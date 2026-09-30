@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.progression.r01;
 
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterDataLoader;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
 import java.util.Objects;
@@ -39,11 +40,16 @@ public final class R01RewardService {
             ServerPlayer player,
             RootClass rewardClass
     ) {
-        return grant(
+        R01RewardRules.RewardRule rule =
+                R01RewardRules.EARTHLOONG_FIRST_BOSS_LAYER;
+        return PlayerRewardTransactionService.grantCombatPercentageRewardOnce(
                 player,
                 EARTHLOONG_FIRST_BOSS_TRANSACTION,
                 rewardClass,
-                R01RewardRules.EARTHLOONG_FIRST_BOSS_LAYER
+                R01EarthloongEncounterDataLoader.loadBundled().contentLevel(),
+                rule.combatRequirementFraction(),
+                rule.classRequirementFraction(),
+                rule.gold()
         );
     }
 

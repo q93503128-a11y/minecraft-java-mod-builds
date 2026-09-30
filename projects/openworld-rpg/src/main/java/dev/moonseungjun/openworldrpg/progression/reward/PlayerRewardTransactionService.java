@@ -21,6 +21,101 @@ public final class PlayerRewardTransactionService {
         );
     }
 
+    public static RewardResult grantCombatPercentageRewardOnce(
+            ServerPlayer player,
+            String transactionId,
+            RootClass rewardClass,
+            int encounterLevel,
+            double combatRequirementFraction,
+            double classRequirementFraction,
+            long gold
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(rewardClass, "rewardClass");
+        validateFraction(combatRequirementFraction, "combatRequirementFraction");
+        validateFraction(classRequirementFraction, "classRequirementFraction");
+        if (encounterLevel < 1
+                || encounterLevel > ProjectProgressionRules.MAX_COMBAT_LEVEL) {
+            throw new IllegalArgumentException(
+                    "Combat reward encounter level must be inside [1, 80]."
+            );
+        }
+        if (gold < 0L) {
+            throw new IllegalArgumentException("Gold reward cannot be negative.");
+        }
+
+        PlayerRewardTransactionState transactions = state(player);
+        if (transactions.isCompleted(transactionId)) {
+            return new RewardResult(null, false);
+        }
+
+        var pending = transactions.pendingPlan(transactionId);
+        PlayerRewardTransactionState.RewardPlan plan;
+        if (pending.isPresent()) {
+            plan = pending.get();
+            if (plan.rewardClass() != rewardClass) {
+                throw new IllegalStateException(
+                        "Pending reward class changed for transaction " + transactionId
+                );
+            }
+        } else {
+            var progression = PlayerProgressionService.state(player);
+            double levelModifier =
+                    ProjectProgressionRules.combatRewardLevelMultiplier(
+                            encounterLevel,
+                            progression.combatLevel()
+                    );
+            long combatXp = progression.combatLevel()
+                    >= ProjectProgressionRules.MAX_COMBAT_LEVEL
+                    ? 0L
+                    : Math.round(
+                            ProjectProgressionRules.combatXpToNext(
+                                    progression.combatLevel()
+                            )
+                                    * combatRequirementFraction
+                                    * levelModifier
+                    );
+
+            var classProgress = progression.classProgress(rewardClass);
+            long classXp = 0L;
+            if (classProgress.rank()
+                    < ProjectProgressionRules.MAX_CLASS_RANK) {
+                long afterContentModifier = Math.round(
+                        ProjectProgressionRules.classXpToNext(
+                                classProgress.rank()
+                        )
+                                * classRequirementFraction
+                                * levelModifier
+                );
+                classXp = ProjectProgressionRules.applyClassXpCatchUp(
+                        afterContentModifier,
+                        progression.combatLevel(),
+                        classProgress.rank()
+                );
+            }
+
+            plan = new PlayerRewardTransactionState.RewardPlan(
+                    combatXp,
+                    rewardClass,
+                    classXp,
+                    gold
+            );
+            transactions = transactions.begin(transactionId, plan);
+            player.setAttached(
+                    PlayerRewardTransactionAttachments.REWARD_TRANSACTIONS,
+                    transactions
+            );
+        }
+
+        applyPlan(player, transactionId, plan);
+        PlayerRewardTransactionState completed = state(player).complete(transactionId);
+        player.setAttached(
+                PlayerRewardTransactionAttachments.REWARD_TRANSACTIONS,
+                completed
+        );
+        return new RewardResult(plan, true);
+    }
+
     public static RewardResult grantPercentageRewardOnce(
             ServerPlayer player,
             String transactionId,

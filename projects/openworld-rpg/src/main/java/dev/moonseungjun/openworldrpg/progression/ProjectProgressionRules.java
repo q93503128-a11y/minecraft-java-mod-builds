@@ -46,6 +46,84 @@ public final class ProjectProgressionRules {
         return 0.10;
     }
 
+    public static double questDungeonRewardLevelMultiplier(
+            int recommendedLevel,
+            int playerLevel
+    ) {
+        validateCombatLevel(recommendedLevel, "recommendedLevel");
+        validateCombatLevel(playerLevel, "playerLevel");
+        int overLevel = playerLevel - recommendedLevel;
+        if (overLevel <= 5) {
+            return 1.00;
+        }
+        if (overLevel <= 10) {
+            return 0.75;
+        }
+        if (overLevel <= 20) {
+            return 0.50;
+        }
+        return 0.25;
+    }
+
+    public static int expectedClassRankForCatchUp(int combatLevel) {
+        validateCombatLevel(combatLevel, "combatLevel");
+        int progress = Math.min(combatLevel - 1, 59);
+        return Math.min(
+                MAX_CLASS_RANK,
+                1 + (49 * progress) / 59
+        );
+    }
+
+    public static double classXpCatchUpMultiplier(
+            int combatLevel,
+            int classRank
+    ) {
+        validateCombatLevel(combatLevel, "combatLevel");
+        if (classRank < 1 || classRank > MAX_CLASS_RANK) {
+            throw new IllegalArgumentException(
+                    "Class Rank must be inside [1, 50]."
+            );
+        }
+        int gap = expectedClassRankForCatchUp(combatLevel) - classRank;
+        if (gap <= 4) {
+            return 1.00;
+        }
+        if (gap <= 9) {
+            return 1.30;
+        }
+        if (gap <= 19) {
+            return 1.75;
+        }
+        return 2.25;
+    }
+
+    public static long applyClassXpCatchUp(
+            long classXpAfterContentModifier,
+            int combatLevel,
+            int classRank
+    ) {
+        if (classXpAfterContentModifier < 0L) {
+            throw new IllegalArgumentException(
+                    "Class XP after content modifier cannot be negative."
+            );
+        }
+        if (classXpAfterContentModifier == 0L) {
+            validateCombatLevel(combatLevel, "combatLevel");
+            if (classRank < 1 || classRank > MAX_CLASS_RANK) {
+                throw new IllegalArgumentException(
+                        "Class Rank must be inside [1, 50]."
+                );
+            }
+            return 0L;
+        }
+        double scaled = classXpAfterContentModifier
+                * classXpCatchUpMultiplier(combatLevel, classRank);
+        if (!Double.isFinite(scaled) || scaled > Long.MAX_VALUE) {
+            throw new ArithmeticException("Scaled Class XP overflow.");
+        }
+        return Math.round(scaled);
+    }
+
     public static long classSwitchGoldCost(int combatLevel) {
         if (combatLevel < 1 || combatLevel > MAX_COMBAT_LEVEL) {
             throw new IllegalArgumentException(
@@ -80,6 +158,17 @@ public final class ProjectProgressionRules {
         }
         long raw = 100L + 20L * rank + 2L * rank * rank;
         return roundToTen(raw);
+    }
+
+    private static void validateCombatLevel(
+            int level,
+            String name
+    ) {
+        if (level < 1 || level > MAX_COMBAT_LEVEL) {
+            throw new IllegalArgumentException(
+                    name + " must be inside [1, 80]."
+            );
+        }
     }
 
     private static long roundToTen(long value) {

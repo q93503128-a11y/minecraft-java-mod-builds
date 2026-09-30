@@ -19,6 +19,89 @@ class ProjectProgressionRulesTest {
     }
 
     @Test
+    void questDungeonOverlevelCurveMatchesCanon() {
+        assertEquals(
+                1.00,
+                ProjectProgressionRules.questDungeonRewardLevelMultiplier(8, 3),
+                0.0001
+        );
+        assertEquals(
+                1.00,
+                ProjectProgressionRules.questDungeonRewardLevelMultiplier(8, 13),
+                0.0001
+        );
+        assertEquals(
+                0.75,
+                ProjectProgressionRules.questDungeonRewardLevelMultiplier(8, 14),
+                0.0001
+        );
+        assertEquals(
+                0.75,
+                ProjectProgressionRules.questDungeonRewardLevelMultiplier(8, 18),
+                0.0001
+        );
+        assertEquals(
+                0.50,
+                ProjectProgressionRules.questDungeonRewardLevelMultiplier(8, 19),
+                0.0001
+        );
+        assertEquals(
+                0.50,
+                ProjectProgressionRules.questDungeonRewardLevelMultiplier(8, 28),
+                0.0001
+        );
+        assertEquals(
+                0.25,
+                ProjectProgressionRules.questDungeonRewardLevelMultiplier(8, 29),
+                0.0001
+        );
+    }
+
+    @Test
+    void lateClassCatchUpMatchesExpectedRankAndGapBands() {
+        assertEquals(1, ProjectProgressionRules.expectedClassRankForCatchUp(1));
+        assertEquals(6, ProjectProgressionRules.expectedClassRankForCatchUp(8));
+        assertEquals(16, ProjectProgressionRules.expectedClassRankForCatchUp(20));
+        assertEquals(33, ProjectProgressionRules.expectedClassRankForCatchUp(40));
+        assertEquals(50, ProjectProgressionRules.expectedClassRankForCatchUp(60));
+        assertEquals(50, ProjectProgressionRules.expectedClassRankForCatchUp(80));
+
+        assertEquals(
+                1.00,
+                ProjectProgressionRules.classXpCatchUpMultiplier(60, 46),
+                0.0001
+        );
+        assertEquals(
+                1.30,
+                ProjectProgressionRules.classXpCatchUpMultiplier(60, 45),
+                0.0001
+        );
+        assertEquals(
+                1.75,
+                ProjectProgressionRules.classXpCatchUpMultiplier(60, 40),
+                0.0001
+        );
+        assertEquals(
+                2.25,
+                ProjectProgressionRules.classXpCatchUpMultiplier(60, 30),
+                0.0001
+        );
+
+        assertEquals(
+                225L,
+                ProjectProgressionRules.applyClassXpCatchUp(100L, 60, 30)
+        );
+        assertEquals(
+                130L,
+                ProjectProgressionRules.applyClassXpCatchUp(100L, 20, 11)
+        );
+        assertEquals(
+                100L,
+                ProjectProgressionRules.applyClassXpCatchUp(100L, 20, 12)
+        );
+    }
+
+    @Test
     void classSwitchGoldCostMatchesCanonAnchorsAndCap() {
         assertEquals(200L, ProjectProgressionRules.classSwitchGoldCost(8));
         assertEquals(510L, ProjectProgressionRules.classSwitchGoldCost(20));
