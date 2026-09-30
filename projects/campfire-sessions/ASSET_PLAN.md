@@ -104,15 +104,56 @@ Use the life-sim role as structural inspiration only.
 ### Requirements
 Final map must:
 - be an island/archipelago world.
-- provide large flat buildable zones.
+- preferably provide roughly 6–10 **meaningful** island destinations, including one strong main-village island; do not chase island count with tiny useless rocks.
+- provide a large flat buildable main zone.
 - support fixed building anchors.
 - have enough buildable land for roughly 10–12 homes plus public facilities.
 - have useful coast/rivers/cliffs/caves where possible.
 - be directly obtainable by the development workflow.
+- permit redistribution/bundling inside the Campfire Sessions Modrinth .mrpack.
 - require no user-side manual world download/install.
 - survive conversion/loading in Minecraft 26.2.
+- be provisionable from a packaged template without modpack updates overwriting a progressed save.
 
 ### Candidate status
+
+**Geming400 — Island map | 1024×1024 — current leading packable candidate**
+Recovered from the earlier Campfire planning pass and re-verified against the current CurseForge/Planet Minecraft listing.
+
+Current verified source facts:
+- creator: Geming400.
+- world size: 1024×1024.
+- 7 islands total: one large central island + six smaller surrounding islands.
+- WorldPainter.
+- caves: yes.
+- caverns: yes.
+- chasms: no.
+- ores: yes.
+- palm trees, other trees and bushes.
+- current release: `Island - No WorldBorder.zip`.
+- file size: about 51.2 MB.
+- source version: Minecraft 1.21.4.
+- license: MIT.
+
+Why it is now strategically strong:
+- the 7-island structure better supports repeated pier travel and destination identity than only 2–3 giant landmasses.
+- MIT explicitly resolves the Modrinth-pack redistribution problem as long as license/copyright notices are preserved.
+- current direct download remains available.
+- 51.2 MB is practical for a bundled world template.
+
+Unknowns that still block canonical selection:
+- exact central-island flat/buildable acreage.
+- whether 10–12 houses + civic buildings + roads/plaza/yard spacing fit without crowding.
+- exact island-to-island distances and travel feel.
+- actual biome/height distribution from chunks.
+- Minecraft 26.2 conversion correctness.
+- whether the 1024×1024 overall scale feels rich enough after multiplayer and long-term content are placed.
+
+Required next action:
+- obtain the actual ZIP.
+- inspect level.dat/region data and load it in a controlled conversion copy.
+- measure usable flat area and produce a first anchor/parcel sketch.
+- reject it if the main island cannot comfortably support the village, even though the license/island count are attractive.
 
 **4K Flat Islands Map for Creative — current leading candidate**
 Source/visual inspection pass completed from the creator's current Planet Minecraft page and screenshots.
@@ -160,15 +201,11 @@ Important limitation:
 - however it is substantially more vertical/terrain-heavy and less ideal for a clean large prefab village core.
 - retain as fallback/reference if the leading flat map cannot be acquired or if exploration terrain becomes more important than civic flatness.
 
-Previous 1024×1024 7-island candidate:
-- useful reference.
-- not final.
-- likely too small and/or not flat enough for the current scope.
-
-Current preference:
-1. attempt direct acquisition + real chunk inspection of 4K Flat Islands first.
-2. if it passes 26.2 conversion and exact-area checks, use it as the base and author the missing ecology/exploration layer around its strong flat civic geography.
-3. if direct acquisition fails, move to another actually downloadable flat archipelago rather than asking the user to install a map manually.
+### Current map-selection priority
+1. **Geming400 7-island MIT world** — inspect first because it combines useful island count, direct availability and clear redistribution rights.
+2. search/compare any larger redistributable archipelago that still offers a genuinely flat main-village island.
+3. **4K Flat Islands** — retain as the strongest extreme-flatness candidate/reference, but do not package it without explicit redistribution rights.
+4. reject visually excellent ARR/no-redistribution maps if they would force manual user installation; that violates the project delivery requirement.
 
 No island roles are final until a real world file is inspected.
 
