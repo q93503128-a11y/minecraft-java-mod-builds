@@ -299,26 +299,22 @@ public final class MetaMenuScreen extends Screen {
             int slotCount=skills.size()+(passives.isEmpty()?0:1);
             selectedSkillIndex=Math.max(0,Math.min(selectedSkillIndex,Math.max(0,slotCount-1)));
             if(slotCount>0){
-                int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-(contentTop()+27)-6)));
-                int sx=compactLayout?left+16:left+18+portraitSize+14;
-                int sw=compactLayout?Math.max(80,panelWidth-32):Math.max(80,left+panelWidth-18-sx);
-                int gapSkill=3;
-                int bw=Math.max(42,(sw-gapSkill*(slotCount-1))/slotCount);
-                int by=compactLayout?contentTop()+43:contentTop()+58;
+                int sx=skillRailX(),by=skillRailY(),bw=skillRailW(),buttonH=22,gapSkill=4;
                 for(int i=0;i<skills.size();i++){
                     final int index=i;
                     var skill=skills.get(i);
+                    String prefix=skill.isBasic()?"기본 · ":"기술 · ";
                     addRenderableWidget(new BattleHudButton(
-                            sx+i*(bw+gapSkill),by,bw,18,
-                            Component.literal(skill.name()),
+                            sx,by+i*(buttonH+gapSkill),bw,buttonH,
+                            Component.literal(prefix+skill.name()),
                             i==selectedSkillIndex?(skill.isBasic()?GREEN:GOLD):MUTED,
                             ignored->{selectedSkillIndex=index;skillDescriptionScroll=0;rebuild();}));
                 }
                 if(!passives.isEmpty()){
                     int index=skills.size();
                     addRenderableWidget(new BattleHudButton(
-                            sx+index*(bw+gapSkill),by,bw,18,
-                            Component.literal("패시브"),
+                            sx,by+index*(buttonH+gapSkill),bw,buttonH,
+                            Component.literal("패시브 · 고유 효과"),
                             selectedSkillIndex==index?PURPLE:MUTED,
                             ignored->{selectedSkillIndex=index;skillDescriptionScroll=0;rebuild();}));
                 }
@@ -753,16 +749,25 @@ public final class MetaMenuScreen extends Screen {
         }
     }
 
+    private int skillRailX(){return left+16;}
+    private int skillRailY(){return contentTop()+58;}
+    private int skillRailW(){return Math.min(compactLayout?132:156,Math.max(112,panelWidth/4));}
+    private int skillDetailX(){return skillRailX()+skillRailW()+10;}
+    private int skillDetailW(){return Math.max(120,left+panelWidth-16-skillDetailX());}
+
     private void drawCharacters(GuiGraphicsExtractor g){
         if(selectedCharacterId.isBlank()) return;
         var r=character(selectedCharacterId);if(r==null)return;
-        boolean compactSkills=compactLayout&&detailTab==DetailTab.SKILLS;
+        boolean skillView=detailTab==DetailTab.SKILLS;
         int x,y,w;
-        if(compactSkills){
-            x=left+16;y=contentTop()+27;w=Math.max(80,panelWidth-32);
+        if(skillView){
+            int headerX=left+16,headerW=Math.max(80,panelWidth-32);
+            y=contentTop()+27;
             String header=r.name()+" · "+(r.owned()?(r.awakened()?"각성 · ":"")+"★"+r.nativeStar()+" "+levelLabel(r):"미보유 · ★"+r.nativeStar())
                     +" · "+primaryRoleLabel(r.primaryRole());
-            g.text(font,Component.literal(UiTextLayout.fit(header,w)),x,y,r.owned()?TEXT:MUTED,true);
+            g.text(font,Component.literal(UiTextLayout.fit(header,headerW)),headerX,y,r.owned()?TEXT:MUTED,true);
+            g.text(font,Component.literal("기술 목록"),skillRailX(),contentTop()+42,SECONDARY,true);
+            x=skillDetailX();w=skillDetailW();
         }else{
             int portraitX=left+18,portraitY=contentTop()+27;
             int portraitSize=Math.min(116,Math.max(76,Math.min(panelWidth/5,contentBottom()-portraitY-6)));
@@ -791,8 +796,8 @@ public final class MetaMenuScreen extends Screen {
                 if(slotCount<=0)break;
                 int index=Math.max(0,Math.min(selectedSkillIndex,slotCount-1));
                 boolean passiveSelected=index>=skills.size();
-                int detailY=compactSkills?contentTop()+66:y+58;
-                int boxH=Math.max(66,contentBottom()-detailY-3);
+                int detailY=skillRailY()-4;
+                int boxH=Math.max(92,contentBottom()-detailY-3);
                 TurnboundUiSkin.inset(g,x,detailY,w,boxH);
 
                 List<DetailLine> details=new ArrayList<>();
@@ -808,7 +813,7 @@ public final class MetaMenuScreen extends Screen {
                     }else{
                         for(var passive:passives){
                             details.add(new DetailLine(passive.name(),GOLD));
-                            for(String line:UiTextLayout.wrap(passive.description(),Math.max(80,w-16),96)){
+                            for(String line:UiTextLayout.wrap(passive.description(),Math.max(100,w-20),120)){
                                 details.add(new DetailLine(line,SECONDARY));
                             }
                         }
@@ -819,23 +824,24 @@ public final class MetaMenuScreen extends Screen {
                     metaLine=(skill.isBasic()?"기본 공격":"액티브")+" · "
                             +(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
                     titleColor=skill.isBasic()?GREEN:GOLD;
-                    for(String line:UiTextLayout.wrap(skill.description(),Math.max(80,w-16),96)){
+                    for(String line:UiTextLayout.wrap(skill.description(),Math.max(100,w-20),120)){
                         details.add(new DetailLine(line,TEXT));
                     }
                 }
 
-                int bodyY=detailY+35;
-                int visible=Math.max(1,(detailY+boxH-bodyY-6)/10);
+                int bodyY=detailY+45;
+                int visible=Math.max(1,(detailY+boxH-bodyY-8)/12);
                 int maxScroll=Math.max(0,details.size()-visible);
                 skillDescriptionScroll=Math.max(0,Math.min(skillDescriptionScroll,maxScroll));
                 String scroll=maxScroll>0?" · 휠 "+(skillDescriptionScroll+1)+"/"+(maxScroll+1):"";
-                g.text(font,Component.literal(UiTextLayout.fit(title,w-16)),x+8,detailY+7,titleColor,true);
-                g.text(font,Component.literal(UiTextLayout.fit(metaLine+scroll,w-16)),x+8,detailY+20,SECONDARY,false);
+                g.text(font,Component.literal(UiTextLayout.fit(title,w-20)),x+10,detailY+9,titleColor,true);
+                g.text(font,Component.literal(UiTextLayout.fit(metaLine+scroll,w-20)),x+10,detailY+24,SECONDARY,false);
+                g.text(font,Component.literal("효과"),x+10,detailY+36,MUTED,true);
                 int end=Math.min(details.size(),skillDescriptionScroll+visible),cursor=bodyY;
                 for(int i=skillDescriptionScroll;i<end;i++){
                     DetailLine line=details.get(i);
-                    g.text(font,Component.literal(UiTextLayout.fit(line.text(),w-16)),x+8,cursor,line.color(),false);
-                    cursor+=10;
+                    g.text(font,Component.literal(UiTextLayout.fit(line.text(),w-20)),x+10,cursor,line.color(),false);
+                    cursor+=12;
                 }
             }
             case EQUIPMENT->{
