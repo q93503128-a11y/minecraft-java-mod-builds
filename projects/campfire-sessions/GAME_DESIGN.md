@@ -250,8 +250,23 @@ Preference:
 - ocean boundaries.
 - terrain large enough for multiplayer without becoming tedious to traverse.
 
-A previously discussed candidate was “4K Flat Islands Map for Creative” because of its flat terrain and ~4000×4000 scale, but it is NOT canonical until the actual world file is directly obtained and inspected.
-If it cannot be directly obtained, replace it with another directly obtainable flat archipelago map.
+The current leading visual/source candidate is “4K Flat Islands Map for Creative” because:
+- the creator states the whole map is roughly 4000×4000.
+- three major bare islands plus smaller islets/lake are present.
+- terrain height is stated to vary only from about 26 to 32, making it exceptionally suitable for external building prefabs and controlled civic parcels.
+- the bottom-left/southwest landmass is the provisional main-village candidate based on its large contiguous flat area and documented spawn region.
+- a broad central water channel creates natural harbor/bridge/coastal-route opportunities.
+
+However, this is still NOT canonical until the actual world file is directly obtained and inspected.
+Screenshot/source analysis is not a substitute for level.dat/region/chunk inspection and Minecraft 26.2 conversion testing.
+
+If the candidate passes real-file inspection:
+- keep the main civic/residential village deliberately clustered rather than spreading buildings over the full 4k map.
+- use the excess land/water for natural space, later facilities, routes, exploration and authored environmental content.
+- replace/refine the large bare stone-heavy surfaces with a coherent Campfire vegetation/grass/path/environment pass.
+- add or author missing cave/cliff/exploration content rather than assuming the base map already provides the full game.
+
+If it cannot be directly obtained, replace it with another directly obtainable flat archipelago map rather than asking the user to install it manually.
 
 ### Island identity and naming
 When the village/world is first established, the creating player chooses the island/village display name before normal arrival play begins.
