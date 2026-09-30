@@ -291,3 +291,17 @@ Build TURNBOUND #954 verified code commit `bf228f7de380896c8cc9c070d8c996a236f02
 - Active Av'Sal quests may coexist with Capital Valley/hidden objectives and project their exact known target zones onto the map.
 - MQ_AV02 remains an outskirts investigation objective until its individual clue interactions are implemented; do not invent false exact clue coordinates before live-world placement.
 - Future Av'Sal NPCs, enemies, midbosses and playable additions remain external-model-first and should broaden silhouettes/species rather than defaulting to humanoid-only or giant-monster-only content.
+
+
+## MQ_AV02 production investigation slice — 2026-09-30
+
+`MQ_AV02 — 폐허를 쓰는 사람들` now has a concrete 2-of-3 investigation loop:
+- 폐품상 나라: recent cargo and metallic echo testimony
+- 생존자 렌: repeated light/echo direction testimony
+- 비에 젖은 기록: recent movement ledger discovered in the environment
+- any two complete the main objective; the third remains optional
+- the world map projects unresolved candidates simultaneously and the single navigation pointer chooses the nearest unresolved candidate
+- NPC markers use exact live-resolved server positions, while the environmental clue is resolved from an outskirts seed through collision/source-content checks
+- the three seeds are TURNBOUND placement hints around the source-backed Av'Sal Scavengers House landmark, not claims about Drehmal canon coordinates
+- both NPCs reuse the already adopted Apache-2.0 FableCraft visual family; no new unlicensed placeholder model is introduced
+- completion grants the existing generous MQ_AV02 package: 1,000 Crystal / 8,000 Gold / party XP 2,400

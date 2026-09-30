@@ -10,6 +10,10 @@ class DrehmalFieldNpcCatalogTest {
                 () -> String.join("; ", DrehmalFieldNpcCatalog.validate()));
         long offers = DrehmalFieldNpcCatalog.all().stream().filter(npc -> !npc.questOfferFlag().isBlank()).count();
         assertEquals(2, offers);
+        assertEquals(2, DrehmalFieldNpcCatalog.all().stream().filter(npc -> !npc.progressFlag().isBlank()).count());
+        assertTrue(DrehmalFieldNpcCatalog.all().stream()
+                .filter(npc -> !npc.progressFlag().isBlank())
+                .allMatch(npc -> npc.progressRequiresFlag().equals(AvsalExpansionProgress.OUTSKIRTS_REACHED)));
         for (var npc : DrehmalFieldNpcCatalog.all()) {
             if (npc.questOfferFlag().isBlank()) continue;
             assertTrue(npc.questOfferFlag().startsWith("HIDDEN_"));

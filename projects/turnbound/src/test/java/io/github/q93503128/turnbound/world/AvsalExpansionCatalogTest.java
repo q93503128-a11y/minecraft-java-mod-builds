@@ -25,6 +25,9 @@ class AvsalExpansionCatalogTest {
         assertEquals("ELITE", elite.tier());
         assertTrue(CampaignEncounterCatalog.contains(common.combatEncounterId()));
         assertTrue(CampaignEncounterCatalog.contains(elite.combatEncounterId()));
+        assertTrue(AvsalExpansionCatalog.site(AvsalExpansionRuntime.SCAVENGER_CLUE_SITE).kind().equals("NPC_ZONE"));
+        assertTrue(AvsalExpansionCatalog.site(AvsalExpansionRuntime.SURVIVOR_CLUE_SITE).kind().equals("NPC_ZONE"));
+        assertTrue(AvsalExpansionCatalog.site(AvsalExpansionRuntime.RECORDS_CLUE_SITE).kind().equals("CLUE_ZONE"));
         var spec = CampaignEncounterCatalog.spec("AV_ROAD_PATROL");
         assertTrue(spec.enemies().contains("CV_B"));
         assertTrue(spec.enemies().contains("CV_C"));

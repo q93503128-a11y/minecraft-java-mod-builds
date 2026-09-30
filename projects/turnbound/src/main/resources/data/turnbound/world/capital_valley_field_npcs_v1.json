@@ -30,6 +30,26 @@
       "questOfferFlag": "HIDDEN_CV_MIRA_OFFERED",
       "questOfferId": "turnbound:quest/drehmal/hidden_camp_night",
       "questOfferDialogue": "밤마다 북쪽 길의 이끼등 무리가 야영지까지 내려와. 지나가는 길이면 한 번 흩어 줘. 다음 탐험대가 훨씬 편해질 거야."
+    },
+    {
+      "locator": "turnbound:npc/avsal/scrap_dealer",
+      "siteLocator": "turnbound:site/avsal/scavenger_contact",
+      "playerLabel": "폐품상 나라",
+      "visualAsset": "DRABYEL_STORYKEEPER",
+      "dialogue": "도시가 죽었다고? 물건은 계속 움직여. 며칠 전에도 안쪽에서 금속 울림이 나더니 누군가 상자를 북쪽으로 옮겼어.",
+      "interactionRadius": 4,
+      "progressFlag": "AVSAL_MQ_AV02_SCAVENGER",
+      "progressRequiresFlag": "AVSAL_MQ_AV01_COMPLETE"
+    },
+    {
+      "locator": "turnbound:npc/avsal/shelter_survivor",
+      "siteLocator": "turnbound:site/avsal/survivor_shelter",
+      "playerLabel": "생존자 렌",
+      "visualAsset": "DRABYEL_GREETER",
+      "dialogue": "밤이 되면 폐허 깊은 곳에서 같은 간격으로 빛이 번쩍여. 사람들 싸움과는 달라. 북쪽 물가 쪽에서 시작되는 것 같아.",
+      "interactionRadius": 4,
+      "progressFlag": "AVSAL_MQ_AV02_SURVIVOR",
+      "progressRequiresFlag": "AVSAL_MQ_AV01_COMPLETE"
     }
   ]
 }

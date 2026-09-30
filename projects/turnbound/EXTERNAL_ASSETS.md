@@ -83,6 +83,32 @@
 - Intended use: Korean UI typography
 - Status: Minecraft 26.2 font-provider/runtime 검증 전
 
+
+
+### Quaternius Ultimate Monsters
+- Type: direct_asset / editable_base candidate
+- License: CC0 (official pack page verified 2026-09-30)
+- Source: https://quaternius.com/packs/ultimatemonsters.html
+- Contents: 50 fully animated textured monsters; FBX / OBJ / Blend / glTF
+- Intended use: Av'Sal and later-region non-humanoid common/Elite/Midboss visual pool
+- Status: verified candidate; no files imported yet
+
+### Quaternius Animated Robot Pack
+- Type: direct_asset / editable_base candidate
+- License: CC0 (official pack page verified 2026-09-30)
+- Source: https://quaternius.com/packs/animatedrobot.html
+- Contents: one animated textured robot; FBX / OBJ / Blend
+- Intended use: construct NPC/enemy/playable candidate where a mechanical silhouette fits the mechanic
+- Status: verified candidate; no files imported yet
+
+### Quaternius Ultimate Animated Animal Pack
+- Type: direct_asset / editable_base candidate
+- License: CC0 (official pack page verified 2026-09-30)
+- Source: https://quaternius.com/packs/ultimateanimatedanimals.html
+- Contents: 12 animated animals with attack/death/locomotion animation coverage
+- Intended use: animal allies/enemies and future mount investigation
+- Status: verified candidate; no files imported yet
+
 ## Reference projects — asset workflow
 
 ### MCUI

@@ -26,11 +26,23 @@ class AvsalExpansionProgressTest {
                 AvsalExpansionProgress.stage(Set.of(
                         AvsalExpansionProgress.BRIEFED,
                         AvsalExpansionProgress.ROADSIDE_ECHO_SEEN), clear));
+        Set<String> investigating=Set.of(
+                AvsalExpansionProgress.BRIEFED,
+                AvsalExpansionProgress.ROADSIDE_ECHO_SEEN,
+                AvsalExpansionProgress.ROAD_PATROL_SEEN,
+                AvsalExpansionProgress.OUTSKIRTS_REACHED,
+                AvsalExpansionProgress.CLUE_SCAVENGER);
         assertEquals(AvsalExpansionProgress.Stage.INVESTIGATE,
-                AvsalExpansionProgress.stage(Set.of(
-                        AvsalExpansionProgress.BRIEFED,
-                        AvsalExpansionProgress.ROADSIDE_ECHO_SEEN,
-                        AvsalExpansionProgress.ROAD_PATROL_SEEN,
-                        AvsalExpansionProgress.OUTSKIRTS_REACHED), clear));
+                AvsalExpansionProgress.stage(investigating, clear));
+        assertEquals(1,AvsalExpansionProgress.investigationCount(investigating));
+
+        Set<String> complete=Set.of(
+                AvsalExpansionProgress.BRIEFED,
+                AvsalExpansionProgress.OUTSKIRTS_REACHED,
+                AvsalExpansionProgress.CLUE_SCAVENGER,
+                AvsalExpansionProgress.CLUE_RECORDS,
+                AvsalExpansionProgress.INVESTIGATION_COMPLETE);
+        assertTrue(AvsalExpansionProgress.investigationComplete(complete));
+        assertEquals(AvsalExpansionProgress.Stage.NORTHBOUND,AvsalExpansionProgress.stage(complete,clear));
     }
 }

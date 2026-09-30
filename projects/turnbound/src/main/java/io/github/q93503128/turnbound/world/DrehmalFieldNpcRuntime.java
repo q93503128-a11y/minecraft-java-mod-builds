@@ -30,7 +30,7 @@ final class DrehmalFieldNpcRuntime {
 
         Set<String> active=new HashSet<>();
         for(var npc:DrehmalFieldNpcCatalog.all()){
-            var site=DrehmalAdaptiveRoutePlacement.site(caller,npc.siteLocator());
+            var site=site(level,caller,npc.siteLocator());
             if(site==null||site.runtimePosition()==null||!DrabyelServiceActors.supports(npc.visualAsset()))continue;
             active.add(npc.locator());
             Vec3 pos=vec(site.runtimePosition());
@@ -51,7 +51,7 @@ final class DrehmalFieldNpcRuntime {
         if(player==null||locator==null)return false;
         var npc=DrehmalFieldNpcCatalog.npc(locator);
         if(npc==null)return false;
-        var site=DrehmalAdaptiveRoutePlacement.site(player,npc.siteLocator());
+        var site=site(player,npc.siteLocator());
         if(site==null||site.runtimePosition()==null)return false;
         Vec3 pos=vec(site.runtimePosition());
         double radius=npc.interactionRadius()+1.0D;
@@ -59,10 +59,20 @@ final class DrehmalFieldNpcRuntime {
         if(target instanceof BattleActorEntity actor){face(actor,player);actor.playServiceGreeting();}
         String dialogue=npc.dialogue();
         var server=player.level().getServer();
-        if(server!=null&&!npc.questOfferFlag().isBlank()){
+        if(server!=null){
             ExternalWorldSavedData data=ExternalWorldSavedData.get(server);
-            boolean first=!data.onboardingFlag(player.getUUID(),npc.questOfferFlag());
-            if(first){data.markOnboardingFlag(player.getUUID(),npc.questOfferFlag());dialogue=dialogue+"\n\n"+npc.questOfferDialogue();}
+            if(!npc.progressFlag().isBlank()
+                    && (npc.progressRequiresFlag().isBlank() || data.onboardingFlag(player.getUUID(),npc.progressRequiresFlag()))
+                    && !data.onboardingFlag(player.getUUID(),npc.progressFlag())){
+                data.markOnboardingFlag(player.getUUID(),npc.progressFlag());
+                int count=AvsalExpansionProgress.investigationCount(data.onboardingFlags(player.getUUID()));
+                dialogue=dialogue+"\n\n조사 진척 "+Math.min(count,2)+"/2";
+                if(AvsalExpansionProgress.reconcileInvestigation(player)) dialogue=dialogue+" · 필요한 단서를 충분히 확보했습니다.";
+            }
+            if(!npc.questOfferFlag().isBlank()){
+                boolean first=!data.onboardingFlag(player.getUUID(),npc.questOfferFlag());
+                if(first){data.markOnboardingFlag(player.getUUID(),npc.questOfferFlag());dialogue=dialogue+"\n\n"+npc.questOfferDialogue();}
+            }
         }
         FieldNetwork.showDialogue(player, npc.playerLabel(), dialogue);
         ExternalWorldBootstrap.refreshFieldContext(player);
@@ -74,6 +84,25 @@ final class DrehmalFieldNpcRuntime {
     static void clear(){
         if(boundLevel!=null)for(String locator:List.copyOf(ACTORS.keySet()))discard(boundLevel,locator);
         ACTORS.clear();boundLevel=null;lastTick=Long.MIN_VALUE;
+    }
+
+    private static DrehmalFirstRouteCatalog.Site site(ServerLevel level,ServerPlayer player,String locator){
+        var first=DrehmalAdaptiveRoutePlacement.site(player,locator);
+        if(first!=null)return first;
+        var avsal=AvsalExpansionRuntime.site(player,locator);
+        if(avsal!=null)return avsal;
+        if(level!=null){
+            for(ServerPlayer candidate:level.players()){
+                if(candidate==player||!ExternalWorldBootstrap.active(candidate)||!AvsalExpansionRuntime.active(candidate))continue;
+                avsal=AvsalExpansionRuntime.site(candidate,locator);
+                if(avsal!=null)return avsal;
+            }
+        }
+        return null;
+    }
+
+    private static DrehmalFirstRouteCatalog.Site site(ServerPlayer player,String locator){
+        return player!=null && player.level() instanceof ServerLevel level ? site(level,player,locator) : null;
     }
 
     private static boolean demanded(ServerLevel level,Vec3 pos){

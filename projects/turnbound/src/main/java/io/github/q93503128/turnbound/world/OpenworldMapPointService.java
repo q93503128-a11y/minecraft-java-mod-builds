@@ -24,10 +24,16 @@ final class OpenworldMapPointService {
         }
         for (var npc : DrehmalFieldNpcCatalog.all()) {
             if (!fieldNpcVisible(npc, flags)) continue;
-            var site = DrehmalAdaptiveRoutePlacement.site(player, npc.siteLocator());
+            var site = fieldNpcSite(player, npc.siteLocator());
             if (site == null || site.runtimePosition() == null) continue;
             var pos = site.runtimePosition();
-            out.add(new FieldUiSnapshot.MapPoint(npc.locator(), npc.playerLabel(), "NPC", pos.x()+0.5D, pos.z()+0.5D, false));
+            boolean objective = !npc.progressFlag().isBlank()
+                    && (npc.progressRequiresFlag().isBlank() || flags.contains(npc.progressRequiresFlag()))
+                    && !flags.contains(npc.progressFlag())
+                    && (!npc.progressFlag().startsWith("AVSAL_MQ_AV02_")
+                    || !flags.contains(AvsalExpansionProgress.INVESTIGATION_COMPLETE));
+            out.add(new FieldUiSnapshot.MapPoint(npc.locator(), npc.playerLabel(), objective ? "QUEST" : "NPC",
+                    pos.x()+0.5D, pos.z()+0.5D, objective));
         }
 
         Set<String> production = new LinkedHashSet<>();
@@ -41,6 +47,16 @@ final class OpenworldMapPointService {
         }
         for (var quest : AvsalQuestCatalog.all()) {
             if (!AvsalQuestCatalog.visible(quest, flags, production) || AvsalQuestCatalog.completed(quest, flags, clears)) continue;
+            if ("MQ_AV02".equals(quest.id())) {
+                if (!flags.contains(AvsalExpansionProgress.CLUE_RECORDS)) {
+                    var records=AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.RECORDS_CLUE_SITE);
+                    if(records!=null&&records.runtimePosition()!=null){
+                        var pos=records.runtimePosition();
+                        out.add(new FieldUiSnapshot.MapPoint("quest:MQ_AV02:records","낡은 기록","QUEST",pos.x()+0.5D,pos.z()+0.5D,true));
+                    }
+                }
+                continue;
+            }
             var target=avsalQuestTarget(player,quest); if(target==null||target.runtimePosition()==null)continue; var pos=target.runtimePosition();
             out.add(new FieldUiSnapshot.MapPoint("quest:"+quest.id(),quest.title(),"QUEST",pos.x()+0.5D,pos.z()+0.5D,true));
         }
@@ -48,9 +64,15 @@ final class OpenworldMapPointService {
     }
 
     private static boolean fieldNpcVisible(DrehmalFieldNpcCatalog.Npc npc, Set<String> flags) {
+        if (AvsalExpansionRuntime.ownsSite(npc.siteLocator())) return flags.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED);
         if (npc.siteLocator().contains("tower_watch")) return flags.contains(DrehmalFirstRouteProgress.TOWER_REACHED);
         if (npc.siteLocator().contains("camp_explorer")) return flags.contains(DrehmalFirstRouteProgress.CAMP_REACHED);
         return true;
+    }
+
+    private static DrehmalFirstRouteCatalog.Site fieldNpcSite(ServerPlayer player,String locator){
+        var first=DrehmalAdaptiveRoutePlacement.site(player,locator);
+        return first!=null?first:AvsalExpansionRuntime.site(player,locator);
     }
 
     private static DrehmalFirstRouteCatalog.Site drehmalQuestTarget(ServerPlayer player,DrehmalQuestCatalog.Quest quest){

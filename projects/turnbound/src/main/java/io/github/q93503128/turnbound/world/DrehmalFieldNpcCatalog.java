@@ -12,6 +12,7 @@ public final class DrehmalFieldNpcCatalog {
     private static final List<Npc> NPCS=load();
 
     public record Npc(String locator,String siteLocator,String playerLabel,String visualAsset,String dialogue,int interactionRadius,
+                      String progressFlag,String progressRequiresFlag,
                       String questOfferFlag,String questOfferId,String questOfferDialogue){}
 
     private DrehmalFieldNpcCatalog(){}
@@ -22,7 +23,7 @@ public final class DrehmalFieldNpcCatalog {
         List<String> errors=new ArrayList<>();Set<String> ids=new HashSet<>();
         for(Npc npc:NPCS){
             if(!ids.add(npc.locator()))errors.add("duplicate field npc "+npc.locator());
-            if(DrehmalFirstRouteCatalog.site(npc.siteLocator())==null)errors.add("unknown npc site "+npc.siteLocator());
+            if(DrehmalFirstRouteCatalog.site(npc.siteLocator())==null&&AvsalExpansionCatalog.site(npc.siteLocator())==null)errors.add("unknown npc site "+npc.siteLocator());
             if(npc.playerLabel().isBlank()||npc.dialogue().isBlank())errors.add("blank field npc copy "+npc.locator());
             if(!VISUALS.contains(npc.visualAsset()))errors.add("unsupported field npc visual "+npc.visualAsset());
             if(npc.interactionRadius()<2||npc.interactionRadius()>6)errors.add("invalid field npc radius "+npc.locator());
@@ -40,7 +41,8 @@ public final class DrehmalFieldNpcCatalog {
             for(JsonElement element:root.getAsJsonArray("npcs")){
                 JsonObject raw=element.getAsJsonObject();
                 out.add(new Npc(str(raw,"locator"),str(raw,"siteLocator"),str(raw,"playerLabel"),str(raw,"visualAsset"),str(raw,"dialogue"),
-                        raw.get("interactionRadius").getAsInt(),optional(raw,"questOfferFlag"),optional(raw,"questOfferId"),optional(raw,"questOfferDialogue")));
+                        raw.get("interactionRadius").getAsInt(),optional(raw,"progressFlag"),optional(raw,"progressRequiresFlag"),
+                        optional(raw,"questOfferFlag"),optional(raw,"questOfferId"),optional(raw,"questOfferDialogue")));
             }
             return List.copyOf(out);
         }catch(Exception ex){
