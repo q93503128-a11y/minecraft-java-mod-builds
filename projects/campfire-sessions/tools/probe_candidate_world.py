@@ -34,7 +34,7 @@ class NbtReader:
 
     def string(self) -> str:
         n = self.read("H")
-        return self.fp.read(n).decode("utf-8")
+        return self.fp.read(n).decode("utf-8", errors="replace")
 
     def payload(self, tag: int):
         if tag == 0:
