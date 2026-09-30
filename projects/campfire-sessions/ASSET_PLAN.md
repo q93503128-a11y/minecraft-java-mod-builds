@@ -1021,6 +1021,8 @@ Verified current 26.2 NeoForge candidates to investigate further:
 - latest observed 26.2 release in this pass: **3.26.3.2170**, CurseForge file ID **8992917**.
 - required core selected for the same trial: **Sophisticated Core 1.5.0.2349**, CurseForge file ID **8985852**.
 - available through current distribution channels suitable for .mrpack dependency delivery despite ARR licensing.
+- **Current Campfire dependency-stack validation:** clean build and existing alpha.6 package-contract checks passed with Sophisticated Core + Sophisticated Backpacks present alongside Skniro's Furniture, Peterwolf's Boats & Ships, Traveler Tool Belt and Player Animation Library.
+- this proves build/classpath compatibility only; it does not yet prove catch-routing API suitability, client visuals, storage UX or multiplayer runtime behavior.
 - client + server.
 - tiered portable storage.
 - wearable/placeable.
@@ -1322,7 +1324,7 @@ When implementation moves from planning to dependency validation, test these **o
 1. **Skniro's Furniture 1.5.2 / NeoForge 26.2** — **BUILD VERIFIED** with Campfire / Java 25 / NeoForge 26.2.0.87; visual, seating and multiplayer acceptance still untested.
 2. **Peterwolf's Boats & Ships 1.0.19 / NeoForge 26.2** — **BUILD VERIFIED together with Skniro**; boat visuals, physics, docking and multiplayer passengers still untested.
 3. **Traveler Tool Belt 1.0.4 / NeoForge 26.2** — **BUILD VERIFIED** in the current Skniro + Peterwolf stack; radial UX/visual acceptance remains untested.
-4. **Sophisticated Backpacks 3.26.3.2170 + Sophisticated Core 1.5.0.2349 / NeoForge 26.2** — now entering controlled build validation for portable storage and Campfire catch-routing integration.
+4. **Sophisticated Backpacks 3.26.3.2170 + Sophisticated Core 1.5.0.2349 / NeoForge 26.2** — **BUILD VERIFIED** inside the current Skniro + Peterwolf + Tool Belt + Player Animation Library stack; catch-routing/API integration and visual UX remain untested.
 5. **Player Animation Library 1.2.6** — **BUILD VERIFIED** in the current Skniro + Peterwolf + Tool Belt stack; no real full-body Campfire animation has been authored/tested yet.
 6. **CPM v0.6.27c** — curated player appearance/model backend; test separately against PAL first.
 7. **NCL Skins 1.2.1** — compare as an alternate wardrobe/look backend; do not keep both CPM and NCL unless each proves a unique necessary role.
@@ -1330,6 +1332,29 @@ When implementation moves from planning to dependency validation, test these **o
 
 Do not call these adopted until the exact 26.2 runtime combination is tested and the visual result is inspected.
 For Modrinth distribution, prefer dependencies already published on Modrinth where quality is equivalent; this reduces manual packaging and licensing friction.
+
+### Current build-validation checkpoint
+Verified through Campfire's real GitHub Actions clean-build workflow:
+- **Skniro's Furniture 1.5.2** — BUILD VERIFIED.
+- **Peterwolf's Boats & Ships 1.0.19** — BUILD VERIFIED in combination with Skniro.
+- **Traveler Tool Belt 1.0.4** — BUILD VERIFIED in the same combined stack.
+- **Player Animation Library 1.2.6** — BUILD VERIFIED in the same combined stack.
+- **Sophisticated Core 1.5.0.2349 + Sophisticated Backpacks 3.26.3.2170** — BUILD VERIFIED in the same combined stack.
+- external building probe also resolves Villageria, SY Village and Towns & Towers and parses their structure NBT during CI.
+
+Latest successful storage-stack workflow checkpoint:
+- commit: `dc7345ca24dc727be257cbddfaf3447b4bc0c9ee`.
+- Build Campfire Sessions run: **18** / run ID **36665249692**.
+- clean build: SUCCESS.
+- external structure probe: SUCCESS.
+- existing alpha.6 packaged-asset/contracts: SUCCESS.
+
+Validation boundary:
+- **BUILD VERIFIED:** YES for the dependency stack above.
+- **CLIENT VISUAL TESTED:** NO.
+- **DEPENDENCY GAMEPLAY TESTED:** NO.
+- **PLAYTESTED:** NO.
+- **MULTIPLAYER TESTED:** NO.
 
 ### Visual/model sources worth retaining even if no runtime mod is adopted
 - **Kenney Cube Pets (CC0)** — resident style/species base candidate; actual pack describes 16 pet models.
