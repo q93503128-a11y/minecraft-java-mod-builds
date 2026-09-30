@@ -424,6 +424,33 @@ Build Openworld RPG run `36665723551` at code state `68a738de298ab3f313c47550b7f
 
 State: `RUNTIME_BOUND / PLAYER_SLOT_OPEN / BUILD_VERIFIED / PLAYTEST_PENDING`.
 
+### Hunter Power Shot runtime/presentation binding — 2026-09-30
+
+Hunter `Power Shot` is now player-slot published as Active Skill 4 / X with server-owned committed-shot, damage, Poise and authored weak-point authority.
+
+Locked gameplay contract:
+
+- 34 Mana / 14.0 s cooldown;
+- ranged-weapon gate currently admitted for Bow/Crossbow;
+- fixed 0.70 s charge/wind-up;
+- ActionCoefficient 3.00;
+- PoiseCoefficient 1.60;
+- shot-specific authored weak-point multiplier 1.40x;
+- three-Focus empowerment: ActionCoefficient 3.35 and weak-point multiplier 1.55x;
+- Focus spender: yes.
+
+The 0.70 s timing is implemented as a Spell Engine `STANDARD` committed cast, not an early-release `CHARGE`. Pinned Spell Engine `spell_engine:archery_pull` provides the ranged-charge pose and `spell_engine:archery_release` provides release. The single projectile has no homing or pierce. Current range 24 blocks, velocity 3.20, 0.22 x 0.22 x 1.15 hitbox and 1.85 render scale are playtest-tunable presentation/precision bindings; `projectile speed: high` is the only authored class-canon statement.
+
+Weak points are now an explicit actor contract rather than an inferred hitbox heuristic. `ExternalActorWeakPointProfile` contains optional actor-local normalized volumes. X/Z are authored relative to half body width in the target yaw frame and Y relative to target bounding-box height; the actual Spell Engine projectile collision point is transformed into this frame before a weak-point hit may be claimed. Empty profiles return false. No current R01 Earthloong profile was invented, so Earthloong remains intentionally weak-point-ineligible until an exact model/actor-specific region is authored and accepted.
+
+This collision-point decision is source-backed: direct inspection of pinned Spell Engine 26.2 upstream commit `d3cba71b726c6fcfb129969f7eeb679faa5ee8ed` confirmed `SpellProjectile.onHitEntity` derives an adjusted point from `EntityHitResult.getLocation()` and forwards it through `ImpactContext.position`. Archers 26.2 at commit `8455d662c13b1236e0ddf42b0b802dc58960dd2a` was also inspected. Its `power_shot.json` uses a next-natural-arrow stash, so that runtime pattern was rejected for this skill because it conflicts with the locked committed direct-shot design.
+
+Presentation reuses the accepted KayKit Character Pack: Adventures arrow geometry/texture, scaled modestly larger for the heavier shot, plus the dependency-provided charge/release animations. No temporary bespoke arrow mesh or generic particle replacement is introduced.
+
+Build Openworld RPG run `36669480301` at code state `39929bae72b56750f5ec87a79c3e0f333ce9c0fb` passes unit tests/clean build, bootstrap JAR verification, core-profile dedicated server smoke, gameplay dependency server smoke, gameplay client startup including the Power renderer mixin, both playtest-JAR builds, Modrinth pack packaging and artifact upload.
+
+State: `RUNTIME_BOUND / PLAYER_SLOT_OPEN / BUILD_VERIFIED / PLAYTEST_PENDING`.
+
 ### Warrior root runtime binding delta — 2026-09-29
 
 Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `slash_01.png` as a support material inside project-authored 3D slash/sector geometry. Exact committed bytes are taken from pinned corroboration repository `shorepine/kenney` commit `3694c6879e487c108f55677be7dd2ca75b07cc3b`, Git blob `c04fa2d3938827da63105172748851db86735aa6`, and are recorded under `external-assets/kenney-particle-pack/SOURCE.md`.
