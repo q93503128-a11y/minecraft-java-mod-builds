@@ -25,13 +25,20 @@ public final class ResidentVec3Track {
             throw new IllegalArgumentException("expected " + expected + " VEC3 values, got " + values.length);
         }
 
+        if (times[0] < 0) {
+            throw new IllegalArgumentException("glTF key times must start at or after zero");
+        }
+        if (interpolation == ResidentInterpolation.CUBICSPLINE && times.length < 2) {
+            throw new IllegalArgumentException("glTF CUBICSPLINE requires at least two keys");
+        }
+
         this.times = times.clone();
         this.values = values.clone();
         this.interpolation = interpolation;
 
         for (int i = 1; i < this.times.length; i++) {
-            if (this.times[i] < this.times[i - 1]) {
-                throw new IllegalArgumentException("key times must be sorted");
+            if (this.times[i] <= this.times[i - 1]) {
+                throw new IllegalArgumentException("glTF key times must be strictly increasing");
             }
         }
     }

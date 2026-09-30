@@ -158,15 +158,19 @@ def animation_names(document: dict) -> set[str]:
 
 
 def gltf_render_profile(document: dict) -> dict:
-    """Summarize whether a GLB fits Campfire's rigid-node triangle runtime path."""
+    """Summarize whether a GLB fits Campfire's rigid-node multi-material runtime path."""
     meshes = document.get("meshes", [])
     nodes = document.get("nodes", [])
     animations = document.get("animations", [])
+    materials = document.get("materials", [])
+    textures = document.get("textures", [])
+    images = document.get("images", [])
     primitive_modes: dict[str, int] = {}
     attribute_counts: dict[str, int] = {}
     interpolation_counts: dict[str, int] = {}
     animation_target_paths: dict[str, int] = {}
     mesh_nodes = []
+    used_material_indices: set[int] = set()
     morph_primitive_count = 0
     primitive_count = 0
 
@@ -191,6 +195,8 @@ def gltf_render_profile(document: dict) -> dict:
                 attribute_counts[attribute] = attribute_counts.get(attribute, 0) + 1
             if primitive.get("targets"):
                 morph_primitive_count += 1
+            if isinstance(primitive.get("material"), int):
+                used_material_indices.add(primitive["material"])
 
     for animation in animations:
         if not isinstance(animation, dict):
@@ -215,6 +221,7 @@ def gltf_render_profile(document: dict) -> dict:
     ]
 
     blockers = []
+    warnings = []
     skin_count = len(document.get("skins", []))
     if skin_count:
         blockers.append(f"uses {skin_count} glTF skin(s); rigid-node renderer assumption fails")
@@ -227,6 +234,12 @@ def gltf_render_profile(document: dict) -> dict:
         blockers.append(f"contains {non_triangles} non-TRIANGLES primitive(s)")
     if animation_target_paths.get("weights", 0):
         blockers.append("animation targets morph weights")
+    unsupported_interpolations = sorted(
+        mode for mode in interpolation_counts
+        if mode not in {"STEP", "LINEAR", "CUBICSPLINE"}
+    )
+    if unsupported_interpolations:
+        blockers.append("unsupported animation interpolation(s): " + ", ".join(unsupported_interpolations))
     if decoder_extensions:
         blockers.append("requires compressed mesh decoder(s): " + ", ".join(decoder_extensions))
 
@@ -237,11 +250,131 @@ def gltf_render_profile(document: dict) -> dict:
     if missing_core_attributes:
         blockers.append("not every primitive has: " + ", ".join(missing_core_attributes))
 
+    for material_index in sorted(used_material_indices):
+        if material_index < 0 or material_index >= len(materials):
+            blockers.append(f"primitive references invalid material index {material_index}")
+
+    material_reports = []
+    referenced_image_indices: set[int] = set()
+    for material_index, material in enumerate(materials):
+        if not isinstance(material, dict):
+            blockers.append(f"material {material_index} is not an object")
+            continue
+
+        pbr = material.get("pbrMetallicRoughness", {})
+        if not isinstance(pbr, dict):
+            pbr = {}
+
+        base_texture = pbr.get("baseColorTexture")
+        alpha_mode = material.get("alphaMode", "OPAQUE")
+        alpha_cutoff = material.get("alphaCutoff", 0.5)
+        double_sided = bool(material.get("doubleSided", False))
+        unsupported_slots = [
+            key for key in ("normalTexture", "occlusionTexture", "emissiveTexture")
+            if material.get(key) is not None
+        ]
+        if pbr.get("metallicRoughnessTexture") is not None:
+            unsupported_slots.append("metallicRoughnessTexture")
+
+        texture_index = None
+        tex_coord = 0
+        texture_extensions = {}
+        if isinstance(base_texture, dict):
+            texture_index = base_texture.get("index")
+            tex_coord = base_texture.get("texCoord", 0)
+            texture_extensions = base_texture.get("extensions", {}) or {}
+
+            if not isinstance(texture_index, int) or not (0 <= texture_index < len(textures)):
+                blockers.append(f"material {material_index} has invalid baseColorTexture index {texture_index!r}")
+            else:
+                texture = textures[texture_index]
+                if not isinstance(texture, dict):
+                    blockers.append(f"texture {texture_index} is not an object")
+                else:
+                    texture_ext = texture.get("extensions", {}) or {}
+                    if "KHR_texture_basisu" in texture_ext:
+                        blockers.append(f"material {material_index} requires KHR_texture_basisu")
+                    source_index = texture.get("source")
+                    if isinstance(source_index, int):
+                        if 0 <= source_index < len(images):
+                            referenced_image_indices.add(source_index)
+                        else:
+                            blockers.append(f"texture {texture_index} references invalid image {source_index}")
+
+        if alpha_mode == "BLEND":
+            blockers.append(f"material {material_index} uses alphaMode=BLEND")
+        elif alpha_mode == "MASK" and abs(float(alpha_cutoff) - 0.5) > 1.0e-6:
+            blockers.append(
+                f"material {material_index} uses non-default MASK alphaCutoff={alpha_cutoff}"
+            )
+        elif alpha_mode not in {"OPAQUE", "MASK"}:
+            blockers.append(f"material {material_index} uses unknown alphaMode={alpha_mode!r}")
+
+        if double_sided:
+            blockers.append(f"material {material_index} requires double-sided rendering")
+        if unsupported_slots:
+            blockers.append(
+                f"material {material_index} uses unsupported texture slots: {', '.join(unsupported_slots)}"
+            )
+        if tex_coord != 0:
+            blockers.append(f"material {material_index} base color uses TEXCOORD_{tex_coord}")
+        if texture_extensions:
+            blockers.append(
+                f"material {material_index} baseColorTexture extensions unsupported: "
+                + ", ".join(sorted(texture_extensions))
+            )
+        material_extensions = material.get("extensions", {}) or {}
+        if material_extensions:
+            blockers.append(
+                f"material {material_index} extensions unsupported: "
+                + ", ".join(sorted(material_extensions))
+            )
+
+        emissive_factor = material.get("emissiveFactor", [0, 0, 0])
+        if isinstance(emissive_factor, list) and any(float(value) != 0 for value in emissive_factor):
+            blockers.append(f"material {material_index} uses emissiveFactor")
+
+        metallic = float(pbr.get("metallicFactor", 1))
+        roughness = float(pbr.get("roughnessFactor", 1))
+        if metallic != 0 or roughness != 1:
+            warnings.append(
+                f"material {material_index} PBR factors metallic={metallic} roughness={roughness} "
+                "will be reduced to Minecraft entity lighting"
+            )
+
+        material_reports.append({
+            "index": material_index,
+            "name": material.get("name"),
+            "base_color_factor": pbr.get("baseColorFactor", [1, 1, 1, 1]),
+            "base_color_texture": texture_index,
+            "tex_coord": tex_coord,
+            "alpha_mode": alpha_mode,
+            "alpha_cutoff": alpha_cutoff,
+            "double_sided": double_sided,
+            "unsupported_texture_slots": unsupported_slots,
+        })
+
     image_types = []
-    for image in document.get("images", []):
+    unsupported_images = []
+    for image_index, image in enumerate(images):
         if not isinstance(image, dict):
             continue
-        image_types.append(image.get("mimeType") or pathlib.PurePosixPath(image.get("uri", "")).suffix.lower() or "embedded/unknown")
+        image_type = (
+            image.get("mimeType")
+            or pathlib.PurePosixPath(image.get("uri", "")).suffix.lower()
+            or "embedded/unknown"
+        )
+        image_types.append(image_type)
+        if image_index in referenced_image_indices and image_type not in {
+            "image/png", "image/jpeg", ".png", ".jpg", ".jpeg"
+        }:
+            unsupported_images.append((image_index, image_type))
+
+    if unsupported_images:
+        blockers.append(
+            "unsupported base-color image type(s): "
+            + ", ".join(f"{index}:{kind}" for index, kind in unsupported_images)
+        )
 
     return {
         "skin_count": skin_count,
@@ -249,18 +382,20 @@ def gltf_render_profile(document: dict) -> dict:
         "primitive_modes": primitive_modes,
         "attribute_counts": attribute_counts,
         "mesh_nodes": mesh_nodes,
-        "material_count": len(document.get("materials", [])),
-        "image_count": len(document.get("images", [])),
+        "material_count": len(materials),
+        "materials": material_reports,
+        "used_material_indices": sorted(used_material_indices),
+        "image_count": len(images),
         "image_types": image_types,
         "morph_primitive_count": morph_primitive_count,
         "animation_target_paths": animation_target_paths,
         "interpolation_counts": interpolation_counts,
         "extensions_used": list(document.get("extensionsUsed", [])),
         "extensions_required": extensions_required,
+        "warnings": warnings,
         "blockers": blockers,
         "candidate": not blockers,
     }
-
 
 def find_docs(names: Iterable[str]) -> dict[str, list[str]]:
     result = {"terms.md": [], "readme.md": [], "contents.md": []}

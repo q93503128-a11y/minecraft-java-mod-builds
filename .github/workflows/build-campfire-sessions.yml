@@ -40,6 +40,7 @@ jobs:
           set -euo pipefail
           mkdir -p build
           python3 tools/inspect_plumberry_assets.py --contract-only | tee build/plumberry-asset-contract.txt
+          python3 tools/test_plumberry_probe.py
       - name: Probe external building structure bounds
         shell: bash
         run: |

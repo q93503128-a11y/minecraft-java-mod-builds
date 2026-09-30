@@ -689,9 +689,10 @@ Current external resident/model source pool:
   - however, GeckoLib's runtime `GeoBone` is an abstract renderable node and `BakedGeoModel` accepts arbitrary `GeoBone` implementations. Campfire now uses this supported shape to prototype a **custom triangle ResidentMeshBone** while retaining GeckoLib's entity render lifecycle and bone hierarchy.
   - `ResidentMeshBone` emits each source triangle as one degenerate quad (ABC+C) through the standard entity vertex consumer, preserving arbitrary triangle surfaces without voxel/cuboid remeshing.
   - `ResidentMeshGeoModel` supplies a programmatic `BakedGeoModel`, so no fake Bedrock cuboid model is required.
-  - the GLB inspector now checks the assumptions needed by this path: no skin weights, no morph targets, TRIANGLES primitives, POSITION/NORMAL/TEXCOORD_0 on every primitive, transform-only animation targets, and no Draco/meshopt decoder requirement.
+  - the GLB inspector now checks the assumptions needed by this path: no skin weights, no morph targets, TRIANGLES primitives, POSITION/NORMAL/TEXCOORD_0 on every primitive, transform-only animation targets, supported STEP/LINEAR/CUBICSPLINE interpolation, and no Draco/meshopt decoder requirement.
+  - material acceptance is explicit: separate base-color textures/material factors are supported, while unsupported PBR texture slots, BLEND materials, non-default MASK cutoffs, double-sided materials, secondary UV sets and texture/material extensions are rejected instead of being silently dropped.
   - public Plumberry specs already describe rigid transform-node animation with no skin weights; the **actual downloaded GLBs must still pass the new probe before this render path is production-accepted**.
-  - final animation application will sample the glTF transform tracks per render frame and feed local T/R/S into GeckoLib bone snapshots. Rotation must be sampled as quaternion first and only converted at the final pose-application step, rather than interpolating Euler keyframes.
+  - resident animation core now implements glTF STEP/LINEAR/CUBICSPLINE sampling, quaternion slerp for LINEAR rotations, component Hermite + normalization for quaternion CUBICSPLINE, looping/clamped clips and rest-pose fallback. Quaternion data remains quaternion through sampling; Euler conversion is deferred until the final GeckoLib bone-pose adapter is implemented.
 
 Companion same-style asset:
 - **Plumberry Plains Tools Set Vol. 1** includes a fishing pole, watering can, garden shovel, axe, hammer, cooking knife and paint brush with grip-point origins designed for the resident hand sockets.
@@ -1508,6 +1509,14 @@ Resident mesh-renderer checkpoint:
 - Plumberry asset contract step: SUCCESS.
 - existing external-structure probe + packaged-asset contracts: SUCCESS.
 - this verifies API/build compatibility only; no real Plumberry GLB has been converted or rendered in Minecraft yet.
+
+Resident material/animation checkpoint:
+- implementation commits: `d7a6869f7d5a4c14e14d49fa9c3a8a903cc933fc`, fix `d56b71fea33ed67a77d866fb3023cdef7413b943`.
+- Build Campfire Sessions run: **35** / run ID **36793338245**.
+- clean build with per-material texture render passes: SUCCESS.
+- STEP/LINEAR/CUBICSPLINE + quaternion animation sampler core: BUILD VERIFIED.
+- resident render-state type boundary: FIXED with explicit `ResidentEntityRenderState`.
+- actual Plumberry material inventory, source textures and animation accessors: **NOT YET INSPECTED** because source ZIPs are not locally available.
 
 Validation boundary:
 - **BUILD VERIFIED:** YES for the dependency stack and resident mesh-renderer scaffold above.
