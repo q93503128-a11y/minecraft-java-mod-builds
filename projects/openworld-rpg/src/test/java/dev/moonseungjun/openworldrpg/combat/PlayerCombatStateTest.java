@@ -359,4 +359,25 @@ class PlayerCombatStateTest {
         assertEquals(12.0, restored.ultimateCharge(20L), 0.0001);
     }
 
+
+    @Test
+    void classStaminaFlatAndRecoveryBonusesStaySeparateFromGearModifiers() {
+        PlayerCombatState state = new PlayerCombatState(5, 0L);
+        state.synchronizeClassStaminaModifiers(
+                12,
+                0.03,
+                0L
+        );
+
+        assertEquals(112, state.maxStamina());
+        assertTrue(state.spendStamina(50.0, 0L, 0L));
+        assertEquals(86.72, state.stamina(20L), 0.0001);
+
+        state.synchronizeClassStaminaModifiers(
+                0,
+                0.0,
+                20L
+        );
+        assertEquals(100, state.maxStamina());
+    }
 }

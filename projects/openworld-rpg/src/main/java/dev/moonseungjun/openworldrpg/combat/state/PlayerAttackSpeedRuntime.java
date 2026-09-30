@@ -40,11 +40,32 @@ public final class PlayerAttackSpeedRuntime {
             Optional<ProjectWeaponFamily> weaponFamily,
             double equipmentAttackSpeedBonus
     ) {
+        synchronize(
+                player,
+                weaponFamily,
+                equipmentAttackSpeedBonus,
+                0.0
+        );
+    }
+
+    public static void synchronize(
+            Player player,
+            Optional<ProjectWeaponFamily> weaponFamily,
+            double equipmentAttackSpeedBonus,
+            double classAttackSpeedBonus
+    ) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(weaponFamily, "weaponFamily");
         if (player.level().isClientSide()) {
             throw new IllegalStateException(
                     "Project Attack Speed authority is server-only."
+            );
+        }
+        if (!Double.isFinite(classAttackSpeedBonus)
+                || classAttackSpeedBonus < 0.0
+                || classAttackSpeedBonus > 1.0) {
+            throw new IllegalArgumentException(
+                    "classAttackSpeedBonus must be inside [0, 1]."
             );
         }
         if (!Double.isFinite(equipmentAttackSpeedBonus)
@@ -92,11 +113,13 @@ public final class PlayerAttackSpeedRuntime {
                 }
                 return;
             }
-            if (equipmentAttackSpeedBonus > 0.0) {
+            double combinedAttackSpeedBonus =
+                    equipmentAttackSpeedBonus + classAttackSpeedBonus;
+            if (combinedAttackSpeedBonus > 0.0) {
                 rangedHaste.addOrUpdateTransientModifier(
                         new AttributeModifier(
                                 PROJECT_RANGED_HASTE_MODIFIER_ID,
-                                equipmentAttackSpeedBonus,
+                                combinedAttackSpeedBonus,
                                 AttributeModifier.Operation.ADD_MULTIPLIED_BASE
                         )
                 );
@@ -106,7 +129,9 @@ public final class PlayerAttackSpeedRuntime {
 
         double targetEventsPerSecond =
                 family.basicAttackEventsPerSecond()
-                        * (1.0 + equipmentAttackSpeedBonus);
+                        * (1.0
+                        + equipmentAttackSpeedBonus
+                        + classAttackSpeedBonus);
         double correction = targetEventsPerSecond - attackSpeed.getValue();
         if (Math.abs(correction) > 1.0e-9) {
             attackSpeed.addOrUpdateTransientModifier(

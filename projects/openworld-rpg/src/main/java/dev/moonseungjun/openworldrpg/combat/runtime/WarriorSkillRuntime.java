@@ -5,6 +5,7 @@ import dev.moonseungjun.openworldrpg.combat.authority.ProjectBasicAttackRules;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildPublisher;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerDefenseRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
@@ -129,6 +130,29 @@ public final class WarriorSkillRuntime {
             );
         }
 
+        if (empowered) {
+            if (WarriorRootPassiveEffects.battleTemperEnabled(player)
+                    && momentum.tryClaimBattleTemper(
+                            nowTick,
+                            WarriorRootPassiveEffects
+                                    .BATTLE_TEMPER_ICD_TICKS
+                    )) {
+                var combatState = CombatStateServices.states()
+                        .getOrCreate(player.getUUID(), nowTick);
+                combatState.restoreStamina(
+                        WarriorRootPassiveEffects
+                                .BATTLE_TEMPER_STAMINA_RESTORE,
+                        nowTick
+                );
+                combatState.restoreMana(
+                        WarriorRootPassiveEffects
+                                .BATTLE_TEMPER_MANA_RESTORE,
+                        nowTick
+                );
+            }
+            PlayerCombatBuildPublisher.refresh(player);
+        }
+
         if (ProjectSpellSpec.WARRIOR_IRON_COUNTER_ID.equals(spellId)) {
             momentum.beginCounter(
                     nowTick,
@@ -251,6 +275,22 @@ public final class WarriorSkillRuntime {
             );
             return true;
         });
+        MOMENTUM.forEach((playerId, momentumState) -> {
+            ServerPlayer player = server.getPlayerList()
+                    .getPlayer(playerId);
+            if (player == null || !isWarrior(player)) {
+                return;
+            }
+            momentumState.synchronizeExpiryBonusTicks(
+                    WarriorRootPassiveEffects
+                            .momentumExpiryBonusTicks(player)
+            );
+            if (momentumState.refreshAndReportPipChange(
+                    player.level().getGameTime()
+            )) {
+                PlayerCombatBuildPublisher.refresh(player);
+            }
+        });
     }
 
     public static Optional<PlayerDefenseRuntimeState.IncomingDefenseResult>
@@ -285,17 +325,26 @@ public final class WarriorSkillRuntime {
                                 hit,
                                 defense
                         );
-        momentum.recordSuccessfulCounter(nowTick);
+        int pipsBefore = momentum.pips(nowTick);
+        boolean gained = momentum.recordSuccessfulCounter(
+                nowTick
+        );
+        if (pipsBefore == 0 && gained) {
+            PlayerCombatBuildPublisher.refresh(warrior);
+        }
         CombatStateServices.markCombatActivity(
                 warrior.getUUID(),
                 nowTick
         );
 
+        double counterforce =
+                WarriorRootPassiveEffects
+                        .counterforceOutputMultiplier(warrior);
         resolveSingleTarget(
                 warrior,
                 attacker,
-                IRON_COUNTER_ACTION,
-                IRON_COUNTER_POISE
+                IRON_COUNTER_ACTION * counterforce,
+                IRON_COUNTER_POISE * counterforce
         );
         ProjectUltimateChargeRuntime.recordWarriorPerfectGuard(
                 warrior,
@@ -344,7 +393,14 @@ public final class WarriorSkillRuntime {
             return;
         }
         WarriorMomentumRuntimeState momentum = state(warrior);
-        momentum.recordMeleeBasicHit(cycleFinisher, nowTick);
+        int pipsBefore = momentum.pips(nowTick);
+        boolean gained = momentum.recordMeleeBasicHit(
+                cycleFinisher,
+                nowTick
+        );
+        if (pipsBefore == 0 && gained) {
+            PlayerCombatBuildPublisher.refresh(warrior);
+        }
         if (cycleFinisher
                 && momentum.claimBasicCyclePublication(nowTick)) {
             ProjectUltimateChargeRuntime.recordWarriorBasicCycle(
@@ -379,7 +435,14 @@ public final class WarriorSkillRuntime {
             return;
         }
 
-        state(warrior).recordEliteBossPoiseBreak(nowTick);
+        WarriorMomentumRuntimeState momentum = state(warrior);
+        int pipsBefore = momentum.pips(nowTick);
+        boolean gained = momentum.recordEliteBossPoiseBreak(
+                nowTick
+        );
+        if (pipsBefore == 0 && gained) {
+            PlayerCombatBuildPublisher.refresh(warrior);
+        }
         ProjectUltimateChargeRuntime.recordWarriorPoiseBreak(
                 warrior,
                 target
@@ -393,7 +456,9 @@ public final class WarriorSkillRuntime {
         if (!isWarrior(player)) {
             return 1.0;
         }
-        return state(player).poiseOutputMultiplier(nowTick);
+        return state(player).poiseOutputMultiplier(nowTick)
+                * WarriorRootPassiveEffects
+                        .poiseOutputMultiplier(player);
     }
 
     public static double ordinaryHitStaggerTakenMultiplier(
@@ -818,10 +883,16 @@ public final class WarriorSkillRuntime {
     private static WarriorMomentumRuntimeState state(
             ServerPlayer player
     ) {
-        return MOMENTUM.computeIfAbsent(
-                player.getUUID(),
-                ignored -> new WarriorMomentumRuntimeState()
+        WarriorMomentumRuntimeState state =
+                MOMENTUM.computeIfAbsent(
+                        player.getUUID(),
+                        ignored -> new WarriorMomentumRuntimeState()
+                );
+        state.synchronizeExpiryBonusTicks(
+                WarriorRootPassiveEffects
+                        .momentumExpiryBonusTicks(player)
         );
+        return state;
     }
 
     private static boolean isWarrior(ServerPlayer player) {

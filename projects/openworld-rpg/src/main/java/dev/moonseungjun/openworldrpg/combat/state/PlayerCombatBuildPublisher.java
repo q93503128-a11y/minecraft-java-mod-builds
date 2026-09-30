@@ -2,6 +2,8 @@ package dev.moonseungjun.openworldrpg.combat.state;
 
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
+import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
+import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import java.util.Optional;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -31,11 +33,21 @@ public final class PlayerCombatBuildPublisher {
         double effectiveEnd = allocation.value(CombatAttribute.END) + gearAttributes.end();
         double effectiveWil = allocation.value(CombatAttribute.WIL) + gearAttributes.wil();
         long gameTick = player.level().getGameTime();
+        ServerPlayer serverPlayer =
+                player instanceof ServerPlayer value
+                        ? value
+                        : null;
 
         int maxHealth = ProjectCombatRules.maxPlayerHealth(
                 progression.combatLevel(),
                 effectiveVit,
                 resourceModifiers.maxHealthBonus()
+                        + (serverPlayer != null
+                                ? WarriorRootPassiveEffects
+                                        .maxHealthPercentBonus(
+                                                serverPlayer
+                                        )
+                                : 0.0)
         );
         PlayerVitalsRuntime.synchronizeMaxHealth(player, maxHealth);
         PlayerMovementRuntime.synchronize(
@@ -48,7 +60,7 @@ public final class PlayerCombatBuildPublisher {
                 .orElse(null);
         PlayerMovementRuntime.synchronizeClassMovementSpeedBonus(
                 player,
-                player instanceof ServerPlayer serverPlayer
+                serverPlayer != null
                         ? HunterRootPassiveEffects.movementSpeedBonus(
                                 serverPlayer,
                                 mainWeaponFamily
@@ -59,7 +71,18 @@ public final class PlayerCombatBuildPublisher {
                 player,
                 loadout.item(ProjectEquipmentSlot.MAIN_WEAPON)
                         .flatMap(EquippedCombatItem::weaponFamily),
-                loadout.aggregateAttackSpeedBonus()
+                loadout.aggregateAttackSpeedBonus(),
+                serverPlayer != null
+                        ? WarriorRootPassiveEffects
+                                .weaponRhythmAttackSpeedBonus(
+                                        serverPlayer,
+                                        WarriorSkillRuntime
+                                                .momentumPips(
+                                                        serverPlayer,
+                                                        gameTick
+                                                )
+                                )
+                        : 0.0
         );
         CombatStateServices.states().synchronizeEndurance(
                 player.getUUID(),
@@ -76,6 +99,23 @@ public final class PlayerCombatBuildPublisher {
                 resourceModifiers,
                 gameTick
         );
+        CombatStateServices.states()
+                .synchronizeClassStaminaModifiers(
+                        player.getUUID(),
+                        serverPlayer != null
+                                ? WarriorRootPassiveEffects
+                                        .maxStaminaFlatBonus(
+                                                serverPlayer
+                                        )
+                                : 0,
+                        serverPlayer != null
+                                ? WarriorRootPassiveEffects
+                                        .staminaRecoveryBonus(
+                                                serverPlayer
+                                        )
+                                : 0.0,
+                        gameTick
+                );
         CombatStateServices.states()
                 .synchronizeClassSkillManaCostMultiplier(
                         player.getUUID(),

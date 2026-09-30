@@ -31,6 +31,8 @@ public final class PlayerCombatState {
     private double maxStaminaBonus;
     private double manaRecoveryBonus;
     private double staminaRecoveryBonus;
+    private int classMaxStaminaFlatBonus;
+    private double classStaminaRecoveryBonus;
     private double manaCostReduction;
     private double classSkillManaCostMultiplier = 1.0;
     private double dodgeSprintStaminaCostReduction;
@@ -99,7 +101,13 @@ public final class PlayerCombatState {
     }
 
     public int maxStamina() {
-        return maxStaminaForEndurance(endurance, maxStaminaBonus);
+        return Math.addExact(
+                maxStaminaForEndurance(
+                        endurance,
+                        maxStaminaBonus
+                ),
+                classMaxStaminaFlatBonus
+        );
     }
 
     public double stamina(long nowTick) {
@@ -152,6 +160,35 @@ public final class PlayerCombatState {
 
         mana = Math.min(maxMana(), maxMana() * manaFraction);
         stamina = Math.min(maxStamina(), maxStamina() * staminaFraction);
+    }
+
+    public void synchronizeClassStaminaModifiers(
+            int maxStaminaFlatBonus,
+            double staminaRecoveryBonus,
+            long nowTick
+    ) {
+        if (maxStaminaFlatBonus < 0
+                || !Double.isFinite(staminaRecoveryBonus)
+                || staminaRecoveryBonus < 0.0) {
+            throw new IllegalArgumentException(
+                    "Class Stamina modifiers must be non-negative."
+            );
+        }
+        refresh(nowTick);
+        int oldMax = maxStamina();
+        double fraction = oldMax > 0
+                ? Math.max(
+                        0.0,
+                        Math.min(1.0, stamina / oldMax)
+                )
+                : 1.0;
+        classMaxStaminaFlatBonus = maxStaminaFlatBonus;
+        classStaminaRecoveryBonus = staminaRecoveryBonus;
+        int newMax = maxStamina();
+        stamina = Math.min(
+                newMax,
+                newMax * fraction
+        );
     }
 
     public EquipmentResourceModifiers resourceModifiers() {
@@ -643,7 +680,9 @@ public final class PlayerCombatState {
                 long regenTicks = end - regenStart;
                 stamina += regenTicks
                         * baseStaminaRegenPerSecondForEndurance(endurance)
-                        * (1.0 + staminaRecoveryBonus)
+                        * (1.0
+                        + staminaRecoveryBonus
+                        + classStaminaRecoveryBonus)
                         / 20.0;
                 stamina = Math.min(maxStamina(), stamina);
             }

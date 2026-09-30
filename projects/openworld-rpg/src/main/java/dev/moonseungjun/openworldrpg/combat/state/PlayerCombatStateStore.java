@@ -48,6 +48,20 @@ public final class PlayerCombatStateStore {
                 );
     }
 
+    public void synchronizeClassStaminaModifiers(
+            UUID playerId,
+            int maxStaminaFlatBonus,
+            double staminaRecoveryBonus,
+            long nowTick
+    ) {
+        getOrCreate(playerId, nowTick)
+                .synchronizeClassStaminaModifiers(
+                        maxStaminaFlatBonus,
+                        staminaRecoveryBonus,
+                        nowTick
+                );
+    }
+
     public void remove(UUID playerId) {
         states.remove(playerId);
     }

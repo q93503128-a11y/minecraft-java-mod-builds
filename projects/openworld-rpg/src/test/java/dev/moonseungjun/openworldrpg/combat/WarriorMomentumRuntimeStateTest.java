@@ -78,4 +78,23 @@ class WarriorMomentumRuntimeStateTest {
         assertEquals(1.60, state.hyperarmorMultiplier(117L), 0.0001);
         assertEquals(1.0, state.hyperarmorMultiplier(118L), 0.0001);
     }
+
+    @Test
+    void heldMomentumExtendsExpiryByOneSecondPerRank() {
+        var state = new WarriorMomentumRuntimeState();
+        state.synchronizeExpiryBonusTicks(40L);
+        state.recordSuccessfulCounter(0L);
+
+        assertEquals(1, state.pips(179L));
+        assertEquals(0, state.pips(180L));
+    }
+
+    @Test
+    void battleTemperClaimUsesFourSecondPersonalIcd() {
+        var state = new WarriorMomentumRuntimeState();
+
+        assertTrue(state.tryClaimBattleTemper(0L, 80L));
+        assertFalse(state.tryClaimBattleTemper(79L, 80L));
+        assertTrue(state.tryClaimBattleTemper(80L, 80L));
+    }
 }

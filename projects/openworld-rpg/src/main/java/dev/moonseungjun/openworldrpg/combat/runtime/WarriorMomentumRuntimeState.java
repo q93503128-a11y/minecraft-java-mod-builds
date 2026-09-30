@@ -13,10 +13,47 @@ public final class WarriorMomentumRuntimeState {
     private long counterUntilTick = Long.MIN_VALUE / 4;
     private long hyperarmorUntilTick = Long.MIN_VALUE / 4;
     private double hyperarmorMultiplier = 1.0;
+    private long expiryBonusTicks;
+    private long battleTemperReadyAtTick = Long.MIN_VALUE / 4;
 
     public int pips(long nowTick) {
         refresh(nowTick);
         return pips;
+    }
+
+    public void synchronizeExpiryBonusTicks(long bonusTicks) {
+        if (bonusTicks < 0L) {
+            throw new IllegalArgumentException(
+                    "Momentum expiry bonus cannot be negative."
+            );
+        }
+        expiryBonusTicks = bonusTicks;
+    }
+
+    public boolean refreshAndReportPipChange(long nowTick) {
+        int before = pips;
+        refresh(nowTick);
+        return before != pips;
+    }
+
+    public boolean tryClaimBattleTemper(
+            long nowTick,
+            long cooldownTicks
+    ) {
+        if (cooldownTicks <= 0L) {
+            throw new IllegalArgumentException(
+                    "Battle Temper cooldown must be positive."
+            );
+        }
+        refresh(nowTick);
+        if (nowTick < battleTemperReadyAtTick) {
+            return false;
+        }
+        battleTemperReadyAtTick = Math.addExact(
+                nowTick,
+                cooldownTicks
+        );
+        return true;
     }
 
     public double poiseOutputMultiplier(long nowTick) {
@@ -143,6 +180,8 @@ public final class WarriorMomentumRuntimeState {
         counterUntilTick = Long.MIN_VALUE / 4;
         hyperarmorUntilTick = Long.MIN_VALUE / 4;
         hyperarmorMultiplier = 1.0;
+        expiryBonusTicks = 0L;
+        battleTemperReadyAtTick = Long.MIN_VALUE / 4;
     }
 
     private void refresh(long nowTick) {
@@ -150,7 +189,10 @@ public final class WarriorMomentumRuntimeState {
                 && lastQualifyingActivityTick > Long.MIN_VALUE / 8
                 && nowTick >= Math.addExact(
                         lastQualifyingActivityTick,
-                        EXPIRY_TICKS
+                        Math.addExact(
+                                EXPIRY_TICKS,
+                                expiryBonusTicks
+                        )
                 )) {
             pips = 0;
         }
