@@ -33,11 +33,12 @@
 6. `WORLD_OVERHAUL_DREHMAL.md`
 7. `DREHMAL_MAP_REFERENCE_v1.md`
 8. `FIRST_ROUTE_CAPITAL_VALLEY_v1.md`
-9. `ENCOUNTER_ENEMY_PLACEMENT_v1.md`
-10. `MULTIPLAYER_DESIGN_v1.md`
-11. `OVERHAUL_ROADMAP_v1.md`
-12. current source/resources
-13. preserved TURNBOUND v0.4 system canon in Git history / archived design files, only where it was explicitly reaffirmed and not later superseded by the user
+9. `AVSAL_EXPANSION_v1.md`
+10. `ENCOUNTER_ENEMY_PLACEMENT_v1.md`
+11. `MULTIPLAYER_DESIGN_v1.md`
+12. `OVERHAUL_ROADMAP_v1.md`
+13. current source/resources
+14. preserved TURNBOUND v0.4 system canon in Git history / archived design files, only where it was explicitly reaffirmed and not later superseded by the user
 
 The old **Aster March physical-world layout** is superseded by the Drehmal production world.
 That world replacement does **not** automatically invalidate unrelated TURNBOUND system canon such as rarity, roster identity, or economy rules.
@@ -1487,3 +1488,15 @@ Validation after Build #953:
 - CLIENT RUNTIME TESTED: NO for Build #953
 - PLAYTESTED: NO for Build #953
 - MULTIPLAYER TESTED: NO
+
+
+## Av'Sal expansion direction — 2026-09-30
+
+Latest explicit direction:
+- story, quest structure, objective variety and chapter outcome variants may be authored as part of the expansion without requiring one-off approval for every beat
+- achievements remain inside the Quest journal; Hard Boss/Rift are a separate high-difficulty activity surface
+- next roster growth starts with P09~P12 and must avoid near-duplicate kits
+- new hero visual design is **external-asset-first**; do not invent final costumes/faces internally
+- preferred directly usable/editable sources are clearly licensed assets such as CC0 Quaternius/Kenney packs
+- choose the visual base first, then finalize name/personality/weapon/kit around what the asset actually supports
+- the next major world/content slice is `AVSAL_EXPANSION_v1.md`
