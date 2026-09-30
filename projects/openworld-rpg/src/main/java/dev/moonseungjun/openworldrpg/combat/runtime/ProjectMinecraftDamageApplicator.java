@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
@@ -50,14 +51,17 @@ public final class ProjectMinecraftDamageApplicator {
             double finalDamage
     ) {
         if (attacker instanceof ServerPlayer hunter) {
-            finalDamage *= HunterRootPassiveEffects
-                    .quarryDirectDamageMultiplier(
-                            hunter,
-                            HunterSkillRuntime.isCurrentQuarry(
-                                    hunter,
-                                    target
-                            )
-                    );
+            finalDamage = ProjectCombatRules.roundFinal(
+                    finalDamage
+                            * HunterRootPassiveEffects
+                                    .quarryDirectDamageMultiplier(
+                                            hunter,
+                                            HunterSkillRuntime.isCurrentQuarry(
+                                                    hunter,
+                                                    target
+                                            )
+                                    )
+            );
         }
         return applyResolved(
                 attacker,

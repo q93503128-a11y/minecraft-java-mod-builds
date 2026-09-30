@@ -141,7 +141,7 @@ public abstract class ExternalActorDamageAuthorityMixin {
                             shooter.getUUID(),
                             gameTick
                     );
-                    if (shooter instanceof ServerPlayer serverShooter) {
+                    if (serverShooter != null) {
                         HunterSkillRuntime.onRangedBasicHit(
                                 serverShooter,
                                 self,
