@@ -60,7 +60,8 @@ final class BattleTurnGaugeModel {
 
     static String gaugeLabel(ClientBattleState.Unit unit) {
         if (unit == null) return "0";
-        if (unit.gauge() >= 1000) return "READY";
+        if (unit.gauge() > 1000) return "READY+" + (unit.gauge() - 1000);
+        if (unit.gauge() == 1000) return "READY";
         return Long.toString(Math.max(0L, unit.gauge()));
     }
 
