@@ -6,7 +6,9 @@ without adding project/runtime dependencies.
 """
 from __future__ import annotations
 
+import collections
 import gzip
+import hashlib
 import io
 import pathlib
 import struct
@@ -79,9 +81,75 @@ class NbtReader:
         return self.payload(tag)
 
 
+SELECTED_SUFFIXES = (
+    "data/villageroles/structure/town_hall.nbt",
+    "data/villageroles/structure/shop.nbt",
+    "data/villageroles/structure/hospital.nbt",
+    "data/kaisyn/structure/village/exclusives/mediterranean/houses/regular/med_library_1.nbt",
+    "data/kaisyn/structure/village/exclusives/mediterranean/houses/regular/med_leatherworker_1.nbt",
+    "data/kaisyn/structure/village/exclusives/iberian/houses/iberian_temple_1.nbt",
+    "data/kaisyn/structure/village/beach_lighthouse/side/beach_outdoor_shack_1.nbt",
+    "data/kaisyn/structure/village/beach_lighthouse/side/beach_main_house_1.nbt",
+    "data/kaisyn/structure/village/exclusives/mediterranean/houses/regular/med_small_house_1.nbt",
+    "data/kaisyn/structure/village/exclusives/mediterranean/houses/regular/med_medium_house_2.nbt",
+    "data/kaisyn/structure/village/exclusives/mediterranean/houses/regular/med_large_house_1.nbt",
+    "data/kaisyn/structure/village/exclusives/iberian/houses/iberian_medium_house_4.nbt",
+    "data/kaisyn/structure/village/exclusives/iberian/houses/iberian_large_house_2.nbt",
+)
+
+LICENSE_NAMES = (
+    "license", "license.txt", "license.md", "copying", "copying.txt",
+    "meta-inf/license", "meta-inf/license.txt", "meta-inf/license.md",
+)
+
+
+def selected_structure_report(zf: zipfile.ZipFile, name: str):
+    root = NbtReader(zf.read(name)).root()
+    palette = root.get("palette")
+    blocks = root.get("blocks")
+    counts = collections.Counter()
+    if isinstance(palette, list) and isinstance(blocks, list):
+        names = []
+        for entry in palette:
+            if isinstance(entry, dict):
+                names.append(entry.get("Name", "minecraft:air"))
+            else:
+                names.append("minecraft:air")
+        for block in blocks:
+            if not isinstance(block, dict):
+                continue
+            state = block.get("state")
+            if isinstance(state, int) and 0 <= state < len(names):
+                counts[names[state]] += 1
+    raw = zf.read(name)
+    top = counts.most_common(16)
+    return {
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "blocks": sum(counts.values()),
+        "top": top,
+    }
+
+
+def inspect_license_entries(zf: zipfile.ZipFile):
+    out = []
+    for name in zf.namelist():
+        low = name.lower().strip("/")
+        base = low.rsplit("/", 1)[-1]
+        if base in LICENSE_NAMES or base.startswith("license") or base.startswith("copying"):
+            try:
+                text = zf.read(name).decode("utf-8", errors="replace").strip()
+            except Exception:
+                continue
+            if text:
+                out.append((name, text[:3000].replace("\r", "")))
+    return out
+
+
 def inspect_jar(path: pathlib.Path):
     rows = []
     errors = []
+    selected = {}
+    licenses = []
     with zipfile.ZipFile(path) as zf:
         for name in zf.namelist():
             low = name.lower()
@@ -99,7 +167,18 @@ def inspect_jar(path: pathlib.Path):
                     errors.append((name, f"missing/invalid size: {size!r}"))
             except Exception as exc:
                 errors.append((name, f"{type(exc).__name__}: {exc}"))
-    return rows, errors
+
+        for suffix in SELECTED_SUFFIXES:
+            matches = [n for n in zf.namelist() if n.lower().endswith(suffix.lower())]
+            for name in matches:
+                try:
+                    selected[name] = selected_structure_report(zf, name)
+                except Exception as exc:
+                    selected[name] = {"error": f"{type(exc).__name__}: {exc}"}
+
+        licenses = inspect_license_entries(zf)
+
+    return rows, errors, selected, licenses
 
 
 def main() -> int:
@@ -112,7 +191,7 @@ def main() -> int:
     total = 0
     keywords = ("town", "hall", "shop", "hospital", "house", "clinic", "market", "store", "center", "centre")
     for jar in jars:
-        rows, errors = inspect_jar(jar)
+        rows, errors, selected, licenses = inspect_jar(jar)
         total += len(rows)
         print(f"\n## {jar.name}")
         print(f"structures with explicit size: {len(rows)}")
@@ -121,6 +200,22 @@ def main() -> int:
             for name, x, y, z in priority:
                 flag = " *" if any(k in name.lower() for k in keywords) else ""
                 print(f"{x:>3} x {y:>3} x {z:>3}  footprint={x:>3}x{z:<3}  {name}{flag}")
+        if selected:
+            print("\nselected candidate palettes:")
+            for name, info in sorted(selected.items()):
+                print(f"  {name}")
+                if "error" in info:
+                    print(f"    ERROR {info['error']}")
+                    continue
+                print(f"    sha256={info['sha256']} blocks={info['blocks']}")
+                print("    top=" + ", ".join(f"{block}:{count}" for block, count in info["top"]))
+
+        if licenses:
+            print("\nlicense-like JAR entries:")
+            for name, body in licenses[:8]:
+                compact = " ".join(body.split())
+                print(f"  {name}: {compact[:1200]}")
+
         if errors:
             print(f"unparsed structure entries: {len(errors)}")
             for name, err in errors[:10]:
