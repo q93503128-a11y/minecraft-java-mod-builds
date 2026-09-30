@@ -40,7 +40,7 @@ public final class BattleSnapshotCodec {
                     .append(number(pos.x)).append('|').append(number(pos.y)).append('|').append(number(pos.z)).append('|').append(statuses).append('|')
                     .append(combatant.speed()).append('|').append(combatant.definition().summon()?0:1).append('\n');
         }
-        out.append("T|").append(state.timelinePreview(8).stream().map(CombatantState::instanceId).collect(Collectors.joining(","))).append('\n');
+        out.append("T|").append(state.timelinePreview(12).stream().map(CombatantState::instanceId).collect(Collectors.joining(","))).append('\n');
         if(running&&state.currentActorId()!=null){CombatantState current=state.combatant(state.currentActorId());for(SkillDefinition skill:current.definition().skills()){String canonicalSkillId=current.definition().canonicalSkillId(skill.id());out.append("S|").append(canonicalSkillId).append('|').append(safe(skill.name())).append('|').append(skill.targetRule()).append('|').append(skill.cooldown()).append('|').append(current.cooldown(skill.id())).append('|').append(safe(skill.description())).append('\n');}}
 
         BattleResultPreview.View preview=playerId==null?new BattleResultPreview.View(session.resultSummary(),java.util.List.of()):BattleResultPreview.enrich(playerId,session.rewardTransactionId(),session.encounterId(),state,session.resultSummary());
