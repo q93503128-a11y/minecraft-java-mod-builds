@@ -6,10 +6,9 @@ import com.geckolib.renderer.base.RenderPassInfo;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -19,8 +18,8 @@ import org.jspecify.annotations.Nullable;
  * base-color texture can remain independent. All passes share the same GeckoLib
  * bone snapshots and hierarchy.</p>
  */
-public final class ResidentMeshEntityRenderer<T extends Entity & GeoAnimatable>
-        extends GeoEntityRenderer<T, EntityRenderState> {
+public final class ResidentMeshEntityRenderer<T extends LivingEntity & GeoAnimatable>
+        extends GeoEntityRenderer<T, ResidentEntityRenderState> {
     private final ResidentMeshGeoModel<T> residentModel;
 
     public ResidentMeshEntityRenderer(
@@ -34,8 +33,13 @@ public final class ResidentMeshEntityRenderer<T extends Entity & GeoAnimatable>
     }
 
     @Override
+    public ResidentEntityRenderState createRenderState(T animatable, @Nullable Void relatedObject) {
+        return new ResidentEntityRenderState();
+    }
+
+    @Override
     public void submitRenderTasks(
-            RenderPassInfo<EntityRenderState> renderPassInfo,
+            RenderPassInfo<ResidentEntityRenderState> renderPassInfo,
             OrderedSubmitNodeCollector renderTasks,
             @Nullable RenderType ignoredDefaultRenderType
     ) {
