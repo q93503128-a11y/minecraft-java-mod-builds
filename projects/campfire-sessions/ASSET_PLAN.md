@@ -279,7 +279,8 @@ Current external structure candidates:
 - exact structure bounds must be measured from the real 26.2 assets before placement decisions.
 
 **SY Village**
-- current Minecraft 26.2 NeoForge release observed during this pass: `syvillage-0.3.0.jar`.
+- current Minecraft 26.2 NeoForge latest release observed during the follow-up pass: `syvillage-1.0.0.jar`.
+- earlier 0.3.0 remains in its file history; do not treat it as latest.
 - MIT licensed.
 - blueprint/structure-oriented system and editable structure-block/NBT workflow.
 - useful technical reference/source for compact village houses and structure-template placement.
@@ -293,6 +294,13 @@ Current external structure candidates:
 - therefore use it as a visual/layout reference for now; do not package extracted structures into Campfire yet.
 - useful reference pool for **café, clothing shop, museum-like civic shell, houses and harbor/coastal structures** when a specific structure visually fits.
 - do not import the entire worldgen system merely to obtain one building.
+
+**kogtyv-Towny and Village**
+- current Minecraft 26.2 NeoForge build exists.
+- MIT licensed with source linked.
+- expands village generation toward larger town/city structures.
+- useful additional permissive structure pool/reference if Villageria/SY Village do not provide a suitable civic/house shell.
+- not automatically preferred: generated-city scale may be too large or visually busy for Campfire's compact island village.
 
 **High-quality downloadable build/schematic packs**
 - may be used as reference/editable base/direct asset only when redistribution rights are explicit enough for the Modrinth-pack workflow.
@@ -329,6 +337,15 @@ Use a walkable clustered layout rather than spreading facilities across the whol
 - community garden/public green sits between civic and residential activity if the actual terrain supports it.
 
 Do not lock coordinates until the real map chunks and exact structure bounds are available.
+
+### Building acquisition status after current research pass
+- **Resident services:** Villageria Town Hall is the first compact permissive candidate to measure.
+- **General store:** Villageria Village Shop is the first compact permissive candidate to measure.
+- **Clinic:** Villageria Mini Hospital is the first compact permissive candidate to measure.
+- **Player/resident houses:** SY Village structure/blueprint pool is a permissive first source; visual inspection still required.
+- **Café / clothing shop / museum shell:** still unresolved. Towns and Towers/CTOV/Structory may be visual references, but their licensing or version constraints make them weaker extraction paths. Continue searching for directly packable permissive builds before settling.
+- **Harbor/pier:** Peterwolf's boat mod includes shore settlements/ports that are useful layout/model reference material, but Campfire still needs its own authored main-harbor structure/anchor plan.
+- do not declare the building set complete until actual structure bounds and screenshots/models are inspected together for one coherent village language.
 
 ## 6. Interior assets
 
