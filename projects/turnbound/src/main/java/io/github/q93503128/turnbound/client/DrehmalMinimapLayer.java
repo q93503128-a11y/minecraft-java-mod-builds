@@ -25,6 +25,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
     private static final int TEXT = TurnboundUiTokens.TEXT_PRIMARY;
     private static final int MUTED = TurnboundUiTokens.TEXT_SECONDARY;
     private static final int TARGET = TurnboundUiTokens.ACCENT;
+    private static final float HUD_SCALE = 0.80F;
 
     private static final int GRID = 52;
     private static final int CELL = 2;
@@ -46,6 +47,12 @@ public final class DrehmalMinimapLayer implements GuiLayer {
 
         FieldUiSnapshot field = ClientFieldState.snapshot();
         if (!field.active() || field.mode() == FieldUiSnapshot.Mode.LOADING) return;
+
+        int anchorX=TurnboundUiTokens.S,anchorY=TurnboundUiTokens.S;
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(anchorX,anchorY);
+        graphics.pose().scale(HUD_SCALE,HUD_SCALE);
+        graphics.pose().translate(-anchorX,-anchorY);
 
         int panelW = MAP_SIZE + 22;
         int panelH = MAP_SIZE + 58;
@@ -114,6 +121,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         String place = field.locationTitle().isBlank() ? "현재 위치" : field.locationTitle();
         graphics.text(minecraft.font, Component.literal(fit(minecraft, place, panelW - 14)),
                 x + 7, y + panelH - 11, TEXT, false);
+        graphics.pose().popMatrix();
     }
 
     private static void refreshTerrain(Minecraft minecraft) {
