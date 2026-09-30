@@ -205,17 +205,16 @@ UI 파일/클래스 구조보다 **플레이어가 몇 번 눌러야 원하는 �
 각 scheduler 전투원 행:
 - production portrait
 - 캐릭터 이름
-- 현재 Gauge 0~1000
-- 현재 effective SPD
-- 서버가 계산한 다음 행동 순번
-- 연속 행동이면 같은 캐릭터의 미래 순번도 함께 표시
+- 얇은 현재 Gauge bar
+- 서버 TurnScheduler가 계산한 실제 미래 순서대로 위→아래 정렬
 - 현재 actor 강조
 - Gauge 조작으로 순번이 크게 바뀌면 짧은 이동/accent
 
 중요:
-- raw Gauge가 더 높다고 항상 먼저 행동하는 것은 아니다. SPD가 Gauge 증가 속도를 결정하므로 **HUD 정렬은 반드시 서버 TurnScheduler preview를 정본으로 사용**한다.
-- Gauge bar는 현재 누적량을 보여주고, SPD 숫자는 충전 속도를 설명하며, 순번 숫자는 둘을 합친 실제 결과를 보여준다.
-- Gauge 1000 이상은 READY로 표시하고 overflow가 있으면 `READY+N`으로 남은 Gauge도 숨기지 않는다.
+- **전투 중 기본 HUD에는 raw Gauge 숫자와 SPD 숫자를 상시 노출하지 않는다.** Epic Seven의 Combat Readiness처럼 한눈에 진행도와 순서만 읽히는 수준을 목표로 한다.
+- raw Gauge가 더 높다고 항상 먼저 행동하는 것은 아니므로 행 정렬은 반드시 서버 TurnScheduler preview를 정본으로 사용한다.
+- Gauge bar는 현재 누적량을 직관적으로만 보여주고, SPD는 내부 계산/상세 정보에서 사용한다.
+- overflow, 세부 SPD, 반복 미래 슬롯 같은 telemetry는 기본 HUD를 복잡하게 만들지 않는다.
 - 소환수처럼 별도 regular turn을 갖지 않는 unit은 Action Gauge에 넣지 않는다.
 - 쓰러진 unit은 부활 전까지 Action Gauge에서 제외한다.
 - 4v5 기준 전원을 한 화면에서 읽는 것을 우선하고, 대규모 shared battle에서는 우선순위 높은 행만 보이되 숨은 수를 표시한다.
