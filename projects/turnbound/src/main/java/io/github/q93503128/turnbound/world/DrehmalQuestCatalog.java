@@ -96,7 +96,7 @@ public final class DrehmalQuestCatalog {
                 errors.add("Drehmal quest has no completion reward " + quest.id());
             }
         }
-        if (mainCount != 1) errors.add("Drehmal first route must expose exactly one main quest");
+        if (mainCount < 1) errors.add("Drehmal route must expose at least one main quest");
         return List.copyOf(errors);
     }
 

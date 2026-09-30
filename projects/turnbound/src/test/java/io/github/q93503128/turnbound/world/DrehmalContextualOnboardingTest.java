@@ -22,11 +22,20 @@ class DrehmalContextualOnboardingTest {
                 "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED), roles);
         assertTrue(forge.objective().contains("대장장이"));
-        var map = DrehmalContextualOnboarding.resolve(
+        var localOffer = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED,
                         DrehmalContextualOnboarding.serviceFlag("BLACKSMITH"), DrehmalContextualOnboarding.serviceFlag("MARKET"),
                         DrehmalContextualOnboarding.serviceFlag("TRAVEL"), DrehmalContextualOnboarding.serviceFlag("SUMMON")), roles);
+        assertTrue(localOffer.objective().contains("라나"));
+
+        var map = DrehmalContextualOnboarding.resolve(
+                "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
+                Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED,
+                        DrehmalContextualOnboarding.serviceFlag("BLACKSMITH"), DrehmalContextualOnboarding.serviceFlag("MARKET"),
+                        DrehmalContextualOnboarding.serviceFlag("TRAVEL"), DrehmalContextualOnboarding.serviceFlag("SUMMON"),
+                        DrabyelLocalArcProgress.ACCEPTED,DrabyelLocalArcProgress.CRATE,DrabyelLocalArcProgress.RECORD,
+                        DrabyelLocalArcProgress.COMPLETE), roles);
         assertTrue(map.objective().contains("M 지도"));
     }
 

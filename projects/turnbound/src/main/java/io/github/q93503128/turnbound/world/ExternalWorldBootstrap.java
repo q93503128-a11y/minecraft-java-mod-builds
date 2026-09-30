@@ -88,6 +88,7 @@ public final class ExternalWorldBootstrap {
 
         if (player.tickCount % 20 == 0) DrehmalHubEntityPolicy.sweep(player);
         DrehmalVisibleEncounterService.tick(player);
+        DrabyelLocalArcRuntime.tick(player);
         DrehmalFieldNpcRuntime.tick(player);
         DrabyelHubServiceRuntime.tick(player);
         DrehmalFirstRouteRuntime.recordProgress(player);
@@ -180,6 +181,8 @@ public final class ExternalWorldBootstrap {
         DrehmalVisibleEncounterService.clear();
         DrehmalFieldNpcRuntime.clear();
         DrehmalAdaptiveRoutePlacement.clear();
+        DrabyelLocalArcRuntime.clear();
+        QuestTargetGlowService.clear();
         AvsalExpansionRuntime.clear();
         DrabyelHubServiceRuntime.clear();
         ACTIVE.clear();

@@ -222,3 +222,31 @@ For every new region:
 7. freeze a static coordinate only when there is a concrete reason to replace the adaptive resolver.
 
 This keeps world understanding detailed without pretending a web coordinate is already a verified gameplay coordinate, while also avoiding manual coordinate authoring.
+
+
+## 8. Structured-map scale and future region release plan — 2026-09-30
+
+Pinned zachaa/DrehmalMap@72d82180cbe3f950f068cf2d8e8668c6b09d5c58 confirms that TURNBOUND is not limited to one large road.
+
+data/locations.json:
+- 376 structured locations total
+- 285 in the overworld
+- 79 in Lo'Dahr
+- 9 in true_end
+- 2 in space
+- 1 in end
+- overworld location-point bounds span about 31,409 blocks east-west and 11,122 blocks north-south
+- major location categories include 68 buildings, 62 other locations, 38 abandoned towns, 26 campsites, 24 Avsohm facilities, 19 abandoned buildings, 17 small towns and 16 towns
+
+data/paths.geojson:
+- 644 path features
+- 11,070 path coordinate points
+- the main path network spans roughly 10.6k × 10.5k blocks
+
+Near New Drabyel, named source landmarks are already hundreds of blocks apart: Explorer's Campsite is about 354 blocks straight-line, while Av'Sal center is about 772 blocks away. Therefore TURNBOUND early-game content should use compact live-resolved micro-objectives around the hub rather than forcing the player to commute between named macro landmarks.
+
+Long-term production implication:
+- treat major territories as unlockable regions/chapters;
+- reveal distant map regions gradually instead of exposing every far destination as an immediate objective;
+- connect unlocked regions through discovered fast travel, shortcuts and later mount support;
+- preserve large untouched spaces for future characters, enemies, dungeons, hidden quests, bosses and region-specific systems.

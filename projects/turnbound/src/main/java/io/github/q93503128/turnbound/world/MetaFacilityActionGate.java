@@ -6,6 +6,17 @@ import net.minecraft.server.level.ServerPlayer;
 public final class MetaFacilityActionGate {
     private MetaFacilityActionGate() {}
 
+    static String requiredFacilityHint(String rawCommand) {
+        if (rawCommand == null || rawCommand.isBlank()) return "";
+        String action = rawCommand.split("\\|", -1)[0];
+        return switch (action) {
+            case "SUMMON1", "SUMMON10", "STARTER", "ESSENCE_CRYSTAL", "ESSENCE_PICK4", "ESSENCE_PICK5" -> "SUMMON";
+            case "BUY", "SELL" -> "MARKET";
+            case "ENHANCE" -> "FORGE";
+            default -> "";
+        };
+    }
+
     public static String denial(ServerPlayer player, String rawCommand) {
         if (player == null || rawCommand == null || rawCommand.isBlank()) return "";
         String action = rawCommand.split("\\|", -1)[0];

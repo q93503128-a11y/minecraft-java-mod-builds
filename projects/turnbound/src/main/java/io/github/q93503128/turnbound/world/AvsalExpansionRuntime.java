@@ -84,8 +84,8 @@ final class AvsalExpansionRuntime {
         if (player == null) return null;
         if (shouldGuideBriefing(player)) {
             return new DrehmalContextualOnboarding.Guidance(
-                    "마을 중심의 이야기꾼에게 아브살로 향하는 길의 소식을 확인하십시오.",
-                    "지도를 확인했다면 마을 중심에서 다음 여정의 단서를 들을 수 있습니다.");
+                    "뉴 드라비엘 입구의 라나에게 먼 서쪽 길의 소식을 확인하십시오.",
+                    "지도와 지역 준비가 끝났다면 입구 안내원이 아브살 원정 의뢰를 이어 줍니다.");
         }
         if (!active(player)) return null;
 
@@ -120,10 +120,10 @@ final class AvsalExpansionRuntime {
     static FieldUiSnapshot.Navigation navigation(ServerPlayer player) {
         if (player == null) return FieldUiSnapshot.Navigation.none();
         if (shouldGuideBriefing(player)) {
-            var story = DrabyelHubServiceRuntime.serviceByRole(player, "STORY");
-            if (story != null && story.runtimePosition() != null) {
-                var pos = story.runtimePosition();
-                return new FieldUiSnapshot.Navigation(story.locator(), story.playerLabel(), pos.x() + 0.5D, pos.z() + 0.5D);
+            var greeter = DrabyelHubServiceRuntime.serviceByRole(player, "GREETER");
+            if (greeter != null && greeter.runtimePosition() != null) {
+                var pos = greeter.runtimePosition();
+                return new FieldUiSnapshot.Navigation(greeter.locator(), greeter.playerLabel(), pos.x() + 0.5D, pos.z() + 0.5D);
             }
             return FieldUiSnapshot.Navigation.none();
         }

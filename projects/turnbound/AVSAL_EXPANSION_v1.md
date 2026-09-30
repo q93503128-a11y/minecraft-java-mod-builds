@@ -1,6 +1,6 @@
 # TURNBOUND Av'Sal Expansion v1
 
-> 역할: New Drabyel 이후 첫 본격 확장 챕터의 story / quest / encounter / outcome / character-production 정본.
+> 역할: New Drabyel 초반 로컬 진행과 Capital Valley 지역 목표 이후 열리는 중후반 확장 챕터의 story / quest / encounter / outcome / character-production 정본.
 > 정확한 원본 lore·지형은 Drehmal source와 현재 26.2 world가 우선하며, TURNBOUND는 원본을 덮어쓰지 않고 gameplay layer를 얹는다.
 
 ## 1. 목표
@@ -10,8 +10,11 @@ Av'Sal 확장은 단순히 적 수를 늘리는 패치가 아니다.
 완성해야 하는 플레이 흐름:
 
 ```text
-New Drabyel에서 다음 목적 확인
-→ 실제 도로를 따라 Av'Sal 접근
+New Drabyel 로컬 메인 완료
+→ Capital Valley 지역 목표 최소 1개 추가 해결
+→ M 지도에서 먼 서쪽 지역 확인
+→ 입구 안내원 라나에게 원정 의뢰 수령
+→ 해금된 역참망/이후 이동수단을 활용해 실제 도로를 따라 Av'Sal 접근
 → 순찰 / 사건 / 선택 Elite
 → 폐허 외곽에서 상황 파악
 → 북쪽 dock Midboss
@@ -305,3 +308,21 @@ Build TURNBOUND #954 verified code commit `bf228f7de380896c8cc9c070d8c996a236f02
 - the three seeds are TURNBOUND placement hints around the source-backed Av'Sal Scavengers House landmark, not claims about Drehmal canon coordinates
 - both NPCs reuse the already adopted Apache-2.0 FableCraft visual family; no new unlicensed placeholder model is introduced
 - completion grants the existing generous MQ_AV02 package: 1,000 Crystal / 8,000 Gold / party XP 2,400
+
+
+## Early-game distance reclassification — 2026-09-30
+
+Av'Sal is no longer the immediate post-hub main destination.
+
+Source-backed measurements:
+- New Drabyel -> Av'Sal center: roughly 772 blocks straight-line.
+- New Drabyel -> Av'Sal Scavengers House: roughly 817 blocks straight-line.
+- the source-road route used by TURNBOUND is substantially longer (about 1.4k blocks in the current extracted corridor).
+
+Production gate:
+- complete the short New Drabyel local main quest first;
+- then clear at least one meaningful Capital Valley regional objective (north-road watch, Warning Cave Elite, or Graul);
+- review the map;
+- only then can entrance guide Lara brief the Av'Sal expedition.
+
+First traversal may establish world scale. Repeated traversal must rely on discovered waypoints/shortcuts and later may use a dedicated mount system. Empty walking is never a progression requirement.

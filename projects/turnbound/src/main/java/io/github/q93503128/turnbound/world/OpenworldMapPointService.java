@@ -31,10 +31,14 @@ final class OpenworldMapPointService {
                     && (npc.progressRequiresFlag().isBlank() || flags.contains(npc.progressRequiresFlag()))
                     && !flags.contains(npc.progressFlag())
                     && (!npc.progressFlag().startsWith("AVSAL_MQ_AV02_")
-                    || !flags.contains(AvsalExpansionProgress.INVESTIGATION_COMPLETE));
+                    || !flags.contains(AvsalExpansionProgress.INVESTIGATION_COMPLETE))
+                    && (!npc.progressFlag().startsWith("DRABYEL_LOCAL_")
+                    || !flags.contains(DrabyelLocalArcProgress.COMPLETE));
             out.add(new FieldUiSnapshot.MapPoint(npc.locator(), npc.playerLabel(), objective ? "QUEST" : "NPC",
                     pos.x()+0.5D, pos.z()+0.5D, objective));
         }
+
+        out.addAll(DrabyelLocalArcRuntime.objectMapPoints(player));
 
         Set<String> production = new LinkedHashSet<>();
         DrehmalAdaptiveRoutePlacement.productionEncounters(player).stream().map(DrehmalFirstRouteCatalog.EncounterSlot::combatEncounterId).filter(id->id!=null&&!id.isBlank()).forEach(production::add);
@@ -64,6 +68,7 @@ final class OpenworldMapPointService {
     }
 
     private static boolean fieldNpcVisible(DrehmalFieldNpcCatalog.Npc npc, Set<String> flags) {
+        if (DrabyelLocalArcRuntime.ownsSite(npc.siteLocator())) return DrabyelLocalArcProgress.available(flags);
         if (AvsalExpansionRuntime.ownsSite(npc.siteLocator())) return flags.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED);
         if (npc.siteLocator().contains("tower_watch")) return flags.contains(DrehmalFirstRouteProgress.TOWER_REACHED);
         if (npc.siteLocator().contains("camp_explorer")) return flags.contains(DrehmalFirstRouteProgress.CAMP_REACHED);
@@ -72,7 +77,9 @@ final class OpenworldMapPointService {
 
     private static DrehmalFirstRouteCatalog.Site fieldNpcSite(ServerPlayer player,String locator){
         var first=DrehmalAdaptiveRoutePlacement.site(player,locator);
-        return first!=null?first:AvsalExpansionRuntime.site(player,locator);
+        if(first!=null)return first;
+        var local=DrabyelLocalArcRuntime.site(player,locator);
+        return local!=null?local:AvsalExpansionRuntime.site(player,locator);
     }
 
     private static DrehmalFirstRouteCatalog.Site drehmalQuestTarget(ServerPlayer player,DrehmalQuestCatalog.Quest quest){

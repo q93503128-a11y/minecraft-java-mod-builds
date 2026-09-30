@@ -114,6 +114,7 @@ public final class DrehmalFirstRouteRuntime {
         ExternalWorldSavedData data = ExternalWorldSavedData.get(server);
         DrehmalFirstRouteProgress.record(data, player.getUUID(), locationSite(player));
         DrehmalFastTravelService.recordDiscovery(player);
+        DrabyelLocalArcRuntime.recordProgress(player);
         AvsalExpansionRuntime.recordProgress(player);
         if (insideHubCoordinates(player.getX(), player.getZ())) {
             data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
@@ -138,6 +139,8 @@ public final class DrehmalFirstRouteRuntime {
 
     private static FieldUiSnapshot.Navigation navigation(ServerPlayer player) {
         if (player == null) return FieldUiSnapshot.Navigation.none();
+        FieldUiSnapshot.Navigation localNavigation = DrabyelLocalArcRuntime.navigation(player);
+        if (localNavigation.active()) return localNavigation;
         FieldUiSnapshot.Navigation avsalNavigation = AvsalExpansionRuntime.navigation(player);
         if (avsalNavigation.active()) return avsalNavigation;
         var server = player.level().getServer();
@@ -165,7 +168,8 @@ public final class DrehmalFirstRouteRuntime {
             if (DrabyelOpeningTutorial.shouldSendOut(flags, clears)) {
                 return openingPatrolNavigation(player);
             }
-            if (!inHub && (!DrabyelOpeningTutorial.introReady(flags)
+            if (!inHub && !DrabyelLocalArcProgress.complete(flags)
+                    && (!DrabyelOpeningTutorial.introReady(flags)
                     || DrabyelOpeningTutorial.shouldReturnToHub(false, clears))) {
                 var hub = DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
                 if (hub != null) return new FieldUiSnapshot.Navigation(hub.locator(), "뉴 드라비엘", hub.x() + 0.5D, hub.z() + 0.5D);
@@ -234,6 +238,8 @@ public final class DrehmalFirstRouteRuntime {
             ServerPlayer player,
             DrehmalFirstRouteCatalog.Site location
     ) {
+        DrehmalContextualOnboarding.Guidance local = DrabyelLocalArcRuntime.guidance(player);
+        if (local != null) return local;
         DrehmalContextualOnboarding.Guidance avsal = AvsalExpansionRuntime.guidance(player);
         if (avsal != null) return avsal;
         if (player == null) {

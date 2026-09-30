@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sites": [
+    {
+      "locator": "turnbound:site/drabyel_local/courier_crate",
+      "kind": "CLUE_ZONE",
+      "playerLabel": "버려진 배송 상자",
+      "seed": {"x": 470, "z": 1800},
+      "searchRadius": 12,
+      "detectionRadius": 5,
+      "progressFlag": "DRABYEL_LOCAL_CRATE",
+      "itemVisual": "CHEST"
+    },
+    {
+      "locator": "turnbound:site/drabyel_local/wounded_scout",
+      "kind": "NPC_ZONE",
+      "playerLabel": "부상당한 정찰병",
+      "seed": {"x": 590, "z": 1800},
+      "searchRadius": 12,
+      "detectionRadius": 6,
+      "progressFlag": "DRABYEL_LOCAL_SCOUT",
+      "itemVisual": ""
+    },
+    {
+      "locator": "turnbound:site/drabyel_local/torn_record",
+      "kind": "CLUE_ZONE",
+      "playerLabel": "찢긴 순찰 기록",
+      "seed": {"x": 530, "z": 1758},
+      "searchRadius": 12,
+      "detectionRadius": 5,
+      "progressFlag": "DRABYEL_LOCAL_RECORD",
+      "itemVisual": "WRITABLE_BOOK"
+    }
+  ]
+}

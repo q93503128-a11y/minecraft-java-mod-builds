@@ -50,6 +50,16 @@
       "interactionRadius": 4,
       "progressFlag": "AVSAL_MQ_AV02_SURVIVOR",
       "progressRequiresFlag": "AVSAL_MQ_AV01_COMPLETE"
+    },
+    {
+      "locator": "turnbound:npc/drabyel_local/wounded_scout",
+      "siteLocator": "turnbound:site/drabyel_local/wounded_scout",
+      "playerLabel": "정찰병 하엔",
+      "visualAsset": "DRABYEL_STABLEMASTER",
+      "dialogue": "마을에서 멀리 나온 것도 아닌데 같은 길을 두 번 돌아왔습니다. 길표식이 멀쩡한데 방향 감각만 틀어지는 느낌이었어요. 북쪽보다 이 주변부터 확인하는 게 좋겠습니다.",
+      "interactionRadius": 4,
+      "progressFlag": "DRABYEL_LOCAL_SCOUT",
+      "progressRequiresFlag": "DRABYEL_LOCAL_ACCEPTED"
     }
   ]
 }

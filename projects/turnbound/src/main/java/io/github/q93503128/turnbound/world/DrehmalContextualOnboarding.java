@@ -47,7 +47,8 @@ final class DrehmalContextualOnboarding {
         }
 
         boolean hubReached = DrehmalFirstRouteProgress.reached(flags, DrehmalFirstRouteProgress.HUB_REACHED);
-        if (hubReached && !kind.isBlank() && !"HUB_SAFE".equals(kind)) {
+        if (hubReached && !DrabyelLocalArcProgress.complete(flags)
+                && !kind.isBlank() && !"HUB_SAFE".equals(kind)) {
             if (!DrabyelOpeningTutorial.introReady(flags)) {
                 return new Guidance(
                         "뉴 드라비엘 입구로 돌아가 안내와 대화하십시오.",
@@ -152,19 +153,34 @@ final class DrehmalContextualOnboarding {
         if ("SUMMON".equals(nextService)) {
             return new Guidance("정령술사를 찾아 새 동료를 부를 수 있는지 확인하십시오.", "캐피털 밸리의 강적을 넘겼다면 소환이 열려 있습니다.");
         }
+        if (DrabyelLocalArcProgress.offerReady(clears, flags, roles)) {
+            return new Guidance(
+                    "뉴 드라비엘 입구의 라나에게 마을 주변 상황을 다시 확인하십시오.",
+                    "먼 지역으로 떠나기 전에 마을 바로 바깥의 짧은 지역 메인 퀘스트를 받습니다.");
+        }
+        if (DrabyelLocalArcProgress.active(flags)) {
+            return new Guidance(
+                    "뉴 드라비엘 주변 조사 지점 3곳 중 2곳을 확인하십시오. (" + DrabyelLocalArcProgress.count(flags) + "/2)",
+                    "모든 지점을 돌 필요는 없습니다. M 지도에서 가까운 목표를 고르십시오.");
+        }
+        if (!DrabyelLocalArcProgress.complete(flags)) {
+            return new Guidance(
+                    "뉴 드라비엘에서 시설을 둘러보고 입구의 라나에게 돌아가십시오.",
+                    "상점·강화·소환·이동은 메뉴 바로가기가 아니라 실제 담당 NPC에게 가야 이용할 수 있습니다.");
+        }
         if (!flags.contains(HUB_ROUTE_REVIEWED)) {
             return new Guidance(
-                    "M 지도를 열어 뉴 드라비엘 서쪽의 다음 길을 확인하십시오.",
-                    "지도에는 현재 위치, 목적지, 발견한 이동 거점이 표시됩니다.");
+                    "M 지도를 열어 캐피털 밸리의 다음 선택지를 확인하십시오.",
+                    "아브살은 바로 떠나는 초반 목적지가 아닙니다. 먼저 주변 지역의 위협과 이동 거점을 확보합니다.");
         }
         if (AvsalExpansionProgress.briefingReady(clears, flags)) {
             return new Guidance(
-                    "마을 중심의 이야기꾼에게 아브살로 향하는 길의 소식을 확인하십시오.",
-                    "서쪽 가도로 나가기 전 최근 폐허에서 생긴 일을 들을 수 있습니다.");
+                    "마을 입구의 라나에게 먼 서쪽 길의 소식을 확인하십시오.",
+                    "아브살은 뉴 드라비엘 주변 진행과 캐피털 밸리의 의미 있는 목표를 마친 뒤 열립니다.");
         }
         return new Guidance(
-                "준비가 끝났다면 뉴 드라비엘 서쪽 출구에서 아브살 방향의 길을 따라가십시오.",
-                "마을을 나서기 전 장비와 파티를 다시 확인해도 됩니다.");
+                "캐피털 밸리에서 지역 목표를 하나 더 해결하고 뉴 드라비엘로 돌아오십시오.",
+                "북부 도로, 경고 동굴의 강적, 들이받는 왕 그라울 중 원하는 방향을 선택할 수 있습니다.");
     }
 
     static String nextHubServiceRole(Set<String> clears, Set<String> flags, Set<String> roles) {

@@ -27,16 +27,28 @@
     },
     {
       "id": "turnbound:quest/drehmal/drabyel_approach_patrol",
-      "kind": "SIDE",
-      "title": "진입로 안전 확보",
+      "kind": "MAIN",
+      "title": "북문 순찰",
       "regionLabel": "New Drabyel",
-      "objective": "뉴 드라비엘 진입로의 순찰대를 정리하십시오.",
-      "activationFlag": "ROUTE_CAMP_REACHED",
+      "objective": "입구 안내원 라나의 부탁대로 뉴 드라비엘 북쪽 가까운 길목의 순찰대를 정리하십시오.",
+      "activationFlag": "HUB_SERVICE_GREETER",
       "encounterId": "CV_DRABYEL_ROAD",
-      "requiresProductionEncounter": true,
       "rewardCrystal": 300,
       "rewardGold": 3000,
-      "rewardXp": 700
+      "rewardXp": 700,
+      "requiresProductionEncounter": true
+    },
+    {
+      "id": "turnbound:quest/drehmal/drabyel_local_signs",
+      "kind": "MAIN",
+      "title": "문 밖의 세 흔적",
+      "regionLabel": "New Drabyel",
+      "objective": "라나가 표시한 마을 주변 세 조사 지점 중 두 곳을 확인하십시오.",
+      "activationFlag": "DRABYEL_LOCAL_ACCEPTED",
+      "completionFlag": "DRABYEL_LOCAL_COMPLETE",
+      "rewardCrystal": 500,
+      "rewardGold": 3500,
+      "rewardXp": 900
     },
     {
       "id": "turnbound:quest/drehmal/hidden_old_waymark",

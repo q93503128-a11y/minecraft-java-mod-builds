@@ -126,8 +126,11 @@ New Drabyel north gate arrival
 → E menu: current party check
 → short north-road patrol (CV_DRABYEL_ROAD)
 → return to New Drabyel
-→ blacksmith / market / stable onboarding
-→ next-route choice toward Av'Sal
+→ blacksmith / market / waystation / summon NPC onboarding
+→ return to entrance guide Lara
+→ local main quest: inspect any 2 of 3 targets in the 64-110 block town ring
+→ Capital Valley regional choice
+→ Av'Sal remains locked until one additional meaningful regional milestone
 
 Optional Capital Valley exploration:
 New Drabyel → Explorer camp → Tower / Warning Cave → chapel / Primal roadhead
@@ -604,3 +607,30 @@ NPC 역할:
 - Hidden requests are server-authoritative one-time quests once discovered and receive the same durable reward protection as other authored-world quests.
 - The old three-objective tracking assumption is raised to five simultaneous tracked objectives. Authored-world active quests may also coexist on the map.
 - Empty walking is not content. Return travel nodes and future shortcuts remove repeated long commuting while keeping the first exploration pass readable.
+
+
+## New Drabyel local main ring — 2026-09-30
+
+The immediate post-hub loop is deliberately compact.
+
+Main-quest giver:
+- entrance guide 문지기 라나
+- 북문 순찰 is a MAIN quest activated by the first greeter conversation
+- after the patrol and physical facility visits, Lara gives 문 밖의 세 흔적
+
+문 밖의 세 흔적 uses a 2-of-3 structure:
+- 버려진 배송 상자 — object clue
+- 정찰병 하엔 — NPC clue
+- 찢긴 순찰 기록 — object clue
+
+Placement contract:
+- source seed distance from New Drabyel center: approximately 77 / 77 / 90 blocks
+- every final position is re-resolved against live 26.2 collision/source-content clearance
+- no terrain is written
+- only two objectives are required, so the player is never forced to run all three legs
+
+Target readability:
+- active physical NPC/object targets use glowing outline while they are loaded, making them readable through walls
+- M map still shows all unresolved objectives and the single navigation pointer chooses the nearest unresolved target
+- physical facilities remain physical: global E-menu has no buy/sell/forge/summon/travel shortcut
+- server-side MetaFacilityActionGate rejects economy actions unless the player is actually near the corresponding NPC facility

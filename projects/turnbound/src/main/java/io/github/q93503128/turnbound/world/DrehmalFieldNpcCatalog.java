@@ -23,7 +23,9 @@ public final class DrehmalFieldNpcCatalog {
         List<String> errors=new ArrayList<>();Set<String> ids=new HashSet<>();
         for(Npc npc:NPCS){
             if(!ids.add(npc.locator()))errors.add("duplicate field npc "+npc.locator());
-            if(DrehmalFirstRouteCatalog.site(npc.siteLocator())==null&&AvsalExpansionCatalog.site(npc.siteLocator())==null)errors.add("unknown npc site "+npc.siteLocator());
+            if(DrehmalFirstRouteCatalog.site(npc.siteLocator())==null
+                    &&AvsalExpansionCatalog.site(npc.siteLocator())==null
+                    &&DrabyelLocalArcCatalog.site(npc.siteLocator())==null)errors.add("unknown npc site "+npc.siteLocator());
             if(npc.playerLabel().isBlank()||npc.dialogue().isBlank())errors.add("blank field npc copy "+npc.locator());
             if(!VISUALS.contains(npc.visualAsset()))errors.add("unsupported field npc visual "+npc.visualAsset());
             if(npc.interactionRadius()<2||npc.interactionRadius()>6)errors.add("invalid field npc radius "+npc.locator());

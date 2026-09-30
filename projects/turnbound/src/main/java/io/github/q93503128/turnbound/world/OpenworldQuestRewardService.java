@@ -22,10 +22,12 @@ final class OpenworldQuestRewardService {
         List<Grant> granted = new ArrayList<>();
 
         for (DrehmalQuestCatalog.Quest quest : DrehmalQuestCatalog.all()) {
+            if (!quest.activationFlag().isBlank() && !flags.contains(quest.activationFlag())) continue;
             if (!DrehmalQuestCatalog.completed(quest, flags, clears)) continue;
             grant(player, "quest:" + quest.id(), quest.title(), quest.rewardCrystal(), quest.rewardGold(), quest.rewardXp(), granted);
         }
         for (AvsalQuestCatalog.Quest quest : AvsalQuestCatalog.all()) {
+            if (!quest.activationFlag().isBlank() && !flags.contains(quest.activationFlag())) continue;
             if (!AvsalQuestCatalog.completed(quest, flags, clears)) continue;
             grant(player, "quest:" + quest.id(), quest.title(), quest.rewardCrystal(), quest.rewardGold(), quest.rewardXp(), granted);
         }

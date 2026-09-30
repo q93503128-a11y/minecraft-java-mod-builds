@@ -11,10 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AvsalExpansionProgressTest {
     @Test
     void mqAv01OnlyBriefsAfterOpeningPatrolAndMapReview() {
-        Set<String> clear = Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID);
-        assertFalse(AvsalExpansionProgress.briefingReady(clear, Set.of()));
+        Set<String> openingOnly = Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID);
+        assertFalse(AvsalExpansionProgress.briefingReady(openingOnly, Set.of(
+                DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED,
+                DrabyelLocalArcProgress.COMPLETE)));
+        Set<String> regional = Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID,"CV_DRABYEL_NORTH");
         assertTrue(AvsalExpansionProgress.briefingReady(
-                clear, Set.of(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED)));
+                regional, Set.of(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED,DrabyelLocalArcProgress.COMPLETE)));
     }
 
     @Test

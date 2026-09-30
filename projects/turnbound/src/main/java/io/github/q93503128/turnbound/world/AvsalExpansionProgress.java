@@ -22,7 +22,7 @@ final class AvsalExpansionProgress {
 
     static boolean briefingReady(Set<String> clears, Set<String> flags) {
         return clears != null && flags != null
-                && DrabyelOpeningTutorial.patrolCleared(clears)
+                && DrabyelLocalArcProgress.regionalGateReady(clears, flags)
                 && flags.contains(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED)
                 && !flags.contains(BRIEFED);
     }

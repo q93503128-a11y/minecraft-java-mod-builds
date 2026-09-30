@@ -90,16 +90,45 @@ final class DrabyelHubServiceRuntime {
         }
         if(target instanceof BattleActorEntity actor)actor.playServiceGreeting();
         if ("GREETER".equals(service.role())) {
-            boolean roadClear = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters()
-                    .contains(DrabyelOpeningTutorial.ENCOUNTER_ID);
-            FieldNetwork.showDialogue(player, service.playerLabel(),
-                    roadClear
-                            ? "북쪽 길이 다시 조용해졌네요. 수고했어요. 이제 대장간과 시장에서 정비하고 다음 길을 준비해도 됩니다."
-                            : "뉴 드라비엘에 잘 왔어요. 북쪽 길에 약탈자들이 보여 순찰이 멈췄어요. 먼저 파티를 확인하고 입구 밖 가까운 길목을 정리해 주세요.");
+            var clears=CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+            boolean roadClear=clears.contains(DrabyelOpeningTutorial.ENCOUNTER_ID);
+            if(!roadClear){
+                FieldNetwork.showDialogue(player,service.playerLabel(),
+                        "뉴 드라비엘에 잘 왔어요. 북쪽 길에 약탈자들이 보여 순찰이 멈췄어요. 먼저 파티를 확인하고 입구 밖 가까운 길목을 정리해 주세요.");
+                return true;
+            }
+            if(DrabyelLocalArcRuntime.offerReady(player)){
+                boolean accepted=DrabyelLocalArcRuntime.accept(player);
+                FieldNetwork.showDialogue(player,service.playerLabel(),
+                        accepted
+                                ?"멀리 갈 필요는 없어요. 마을 바로 바깥에서 운송 표식이 끊기고 정찰 기록도 이상해졌어요. 세 군데를 표시해 둘 테니 가까운 두 곳만 확인하고 돌아와 주세요."
+                                :"마을 바로 바깥의 세 조사 지점 중 가까운 두 곳만 확인해 주세요.");
+                return true;
+            }
+            if(server!=null){
+                Set<String> flags=ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+                if(DrabyelLocalArcProgress.active(flags)){
+                    FieldNetwork.showDialogue(player,service.playerLabel(),
+                            "표시해 둔 세 곳 중 두 곳만 확인하면 충분해요. 너무 멀리 돌아다닐 필요는 없습니다.");
+                    return true;
+                }
+                if(DrabyelLocalArcProgress.complete(flags)&&AvsalExpansionProgress.briefingReady(clears,flags)){
+                    FieldNetwork.showDialogue(player,service.playerLabel(),AvsalExpansionRuntime.storyDialogue(player));
+                    return true;
+                }
+                if(DrabyelLocalArcProgress.complete(flags)){
+                    FieldNetwork.showDialogue(player,service.playerLabel(),
+                            "마을 주변은 정리됐어요. 이제 캐피털 밸리에서 원하는 지역 목표를 하나 더 해결해 보세요. 먼 서쪽 길은 그 뒤에 준비해도 늦지 않아요.");
+                    return true;
+                }
+            }
+            FieldNetwork.showDialogue(player,service.playerLabel(),
+                    "북쪽 길이 다시 조용해졌네요. 수고했어요. 대장간, 시장, 역참과 정령술사를 직접 찾아 정비한 뒤 다시 들러 주세요.");
             return true;
         }
         if ("STORY".equals(service.role())) {
-            FieldNetwork.showDialogue(player, service.playerLabel(), AvsalExpansionRuntime.storyDialogue(player));
+            FieldNetwork.showDialogue(player, service.playerLabel(),
+                    "이곳에는 캐피털 밸리와 서쪽 폐허에 관한 오래된 기록이 남아 있습니다. 길의 방향은 입구의 라나가 최근 소식과 함께 정리해 줄 겁니다.");
             return true;
         }
         String hint=service.facilityHint();
@@ -248,6 +277,7 @@ final class DrabyelHubServiceRuntime {
         // R_PG-style field readability: service identity belongs to the close-range interaction prompt,
         // not a nameplate floating over town NPCs from across the street.
         actor.setCustomNameVisible(false);
+        actor.setGlowingTag(QuestTargetGlowService.shouldGlow(level,service.locator()));
 
         if(nearest!=null&&distance<=service.interactionRadius()+2.0D){
             face(actor,nearest);

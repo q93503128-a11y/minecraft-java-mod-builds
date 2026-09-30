@@ -1556,3 +1556,15 @@ Current production direction:
 - a future mount system, if adopted, is separate content and must use a vetted external model/animation rather than pretending the current waystation already grants mounts
 - avoid travel padding: first-time traversal may establish scale, but repeated routes receive discovered waypoints/shortcuts; long roads should contain meaningful encounters, NPCs, discoveries or route choices instead of empty walking
 - the New Drabyel → Av'Sal road gains return waypoints at 끊긴 가도 and 아브살 외곽 so the long first journey does not become repeated commuting
+
+
+## World-scale / physical-NPC / early-distance canon — 2026-09-30
+
+- Physical NPC services are authoritative. Global E-menu is management only; shop, sell, forge, summon and travel actions must stay at their corresponding world NPC/facility.
+- MetaFacilityActionGate remains the server-side anti-shortcut boundary.
+- Entrance guide Lara is now the main-quest giver for the New Drabyel opening sequence.
+- Post-hub early movement targets a 64-110 block ring, with a 2-of-3 local investigation before larger regional travel.
+- Quest targets represented by actual entities use a wall-through glowing outline while active; coordinate-only targets should be promoted to physical interactable proxies when they need the same treatment.
+- Av'Sal is no longer an immediate early-game destination. It requires the local New Drabyel arc plus at least one meaningful Capital Valley regional milestone and map review.
+- Source data shows a much larger world than the current route: 285 structured overworld locations and hundreds of path features, so later development should unlock whole regions over time rather than treating the existing road as the entire game.
+- Future mount support is separate from the current waystation system. Once mounts exist, long first-time journeys may be acceptable, but repeated empty walking remains unacceptable.

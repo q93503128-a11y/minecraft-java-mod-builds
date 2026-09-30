@@ -65,9 +65,15 @@ final class DrehmalFieldNpcRuntime {
                     && (npc.progressRequiresFlag().isBlank() || data.onboardingFlag(player.getUUID(),npc.progressRequiresFlag()))
                     && !data.onboardingFlag(player.getUUID(),npc.progressFlag())){
                 data.markOnboardingFlag(player.getUUID(),npc.progressFlag());
-                int count=AvsalExpansionProgress.investigationCount(data.onboardingFlags(player.getUUID()));
-                dialogue=dialogue+"\n\n조사 진척 "+Math.min(count,2)+"/2";
-                if(AvsalExpansionProgress.reconcileInvestigation(player)) dialogue=dialogue+" · 필요한 단서를 충분히 확보했습니다.";
+                if(npc.progressFlag().startsWith("AVSAL_MQ_AV02_")){
+                    int count=AvsalExpansionProgress.investigationCount(data.onboardingFlags(player.getUUID()));
+                    dialogue=dialogue+"\n\n조사 진척 "+Math.min(count,2)+"/2";
+                    if(AvsalExpansionProgress.reconcileInvestigation(player))dialogue=dialogue+" · 필요한 단서를 충분히 확보했습니다.";
+                }else if(npc.progressFlag().startsWith("DRABYEL_LOCAL_")){
+                    int count=DrabyelLocalArcProgress.count(data.onboardingFlags(player.getUUID()));
+                    dialogue=dialogue+"\n\n조사 진척 "+Math.min(count,2)+"/2";
+                    if(DrabyelLocalArcProgress.reconcile(player))dialogue=dialogue+" · 두 곳을 확인했습니다. 라나에게 돌아갈 수 있습니다.";
+                }
             }
             if(!npc.questOfferFlag().isBlank()){
                 boolean first=!data.onboardingFlag(player.getUUID(),npc.questOfferFlag());
@@ -89,11 +95,16 @@ final class DrehmalFieldNpcRuntime {
     private static DrehmalFirstRouteCatalog.Site site(ServerLevel level,ServerPlayer player,String locator){
         var first=DrehmalAdaptiveRoutePlacement.site(player,locator);
         if(first!=null)return first;
+        var local=DrabyelLocalArcRuntime.site(player,locator);
+        if(local!=null)return local;
         var avsal=AvsalExpansionRuntime.site(player,locator);
         if(avsal!=null)return avsal;
         if(level!=null){
             for(ServerPlayer candidate:level.players()){
-                if(candidate==player||!ExternalWorldBootstrap.active(candidate)||!AvsalExpansionRuntime.active(candidate))continue;
+                if(candidate==player||!ExternalWorldBootstrap.active(candidate))continue;
+                local=DrabyelLocalArcRuntime.site(candidate,locator);
+                if(local!=null)return local;
+                if(!AvsalExpansionRuntime.active(candidate))continue;
                 avsal=AvsalExpansionRuntime.site(candidate,locator);
                 if(avsal!=null)return avsal;
             }
@@ -143,6 +154,7 @@ final class DrehmalFieldNpcRuntime {
             double d=actor.distanceToSqr(player);if(d<best){best=d;nearest=player;}
         }
         actor.setCustomNameVisible(nearest!=null&&best<=36.0D);
+        actor.setGlowingTag(QuestTargetGlowService.shouldGlow(level,npc.locator()));
         if(nearest!=null&&best<=64.0D)face(actor,nearest);
     }
 
