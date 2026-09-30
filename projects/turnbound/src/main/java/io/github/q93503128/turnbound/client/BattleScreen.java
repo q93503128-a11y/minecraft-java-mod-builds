@@ -414,9 +414,10 @@ public final class BattleScreen extends Screen {
     }
 
     /**
-     * Action Gauge combines the two pieces the player actually needs:
-     * exact server-authored upcoming order and each combatant's current Gauge/effective SPD.
-     * The left-edge list keeps the 3D battlefield center open while making tempo manipulation readable.
+     * Compact CR-style action gauge.
+     *
+     * The row order is the server TurnScheduler preview, while the thin bar shows current Gauge progress.
+     * Raw Gauge/SPD numbers are intentionally hidden from the default combat view to preserve glanceability.
      */
     private void drawTimeline(GuiGraphicsExtractor graphics, BattleHudLayout.Layout current, ClientBattleState.Snapshot snapshot) {
         var panel = current.timeline();
@@ -426,36 +427,35 @@ public final class BattleScreen extends Screen {
 
         int total = BattleTurnGaugeModel.scheduledLivingCount(snapshot);
         int hidden = Math.max(0, total - rows.size());
-        graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), 0x70080A0E);
-        TurnboundFrameStyle.frame(graphics, panel.x(), panel.y(), panel.width(), panel.height(), 0x884B5668);
+        graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), 0x66080A0E);
+        TurnboundFrameStyle.frame(graphics, panel.x(), panel.y(), panel.width(), panel.height(), 0x784B5668);
 
-        String title = "행동 게이지" + (hidden > 0 ? " · +" + hidden : "");
-        graphics.text(font, Component.literal(title), panel.x() + 6, panel.y() + 4, TEXT, true);
-        drawScaledText(graphics, "Gauge / SPD", panel.right() - 6, panel.y() + 5, 0.58F, SECONDARY, true);
+        String title = hidden > 0 ? "행동 순서 +" + hidden : "행동 순서";
+        graphics.text(font, Component.literal(title), panel.x() + 5, panel.y() + 3, TEXT, true);
 
         int rowH = height < 200 ? 11 : current.compact() ? 12 : 13;
-        int y = panel.y() + (height < 200 ? 13 : 15);
+        int y = panel.y() + (height < 200 ? 12 : 14);
         long elapsed = Math.max(0L, System.currentTimeMillis() - timelineMotionStartedAt);
         boolean motionActive = elapsed < TIMELINE_MOTION_MS && !timelineMotion.isEmpty();
 
+        int rank = 1;
         for (BattleTurnGaugeModel.Row row : rows) {
             ClientBattleState.Unit unit = row.unit();
             boolean actor = unit.id().equals(snapshot.actorId());
             boolean tempoJump = motionActive && timelineMotion.stream()
                     .anyMatch(move -> move.unitId().equals(unit.id()) && move.tempoJump());
             int sideColor = "ALLY".equals(unit.side()) ? GAUGE : DANGER;
-            int rowBg = actor ? 0xA02A3442 : tempoJump ? 0x60304B63 : 0x30080A0E;
+            int rowBg = actor ? 0x8C2A3442 : tempoJump ? 0x48304B63 : 0x22080A0E;
 
             graphics.fill(panel.x() + 3, y, panel.right() - 3, y + rowH - 1, rowBg);
-            graphics.fill(panel.x() + 3, y, panel.x() + 5, y + rowH - 1, actor ? GOLD : sideColor);
+            if (actor) graphics.fill(panel.x() + 3, y, panel.x() + 5, y + rowH - 1, GOLD);
 
-            int orderW = height < 200 ? 15 : 19;
-            float orderScale = height < 200 ? 0.52F : 0.60F;
-            drawScaledText(graphics, row.orderLabel(), panel.x() + 6 + orderW, y + 2, orderScale,
-                    actor ? GOLD : SECONDARY, true);
+            int rankW = height < 200 ? 9 : 11;
+            drawScaledText(graphics, Integer.toString(rank), panel.x() + 5 + rankW, y + 2,
+                    current.compact() ? 0.52F : 0.58F, actor ? GOLD : SECONDARY, true);
 
             int portrait = Math.max(8, rowH - 2);
-            int portraitX = panel.x() + 7 + orderW;
+            int portraitX = panel.x() + 7 + rankW;
             int portraitY = y + 1;
             boolean rendered = TurnboundPortraitRenderer.extract(
                     graphics, unit.defId(), portraitX, portraitY,
@@ -463,33 +463,24 @@ public final class BattleScreen extends Screen {
             if (!rendered) {
                 String fallback = abbreviate(unit.name(), 1);
                 drawScaledText(graphics, fallback, portraitX + portrait / 2, portraitY + 2,
-                        0.62F, TEXT, true);
+                        0.60F, TEXT, true);
             }
 
             int textX = portraitX + portrait + 4;
-            int right = panel.right() - 6;
-            String meta = BattleTurnGaugeModel.gaugeLabel(unit)
-                    + (unit.speed() > 0 ? " / " + unit.speed() : "");
-            int metaLogicalWidth = Math.max(34, (int)Math.floor((right - textX) * 0.42));
-            float metaScale = current.compact() ? 0.56F : 0.62F;
-            String fittedMeta = UiTextLayout.fit(meta, Math.max(18, (int)Math.floor(metaLogicalWidth / metaScale)));
-            float metaPx = font.width(fittedMeta) * metaScale;
-            int metaX = Math.max(textX + 26, (int)Math.floor(right - metaPx));
-            int nameMax = Math.max(18, metaX - textX - 4);
-            String name = UiTextLayout.fit(unit.name(), nameMax);
+            int right = panel.right() - 5;
+            String name = UiTextLayout.fit(unit.name(), Math.max(16, right - textX));
             graphics.text(font, Component.literal(name), textX, y + 1, actor ? GOLD : TEXT, true);
-            drawScaledText(graphics, fittedMeta, right, y + 2, metaScale, actor ? GOLD : SECONDARY, true);
 
             int barX = textX;
-            int barRight = right;
             int barY = y + rowH - 3;
-            int barW = Math.max(4, barRight - barX);
-            graphics.fill(barX, barY, barRight, barY + 2, 0xD0080A0E);
+            int barW = Math.max(5, right - barX);
+            graphics.fill(barX, barY, right, barY + 2, 0xC0080A0E);
             int fill = (int)Math.round(barW * BattleTurnGaugeModel.gaugeRatio(unit));
             if (fill > 0) graphics.fill(barX, barY, barX + Math.min(barW, fill), barY + 2, actor ? GOLD : sideColor);
-            if (tempoJump) graphics.fill(barX, barY - 1, barRight, barY, 0xAA6DC6FF);
+            if (tempoJump) graphics.fill(barX, barY - 1, right, barY, 0x806DC6FF);
 
             y += rowH;
+            rank++;
             if (y + rowH > panel.bottom() - 2) break;
         }
     }
