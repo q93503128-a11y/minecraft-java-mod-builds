@@ -1434,14 +1434,19 @@ Verified through Campfire's real GitHub Actions clean-build workflow:
 - **Traveler Tool Belt 1.0.4** — BUILD VERIFIED in the same combined stack.
 - **Player Animation Library 1.2.6** — BUILD VERIFIED in the same combined stack.
 - **Sophisticated Core 1.5.0.2349 + Sophisticated Backpacks 3.26.3.2170** — BUILD VERIFIED in the same combined stack.
-- external building probe also resolves Villageria, SY Village and Towns & Towers and parses their structure NBT during CI.
+- external building probe resolves Villageria, SY Village, Towns & Towers and kogtyv-Towny and Village for analysis.
+- **Kogtyv Greece selected structure pack — 31 NBTs — PACKAGED AND CONTRACT VERIFIED.**
+- embedded Kogtyv MIT license notice and provenance manifest — PACKAGED AND VERIFIED.
+- Towns & Towers and Villageria extracted NBTs — **NOT PACKAGED** by policy.
 
-Latest successful storage-stack workflow checkpoint:
-- commit: `dc7345ca24dc727be257cbddfaf3447b4bc0c9ee`.
-- Build Campfire Sessions run: **18** / run ID **36665249692**.
+Latest external-structure packaging checkpoint:
+- commit: `290876b8172de9428229bb167543106c6d5924eb`.
+- Build Campfire Sessions run: **31** / run ID **36702085816**.
 - clean build: SUCCESS.
 - external structure probe: SUCCESS.
-- existing alpha.6 packaged-asset/contracts: SUCCESS.
+- alpha.6 packaged-asset/contracts: SUCCESS.
+- approved external structures in JAR: **31**.
+- approved packaged structure source: **kogtyv_tav only**.
 
 Validation boundary:
 - **BUILD VERIFIED:** YES for the dependency stack above.
@@ -1475,7 +1480,7 @@ Validation boundary:
 - final coherent resident biped animal roster/rig.
 - final museum dinosaur/prehistory skeleton art.
 - coherent full lifestyle-tool family including watering can + bug net + fishing tiers.
-- final house/building set for café, clothing shop, museum and housing progression.
+- final in-client visual acceptance, rotation/terrain fit and role dressing for the already-packaged Kogtyv Greece building set.
 - final coherent clothing art set beyond hats/accessory/backend candidates.
 - festival/event prop set.
 

@@ -16,6 +16,34 @@ Campfire Sessions uses Minecraft-native open-source models, CC0 music, and CC0 U
 - Use here: canonical Campfire base world. The project will preserve the island/shoreline identity while adding the authored village, selective terrain grading, vegetation, paths, facilities, exploration content and other Campfire-specific world changes.
 - Packaging: keep the original MIT notice/attribution with the packaged template. The Modrinth pack provisions a playable copy and does not overwrite progressed saves on updates.
 
+## Village structure bases — kogtyv-Towny and Village
+- Project: **kogtyv-Towny and Village** — kogtyv
+- Source/distribution project: https://www.curseforge.com/minecraft/mc-mods/kogtyv-tav
+- 26.2 NeoForge source artifact used by the build pipeline: `kogtyv-tav-963118-8762244.jar`
+- Project version: 1.7
+- License: MIT
+- Embedded license notice verified from the distributed JAR: `LICENSE`, copyright 2023–2026 kogtyv.
+- Campfire packages **31 selected Greece-village structure NBTs** as editable external bases:
+  - 1 civic center: `ratush_1`
+  - 8 small-house variants
+  - 6 medium-house variants
+  - 4 big-house variants
+  - 5 small-shop variants
+  - 3 medium-shop variants
+  - 3 triple-shop variants
+  - 1 larger `triple_1` house
+- Generated target root: `data/campfiresessions/structure/external/kogtyv_greece/`
+- Generated attribution/license: `META-INF/campfiresessions/licenses/kogtyv_tav_LICENSE.txt`
+- Generated provenance manifest: `META-INF/campfiresessions/external_structure_manifest.json`
+- Current intended roles include resident services, general store, clinic, café, clothing shop, museum shell, harbor-service shell, player-house progression and resident-house variants.
+- Campfire may palette/role-dress these MIT bases while keeping the source/license notice and provenance manifest.
+- Build verification: **Build Campfire Sessions run 31 / run ID 36702085816 — SUCCESS**.
+- Package-contract verification confirms exactly 31 approved external structures and only source `kogtyv_tav`.
+
+### Explicitly not packaged as extracted structure assets
+- **Towns & Towers** structures are reference/footprint material only. Its distributed JAR states CC BY-NC-ND 4.0 and disallows modified/repackaged structure extraction.
+- **Villageria** remains compact-building reference material only. CurseForge labels the project MIT, but the tested distributed 26.2 NeoForge JAR does not embed the MIT notice; Campfire therefore does not extract/package its structures in the current provenance pipeline.
+
 ## Guitar model
 - Project: **Musical Instruments Pack** — Tchongas
 - Source repository: https://github.com/Tchongas/datapacks
