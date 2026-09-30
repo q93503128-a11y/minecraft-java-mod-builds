@@ -336,6 +336,37 @@ State: `RUNTIME_AND_ASSET_BOUND / MINECRAFT_VISUAL_ACCEPTANCE_PENDING`. Build Op
 Final third-person silhouette, armor/cape clipping, first-person camera feel, terrain shortening and
 network-latency feel require joined-player playtest.
 
+### Hunter Quickstep Volley presentation intake — 2026-09-30
+
+Hunter `Quickstep Volley` now has a project-owned backend contract, but its player-facing presentation remains deliberately closed.
+
+Canonical backend already locked in source:
+
+- 18 Mana / 7.0 s cooldown;
+- 3.0-block ordinary dash / 4.0-block empowered dash;
+- **0 i-frame ticks** — this action is mobility, not a hidden second dodge;
+- three projectiles, 0.55 ActionCoefficient each, 1.65 same-target cap;
+- whole-action PoiseCoefficient 0.70;
+- three-Focus empowerment may pierce one normal enemy per projectile without increasing the same-target coefficient cap;
+- current production weapon gate is Bow/Crossbow only.
+
+Presentation-source direction remains Quaternius **Universal Animation Library 2 Standard**. The current official pack is CC0 and includes movement/parkour-oriented animation coverage. Public byte-locator corroboration exists in `agentkaerf/FreeModels` at commit `db3df04d1e4714298a09510b26fb6de6645138a2`:
+
+- `Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb`
+  - Git blob: `dc684c2a664927964307e8eb7b27b0000ebf6a18`
+  - size: 8,061,600 bytes;
+- `Universal Animation Library 2[Standard]/License.txt`
+  - Git blob: `233f759611a4467aefaa5b4e21d68b389fea33f7`
+  - text explicitly identifies CC0 1.0 Universal / Public Domain Dedication and Quaternius.
+
+This is **not** exact animation acceptance. The current connector can locate the binary GLB but cannot return/decode its non-UTF8 animation bytes, so clip curves, duration, root-motion behavior, bow/crossbow arm overlap, PAL retarget quality and Minecraft third-person readability have not been inspected. Free-Standard catalog references such as the Slide family remain candidates only until the exact track is byte-inspected and played in Minecraft.
+
+Do not reuse the admitted Kelvin dodge roll automatically for Quickstep merely because both move the player. Quickstep must read as an aimed ranged reposition with no i-frames, not as another evasive roll. Archers RPG Series remains ARR dependency/local-only/reference material for ranged presentation; its source/assets are not copied into this public repository.
+
+State: `BACKEND_CONTRACT_BOUND / PRESENTATION_ASSET_PENDING / PLAYER_SLOT_CLOSED`.
+
+Build Openworld RPG run `36658587908` at code state `fde4dd1bb9ce474b3d1c11d676c2f135acf26487` passes unit tests/clean build, bootstrap JAR verification, core server, gameplay dependency server, gameplay client startup, both playtest-JAR builds, Modrinth pack packaging and artifact upload. This does not substitute for a real Quickstep animation/projectile/terrain/latency playtest.
+
 ### Warrior root runtime binding delta — 2026-09-29
 
 Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `slash_01.png` as a support material inside project-authored 3D slash/sector geometry. Exact committed bytes are taken from pinned corroboration repository `shorepine/kenney` commit `3694c6879e487c108f55677be7dd2ca75b07cc3b`, Git blob `c04fa2d3938827da63105172748851db86735aa6`, and are recorded under `external-assets/kenney-particle-pack/SOURCE.md`.
