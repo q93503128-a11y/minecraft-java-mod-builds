@@ -1170,3 +1170,41 @@ Validation after Build #947:
 - CLIENT RUNTIME TESTED: NO for Build #947
 - PLAYTESTED: NO for Build #947
 - MULTIPLAYER TESTED: NO
+
+
+## Build #947 client battle cleanup pass — 2026-09-30
+
+Observed in the real Build #947 client:
+- the New Drabyel north-road encounter can now reach a normal 3D battle and proceed through victory to the result screen
+- the battle arena/camera is visible rather than the earlier sky-only staging failure
+- a defeated road enemy remained in the arena indefinitely in its held death pose; the authored CV-B/C death clip lowers/rotates body bones and becomes visually broken when held forever
+- the result screen preserved all four party members but the fourth growth row intruded beyond the framed panel / footer area at the tested compact GUI viewport
+- the supplied error-only log contains repeated invalid vanilla/external resource model paths using `minecraft:item/spawn_egg_2D`; no TURNBOUND battle exception is present in that supplied excerpt, so those resource errors are not treated as the cause of either presentation issue
+
+Downed/revive presentation correction:
+- normal defeated enemies now play a short death beat and then retire from the 3D arena instead of occupying a slot as a permanent broken corpse
+- bosses retain a slightly longer defeat beat before retirement
+- recoverable non-summon allies play their authored down animation, then their model is hidden and the formation slot becomes a low in-world `전투불능 · 이름` recovery marker
+- the marker is presentation only; DEAD_ALLY_SINGLE targeting continues to use the same server-authoritative combatant/formation coordinates
+- on revive, the marker is removed and the actor becomes visible at the same slot with the existing authored revive/get-up animation and VFX
+- delayed/self-revive uses the same path
+- downed summons may retire visually and respawn with revive presentation when their state becomes living again
+- retired downed visuals are tracked so snapshot refreshes do not immediately respawn defeated actors
+
+Battle Result compact correction:
+- result layout now reserves a footer area for `현장 복귀` / inventory-cleanup controls
+- when four full growth rows cannot fit above that footer, party growth switches to a 2×2 compact grid
+- compact cells retain portrait, name, level transition / +Level, XP bar and XP text
+- large viewports keep the existing detailed single-column rows
+- pure layout tests pin the compact viewport and large viewport behavior
+
+This pass intentionally does not redesign rewards, progression or combat balance.
+
+Validation at implementation checkpoint:
+- CODE REVIEWED: YES
+- TESTED: PENDING Build TURNBOUND
+- BUILD VERIFIED: PENDING Build TURNBOUND
+- JAR PRODUCED: PENDING Build TURNBOUND
+- CLIENT RUNTIME TESTED: Build #947 YES for the reported battle/result path; new fixes NOT YET
+- PLAYTESTED: PARTIAL — New Drabyel opening battle reached victory/result on Build #947
+- MULTIPLAYER TESTED: NO
