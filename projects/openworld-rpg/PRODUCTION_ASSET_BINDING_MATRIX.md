@@ -451,6 +451,33 @@ Build Openworld RPG run `36669480301` at code state `39929bae72b56750f5ec87a79c3
 
 State: `RUNTIME_BOUND / PLAYER_SLOT_OPEN / BUILD_VERIFIED / PLAYTEST_PENDING`.
 
+### Hunter Skyfall runtime/presentation binding — 2026-09-30
+
+Hunter `Skyfall` is now player-slot published as the root Ultimate / Y with server-owned ground placement, Ultimate consumption, pulse damage/Poise, movement control and roof exposure.
+
+Locked gameplay contract:
+
+- radius 7.0 blocks;
+- duration 4.5 s;
+- maximum total physical ActionCoefficient per target 5.50;
+- total PoiseCoefficient 3.00;
+- movement while exposed: x0.75 normal/elite, x0.90 miniboss/boss;
+- shared Ultimate Gauge cost: 100 charge with the existing 35.0 s lockout.
+
+The damage contract is grouped into five server pulses. Each pulse carries ActionCoefficient 1.10 and PoiseCoefficient 0.60. Visible arrows are not treated as dozens of independent damage events, so presentation density cannot multiply damage or Poise beyond the locked totals.
+
+The field applies a dedicated transient MOVEMENT_SPEED modifier refreshed for two ticks while a target remains inside. Existing Pinning `Snared` is stronger and takes precedence: applying Snared removes the Skyfall modifier, and Skyfall's tick path keeps its modifier suppressed until Snared expires. This prevents multiplicative double-slow while preserving Skyfall if the target is still exposed afterward.
+
+Ground/ceiling authority is server-owned. The first meteor placement resolves a real ground collision surface within the aimed column, rejects targets outside the current 32-block delivery binding, and requires an unobstructed 12-block rain column. Each later visible arrow resolves its own nearby ground point inside the canonical radius and is discarded if its column is blocked. Damage candidates also require an unobstructed rain column above their body, preventing indoor damage through solid ceilings.
+
+Presentation deliberately reuses previously admitted assets instead of opening another asset-selection cycle: the KayKit Character Pack: Adventures arrow body is reused through the existing neutral Hunter projectile model, and pinned Spell Engine 26.2 supplies `spell_engine:archery_upwards_pull`, `spell_engine:archery_upwards_release` and `METEOR` transport. Archers 26.2 `rain_of_arrows` was inspected as a behavior/presentation reference only; its donor projectile/sound assets remain outside the project.
+
+Fifteen real visual arrows are distributed with deterministic golden-angle offsets that remain within the authoritative 7-block radius. Current 0.5 s wind-up, 32-block target range, 12-block launch height, velocity 1.5, six-tick launch spacing and 15-arrow density are playtest-tunable implementation bindings. Ultimate charge is spent only when sequence zero resolves a valid exposed ground placement; an invalid/roof-blocked first placement cancels the remaining visual sequence instead of consuming the gauge for a non-existent storm.
+
+Build Openworld RPG run `36672148957` at code state `cdcc51bff539a5dc77a0b53c4a068fb15cdbaaa3` passes unit tests/clean build, bootstrap JAR verification, core-profile dedicated server smoke, gameplay dependency server smoke, gameplay client startup, both playtest-JAR builds, Modrinth pack packaging and artifact upload.
+
+State: `RUNTIME_BOUND / PLAYER_SLOT_OPEN / BUILD_VERIFIED / PLAYTEST_PENDING`.
+
 ### Warrior root runtime binding delta — 2026-09-29
 
 Warrior root skills use the already Phase-F-shortlisted Kenney Particle Pack `slash_01.png` as a support material inside project-authored 3D slash/sector geometry. Exact committed bytes are taken from pinned corroboration repository `shorepine/kenney` commit `3694c6879e487c108f55677be7dd2ca75b07cc3b`, Git blob `c04fa2d3938827da63105172748851db86735aa6`, and are recorded under `external-assets/kenney-particle-pack/SOURCE.md`.

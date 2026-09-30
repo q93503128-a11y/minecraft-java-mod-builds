@@ -212,6 +212,15 @@ This avoids binding two actions to one key while also reducing accidental item l
 
 The mod must not silently overwrite an existing user's unrelated custom control scheme on every launch. On first profile creation it offers/apply-once the project control preset and reports conflicts; afterward the normal controls screen is authoritative.
 
+Implementation note — 2026-09-30:
+
+- project combat defaults are now registered as `Q / F / G / V / X / Y`; the earlier temporary Left Alt dodge binding is no longer the runtime default;
+- if vanilla Drop Item or Swap Offhand still shares the exact same physical Q/F mapping, the client consumes that vanilla quick-action click for the tick so one key press does not execute both the RPG action and the retired vanilla shortcut;
+- this collision suppression does **not** rewrite the user's saved key choices every launch and stops applying when the user rebinds either side to different keys;
+- the full first-profile preset offer/conflict-report screen described above is still not implemented;
+- the map is code/startup verified, not ergonomics-playtested. F/G/V/X form the frequent skill cluster; Y is intentionally separated because Ultimate is low-frequency. Q is fast to reach but shares the left-strafe finger path on a standard WASD posture, so diagonal-left dodge comfort must be judged in the joined-player playtest rather than assumed.
+
+
 ## 4.3 Navigation / world actions
 
 | Project action | Default |
