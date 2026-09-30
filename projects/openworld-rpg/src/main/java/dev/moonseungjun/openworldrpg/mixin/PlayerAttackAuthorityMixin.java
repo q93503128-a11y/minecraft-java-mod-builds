@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRun
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
@@ -92,12 +93,25 @@ public abstract class PlayerAttackAuthorityMixin {
             return false;
         }
 
-        double attackSpeedBonus = PlayerEquipmentService.state(attacker)
-                .aggregateAttackSpeedBonus();
+        double equipmentAttackSpeedBonus =
+                PlayerEquipmentService.state(attacker)
+                        .aggregateAttackSpeedBonus();
+        double classAttackSpeedBonus =
+                attacker instanceof ServerPlayer serverPlayer
+                        ? WarriorRootPassiveEffects
+                                .weaponRhythmAttackSpeedBonus(
+                                        serverPlayer,
+                                        WarriorSkillRuntime.momentumPips(
+                                                serverPlayer,
+                                                gameTick
+                                        )
+                                )
+                        : 0.0;
         if (!ProjectBasicAttackCadenceRuntime.authorize(
                 attacker.getUUID(),
                 build.equipment().weaponFamily(),
-                attackSpeedBonus,
+                equipmentAttackSpeedBonus,
+                classAttackSpeedBonus,
                 context.comboCount(),
                 livingTarget.getId(),
                 gameTick

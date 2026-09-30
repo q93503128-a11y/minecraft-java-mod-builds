@@ -30,18 +30,45 @@ public final class ProjectBasicAttackCadenceRuntime {
             int targetEntityId,
             long gameTick
     ) {
+        return authorize(
+                playerId,
+                family,
+                attackSpeedBonus,
+                0.0,
+                comboCount,
+                targetEntityId,
+                gameTick
+        );
+    }
+
+    public static boolean authorize(
+            UUID playerId,
+            ProjectWeaponFamily family,
+            double equipmentAttackSpeedBonus,
+            double classAttackSpeedBonus,
+            int comboCount,
+            int targetEntityId,
+            long gameTick
+    ) {
         if (playerId == null || family == null || comboCount < 0 || gameTick < 0L) {
             return false;
         }
-        if (!Double.isFinite(attackSpeedBonus)
-                || attackSpeedBonus < 0.0
-                || attackSpeedBonus > PlayerEquipmentLoadoutState.ATTACK_SPEED_GEAR_CAP
+        if (!Double.isFinite(equipmentAttackSpeedBonus)
+                || equipmentAttackSpeedBonus < 0.0
+                || equipmentAttackSpeedBonus
+                        > PlayerEquipmentLoadoutState.ATTACK_SPEED_GEAR_CAP
+                || !Double.isFinite(classAttackSpeedBonus)
+                || classAttackSpeedBonus < 0.0
+                || classAttackSpeedBonus > 1.0
                 || !ProjectBasicAttackRules.supportsBetterCombatMelee(family)) {
             return false;
         }
 
         double eventsPerSecond =
-                family.basicAttackEventsPerSecond() * (1.0 + attackSpeedBonus);
+                family.basicAttackEventsPerSecond()
+                        * (1.0
+                        + equipmentAttackSpeedBonus
+                        + classAttackSpeedBonus);
         double periodTicks = 20.0 / eventsPerSecond;
         return STATES.computeIfAbsent(playerId, ignored -> new SwingState())
                 .authorize(comboCount, targetEntityId, gameTick, periodTicks);

@@ -34,6 +34,42 @@ class ProjectBasicAttackCadenceRuntimeTest {
     }
 
     @Test
+    void classAttackSpeedBonusAlsoShortensAuthoritativeCadence() {
+        UUID player = UUID.randomUUID();
+        try {
+            assertTrue(ProjectBasicAttackCadenceRuntime.authorize(
+                    player,
+                    ProjectWeaponFamily.SWORD,
+                    0.0,
+                    0.06,
+                    0,
+                    1,
+                    0
+            ));
+            assertTrue(ProjectBasicAttackCadenceRuntime.authorize(
+                    player,
+                    ProjectWeaponFamily.SWORD,
+                    0.0,
+                    0.06,
+                    1,
+                    1,
+                    16
+            ));
+            assertTrue(ProjectBasicAttackCadenceRuntime.authorize(
+                    player,
+                    ProjectWeaponFamily.SWORD,
+                    0.0,
+                    0.06,
+                    2,
+                    1,
+                    31
+            ));
+        } finally {
+            ProjectBasicAttackCadenceRuntime.disconnect(player);
+        }
+    }
+
+    @Test
     void gearAttackSpeedShortensServerCadenceAndDualBladeEventsUseTwoHitCycleRate() {
         UUID swordPlayer = UUID.randomUUID();
         UUID dualPlayer = UUID.randomUUID();
