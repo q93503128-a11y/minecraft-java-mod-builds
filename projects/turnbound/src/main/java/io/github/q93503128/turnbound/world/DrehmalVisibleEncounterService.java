@@ -41,6 +41,8 @@ final class DrehmalVisibleEncounterService {
     private static final double PATROL_SPEED_MODIFIER = 0.72D;
     private static final double RETURN_SPEED_MODIFIER = 0.90D;
     private static final double ALERT_SPEED_MODIFIER = 1.05D;
+    private static final int PRESENTATION_DWELL_MIN_TICKS = 30;
+    private static final int PRESENTATION_DWELL_MAX_TICKS = 70;
     /** Party members farther than the encounter leash remain in field state; nobody is teleported in from afar. */
     private static final double SHARED_PARTICIPANT_RADIUS = FieldEncounterRules.HOME_LEASH_RADIUS;
     private static final Map<String, SharedEncounter> ENCOUNTERS = new LinkedHashMap<>();
@@ -167,6 +169,7 @@ final class DrehmalVisibleEncounterService {
         private UUID claimedBy;
         private FieldEncounterRules.Phase phase = FieldEncounterRules.Phase.PATROL;
         private boolean blockedArenaWarned;
+        private boolean blockedMaterializationWarned;
         private boolean missingVisualWarned;
 
         private SharedEncounter(
@@ -186,7 +189,10 @@ final class DrehmalVisibleEncounterService {
             this.pivot = vec(site.runtimePosition());
             this.returnTarget = pivot;
             this.lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(level, pivot.x, pivot.z) ? null : pivot;
-            this.patrolPoints = patrol == null ? List.of() : patrol.points().stream().map(DrehmalVisibleEncounterService::vec).toList();
+            List<DrehmalFirstRouteCatalog.Position> resolvedPatrol = patrol == null
+                    ? DrehmalAdaptiveRoutePlacement.fieldPresentationPatrol(level, site)
+                    : patrol.points();
+            this.patrolPoints = resolvedPatrol.stream().map(DrehmalVisibleEncounterService::vec).toList();
             this.roamPoints = patrolPoints.stream().map(point -> new FieldRoamPlanner.Point(point.x, point.z)).toList();
             this.roamSequence = slot.locator().hashCode();
         }
@@ -285,8 +291,7 @@ final class DrehmalVisibleEncounterService {
                     && patrolPoints.size() >= 2 && delta.lengthSqr() < 0.64D) {
                 stopLeadNavigation(level);
                 advancePatrolPoint();
-                patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
-                        patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
+                patrolDwellTicks = nextPatrolDwellTicks();
             } else if (delta.lengthSqr() > 0.01D && speed > 0.0D) {
                 walking = driveLeadNavigation(level, target, speed, physicalMovement);
             } else {
@@ -299,7 +304,7 @@ final class DrehmalVisibleEncounterService {
         private List<ServerPlayer> observers(ServerLevel level) {
             List<ServerPlayer> out = new ArrayList<>();
             double radiusSq = MATERIALIZE_RADIUS * MATERIALIZE_RADIUS;
-            Vec3 center = vec(site.runtimePosition());
+            Vec3 center = pivot;
             for (ServerPlayer player : level.players()) {
                 if (!ExternalWorldBootstrap.active(player) || BattleSessionManager.exists(player) || player.isSpectator()) continue;
                 if (player.position().distanceToSqr(center) > radiusSq) continue;
@@ -323,18 +328,34 @@ final class DrehmalVisibleEncounterService {
         }
 
         private boolean ensureActors(ServerLevel level) {
-            var sitePosition=site.runtimePosition();
-            if(sitePosition==null||!DrehmalAdaptiveRoutePlacement.sourceContentClear(
-                    level,sitePosition.x(),sitePosition.y(),sitePosition.z(),3.5D)){
-                discardActors(level);
-                return false;
-            }
+            // Once our own representative exists, keep it authoritative. Rechecking the cached survey origin every
+            // tick can falsely delete a valid proxy when source-map decoration entities finish loading later.
             if (actorsAlive(level)) return true;
+
             discardActors(level);
             if (adoptTagged(level)) {
+                blockedMaterializationWarned = false;
                 updateActors(level, false);
                 return true;
             }
+
+            var spawnPosition = DrehmalAdaptiveRoutePlacement.visibleActorPosition(level, site);
+            if (spawnPosition == null) {
+                if (!blockedMaterializationWarned) {
+                    Turnbound.LOGGER.warn(
+                            "TURNBOUND field representative {} remained dormant: no live safe materialization point",
+                            slot.locator());
+                    blockedMaterializationWarned = true;
+                }
+                return false;
+            }
+            Vec3 recoveredPivot = vec(spawnPosition);
+            if (pivot.distanceToSqr(recoveredPivot) > 0.25D) {
+                pivot = recoveredPivot;
+                returnTarget = recoveredPivot;
+                lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(level, pivot.x, pivot.z) ? null : pivot;
+            }
+            blockedMaterializationWarned = false;
 
             List<String> fieldIds = fieldRepresentativeIds();
             for (String defId : fieldIds) {
@@ -351,6 +372,12 @@ final class DrehmalVisibleEncounterService {
                 String defId = fieldIds.get(i);
                 BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, pivot, yawFor(facing));
                 if (actor == null) {
+                    if (!blockedMaterializationWarned) {
+                        Turnbound.LOGGER.warn(
+                                "TURNBOUND field representative {} failed entity insertion at {}, {}, {}",
+                                slot.locator(), pivot.x, pivot.y, pivot.z);
+                        blockedMaterializationWarned = true;
+                    }
                     discardActors(level);
                     return false;
                 }
@@ -364,6 +391,7 @@ final class DrehmalVisibleEncounterService {
                 actor.addTag(SLOT_TAG_PREFIX + i);
                 actors.add(actor.getUUID());
             }
+            blockedMaterializationWarned = false;
             updateActors(level, false);
             return true;
         }
@@ -475,11 +503,19 @@ final class DrehmalVisibleEncounterService {
             }
         }
 
+        private int nextPatrolDwellTicks() {
+            if (patrolPoints.size() < 2) return 0;
+            if (patrol != null) {
+                return FieldRoamPlanner.dwellTicks(
+                        patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
+            }
+            return FieldRoamPlanner.dwellTicks(
+                    PRESENTATION_DWELL_MIN_TICKS, PRESENTATION_DWELL_MAX_TICKS, ++roamSequence);
+        }
+
         private List<String> fieldRepresentativeIds() {
-            // Schema v1 keeps a count field for compatibility, but production validation pins it to one.
-            // The world silhouette is a contact proxy; the full combat encounter expands independently after contact.
-            int count = Math.max(1, Math.min(slot.fieldVisibleCount(), spec.enemies().size()));
-            return spec.enemies().subList(0, count);
+            // Production validation pins fieldVisibleCount to one; battle composition expands independently on contact.
+            return spec.enemies().isEmpty() ? List.of() : List.of(spec.enemies().getFirst());
         }
 
         private void updateActors(ServerLevel level, boolean walking) {
@@ -540,8 +576,7 @@ final class DrehmalVisibleEncounterService {
                 stopLeadNavigation(level);
                 if (blockedPatrol) {
                     advancePatrolPoint();
-                    patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
-                            patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
+                    patrolDwellTicks = nextPatrolDwellTicks();
                 }
                 return false;
             }
@@ -607,8 +642,7 @@ final class DrehmalVisibleEncounterService {
             returnTarget = pivot;
             lastSafePivot = DrehmalFirstRouteRuntime.insideSafetyZone(level, pivot.x, pivot.z) ? null : pivot;
             patrolIndex = 0;
-            patrolDwellTicks = patrol == null ? 0 : FieldRoamPlanner.dwellTicks(
-                    patrol.dwellMinTicks(), patrol.dwellMaxTicks(), ++roamSequence);
+            patrolDwellTicks = nextPatrolDwellTicks();
             lastMoveTarget = null;
             lastMoveCommandTick = FieldNavigationRules.NEVER;
             navigationStalledSinceTick = FieldNavigationRules.NEVER;
