@@ -45,6 +45,19 @@ class ProjectProgressionRulesTest {
     }
 
     @Test
+    void passiveRespecGoldCostMatchesCanonFormulaAndCaps() {
+        assertEquals(50L, ProjectProgressionRules.passiveRespecGoldCost(8));
+        assertEquals(100L, ProjectProgressionRules.passiveRespecGoldCost(20));
+        assertEquals(260L, ProjectProgressionRules.passiveRespecGoldCost(40));
+        assertEquals(480L, ProjectProgressionRules.passiveRespecGoldCost(60));
+        assertEquals(500L, ProjectProgressionRules.passiveRespecGoldCost(80));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ProjectProgressionRules.passiveRespecGoldCost(0)
+        );
+    }
+
+    @Test
     void classXpCurveMatchesCanonAnchors() {
         assertEquals(120L, ProjectProgressionRules.classXpToNext(1));
         assertEquals(250L, ProjectProgressionRules.classXpToNext(5));

@@ -1,0 +1,925 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "openworld_rpg:passive/warrior/root/steel_nerve",
+      "name": "Steel Nerve",
+      "root_class": "warrior",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/root/tireless_combatant",
+      "name": "Tireless Combatant",
+      "root_class": "warrior",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/root/weapon_rhythm",
+      "name": "Weapon Rhythm",
+      "root_class": "warrior",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/root/crushing_intent",
+      "name": "Crushing Intent",
+      "root_class": "warrior",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/root/held_momentum",
+      "name": "Held Momentum",
+      "root_class": "warrior",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/root/counterforce",
+      "name": "Counterforce",
+      "root_class": "warrior",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/root/battle_temper",
+      "name": "Battle Temper",
+      "root_class": "warrior",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/forward_pressure",
+      "name": "Forward Pressure",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/onslaught_rhythm",
+      "name": "Onslaught Rhythm",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/break_lines",
+      "name": "Break Lines",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/rending_edge",
+      "name": "Rending Edge",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/unbroken_advance",
+      "name": "Unbroken Advance",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/fuel_the_assault",
+      "name": "Fuel the Assault",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/overrun",
+      "name": "Overrun",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/vanguard/siegebreaker",
+      "name": "Siegebreaker",
+      "root_class": "warrior",
+      "specialization": "warrior_vanguard",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/keen_guard",
+      "name": "Keen Guard",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/riposte_edge",
+      "name": "Riposte Edge",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/measured_blows",
+      "name": "Measured Blows",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/weapon_familiarity",
+      "name": "Weapon Familiarity",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/calm_momentum",
+      "name": "Calm Momentum",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/exacting_edge",
+      "name": "Exacting Edge",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/perfect_measure",
+      "name": "Perfect Measure",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/warrior/armsmaster/master_at_arms",
+      "name": "Master at Arms",
+      "root_class": "warrior",
+      "specialization": "warrior_armsmaster",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/root/keen_eye",
+      "name": "Keen Eye",
+      "root_class": "hunter",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/root/light_step",
+      "name": "Light Step",
+      "root_class": "hunter",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/root/efficient_draw",
+      "name": "Efficient Draw",
+      "root_class": "hunter",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/root/quarry_pressure",
+      "name": "Quarry Pressure",
+      "root_class": "hunter",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/root/focus_retention",
+      "name": "Focus Retention",
+      "root_class": "hunter",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/root/weakpoint_study",
+      "name": "Weakpoint Study",
+      "root_class": "hunter",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/root/trail_sense",
+      "name": "Trail Sense",
+      "root_class": "hunter",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/skirmishers_step",
+      "name": "Skirmisher's Step",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/trapcraft",
+      "name": "Trapcraft",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/ricochet",
+      "name": "Ricochet",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/field_focus",
+      "name": "Field Focus",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/mobile_quarry",
+      "name": "Mobile Quarry",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/lightfoot",
+      "name": "Lightfoot",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/trailblazer",
+      "name": "Trailblazer",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/ranger/pack_hunt",
+      "name": "Pack Hunt",
+      "root_class": "hunter",
+      "specialization": "hunter_ranger",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/steady_aim",
+      "name": "Steady Aim",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/longshot",
+      "name": "Longshot",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/penetrating_force",
+      "name": "Penetrating Force",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/measured_breath",
+      "name": "Measured Breath",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/focused_quarry",
+      "name": "Focused Quarry",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/critical_window",
+      "name": "Critical Window",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/one_shot",
+      "name": "One Shot",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/hunter/marksman/executioner",
+      "name": "Executioner",
+      "root_class": "hunter",
+      "specialization": "hunter_marksman",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/root/wellspring",
+      "name": "Wellspring",
+      "root_class": "cleric",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/root/mercy",
+      "name": "Mercy",
+      "root_class": "cleric",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/root/sacred_guard",
+      "name": "Sacred Guard",
+      "root_class": "cleric",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/root/resolute_faith",
+      "name": "Resolute Faith",
+      "root_class": "cleric",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/root/lingering_grace",
+      "name": "Lingering Grace",
+      "root_class": "cleric",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/root/balanced_service",
+      "name": "Balanced Service",
+      "root_class": "cleric",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/root/living_doctrine",
+      "name": "Living Doctrine",
+      "root_class": "cleric",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/gentle_hands",
+      "name": "Gentle Hands",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/overflowing_light",
+      "name": "Overflowing Light",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/sanctuary_keeper",
+      "name": "Sanctuary Keeper",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/aegis",
+      "name": "Aegis",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/purifying_grace",
+      "name": "Purifying Grace",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/benediction",
+      "name": "Benediction",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/saving_grace",
+      "name": "Saving Grace",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/saint/shared_light",
+      "name": "Shared Light",
+      "root_class": "cleric",
+      "specialization": "cleric_saint",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/judgment",
+      "name": "Judgment",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/smitecraft",
+      "name": "Smitecraft",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/battle_mercy",
+      "name": "Battle Mercy",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/lasting_brand",
+      "name": "Lasting Brand",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/condemn",
+      "name": "Condemn",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/zeal",
+      "name": "Zeal",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/verdict",
+      "name": "Verdict",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/cleric/inquisitor/penance",
+      "name": "Penance",
+      "root_class": "cleric",
+      "specialization": "cleric_inquisitor",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/mage/root/deep_well",
+      "name": "Deep Well",
+      "root_class": "mage",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/root/arcane_efficiency",
+      "name": "Arcane Efficiency",
+      "root_class": "mage",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/root/spell_edge",
+      "name": "Spell Edge",
+      "root_class": "mage",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/root/quick_sigils",
+      "name": "Quick Sigils",
+      "root_class": "mage",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/root/weave_memory",
+      "name": "Weave Memory",
+      "root_class": "mage",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/mage/root/triune_study",
+      "name": "Triune Study",
+      "root_class": "mage",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/mage/root/resonant_mind",
+      "name": "Resonant Mind",
+      "root_class": "mage",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/firecraft",
+      "name": "Firecraft",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/frostcraft",
+      "name": "Frostcraft",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/stormcraft",
+      "name": "Stormcraft",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/conduction",
+      "name": "Conduction",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/elemental_memory",
+      "name": "Elemental Memory",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/confluence",
+      "name": "Confluence",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/triad",
+      "name": "Triad",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/mage/elementalist/elemental_heart",
+      "name": "Elemental Heart",
+      "root_class": "mage",
+      "specialization": "mage_elementalist",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/arcane_power",
+      "name": "Arcane Power",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/phasecraft",
+      "name": "Phasecraft",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/binding_formula",
+      "name": "Binding Formula",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/orbital_theory",
+      "name": "Orbital Theory",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/weave_precision",
+      "name": "Weave Precision",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/rift_efficiency",
+      "name": "Rift Efficiency",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/continuum",
+      "name": "Continuum",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/mage/arcanist/singularity",
+      "name": "Singularity",
+      "root_class": "mage",
+      "specialization": "mage_arcanist",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/root/bulwark",
+      "name": "Bulwark",
+      "root_class": "guardian",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/root/enduring_guard",
+      "name": "Enduring Guard",
+      "root_class": "guardian",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/root/shieldcraft",
+      "name": "Shieldcraft",
+      "root_class": "guardian",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/root/protective_force",
+      "name": "Protective Force",
+      "root_class": "guardian",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/root/resolve_keeper",
+      "name": "Resolve Keeper",
+      "root_class": "guardian",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/root/defiant_retort",
+      "name": "Defiant Retort",
+      "root_class": "guardian",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/root/stand_together",
+      "name": "Stand Together",
+      "root_class": "guardian",
+      "specialization": null,
+      "tier": "ROOT",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/wallcraft",
+      "name": "Wallcraft",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/guarded_ground",
+      "name": "Guarded Ground",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/heavy_stance",
+      "name": "Heavy Stance",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/provocation",
+      "name": "Provocation",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/shared_shield",
+      "name": "Shared Shield",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/resolve_fortification",
+      "name": "Resolve Fortification",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/living_wall",
+      "name": "Living Wall",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/bastion/citadel",
+      "name": "Citadel",
+      "root_class": "guardian",
+      "specialization": "guardian_bastion",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/retaliation",
+      "name": "Retaliation",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/denial",
+      "name": "Denial",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "I",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/intercept",
+      "name": "Intercept",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/vigilance",
+      "name": "Vigilance",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "II",
+      "max_rank": 3
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/guard_rhythm",
+      "name": "Guard Rhythm",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/zone_control",
+      "name": "Zone Control",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "III",
+      "max_rank": 2
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/watchful",
+      "name": "Watchful",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    },
+    {
+      "id": "openworld_rpg:passive/guardian/sentinel/no_passage",
+      "name": "No Passage",
+      "root_class": "guardian",
+      "specialization": "guardian_sentinel",
+      "tier": "CAPSTONE",
+      "max_rank": 1
+    }
+  ]
+}

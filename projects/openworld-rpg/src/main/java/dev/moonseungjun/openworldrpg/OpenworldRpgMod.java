@@ -27,6 +27,8 @@ import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementAttachments;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementService;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassMilestoneAttachments;
+import dev.moonseungjun.openworldrpg.progression.PlayerPassiveProgressAttachments;
+import dev.moonseungjun.openworldrpg.progression.PlayerPassiveProgressService;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchAttachments;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
@@ -102,6 +104,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerClassSwitchAttachments.initialize();
         PlayerClassAdvancementAttachments.initialize();
         PlayerClassMilestoneAttachments.initialize();
+        PlayerPassiveProgressAttachments.initialize();
         ProjectCombatNetworking.initialize();
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
@@ -179,6 +182,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 PlayerClassSwitchService.reconcilePending(handler.getPlayer());
                 PlayerClassAdvancementService.reconcilePendingBranchSwitch(
+                        handler.getPlayer()
+                );
+                PlayerPassiveProgressService.reconcilePending(
                         handler.getPlayer()
                 );
             }
