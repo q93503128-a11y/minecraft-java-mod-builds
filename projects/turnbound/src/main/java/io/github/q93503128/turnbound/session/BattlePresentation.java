@@ -553,7 +553,7 @@ final class BattlePresentation {
         Component actorName=actor!=null&&actor.getCustomName()!=null?actor.getCustomName():Component.literal("아군");
         ArmorStand marker=new ArmorStand(level,home.x,home.y-.72D,home.z);
         marker.setInvisible(true);marker.setInvulnerable(true);marker.setNoGravity(true);setSmall(marker);
-        marker.setItemSlot(EquipmentSlot.HEAD,Items.CHISELED_STONE_BRICKS.getDefaultInstance());
+        marker.setItemSlot(EquipmentSlot.HEAD,Items.SKELETON_SKULL.getDefaultInstance());
         ChatFormatting markerColor=sides.get(id)==CombatantSide.ENEMY?ChatFormatting.RED:ChatFormatting.GRAY;
         marker.setCustomName(Component.literal("전투불능 · ").append(actorName).withStyle(markerColor));
         marker.setCustomNameVisible(true);
