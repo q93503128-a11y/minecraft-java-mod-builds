@@ -351,6 +351,52 @@ Required screens:
 - route/pier UI.
 - village notice-board schedule/detail UI.
 
+### Rounded/cozy GUI resource candidates
+
+The preferred Campfire visual direction is a friendly rounded life-sim UI, with Animal Crossing-like softness as a reference only.
+Do not copy Nintendo's exact icons, layouts or branding.
+
+**Round Up**
+- Minecraft 26.2 compatible resource pack.
+- makes the whole game UI rounder/cleaner.
+- MIT project page, with additional private/modpack redistribution terms that must be respected.
+- strong first candidate for the baseline vanilla inventory/container shape language because it already targets the exact "rounder UI" requirement.
+- test actual slot readability, container coverage, font compatibility and modded-screen consistency before adoption.
+
+**Pure UI**
+- Minecraft 26.2 compatible.
+- covers inventory, crafting, furnace, chest, enchanting, anvil, shulker, recipe book, hotbar and buttons.
+- also advertises support for Sophisticated Storage / Sophisticated Backpacks among other mods.
+- ARR licensed; treat as an installable/reference resource pack, not something to copy into Campfire.
+- strong comparison candidate if its rounded/simple visual density fits better than Round Up.
+
+**CozyUI+**
+- excellent visual reference for soft pastel/rounded GUI and broad mod-UI restyling.
+- current official compatibility listed through 1.21.10 rather than Minecraft 26.2.
+- GPL-3.0-only.
+- do NOT treat as a current 26.2 dependency unless compatibility is directly proven later.
+- use as a visual/reference benchmark for cozy proportions, borders, slots and mod-screen consistency.
+
+**Better GUI for Sophisticated Backpacks**
+- a 26.2-compatible resource pack exists specifically to give Sophisticated Backpacks a CozyUI-like presentation.
+- GPLv3.
+- particularly relevant if Campfire adopts Sophisticated Backpacks, because it can prevent the backpack screen from visually breaking away from the cozy inventory language.
+- evaluate together with the chosen baseline GUI pack rather than stacking blindly.
+
+Selection workflow:
+1. install/test Round Up and Pure UI independently on the real 26.2 Campfire client.
+2. compare inventory slot shape, text readability, GUI scale behavior and compatibility with chosen storage/tool mods.
+3. use CozyUI+ as visual-reference material even if it cannot be adopted directly on 26.2.
+4. pick one baseline visual family.
+5. adapt Campfire-specific M/menu/dialogue/calendar screens to that family using external assets/frameworks.
+6. do not combine multiple full GUI reskins if they fight each other.
+
+Inventory-specific rule:
+- rounded slots are desirable.
+- keep slot boundaries readable and selection/favorite/locked states unambiguous.
+- do not enlarge slots excessively just to emphasize roundness.
+- inventory capacity and information density remain practical.
+
 ### Unified M-menu / UI framework candidates
 
 The M-key menu is a Campfire life-information hub, not a remote replacement for physical village interactions.
