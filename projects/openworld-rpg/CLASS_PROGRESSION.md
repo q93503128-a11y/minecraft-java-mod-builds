@@ -1237,3 +1237,50 @@ Remaining work is integration/production validation rather than a new class-prog
 - any regional encounter binding that changes only because its accepted external boss/creature asset changes must update this file at the same time as the owning regional canon.
 
 The frequent-action key map, accessibility/difficulty contract and current global status/element baseline are already owned by their dedicated active canon. Do not reopen those as generic `next class-progression work`.
+
+---
+
+# 25. Runtime implementation status — 2026-09-30
+
+The first specialization/branch-authority slice is now implemented without changing the canon above.
+
+Implemented:
+
+- persistent server-owned identities for all ten first specializations;
+- first specialization trial acceptance only for the currently active root class at Class Rank 10+;
+- the first unlocked specialization activates immediately and does not remove root skills;
+- sibling specialization unlock is blocked until Class Rank 20+ and completion of that sibling's specialization trial;
+- unlocking the sibling does not silently switch the active branch;
+- canonical branch-switch Gold formula `round_to_10(max(150, min(1500, 0.60 * SwitchCost(L))))`;
+- server-side branch switching requires an already-unlocked sibling, the matching active root, an approved class-facility context and out-of-combat acceptance;
+- branch-switch Gold debit is idempotent and the pending transaction is persisted/reconciled across reconnect;
+- codec round-trip and branch-state invariants are unit tested;
+- join reconciliation is registered in the normal runtime.
+
+Verification:
+
+```text
+CODE STATE: 18634fb28d8fdb2af308a00f43af5fc60f28ff06
+BUILD OPENWORLD RPG RUN: 36678731893
+UNIT TESTS: PASS
+CLEAN BUILD: PASS
+JAR VERIFY: PASS
+CORE SERVER SMOKE: PASS
+GAMEPLAY DEPENDENCY SERVER SMOKE: PASS
+GAMEPLAY CLIENT STARTUP: PASS
+JAR/PLAYTEST ARTIFACT PACKAGING: PASS
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+Still separate implementation work:
+
+- Rank-20 technique milestone state and branch-active runtime;
+- Rank-32 doctrine unlock/selection and effects;
+- Rank-44 ascendant mechanic/ultimate-augment state and effects;
+- Rank-50 Deep Mastery completion;
+- Passive Point / Insight / allocation / respec authority and passive runtime consumers;
+- specialization/class-screen UI and final icon/animation/VFX bindings.
+
+Do not treat the persistent branch state above as evidence that those later progression layers are already implemented.
+
