@@ -122,6 +122,17 @@ SPD는 action economy이므로 ATK +10%와 동일한 값으로 평가하지 않�
 
 단순 “Basic보다 숫자가 큼”만으로 CD3~4를 만들지 않는다.
 
+### Revive tempo
+부활의 HP만 보고 밸런스를 끝내지 않는다. 복귀 직후의 **Turn Gauge**도 부활 성능의 일부다.
+
+- 일반 수동 부활은 대상 캐릭터별 `reviveStartGauge`를 사용한다.
+- 같은 부활 스킬도 느린 탱커와 빠른 서포터가 똑같은 순서로 돌아오지 않는다.
+- 부활 스킬 자체의 Gauge 보너스는 대상의 복귀 Gauge 위에 더하는 별도 효과다.
+- 지연 자가 부활은 이미 행동 몇 회를 기다렸다는 비용을 고려해 일반 수동 부활보다 빠르게 복귀할 수 있다.
+- 치명타를 받는 즉시 1회 자동 부활하는 signature passive는 충분한 power budget을 지불하면 `REVIVE_IMMEDIATE_TURN`으로 Gauge 1000을 받아 바로 행동하는 archetype을 허용한다.
+- 즉시 행동형은 모든 부활의 기본값이 아니다. HP 복구량, 발동 횟수, 사전 지연, 버프/무적, 쿨타임과 함께 묶어 평가한다.
+- Gauge overflow 규칙은 기존 TurnScheduler를 그대로 따른다.
+
 ### Reaction
 Reaction은 무료 행동이므로:
 - raw potency를 낮게 시작
