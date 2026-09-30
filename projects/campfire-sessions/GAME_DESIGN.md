@@ -135,6 +135,29 @@ Direction:
 
 Local Custom Music remains a player-side/custom feature and should not automatically become the canonical NPC performance catalogue unless multiplayer availability/sync is explicitly solved.
 
+### Contextual BGM direction
+The existing Campfire music foundation should support authored world-state music rather than functioning only as a manual player.
+
+Possible context families:
+- village daytime.
+- village evening/night.
+- rain/storm ambience/music where appropriate.
+- beach/harbor.
+- café/interior.
+- festival/event.
+- special musician performance.
+- dangerous exploration area.
+
+Rules:
+- do not switch tracks every time the player crosses a tiny boundary.
+- prefer finishing the current phrase/track or using a short clean fade when the context changes.
+- establish minimum hold/cooldown rules so rapidly moving between adjacent zones does not cause music churn.
+- priority contexts such as festival/performance may temporarily override ordinary village music.
+- nearby multiplayer players should hear coherent shared event/performance playback where the music is world-based.
+- Local Custom Music remains player-controlled and is not automatically inserted into canonical world-state BGM.
+
+Final transition timing, crossfade behavior and context table should be tuned against the actual bundled track lengths/BPM metadata and playtest feel.
+
 ### Lightweight multiplayer jam sessions
 Players who own guitars may join the same bundled-track performance session.
 
@@ -895,6 +918,26 @@ Schedules react to:
 - hobbies.
 - current events.
 
+### Ambient speech bubbles / reaction icons
+Resident-to-resident activity should be readable without forcing the nearby player into a full dialogue screen.
+
+Use small external-UI-based speech/reaction indicators for ambient interactions such as:
+- residents chatting.
+- greeting.
+- surprise.
+- laughter.
+- annoyance.
+- shared activity reactions.
+
+These indicators:
+- appear briefly above/near the relevant resident.
+- do not require player input.
+- use short text fragments, symbols or emotion icons rather than full dialogue paragraphs.
+- never replace the normal full dialogue UI when the player actively speaks to the resident.
+- should remain sparse enough that a busy plaza does not become a cloud of overlapping bubbles.
+
+Prefer external icon/UI assets and test readability at real Minecraft camera distances.
+
 ### Schedule strictness
 Resident scheduling should use broad authored time blocks and weighted activity choices rather than brittle minute-by-minute choreography.
 
@@ -1310,6 +1353,34 @@ Current direction:
 - if no strong external dedicated fish/insect container exists, use the selected external backpack system and add only the smallest Campfire-specific category/filter layer needed rather than building an entire parallel inventory framework.
 - house storage is a major separate storage solution.
 
+### Catch auto-routing and full-inventory handling
+Freshly caught specimens should use the most appropriate owned portable container before consuming ordinary inventory slots.
+
+Routing priority:
+1. compatible equipped/carried specialized container such as fish container, insect/bug container or sea-life container.
+2. eligible general specimen/storage backpack with the correct Campfire filter/category.
+3. normal player inventory.
+4. only when all valid storage is full, open a short non-destructive resolution prompt.
+
+The routing is server-authoritative and must preserve all specimen data such as species, size, color/pattern and special variant.
+
+When no capacity remains, do **not** silently drop or despawn the catch.
+Use a compact cozy life-sim-style choice UI based on the selected external rounded UI family. Baseline actions:
+- **Organize Bag**: open the relevant inventory/container management view.
+- **Swap Item**: choose an existing eligible item/stack to move/drop/store while keeping the new catch safe during the decision.
+- **Safe Temporary Hold**: place the newly acquired important specimen in a short-term recoverable holding state rather than the ground.
+
+The exact labels/icon arrangement should follow the adopted external UI reference rather than literal large text buttons.
+This prompt must remain small, readable and non-combat-like, with rounded slots/panels consistent with the rest of Campfire.
+
+Temporary holding is a safety net, not extra free storage:
+- capacity is deliberately small.
+- contents remain clearly visible/recoverable.
+- the player must resolve them through a valid container/home/Lost & Found flow.
+- it must not become an infinite portable inventory exploit.
+
+Ordinary low-value materials may use simpler full-inventory behavior, but rare specimens, photographs, unique/event items and other protected acquisitions must never vanish because the inventory was full.
+
 ### Specimen stacking
 Collected fish, bugs, sea creatures and other individualized specimens carry gameplay-relevant specimen data.
 
@@ -1385,6 +1456,18 @@ Lost & Found may also receive:
 
 Ordinary low-value materials/resources may still use normal cleanup/despawn rules after a reasonable grace period so the world cannot accumulate infinite dropped entities.
 Lost & Found is data-backed and should not be exploitable as infinite deliberate storage; repeated junk abuse can be rejected/condensed while important items remain recoverable.
+
+### Recycling / declutter service
+Provide a physical village/home-adjacent declutter/recycling service for unwanted ordinary furniture, clothing and selected common items.
+
+Direction:
+- physical interaction point, not an M-menu remote delete button.
+- ordinary items may return a small amount of money/material or simply be accepted for clean disposal depending on balance.
+- valuable/event/unique/favorited/protected items require an extra confirmation or are rejected while locked.
+- recycling must not outperform normal shop selling as a money strategy.
+- no hidden random reward loop that encourages mass-trash farming.
+
+Use an external prop/container/service presentation where possible so it feels like part of the village rather than a developer trash can.
 
 ## 17. Calendar, time and sleep
 
@@ -2223,6 +2306,18 @@ Clothing and visible exploration gear should be **external-asset-first**:
 Prefer a system that can separate visible outfit from functional protection so players do not have to choose between stats and the intended life-sim look.
 The actual adopted outfit/armor models must fit the final player-animation stack and not break guitar, sitting, fishing or photo poses.
 
+### Player rain / umbrella presentation
+Players should visually participate in weather rather than only watching residents react.
+
+When supported by the final external clothing/animation assets:
+- umbrellas can be equipped/opened in rain.
+- raincoats or rain outfits can be worn normally.
+- walking/idle posture should align with an open umbrella rather than clipping through the body.
+- umbrellas are primarily lifestyle presentation, not a major stat system.
+- stronger storms may influence umbrella animation/audio, but do not turn rain into durability management.
+
+Prefer high-quality external umbrella/rainwear assets and compatible player animation before authoring a custom set.
+
 ### Saved outfit presets
 The wardrobe may store a small set of player-created outfit presets for quick changing.
 
@@ -2488,6 +2583,25 @@ The project pool should mix functional and decorative changes, for example:
 Only a limited subset should be mandatory progression.
 Most public projects should remain elective village-development goals so the game does not become one long linear infrastructure checklist.
 
+### Community garden
+The village may include a modest shared community garden distinct from private player yards.
+
+Purpose:
+- visible shared care/activity space.
+- common seasonal plants/flowers/crops.
+- resident activity destination.
+- small multiplayer cooperation opportunity.
+- optional public-project expansion/decoration.
+
+Rules:
+- it does not become the strongest money farm.
+- rare crops/specimens should not be monopolized behind the community plot.
+- shared harvest rules follow normal shared-world resource principles.
+- residents may water/tend presentation slots without silently taking player-important harvests.
+- expansion/decoration can be a public project when the final map supports the footprint.
+
+Use the final inspected map to choose its location/size rather than assuming a large farm area in advance.
+
 ### Active project and contribution history
 Resident services can present the currently available public-project options.
 The village may designate one **active funding project** at a time so contributions are easy to understand and the village does not scatter money across many half-funded projects.
@@ -2551,6 +2665,20 @@ Functional furniture where appropriate:
 - mirrors → appearance/clothing.
 - music devices → music.
 - TVs → limited entertainment/presentation if worthwhile.
+
+### Home lighting scenes
+When a home contains multiple compatible lights, allow simple player-defined lighting scenes rather than requiring every lamp to be toggled individually.
+
+Possible presets:
+- All On.
+- All Off.
+- Evening.
+- Sleep.
+- custom saved scene where technically clean.
+
+The control is accessed from a physical home switch/control object or equivalent interior interaction, not the M-menu.
+Only lights inside the relevant home/interior scope participate.
+Use the adopted external lighting/furniture system's capabilities where possible rather than building a parallel smart-home simulation.
 
 Do not force functionality onto every decorative object.
 
@@ -2879,6 +3007,24 @@ Priorities:
 - dialogue progression is quick and responsive.
 
 Do not use generic black translucent rectangles and default Minecraft buttons as the final dialogue presentation.
+
+### Keybind integration
+Every Campfire input must register through Minecraft's normal configurable Controls/key-mapping system.
+
+This includes current/future actions such as:
+- M life menu.
+- lifestyle tool wheel.
+- emote wheel.
+- camera/photo action where Campfire owns the key.
+- music controls where retained.
+- other direct gameplay shortcuts.
+
+Rules:
+- no hard-coded hidden keys that cannot be rebound.
+- detect/report conflicts with vanilla and installed-mod mappings where the platform exposes them.
+- provide sensible recommended defaults without silently overwriting the player's existing mappings.
+- external dependency keybinds should be integrated/documented rather than creating duplicate Campfire actions for the same behavior.
+- keep the number of mandatory direct keys low; prefer contextual actions/one hub key when practical.
 
 ### Accessibility and comfort
 Accessibility options should be part of the real UI system from the beginning, not added only at the end.
