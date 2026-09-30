@@ -269,6 +269,23 @@ Map discovery rules:
 - discovered landmarks then persist on that player's map/records unless the landmark itself is intentionally temporary.
 - map hints from residents/treasure clues may reveal a rough area without automatically marking the exact final location.
 
+### Personal map markers
+Players may add a small number of personal map pins/markers to already known map areas.
+
+Use a curated external icon set/categories such as:
+- fishing.
+- gathering.
+- mushroom/plant.
+- photo spot.
+- reminder/star.
+- generic custom marker.
+
+Markers are primarily personal.
+Optional sharing with friends/Household may exist, but sharing is explicit rather than automatic.
+
+Do not turn the map into a technical waypoint manager dominated by XYZ coordinates, beams or HUD arrows.
+The marker system should feel like annotating a life-sim map.
+
 Do not put a permanent minimap/GPS overlay on the HUD by default.
 Live player/NPC tracking is not assumed; only add selective location indicators where they improve a specific social/travel feature without turning the island into a tracking screen.
 
@@ -621,6 +638,19 @@ After choosing a preset, the owner can individually allow/deny specific capabili
 The UI should clearly show when a granular override differs from the selected preset.
 Changing the preset may offer to reset overrides or preserve them, but must never silently broaden access beyond what the owner expects.
 
+### Home door / current access state
+Guest permissions define **what a visitor may do after entering**.
+A separate simple door/access state defines **who may enter right now**.
+
+Baseline states:
+- Open / allowed guests may enter according to their guest permission.
+- Friends / explicitly approved non-Household guests only.
+- Household Only.
+- Locked / owner-Household controlled access only, with no ordinary guest entry.
+
+The exact naming can follow the final UI language, but keep this separate from the detailed permission matrix.
+Changing the door state must be quick at the home's physical entrance/interior control point and should not require opening the M-menu.
+
 ## 9. Player-building restrictions and protection
 
 ### Vanilla-survival boundary
@@ -793,6 +823,26 @@ Each authored resident should combine:
 
 The combination is an authoring tool for character variety, not a reason to procedurally randomize personalities every save.
 
+### Resident safety / playful tool reactions
+Animal residents are not ordinary combat targets.
+
+Rules:
+- normal player attacks do **zero health damage** to residents.
+- residents cannot be killed, farmed for drops, set on fire to death, pushed into lethal hazards for rewards, or otherwise treated as survival mobs.
+- hostile exploration combat systems should not accidentally retarget ordinary village residents.
+- resident state/relationship changes caused by interactions are server-authoritative.
+
+Selected lifestyle-tool interactions may still create harmless social reactions.
+Example direction:
+- a bug net can lightly bonk a resident.
+- no HP is lost and no combat knockback chain starts.
+- the resident plays a brief startled/annoyed animation and contextual line.
+- repeated harassment within a short period can make the resident visibly angry, refuse casual chat for a short in-game interval, or apply a **small** relationship penalty.
+- one accidental playful hit should not meaningfully damage a long-term relationship.
+- this behavior is social comedy, not a hidden combat mechanic.
+
+Do not allow swords, axes, bows or exploration weapons to become alternate ways to trigger the same 'funny bonk' interaction; keep playful reactions tied to explicitly approved lifestyle interactions.
+
 ### Resident life
 Residents actually use the village.
 Possible activities:
@@ -828,6 +878,18 @@ Important work shifts for staffed facilities may be more fixed.
 
 If pathing fails or a resident becomes badly desynchronized, recovery should prefer safe correction while the resident is not visibly being watched rather than obvious repeated teleporting in front of players.
 
+### Resident/player collision and obstruction
+Residents should feel physically present without becoming door-blocking obstacles.
+
+Direction:
+- residents yield/repath when a player needs to pass through narrow doors, counters or paths.
+- avoid strong vanilla-style body shoving that lets players push residents long distances or into hazards.
+- short local avoidance and stepping aside are preferred.
+- if a resident remains irrecoverably stuck for a defined interval, use an authored safe-position correction when it can happen unobtrusively.
+- seated/working residents may keep their authored anchor when enough alternate walking space exists.
+
+Do not make players wait for long NPC path queues just to enter their own home/shop.
+
 ### Dialogue repetition control
 Resident dialogue quality depends on avoiding obvious repetition.
 Use data-driven dialogue pools with context tags such as:
@@ -862,6 +924,24 @@ Higher relationship can unlock:
 - gifts.
 - photos/keepsakes.
 - personal favors.
+
+### Resident visits to player homes
+Friendly residents may occasionally ask to visit a player's home.
+
+Preferred flow:
+resident asks / sends an invitation context
+→ player accepts or declines
+→ visit occurs in a suitable time window
+→ resident walks/enters through the normal home transition
+→ resident looks around, sits, comments on suitable furniture/decor, listens to music or uses approved social furniture
+→ player can naturally end the visit.
+
+Rules:
+- no surprise forced entry while the player is decorating, sleeping or away.
+- visits respect the home's current access/door state.
+- residents never move, remove, claim or permanently alter player furniture during a normal visit.
+- repeated visits should not become a mandatory friendship grind.
+- contextual reactions should favor a few meaningful observations over commenting on every object.
 
 Friendship does not decay merely because the real-world player was offline.
 Absence reactions such as "long time no see" are based on elapsed **in-game world/calendar time since the last meaningful interaction**, not wall-clock time or login/logout duration.
@@ -1197,6 +1277,27 @@ Stacking rule:
 - first-discovery date/history belongs in player save data rather than forcing every physical specimen item to be unique.
 
 Storage/container systems must preserve these distinctions and must never silently merge non-identical specimens.
+
+### Item protection / favorite lock
+Players may mark important carried/stored items as protected/favorited.
+
+Protected items are excluded by default from:
+- shop sell baskets.
+- dropping/throw-away actions.
+- gift/wrapping transfer.
+- automatic crafting/cooking ingredient consumption.
+- bulk-deposit/cleanup operations that would move them unexpectedly.
+- other destructive or irreversible batch actions.
+
+The system should be especially useful for:
+- rare specimen variants.
+- resident keepsakes/photos.
+- event furniture.
+- favorite clothing.
+- valuable tools/items.
+
+Avoid adding irrelevant per-stack metadata in a way that fragments otherwise stackable ordinary items.
+Implement the protection state through the cleanest inventory/profile/container mechanism supported by the final stack/asset architecture.
 
 House storage:
 - private to the player/household.
@@ -1611,6 +1712,21 @@ Displays are physical/3D:
 - fish in tanks.
 - insects in exhibit spaces.
 - fossils as assembled skeletons.
+
+### Physical exhibit information
+Museum exhibits should be readable in the museum itself rather than existing only as encyclopedia completion.
+
+Interacting with an exhibit/plaque can show a concise presentation such as:
+- species/artifact name.
+- short authored description.
+- first donor where recorded.
+- relevant discovered habitat/season facts when appropriate.
+- fossil/skeleton completion information where relevant.
+
+Do not dump every encyclopedia statistic onto every plaque.
+The museum presentation should feel like an exhibit label; the M-menu encyclopedia remains the deeper personal record.
+
+First-donor credit should remain subtle and historical, not ownership.
 
 Museum has a dedicated curator NPC.
 
@@ -2620,6 +2736,17 @@ Do not claim multiplayer correctness until actual multiplayer testing occurs.
 Core UI must use selected external UI design assets/references.
 Do not improvise the final visual language, navigation density, button scale or spacing from scratch.
 
+### Notification hierarchy
+Do not interrupt play with large center-screen banners for every routine event.
+
+Use the selected external UI language to create a hierarchy:
+- small non-blocking toast/feed for routine discoveries, recipe unlocks, mail arrival, small relationship/status updates and ordinary system notices.
+- grouped/queued presentation when several notices occur close together.
+- stronger but still concise presentation for first discoveries, major collection milestones, building completion, important event starts and similar meaningful moments.
+
+Notifications should not obscure fishing timing, combat, photography or other active interactions.
+Where practical, defer non-urgent notices until the critical interaction ends.
+
 ### Resident dialogue presentation
 Resident conversation should use a life-sim-style dialogue presentation built from the chosen external UI language.
 
@@ -2665,6 +2792,8 @@ Once dismissed/understood, do not repeatedly interrupt normal play.
 The M-menu may include a **Help / Guide** area that reopens explanations, control references and discovered-system guidance.
 This is informational only.
 It must not remotely execute mailbox, notice-board, shop, resident-services, museum or other location-based interactions.
+
+### M-key life menu
 **M** opens the unified Campfire life-information menu.
 
 The M menu is a hub for information/functions that make sense to access anywhere, such as:
@@ -2678,6 +2807,17 @@ The M menu is a hub for information/functions that make sense to access anywhere
 
 This list defines functional domains, NOT the final visual navigation layout.
 The final tab/icon/sidebar/page hierarchy should be derived from a strong external life-sim/menu reference and the selected external UI system rather than invented ad hoc.
+
+### Menu and UI time behavior
+Opening M, the map, encyclopedia, recipe book, shop UI, dialogue UI or other ordinary Campfire screens does **not** pause the shared simulation clock.
+
+This rule applies consistently in single-player and multiplayer so schedules, residents, weather and other world activity use one predictable model.
+
+Requirements:
+- important transactional actions validate current server state when confirmed.
+- active timed interactions that should not continue blindly behind a menu (for example a hooked fish or dangerous combat state) may block opening specific menus or use a clear safe interaction rule.
+- do not pause the whole server because one player is reading.
+- ESC/pause-menu behavior may follow the final single-player/server architecture separately, but Campfire gameplay screens themselves should not function as time-freeze exploits.
 
 ### Physical-interaction boundary
 Do **not** put world-location gameplay into the M menu merely for convenience.
