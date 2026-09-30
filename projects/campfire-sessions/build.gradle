@@ -23,6 +23,11 @@ repositories {
         url = 'https://www.cursemaven.com'
         content { includeGroup 'curse.maven' }
     }
+    maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content { includeGroup 'com.geckolib' }
+    }
 }
 
 configurations {
@@ -44,6 +49,10 @@ dependencies {
     // Fourth controlled runtime trial: portable storage foundation and required core library.
     implementation 'curse.maven:sophisticated-core-618298:8985852'
     implementation 'curse.maven:sophisticated-backpacks-422301:8992917'
+
+    // Fifth controlled runtime trial: resident entity animation/rendering foundation.
+    // Official GeckoLib 26.2 NeoForge artifact; resident source models are NOT bundled here.
+    implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
     // Analysis-only candidates. These are resolved for structure-footprint inspection and are NOT runtime dependencies.
     externalStructureProbe 'curse.maven:villageria-1646907:8620392'

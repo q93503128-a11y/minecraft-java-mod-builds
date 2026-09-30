@@ -34,6 +34,12 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --no-daemon clean build --stacktrace 2>&1 | tee build.log
+      - name: Validate resident asset contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          python3 tools/inspect_plumberry_assets.py --contract-only | tee build/plumberry-asset-contract.txt
       - name: Probe external building structure bounds
         shell: bash
         run: |
@@ -196,6 +202,8 @@ jobs:
             echo '- dedicated third-person guitar arm pose + strum: COMPILED'
             echo '- repeat-one + auto-next logic: COMPILED'
             echo '- external themed UI + inertial carousel: PACKAGED'
+            echo '- GeckoLib 5.5.6 resident animation dependency: BUILD VERIFIED'
+            echo '- Plumberry 20-resident rig/socket/animation contract: VALIDATED (raw source packs not bundled)'
             echo '- in-game visual/audio acceptance: USER TEST REQUIRED'
           } > BUILD_AND_RUNTIME_REPORT.md
       - name: Upload build logs
@@ -206,6 +214,7 @@ jobs:
           path: |
             projects/campfire-sessions/build.log
             projects/campfire-sessions/build/external-structure-footprints.txt
+            projects/campfire-sessions/build/plumberry-asset-contract.txt
           if-no-files-found: warn
       - name: Upload alpha6
         if: success()

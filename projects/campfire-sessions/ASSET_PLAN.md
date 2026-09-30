@@ -679,6 +679,12 @@ Current external resident/model source pool:
 - itch.io currently marks the character packs as AI-assisted graphics; record that provenance but judge adoption on final visual/runtime quality and license compatibility.
 - current missing area: no matching modular clothing/rainwear/winterwear set has been verified yet. The sockets solve hats/back/chest props, but full body outfit swapping still needs a separate test or authored overlay/mesh layer.
 - **status: PROVISIONAL ADOPT FOR PROTOTYPE**, not final production acceptance until license-file inspection + Minecraft conversion + in-client visual test pass.
+- implementation checkpoint:
+  - added `tools/plumberry_asset_contract.json` with the observed 20-character roster, shared GTB rig bones, five prop sockets and 26 required everyday animation names.
+  - added read-only `tools/inspect_plumberry_assets.py`; it accepts the original ZIPs or extracted directories, records archive SHA-256, locates TERMS/README/CONTENTS, reads GLB JSON metadata without extracting/repacking the assets, and fails on missing rig/socket/animation contract.
+  - GeckoLib **5.5.6 / NeoForge 26.2** is entering the combined Campfire build trial as the resident entity animation/rendering foundation.
+  - raw Plumberry FBX/GLB/OBJ assets are deliberately **not** committed or bundled at this stage.
+  - itch.io's free download is session/form-gated; do not bypass that access flow. Full local TERMS inspection and real two-resident conversion remain the next gate.
 
 Companion same-style asset:
 - **Plumberry Plains Tools Set Vol. 1** includes a fishing pole, watering can, garden shovel, axe, hammer, cooking knife and paint brush with grip-point origins designed for the resident hand sockets.

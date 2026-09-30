@@ -1,0 +1,91 @@
+{
+  "format": 1,
+  "sources": [
+    {
+      "id": "vol1",
+      "url": "https://chibipup.itch.io/plumberry-plains-free-3d-cozy-game-animal-characters",
+      "expected_archive": "plumberry-plains-vol-1.zip",
+      "characters": [
+        "barney-the-songbird",
+        "chester-the-rabbit",
+        "clyde-the-frog",
+        "felix-the-cow",
+        "maple-the-cat",
+        "juniper-the-pig",
+        "hazel-the-deer",
+        "ollie-the-terrier",
+        "una-the-cow",
+        "ziggy-the-wolf"
+      ]
+    },
+    {
+      "id": "vol2",
+      "url": "https://chibipup.itch.io/plumberry-plains-vol-2-even-more-free-animal-friends-for-your-village",
+      "expected_archive": "plumberry-plains-vol-2.zip",
+      "characters": [
+        "bruno-the-bear",
+        "ernie-the-duck",
+        "freya-the-hamster",
+        "homer-the-wolf",
+        "kiki-the-rabbit",
+        "ollie-the-songbird",
+        "pip-the-bird",
+        "zinnia-the-fox",
+        "poppy-the-mouse",
+        "orson-the-penguin"
+      ]
+    }
+  ],
+  "required_bones": [
+    "root",
+    "hips",
+    "spine",
+    "chest",
+    "upper_chest",
+    "neck",
+    "head",
+    "shoulder_l",
+    "shoulder_r",
+    "arm_l",
+    "arm_r",
+    "leg_l",
+    "leg_r",
+    "tail_01",
+    "tail_02"
+  ],
+  "required_sockets": [
+    "socket_hand_l",
+    "socket_hand_r",
+    "socket_head",
+    "socket_back",
+    "socket_chest"
+  ],
+  "required_animations": [
+    "walk",
+    "run",
+    "sit",
+    "sit_talk",
+    "interact",
+    "idle",
+    "talk",
+    "dance",
+    "pickup",
+    "jump",
+    "no",
+    "yes",
+    "pain",
+    "fall_over",
+    "wave",
+    "cheer",
+    "crying",
+    "celebrate",
+    "axe_chop",
+    "hammer",
+    "fish_cast",
+    "fish_reel",
+    "stick_swing",
+    "paint",
+    "uppercut",
+    "shadow_box"
+  ]
+}
