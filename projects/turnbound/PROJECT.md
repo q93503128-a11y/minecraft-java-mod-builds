@@ -1208,3 +1208,23 @@ Validation at implementation checkpoint:
 - CLIENT RUNTIME TESTED: Build #947 YES for the reported battle/result path; new fixes NOT YET
 - PLAYTESTED: PARTIAL — New Drabyel opening battle reached victory/result on Build #947
 - MULTIPLAYER TESTED: NO
+
+Build TURNBOUND #948 / run `36651974962` verified commit
+`9f971bc5cae5ac17ff0b615decb5c2b7e31e89f1`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11071375001`
+- JAR SHA-256: `0bd3c3d352c929908ce4a40e1007e69751e7dfcd54846ae9a515bc704d9e116d`
+- MRPACK SHA-256: `5333cb5fbd0e04a91625f881c8932b9a3f60f53519764b3f855ff57f1ee7b963`
+
+Validation after Build #948:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for Build #948
+- PLAYTESTED: NO for Build #948
+- MULTIPLAYER TESTED: NO
