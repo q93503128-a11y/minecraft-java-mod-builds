@@ -1017,8 +1017,10 @@ Specimen individuality makes portable storage a likely real need rather than an 
 Verified current 26.2 NeoForge candidates to investigate further:
 
 **Sophisticated Backpacks**
-- Minecraft 26.2 NeoForge support confirmed; current 26.2 releases are actively maintained.
-- available directly on Modrinth, which is favorable for .mrpack dependency delivery despite its ARR license.
+- Minecraft 26.2 NeoForge support confirmed.
+- latest observed 26.2 release in this pass: **3.26.3.2170**, CurseForge file ID **8992917**.
+- required core selected for the same trial: **Sophisticated Core 1.5.0.2349**, CurseForge file ID **8985852**.
+- available through current distribution channels suitable for .mrpack dependency delivery despite ARR licensing.
 - client + server.
 - tiered portable storage.
 - wearable/placeable.
@@ -1319,9 +1321,9 @@ This research pass has narrowed several categories enough to justify direct runt
 When implementation moves from planning to dependency validation, test these **one controlled group at a time**, not all at once:
 1. **Skniro's Furniture 1.5.2 / NeoForge 26.2** — **BUILD VERIFIED** with Campfire / Java 25 / NeoForge 26.2.0.87; visual, seating and multiplayer acceptance still untested.
 2. **Peterwolf's Boats & Ships 1.0.19 / NeoForge 26.2** — **BUILD VERIFIED together with Skniro**; boat visuals, physics, docking and multiplayer passengers still untested.
-3. **Traveler Tool Belt 1.0.4 / NeoForge 26.2** — now entering controlled build validation for radial lifestyle-tool switching.
-4. **Sophisticated Backpacks / current stable 26.2** + Sophisticated Core — portable storage and Campfire catch-routing integration.
-5. **Player Animation Library 1.2.6** — now entering controlled build validation for guitar/fishing/net/watering full-body animation foundation.
+3. **Traveler Tool Belt 1.0.4 / NeoForge 26.2** — **BUILD VERIFIED** in the current Skniro + Peterwolf stack; radial UX/visual acceptance remains untested.
+4. **Sophisticated Backpacks 3.26.3.2170 + Sophisticated Core 1.5.0.2349 / NeoForge 26.2** — now entering controlled build validation for portable storage and Campfire catch-routing integration.
+5. **Player Animation Library 1.2.6** — **BUILD VERIFIED** in the current Skniro + Peterwolf + Tool Belt stack; no real full-body Campfire animation has been authored/tested yet.
 6. **CPM v0.6.27c** — curated player appearance/model backend; test separately against PAL first.
 7. **NCL Skins 1.2.1** — compare as an alternate wardrobe/look backend; do not keep both CPM and NCL unless each proves a unique necessary role.
 8. photography: compare **Camerapture** against **Camera Mod** independently; adopt one.

@@ -41,6 +41,10 @@ dependencies {
     implementation 'curse.maven:traveler-tool-belt-1457447:8920360'
     implementation 'curse.maven:player-animation-library-1283899:8674798'
 
+    // Fourth controlled runtime trial: portable storage foundation and required core library.
+    implementation 'curse.maven:sophisticated-core-618298:8985852'
+    implementation 'curse.maven:sophisticated-backpacks-422301:8992917'
+
     // Analysis-only candidates. These are resolved for structure-footprint inspection and are NOT runtime dependencies.
     externalStructureProbe 'curse.maven:villageria-1646907:8620392'
     externalStructureProbe 'curse.maven:syvillage-1696659:8946351'
