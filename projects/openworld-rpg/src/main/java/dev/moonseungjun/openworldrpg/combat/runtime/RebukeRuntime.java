@@ -171,9 +171,18 @@ public final class RebukeRuntime {
                     caster.getUUID(),
                     nowTick
             );
-            grace.recordDamagingActiveHit(
+            ClericRootPassiveRuntime.recordDamagingEligibleHit(
+                    caster,
+                    nowTick
+            );
+            var gain = grace.recordDamagingActiveHit(
                     nowTick,
                     combat.lastCombatActivityTick()
+            );
+            ClericRootPassiveRuntime.onGraceGain(
+                    caster,
+                    gain,
+                    nowTick
             );
             if (ultimateChargePrimary != null) {
                 ProjectUltimateChargeRuntime

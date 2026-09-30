@@ -60,6 +60,8 @@ public final class ProjectBarrierRuntime {
                         barrierReference,
                         barrierCoefficient,
                         applicableOutputBonus
+                                + ClericRootPassiveEffects
+                                        .barrierOutputBonus(caster)
                 );
 
         return applyFixedBarrier(
@@ -180,6 +182,11 @@ public final class ProjectBarrierRuntime {
                                 sourceTick,
                                 combat.lastCombatActivityTick()
                         );
+                ClericRootPassiveRuntime.onGraceGain(
+                        sourcePlayer,
+                        gain,
+                        sourceTick
+                );
                 if (gain.pipAdded()) {
                     gracePipsGranted++;
                 }

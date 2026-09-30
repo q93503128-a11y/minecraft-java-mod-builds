@@ -1,6 +1,9 @@
 package dev.moonseungjun.openworldrpg.combat.state;
 
+import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
+import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveEffects;
+import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
@@ -100,6 +103,17 @@ public final class PlayerCombatBuildPublisher {
                 gameTick
         );
         CombatStateServices.states()
+                .synchronizeClassManaFlatBonus(
+                        player.getUUID(),
+                        serverPlayer != null
+                                ? ClericRootPassiveEffects
+                                        .maxManaFlatBonus(
+                                                serverPlayer
+                                        )
+                                : 0,
+                        gameTick
+                );
+        CombatStateServices.states()
                 .synchronizeClassStaminaModifiers(
                         player.getUUID(),
                         serverPlayer != null
@@ -127,9 +141,39 @@ public final class PlayerCombatBuildPublisher {
                                 : 1.0,
                         gameTick
                 );
+        PlayerDefenseAuthority.DefenseSnapshot defenseSnapshot =
+                loadout.aggregateDefenseSnapshot();
+        if (serverPlayer != null) {
+            double equipmentMagicResistanceMultiplier =
+                    ClericRootPassiveEffects
+                            .equipmentMagicResistanceMultiplier(
+                                    serverPlayer
+                            );
+            if (Math.abs(
+                    equipmentMagicResistanceMultiplier - 1.0
+            ) > 1.0e-9) {
+                defenseSnapshot =
+                        new PlayerDefenseAuthority.DefenseSnapshot(
+                                defenseSnapshot.defense(),
+                                defenseSnapshot.magicResistance()
+                                        * equipmentMagicResistanceMultiplier,
+                                defenseSnapshot.guardRating(),
+                                defenseSnapshot.guardType()
+                        );
+            }
+            CombatStateServices.clericGraceStates()
+                    .getOrCreate(player.getUUID())
+                    .synchronizeExpiryBonusTicks(
+                            ClericRootPassiveEffects
+                                    .graceExpiryBonusTicks(
+                                            serverPlayer
+                                    )
+                    );
+            ClericRootPassiveRuntime.synchronize(serverPlayer);
+        }
         CombatStateServices.defenseSnapshots().bindAuthoritative(
                 player.getUUID(),
-                loadout.aggregateDefenseSnapshot()
+                defenseSnapshot
         );
         double maxPoise = ProjectCombatRules.maxPlayerPoise(
                 effectiveEnd,

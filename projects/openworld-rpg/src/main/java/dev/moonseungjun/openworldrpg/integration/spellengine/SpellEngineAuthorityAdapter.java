@@ -5,6 +5,7 @@ import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellTransactionPolicy;
 import dev.moonseungjun.openworldrpg.combat.authority.SpellCastAuthority;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericMendRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
@@ -71,6 +72,32 @@ public final class SpellEngineAuthorityAdapter {
 
     private static final SpellCastAuthority AUTHORITY = new SpellCastAuthority(OpenworldRpgMod.MOD_ID);
     private static final PlayerCombatStateStore COMBAT_STATES = CombatStateServices.states();
+    private static final ProjectSpellTransactionPolicy.ManaCostAdjustment
+            CLERIC_MANA_COST_ADJUSTMENT =
+            new ProjectSpellTransactionPolicy.ManaCostAdjustment() {
+                @Override
+                public double previewMultiplier(
+                        SpellCastAuthority.CastContext context
+                ) {
+                    return ClericRootPassiveRuntime
+                            .previewManaCostMultiplier(
+                                    context.playerId(),
+                                    context.spellId(),
+                                    context.gameTick()
+                            );
+                }
+
+                @Override
+                public void commit(
+                        SpellCastAuthority.CastContext context
+                ) {
+                    ClericRootPassiveRuntime.consumeManaDiscount(
+                            context.playerId(),
+                            context.spellId(),
+                            context.gameTick()
+                    );
+                }
+            };
 
     private static volatile ProcessBinding processBinding = ProcessBinding.disabled();
     private static volatile boolean initialized;
@@ -279,7 +306,8 @@ public final class SpellEngineAuthorityAdapter {
                 new ProjectSpellTransactionPolicy(
                         radiantLance,
                         COMBAT_STATES,
-                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed(),
+                        CLERIC_MANA_COST_ADJUSTMENT
                 )
         );
 
@@ -289,7 +317,8 @@ public final class SpellEngineAuthorityAdapter {
                 new ProjectSpellTransactionPolicy(
                         consecratedGround,
                         COMBAT_STATES,
-                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed(),
+                        CLERIC_MANA_COST_ADJUSTMENT
                 )
         );
 
@@ -299,7 +328,8 @@ public final class SpellEngineAuthorityAdapter {
                 new ProjectSpellTransactionPolicy(
                         rebuke,
                         COMBAT_STATES,
-                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed(),
+                        CLERIC_MANA_COST_ADJUSTMENT
                 )
         );
 
@@ -309,7 +339,8 @@ public final class SpellEngineAuthorityAdapter {
                 new ProjectSpellTransactionPolicy(
                         sanctuary,
                         COMBAT_STATES,
-                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed(),
+                        CLERIC_MANA_COST_ADJUSTMENT
                 )
         );
 
@@ -319,7 +350,8 @@ public final class SpellEngineAuthorityAdapter {
                 new ProjectSpellTransactionPolicy(
                         mend,
                         COMBAT_STATES,
-                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed(),
+                        CLERIC_MANA_COST_ADJUSTMENT
                 )
         );
         canonicalPoliciesRegistered = true;

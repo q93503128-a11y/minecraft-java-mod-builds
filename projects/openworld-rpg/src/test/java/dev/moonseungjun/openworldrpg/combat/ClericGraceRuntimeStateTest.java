@@ -134,4 +134,14 @@ class ClericGraceRuntimeStateTest {
         assertEquals(3, state.pips(299L, 3L));
         assertEquals(0, state.pips(300L, 3L));
     }
+
+    @Test
+    void lingeringGraceAddsExactExpiryTime() {
+        var state = new ClericGraceRuntimeState();
+        state.synchronizeExpiryBonusTicks(60L);
+        state.recordDamagingActiveHit(100L, 100L);
+
+        assertEquals(1, state.pips(359L, 100L));
+        assertEquals(0, state.pips(360L, 100L));
+    }
 }

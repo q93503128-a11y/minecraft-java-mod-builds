@@ -21,6 +21,7 @@ public final class ClericGraceRuntimeState {
     public static final double SUPPORT_THRESHOLD_MAX_HP_FRACTION = 0.06;
 
     private int pips;
+    private long expiryBonusTicks;
     private long lastGraceActivityTick = Long.MIN_VALUE / 4;
     private long damagingActiveReadyTick = Long.MIN_VALUE / 4;
     private final Map<UUID, Long> healTargetReadyTick = new HashMap<>();
@@ -111,6 +112,16 @@ public final class ClericGraceRuntimeState {
         return grantPip(nowTick);
     }
 
+    public void synchronizeExpiryBonusTicks(long bonusTicks) {
+        if (bonusTicks < 0L) {
+            throw new IllegalArgumentException(
+                    "Grace expiry bonus must be non-negative."
+            );
+        }
+        Math.addExact(OUT_OF_COMBAT_EXPIRY_TICKS, bonusTicks);
+        expiryBonusTicks = bonusTicks;
+    }
+
     /**
      * Consumes exactly a full three-pip Grace state for one authored Grace-spender.
      */
@@ -133,6 +144,7 @@ public final class ClericGraceRuntimeState {
         damagingActiveReadyTick = Long.MIN_VALUE / 4;
         healTargetReadyTick.clear();
         barrierTargetReadyTick.clear();
+        expiryBonusTicks = 0L;
     }
 
     private GainResult grantPip(long nowTick) {
@@ -157,7 +169,10 @@ public final class ClericGraceRuntimeState {
                 && activity > Long.MIN_VALUE / 8
                 && nowTick >= Math.addExact(
                         activity,
-                        OUT_OF_COMBAT_EXPIRY_TICKS
+                        Math.addExact(
+                                OUT_OF_COMBAT_EXPIRY_TICKS,
+                                expiryBonusTicks
+                        )
                 )) {
             pips = 0;
         }

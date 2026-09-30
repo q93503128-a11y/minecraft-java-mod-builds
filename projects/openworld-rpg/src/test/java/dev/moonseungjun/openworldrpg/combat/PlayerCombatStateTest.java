@@ -380,4 +380,18 @@ class PlayerCombatStateTest {
         );
         assertEquals(100, state.maxStamina());
     }
+
+    @Test
+    void classManaFlatBonusPreservesCurrentManaPercentage() {
+        PlayerCombatState state = new PlayerCombatState(5, 0L);
+        assertTrue(state.spendMana(50.0, 0L));
+
+        state.synchronizeClassManaFlatBonus(15, 0L);
+        assertEquals(115, state.maxMana());
+        assertEquals(57.5, state.mana(0L), 0.0001);
+
+        state.synchronizeClassManaFlatBonus(0, 0L);
+        assertEquals(100, state.maxMana());
+        assertEquals(50.0, state.mana(0L), 0.0001);
+    }
 }

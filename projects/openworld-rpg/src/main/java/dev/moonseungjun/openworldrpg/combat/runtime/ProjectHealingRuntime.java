@@ -118,11 +118,22 @@ public final class ProjectHealingRuntime {
                         healCoefficient,
                         casterLoadout.aggregateHealingDoneBonus(),
                         targetLoadout.aggregateHealingReceivedBonus()
-                ) * outputMultiplier;
+                )
+                * outputMultiplier
+                * ClericRootPassiveEffects
+                        .healingOutputMultiplier(caster);
 
         float before = target.getHealth();
         target.heal((float) requestedHealing);
-        double effectiveHealing = Math.max(0.0, target.getHealth() - before);
+        double effectiveHealing = Math.max(
+                0.0,
+                target.getHealth() - before
+        );
+        ClericRootPassiveRuntime.recordEffectiveHealing(
+                caster,
+                effectiveHealing,
+                caster.level().getGameTime()
+        );
 
         boolean newEarthloongParticipation = false;
         if (earthloong != null

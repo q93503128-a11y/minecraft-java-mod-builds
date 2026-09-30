@@ -80,4 +80,55 @@ class ProjectSpellTransactionStaminaTest {
         assertEquals(100.0, state.mana(tick), 0.0001);
         assertEquals(10.0, state.stamina(tick), 0.0001);
     }
+
+    @Test
+    void manaCostAdjustmentAppliesDuringPreflightAndConsumesAfterCommit() {
+        var states = new PlayerCombatStateStore();
+        UUID playerId = UUID.randomUUID();
+        long tick = 20L;
+        var state = states.getOrCreate(playerId, tick);
+        assertTrue(state.spendMana(82.0, tick));
+
+        var spec = new ProjectSpellSpec(
+                "openworld_rpg:test_discounted_cost",
+                20.0,
+                0.0,
+                40,
+                0.0,
+                0.0,
+                1
+        );
+        boolean[] committed = {false};
+        var policy = new ProjectSpellTransactionPolicy(
+                spec,
+                states,
+                ProjectSpellTransactionPolicy.SpellImpactPort.failClosed(),
+                new ProjectSpellTransactionPolicy.ManaCostAdjustment() {
+                    @Override
+                    public double previewMultiplier(
+                            SpellCastAuthority.CastContext context
+                    ) {
+                        return 0.90;
+                    }
+
+                    @Override
+                    public void commit(
+                            SpellCastAuthority.CastContext context
+                    ) {
+                        committed[0] = true;
+                    }
+                }
+        );
+        var context = new SpellCastAuthority.CastContext(
+                playerId,
+                spec.id(),
+                tick,
+                false
+        );
+
+        assertTrue(policy.preflight(context));
+        assertTrue(policy.commitAcceptedCast(context));
+        assertTrue(committed[0]);
+        assertEquals(0.0, state.mana(tick), 0.0001);
+    }
 }

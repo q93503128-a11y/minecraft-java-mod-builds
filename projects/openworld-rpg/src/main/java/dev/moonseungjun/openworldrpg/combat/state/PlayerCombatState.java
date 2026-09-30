@@ -31,6 +31,7 @@ public final class PlayerCombatState {
     private double maxStaminaBonus;
     private double manaRecoveryBonus;
     private double staminaRecoveryBonus;
+    private int classMaxManaFlatBonus;
     private int classMaxStaminaFlatBonus;
     private double classStaminaRecoveryBonus;
     private double manaCostReduction;
@@ -67,7 +68,10 @@ public final class PlayerCombatState {
     }
 
     public int maxMana() {
-        return maxManaForWill(will, maxManaBonus);
+        return Math.addExact(
+                maxManaForWill(will, maxManaBonus),
+                classMaxManaFlatBonus
+        );
     }
 
     public double mana(long nowTick) {
@@ -160,6 +164,31 @@ public final class PlayerCombatState {
 
         mana = Math.min(maxMana(), maxMana() * manaFraction);
         stamina = Math.min(maxStamina(), maxStamina() * staminaFraction);
+    }
+
+    public void synchronizeClassManaFlatBonus(
+            int maxManaFlatBonus,
+            long nowTick
+    ) {
+        if (maxManaFlatBonus < 0) {
+            throw new IllegalArgumentException(
+                    "Class Max Mana bonus must be non-negative."
+            );
+        }
+        refresh(nowTick);
+        int oldMax = maxMana();
+        double fraction = oldMax > 0
+                ? Math.max(
+                        0.0,
+                        Math.min(1.0, mana / oldMax)
+                )
+                : 1.0;
+        classMaxManaFlatBonus = maxManaFlatBonus;
+        int newMax = maxMana();
+        mana = Math.min(
+                newMax,
+                newMax * fraction
+        );
     }
 
     public void synchronizeClassStaminaModifiers(

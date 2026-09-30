@@ -78,6 +78,11 @@ public final class ClericMendRuntime {
                 nowTick,
                 combat.lastCombatActivityTick()
         );
+        ClericRootPassiveRuntime.onGraceGain(
+                caster,
+                gain,
+                nowTick
+        );
         ProjectUltimateChargeRuntime
                 .recordClericEffectiveHealing(
                         caster,

@@ -180,15 +180,21 @@ public final class ConsecratedGroundRuntime {
             healedRecipients++;
             var combat = CombatStateServices.states()
                     .getOrCreate(caster.getUUID(), nowTick);
-            CombatStateServices.clericGraceStates()
-                    .getOrCreate(caster.getUUID())
-                    .recordEffectiveHeal(
-                            ally.getUUID(),
-                            healing.effectiveHealing(),
-                            ally.getMaxHealth(),
-                            nowTick,
-                            combat.lastCombatActivityTick()
-                    );
+            var healingGraceGain =
+                    CombatStateServices.clericGraceStates()
+                            .getOrCreate(caster.getUUID())
+                            .recordEffectiveHeal(
+                                    ally.getUUID(),
+                                    healing.effectiveHealing(),
+                                    ally.getMaxHealth(),
+                                    nowTick,
+                                    combat.lastCombatActivityTick()
+                            );
+            ClericRootPassiveRuntime.onGraceGain(
+                    caster,
+                    healingGraceGain,
+                    nowTick
+            );
             ProjectUltimateChargeRuntime.recordClericEffectiveHealing(
                     caster,
                     ally,
@@ -261,12 +267,22 @@ public final class ConsecratedGroundRuntime {
             );
             var combat = CombatStateServices.states()
                     .getOrCreate(caster.getUUID(), nowTick);
-            CombatStateServices.clericGraceStates()
-                    .getOrCreate(caster.getUUID())
-                    .recordDamagingActiveHit(
-                            nowTick,
-                            combat.lastCombatActivityTick()
-                    );
+            ClericRootPassiveRuntime.recordDamagingEligibleHit(
+                    caster,
+                    nowTick
+            );
+            var damagingGraceGain =
+                    CombatStateServices.clericGraceStates()
+                            .getOrCreate(caster.getUUID())
+                            .recordDamagingActiveHit(
+                                    nowTick,
+                                    combat.lastCombatActivityTick()
+                            );
+            ClericRootPassiveRuntime.onGraceGain(
+                    caster,
+                    damagingGraceGain,
+                    nowTick
+            );
             ProjectUltimateChargeRuntime.recordClericDamagingActive(
                     caster,
                     firstDamaged

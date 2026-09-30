@@ -48,6 +48,18 @@ public final class PlayerCombatStateStore {
                 );
     }
 
+    public void synchronizeClassManaFlatBonus(
+            UUID playerId,
+            int maxManaFlatBonus,
+            long nowTick
+    ) {
+        getOrCreate(playerId, nowTick)
+                .synchronizeClassManaFlatBonus(
+                        maxManaFlatBonus,
+                        nowTick
+                );
+    }
+
     public void synchronizeClassStaminaModifiers(
             UUID playerId,
             int maxStaminaFlatBonus,

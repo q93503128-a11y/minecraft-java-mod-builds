@@ -55,6 +55,7 @@ import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionS
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
@@ -199,6 +200,7 @@ public final class OpenworldRpgMod implements ModInitializer {
                 PlayerDeathPenaltyService.applyAfterDeathRespawn(newPlayer);
             }
             WarriorSkillRuntime.reset(newPlayer.getUUID());
+            ClericRootPassiveRuntime.reset(newPlayer.getUUID());
             HunterQuickstepVolleyRuntime.reset(newPlayer.getUUID());
             HunterPinningShotRuntime.reset(newPlayer.getUUID());
             HunterFanOfArrowsRuntime.reset(newPlayer.getUUID());
@@ -219,6 +221,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ConsecratedGroundRuntime.disconnect(playerId);
             SanctuaryRuntime.disconnect(playerId);
             WarriorSkillRuntime.disconnect(playerId);
+            ClericRootPassiveRuntime.disconnect(playerId);
             HunterQuickstepVolleyRuntime.disconnect(playerId);
             HunterPinningShotRuntime.disconnect(playerId);
             HunterFanOfArrowsRuntime.disconnect(playerId);

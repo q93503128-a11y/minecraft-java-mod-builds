@@ -119,9 +119,18 @@ public final class RadiantLanceRuntime {
                 .getOrCreate(caster.getUUID(), nowTick);
         var grace = CombatStateServices.clericGraceStates()
                 .getOrCreate(caster.getUUID());
-        grace.recordDamagingActiveHit(
+        ClericRootPassiveRuntime.recordDamagingEligibleHit(
+                caster,
+                nowTick
+        );
+        var damagingGraceGain = grace.recordDamagingActiveHit(
                 nowTick,
                 combat.lastCombatActivityTick()
+        );
+        ClericRootPassiveRuntime.onGraceGain(
+                caster,
+                damagingGraceGain,
+                nowTick
         );
 
         int chainCandidates = 0;
@@ -187,12 +196,18 @@ public final class RadiantLanceRuntime {
                     if (healing.accepted()) {
                         fallbackEffectiveHealing =
                                 healing.effectiveHealing();
-                        grace.recordEffectiveHeal(
-                                recipient.getUUID(),
-                                fallbackEffectiveHealing,
-                                recipient.getMaxHealth(),
-                                nowTick,
-                                combat.lastCombatActivityTick()
+                        var fallbackGraceGain =
+                                grace.recordEffectiveHeal(
+                                        recipient.getUUID(),
+                                        fallbackEffectiveHealing,
+                                        recipient.getMaxHealth(),
+                                        nowTick,
+                                        combat.lastCombatActivityTick()
+                                );
+                        ClericRootPassiveRuntime.onGraceGain(
+                                caster,
+                                fallbackGraceGain,
+                                nowTick
                         );
                         ProjectUltimateChargeRuntime
                                 .recordClericEffectiveHealing(

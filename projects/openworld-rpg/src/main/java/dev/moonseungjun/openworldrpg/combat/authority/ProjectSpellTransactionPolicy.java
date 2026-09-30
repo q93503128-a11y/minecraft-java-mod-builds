@@ -15,15 +15,31 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
     private final ProjectSpellSpec spec;
     private final PlayerCombatStateStore states;
     private final SpellImpactPort impactPort;
+    private final ManaCostAdjustment manaCostAdjustment;
 
     public ProjectSpellTransactionPolicy(
             ProjectSpellSpec spec,
             PlayerCombatStateStore states,
             SpellImpactPort impactPort
     ) {
+        this(
+                spec,
+                states,
+                impactPort,
+                ManaCostAdjustment.none()
+        );
+    }
+
+    public ProjectSpellTransactionPolicy(
+            ProjectSpellSpec spec,
+            PlayerCombatStateStore states,
+            SpellImpactPort impactPort,
+            ManaCostAdjustment manaCostAdjustment
+    ) {
         this.spec = spec;
         this.states = states;
         this.impactPort = impactPort;
+        this.manaCostAdjustment = manaCostAdjustment;
     }
 
     @Override
@@ -39,8 +55,9 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
             if (state.hasCompetingAcceptedCast(context.spellId(), context.gameTick())) {
                 return false;
             }
+            double manaCost = adjustedManaCost(context);
             return !state.isCoolingDown(spec.id(), context.gameTick())
-                    && state.canSpendMana(spec.manaCost(), context.gameTick())
+                    && state.canSpendMana(manaCost, context.gameTick())
                     && state.canSpendStamina(
                             spec.staminaCost(),
                             context.gameTick()
@@ -61,9 +78,10 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
             if (state.hasCompetingAcceptedCast(context.spellId(), context.gameTick())) {
                 return false;
             }
+            double manaCost = adjustedManaCost(context);
             if (state.isCoolingDown(spec.id(), context.gameTick())
                     || !state.canSpendMana(
-                            spec.manaCost(),
+                            manaCost,
                             context.gameTick()
                     )
                     || !state.canSpendStamina(
@@ -73,9 +91,9 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
                 return false;
             }
 
-            if (spec.manaCost() > 0.0
+            if (manaCost > 0.0
                     && !state.spendMana(
-                            spec.manaCost(),
+                            manaCost,
                             context.gameTick()
                     )) {
                 throw new IllegalStateException(
@@ -91,6 +109,10 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
                 throw new IllegalStateException(
                         "Stamina changed inside synchronized spell transaction."
                 );
+            }
+
+            if (spec.manaCost() > 0.0) {
+                manaCostAdjustment.commit(context);
             }
 
             state.startCooldown(spec.id(), spec.cooldownTicks(), context.gameTick());
@@ -129,8 +151,48 @@ public final class ProjectSpellTransactionPolicy implements SpellCastAuthority.P
         return impactPort.apply(spec, context);
     }
 
+    private double adjustedManaCost(
+            SpellCastAuthority.CastContext context
+    ) {
+        double multiplier =
+                manaCostAdjustment.previewMultiplier(context);
+        if (!Double.isFinite(multiplier)
+                || multiplier <= 0.0
+                || multiplier > 1.0) {
+            throw new IllegalStateException(
+                    "Mana-cost adjustment must be inside (0, 1]."
+            );
+        }
+        return spec.manaCost() * multiplier;
+    }
+
     public ProjectSpellSpec spec() {
         return spec;
+    }
+
+    public interface ManaCostAdjustment {
+        double previewMultiplier(
+                SpellCastAuthority.CastContext context
+        );
+
+        void commit(SpellCastAuthority.CastContext context);
+
+        static ManaCostAdjustment none() {
+            return new ManaCostAdjustment() {
+                @Override
+                public double previewMultiplier(
+                        SpellCastAuthority.CastContext context
+                ) {
+                    return 1.0;
+                }
+
+                @Override
+                public void commit(
+                        SpellCastAuthority.CastContext context
+                ) {
+                }
+            };
+        }
     }
 
     @FunctionalInterface
