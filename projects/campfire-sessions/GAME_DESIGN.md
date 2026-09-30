@@ -411,7 +411,24 @@ This is especially important for:
 - café.
 - other public buildings.
 
+**Map-capacity decisions must therefore use the real exterior footprint, frontage, road/plaza clearance and yard/parcel spacing — not the interior floor area.**
+Do not reject a map merely because the museum/café/home interior content is large when that content lives in managed interior space.
+
 The interior-space system must work in multiplayer and keep entry/exit anchors deterministic.
+
+### Map acceptance follows real exterior-layout testing
+Do not finalize or reject the current 7-island candidate from rough intuition alone.
+
+Required sequence:
+1. select/acquire the essential external building exteriors.
+2. read/measure their real structure bounds.
+3. create a first main-village placement plan including roads, plaza, house parcels, public greenery and harbor approach.
+4. test the plan against the central/main island's actual flat usable area.
+5. if the layout fits with healthy breathing room, the map may advance toward canonical selection.
+6. if the village is visibly cramped even after sensible compact placement, search for a larger redistributable multi-island map.
+
+The target is **compact and walkable, not packed tightly**.
+Do not waste land by treating large managed interiors as equally large exterior shells.
 
 ### Building entry/exit transition
 Entering managed interiors may use a short door/transition presentation so exterior→interior coordinate changes do not feel like an abrupt teleport.
