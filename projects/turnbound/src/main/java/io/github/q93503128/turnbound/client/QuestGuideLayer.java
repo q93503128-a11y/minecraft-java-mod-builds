@@ -17,6 +17,7 @@ public final class QuestGuideLayer implements GuiLayer {
     private static final int MUTED = 0xFFC9BDAA;
     private static final int GOLD = 0xFFFFC857;
     private static final int GREEN = 0xFF80D49A;
+    private static final float OBJECTIVE_SCALE = 0.80F;
     private static boolean expanded = false;
 
     public static void toggle() { expanded = !expanded; }
@@ -33,6 +34,12 @@ public final class QuestGuideLayer implements GuiLayer {
         Target target = target(snapshot);
         if (target != null) drawDirectionCue(graphics, minecraft, target);
 
+        int anchorX=graphics.guiWidth()-7,anchorY=7;
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(anchorX,anchorY);
+        graphics.pose().scale(OBJECTIVE_SCALE,OBJECTIVE_SCALE);
+        graphics.pose().translate(-anchorX,-anchorY);
+
         int width = expanded
                 ? Math.min(320, Math.max(238, graphics.guiWidth() / 3))
                 : Math.min(220, Math.max(184, graphics.guiWidth() / 5));
@@ -46,6 +53,7 @@ public final class QuestGuideLayer implements GuiLayer {
             String compact = UiTextLayout.fit("목표 · " + objective, width - 64);
             graphics.text(minecraft.font, Component.literal(compact), x + 8, y + 6, TEXT, true);
             graphics.text(minecraft.font, Component.literal("J 상세"), x + width - 8 - minecraft.font.width("J 상세"), y + 6, GOLD, false);
+            graphics.pose().popMatrix();
             return;
         }
 
@@ -83,6 +91,7 @@ public final class QuestGuideLayer implements GuiLayer {
             String progress = snapshot.patrolsCleared() + "/" + snapshot.patrolGoal();
             graphics.text(minecraft.font, Component.literal(progress), x + width - minecraft.font.width(progress) - 10, y + 22, GREEN, true);
         }
+        graphics.pose().popMatrix();
     }
 
     private static void drawDirectionCue(GuiGraphicsExtractor graphics, Minecraft minecraft, Target target) {
