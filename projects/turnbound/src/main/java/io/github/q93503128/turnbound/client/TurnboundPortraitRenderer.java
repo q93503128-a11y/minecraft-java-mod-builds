@@ -80,11 +80,9 @@ public final class TurnboundPortraitRenderer {
             graphics.fill(x0, y0, x1, y1, 0xA8101318);
         }
         if (unavailable) {
-            graphics.fill(x0, y0, x1, y1, 0x9A101318);
-            int cx = (x0 + x1) / 2;
-            int cy = (y0 + y1) / 2;
-            graphics.fill(cx - 1, cy - 5, cx + 2, cy + 6, 0xCC707987);
-            graphics.fill(cx - 1, cy + 8, cx + 2, cy + 11, 0xCC707987);
+            graphics.fill(x0, y0, x1, y1, 0xA6101318);
+            BattleDownedIndicator.drawSkeletonSkull(
+                    graphics, (x0 + x1) / 2, (y0 + y1) / 2, Math.max(0.65F, Math.min(1.15F, box / 18.0F)));
         }
         return true;
     }

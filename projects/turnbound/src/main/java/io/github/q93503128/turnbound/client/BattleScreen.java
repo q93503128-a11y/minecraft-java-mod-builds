@@ -538,9 +538,13 @@ public final class BattleScreen extends Screen {
         graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), 0x36080A0E);
         graphics.fill(rect.x(), rect.y(), rect.x() + 1, rect.bottom(), accent);
 
-        String name = unit.downed() ? "DOWN" : UiTextLayout.fit(unit.name(), Math.max(8, rect.width() - 5));
+        int nameReserve = unit.downed() ? 14 : 5;
+        String name = UiTextLayout.fit(unit.name(), Math.max(8, rect.width() - nameReserve));
         graphics.text(font, Component.literal(name), rect.x() + 3, rect.y() + 2,
                 unit.downed() ? MUTED : actor ? GOLD : TEXT, false);
+        if (unit.downed()) {
+            BattleDownedIndicator.drawSkeletonSkull(graphics, rect.right() - 7, rect.y() + 6, 0.70F);
+        }
         int barX = rect.x() + 3;
         int barW = Math.max(3, rect.width() - 6);
         int barY = rect.bottom() - 3;
@@ -636,13 +640,14 @@ public final class BattleScreen extends Screen {
                 graphics, unit.defId(), portraitX, portraitY, portraitX + portrait, portraitY + portrait, unit.downed());
         int textX = rendered ? portraitX + portrait + 3 : rect.x() + 5;
 
-        String hpText = unit.downed() ? "DOWN" : unit.hp() + "/" + unit.maxHp();
+        String hpText = unit.downed() ? "" : unit.hp() + "/" + unit.maxHp();
         int hpTextW = font.width(hpText);
         int nameMax = Math.max(12, rect.right() - hpTextW - 4 - textX - 4);
         String name = UiTextLayout.fit(unit.name(), nameMax);
         graphics.text(font, Component.literal(name), textX, rect.y() + 2, unit.downed() ? MUTED : TEXT, true);
-        graphics.text(font, Component.literal(hpText), rect.right() - hpTextW - 4, rect.y() + 2,
-                unit.downed() ? MUTED : SECONDARY, false);
+        if (!hpText.isBlank()) {
+            graphics.text(font, Component.literal(hpText), rect.right() - hpTextW - 4, rect.y() + 2, SECONDARY, false);
+        }
 
         int barX = textX;
         int barY = rect.bottom() - 4;
