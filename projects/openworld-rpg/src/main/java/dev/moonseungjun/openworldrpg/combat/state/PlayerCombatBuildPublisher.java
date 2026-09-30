@@ -119,7 +119,7 @@ public final class PlayerCombatBuildPublisher {
         CombatStateServices.states()
                 .synchronizeClassSkillManaCostMultiplier(
                         player.getUUID(),
-                        player instanceof ServerPlayer serverPlayer
+                        serverPlayer != null
                                 ? HunterRootPassiveEffects
                                         .skillManaCostMultiplier(
                                                 serverPlayer
