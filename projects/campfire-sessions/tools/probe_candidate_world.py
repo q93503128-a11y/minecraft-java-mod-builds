@@ -502,6 +502,65 @@ def main() -> int:
         }
     summary["anchor_terrain_12block_radius"] = anchor_terrain
 
+    # Find nearby compact build patches for anchors that currently intersect steep terrain.
+    def patch_stats(cx: int, cz: int, radius: int = 8):
+        vals = []
+        total = 0
+        land_count = 0
+        for (x, z), y in surface_y.items():
+            if abs(x - cx) <= radius and abs(z - cz) <= radius:
+                total += 1
+                if (x, z) in land:
+                    land_count += 1
+                    vals.append(y)
+        if not vals or total == 0:
+            return None
+        p10 = percentile(vals, 0.10)
+        p90 = percentile(vals, 0.90)
+        return {
+            "median_y": statistics.median(vals),
+            "p10_y": p10,
+            "p90_y": p90,
+            "spread": p90 - p10,
+            "land_fraction": land_count / total,
+            "samples": total,
+            "land_samples": land_count,
+        }
+
+    relocation_targets = {
+        "cafe": (-280, -24),
+        "clothing_shop": (-280, -7),
+        "museum": (-262, -24),
+    }
+    relocation = {}
+    for name, (tx, tz) in relocation_targets.items():
+        candidates = []
+        for cx in range(tx - 48, tx + 49, SAMPLE_STEP):
+            for cz in range(tz - 48, tz + 49, SAMPLE_STEP):
+                stats = patch_stats(cx, cz, 8)
+                if stats is None:
+                    continue
+                if stats["land_fraction"] < 0.90:
+                    continue
+                # Prefer naturally compact grades. Allow up to six blocks p10→p90.
+                if stats["spread"] > 6:
+                    continue
+                distance = abs(cx - tx) + abs(cz - tz)
+                # Penalize terrain work more than a short walking shift.
+                score = distance + stats["spread"] * 5 + abs(stats["median_y"] - anchor_terrain["plaza"]["median_y"])
+                candidates.append((score, distance, cx, cz, stats))
+        candidates.sort(key=lambda row: (row[0], row[1]))
+        relocation[name] = [
+            {
+                "x": cx,
+                "z": cz,
+                "distance_manhattan": distance,
+                **stats,
+            }
+            for _score, distance, cx, cz, stats in candidates[:8]
+        ]
+    summary["nearby_flat_patch_candidates"] = relocation
+
     out = root.parent / "campfire-world-probe.json"
     out.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
