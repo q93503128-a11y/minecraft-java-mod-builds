@@ -1406,6 +1406,9 @@ Correction:
 - a dedicated narrow `fieldProxyContentClear` rule replaces arena-style broad clearance for opening-site, field materialization and patrol-waypoint decisions
 - broad `sourceContentClear` remains intact for battle arenas/source-content-sensitive placement
 - materialization and insertion failures are ERROR-level one-shot diagnostics so the user's error log will contain the relevant TURNBOUND reason if this invariant fails again
+- additional lifecycle audit found that `DrehmalVisibleEncounterService.tick` could be called for an ACTIVE player after changing dimensions; because the service is a single bound-level runtime, this could rebind away from the external Overworld and clear its field actors. The service now ignores callers unless `ExternalWorldBootstrap.active(caller)` is true.
+
+Build TURNBOUND #951 verified the main observer-retention / narrow-clearance / loaded-chunk recovery changes before this final cross-dimension guard. The guard is included in the next checkpoint build rather than treating #951 as the final client artifact.
 
 Validation requested:
 - CODE REVIEWED: YES
