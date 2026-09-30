@@ -49,6 +49,7 @@ dependencies {
     externalStructureProbe 'curse.maven:villageria-1646907:8620392'
     externalStructureProbe 'curse.maven:syvillage-1696659:8946351'
     externalStructureProbe 'curse.maven:towns-and-towers-626761:7886369'
+    externalStructureProbe 'curse.maven:kogtyv-tav-963118:8762244'
 }
 
 tasks.register('copyExternalStructureProbe', Copy) {

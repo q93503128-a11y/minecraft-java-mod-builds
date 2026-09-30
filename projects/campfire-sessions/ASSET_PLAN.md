@@ -271,9 +271,10 @@ Current external structure candidates:
 - current Minecraft 26.2 release 1.13.11 supports NeoForge/Fabric/Quilt.
 - exact current 26.2 CurseForge file: `t_and_t-fabric-neoforge-1.13.11.jar`, file ID 7886369.
 - contains dozens of village structures and several coastal/biome architectural families, including a dedicated beach/fishing-village style.
-- public license metadata is inconsistent across distributors: CurseForge shows generic Creative Commons wording while Modrinth explicitly identifies **CC-BY-NC-SA-4.0**.
-- use the **stricter CC-BY-NC-SA-4.0 interpretation** for any extracted/adapted structure assets unless the packaged upstream LICENSE proves otherwise.
-- Campfire's current private/noncommercial distribution can comply, but attribution, modification notice and share-alike handling for adapted structure files are required.
+- the actual 26.2 JAR was inspected in CI.
+- packaged license text explicitly states **CC BY-NC-ND 4.0** and says the mod may be used in a modpack with credit/linking but may not be changed aside from config files.
+- therefore **do not extract, modify, recolor, repackage or ship individual Towns & Towers structure NBT files inside Campfire**.
+- Towns & Towers remains a strong visual/footprint/reference source only unless Campfire intentionally ships the complete unmodified mod as a dependency, which is currently not desired because its worldgen would conflict with the authored fixed island.
 - added to the analysis-only CI structure probe so actual packaged NBT footprints can be measured before selecting café, clothing-shop, museum-like civic shells, houses or harbor structures.
 - do not import the entire worldgen system merely to obtain one building if a small credited structure subset can cleanly satisfy the role.
 
@@ -348,61 +349,30 @@ Do not lock coordinates until the real map chunks and exact structure bounds are
 
 ### First exterior-role shortlist
 
-This is the first concrete visual/footprint shortlist for the accepted main-village layout.
+**Directly usable / modifiable permissive candidates**
+- Resident services: Villageria `town_hall.nbt` — 11×11, MIT.
+- General store: Villageria `shop.nbt` — 11×11, MIT.
+- Clinic: Villageria `hospital.nbt` — 11×11, MIT.
+- These three remain the strongest current direct civic candidates.
 
-**Resident services**
-- source: Villageria `town_hall.nbt`.
-- footprint: 11×11.
-- status: strongest current direct candidate.
-- reason: dedicated civic silhouette, compact footprint, MIT.
+**Towns & Towers role references — NOT extractable**
+The following exact structures remain useful for footprint and silhouette reference only because the packaged T&T license is CC BY-NC-ND 4.0:
+- café reference: `med_library_1.nbt` — 10×10.
+- clothing-shop reference: `med_leatherworker_1.nbt` — 10×10.
+- museum reference: `iberian_temple_1.nbt` — 15×11.
+- harbor references: `beach_outdoor_shack_1.nbt` — 7×9 and `beach_main_house_1.nbt` — 9×14.
+- house progression reference: Mediterranean 5×5 → 5×10/10×10 → Iberian 14×12 → 16×14/17×15.
 
-**General store**
-- source: Villageria `shop.nbt`.
-- footprint: 11×11.
-- status: strongest current direct candidate.
-- keep the physical merchandise-display interior concept separate from the exterior shell.
+Do not commit those T&T NBT files into Campfire.
 
-**Clinic**
-- source: Villageria `hospital.nbt`.
-- footprint: 11×11.
-- status: strongest current direct candidate.
-
-**Café**
-- primary shell candidate: Towns and Towers `med_library_1.nbt`.
-- footprint: 10×10.
-- alternative smaller shell: `med_butcher_1.nbt` or `med_cartographer_1.nbt`, each 10×5.
-- preference: use the 10×10 shell if visual inspection supports a warm two-story/cozy café presence.
-
-**Clothing shop**
-- primary shell candidate: Towns and Towers `med_leatherworker_1.nbt`.
-- footprint: 10×10.
-- reason: size and existing craft/cloth-like building identity fit a clothing store conversion.
-
-**Museum**
-- primary shell candidate: Towns and Towers `iberian_temple_1.nbt`.
-- footprint: 15×11, height 16.
-- reason: stronger vertical civic silhouette without consuming the huge 25×23 town-center footprint.
-- alternative grand shell/reference: `med_meeting_point_1.nbt` at 25×23 if the museum needs a much larger exterior after visual testing.
-- the museum interior still remains a much larger managed interior space.
-
-**Harbor**
-- `beach_outdoor_shack_1.nbt` — 7×9 for harbor service/storage kiosk.
-- `beach_main_house_1.nbt` — 9×14 for a larger harbor/visitor building if needed.
-- pair with Peterwolf boat entities after real client/physics validation.
-- avoid using the 25×29 beach meeting point as the default harbor because it would dominate the shoreline unnecessarily.
-
-**Player-house exterior progression — first candidate ladder**
-1. Mediterranean small house: ~5×5.
-2. Mediterranean medium/large house: ~5×10 or 10×10.
-3. Iberian medium house: roughly 11×9 to 14×12.
-4. Iberian large house: 16×14 or 17×15.
-
-This gives four visually meaningful exterior stages without inventing arbitrary debt tiers.
-Before final adoption, harmonize block palette/roof/trim where needed so the stage change reads as a larger version of one island architecture language rather than teleporting between unrelated villages.
-
-**Resident houses**
-- primarily use Mediterranean 5×5 / 5×10 / 10×10 shells with authored exterior decoration, color/palette and yard differences.
-- resident identity should come from house dressing, vegetation, signage, props and interior theme rather than requiring every resident to have a completely unique building geometry.
+**Next permissive structure pool: kogtyv-Towny and Village**
+- Minecraft 26.2 NeoForge 1.7 release.
+- MIT licensed.
+- source linked publicly.
+- current CurseForge file ID: 8762244.
+- added to the analysis-only CI structure probe.
+- purpose: find directly reusable house/shop/civic shells to replace the T&T reference-only candidates.
+- accept only structures that visually fit the coastal/cozy village and are not oversized city/high-rise pieces.
 
 ### First main-village X/Z layout draft
 
@@ -433,8 +403,8 @@ Visual reference result:
 - **Resident services:** Villageria Town Hall — exact 11×11 footprint verified.
 - **General store:** Villageria Village Shop — exact 11×11 footprint verified.
 - **Clinic:** Villageria Mini Hospital — exact 11×11 footprint verified.
-- **Player/resident houses:** still unresolved. SY Village was directly probed and does not provide the expected custom house NBT pool; continue with Towns and Towers and other legally extractable house sets.
-- **Café / clothing shop / museum shell:** still unresolved; Towns and Towers is now the strongest current structure-pool probe because its 26.2 JAR and CC BY 4.0 distribution terms are both available.
+- **Player/resident houses:** still unresolved. SY Village was directly probed and does not provide the expected custom house NBT pool. Towns & Towers is reference-only due its no-derivatives license. kogtyv-Towny and Village is now the next permissive probe.
+- **Café / clothing shop / museum shell:** still unresolved. Use T&T only as footprint/style reference; select actual packable shells from Villageria/kogtyv or another permissive source.
 - **Harbor/pier:** Peterwolf's boat mod is entering direct runtime build validation; Campfire still needs its own authored main-harbor structure/anchor plan.
 - current measured civic shells are small enough that the earlier 160×160 village test envelope is deliberately conservative, not evidence that the 7-island map is cramped.
 - do not declare the building set complete until actual structure bounds and screenshots/models are inspected together for one coherent village language.
