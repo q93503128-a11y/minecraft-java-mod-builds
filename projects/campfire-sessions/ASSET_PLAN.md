@@ -304,6 +304,32 @@ Current external structure candidates:
 - added to the analysis-only CI structure probe so actual packaged NBT footprints can be measured before selecting café, clothing-shop, museum-like civic shells, houses or harbor structures.
 - do not import the entire worldgen system merely to obtain one building if a small credited structure subset can cleanly satisfy the role.
 
+Actual CI NBT probe findings:
+- combined probe (Towns & Towers + Villageria + SY Village) parsed **851 structures with explicit size**.
+- the **Mediterranean** family is especially promising for the island-life village:
+  - small houses commonly **5×5**.
+  - medium/large shells commonly **5×10, 10×5 or 10×10**.
+  - med_library_1: **10×10×10**, useful civic/shop/café-shell reference.
+  - med_meeting_point_1: **25×17×23**, footprint 25×23; likely too large for a routine shop shell but useful plaza/civic reference.
+- **Iberian** family offers larger upgraded-looking homes:
+  - small houses roughly 8×6–8×8.
+  - medium houses roughly 11×9–15×11.
+  - large houses **16×14** and **17×15**.
+  - strong candidate source for visually meaningful house-upgrade stages without increasing interior-space requirements.
+- **Beach lighthouse** family provides:
+  - beach_main_house_1: **9×10×14**, footprint 9×14.
+  - beach_outdoor_shack_1: **7×5×9**, footprint 7×9.
+  - beach_meeting_point_1: **25×35×29**, footprint 25×29.
+  - useful coastal/harbor/lighthouse reference pool.
+- **Birch Romanian** family provides compact 7×7 small homes and ~13×10 to 15×9 larger shells.
+- **Classic** family provides compact 6×6/6×7 homes and ~12×11 large-house shells.
+- exact role selection remains visual-first: footprint suitability alone does not make a structure final.
+
+Current visual direction from these measured families:
+- prioritize **Mediterranean + selected Beach/Iberian structures** for the next visual inspection because their scale and coastal/life-sim silhouette are the strongest fit.
+- do not mix every biome style in one village.
+- aim for one coherent main-village architecture family, with secondary-island structures allowed to diverge more.
+
 **kogtyv-Towny and Village**
 - current Minecraft 26.2 NeoForge build exists.
 - MIT licensed with source linked.
@@ -669,6 +695,8 @@ Verified:
 - Minecraft 26.2 NeoForge release **1.0.19**, CurseForge file ID **8752063**.
 - no required external dependency is listed for the 26.2 NeoForge file.
 - added as the second controlled Campfire runtime/build trial after Skniro's Furniture.
+- **Campfire clean build + existing package-contract checks passed with Skniro and Peterwolf enabled together.**
+- this is BUILD VERIFIED compatibility only; no client visual/physics/multiplayer playtest has occurred.
 - client + server.
 - MPL-2.0.
 - custom 3D wooden watercraft.
@@ -1008,6 +1036,7 @@ Verified current 26.2 NeoForge candidates to investigate further:
 - client + server.
 - configurable quick-swap/radial tool access.
 - useful candidate for lifestyle-tool convenience if its presentation fits the final player model/UI.
+- Curios/Trinkets/Accessories integration is optional; on NeoForge the belt can function directly from player inventory without Curios installed.
 - ARR means use it as a dependency; do not copy/repackage source/assets outside the allowed modpack path.
 
 **Packed Up**
@@ -1288,11 +1317,11 @@ This research pass has narrowed several categories enough to justify direct runt
 
 ### First runtime-trial stack
 When implementation moves from planning to dependency validation, test these **one controlled group at a time**, not all at once:
-1. **Skniro's Furniture 1.5.2 / NeoForge 26.2** — furniture visuals, seating, storage, collision, rotation.
-2. **Peterwolf's Boats & Ships 1.0.19 / NeoForge 26.2** — boat models, multiplayer passengers, physics, docking.
-3. **Traveler Tool Belt 1.0.4 / NeoForge 26.2** — radial lifestyle-tool switching.
+1. **Skniro's Furniture 1.5.2 / NeoForge 26.2** — **BUILD VERIFIED** with Campfire / Java 25 / NeoForge 26.2.0.87; visual, seating and multiplayer acceptance still untested.
+2. **Peterwolf's Boats & Ships 1.0.19 / NeoForge 26.2** — **BUILD VERIFIED together with Skniro**; boat visuals, physics, docking and multiplayer passengers still untested.
+3. **Traveler Tool Belt 1.0.4 / NeoForge 26.2** — now entering controlled build validation for radial lifestyle-tool switching.
 4. **Sophisticated Backpacks / current stable 26.2** + Sophisticated Core — portable storage and Campfire catch-routing integration.
-5. **Player Animation Library 1.2.6** — guitar/fishing/net/watering full-body animation foundation.
+5. **Player Animation Library 1.2.6** — now entering controlled build validation for guitar/fishing/net/watering full-body animation foundation.
 6. **CPM v0.6.27c** — curated player appearance/model backend; test separately against PAL first.
 7. **NCL Skins 1.2.1** — compare as an alternate wardrobe/look backend; do not keep both CPM and NCL unless each proves a unique necessary role.
 8. photography: compare **Camerapture** against **Camera Mod** independently; adopt one.
