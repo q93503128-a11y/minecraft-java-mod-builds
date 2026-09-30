@@ -1271,3 +1271,24 @@ Validation requested by this checkpoint:
 - CLIENT RUNTIME TESTED: NO for this follow-up
 - PLAYTESTED: Build #948 screenshots/log reviewed; new follow-up NOT YET
 - MULTIPLAYER TESTED: NO
+
+
+Build TURNBOUND #949 / run `36659991560` verified commit
+`b23e4dcb4ce680bd4a40214c3a2acabc4ca7b4e3`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11074026549`
+- JAR SHA-256: `ffe96e1347a1b9514a136e7bdd382e7e27b84187e4a162d8e28321ac29b5d92c`
+- MRPACK SHA-256: `501f75e9fe2cf028822b7b927cf73dc2b5acc02bdbb332d7f204a03a21fe24ee`
+
+Validation after Build #949:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for Build #949
+- PLAYTESTED: NO for Build #949
+- MULTIPLAYER TESTED: NO
