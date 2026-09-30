@@ -29,6 +29,7 @@ public final class BattleEngine {
     public BattleEngine(BattleState state) {
         this.state = Objects.requireNonNull(state);
         initializeP07Partners();
+        initializeEquipmentTempoRules();
     }
     public BattleState state() { return state; }
 
@@ -251,6 +252,9 @@ public final class BattleEngine {
 
     private void applyGauge(CombatantState source, CombatantState target, int requested, String detail) {
         int amount = requested;
+        if (amount > 0 && source != target && source.side() == target.side()) {
+            amount += ruleValue(source, "ALLY_GAUGE_GRANT_PLUS_");
+        }
         if (amount < 0 && target.definition().boss() && source.side() != target.side()) {
             amount = (int)Math.floor(amount * target.definition().param("gaugeDelayEfficiency", 0.70));
         }
@@ -434,6 +438,12 @@ public final class BattleEngine {
                 && counteredThisAction.add("EL03:" + target.instanceId())) {
             reactions.addLast(new Reaction(target.instanceId(), attacker.instanceId(),
                     target.definition().param("counterPotency", 0.45), "EL03_BARRIER_COUNTER", 1));
+        }
+
+        if (direct && attacker != null && attacker.side() != target.side() && !target.downed()
+                && counteredThisAction.add("EQUIP_DIRECT_HIT_GAUGE:" + target.instanceId())) {
+            int equipmentGauge = ruleValue(target, "DIRECT_HIT_GAUGE_");
+            if (equipmentGauge > 0) applyGauge(target, target, equipmentGauge, "EQUIPMENT_DIRECT_HIT_GAUGE");
         }
 
         boolean redirected = detail != null && (detail.startsWith("redirect:") || detail.startsWith("partner_redirect:"));
@@ -1075,6 +1085,28 @@ public final class BattleEngine {
 
     private CombatantState p07Owner(CombatantSide side) {
         return state.living(side).stream().filter(c -> c.definition().id().equals("P07")).findFirst().orElse(null);
+    }
+
+    private void initializeEquipmentTempoRules() {
+        for (CombatantState unit : state.combatants()) {
+            if (unit.definition().summon()) continue;
+            int startGauge = ruleValue(unit, "START_GAUGE_");
+            if (startGauge <= 0) continue;
+            unit.addGauge(startGauge);
+            state.addEvent(new BattleEvent("GAUGE", unit.instanceId(), unit.instanceId(), startGauge, "EQUIPMENT_START_GAUGE"));
+        }
+    }
+
+    private static int ruleValue(CombatantState unit, String prefix) {
+        if (unit == null || prefix == null || prefix.isBlank()) return 0;
+        int total = 0;
+        for (String rule : unit.definition().rules()) {
+            if (rule == null || !rule.startsWith(prefix) || rule.length() <= prefix.length()) continue;
+            try {
+                total = Math.addExact(total, Integer.parseInt(rule.substring(prefix.length())));
+            } catch (NumberFormatException | ArithmeticException ignored) { }
+        }
+        return Math.max(0, total);
     }
 
     private void initializeP07Partners() {
