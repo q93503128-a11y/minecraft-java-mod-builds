@@ -52,13 +52,30 @@ jobs:
           test "$ok" = 1
           sha256sum "$OUT" | tee build/world-probe/world.sha256
           unzip -q "$OUT" -d build/world-probe/unpacked
-          find build/world-probe/unpacked -maxdepth 3 -type f -name level.dat -print
+          echo 'candidate level.dat roots:'
+          find build/world-probe/unpacked -maxdepth 4 -type f -name level.dat -print
+          echo 'top archive entries:'
+          unzip -l "$OUT" | sed -n '1,80p'
 
       - name: Analyze real world regions
         shell: bash
         run: |
           set -euo pipefail
-          WORLD_ROOT="$(find build/world-probe/unpacked -type f -name level.dat -printf '%h\n' | head -n 1)"
+          WORLD_ROOT="$(python3 - <<'PY'
+import pathlib
+base=pathlib.Path('build/world-probe/unpacked')
+candidates=[]
+for level in base.rglob('level.dat'):
+    root=level.parent
+    count=len(list((root/'region').glob('r.*.*.mca'))) if (root/'region').is_dir() else 0
+    candidates.append((count, len(root.parts), str(root)))
+for row in sorted(candidates, reverse=True):
+    print(row, file=__import__('sys').stderr)
+if not candidates:
+    raise SystemExit(1)
+print(max(candidates)[2])
+PY
+)"
           test -n "$WORLD_ROOT"
           python3 tools/probe_candidate_world.py "$WORLD_ROOT" | tee build/world-probe/probe.log
           cp "$(dirname "$WORLD_ROOT")/campfire-world-probe.json" build/world-probe/campfire-world-probe.json
@@ -67,7 +84,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          WORLD_ROOT="$(find build/world-probe/unpacked -type f -name level.dat -printf '%h\n' | head -n 1)"
+          WORLD_ROOT="$(python3 - <<'PY'
+import pathlib
+base=pathlib.Path('build/world-probe/unpacked')
+candidates=[]
+for level in base.rglob('level.dat'):
+    root=level.parent
+    count=len(list((root/'region').glob('r.*.*.mca'))) if (root/'region').is_dir() else 0
+    candidates.append((count, len(root.parts), str(root)))
+for row in sorted(candidates, reverse=True):
+    print(row, file=__import__('sys').stderr)
+if not candidates:
+    raise SystemExit(1)
+print(max(candidates)[2])
+PY
+)"
           rm -rf run/world
           mkdir -p run/world
           cp -a "$WORLD_ROOT"/. run/world/

@@ -103,7 +103,7 @@ def decode_heightmap(values: list[int]) -> list[int]:
     return out[:256]
 
 
-def parse_region(path: pathlib.Path):
+def parse_region(path: pathlib.Path, diag: dict):
     name = path.stem.split(".")
     rx, rz = int(name[1]), int(name[2])
     data = path.read_bytes()
@@ -120,6 +120,7 @@ def parse_region(path: pathlib.Path):
             continue
         length = int.from_bytes(data[pos : pos + 4], "big")
         ctype = data[pos + 4]
+        diag["compression_types"][str(ctype)] += 1
         payload = data[pos + 5 : pos + 4 + length]
         try:
             if ctype == 1:
@@ -129,12 +130,24 @@ def parse_region(path: pathlib.Path):
             elif ctype == 3:
                 raw = payload
             else:
+                diag["skipped_compression_types"][str(ctype)] += 1
                 continue
             root = NbtReader(raw).root()
-        except Exception:
+            diag["parsed_chunks"] += 1
+            if not diag.get("sample_root_keys"):
+                diag["sample_root_keys"] = sorted(root.keys())
+                probe = root.get("Level", root)
+                if isinstance(probe, dict):
+                    diag["sample_chunk_keys"] = sorted(probe.keys())
+        except Exception as exc:
+            diag["parse_errors"][type(exc).__name__] += 1
+            if len(diag["first_parse_errors"]) < 8:
+                diag["first_parse_errors"].append(f"{path.name} idx={idx} ctype={ctype}: {type(exc).__name__}: {exc}")
             continue
         chunk = root.get("Level", root)
         maps = chunk.get("Heightmaps") or chunk.get("heightmaps") or {}
+        if not maps:
+            diag["chunks_without_heightmaps"] += 1
         chosen = None
         for key in ("OCEAN_FLOOR", "MOTION_BLOCKING_NO_LEAVES", "WORLD_SURFACE"):
             arr = maps.get(key)
@@ -206,8 +219,16 @@ def main() -> int:
     summary["region_files"] = len(region_files)
     kind_counts = collections.Counter()
     chunks = 0
+    diag = {
+        "compression_types": collections.Counter(),
+        "skipped_compression_types": collections.Counter(),
+        "parse_errors": collections.Counter(),
+        "first_parse_errors": [],
+        "parsed_chunks": 0,
+        "chunks_without_heightmaps": 0,
+    }
     for rp in region_files:
-        for cx, cz, heights, kind in parse_region(rp):
+        for cx, cz, heights, kind in parse_region(rp, diag):
             chunks += 1
             kind_counts[kind] += 1
             bx, bz = cx * 16, cz * 16
@@ -217,8 +238,14 @@ def main() -> int:
                 heights_by_pos[(x, z)] = y
     summary["chunks_with_heightmaps"] = chunks
     summary["heightmap_kind_counts"] = dict(kind_counts)
+    summary["diagnostics"] = {
+        k: (dict(v) if isinstance(v, collections.Counter) else v)
+        for k, v in diag.items()
+    }
 
     if not heights_by_pos:
+        out = root.parent / "campfire-world-probe.json"
+        out.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps(summary, ensure_ascii=False, indent=2))
         raise SystemExit("no usable heightmaps found")
 
