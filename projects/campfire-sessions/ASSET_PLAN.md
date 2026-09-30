@@ -380,6 +380,8 @@ Skniro's Furniture is now the strongest primary furniture candidate found in the
 
 Verified:
 - Minecraft 26.2 NeoForge support.
+- current 26.2 NeoForge release observed in this pass: **1.5.2**.
+- published on Modrinth, so the final .mrpack can reference the project/version directly instead of rebundling an arbitrary JAR.
 - client + server.
 - MIT licensed.
 - public source with a maintained `26.2` branch.
@@ -533,8 +535,9 @@ Current external resident/model source pool:
 
 **Kenney Cube Pets**
 - CC0.
-- 24 downloadable files on the current pack page.
+- current Kenney page exposes 24 package files/assets metadata, while the downloadable OpenGameArt package description identifies **16 actual cubic pet models**; do not mistake file count for resident-species count.
 - animated.
+- current pack is explicitly supplied in standard 3D interchange formats and is optimized/low-poly.
 - version 2.0 is described as a complete remake with added animals and animations.
 - strongest current **style/model source** for the cute cubic resident direction.
 - important limitation: these are pet-style animals, not already-finished biped villagers with Campfire's full social animation set.
@@ -616,6 +619,28 @@ Current tool-art candidates / references:
 - current 26.2-compatible MIT resource/model source exists for a broad set of vanilla items.
 - useful permissive source for selected 3D held-item treatment, but does not by itself solve the full lifestyle-tool set.
 
+Additional permissive editable-base candidates:
+
+**Kenney Survival Kit**
+- CC0.
+- 80 low-poly 3D assets.
+- includes shovel, hoe, axe, pickaxe and upgraded variants, plus workbench/resource props.
+- useful for establishing a coherent basic/improved tool silhouette language.
+- does not by itself solve fishing rod + watering can + bug net.
+
+**Quaternius Survival Pack**
+- CC0.
+- 50+ low-poly survival assets.
+- includes a fishing rod, shovel, bucket and other exploration items.
+- useful supplement/reference when Kenney lacks a lifestyle-tool category.
+- do not mix its art with Kenney automatically; first compare proportions/material language in Minecraft.
+
+**Bugseid's Crafty Farmy Survival Tools**
+- CC0 asset license.
+- unusually complete lifestyle list: fishing rod, watering can, shovel, hoe, rake, sickle, bucket and more.
+- the complete pack currently requires a small paid download, so it is **not** part of the zero-user-action acquisition path and is not adopted.
+- keep only as a fallback option if the free/permissive sources cannot produce one coherent tool family.
+
 Still unresolved:
 - one coherent external watering-can model family.
 - one coherent bug-net model family.
@@ -656,7 +681,15 @@ Campfire adoption direction:
 - test collision, passenger sync, dismount behavior, shoreline docking, performance and compatibility with Campfire's registered Household boat ownership.
 - if integration is clean, this may close most of the custom boat-model problem without authoring a parallel vehicle system.
 
-Other references:
+Other references / fallback asset sources:
+
+**Kenney Watercraft Kit**
+- CC0.
+- 45+ low-poly boats/watercraft in OBJ/FBX/glTF-style source formats.
+- excellent permissive editable model source if Peterwolf's runtime/physics stack fails or if Campfire needs an additional cosmetic boat class.
+- because these are generic engine models rather than Minecraft-native entities, conversion, collision, attachment and animation work would still be required.
+- prefer Peterwolf's working Minecraft entity/physics implementation when its visuals and multiplayer behavior pass testing.
+
 - Small Ships remains a strong visual reference but currently lacks a 26.2 release and is not the leading adoption path.
 - larger floating-base boat mods are not preferred because Campfire wants lifestyle travel assets, not mobile bases.
 
@@ -944,7 +977,8 @@ Specimen individuality makes portable storage a likely real need rather than an 
 Verified current 26.2 NeoForge candidates to investigate further:
 
 **Sophisticated Backpacks**
-- Minecraft 26.2 NeoForge support confirmed.
+- Minecraft 26.2 NeoForge support confirmed; current 26.2 releases are actively maintained.
+- available directly on Modrinth, which is favorable for .mrpack dependency delivery despite its ARR license.
 - client + server.
 - tiered portable storage.
 - wearable/placeable.
@@ -956,9 +990,13 @@ Verified current 26.2 NeoForge candidates to investigate further:
 
 **Traveler Tool Belt**
 - Minecraft 26.2 NeoForge support confirmed.
+- latest observed 26.2 NeoForge release in this pass: **1.0.4**.
+- available on Modrinth.
+- project page explicitly allows public/private modpack use.
 - client + server.
 - configurable quick-swap/radial tool access.
 - useful candidate for lifestyle-tool convenience if its presentation fits the final player model/UI.
+- ARR means use it as a dependency; do not copy/repackage source/assets outside the allowed modpack path.
 
 **Packed Up**
 - Minecraft 26.2 NeoForge support confirmed.
@@ -1084,7 +1122,8 @@ display name
 Candidate backends / references:
 
 **Customizable Player Models (CPM)**
-- current Minecraft 26.2 NeoForge release exists.
+- current Minecraft 26.2 NeoForge release exists; latest observed 26.2 release in this pass is **v0.6.27c**.
+- available on Modrinth.
 - client + server.
 - MIT licensed.
 - source is published.
@@ -1094,7 +1133,8 @@ Candidate backends / references:
 - must be tested with Player Animation Library, cosmetic armor/clothing and guitar/fishing/photo animations.
 
 **NCL Skins**
-- current Minecraft 26.2 NeoForge release exists.
+- current Minecraft 26.2 NeoForge release exists; latest observed 26.2 release in this pass is **1.2.1**.
+- available on Modrinth and explicitly permits inclusion in modpacks.
 - client + server.
 - GPLv3.
 - supports saved complete looks, preview/editor flow, skin/model/cape/outer-layer combinations and look switching.
@@ -1124,7 +1164,8 @@ Preferred direction:
 
 ### Player animation candidate
 **Player Animation Library by ZigyTheBird**
-- Minecraft 26.2 release 1.2.6 supports both Fabric and NeoForge in one merged JAR.
+- Minecraft 26.2 release **1.2.6** supports both Fabric and NeoForge in one merged JAR.
+- available on Modrinth and CurseForge.
 - NeoForge integration is explicitly supported.
 - client + server.
 - MIT licensed.
@@ -1231,7 +1272,31 @@ Festival presentation must not be temporary programmer art.
 
 ## 17.5 Current model/asset search status
 
-This research pass has narrowed several categories enough to justify direct runtime/visual trials:
+This research pass has narrowed several categories enough to justify direct runtime/visual trials.
+
+### First runtime-trial stack
+When implementation moves from planning to dependency validation, test these **one controlled group at a time**, not all at once:
+1. **Skniro's Furniture 1.5.2 / NeoForge 26.2** — furniture visuals, seating, storage, collision, rotation.
+2. **Peterwolf's Boats & Ships 1.0.19 / NeoForge 26.2** — boat models, multiplayer passengers, physics, docking.
+3. **Traveler Tool Belt 1.0.4 / NeoForge 26.2** — radial lifestyle-tool switching.
+4. **Sophisticated Backpacks / current stable 26.2** + Sophisticated Core — portable storage and Campfire catch-routing integration.
+5. **Player Animation Library 1.2.6** — guitar/fishing/net/watering full-body animation foundation.
+6. **CPM v0.6.27c** — curated player appearance/model backend; test separately against PAL first.
+7. **NCL Skins 1.2.1** — compare as an alternate wardrobe/look backend; do not keep both CPM and NCL unless each proves a unique necessary role.
+8. photography: compare **Camerapture** against **Camera Mod** independently; adopt one.
+
+Do not call these adopted until the exact 26.2 runtime combination is tested and the visual result is inspected.
+For Modrinth distribution, prefer dependencies already published on Modrinth where quality is equivalent; this reduces manual packaging and licensing friction.
+
+### Visual/model sources worth retaining even if no runtime mod is adopted
+- **Kenney Cube Pets (CC0)** — resident style/species base candidate; actual pack describes 16 pet models.
+- **Kenney Watercraft Kit (CC0)** — 45+ boat/watercraft model fallback.
+- **Kenney Survival Kit (CC0)** — tool/resource/prop base with basic/upgraded tool variants.
+- **Quaternius Survival Pack (CC0)** — fishing/exploration tool supplement.
+- **Quaternius Ultimate Animated Animal Pack / Cube World Kit (CC0)** — animal rig/motion/reference pool.
+- **Quaternius LowPoly Crops Pack (CC0)** — 100+ crop models across growth stages; reference/editable art source if Minecraft-native crop mods leave visual gaps.
+
+
 
 **Strong leading trials**
 - Furniture: Skniro's Furniture.
