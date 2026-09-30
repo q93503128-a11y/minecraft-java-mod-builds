@@ -6,7 +6,6 @@ import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.PartyCommandPayload;
 import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.GrowthRulesV1;
-import io.github.q93503128.turnbound.progression.StarEssenceExchangeRules;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -51,7 +50,6 @@ public final class MetaMenuScreen extends Screen {
     private int selectedSkillIndex;
     private int skillDescriptionScroll;
     private boolean archiveLogOpen;
-    private boolean essenceExchangeOpen;
     private int archiveLogScroll;
     private long seenPartyRevision=-1L;
 
@@ -378,53 +376,11 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildArchive(){
+        // Global E-menu archive is deliberately read-only.
+        // Summon and Star Essence exchange remain physical NPC/facility actions.
         archiveLogOpen=true;
-        essenceExchangeOpen=false;
         currentTotal=0;
         currentPerPage=1;
-    }
-
-    private void buildEssenceExchange(ClientMetaState.Snapshot snapshot,int y){
-        int x=left+16,innerW=Math.max(1,panelWidth-32),gap=4;
-        addRenderableWidget(new BattleHudButton(x,y,88,22,Component.literal("← 소환"),MUTED,ignored->closeEssenceExchange()));
-
-        int crystalX=x+92;
-        int crystalW=Math.max(96,Math.min(220,innerW-92));
-        var crystal=new BattleHudButton(crystalX,y,crystalW,22,
-                Component.literal("150 정수 → 300 크리스탈"),
-                snapshot.essence()>=StarEssenceExchangeRules.CRYSTAL_COST?BLUE:MUTED,
-                ignored->send("ESSENCE_CRYSTAL"));
-        crystal.active=FacilityUiAccess.archive()&&snapshot.essence()>=StarEssenceExchangeRules.CRYSTAL_COST;
-        addRenderableWidget(crystal);
-
-        List<ClientMetaState.CharacterRow> choices=snapshot.characters().stream()
-                .filter(ClientMetaState.CharacterRow::owned)
-                .filter(row->row.nativeStar()==4||row.nativeStar()==5)
-                .sorted(Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar).reversed()
-                        .thenComparing(ClientMetaState.CharacterRow::name))
-                .toList();
-        int cols=innerW>=270?3:2;
-        int cardGap=4;
-        int cardW=Math.max(70,(innerW-cardGap*(cols-1))/cols);
-        int rowY=y+62;
-        int visibleRows=UiPaging.rowsThatFit(rowY,contentBottom()-28,24,1);
-        int per=Math.max(1,cols*visibleRows);
-        setPaging(choices.size(),per);
-        int start=page*per,end=Math.min(choices.size(),start+per);
-        for(int i=start;i<end;i++){
-            var row=choices.get(i);
-            int local=i-start;
-            int cost=StarEssenceExchangeRules.choiceCost(row.nativeStar());
-            int xx=x+(local%cols)*(cardW+cardGap),yy=rowY+(local/cols)*24;
-            String bonus=row.bonusLevel()>=GrowthRulesV1.duplicateBonusMax()?"MAX":"+"+row.bonusLevel();
-            String label="★"+row.nativeStar()+" "+row.name()+" · "+bonus+" · "+cost;
-            var button=new BattleHudButton(xx,yy,cardW,20,Component.literal(UiTextLayout.fit(label,cardW-8)),
-                    snapshot.essence()>=cost?(row.nativeStar()==5?GOLD:PURPLE):MUTED,
-                    ignored->send("ESSENCE_PICK"+row.nativeStar()+"|"+row.id()));
-            button.active=FacilityUiAccess.archive()&&snapshot.essence()>=cost;
-            addRenderableWidget(button);
-        }
-        buildPager();
     }
 
     private void buildQuests(){
@@ -580,12 +536,10 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void movePage(int delta){page=UiPaging.clampPage(page+delta,currentTotal,currentPerPage);rebuild();}
-    private void openArchiveLog(){archiveLogOpen=true;essenceExchangeOpen=false;archiveLogScroll=0;rebuild();}
+    private void openArchiveLog(){archiveLogOpen=true;archiveLogScroll=0;rebuild();}
     private void closeArchiveLog(){archiveLogOpen=false;archiveLogScroll=0;rebuild();}
-    private void openEssenceExchange(){essenceExchangeOpen=true;archiveLogOpen=false;rebuild();}
-    private void closeEssenceExchange(){essenceExchangeOpen=false;rebuild();}
     private void rebuild(){clearWidgets();init();}
-    private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";archiveLogOpen=false;essenceExchangeOpen=false;rebuild();}
+    private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";archiveLogOpen=false;rebuild();}
     private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
     private void openMap(){Minecraft.getInstance().gui.setScreen(new DrehmalWorldMapScreen());}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
@@ -909,14 +863,6 @@ public final class MetaMenuScreen extends Screen {
                 String hint="휠 스크롤 · "+(archiveLogScroll+1)+" / "+(maxScroll+1);
                 g.text(font,Component.literal(hint),left+panelWidth-16-font.width(hint),contentBottom()-10,MUTED,false);
             }
-            return;
-        }
-
-        if(essenceExchangeOpen){
-            int y=contentTop()+31;
-            int w=Math.max(1,panelWidth-32);
-            g.text(font,Component.literal("별의 정수 영구 교환소 · 보유 정수 "+s.essence()),left+16,y,GOLD,true);
-            g.text(font,Component.literal(UiTextLayout.fit("선택 복사본도 중복 보상 적용 · ★4 정수 100 / ★5 정수 250 환원 · +레벨 최대 +10",w)),left+16,y+14,SECONDARY,false);
             return;
         }
 

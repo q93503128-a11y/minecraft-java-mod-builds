@@ -250,3 +250,12 @@ Long-term production implication:
 - reveal distant map regions gradually instead of exposing every far destination as an immediate objective;
 - connect unlocked regions through discovered fast travel, shortcuts and later mount support;
 - preserve large untouched spaces for future characters, enemies, dungeons, hidden quests, bosses and region-specific systems.
+
+
+### Physical-service boundary
+
+TURNBOUND's global management menu is intentionally not a remote town-service toolbar.
+- E menu may manage party, equipped ownership/loadout, quests, codex, records and settings.
+- purchase/sale, enhancement, summon/Star Essence exchange and fast travel remain physical NPC/facility interactions.
+- the global Archive page is read-only summon history/rates; exchange actions exist only in the physical summon facility.
+- server gates remain authoritative even if a client attempts to send a facility command directly.
