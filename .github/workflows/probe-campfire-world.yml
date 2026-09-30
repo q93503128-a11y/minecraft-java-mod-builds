@@ -85,14 +85,25 @@ jobs:
           simulation-distance=4
           spawn-protection=0
           EOF
-          set +e
-          timeout 150s ./gradlew --no-daemon runServer > build/world-probe/server-load.log 2>&1
-          code=$?
-          set -e
-          if grep -Eq 'Done \([0-9.]+s\)!|Done \(' build/world-probe/server-load.log; then
+          ./gradlew --no-daemon runServer > build/world-probe/server-load.log 2>&1 &
+          pid=$!
+          success=0
+          for i in $(seq 1 120); do
+            if grep -Eq 'Done \([0-9.]+s\)!|Done \(' build/world-probe/server-load.log; then
+              success=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          kill "$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+          if [ "$success" = 1 ]; then
             echo 'WORLD_LOAD_26_2=SUCCESS' | tee build/world-probe/world-load-status.txt
           else
-            echo "WORLD_LOAD_26_2=FAIL exit=$code" | tee build/world-probe/world-load-status.txt
+            echo 'WORLD_LOAD_26_2=FAIL' | tee build/world-probe/world-load-status.txt
             tail -n 200 build/world-probe/server-load.log
             exit 1
           fi
