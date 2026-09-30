@@ -1466,3 +1466,24 @@ Validation requested:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO for this simplification
 - MULTIPLAYER TESTED: NO
+
+
+Build TURNBOUND #953 / run `36665400253` verified commit
+`db6183e62782219cd432df0b2c75aa079e873ac8`:
+
+- Gradle test/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click Modrinth pack verification: PASS
+- artifact upload: PASS — artifact id `11076390361`
+- JAR SHA-256: `55846c7c364edf1893d28321243329835fa43f0d8e0cc65fc1747e9cf98eb0a3`
+- MRPACK SHA-256: `03052601d2439f40d11f238c4a314bac2906fccf250250c7da1bf55659c1eefd`
+
+Validation after Build #953:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CLIENT RUNTIME TESTED: NO for Build #953
+- PLAYTESTED: NO for Build #953
+- MULTIPLAYER TESTED: NO
