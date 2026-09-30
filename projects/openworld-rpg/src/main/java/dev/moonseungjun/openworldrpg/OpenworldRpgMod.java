@@ -24,6 +24,8 @@ import dev.moonseungjun.openworldrpg.housing.R01HousingService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
 import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
+import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementAttachments;
+import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementService;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchAttachments;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassSwitchService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01ClassStarterService;
@@ -97,6 +99,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerCurrencyAttachments.initialize();
         PlayerDeathPenaltyAttachments.initialize();
         PlayerClassSwitchAttachments.initialize();
+        PlayerClassAdvancementAttachments.initialize();
         ProjectCombatNetworking.initialize();
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
@@ -173,6 +176,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             CombatStateServices.restoreRuntime(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 PlayerClassSwitchService.reconcilePending(handler.getPlayer());
+                PlayerClassAdvancementService.reconcilePendingBranchSwitch(
+                        handler.getPlayer()
+                );
             }
             R01PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);
             M0PlayerVerificationBootstrap.prepare(handler.getPlayer(), LOGGER);

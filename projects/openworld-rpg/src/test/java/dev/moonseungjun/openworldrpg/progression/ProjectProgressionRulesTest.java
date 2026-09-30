@@ -32,6 +32,19 @@ class ProjectProgressionRulesTest {
     }
 
     @Test
+    void branchSwitchGoldCostMatchesCanonFormulaAndCaps() {
+        assertEquals(150L, ProjectProgressionRules.branchSwitchGoldCost(8));
+        assertEquals(310L, ProjectProgressionRules.branchSwitchGoldCost(20));
+        assertEquals(770L, ProjectProgressionRules.branchSwitchGoldCost(40));
+        assertEquals(1430L, ProjectProgressionRules.branchSwitchGoldCost(60));
+        assertEquals(1500L, ProjectProgressionRules.branchSwitchGoldCost(80));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ProjectProgressionRules.branchSwitchGoldCost(0)
+        );
+    }
+
+    @Test
     void classXpCurveMatchesCanonAnchors() {
         assertEquals(120L, ProjectProgressionRules.classXpToNext(1));
         assertEquals(250L, ProjectProgressionRules.classXpToNext(5));

@@ -58,6 +58,13 @@ public final class ProjectProgressionRules {
         return Math.round(Math.min(2500.0, raw) / 10.0) * 10L;
     }
 
+    public static long branchSwitchGoldCost(int combatLevel) {
+        long classSwitchCost = classSwitchGoldCost(combatLevel);
+        double raw = 0.60 * classSwitchCost;
+        long rounded = Math.round(raw / 10.0) * 10L;
+        return Math.max(150L, Math.min(1500L, rounded));
+    }
+
     public static long classXpToNext(int rank) {
         if (rank < 1 || rank >= MAX_CLASS_RANK) {
             throw new IllegalArgumentException(
