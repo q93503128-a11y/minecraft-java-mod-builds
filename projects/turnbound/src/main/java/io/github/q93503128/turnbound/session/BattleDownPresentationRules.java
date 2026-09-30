@@ -7,11 +7,11 @@ final class BattleDownPresentationRules {
     private BattleDownPresentationRules() {}
 
     static boolean retiresVisual(CombatantSide side, boolean summon) {
-        return summon || side == CombatantSide.ENEMY;
+        return summon;
     }
 
     static boolean usesRecoveryMarker(CombatantSide side, boolean summon) {
-        return !summon && side == CombatantSide.ALLY;
+        return !summon;
     }
 
     static int removalTicks(boolean summon, boolean boss) {
