@@ -58,14 +58,33 @@ tasks.register('copyExternalStructureProbe', Copy) {
 }
 
 def licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
+def externalStructureAssetsOutput = layout.buildDirectory.dir('generated/externalStructureAssets')
 def pythonCommand = System.getProperty('os.name').startsWith('Windows') ? 'python' : 'python3'
+
 def prepareLicensedAssets = tasks.register('prepareLicensedAssets', Exec) {
     inputs.file 'tools/prepare_licensed_assets.py'
     outputs.dir licensedAssetsOutput
     commandLine pythonCommand, file('tools/prepare_licensed_assets.py').absolutePath, licensedAssetsOutput.get().asFile.absolutePath
 }
-sourceSets.main.resources { srcDir licensedAssetsOutput }
-tasks.named('processResources').configure { dependsOn prepareLicensedAssets }
+
+def prepareExternalStructureAssets = tasks.register('prepareExternalStructureAssets', Exec) {
+    dependsOn tasks.named('copyExternalStructureProbe')
+    inputs.file 'tools/extract_external_structure_assets.py'
+    inputs.files configurations.externalStructureProbe
+    outputs.dir externalStructureAssetsOutput
+    commandLine pythonCommand,
+        file('tools/extract_external_structure_assets.py').absolutePath,
+        layout.buildDirectory.dir('externalStructureProbe').get().asFile.absolutePath,
+        externalStructureAssetsOutput.get().asFile.absolutePath
+}
+
+sourceSets.main.resources {
+    srcDir licensedAssetsOutput
+    srcDir externalStructureAssetsOutput
+}
+tasks.named('processResources').configure {
+    dependsOn prepareLicensedAssets, prepareExternalStructureAssets
+}
 
 neoForge {
     version = project.neo_version
