@@ -235,6 +235,17 @@ UI 파일/클래스 구조보다 **플레이어가 몇 번 눌러야 원하는 �
 
 전투 action보다 시각 우선순위 낮게.
 
+### 6.1 Battle Result compact containment — 2026-09-30
+
+전투 결과는 4인 파티 성장과 복귀 버튼을 같은 화면에서 모두 읽을 수 있어야 한다.
+
+- 하단 복귀/정리 버튼 영역을 먼저 예약하고 성장 행이 그 아래로 침범하지 않게 한다.
+- 세로 공간이 충분하면 기존 상세 1열 성장 행을 유지한다.
+- 작은 GUI viewport에서는 4인 성장을 2×2 compact grid로 전환한다.
+- compact grid도 portrait, 이름, 레벨 변화, XP 진행을 유지하며 단순히 마지막 행을 잘라내지 않는다.
+- 화면 밖으로 삐져나온 텍스트/portrait나 복귀 버튼과 겹치는 성장 행은 허용하지 않는다.
+- 실제 Minecraft GUI scale별 스크린샷 검수 전에는 visual completion으로 취급하지 않는다.
+
 ## 7. Targeting
 
 Primary:
