@@ -7,34 +7,39 @@ import com.geckolib.cache.model.GeoLocator;
 import com.geckolib.cache.model.ModelProperties;
 import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.base.GeoRenderState;
+import com.geckolib.renderer.base.RenderPassInfo;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.resources.Identifier;
 
 import java.util.Map;
 
 /**
  * Programmatic GeckoLib model backed by Campfire's converted triangle hierarchy.
- *
- * <p>This avoids forcing arbitrary Plumberry meshes through Bedrock cuboids.
- * The model still participates in GeckoLib's entity render lifecycle, bone
- * snapshots and per-bone attachment positioning.</p>
  */
 public final class ResidentMeshGeoModel<T extends GeoAnimatable> extends GeoModel<T> {
     private final Identifier modelId;
-    private final Identifier texture;
+    private final Identifier fallbackTexture;
     private final Identifier animationResource;
+    private final ResidentMeshMaterial[] materials;
     private final BakedGeoModel bakedModel;
 
     public ResidentMeshGeoModel(
             Identifier modelId,
-            Identifier texture,
+            Identifier fallbackTexture,
             Identifier animationResource,
             int textureWidth,
             int textureHeight,
+            ResidentMeshMaterial[] materials,
             ResidentMeshBoneDefinition[] roots
     ) {
+        if (materials.length == 0) {
+            throw new IllegalArgumentException("resident mesh requires at least one material");
+        }
+
         this.modelId = modelId;
-        this.texture = texture;
+        this.fallbackTexture = fallbackTexture;
         this.animationResource = animationResource;
+        this.materials = materials.clone();
 
         GeoBone[] bakedRoots = new GeoBone[roots.length];
         for (int i = 0; i < roots.length; i++) {
@@ -56,6 +61,36 @@ public final class ResidentMeshGeoModel<T extends GeoAnimatable> extends GeoMode
         );
     }
 
+    public int materialCount() {
+        return this.materials.length;
+    }
+
+    public ResidentMeshMaterial material(int index) {
+        return this.materials[index];
+    }
+
+    public <R extends GeoRenderState> void renderMaterial(
+            RenderPassInfo<R> renderPassInfo,
+            int materialIndex,
+            VertexConsumer vertexConsumer,
+            int packedLight,
+            int packedOverlay,
+            int renderColor
+    ) {
+        for (GeoBone bone : this.bakedModel.topLevelBones()) {
+            if (bone instanceof ResidentMeshBone meshBone) {
+                meshBone.positionAndRenderMaterial(
+                        renderPassInfo,
+                        materialIndex,
+                        vertexConsumer,
+                        packedLight,
+                        packedOverlay,
+                        renderColor
+                );
+            }
+        }
+    }
+
     @Override
     public Identifier getModelResource(GeoRenderState renderState) {
         return this.modelId;
@@ -63,7 +98,7 @@ public final class ResidentMeshGeoModel<T extends GeoAnimatable> extends GeoMode
 
     @Override
     public Identifier getTextureResource(GeoRenderState renderState) {
-        return this.texture;
+        return this.fallbackTexture;
     }
 
     @Override
@@ -71,10 +106,6 @@ public final class ResidentMeshGeoModel<T extends GeoAnimatable> extends GeoMode
         return this.animationResource;
     }
 
-    /**
-     * Deliberately bypass GeckoLib's .geo.json baked-model cache.
-     * The source hierarchy is created from the converted Plumberry runtime data.
-     */
     @Override
     public BakedGeoModel getBakedModel(Identifier location) {
         return this.bakedModel;
