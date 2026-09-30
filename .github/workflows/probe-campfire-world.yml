@@ -61,21 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          WORLD_ROOT="$(python3 - <<'PY'
-import pathlib
-base=pathlib.Path('build/world-probe/unpacked')
-candidates=[]
-for level in base.rglob('level.dat'):
-    root=level.parent
-    count=len(list((root/'region').glob('r.*.*.mca'))) if (root/'region').is_dir() else 0
-    candidates.append((count, len(root.parts), str(root)))
-for row in sorted(candidates, reverse=True):
-    print(row, file=__import__('sys').stderr)
-if not candidates:
-    raise SystemExit(1)
-print(max(candidates)[2])
-PY
-)"
+          WORLD_ROOT="$(python3 -c "import pathlib; base=pathlib.Path('build/world-probe/unpacked'); cs=[(len(list((p.parent/'region').glob('r.*.*.mca'))) if (p.parent/'region').is_dir() else 0, len(p.parent.parts), str(p.parent)) for p in base.rglob('level.dat')]; print(max(cs)[2] if cs else '')")"
           test -n "$WORLD_ROOT"
           python3 tools/probe_candidate_world.py "$WORLD_ROOT" | tee build/world-probe/probe.log
           cp "$(dirname "$WORLD_ROOT")/campfire-world-probe.json" build/world-probe/campfire-world-probe.json
@@ -84,21 +70,7 @@ PY
         shell: bash
         run: |
           set -euo pipefail
-          WORLD_ROOT="$(python3 - <<'PY'
-import pathlib
-base=pathlib.Path('build/world-probe/unpacked')
-candidates=[]
-for level in base.rglob('level.dat'):
-    root=level.parent
-    count=len(list((root/'region').glob('r.*.*.mca'))) if (root/'region').is_dir() else 0
-    candidates.append((count, len(root.parts), str(root)))
-for row in sorted(candidates, reverse=True):
-    print(row, file=__import__('sys').stderr)
-if not candidates:
-    raise SystemExit(1)
-print(max(candidates)[2])
-PY
-)"
+          WORLD_ROOT="$(python3 -c "import pathlib; base=pathlib.Path('build/world-probe/unpacked'); cs=[(len(list((p.parent/'region').glob('r.*.*.mca'))) if (p.parent/'region').is_dir() else 0, len(p.parent.parts), str(p.parent)) for p in base.rglob('level.dat')]; print(max(cs)[2] if cs else '')")"
           rm -rf run/world
           mkdir -p run/world
           cp -a "$WORLD_ROOT"/. run/world/
