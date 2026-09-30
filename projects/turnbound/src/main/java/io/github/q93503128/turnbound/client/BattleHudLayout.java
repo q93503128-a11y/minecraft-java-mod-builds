@@ -78,10 +78,14 @@ final class BattleHudLayout {
             enemies.add(inside(width, height, width - margin - 1, margin + i, 1, 1));
         }
 
-        // Restrained top-center turn queue, slightly narrower than the previous playtest pass.
-        int timelineW = Math.min(compact ? 164 : 214, Math.max(1, width - margin * 2));
-        int timelineH = tiny ? 23 : compact ? 27 : 30;
-        Rect timeline = inside(width, height, (width - timelineW) / 2, margin, timelineW, timelineH);
+        // Readiness panel follows the left-edge action-gauge pattern used by modern turn RPGs.
+        // It carries actual Gauge + effective SPD, so it needs more vertical room than the old portrait-only rail.
+        int timelineRows = tiny ? 5 : compact ? 7 : 9;
+        int timelineRowH = tiny ? 11 : compact ? 12 : 13;
+        int timelineHeaderH = tiny ? 12 : 14;
+        int timelineW = Math.min(tiny ? 148 : compact ? 184 : 222, Math.max(1, width - margin * 2));
+        int timelineH = timelineHeaderH + timelineRows * timelineRowH + 4;
+        Rect timeline = inside(width, height, margin, margin, timelineW, timelineH);
 
         // Current actor actions use one vertical scan path and leave more world visible than the older wide dock.
         int dockW = tiny ? Math.min(102, Math.max(90, width / 3))
@@ -93,7 +97,7 @@ final class BattleHudLayout {
         int headerH = tiny ? 14 : compact ? 15 : 16;
         int skillAreaH = SKILL_COUNT * skillH + (SKILL_COUNT - 1) * skillGap;
         int dockBottom = controlsY - s;
-        int dockY = Math.max(timeline.bottom() + s, dockBottom - headerH - skillAreaH);
+        int dockY = Math.max(margin, dockBottom - headerH - skillAreaH);
         Rect header = inside(width, height, dockX, dockY, dockW, headerH);
         List<Rect> skills = new ArrayList<>(SKILL_COUNT);
         for (int i = 0; i < SKILL_COUNT; i++) {
@@ -103,7 +107,9 @@ final class BattleHudLayout {
         int tooltipW = tiny ? 134 : compact ? 158 : 212;
         int tooltipH = tiny ? 46 : compact ? 66 : 84;
         int tooltipX = Math.max(margin, dockX - tooltipW - s);
-        int tooltipY = Math.max(timeline.bottom() + s,
+        boolean tooltipCouldOverlapGauge = tooltipX < timeline.right() + s;
+        int tooltipTop = tooltipCouldOverlapGauge ? timeline.bottom() + s : margin;
+        int tooltipY = Math.max(tooltipTop,
                 Math.min(dockY + (tiny ? 3 : 10), controlsY - tooltipH - s));
         Rect tooltip = inside(width, height, tooltipX, tooltipY,
                 Math.min(tooltipW, Math.max(1, dockX - margin - s)), tooltipH);
