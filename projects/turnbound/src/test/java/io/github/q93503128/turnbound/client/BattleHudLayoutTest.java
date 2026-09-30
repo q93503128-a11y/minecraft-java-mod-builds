@@ -43,19 +43,21 @@ class BattleHudLayoutTest {
             assertFalse(ally.overlaps(layout.speedButton()));
             assertFalse(ally.overlaps(layout.fleeButton()));
         }
-        assertTrue(layout.timeline().right() < 854 * 3 / 4);
-        assertTrue(layout.timeline().x() > 854 / 4);
+        assertTrue(layout.timeline().x() < 854 / 4);
+        assertTrue(layout.timeline().right() < 854 / 3);
+        assertFalse(layout.timeline().overlaps(layout.actionHeader()));
         assertTrue(layout.tooltipArea().right() <= layout.actionHeader().x());
         for (var enemy : layout.enemyBars()) assertEquals(1, enemy.width());
         assertEquals(1, layout.confirmButton().width());
     }
 
     @Test
-    void turnOrderRailReservesPortraitAndNameRows() {
+    void actionGaugeReservesMultipleReadableRowsWithoutBlockingTheActionDock() {
         for (int[] size : new int[][]{{320,180},{640,360},{854,480},{1280,720}}) {
             BattleHudLayout.Layout layout = BattleHudLayout.calculate(size[0], size[1]);
-            assertTrue(layout.timeline().height() >= 23, size[0] + "x" + size[1]);
-            assertTrue(layout.timeline().bottom() < layout.actionHeader().bottom(), size[0] + "x" + size[1]);
+            assertTrue(layout.timeline().height() >= 67, size[0] + "x" + size[1]);
+            assertTrue(layout.timeline().width() >= 140, size[0] + "x" + size[1]);
+            assertFalse(layout.timeline().overlaps(layout.actionHeader()), size[0] + "x" + size[1]);
         }
     }
 
