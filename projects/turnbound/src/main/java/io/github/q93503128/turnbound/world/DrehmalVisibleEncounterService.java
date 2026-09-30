@@ -432,8 +432,9 @@ final class DrehmalVisibleEncounterService {
 
         private boolean adoptTagged(ServerLevel level) {
             Vec3 center = vec(site.runtimePosition());
-            AABB area = new AABB(center.x - 80.0D, center.y - 32.0D, center.z - 80.0D,
-                    center.x + 80.0D, center.y + 32.0D, center.z + 80.0D);
+            double adoptRadius = 128.0D;
+            AABB area = new AABB(center.x - adoptRadius, center.y - 48.0D, center.z - adoptRadius,
+                    center.x + adoptRadius, center.y + 48.0D, center.z + adoptRadius);
             Map<Integer, BattleActorEntity> bySlot = new HashMap<>();
             String encounterTag = ENCOUNTER_TAG_PREFIX + slot.locator();
             for (BattleActorEntity actor : level.getEntitiesOfClass(BattleActorEntity.class, area)) {
