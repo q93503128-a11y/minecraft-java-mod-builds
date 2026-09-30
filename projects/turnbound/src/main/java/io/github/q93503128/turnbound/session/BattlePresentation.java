@@ -113,11 +113,14 @@ final class BattlePresentation {
             equipStandIn(stand,combatant);level.addFreshEntity(stand);actor=stand;visualId=baseVisualId;
         }
         clearDownMarker(level, combatant.instanceId());
-        retiredDownedVisuals.remove(combatant.instanceId());
+        boolean recoveringFromDown = retiredDownedVisuals.remove(combatant.instanceId());
         actors.put(combatant.instanceId(),actor.getUUID()); homes.put(combatant.instanceId(),pos); homeYaws.put(combatant.instanceId(),yaw);
         sides.put(combatant.instanceId(),combatant.side()); summons.put(combatant.instanceId(),combatant.definition().summon());
         visualIds.put(combatant.instanceId(),visualId); downed.put(combatant.instanceId(),combatant.downed()); barriers.put(combatant.instanceId(),combatant.barrier());
         bossPhases.put(combatant.instanceId(),phaseFor(combatant)); pendingRemovalTicks.remove(combatant.instanceId()); returnTimers.remove(combatant.instanceId());
+        if(recoveringFromDown && !combatant.downed() && actor instanceof BattleActorEntity animated){
+            animated.playRevive();BattleVfx.revive(level,pos);
+        }
     }
 
     private void removeMissing(ServerLevel level,List<CombatantState> units){
