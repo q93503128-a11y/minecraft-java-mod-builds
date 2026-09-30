@@ -11,6 +11,7 @@ import io.github.q93503128.turnbound.session.BattleSessionManager;
 import io.github.q93503128.turnbound.session.MultiplayerPartyService;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -170,6 +171,7 @@ final class DrehmalVisibleEncounterService {
         private FieldEncounterRules.Phase phase = FieldEncounterRules.Phase.PATROL;
         private boolean blockedArenaWarned;
         private boolean blockedMaterializationWarned;
+        private boolean unexpectedActorLossLogged;
         private boolean missingVisualWarned;
 
         private SharedEncounter(
@@ -210,8 +212,7 @@ final class DrehmalVisibleEncounterService {
 
             List<ServerPlayer> observers = observers(level);
             if (observers.isEmpty()) {
-                discardActors(level);
-                resetToRoute();
+                suspendWithoutObservers(level);
                 return;
             }
 
@@ -330,11 +331,26 @@ final class DrehmalVisibleEncounterService {
         private boolean ensureActors(ServerLevel level) {
             // Once our own representative exists, keep it authoritative. Rechecking the cached survey origin every
             // tick can falsely delete a valid proxy when source-map decoration entities finish loading later.
-            if (actorsAlive(level)) return true;
+            if (actorsAlive(level)) {
+                unexpectedActorLossLogged = false;
+                return true;
+            }
+
+            // A persistent field entity may be temporarily unavailable while its chunk is being loaded. Do not erase
+            // the UUID and race a duplicate spawn into the same encounter until the pivot chunk is actually present.
+            if (!actors.isEmpty() && !level.hasChunkAt(BlockPos.containing(pivot))) return false;
+
+            if (!actors.isEmpty() && !unexpectedActorLossLogged) {
+                Turnbound.LOGGER.error(
+                        "TURNBOUND field representative {} vanished while its pivot chunk was loaded; recovering at {}, {}, {}",
+                        slot.locator(), pivot.x, pivot.y, pivot.z);
+                unexpectedActorLossLogged = true;
+            }
 
             discardActors(level);
             if (adoptTagged(level)) {
                 blockedMaterializationWarned = false;
+                unexpectedActorLossLogged = false;
                 updateActors(level, false);
                 return true;
             }
@@ -342,8 +358,8 @@ final class DrehmalVisibleEncounterService {
             var spawnPosition = DrehmalAdaptiveRoutePlacement.visibleActorPosition(level, site);
             if (spawnPosition == null) {
                 if (!blockedMaterializationWarned) {
-                    Turnbound.LOGGER.warn(
-                            "TURNBOUND field representative {} remained dormant: no live safe materialization point",
+                    Turnbound.LOGGER.error(
+                            "TURNBOUND field representative {} remained dormant: no live field-proxy point passed checks",
                             slot.locator());
                     blockedMaterializationWarned = true;
                 }
@@ -373,7 +389,7 @@ final class DrehmalVisibleEncounterService {
                 BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, pivot, yawFor(facing));
                 if (actor == null) {
                     if (!blockedMaterializationWarned) {
-                        Turnbound.LOGGER.warn(
+                        Turnbound.LOGGER.error(
                                 "TURNBOUND field representative {} failed entity insertion at {}, {}, {}",
                                 slot.locator(), pivot.x, pivot.y, pivot.z);
                         blockedMaterializationWarned = true;
@@ -392,8 +408,26 @@ final class DrehmalVisibleEncounterService {
                 actors.add(actor.getUUID());
             }
             blockedMaterializationWarned = false;
+            unexpectedActorLossLogged = false;
             updateActors(level, false);
             return true;
+        }
+
+        private void suspendWithoutObservers(ServerLevel level) {
+            Entity raw = lead(level);
+            if (raw instanceof BattleActorEntity actor) {
+                pivot = actor.position();
+                actor.stopFieldNavigation();
+                actor.setFieldWalking(false);
+            }
+            returnTarget = pivot;
+            lastMoveTarget = null;
+            lastMoveCommandTick = FieldNavigationRules.NEVER;
+            navigationStalledSinceTick = FieldNavigationRules.NEVER;
+            lastPhysicalProgressTick = FieldNavigationRules.NEVER;
+            graceTicks = Math.max(graceTicks, FieldEncounterRules.RETURN_REAGGRO_GRACE_TICKS);
+            alertPreludeTicks = 0;
+            phase = FieldEncounterRules.Phase.PATROL;
         }
 
         private boolean adoptTagged(ServerLevel level) {
