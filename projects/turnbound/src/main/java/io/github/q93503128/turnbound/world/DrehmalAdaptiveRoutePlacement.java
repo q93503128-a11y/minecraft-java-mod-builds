@@ -506,6 +506,87 @@ final class DrehmalAdaptiveRoutePlacement {
         return true;
     }
 
+    /**
+     * Revalidates a field representative against fully loaded live-world content.
+     *
+     * <p>The route snapshot can be resolved before every source-map entity in a nearby chunk is present. A later
+     * villager/item-frame/armor-stand load must therefore relocate the presentation proxy instead of leaving an
+     * objective that points at an empty spot forever.</p>
+     */
+    static DrehmalFirstRouteCatalog.Position visibleActorPosition(
+            ServerLevel level,
+            DrehmalFirstRouteCatalog.Site site
+    ) {
+        if (level == null || site == null || site.runtimePosition() == null) return null;
+
+        var home = site.runtimePosition();
+        int homeY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, home.x(), home.z());
+        BlockPos homeFeet = new BlockPos(home.x(), homeY, home.z());
+        if (standing(level, homeFeet) && sourceContentClear(level, home.x(), homeY, home.z(), 3.5D)) {
+            return new DrehmalFirstRouteCatalog.Position(home.x(), homeY, home.z());
+        }
+
+        var placement = DrehmalMapPlacementCatalog.placement(site.locator());
+        if (placement == null) return null;
+        var zone = DrehmalMapPlacementCatalog.zone(placement.zoneId());
+        List<DrehmalMapPlacementCatalog.Seed> seeds = new ArrayList<>(placement.siteSeeds());
+        seeds.addAll(placement.patrolSeeds());
+        int radius = Math.max(12, placement.searchRadius() + 6);
+        List<DrehmalFirstRouteCatalog.Site> activeSites = productionSites(level);
+
+        for (var seed : seeds) {
+            for (int[] offset : offsets(radius)) {
+                int x = seed.x() + offset[0];
+                int z = seed.z() + offset[1];
+                int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos feet = new BlockPos(x, y, z);
+                if (!standing(level, feet) || !sourceContentClear(level, x, y, z, 3.5D)) continue;
+                if (DrehmalRouteZoneRules.insideSafetyZone(activeSites, x + 0.5D, z + 0.5D)) continue;
+                if (zone != null) {
+                    double roadDistance = DrehmalRoutePlacementRules.corridorDistance(zone, x + 0.5D, z + 0.5D);
+                    if (!DrehmalRoutePlacementRules.acceptableRoadDistance(site.kind(), roadDistance)) continue;
+                }
+                return new DrehmalFirstRouteCatalog.Position(x, y, z);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Optional presentation-only roam path. It does not participate in encounter activation: an opening encounter
+     * can stay production-ready even when no formal Patrol record is bound, while its single world proxy may still
+     * stroll between source-backed live-ground patrol seeds.
+     */
+    static List<DrehmalFirstRouteCatalog.Position> fieldPresentationPatrol(
+            ServerLevel level,
+            DrehmalFirstRouteCatalog.Site site
+    ) {
+        if (level == null || site == null) return List.of();
+        var placement = DrehmalMapPlacementCatalog.placement(site.locator());
+        if (placement == null || placement.patrolSeeds().size() < 2) return List.of();
+
+        List<DrehmalFirstRouteCatalog.Position> out = new ArrayList<>();
+        List<DrehmalFirstRouteCatalog.Site> activeSites = productionSites(level);
+        for (var seed : placement.patrolSeeds()) {
+            DrehmalFirstRouteCatalog.Position point = null;
+            for (int[] offset : offsets(Math.max(4, Math.min(8, placement.searchRadius())))) {
+                int x = seed.x() + offset[0];
+                int z = seed.z() + offset[1];
+                int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos feet = new BlockPos(x, y, z);
+                if (!standing(level, feet) || !sourceContentClear(level, x, y, z, 2.5D)) continue;
+                if (DrehmalRouteZoneRules.insideSafetyZone(activeSites, x + 0.5D, z + 0.5D)) continue;
+                point = new DrehmalFirstRouteCatalog.Position(x, y, z);
+                break;
+            }
+            if (point == null) continue;
+            boolean duplicate = out.stream().anyMatch(existing ->
+                    existing.x() == point.x() && existing.z() == point.z());
+            if (!duplicate) out.add(point);
+        }
+        return out.size() >= 2 ? List.copyOf(out) : List.of();
+    }
+
     private static int positionTieBreak(DrehmalFirstRouteCatalog.Position left,DrehmalFirstRouteCatalog.Position right){
         int x=Integer.compare(left.x(),right.x());
         if(x!=0)return x;
