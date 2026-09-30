@@ -57,6 +57,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHostileStatusRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
