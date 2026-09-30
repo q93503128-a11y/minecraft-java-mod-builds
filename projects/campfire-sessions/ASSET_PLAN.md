@@ -252,8 +252,10 @@ Current external structure candidates:
   - Mini Hospital: **11×9×11**, ground footprint 11×11.
   - spruce variants use the same 11×9×11 bounds.
 - these are substantially smaller than the previous conservative civic-building envelope and strongly support the separate-large-interior approach.
-- strong first extraction/reference candidate for **resident services, general store and clinic exterior envelopes**.
-- do not adopt the rest of Villageria's villager/combat/economy gameplay; only inspect/reuse permitted structure assets or treat the mod as an asset source when technically cleaner.
+- CurseForge currently labels the project MIT, but the distributed 26.2 NeoForge JAR does **not** embed the MIT notice.
+- because Campfire's extracted-asset pipeline preserves source license notices from the actual artifact, Villageria structures are **not packaged or modified directly** at this stage.
+- retain the measured 11×11 buildings as compact civic reference/footprint evidence only unless an upstream source artifact with a complete reusable license notice is obtained.
+- do not adopt the rest of Villageria's villager/combat/economy gameplay.
 
 **SY Village**
 - current Minecraft 26.2 NeoForge latest release observed during the follow-up pass: `syvillage-1.0.0.jar`.
@@ -381,17 +383,17 @@ The main village now has a coherent **directly modifiable external structure dir
 - do not mix unrelated biome-village styles just because their NBTs are available.
 
 **Resident services**
-- base geometry: Villageria `town_hall.nbt`, 11×11, MIT.
-- harmonize roof/trim/foundation toward the selected Greece palette while preserving the external authored geometry.
-- reason: purpose-built compact civic silhouette and very low footprint.
+- direct base: Kogtyv Greece `shop_triple_2.nbt`, **13×8**.
+- use civic signage/forecourt/roof details to distinguish it from ordinary commercial buildings.
+- this keeps the entire main village inside one directly modifiable MIT architecture family.
 
 **General store**
-- base geometry: Villageria `shop.nbt`, 11×11, MIT.
-- palette-harmonize with Greece and use the Campfire physical merchandise-display interior separately.
+- direct base: Kogtyv Greece `shop_triple_1.nbt`, **13×8**.
+- the larger shop shell gives the physical merchandise-display exterior enough presence without matching the managed interior size.
 
 **Clinic**
-- base geometry: Villageria `hospital.nbt`, 11×11, MIT.
-- palette-harmonize with the same civic family.
+- direct base: Kogtyv Greece `shop_medium_3.nbt`, **7×8**.
+- adapt signage/window/entry dressing for the clinic role while retaining the common Greece palette.
 
 **Café**
 - primary: Kogtyv Greece `shop_medium_1.nbt`, **7×8**.
@@ -464,9 +466,9 @@ Visual reference result:
 - use selected Iberian shells mainly for larger/upgraded housing or the museum, with palette harmonization where required.
 
 ### Building acquisition status after current research pass
-- **Resident services:** Villageria Town Hall — exact 11×11 footprint verified.
-- **General store:** Villageria Village Shop — exact 11×11 footprint verified.
-- **Clinic:** Villageria Mini Hospital — exact 11×11 footprint verified.
+- **Resident services:** Kogtyv Greece shop-triple family — direct MIT editable base; Villageria 11×11 remains footprint/reference only.
+- **General store:** Kogtyv Greece shop-triple family — direct MIT editable base.
+- **Clinic:** Kogtyv Greece shop-medium family — direct MIT editable base.
 - **Player/resident houses:** first packable external progression pool selected from Kogtyv Greece: 5×5 → 7×6 → 9×7 → 13×7; final individual variants still require in-client visual inspection.
 - **Café:** Kogtyv Greece shop_medium_1 (7×8) is the primary packable shell candidate.
 - **Clothing shop:** Kogtyv Greece shop_medium_2 (7×8) is the primary packable shell candidate.
