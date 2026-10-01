@@ -55,7 +55,7 @@ public final class AssetReviewCommands {
             "kitchen", List.of("kitchen", "fridge", "oven", "sink", "counter", "cabinet", "cooking", "spice", "rack"),
             "crops", List.of("seed", "fruit", "berry", "apple", "tomato", "corn", "rice", "crop", "sapling"),
             "mushrooms", List.of("mushroom", "shroom", "fung", "mycel"),
-            "storage", List.of("backpack", "bag", "storage", "pouch", "toolbelt", "tool_belt"),
+            "storage", List.of("backpack", "bag", "storage", "pouch", "toolbelt", "tool_belt", "belt"),
             "boats", List.of("boat", "ship", "sloop", "schooner", "raft", "canoe", "helm", "sail")
     );
 
@@ -115,6 +115,9 @@ public final class AssetReviewCommands {
         }
 
         candidates.sort(Comparator.comparing(entry -> entry.getKey().identifier().toString()));
+        if (category.equals("furniture") || category.equals("kitchen")) {
+            candidates = diverseVariants(candidates);
+        }
 
         int added = 0;
         int full = 0;
@@ -155,4 +158,45 @@ public final class AssetReviewCommands {
         String path = id.getPath().toLowerCase(Locale.ROOT);
         return hints.stream().anyMatch(path::contains);
     }
+
+    /**
+     * Collapse color/wood/material variants so the first review kit shows
+     * different silhouettes and furniture functions instead of 27 recolors.
+     */
+    private static List<Map.Entry<net.minecraft.resources.ResourceKey<Item>, Item>> diverseVariants(
+            List<Map.Entry<net.minecraft.resources.ResourceKey<Item>, Item>> candidates
+    ) {
+        Set<String> seen = new java.util.LinkedHashSet<>();
+        List<Map.Entry<net.minecraft.resources.ResourceKey<Item>, Item>> result = new ArrayList<>();
+
+        for (Map.Entry<net.minecraft.resources.ResourceKey<Item>, Item> entry : candidates) {
+            Identifier id = entry.getKey().identifier();
+            String signature = reviewSignature(id.getPath());
+            String scopedSignature = id.getNamespace() + ":" + signature;
+            if (seen.add(scopedSignature)) {
+                result.add(entry);
+            }
+        }
+
+        return result;
+    }
+
+    private static String reviewSignature(String path) {
+        String value = "_" + path.toLowerCase(Locale.ROOT) + "_";
+        for (String token : REVIEW_VARIANT_TOKENS) {
+            value = value.replace("_" + token + "_", "_");
+        }
+        while (value.contains("__")) {
+            value = value.replace("__", "_");
+        }
+        return value.substring(1, value.length() - 1);
+    }
+
+    private static final Set<String> REVIEW_VARIANT_TOKENS = Set.of(
+            "acacia", "bamboo", "birch", "cherry", "crimson", "dark_oak", "jungle",
+            "mangrove", "oak", "pale_oak", "spruce", "warped",
+            "black", "blue", "brown", "cyan", "gray", "green", "light_blue", "light_gray",
+            "lime", "magenta", "orange", "pink", "purple", "red", "white", "yellow",
+            "plank", "planks", "wood"
+    );
 }

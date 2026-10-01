@@ -115,6 +115,7 @@ neoForge {
         client { client() }
         assetReviewClient {
             client()
+            gameDirectory = project.file('run-asset-review')
             systemProperty 'campfiresessions.assetReview', 'true'
         }
         server { server(); programArgument '--nogui' }
