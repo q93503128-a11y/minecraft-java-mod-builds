@@ -79,8 +79,8 @@ jobs:
           for dep in \
             'croptopia' \
             'epherolib' \
-            'cooking-for-blockheads' \
-            'balm' \
+            'vJnhuDde' \
+            'MBAkmtvl' \
             'shroomcrafted' \
             'puzzles-lib' \
             'sophisticated-backpacks' \
@@ -88,6 +88,7 @@ jobs:
             'traveler-tool-belt' \
             'player-animation-library' \
             'peterwolfs-boats-ships' \
+            'pezpt98N' \
             'geckolib-neoforge-26.2'
           do
             grep -qi "$dep" build/world-probe/runtime-classpath.txt || {
