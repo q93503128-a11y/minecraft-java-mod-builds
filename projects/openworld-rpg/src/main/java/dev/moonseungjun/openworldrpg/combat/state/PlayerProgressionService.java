@@ -83,6 +83,8 @@ public final class PlayerProgressionService {
                     .reset(player.getUUID());
             dev.moonseungjun.openworldrpg.combat.runtime.MagePhaseStepRuntime
                     .reset(player.getUUID());
+            dev.moonseungjun.openworldrpg.combat.runtime.MageFrostRingRuntime
+                    .reset(player.getUUID());
             dev.moonseungjun.openworldrpg.combat.runtime.GuardianResolveRuntime
                     .reset(player.getUUID());
             dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime

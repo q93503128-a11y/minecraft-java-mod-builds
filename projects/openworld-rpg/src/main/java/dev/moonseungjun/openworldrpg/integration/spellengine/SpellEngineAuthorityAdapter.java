@@ -15,6 +15,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcBoltRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageFrostRingRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MagePhaseStepRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
@@ -314,6 +315,16 @@ public final class SpellEngineAuthorityAdapter {
                 )
         );
 
+        ProjectSpellSpec frostRing = ProjectSpellSpec.frostRing();
+        AUTHORITY.registerPolicy(
+                frostRing.id(),
+                new ProjectSpellTransactionPolicy(
+                        frostRing,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec radiantLance = ProjectSpellSpec.radiantLance();
         AUTHORITY.registerPolicy(
                 radiantLance.id(),
@@ -429,6 +440,12 @@ public final class SpellEngineAuthorityAdapter {
                 && player instanceof ServerPlayer serverPlayer
                 && (!acceptedStage || firstAcceptedCast)
                 && !MagePhaseStepRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
+        if (ProjectSpellSpec.FROST_RING_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && (!acceptedStage || firstAcceptedCast)
+                && !MageFrostRingRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
         if (ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId)
@@ -560,6 +577,22 @@ public final class SpellEngineAuthorityAdapter {
                             weave.weaveEffectMagnitudeMultiplier()
                     );
                     if (!phase.accepted()) {
+                        return invokeStatic(attemptNone);
+                    }
+                    if (weave.weaveConsumed()) {
+                        MageArcaneWeaveRuntime.consumeEmpoweredCast(
+                                serverPlayer.getUUID(),
+                                spellId,
+                                gameTick
+                        );
+                    }
+                } else if (ProjectSpellSpec.FROST_RING_ID.equals(spellId)) {
+                    if (!MageFrostRingRuntime.onAcceptedCast(
+                            serverPlayer,
+                            weave.weaveConsumed(),
+                            weave.weaveEffectMagnitudeMultiplier(),
+                            gameTick
+                    )) {
                         return invokeStatic(attemptNone);
                     }
                     if (weave.weaveConsumed()) {
@@ -807,6 +840,9 @@ public final class SpellEngineAuthorityAdapter {
                 if (ProjectSpellSpec.REBUKE_ID.equals(spellId)
                         && player instanceof ServerPlayer serverPlayer) {
                     RebukeRuntime.release(serverPlayer);
+                } else if (ProjectSpellSpec.FROST_RING_ID.equals(spellId)
+                        && player instanceof ServerPlayer serverPlayer) {
+                    MageFrostRingRuntime.release(serverPlayer);
                 } else if (ProjectSpellSpec.requiredRootClass(spellId)
                         .filter(RootClass.WARRIOR::equals)
                         .isPresent()

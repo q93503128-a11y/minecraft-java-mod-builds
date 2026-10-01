@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
+import dev.moonseungjun.openworldrpg.combat.state.ChilledRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.RebukedRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.SnaredRuntimeState;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorCombatProfile;
@@ -40,6 +41,13 @@ public final class ProjectHostileStatusRuntime {
     public static final double PHASE_FIELD_BOSS_MOVEMENT_MULTIPLIER = 0.90;
     public static final long PHASE_FIELD_REFRESH_TICKS = 2L;
 
+    public static final double CHILLED_STANDARD_MOVEMENT_MULTIPLIER = 0.65;
+    public static final double CHILLED_MINIBOSS_MOVEMENT_MULTIPLIER = 0.80;
+    public static final double CHILLED_BOSS_MOVEMENT_MULTIPLIER = 0.85;
+    public static final long CHILLED_STANDARD_TICKS = 70L;
+    public static final long CHILLED_MINIBOSS_TICKS = 50L;
+    public static final long CHILLED_BOSS_TICKS = 40L;
+
     private static final Identifier SNARED_MOVEMENT_MODIFIER_ID =
             Identifier.fromNamespaceAndPath(
                     OpenworldRpgMod.MOD_ID,
@@ -49,6 +57,11 @@ public final class ProjectHostileStatusRuntime {
             Identifier.fromNamespaceAndPath(
                     OpenworldRpgMod.MOD_ID,
                     "hostile_skyfall_slow"
+            );
+    private static final Identifier CHILLED_MOVEMENT_MODIFIER_ID =
+            Identifier.fromNamespaceAndPath(
+                    OpenworldRpgMod.MOD_ID,
+                    "hostile_chilled"
             );
     private static final Identifier PHASE_FIELD_MOVEMENT_MODIFIER_ID =
             Identifier.fromNamespaceAndPath(
@@ -64,6 +77,8 @@ public final class ProjectHostileStatusRuntime {
             SKYFALL_SLOW = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<UUID, PhaseFieldSlowEntry>
             PHASE_FIELD_SLOW = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, ChilledEntry>
+            CHILLED = new ConcurrentHashMap<>();
 
     private ProjectHostileStatusRuntime() {
     }
@@ -223,17 +238,97 @@ public final class ProjectHostileStatusRuntime {
                 )
         );
 
-        boolean strongerSnareActive =
-                snaredSnapshot(target, nowTick).isPresent();
+        boolean strongerControlActive =
+                strongestMovementMultiplier(target, nowTick)
+                        < multiplier - 1.0e-9;
         synchronizeMovementControl(target, nowTick);
         return Optional.of(
                 new SkyfallSlowApplication(
                         multiplier,
                         expiresAtTick,
-                        strongerSnareActive,
+                        strongerControlActive,
                         profile.combatRank()
                 )
         );
+    }
+
+    public static Optional<ChilledApplication> applyChilled(
+            LivingEntity target,
+            long nowTick
+    ) {
+        if (target.level().isClientSide()
+                || ExternalActorBindingRuntime.combatProfile(target).isEmpty()
+                || target.getAttribute(Attributes.MOVEMENT_SPEED) == null
+                || !(target.level() instanceof ServerLevel level)) {
+            return Optional.empty();
+        }
+
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(target)
+                .orElseThrow();
+        double multiplier;
+        long duration;
+        switch (profile.combatRank()) {
+            case NORMAL_ELITE -> {
+                multiplier = CHILLED_STANDARD_MOVEMENT_MULTIPLIER;
+                duration = CHILLED_STANDARD_TICKS;
+            }
+            case MINIBOSS -> {
+                multiplier = CHILLED_MINIBOSS_MOVEMENT_MULTIPLIER;
+                duration = CHILLED_MINIBOSS_TICKS;
+            }
+            case BOSS -> {
+                multiplier = CHILLED_BOSS_MOVEMENT_MULTIPLIER;
+                duration = CHILLED_BOSS_TICKS;
+            }
+            default -> throw new IllegalStateException(
+                    "Unhandled hostile combat rank."
+            );
+        }
+
+        ChilledEntry entry = CHILLED.compute(
+                target.getUUID(),
+                (ignored, current) -> {
+                    if (current == null
+                            || current.level() != target.level()) {
+                        return new ChilledEntry(
+                                level,
+                                new ChilledRuntimeState()
+                        );
+                    }
+                    return current;
+                }
+        );
+        var applied = entry.state().apply(
+                multiplier,
+                duration,
+                nowTick
+        );
+        synchronizeMovementControl(target, nowTick);
+        return Optional.of(
+                new ChilledApplication(
+                        applied.movementMultiplier(),
+                        applied.expiresAtTick(),
+                        profile.combatRank()
+                )
+        );
+    }
+
+    public static Optional<ChilledRuntimeState.Snapshot> chilledSnapshot(
+            LivingEntity target,
+            long nowTick
+    ) {
+        var entry = CHILLED.get(target.getUUID());
+        if (entry == null) {
+            return Optional.empty();
+        }
+        var snapshot = entry.state().snapshot(nowTick);
+        if (!snapshot.active()) {
+            CHILLED.remove(target.getUUID(), entry);
+            removeChilledModifier(target);
+            return Optional.empty();
+        }
+        return Optional.of(snapshot);
     }
 
     public static Optional<PhaseFieldSlowApplication>
@@ -385,6 +480,22 @@ public final class ProjectHostileStatusRuntime {
             return false;
         });
 
+        CHILLED.entrySet().removeIf(entry -> {
+            ChilledEntry chilled = entry.getValue();
+            var entity = chilled.level().getEntity(entry.getKey());
+            if (!(entity instanceof LivingEntity living)) {
+                return true;
+            }
+            long nowTick = chilled.level().getGameTime();
+            var snapshot = chilled.state().snapshot(nowTick);
+            if (!snapshot.active()) {
+                removeChilledModifier(living);
+                return true;
+            }
+            synchronizeMovementControl(living, nowTick);
+            return false;
+        });
+
         PHASE_FIELD_SLOW.entrySet().removeIf(entry -> {
             PhaseFieldSlowEntry slow = entry.getValue();
             var entity = slow.level().getEntity(entry.getKey());
@@ -406,17 +517,23 @@ public final class ProjectHostileStatusRuntime {
         SnaredEntry entry = SNARED.remove(entityId);
         SkyfallSlowEntry skyfall = SKYFALL_SLOW.remove(entityId);
         PhaseFieldSlowEntry phase = PHASE_FIELD_SLOW.remove(entityId);
+        ChilledEntry chilled = CHILLED.remove(entityId);
         ServerLevel level = entry != null
                 ? entry.level()
                 : skyfall != null
                         ? skyfall.level()
-                        : phase != null ? phase.level() : null;
+                        : phase != null
+                                ? phase.level()
+                                : chilled != null
+                                        ? chilled.level()
+                                        : null;
         if (level != null) {
             var entity = level.getEntity(entityId);
             if (entity instanceof LivingEntity living) {
                 removeSnaredModifier(living);
                 removeSkyfallModifier(living);
                 removePhaseFieldModifier(living);
+                removeChilledModifier(living);
             }
         }
     }
@@ -454,6 +571,13 @@ public final class ProjectHostileStatusRuntime {
             source = MovementControlSource.SKYFALL;
         }
 
+        var chilled = chilledSnapshot(target, nowTick).orElse(null);
+        if (chilled != null
+                && chilled.movementMultiplier() < strongest) {
+            strongest = chilled.movementMultiplier();
+            source = MovementControlSource.CHILLED;
+        }
+
         PhaseFieldSlowEntry phase = PHASE_FIELD_SLOW.get(
                 target.getUUID()
         );
@@ -468,6 +592,7 @@ public final class ProjectHostileStatusRuntime {
         removeSnaredModifier(target);
         removeSkyfallModifier(target);
         removePhaseFieldModifier(target);
+        removeChilledModifier(target);
         switch (source) {
             case SNARED -> synchronizeSnaredModifier(
                     target,
@@ -478,6 +603,10 @@ public final class ProjectHostileStatusRuntime {
                     strongest
             );
             case PHASE_FIELD -> synchronizePhaseFieldModifier(
+                    target,
+                    strongest
+            );
+            case CHILLED -> synchronizeChilledModifier(
                     target,
                     strongest
             );
@@ -507,6 +636,13 @@ public final class ProjectHostileStatusRuntime {
             strongest = Math.min(
                     strongest,
                     skyfall.movementMultiplier()
+            );
+        }
+        var chilled = chilledSnapshot(target, nowTick).orElse(null);
+        if (chilled != null) {
+            strongest = Math.min(
+                    strongest,
+                    chilled.movementMultiplier()
             );
         }
         PhaseFieldSlowEntry phase = PHASE_FIELD_SLOW.get(
@@ -581,6 +717,35 @@ public final class ProjectHostileStatusRuntime {
         }
     }
 
+    private static void synchronizeChilledModifier(
+            LivingEntity target,
+            double multiplier
+    ) {
+        var movement = target.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement == null) {
+            throw new IllegalStateException(
+                    "Chilled target lost MOVEMENT_SPEED attribute."
+            );
+        }
+        movement.removeModifier(CHILLED_MOVEMENT_MODIFIER_ID);
+        movement.addOrUpdateTransientModifier(
+                new AttributeModifier(
+                        CHILLED_MOVEMENT_MODIFIER_ID,
+                        multiplier - 1.0,
+                        AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                )
+        );
+    }
+
+    private static void removeChilledModifier(
+            LivingEntity target
+    ) {
+        var movement = target.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement != null) {
+            movement.removeModifier(CHILLED_MOVEMENT_MODIFIER_ID);
+        }
+    }
+
     private static void synchronizePhaseFieldModifier(
             LivingEntity target,
             double multiplier
@@ -614,7 +779,8 @@ public final class ProjectHostileStatusRuntime {
         NONE,
         SNARED,
         SKYFALL,
-        PHASE_FIELD
+        PHASE_FIELD,
+        CHILLED
     }
 
     public record Application(
@@ -636,7 +802,14 @@ public final class ProjectHostileStatusRuntime {
     public record SkyfallSlowApplication(
             double movementMultiplier,
             long expiresAtTick,
-            boolean suppressedByStrongerSnare,
+            boolean suppressedByStrongerControl,
+            ExternalActorCombatProfile.CombatRank combatRank
+    ) {
+    }
+
+    public record ChilledApplication(
+            double movementMultiplier,
+            long expiresAtTick,
             ExternalActorCombatProfile.CombatRank combatRank
     ) {
     }
@@ -659,6 +832,12 @@ public final class ProjectHostileStatusRuntime {
             ServerLevel level,
             double movementMultiplier,
             long expiresAtTick
+    ) {
+    }
+
+    private record ChilledEntry(
+            ServerLevel level,
+            ChilledRuntimeState state
     ) {
     }
 

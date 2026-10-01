@@ -3,6 +3,8 @@
   "spell.openworld_rpg.arc_bolt.description": "Launches a focused arcane bolt at the aimed enemy.",
   "spell.openworld_rpg.phase_step.name": "Phase Step",
   "spell.openworld_rpg.phase_step.description": "Blink forward along a safe path. A completed Arcane Weave leaves a slowing arcane field at the origin.",
+  "spell.openworld_rpg.frost_ring.name": "Frost Ring",
+  "spell.openworld_rpg.frost_ring.description": "Burst frost around yourself, damaging and Chilling nearby enemies. A completed Arcane Weave grants you a barrier.",
   "spell.openworld_rpg.radiant_lance.name": "Radiant Lance",
   "spell.openworld_rpg.radiant_lance.description": "Hurls a radiant lance at an enemy. Full Grace empowers its follow-up effect.",
   "spell.openworld_rpg.mend.name": "Mend",

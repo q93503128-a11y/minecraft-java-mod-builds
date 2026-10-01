@@ -85,7 +85,13 @@ class ProjectClassSkillLoadoutTest {
                         .orElseThrow()
         );
         assertEquals(
-                2,
+                ProjectSpellSpec.FROST_RING_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.MAGE, 2)
+                        .orElseThrow()
+        );
+        assertEquals(
+                3,
                 ProjectClassSkillLoadout
                         .implementedSlots(RootClass.MAGE)
                         .size()

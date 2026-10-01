@@ -53,6 +53,40 @@ class ProjectHostileStatusRuntimeContractTest {
     }
 
     @Test
+    void chilledNumbersMatchMageFrostRingCanon() {
+        assertEquals(
+                0.65,
+                ProjectHostileStatusRuntime
+                        .CHILLED_STANDARD_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                0.80,
+                ProjectHostileStatusRuntime
+                        .CHILLED_MINIBOSS_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                0.85,
+                ProjectHostileStatusRuntime
+                        .CHILLED_BOSS_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                70L,
+                ProjectHostileStatusRuntime.CHILLED_STANDARD_TICKS
+        );
+        assertEquals(
+                50L,
+                ProjectHostileStatusRuntime.CHILLED_MINIBOSS_TICKS
+        );
+        assertEquals(
+                40L,
+                ProjectHostileStatusRuntime.CHILLED_BOSS_TICKS
+        );
+    }
+
+    @Test
     void phaseFieldSlowMatchesMageCanonAndTriuneUtilityMagnitude() {
         assertEquals(
                 0.75,

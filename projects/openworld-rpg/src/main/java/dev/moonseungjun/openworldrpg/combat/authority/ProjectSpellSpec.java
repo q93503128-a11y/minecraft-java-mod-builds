@@ -25,6 +25,7 @@ public record ProjectSpellSpec(
     public static final String HUNTER_SKYFALL_ID = "openworld_rpg:hunter_skyfall";
     public static final String ARC_BOLT_ID = "openworld_rpg:arc_bolt";
     public static final String PHASE_STEP_ID = "openworld_rpg:phase_step";
+    public static final String FROST_RING_ID = "openworld_rpg:frost_ring";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
     public static final String CONSECRATED_GROUND_ID = "openworld_rpg:consecrated_ground";
@@ -42,6 +43,8 @@ public record ProjectSpellSpec(
     public static final double HUNTER_POWER_SHOT_WEAK_POINT_MULTIPLIER = 1.40;
     public static final double HUNTER_POWER_SHOT_EMPOWERED_WEAK_POINT_MULTIPLIER = 1.55;
     public static final double ARC_BOLT_WEAVE_FORK_ACTION_COEFFICIENT = 0.50;
+    public static final double FROST_RING_ACTION_COEFFICIENT = 1.45;
+    public static final double FROST_RING_POISE_COEFFICIENT = 1.20;
     public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
     public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
     public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
@@ -221,6 +224,17 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec frostRing() {
+        return new ProjectSpellSpec(
+                FROST_RING_ID,
+                25.0,
+                200,
+                FROST_RING_ACTION_COEFFICIENT,
+                FROST_RING_POISE_COEFFICIENT,
+                1
+        );
+    }
+
     public static ProjectSpellSpec radiantLance() {
         return new ProjectSpellSpec(
                 RADIANT_LANCE_ID,
@@ -281,7 +295,8 @@ public record ProjectSpellSpec(
         return switch (spellId) {
             case WARRIOR_DRIVING_SLASH_ID, WARRIOR_IRON_COUNTER_ID, WARRIOR_CYCLONE_CUT_ID, WARRIOR_BREAKER_SLAM_ID, WARRIOR_EARTHSHATTER_ID -> Optional.of(RootClass.WARRIOR);
             case HUNTER_QUICKSTEP_VOLLEY_ID, HUNTER_PINNING_SHOT_ID, HUNTER_FAN_OF_ARROWS_ID, HUNTER_POWER_SHOT_ID, HUNTER_SKYFALL_ID -> Optional.of(RootClass.HUNTER);
-            case ARC_BOLT_ID, PHASE_STEP_ID -> Optional.of(RootClass.MAGE);
+            case ARC_BOLT_ID, PHASE_STEP_ID, FROST_RING_ID ->
+                    Optional.of(RootClass.MAGE);
             case RADIANT_LANCE_ID, MEND_ID, CONSECRATED_GROUND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);
             default -> Optional.empty();
