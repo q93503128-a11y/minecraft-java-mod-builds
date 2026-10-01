@@ -5,6 +5,7 @@ import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import java.util.Optional;
@@ -87,6 +88,14 @@ public final class PlayerCombatBuildPublisher {
                                 )
                         : 0.0
         );
+        PlayerCastSpeedRuntime.synchronize(
+                player,
+                serverPlayer != null
+                        ? MageRootPassiveEffects.castSpeedBonus(
+                                serverPlayer
+                        )
+                        : 0.0
+        );
         CombatStateServices.states().synchronizeEndurance(
                 player.getUUID(),
                 (int) Math.round(effectiveEnd),
@@ -110,6 +119,10 @@ public final class PlayerCombatBuildPublisher {
                                         .maxManaFlatBonus(
                                                 serverPlayer
                                         )
+                                        + MageRootPassiveEffects
+                                                .maxManaFlatBonus(
+                                                        serverPlayer
+                                                )
                                 : 0,
                         gameTick
                 );
@@ -138,6 +151,10 @@ public final class PlayerCombatBuildPublisher {
                                         .skillManaCostMultiplier(
                                                 serverPlayer
                                         )
+                                        * MageRootPassiveEffects
+                                                .skillManaCostMultiplier(
+                                                        serverPlayer
+                                                )
                                 : 1.0,
                         gameTick
                 );

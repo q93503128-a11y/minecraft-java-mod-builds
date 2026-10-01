@@ -13,6 +13,9 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageArcBoltRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.RadiantLanceRuntime;
@@ -525,6 +528,14 @@ public final class SpellEngineAuthorityAdapter {
                 ).accepted()) {
                     return invokeStatic(attemptNone);
                 }
+            } else if (ProjectSpellSpec.requiredRootClass(spellId)
+                    .filter(RootClass.MAGE::equals)
+                    .isPresent()) {
+                MageArcaneWeaveRuntime.onAcceptedCast(
+                        serverPlayer,
+                        spellId,
+                        gameTick
+                );
             } else {
                 ClericSkillRuntime.onAcceptedCast(
                         serverPlayer,
@@ -1010,6 +1021,15 @@ public final class SpellEngineAuthorityAdapter {
             return impactResultConstructor.newInstance(false, false);
         }
         var sourceSnapshot = build.damageSource(ProjectImpactTransaction.DamageSchool.MAGIC);
+        if (player instanceof ServerPlayer serverCaster
+                && ProjectSpellSpec.requiredRootClass(spellId)
+                        .filter(RootClass.MAGE::equals)
+                        .isPresent()) {
+            sourceSnapshot = MageRootPassiveEffects.applyMagicPowerBonus(
+                    serverCaster,
+                    sourceSnapshot
+            );
+        }
         long gameTick = player.level().getGameTime();
         var targetSnapshot = ExternalActorBindingRuntime.projectTargetSnapshot(livingTarget, gameTick)
                 .orElse(null);
@@ -1040,6 +1060,16 @@ public final class SpellEngineAuthorityAdapter {
             ExternalActorBindingRuntime.applyProjectPoiseDamage(
                     livingTarget,
                     decision.poiseDamage(),
+                    gameTick
+            );
+        }
+        if (applied
+                && ProjectSpellSpec.ARC_BOLT_ID.equals(spellId)
+                && player instanceof ServerPlayer serverCaster) {
+            MageArcBoltRuntime.applyWeaveForks(
+                    serverCaster,
+                    livingTarget,
+                    sourceSnapshot,
                     gameTick
             );
         }

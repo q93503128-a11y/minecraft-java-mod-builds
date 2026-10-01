@@ -63,6 +63,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
@@ -207,6 +208,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterPowerShotRuntime.reset(newPlayer.getUUID());
             HunterSkyfallRuntime.reset(newPlayer.getUUID());
             HunterSkillRuntime.reset(newPlayer.getUUID());
+            MageArcaneWeaveRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
             PlayerCombatBuildPublisher.refresh(newPlayer);
@@ -228,6 +230,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterPowerShotRuntime.disconnect(playerId);
             HunterSkyfallRuntime.disconnect(playerId);
             HunterSkillRuntime.disconnect(playerId);
+            MageArcaneWeaveRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);
             ProjectBasicAttackCadenceRuntime.disconnect(playerId);

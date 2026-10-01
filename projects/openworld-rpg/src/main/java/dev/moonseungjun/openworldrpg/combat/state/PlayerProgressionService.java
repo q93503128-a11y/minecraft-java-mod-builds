@@ -79,6 +79,8 @@ public final class PlayerProgressionService {
                     .reset(player.getUUID());
             dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime
                     .reset(player.getUUID());
+            dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime
+                    .reset(player.getUUID());
             dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime
                     .reset(player.getUUID());
             dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime

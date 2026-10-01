@@ -40,6 +40,7 @@ public record ProjectSpellSpec(
     public static final double HUNTER_POWER_SHOT_POISE_COEFFICIENT = 1.60;
     public static final double HUNTER_POWER_SHOT_WEAK_POINT_MULTIPLIER = 1.40;
     public static final double HUNTER_POWER_SHOT_EMPOWERED_WEAK_POINT_MULTIPLIER = 1.55;
+    public static final double ARC_BOLT_WEAVE_FORK_ACTION_COEFFICIENT = 0.50;
     public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
     public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
     public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
