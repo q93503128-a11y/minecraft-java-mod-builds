@@ -1274,6 +1274,19 @@ Weave effect:
 - direct coefficient increases to 2.60;
 - Burning total coefficient increases to 0.50.
 
+Initial runtime precision binding:
+
+- current ground-target range is **10.0 blocks** and the Spell Engine cast is immediate; both are playtest-tunable targeting/presentation bindings because the locked root-kit table does not author a cast range or cast time;
+- Spell Engine owns `AIM -> CLOUD` ground placement and fire presentation only; donor damage, Poise, status and cooldown authority are neutralized;
+- the 2.5 s cloud uses a 10-tick callback interval; with the pinned Spell Engine cloud lifecycle this yields four project-authority damage pulses before expiry;
+- a target present for all four pulses receives exactly total direct ActionCoefficient 2.30 and total PoiseCoefficient 1.00; Weave raises only the direct total to 2.60 before Triune Study scales the incremental +0.30 effect;
+- project code revalidates the cloud center and real hostile bounding box against the authored 3.5-block radius before each pulse;
+- Burning is applied only on the first successful Flame Burst pulse per target/cast so the field itself never multiplies the authored DoT;
+- Burning uses eight 10-tick server ticks over 4.0 s, for total ActionCoefficient 0.40 or 0.50 when Weave-empowered; it cannot crit and the resolved per-tick magnitude is produced through project Magic Resistance when Burning is applied;
+- Burning reapplication refreshes the 4.0 s duration and retains the stronger existing resolved per-tick magnitude instead of stacking;
+- Triune Study scales only the incremental Weave additions: direct = 2.30 + (2.60 - 2.30) * WeaveMagnitude and Burning = 0.40 + (0.50 - 0.40) * WeaveMagnitude;
+- final target-range feel, ground-placement readability, pulse cadence, flame density and Burning feedback remain manual playtest gates.
+
 ## 9.8 Root ultimate — Astral Convergence
 
 ```text
