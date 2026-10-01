@@ -113,6 +113,10 @@ neoForge {
     version = project.neo_version
     runs {
         client { client() }
+        assetReviewClient {
+            client()
+            systemProperty 'campfiresessions.assetReview', 'true'
+        }
         server { server(); programArgument '--nogui' }
         configureEach { logLevel = org.slf4j.event.Level.INFO }
     }

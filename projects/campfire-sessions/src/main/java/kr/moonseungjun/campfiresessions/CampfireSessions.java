@@ -2,6 +2,7 @@ package kr.moonseungjun.campfiresessions;
 
 import com.mojang.logging.LogUtils;
 import kr.moonseungjun.campfiresessions.client.CampfireClientSetup;
+import kr.moonseungjun.campfiresessions.gameplay.AssetReviewCommands;
 import kr.moonseungjun.campfiresessions.gameplay.ChairSeatManager;
 import kr.moonseungjun.campfiresessions.registry.ModBlocks;
 import kr.moonseungjun.campfiresessions.registry.ModCreativeTabs;
@@ -26,6 +27,10 @@ public final class CampfireSessions {
         ModSounds.register(modEventBus);
         if (FMLEnvironment.getDist().isClient()) {
             CampfireClientSetup.register(modEventBus);
+        }
+        if (AssetReviewCommands.enabled()) {
+            NeoForge.EVENT_BUS.addListener(AssetReviewCommands::register);
+            LOGGER.info("Campfire external asset review command enabled for this development run");
         }
         NeoForge.EVENT_BUS.addListener(ChairSeatManager::onUseBlock);
         NeoForge.EVENT_BUS.addListener(ChairSeatManager::onServerTick);
