@@ -130,14 +130,14 @@ neoForge {
         villageReviewClient {
             client()
             gameDirectory = project.file('run-village-review')
-            systemProperty 'campfiresessions.villageReview', 'true'
+            jvmArgument '-Dcampfiresessions.villageReview=true'
             programArgument '--quickPlaySingleplayer'
             programArgument 'campfire-village-review'
         }
         villageReviewServer {
             server()
             gameDirectory = project.file('run-village-review-server')
-            systemProperty 'campfiresessions.villageReview', 'true'
+            jvmArgument '-Dcampfiresessions.villageReview=true'
             programArgument '--nogui'
         }
         server { server(); programArgument '--nogui' }
