@@ -1271,13 +1271,14 @@ Implemented:
 - late-class Class-XP catch-up is runtime-owned: expected Class Rank derives deterministically from combat Lv, the locked gap bands resolve to x1.00 / x1.30 / x1.75 / x2.25, and reconnect-safe reward plans persist the already-resolved amount instead of recalculating it after reconnect or Rank changes;
 - the R01 Earthloong first-boss reward now resolves its content-level reward modifier before late-class catch-up and snapshots the resulting Combat XP / Class XP / Gold plan before application;
 - all seven Hunter root passive nodes now have server-side runtime consumers: Keen Eye, Light Step, Efficient Draw, Quarry Pressure, Focus Retention, Weakpoint Study and Trail Sense. Authored weak points are accepted only through explicit actor-local weak-point zones; no anatomy is inferred from a generic hitbox;
-- all seven Warrior root passive nodes now have server-side runtime consumers: Steel Nerve, Tireless Combatant, Weapon Rhythm, Crushing Intent, Held Momentum, Counterforce and Battle Temper. Weapon Rhythm updates both the projected attack-speed attribute and the project-owned server basic-attack cadence gate, so visible cadence and damage authority use the same class bonus.
+- all seven Warrior root passive nodes now have server-side runtime consumers: Steel Nerve, Tireless Combatant, Weapon Rhythm, Crushing Intent, Held Momentum, Counterforce and Battle Temper. Weapon Rhythm updates both the projected attack-speed attribute and the project-owned server basic-attack cadence gate, so visible cadence and damage authority use the same class bonus;
+- all seven Cleric root passive nodes now have server-side runtime consumers: Wellspring, Mercy, Sacred Guard, Resolute Faith, Lingering Grace, Balanced Service and Living Doctrine. Wellspring preserves current Mana percentage when Max Mana changes; Resolute Faith modifies only the equipment-owned Magic Resistance contribution; Balanced Service previews the discounted Mana cost during cast preflight and consumes its four-second opposite-role discount only on an accepted cast; Living Doctrine restores 8 Mana only when a newly added pip reaches maximum Grace and respects the six-second ICD.
 
 Verification:
 
 ```text
-CODE STATE: b831cb2656b4037b4eb7d59d30ec1f0665f166f8
-BUILD OPENWORLD RPG RUN: 36706950621
+CODE STATE: d5f2e6015a34976261d0a9bd1de9ca1edb4ff079
+BUILD OPENWORLD RPG RUN: 36793554414
 UNIT TESTS: PASS
 CLEAN BUILD: PASS
 JAR VERIFY: PASS
@@ -1287,8 +1288,8 @@ GAMEPLAY CLIENT STARTUP: PASS
 JOINED-PLAYER ARC-BOLT VERIFICATION JAR: PRODUCED
 R01 INTEGRATION VERIFICATION JAR: PRODUCED
 MODRINTH PLAYTEST PACK: PRODUCED
-ARTIFACT: openworld-rpg-m0-b831cb2656b4037b4eb7d59d30ec1f0665f166f8
-ARTIFACT SHA-256: 9d72443442e3e732e3aa4c8681c185cc32282276a95ca39b063b38f762c8b19d
+ARTIFACT: openworld-rpg-m0-d5f2e6015a34976261d0a9bd1de9ca1edb4ff079
+ARTIFACT SHA-256: 9cbcabc5bae39fd17f60b946c3cd4c3d095a017f9caa446b69f10820ba96ed40
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
@@ -1300,7 +1301,7 @@ Still separate implementation work:
 - Rank-44 ascendant mechanic and ultimate-augment choice/effects;
 - Rank-50 Deep Mastery challenge completion and its authored world binding;
 - encounter-specific Class Insight success detectors, including the five exact R01 challenge conditions in §19.1;
-- passive combat-effect consumers for the remaining 101 catalog nodes: Cleric/Mage/Guardian root nodes plus every specialization branch node; Hunter and Warrior root nodes are runtime-bound;
+- passive combat-effect consumers for the remaining 94 catalog nodes: Mage/Guardian root nodes plus every specialization branch node; Hunter, Warrior and Cleric root nodes are runtime-bound;
 - Hidden Technique discovery/runtime binding;
 - broader late-class catch-up integration across eligible quest/dungeon/encounter reward pipelines where the content-level anti-farm owner is defined; the shared math/planner and Earthloong first-boss path are already bound;
 - specialization/class/passive screen UI and final icon/animation/VFX bindings.
