@@ -580,10 +580,13 @@ Prefer reusing a mod's proven placement/rotation behavior when it correctly rota
 ### Croptopia — leading crop/food-content candidate
 Verified current direction:
 - Minecraft 26.2 NeoForge.
+- current selected trial file: **Croptopia 4.3.2**, CurseForge file ID **8908615**.
+- required library selected for the same trial: **EpheroLib 1.3.0**, CurseForge file ID **8544497**.
 - client + server.
-- MIT licensed.
+- Croptopia: MIT; EpheroLib: LGPL-3.0.
 - current public description advertises 250+ foods, 58 crops and 26 fruit trees.
 - strong external base for Campfire's crop/fruit/food breadth.
+- status: **ENTERING RUNTIME BUILD TRIAL**; no client visual/worldgen/gameplay acceptance yet.
 
 Adoption intent:
 - use the crop/fruit/food catalogue where its art fits.
@@ -593,11 +596,14 @@ Adoption intent:
 ### Cooking for Blockheads — leading kitchen interaction candidate
 Verified:
 - Minecraft 26.2 NeoForge.
+- current selected trial version: **26.2.0.3+neoforge-26.2**, Modrinth version ID **AmK19dxZ**.
+- required library selected for the same trial: **Balm 26.2.0.6+neoforge-26.2**, Modrinth version ID **MKVIBhNe**.
 - client + server.
 - mature multiblock kitchen.
 - shows recipes available from ingredients the player currently has.
 - provides real kitchen blocks such as counters, fridges, oven/cooking table/tool rack/spice-rack-style pieces.
-- current distribution license is ARR/custom; use as a dependency when permitted, not as a model/code extraction source.
+- Cooking for Blockheads and Balm are distributed as ARR; use as external dependencies through their official distribution path, not as model/code extraction sources or bundled raw JARs.
+- status: **ENTERING RUNTIME BUILD TRIAL**; kitchen UX and visual overlap with Skniro remain untested.
 
 Potential role split:
 - **Skniro's Furniture** supplies broad home/furniture language.
@@ -621,12 +627,14 @@ Verified:
 
 ### Shroomcraft / Shroomcrafted — leading mushroom-theme candidate
 Verified:
-- current Minecraft 26.2 NeoForge build.
+- current selected NeoForge 26.2 trial: **Shroomcraft 26.2.2**, CurseForge file ID **8779687**.
+- required library selected for the same trial: **Puzzles Lib 26.2.4**, CurseForge file ID **8878150**.
 - client + server.
-- MPL-2.0.
+- both are MPL-2.0.
 - adds orange/purple/blue mushrooms, multiple growth scales, matching shroomwood/building/decorative families and mushroom-themed creatures.
 - visually much richer than simply recoloring vanilla mushrooms.
-- evaluate whether its creature/worldgen content fits Campfire; mushroom flora/building assets may be the main useful role.
+- status: **ENTERING RUNTIME BUILD TRIAL**.
+- evaluate whether its creature/worldgen content fits Campfire; mushroom flora/building assets may be the main useful role, and uncontrolled worldgen must not damage the authored island template.
 
 ### Tiny Flowers
 - current Minecraft 26.2 NeoForge build.
@@ -1474,9 +1482,10 @@ When implementation moves from planning to dependency validation, test these **o
 3. **Traveler Tool Belt 1.0.4 / NeoForge 26.2** — **BUILD VERIFIED** in the current Skniro + Peterwolf stack; radial UX/visual acceptance remains untested.
 4. **Sophisticated Backpacks 3.26.3.2170 + Sophisticated Core 1.5.0.2349 / NeoForge 26.2** — **BUILD VERIFIED** inside the current Skniro + Peterwolf + Tool Belt + Player Animation Library stack; catch-routing/API integration and visual UX remain untested.
 5. **Player Animation Library 1.2.6** — **BUILD VERIFIED** in the current Skniro + Peterwolf + Tool Belt stack; no real full-body Campfire animation has been authored/tested yet.
-6. **CPM v0.6.27c** — curated player appearance/model backend; test separately against PAL first.
-7. **NCL Skins 1.2.1** — compare as an alternate wardrobe/look backend; do not keep both CPM and NCL unless each proves a unique necessary role.
-8. photography: compare **Camerapture** against **Camera Mod** independently; adopt one.
+6. **Life-sim content trial group** — Croptopia 4.3.2 + EpheroLib 1.3.0, Cooking for Blockheads 26.2.0.3 + Balm 26.2.0.6, Shroomcraft 26.2.2 + Puzzles Lib 26.2.4. Build compatibility is the first gate; worldgen/visual/UX acceptance follows separately.
+7. **CPM v0.6.27c** — curated player appearance/model backend; test separately against PAL first.
+8. **NCL Skins 1.2.1** — compare as an alternate wardrobe/look backend; do not keep both CPM and NCL unless each proves a unique necessary role.
+9. photography: compare **Camerapture** against **Camera Mod** independently; adopt one.
 
 Do not call these adopted until the exact 26.2 runtime combination is tested and the visual result is inspected.
 For Modrinth distribution, prefer dependencies already published on Modrinth where quality is equivalent; this reduces manual packaging and licensing friction.

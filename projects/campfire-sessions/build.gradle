@@ -54,6 +54,15 @@ dependencies {
     // Official GeckoLib 26.2 NeoForge artifact; resident source models are NOT bundled here.
     implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
+    // Sixth controlled runtime trial: life-sim food/crop/kitchen/mushroom content.
+    // Keep these as external runtime dependencies; do not extract ARR mod assets/code into Campfire.
+    implementation 'curse.maven:epherolib-885449:8544497'
+    implementation 'curse.maven:croptopia-415438:8908615'
+    implementation 'maven.modrinth:MBAkmtvl:MKVIBhNe' // Balm 26.2.0.6
+    implementation 'maven.modrinth:vJnhuDde:AmK19dxZ' // Cooking for Blockheads 26.2.0.3
+    implementation 'curse.maven:puzzles-lib-495476:8878150'
+    implementation 'curse.maven:shroomcrafted-1371092:8779687'
+
     // Analysis-only candidates. These are resolved for structure-footprint inspection and are NOT runtime dependencies.
     externalStructureProbe 'curse.maven:villageria-1646907:8620392'
     externalStructureProbe 'curse.maven:syvillage-1696659:8946351'
