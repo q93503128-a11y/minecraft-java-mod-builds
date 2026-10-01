@@ -198,6 +198,58 @@ class PlayerBarrierRuntimeStateTest {
     }
 
     @Test
+    void guardianResolveOwnershipIsSnapshottedAtBarrierGrant() {
+        var state = new PlayerBarrierRuntimeState();
+        UUID guardian = UUID.randomUUID();
+
+        state.grant(
+                "openworld_rpg:guardian_barrier",
+                guardian,
+                20.0,
+                100.0,
+                120,
+                false,
+                true,
+                0L
+        );
+
+        var absorbed = state.absorbHostileDamage(
+                8.0,
+                100.0,
+                1L
+        );
+        assertTrue(
+                absorbed.sourceConsumptions()
+                        .getFirst()
+                        .guardianResolveSource()
+        );
+
+        state.grant(
+                "openworld_rpg:ordinary_barrier",
+                guardian,
+                10.0,
+                100.0,
+                120,
+                false,
+                2L
+        );
+        var ordinary = state.absorbHostileDamage(
+                25.0,
+                100.0,
+                3L
+        );
+        assertFalse(
+                ordinary.sourceConsumptions()
+                        .stream()
+                        .filter(consumption -> consumption.sourceId()
+                                .equals("openworld_rpg:ordinary_barrier"))
+                        .findFirst()
+                        .orElseThrow()
+                        .guardianResolveSource()
+        );
+    }
+
+    @Test
     void maxHpDecreaseTrimsPoolBackToCurrentFortyPercentCap() {
         var state = new PlayerBarrierRuntimeState();
         UUID source = UUID.randomUUID();

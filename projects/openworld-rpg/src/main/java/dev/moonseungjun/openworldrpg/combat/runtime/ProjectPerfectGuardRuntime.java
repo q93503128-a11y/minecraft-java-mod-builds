@@ -46,6 +46,13 @@ public final class ProjectPerfectGuardRuntime {
         if (applied == null) {
             return Application.rejected();
         }
+        if (applied.breakTriggered()) {
+            WarriorSkillRuntime.onPersonalEliteBossPoiseBreak(
+                    defender,
+                    attacker,
+                    nowTick
+            );
+        }
         return new Application(
                 true,
                 authoredPoiseDamage,

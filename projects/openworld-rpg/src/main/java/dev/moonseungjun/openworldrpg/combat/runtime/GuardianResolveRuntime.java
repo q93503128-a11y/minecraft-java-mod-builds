@@ -161,9 +161,11 @@ public final class GuardianResolveRuntime {
                     requested,
                     PlayerBarrierAuthority
                             .DEFAULT_BARRIER_DURATION_TICKS,
-                    false
+                    false,
+                    true
             );
-            barrierTriggered = grant.accepted();
+            barrierTriggered = grant.accepted()
+                    && grant.appliedAmount() > 0.0;
             barrierTargetId = target.getUUID();
             barrierApplied = grant.appliedAmount();
         }

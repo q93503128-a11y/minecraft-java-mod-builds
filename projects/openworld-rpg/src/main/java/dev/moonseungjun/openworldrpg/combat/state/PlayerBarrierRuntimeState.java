@@ -31,6 +31,28 @@ public final class PlayerBarrierRuntimeState {
             boolean clericGraceSource,
             long nowTick
     ) {
+        return grant(
+                sourceId,
+                sourcePlayerId,
+                requestedAmount,
+                recipientMaxHp,
+                durationTicks,
+                clericGraceSource,
+                false,
+                nowTick
+        );
+    }
+
+    public GrantResult grant(
+            String sourceId,
+            UUID sourcePlayerId,
+            double requestedAmount,
+            double recipientMaxHp,
+            int durationTicks,
+            boolean clericGraceSource,
+            boolean guardianResolveSource,
+            long nowTick
+    ) {
         requireStableId(sourceId);
         Objects.requireNonNull(sourcePlayerId, "sourcePlayerId");
         requireFinitePositive("requestedAmount", requestedAmount);
@@ -86,6 +108,7 @@ public final class PlayerBarrierRuntimeState {
                         appliedAmount,
                         expiresAtTick,
                         clericGraceSource,
+                        guardianResolveSource,
                         0.0,
                         false,
                         0
@@ -201,6 +224,7 @@ public final class PlayerBarrierRuntimeState {
                                 amountAfter,
                                 layer.expiresAtTick(),
                                 layer.clericGraceSource(),
+                                layer.guardianResolveSource(),
                                 consumedSinceGrant,
                                 graceEventEmitted,
                                 ultimateChargeStepsEmitted
@@ -212,6 +236,7 @@ public final class PlayerBarrierRuntimeState {
                     new SourceConsumption(
                             layer.sourceId(),
                             layer.sourcePlayerId(),
+                            layer.guardianResolveSource(),
                             absorbed,
                             consumedSinceGrant,
                             graceThresholdReached,
@@ -309,6 +334,7 @@ public final class PlayerBarrierRuntimeState {
                                 amountAfter,
                                 layer.expiresAtTick(),
                                 layer.clericGraceSource(),
+                                layer.guardianResolveSource(),
                                 layer.consumedSinceGrant(),
                                 layer.graceEventEmitted(),
                                 layer.ultimateChargeStepsEmitted()
@@ -366,6 +392,7 @@ public final class PlayerBarrierRuntimeState {
             double amount,
             long expiresAtTick,
             boolean clericGraceSource,
+            boolean guardianResolveSource,
             double consumedSinceGrant,
             boolean graceEventEmitted,
             int ultimateChargeStepsEmitted
@@ -436,6 +463,7 @@ public final class PlayerBarrierRuntimeState {
     public record SourceConsumption(
             String sourceId,
             UUID sourcePlayerId,
+            boolean guardianResolveSource,
             double absorbedDamage,
             double consumedSinceGrant,
             boolean clericGraceThresholdReached,

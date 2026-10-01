@@ -72,7 +72,8 @@ public final class ProjectBarrierRuntime {
                 sourceId,
                 requested,
                 durationTicks,
-                clericGraceSource
+                clericGraceSource,
+                activeClass == RootClass.GUARDIAN
         );
     }
 
@@ -83,6 +84,26 @@ public final class ProjectBarrierRuntime {
             double requestedAmount,
             int durationTicks,
             boolean clericGraceSource
+    ) {
+        return applyFixedBarrier(
+                sourcePlayer,
+                target,
+                sourceId,
+                requestedAmount,
+                durationTicks,
+                clericGraceSource,
+                false
+        );
+    }
+
+    public static GrantApplication applyFixedBarrier(
+            ServerPlayer sourcePlayer,
+            ServerPlayer target,
+            String sourceId,
+            double requestedAmount,
+            int durationTicks,
+            boolean clericGraceSource,
+            boolean guardianResolveSource
     ) {
         Objects.requireNonNull(sourcePlayer, "sourcePlayer");
         Objects.requireNonNull(target, "target");
@@ -102,6 +123,7 @@ public final class ProjectBarrierRuntime {
                                 target.getMaxHealth(),
                                 durationTicks,
                                 clericGraceSource,
+                                guardianResolveSource,
                                 nowTick
                         );
         return new GrantApplication(
@@ -157,12 +179,14 @@ public final class ProjectBarrierRuntime {
 
             long sourceTick = sourcePlayer.level()
                     .getGameTime();
-            GuardianResolveRuntime.onBarrierAbsorbed(
-                    sourcePlayer,
-                    target,
-                    consumption.absorbedDamage(),
-                    sourceTick
-            );
+            if (consumption.guardianResolveSource()) {
+                GuardianResolveRuntime.onBarrierAbsorbed(
+                        sourcePlayer,
+                        target,
+                        consumption.absorbedDamage(),
+                        sourceTick
+                );
+            }
 
             boolean graceQualified =
                     consumption.clericGraceThresholdReached();
