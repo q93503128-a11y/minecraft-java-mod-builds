@@ -555,6 +555,60 @@ Rank 5: 8%
 
 This is meaningful over time but not strong enough to make profession grind mandatory.
 
+
+## 10.4 R01 alchemy/cooking transaction binding — 2026-10-01
+
+The non-visual R01 settlement crafting backend is now production-bound in code for the six
+currently materializable baseline recipes:
+
+- Alchemy: Healing Potion, Focus Draught, Cleansing Tonic;
+- Cooking: Herbed Louxia Roast, Trail Skewers, Glow Broth.
+
+The server transaction preserves the current R01 recipe costs exactly. Settlement crafting resolves
+all required materials as one atomic Pouch-first, then same-player Material Vault transaction.
+The material mutation carries its own stable receipt so a disconnect between material removal and
+craft-state commit cannot consume the recipe twice. Gold debit, material consumption and each
+output stack use distinct stable transaction IDs. Normal crafts preflight the complete Backpack
+output before mutating Gold/materials; only an already-committed interrupted craft may use the
+existing Storage/Pending Reward Claim recovery path.
+
+The backend accepts arbitrary positive batch quantities and exposes a server-side Craft Max
+calculation bounded by owned materials, Gold and Backpack capacity. Recovery consumables retain
+stack cap 20 and prepared meals retain stack cap 50.
+
+Smithing / Alchemy / Cooking Mastery now has persistent server authority with the canonical
+five-rank Insight thresholds (0 / 4 / 9 / 15 / 22) and fee-reduction table (0 / 2 / 4 / 6 / 8%).
+The six bound recipes award exactly one first-craft Insight each and repeated copies/batches cannot
+farm additional Insight. The current R01 Alchemy set therefore remains below Rank 2 by itself.
+Cooking's fourth R01 Insight, Grilled Catch, is deliberately not bound yet because actual fish
+item/name/model materialization is still behind the fishing asset-binding gate. Smithing Insight
+storage/rank authority exists, but Smithing award events are not claimed as implemented by this
+pass.
+
+This closes the service **backend**, not the player-facing station. Greenwater Remedies and Copper
+Kettle still require accepted production spatial/service binding before live world calls are
+allowed; final Lucifer-family crafting UI, exact workstation/consume presentation, and client
+world-interaction acceptance remain separate gates.
+
+Verification for code state `4fcaecdb408182a3fd35530ffce62fd523c4d05f`:
+
+- Build Openworld RPG run `36827845622`: SUCCESS;
+- clean unit test/build: PASS;
+- bootstrap JAR verification: PASS;
+- core-profile dedicated server smoke: PASS;
+- gameplay dependency server smoke: PASS;
+- gameplay client startup smoke: PASS;
+- M0/R01 verification JAR build + marker isolation: PASS;
+- artifact: `openworld-rpg-m0-4fcaecdb408182a3fd35530ffce62fd523c4d05f`;
+- artifact ZIP SHA-256: `8b6b697ea82c5b1aeb6a3097a70ec38d772ae5897a5991a79139f5d80b95209a`;
+- normal JAR SHA-256: `e1b64c7a6dc7a3c69561ae8561d315e236435227053ce40394bb1e5b522eca11`;
+- M0 JAR SHA-256: `16d9e3cdb6e87ce5dd75ac95de8984adabbccb926e58c989de79f745ccac93c8`;
+- R01 integration JAR SHA-256: `9452e1ac9110b3b09eea23998185e2f880c72c7a5bee4d37a5d56d4780e1ff6b`.
+
+Client world join for these crafting services, integrated R01 playtest and multiplayer remain
+**NOT RUN**.
+
+
 ---
 
 # 11. Armor / apparel visual canon
