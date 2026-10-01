@@ -155,9 +155,31 @@ public final class PlayerDefenseRuntimeState {
             PlayerDefenseAuthority.IncomingHit hit,
             long nowTick
     ) {
+        return resolveIncoming(
+                resources,
+                defense,
+                hit,
+                nowTick,
+                1.0
+        );
+    }
+
+    public IncomingDefenseResult resolveIncoming(
+            PlayerCombatState resources,
+            PlayerDefenseAuthority.DefenseSnapshot defense,
+            PlayerDefenseAuthority.IncomingHit hit,
+            long nowTick,
+            double guardStaminaCostMultiplier
+    ) {
         Objects.requireNonNull(resources, "resources");
         Objects.requireNonNull(defense, "defense");
         Objects.requireNonNull(hit, "hit");
+        if (!Double.isFinite(guardStaminaCostMultiplier)
+                || guardStaminaCostMultiplier <= 0.0) {
+            throw new IllegalArgumentException(
+                    "Guard Stamina-cost multiplier must be finite and positive."
+            );
+        }
 
         double mitigated = PlayerDefenseAuthority.mitigatedDamageBeforeActiveDefense(
                 hit,
@@ -193,7 +215,7 @@ public final class PlayerDefenseRuntimeState {
                 defense.guardRating(),
                 resources.endurance(),
                 hit.attackerLevel()
-        );
+        ) * guardStaminaCostMultiplier;
 
         /*
          * perfect_guardable is intentionally independent from ordinary guardable. Canon contains

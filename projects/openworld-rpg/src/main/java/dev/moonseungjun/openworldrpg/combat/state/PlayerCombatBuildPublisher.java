@@ -4,6 +4,8 @@ import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.GuardianResolveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.GuardianRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
@@ -51,6 +53,10 @@ public final class PlayerCombatBuildPublisher {
                                         .maxHealthPercentBonus(
                                                 serverPlayer
                                         )
+                                        + GuardianRootPassiveEffects
+                                                .maxHealthPercentBonus(
+                                                        serverPlayer
+                                                )
                                 : 0.0)
         );
         PlayerVitalsRuntime.synchronizeMaxHealth(player, maxHealth);
@@ -134,12 +140,20 @@ public final class PlayerCombatBuildPublisher {
                                         .maxStaminaFlatBonus(
                                                 serverPlayer
                                         )
+                                        + GuardianRootPassiveEffects
+                                                .maxStaminaFlatBonus(
+                                                        serverPlayer
+                                                )
                                 : 0,
                         serverPlayer != null
                                 ? WarriorRootPassiveEffects
                                         .staminaRecoveryBonus(
                                                 serverPlayer
                                         )
+                                        + GuardianRootPassiveEffects
+                                                .staminaRecoveryBonus(
+                                                        serverPlayer
+                                                )
                                 : 0.0,
                         gameTick
                 );
@@ -187,6 +201,7 @@ public final class PlayerCombatBuildPublisher {
                                     )
                     );
             ClericRootPassiveRuntime.synchronize(serverPlayer);
+            GuardianResolveRuntime.synchronize(serverPlayer);
         }
         CombatStateServices.defenseSnapshots().bindAuthoritative(
                 player.getUUID(),

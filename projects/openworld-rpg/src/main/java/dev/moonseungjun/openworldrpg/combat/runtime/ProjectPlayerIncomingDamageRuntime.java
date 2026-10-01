@@ -92,6 +92,15 @@ public final class ProjectPlayerIncomingDamageRuntime {
         );
         if (counter.isPresent()) {
             resources.markCombatActivity(gameTick);
+            ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
+                    target,
+                    attacker,
+                    gameTick
+            );
+            GuardianResolveRuntime.onPerfectGuard(
+                    target,
+                    gameTick
+            );
             R01EarthloongMythicRuntime.onPerfectGuard(
                     target,
                     gameTick
@@ -106,7 +115,9 @@ public final class ProjectPlayerIncomingDamageRuntime {
                 resources,
                 defenseSnapshot.orElseThrow(),
                 effectiveHit,
-                gameTick
+                gameTick,
+                GuardianRootPassiveEffects
+                        .guardImpactStaminaCostMultiplier(target)
         );
         resources.markCombatActivity(gameTick);
 
@@ -129,10 +140,26 @@ public final class ProjectPlayerIncomingDamageRuntime {
         }
 
         if (resolution.perfectGuarded()) {
+            ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
+                    target,
+                    attacker,
+                    gameTick
+            );
+            GuardianResolveRuntime.onPerfectGuard(
+                    target,
+                    gameTick
+            );
             R01EarthloongMythicRuntime.onPerfectGuard(target, gameTick);
             WarriorSkillRuntime.onSuccessfulPerfectGuard(
                     target,
                     attacker,
+                    gameTick
+            );
+        } else if (resolution.guarded()
+                && !resolution.guardBroken()) {
+            GuardianResolveRuntime.onOrdinaryGuardedHit(
+                    target,
+                    resolution.staminaSpent(),
                     gameTick
             );
         }

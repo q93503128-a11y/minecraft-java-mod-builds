@@ -62,6 +62,8 @@ public final class ProjectBarrierRuntime {
                         applicableOutputBonus
                                 + ClericRootPassiveEffects
                                         .barrierOutputBonus(caster)
+                                + GuardianRootPassiveEffects
+                                        .barrierOutputBonus(caster)
                 );
 
         return applyFixedBarrier(
@@ -143,21 +145,30 @@ public final class ProjectBarrierRuntime {
 
         int gracePipsGranted = 0;
         for (var consumption : result.sourceConsumptions()) {
-            boolean graceQualified =
-                    consumption.clericGraceThresholdReached();
-            boolean ultimateQualified =
-                    consumption.clericUltimateChargeStepsReached() > 0;
-            if (!graceQualified && !ultimateQualified) {
-                continue;
-            }
-
             ServerPlayer sourcePlayer = target.level()
                     .getServer()
                     .getPlayerList()
                     .getPlayer(
                             consumption.sourcePlayerId()
                     );
-            if (sourcePlayer == null
+            if (sourcePlayer == null) {
+                continue;
+            }
+
+            long sourceTick = sourcePlayer.level()
+                    .getGameTime();
+            GuardianResolveRuntime.onBarrierAbsorbed(
+                    sourcePlayer,
+                    target,
+                    consumption.absorbedDamage(),
+                    sourceTick
+            );
+
+            boolean graceQualified =
+                    consumption.clericGraceThresholdReached();
+            boolean ultimateQualified =
+                    consumption.clericUltimateChargeStepsReached() > 0;
+            if ((!graceQualified && !ultimateQualified)
                     || PlayerProgressionService.state(sourcePlayer)
                             .activeClass()
                             .filter(RootClass.CLERIC::equals)
@@ -165,8 +176,6 @@ public final class ProjectBarrierRuntime {
                 continue;
             }
 
-            long sourceTick = sourcePlayer.level()
-                    .getGameTime();
             if (graceQualified) {
                 var combat = CombatStateServices.states()
                         .getOrCreate(
