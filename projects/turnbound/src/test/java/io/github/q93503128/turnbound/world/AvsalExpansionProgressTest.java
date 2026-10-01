@@ -46,6 +46,19 @@ class AvsalExpansionProgressTest {
                 AvsalExpansionProgress.CLUE_RECORDS,
                 AvsalExpansionProgress.INVESTIGATION_COMPLETE);
         assertTrue(AvsalExpansionProgress.investigationComplete(complete));
-        assertEquals(AvsalExpansionProgress.Stage.NORTHBOUND,AvsalExpansionProgress.stage(complete,clear));
+        assertEquals(AvsalExpansionProgress.Stage.RELAYS,AvsalExpansionProgress.stage(complete,clear));
+
+        Set<String> relays=Set.of(
+                AvsalExpansionProgress.BRIEFED,
+                AvsalExpansionProgress.OUTSKIRTS_REACHED,
+                AvsalExpansionProgress.INVESTIGATION_COMPLETE,
+                AvsalExpansionProgress.RELAY_WEST,
+                AvsalExpansionProgress.RELAY_EAST,
+                AvsalExpansionProgress.RELAY_COMPLETE);
+        assertTrue(AvsalExpansionProgress.relayComplete(relays));
+        assertEquals(2,AvsalExpansionProgress.relayCount(relays));
+        assertEquals(AvsalExpansionProgress.Stage.BOSS,AvsalExpansionProgress.stage(relays,clear));
+        assertEquals(AvsalExpansionProgress.Stage.CLEARED,
+                AvsalExpansionProgress.stage(relays,Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID,"AV_FIRST_BOSS")));
     }
 }

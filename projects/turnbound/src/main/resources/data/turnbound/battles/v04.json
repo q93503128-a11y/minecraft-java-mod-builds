@@ -546,6 +546,30 @@
       ],
       "respawnSeconds": 28,
       "boss": false
+    },
+    {
+      "id": "AV_RELAY_GUARD",
+      "label": "수로 중계기 파수조",
+      "region": "AVSAL",
+      "level": 12,
+      "enemies": [
+        "E009",
+        "E011",
+        "E012"
+      ],
+      "respawnSeconds": 35,
+      "boss": false
+    },
+    {
+      "id": "AV_FIRST_BOSS",
+      "label": "북쪽 수로문의 집행기",
+      "region": "AVSAL",
+      "level": 15,
+      "enemies": [
+        "AV_B01"
+      ],
+      "respawnSeconds": 0,
+      "boss": true
     }
   ]
 }

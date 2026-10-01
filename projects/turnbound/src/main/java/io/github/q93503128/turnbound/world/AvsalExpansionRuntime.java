@@ -31,6 +31,10 @@ final class AvsalExpansionRuntime {
     static final String SCAVENGER_CLUE_SITE = "turnbound:site/avsal/scavenger_contact";
     static final String SURVIVOR_CLUE_SITE = "turnbound:site/avsal/survivor_shelter";
     static final String RECORDS_CLUE_SITE = "turnbound:site/avsal/weathered_records";
+    static final String RELAY_WEST_SITE = "turnbound:site/avsal/relay_west";
+    static final String RELAY_GUARD_SITE = "turnbound:site/avsal/relay_guard";
+    static final String RELAY_EAST_SITE = "turnbound:site/avsal/relay_east";
+    static final String FIRST_BOSS_SITE = "turnbound:site/avsal/north_gate_boss";
 
     private static final Map<ServerLevel, Snapshot> CACHE = new IdentityHashMap<>();
 
@@ -101,9 +105,15 @@ final class AvsalExpansionRuntime {
             case INVESTIGATE -> new DrehmalContextualOnboarding.Guidance(
                     "아브살 외곽의 조사 지점 3곳 중 2곳을 확인하십시오. (" + AvsalExpansionProgress.investigationCount(flags) + "/2)",
                     "지도에 표시된 폐품상, 생존자, 낡은 기록 중 원하는 순서로 두 곳만 확인하면 됩니다.");
-            case NORTHBOUND -> new DrehmalContextualOnboarding.Guidance(
-                    "외곽 조사를 마쳤습니다. 북쪽으로 이어지는 불안정한 신호의 방향을 살피십시오.",
-                    "다음 구간은 외곽보다 위험합니다. 역참을 이용해 정비한 뒤 다시 돌아올 수 있습니다.");
+            case RELAYS -> new DrehmalContextualOnboarding.Guidance(
+                    "아브살 안쪽 중계 흔적 3곳 중 2곳을 해결하십시오. (" + AvsalExpansionProgress.relayCount(flags) + "/2)",
+                    "서부 배전실, 수로 중계기 파수조, 동부 우회선 중 원하는 두 곳만 해결하면 됩니다.");
+            case BOSS -> new DrehmalContextualOnboarding.Guidance(
+                    "북쪽 수로문으로 이동해 수로 집행기 카르논을 격파하십시오.",
+                    "카르논은 Barrier가 남아 있을 때 직접 공격을 반격합니다. 장벽을 끊고 예고된 수문 충돌에 대비하십시오.");
+            case CLEARED -> new DrehmalContextualOnboarding.Guidance(
+                    "북쪽 수로문이 열렸습니다. 아브살 안쪽을 더 조사할 수 있습니다.",
+                    "외곽 의뢰 중개소와 발견한 이동 지점을 이용해 정비할 수 있습니다.");
             case ROAD_EVENT -> new DrehmalContextualOnboarding.Guidance(
                     "뉴 드라비엘 서쪽 가도를 따라 아브살 외곽으로 향하십시오.",
                     "길에서 이상한 흔적을 발견해도 모든 것을 조사할 필요는 없습니다.");
@@ -136,8 +146,17 @@ final class AvsalExpansionRuntime {
         var server = player.level().getServer();
         if (server == null) return FieldUiSnapshot.Navigation.none();
         Set<String> flags = ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        Set<String> clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
         if (flags.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED)) {
             if (!AvsalExpansionProgress.investigationComplete(flags)) return investigationNavigation(player, flags);
+            if (!AvsalExpansionProgress.relayComplete(flags)) return relayNavigation(player, flags, clears);
+            if (!clears.contains("AV_FIRST_BOSS")) {
+                DrehmalFirstRouteCatalog.Site boss = site(player, FIRST_BOSS_SITE);
+                if (boss != null && boss.runtimePosition() != null) {
+                    var pos = boss.runtimePosition();
+                    return new FieldUiSnapshot.Navigation(boss.locator(), boss.playerLabel(), pos.x() + 0.5D, pos.z() + 0.5D);
+                }
+            }
             return FieldUiSnapshot.Navigation.none();
         }
 
@@ -202,6 +221,32 @@ final class AvsalExpansionRuntime {
             }
         }
         AvsalExpansionProgress.reconcileInvestigation(player);
+
+        refreshed = ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        if (AvsalExpansionProgress.investigationComplete(refreshed)) {
+            if (!refreshed.contains(AvsalExpansionProgress.RELAY_WEST)
+                    && inside(player, AvsalExpansionCatalog.site(RELAY_WEST_SITE), snapshot.sites().get(RELAY_WEST_SITE))) {
+                if (AvsalExpansionProgress.mark(player, AvsalExpansionProgress.RELAY_WEST)) {
+                    FieldNetwork.showDialogue(player, "서부 배전실",
+                            "끊어진 배선이 바닥의 오래된 홈과 맞물립니다. 남은 선을 우회 연결하자 짧은 진동이 북쪽으로 이어집니다.");
+                }
+            }
+            if (!refreshed.contains(AvsalExpansionProgress.RELAY_EAST)
+                    && inside(player, AvsalExpansionCatalog.site(RELAY_EAST_SITE), snapshot.sites().get(RELAY_EAST_SITE))) {
+                if (AvsalExpansionProgress.mark(player, AvsalExpansionProgress.RELAY_EAST)) {
+                    FieldNetwork.showDialogue(player, "동부 중계기",
+                            "무너진 중계기를 직접 살리는 대신 남은 선을 우회시켰습니다. 신호 일부가 북쪽 수로문 쪽으로 다시 모입니다.");
+                }
+            }
+            Set<String> clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+            if (clears.contains("AV_RELAY_GUARD") && !refreshed.contains(AvsalExpansionProgress.RELAY_GUARD)) {
+                AvsalExpansionProgress.mark(player, AvsalExpansionProgress.RELAY_GUARD);
+            }
+            if (AvsalExpansionProgress.reconcileRelay(player)) {
+                FieldNetwork.showDialogue(player, "끊어진 선",
+                        "두 개의 중계선이 다시 이어졌습니다. 북쪽 수로문의 잠금이 풀리며 거대한 집행기가 움직이기 시작합니다.");
+            }
+        }
     }
 
     private static FieldUiSnapshot.Navigation investigationNavigation(ServerPlayer player, Set<String> flags) {
@@ -209,6 +254,27 @@ final class AvsalExpansionRuntime {
         if (!flags.contains(AvsalExpansionProgress.CLUE_SCAVENGER)) candidates.add(SCAVENGER_CLUE_SITE);
         if (!flags.contains(AvsalExpansionProgress.CLUE_SURVIVOR)) candidates.add(SURVIVOR_CLUE_SITE);
         if (!flags.contains(AvsalExpansionProgress.CLUE_RECORDS)) candidates.add(RECORDS_CLUE_SITE);
+        DrehmalFirstRouteCatalog.Site best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (String locator : candidates) {
+            DrehmalFirstRouteCatalog.Site candidate = site(player, locator);
+            if (candidate == null || candidate.runtimePosition() == null) continue;
+            var pos = candidate.runtimePosition();
+            double dx = player.getX() - (pos.x() + 0.5D);
+            double dz = player.getZ() - (pos.z() + 0.5D);
+            double distance = dx * dx + dz * dz;
+            if (distance < bestDistance) { bestDistance = distance; best = candidate; }
+        }
+        if (best == null) return FieldUiSnapshot.Navigation.none();
+        var pos = best.runtimePosition();
+        return new FieldUiSnapshot.Navigation(best.locator(), best.playerLabel(), pos.x() + 0.5D, pos.z() + 0.5D);
+    }
+
+    private static FieldUiSnapshot.Navigation relayNavigation(ServerPlayer player, Set<String> flags, Set<String> clears) {
+        List<String> candidates = new ArrayList<>();
+        if (!flags.contains(AvsalExpansionProgress.RELAY_WEST)) candidates.add(RELAY_WEST_SITE);
+        if (!flags.contains(AvsalExpansionProgress.RELAY_GUARD) && !clears.contains("AV_RELAY_GUARD")) candidates.add(RELAY_GUARD_SITE);
+        if (!flags.contains(AvsalExpansionProgress.RELAY_EAST)) candidates.add(RELAY_EAST_SITE);
         DrehmalFirstRouteCatalog.Site best = null;
         double bestDistance = Double.MAX_VALUE;
         for (String locator : candidates) {
@@ -235,7 +301,21 @@ final class AvsalExpansionRuntime {
     }
 
     static List<DrehmalFirstRouteCatalog.EncounterSlot> productionEncounters(ServerPlayer player) {
-        return active(player) ? snapshot(player).encounters() : List.of();
+        if (!active(player)) return List.of();
+        return snapshot(player).encounters().stream()
+                .filter(slot -> encounterAvailable(player, slot.combatEncounterId()))
+                .toList();
+    }
+
+    static boolean encounterAvailable(ServerPlayer player, String combatEncounterId) {
+        if (!active(player) || player.level().getServer() == null || combatEncounterId == null) return false;
+        Set<String> flags = ExternalWorldSavedData.get(player.level().getServer()).onboardingFlags(player.getUUID());
+        Set<String> clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+        if ("AV_RELAY_GUARD".equals(combatEncounterId)) return AvsalExpansionProgress.investigationComplete(flags);
+        if ("AV_FIRST_BOSS".equals(combatEncounterId)) {
+            return AvsalExpansionProgress.relayComplete(flags) && !clears.contains("AV_FIRST_BOSS");
+        }
+        return true;
     }
 
     static DrehmalFirstRouteCatalog.Site site(ServerPlayer player, String locator) {

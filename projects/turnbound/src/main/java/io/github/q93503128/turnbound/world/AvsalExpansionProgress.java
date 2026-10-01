@@ -16,9 +16,14 @@ final class AvsalExpansionProgress {
     static final String CLUE_SURVIVOR = "AVSAL_MQ_AV02_SURVIVOR";
     static final String CLUE_RECORDS = "AVSAL_MQ_AV02_RECORDS";
     static final String INVESTIGATION_COMPLETE = "AVSAL_MQ_AV02_COMPLETE";
+    static final String RELAY_WEST = "AVSAL_MQ_AV03_RELAY_WEST";
+    static final String RELAY_GUARD = "AVSAL_MQ_AV03_RELAY_GUARD";
+    static final String RELAY_EAST = "AVSAL_MQ_AV03_RELAY_EAST";
+    static final String RELAY_COMPLETE = "AVSAL_MQ_AV03_COMPLETE";
     private static final Set<String> INVESTIGATION_CLUES = Set.of(CLUE_SCAVENGER, CLUE_SURVIVOR, CLUE_RECORDS);
+    private static final Set<String> RELAY_CLUES = Set.of(RELAY_WEST, RELAY_GUARD, RELAY_EAST);
 
-    enum Stage { LOCKED, BRIEFING, ROAD_EVENT, ROAD_PATROL, OUTSKIRTS, INVESTIGATE, NORTHBOUND }
+    enum Stage { LOCKED, BRIEFING, ROAD_EVENT, ROAD_PATROL, OUTSKIRTS, INVESTIGATE, RELAYS, BOSS, CLEARED }
 
     private AvsalExpansionProgress() {}
 
@@ -37,7 +42,9 @@ final class AvsalExpansionProgress {
         if (flags == null || clears == null || !DrabyelOpeningTutorial.patrolCleared(clears)) return Stage.LOCKED;
         if (!flags.contains(BRIEFED)) return Stage.BRIEFING;
         if (flags.contains(OUTSKIRTS_REACHED)) {
-            return flags.contains(INVESTIGATION_COMPLETE) ? Stage.NORTHBOUND : Stage.INVESTIGATE;
+            if (!investigationComplete(flags)) return Stage.INVESTIGATE;
+            if (!relayComplete(flags)) return Stage.RELAYS;
+            return clears.contains("AV_FIRST_BOSS") ? Stage.CLEARED : Stage.BOSS;
         }
         if (!flags.contains(ROADSIDE_ECHO_SEEN)) return Stage.ROAD_EVENT;
         if (!flags.contains(ROAD_PATROL_SEEN)) return Stage.ROAD_PATROL;
@@ -60,6 +67,24 @@ final class AvsalExpansionProgress {
         Set<String> flags = ExternalWorldSavedData.get(player.level().getServer()).onboardingFlags(player.getUUID());
         if (!flags.contains(OUTSKIRTS_REACHED) || flags.contains(INVESTIGATION_COMPLETE) || investigationCount(flags) < 2) return false;
         return mark(player, INVESTIGATION_COMPLETE);
+    }
+
+    static int relayCount(Set<String> flags) {
+        if (flags == null || flags.isEmpty()) return 0;
+        int count = 0;
+        for (String clue : RELAY_CLUES) if (flags.contains(clue)) count++;
+        return count;
+    }
+
+    static boolean relayComplete(Set<String> flags) {
+        return flags != null && (flags.contains(RELAY_COMPLETE) || relayCount(flags) >= 2);
+    }
+
+    static boolean reconcileRelay(ServerPlayer player) {
+        if (player == null || player.level().getServer() == null) return false;
+        Set<String> flags = ExternalWorldSavedData.get(player.level().getServer()).onboardingFlags(player.getUUID());
+        if (!investigationComplete(flags) || flags.contains(RELAY_COMPLETE) || relayCount(flags) < 2) return false;
+        return mark(player, RELAY_COMPLETE);
     }
 
     static boolean mark(ServerPlayer player, String flag) {

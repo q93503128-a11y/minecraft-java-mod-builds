@@ -43,6 +43,13 @@ public final class EnemyPresentationProfile {
             Map.entry("el_cv01_charge", skill(Motion.CHARGE, 26, true)),
             Map.entry("el_cv01_stomp", skill(Motion.CAST, 23, false)),
 
+            // Av'Sal first boss: a readable barrier/counter cycle and a full-party telegraphed breach.
+            Map.entry("av_b01_basic", skill(Motion.STRIKE, 17, true)),
+            Map.entry("av_b01_barrier", skill(Motion.TELEGRAPH, 21, false)),
+            Map.entry("av_b01_lock", skill(Motion.CAST, 21, false)),
+            Map.entry("av_b01_warn", skill(Motion.CAST, 23, false)),
+            Map.entry("av_b01_breach", skill(Motion.STRIKE, 27, true)),
+
             // Retired Aster migration encounters retained until replacement work completes.
             Map.entry("e001_basic", skill(Motion.STRIKE, 14, true)),
             Map.entry("e002_basic", skill(Motion.STRIKE, 13, false)),

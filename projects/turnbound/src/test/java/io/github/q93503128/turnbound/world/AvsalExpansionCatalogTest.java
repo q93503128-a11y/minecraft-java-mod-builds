@@ -42,5 +42,14 @@ class AvsalExpansionCatalogTest {
         assertTrue(AvsalExpansionCatalog.site(AvsalExpansionRuntime.ROAD_COURIER_SITE).kind().equals("NPC_ZONE"));
         assertTrue(AvsalExpansionCatalog.site(AvsalExpansionRuntime.WAYSIDE_CACHE_SITE).detectionRadius() >= 12);
         assertTrue(AvsalExpansionCatalog.site("turnbound:site/avsal/contract_broker").kind().equals("NPC_ZONE"));
+
+        var relayGuard = AvsalExpansionCatalog.site(AvsalExpansionRuntime.RELAY_GUARD_SITE);
+        var firstBoss = AvsalExpansionCatalog.site(AvsalExpansionRuntime.FIRST_BOSS_SITE);
+        assertEquals("AV_RELAY_GUARD", relayGuard.combatEncounterId());
+        assertEquals("COMMON", relayGuard.tier());
+        assertEquals("AV_FIRST_BOSS", firstBoss.combatEncounterId());
+        assertEquals("BOSS", firstBoss.tier());
+        assertTrue(CampaignEncounterCatalog.contains("AV_FIRST_BOSS"));
+        assertTrue(firstBoss.patrolSeeds().size() >= 2);
     }
 }

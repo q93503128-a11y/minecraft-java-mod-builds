@@ -1655,8 +1655,8 @@ Current data/runtime additions:
 - existing first-region common sites gain roaming presentation patrol seeds where available
 - New Drabyel adds physical 지역 의뢰관 로웬 as the regional-contract NPC
 - contract Tier 1: level 1+
-- contract Tier 2: average active-party level 8+
-- contract Tier 3: average active-party level 16+
+- contract tiers are not hard-gated by average party level; tier/minPartyLevel is recommendation metadata only
+- harder contracts may be accepted early; actual encounter difficulty is the readiness check
 - contract tier selection is independent of specific main-quest completion after the player reaches New Drabyel
 - contract pool contains 9 contracts across three tiers
 - future playable roster selection explicitly evaluates beasts/constructs/spirits and other non-humanoid bodies
@@ -1691,10 +1691,10 @@ Implemented in the current content batch:
 - Av'Sal road encounter levels now progress through Lv6 / Lv7 / Lv9 with the optional Elite at Lv11
 - Capital Valley common fights feed T1 equipment; harder Capital Valley and Av'Sal feed T2 equipment
 - early equipment drops use the existing durable settlement transaction as the deterministic roll source
-- New Drabyel T2 shop display and BUY authority share the same Drehmal progression gate
+- New Drabyel normal T1/T2 shop has no party-level/story hard gate; price and route danger are the readiness checks
 - stale loot-data shop/sale numbers were aligned to the current equipment-economy canon
-- Av'Sal physical discovery unlocks Tier 4 regional contracts at average active-party Lv16+
-- the Tier 4 pool is region-discovery + party-growth gated, not hard-wired to a later MQ completion
+- Av'Sal physical discovery adds Tier 4 regional contracts with no party-level hard gate
+- the Tier 4 pool is region-discovery gated, not hard-wired to party level or a later MQ completion
 - Av'Sal outskirts gains a physical contract broker sharing the player's existing server-owned regional-contract state
 - multiplayer field NPC eligibility checks the interacting player's own Av'Sal flags
 
@@ -1705,6 +1705,55 @@ Remaining before calling the first route playtest-ready:
 - rideable mount production remains pending and is not required to fake-complete the Av'Sal arrival gate
 
 Validation for this content checkpoint:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- NEW JAR: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+
+## Av'Sal first boss / summon-stage checkpoint — 2026-10-01
+
+The first user playtest gate now extends through the first Av'Sal boss rather than stopping at outskirts arrival.
+
+Route/content density before the boss:
+- MQ_AV01: New Drabyel -> Av'Sal approach
+- side: Ash Hounds, issued from Aren's expedition briefing
+- physical courier Deren: missing cart / rusted sentries / optional off-road Elite cluster
+- MQ_AV02: outskirts investigation, any 2 of 3
+- MQ_AV03: inner relay loop, any 2 of 3
+  - west distribution room: environment interaction
+  - aqueduct relay guard: combat route
+  - east relay bypass: environment interaction
+- MQ_AV04: first boss at the north aqueduct gate
+
+First boss:
+- id: AV_B01 / encounter AV_FIRST_BOSS
+- player label: 수로 집행기 카르논
+- Barrier cycle: direct hits while the Barrier is active trigger a real reaction counter
+- 55% HP transition: fresh Barrier + permanent speed pressure
+- phase-2 heavy attack is telegraphed before the following all-target breach
+- field representative stays at the gate instead of roaming the city
+- current visual production base reuses the authored 3D rusted-centurion rig at boss scale; combat mechanics and presentation timing are boss-specific
+- unique final Av'Sal boss art remains a visual-quality review item, not falsely marked complete
+
+Level gating:
+- regional contracts do not require average party level
+- minPartyLevel remains recommendation copy only
+- Drehmal T1/T2 physical shop does not require average party level or legacy chapter completion
+- discovering Av'Sal is still required before Av'Sal-local contracts can appear, because undiscovered-region jobs should not be offered out of context
+
+Summon presentation replacement:
+- summon results remain server-resolved and persisted before presentation
+- a safe in-world position near the physical summon facility becomes a player-private 3D summon stage
+- client camera detaches onto the stage, performs an authored orbit/push-in and restores cleanly afterwards
+- the local vanilla player shell is hidden during the stage
+- signal/charge ring is rendered in the world and the actual BattleActorEntity performs reveal/pose beats
+- the previous central 2D silhouette/bust overlay is removed from the reveal; 2D portraits remain only in the post-reveal summary cards
+
+Validation state for this checkpoint remains:
 - CODE REVIEWED: YES
 - TESTED: NO
 - BUILD VERIFIED: NO

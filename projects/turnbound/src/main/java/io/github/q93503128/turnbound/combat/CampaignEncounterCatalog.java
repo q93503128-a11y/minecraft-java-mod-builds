@@ -62,7 +62,9 @@ public final class CampaignEncounterCatalog {
             case "AV_ROAD_HOUNDS" -> 0.42;
             case "AV_ROAD_PATROL" -> 0.40;
             case "AV_RELAY_SENTRIES" -> 0.48;
+            case "AV_RELAY_GUARD" -> 0.50;
             case "AV_ROAD_ELITE" -> 0.52;
+            case "AV_FIRST_BOSS" -> 0.76;
             default -> {
                 if (encounter.id().startsWith("TUTORIAL_")) yield 0.68;
                 if (encounter.boss()) yield 0.88;

@@ -68,8 +68,10 @@ public final class EquipmentDropService {
                     new DropRule("T2", firstClear ? 0.20D : 0.20D);
             case "CV_BRIAR_STAG" ->
                     new DropRule("T2", firstClear ? 0.35D : 0.25D);
-            case "AV_ROAD_HOUNDS", "AV_ROAD_PATROL", "AV_RELAY_SENTRIES" ->
+            case "AV_ROAD_HOUNDS", "AV_ROAD_PATROL", "AV_RELAY_SENTRIES", "AV_RELAY_GUARD" ->
                     new DropRule("T2", firstClear ? 0.55D : 0.22D);
+            case "AV_FIRST_BOSS" ->
+                    new DropRule("T2", firstClear ? 0.0D : 0.35D);
             case "AV_ROAD_ELITE" ->
                     new DropRule("T2", firstClear ? 0.25D : 0.30D);
             default -> null;

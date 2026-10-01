@@ -39,6 +39,10 @@ public final class EnemyBattleTelegraphs {
             case "el02_piercing_horn" -> hornLane(level, source, aim);
             case "el03_barrier" -> centurionGuard(level, source);
             case "el04_collapse" -> EliteVfxTelegraphs.el04CollapseCracks(level, aim);
+            case "av_b01_barrier" -> centurionGuard(level, source);
+            case "av_b01_lock" -> aqueductDelay(level, aim);
+            case "av_b01_warn" -> aqueductBreachWarning(level, source);
+            case "av_b01_breach" -> aqueductBreachRelease(level, source);
             default -> { }
         }
     }
@@ -150,6 +154,21 @@ public final class EnemyBattleTelegraphs {
             Vec3 p = source.add(Math.cos(a) * .7, .15, Math.sin(a) * .7);
             vertical(level, ParticleTypes.END_ROD, p, 1.2, 5);
         }
+    }
+
+    private static void aqueductBreachWarning(ServerLevel level, Vec3 source) {
+        Vec3 center = source.add(0, .10, 0);
+        ring(level, ParticleTypes.ELECTRIC_SPARK, center, 2.15, 34);
+        ring(level, ParticleTypes.END_ROD, center, 2.75, 40);
+        radial(level, ParticleTypes.ELECTRIC_SPARK, center, 8, 2.65, 7);
+    }
+
+    private static void aqueductBreachRelease(ServerLevel level, Vec3 source) {
+        Vec3 center = source.add(0, .12, 0);
+        radial(level, ParticleTypes.END_ROD, center, 10, 3.05, 8);
+        ring(level, ParticleTypes.ELECTRIC_SPARK, center, 3.15, 46);
+        PersonalPresentationIsolation.particles(level, ParticleTypes.CLOUD,
+                center.x, center.y + .35, center.z, 28, 1.8, .25, 1.8, .06);
     }
 
     private static void chargeLane(ServerLevel level, Vec3 source, Vec3 target, ParticleOptions edge, ParticleOptions center) {

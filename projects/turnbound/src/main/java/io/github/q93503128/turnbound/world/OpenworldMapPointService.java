@@ -61,10 +61,29 @@ final class OpenworldMapPointService {
                 }
                 continue;
             }
+            if ("MQ_AV03".equals(quest.id())) {
+                addAvsalQuestPoint(out, player, "quest:MQ_AV03:west", "서부 배전실",
+                        AvsalExpansionRuntime.RELAY_WEST_SITE, !flags.contains(AvsalExpansionProgress.RELAY_WEST));
+                addAvsalQuestPoint(out, player, "quest:MQ_AV03:guard", "수로 중계기 파수조",
+                        AvsalExpansionRuntime.RELAY_GUARD_SITE,
+                        !flags.contains(AvsalExpansionProgress.RELAY_GUARD) && !clears.contains("AV_RELAY_GUARD"));
+                addAvsalQuestPoint(out, player, "quest:MQ_AV03:east", "동부 중계기",
+                        AvsalExpansionRuntime.RELAY_EAST_SITE, !flags.contains(AvsalExpansionProgress.RELAY_EAST));
+                continue;
+            }
             var target=avsalQuestTarget(player,quest); if(target==null||target.runtimePosition()==null)continue; var pos=target.runtimePosition();
             out.add(new FieldUiSnapshot.MapPoint("quest:"+quest.id(),quest.title(),"QUEST",pos.x()+0.5D,pos.z()+0.5D,true));
         }
         return List.copyOf(out);
+    }
+
+    private static void addAvsalQuestPoint(List<FieldUiSnapshot.MapPoint> out, ServerPlayer player,
+                                           String id, String label, String siteLocator, boolean unresolved) {
+        if (!unresolved) return;
+        var site = AvsalExpansionRuntime.site(player, siteLocator);
+        if (site == null || site.runtimePosition() == null) return;
+        var pos = site.runtimePosition();
+        out.add(new FieldUiSnapshot.MapPoint(id, label, "QUEST", pos.x()+0.5D, pos.z()+0.5D, true));
     }
 
     private static boolean fieldNpcVisible(DrehmalFieldNpcCatalog.Npc npc, Set<String> flags) {
@@ -98,6 +117,10 @@ final class OpenworldMapPointService {
 
     private static DrehmalFirstRouteCatalog.Site avsalQuestTarget(ServerPlayer player,AvsalQuestCatalog.Quest quest){
         if(!quest.encounterId().isBlank())for(var encounter:AvsalExpansionRuntime.productionEncounters(player))if(quest.encounterId().equals(encounter.combatEncounterId()))return AvsalExpansionRuntime.site(player,encounter.siteLocator());
-        return switch(quest.id()){case "MQ_AV01","MQ_AV02"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.OUTSKIRTS_SITE);default->null;};
+        return switch(quest.id()){
+            case "MQ_AV01","MQ_AV02"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.OUTSKIRTS_SITE);
+            case "SQ_AV04_CART"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.WAYSIDE_CACHE_SITE);
+            default->null;
+        };
     }
 }

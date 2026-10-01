@@ -439,6 +439,11 @@ public final class BattleEngine {
             reactions.addLast(new Reaction(target.instanceId(), attacker.instanceId(),
                     target.definition().param("counterPotency", 0.45), "EL03_BARRIER_COUNTER", 1));
         }
+        if (direct && attacker != null && barrierBefore > 0 && target.definition().id().equals("AV_B01") && !target.downed()
+                && counteredThisAction.add("AV_B01:" + target.instanceId())) {
+            reactions.addLast(new Reaction(target.instanceId(), attacker.instanceId(),
+                    target.definition().param("counterPotency", 0.35), "AV_B01_BARRIER_COUNTER", 1));
+        }
 
         if (direct && attacker != null && attacker.side() != target.side() && !target.downed()
                 && counteredThisAction.add("EQUIP_DIRECT_HIT_GAUGE:" + target.instanceId())) {
@@ -880,6 +885,7 @@ public final class BattleEngine {
                 actor.removeStatus("el_cv01_charge_warning");
             }
         }
+        if (id.equals("AV_B01") && skill.id().equals("av_b01_breach")) actor.removeStatus("av_b01_breach_warning");
         if (id.equals("B01") && skill.id().equals("b01_charge")) actor.removeStatus("b01_charge_warning");
         if (id.equals("B02") && skill.id().equals("b02_summon")) spawnBossAdd(actor, "E007");
         if (id.equals("B03") && actor.flag("b03_phase3")) {
@@ -972,6 +978,17 @@ public final class BattleEngine {
         if (boss.downed() || !boss.definition().boss()) return;
         double hp = boss.hp() / (double)boss.maxHp();
         switch (boss.definition().id()) {
+            case "AV_B01" -> {
+                if (!boss.flag("av_b01_phase2") && hp <= boss.definition().param("phase2", 0.55)) {
+                    boss.setFlag("av_b01_phase2");
+                    int barrier = boss.addBarrier((int)Math.floor(boss.maxHp() * boss.definition().param("phase2Barrier", 0.12)));
+                    boss.putStatus(new StatusInstance("speed_multiplier", boss.instanceId(), 999,
+                            boss.definition().param("phase2Speed", 0.18)));
+                    state.addEvent(new BattleEvent("BARRIER", boss.instanceId(), boss.instanceId(), barrier, "AV_B01_PHASE2"));
+                    state.addEvent(new BattleEvent("BOSS_PHASE", boss.instanceId(), boss.instanceId(), 2, "AV_B01_PHASE2"));
+                    recordMorwenBossPhase(boss);
+                }
+            }
             case "B01" -> {
                 if (!boss.flag("b01_phase2") && hp <= boss.definition().param("phase2", 0.70)) {
                     boss.setFlag("b01_phase2"); spawnBossAdd(boss, "E001"); spawnBossAdd(boss, "E002");

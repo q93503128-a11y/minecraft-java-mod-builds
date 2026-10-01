@@ -19,6 +19,7 @@ import io.github.q93503128.turnbound.client.FieldLocationBannerLayer;
 import io.github.q93503128.turnbound.client.DrehmalMinimapLayer;
 import io.github.q93503128.turnbound.client.MetaMenuKeyHandler;
 import io.github.q93503128.turnbound.client.QuestGuideLayer;
+import io.github.q93503128.turnbound.client.SummonCameraController;
 import io.github.q93503128.turnbound.client.VanillaHudPolicy;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
@@ -49,6 +50,9 @@ public final class TurnboundClient {
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onDetachedCameraDistance);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onCameraAngles);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onFov);
+        NeoForge.EVENT_BUS.addListener(SummonCameraController::onDetachedCameraDistance);
+        NeoForge.EVENT_BUS.addListener(SummonCameraController::onCameraAngles);
+        NeoForge.EVENT_BUS.addListener(SummonCameraController::onFov);
         NeoForge.EVENT_BUS.addListener(BattlePlayerRenderPolicy::onRenderPlayer);
         NeoForge.EVENT_BUS.addListener(MetaMenuKeyHandler::onKey);
         NeoForge.EVENT_BUS.addListener(DrehmalAutoInstaller::onTick);

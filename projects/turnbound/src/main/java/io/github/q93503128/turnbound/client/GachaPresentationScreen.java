@@ -36,8 +36,19 @@ public final class GachaPresentationScreen extends Screen {
             this(characterId, stars, newlyOwned, essence, pityAfter, 0, 0, false);
         }
     }
-    public record Batch(String action, int crystalSpent, List<Pull> pulls) {
-        public Batch { pulls = List.copyOf(pulls == null ? List.of() : pulls); }
+    public record Batch(
+            String action, int crystalSpent, List<Pull> pulls,
+            double stageX, double stageY, double stageZ, float cameraYaw
+    ) {
+        public Batch {
+            pulls = List.copyOf(pulls == null ? List.of() : pulls);
+        }
+        public Batch(String action, int crystalSpent, List<Pull> pulls) {
+            this(action, crystalSpent, pulls, Double.NaN, Double.NaN, Double.NaN, Float.NaN);
+        }
+        boolean hasStage() {
+            return Double.isFinite(stageX) && Double.isFinite(stageY) && Double.isFinite(stageZ) && Float.isFinite(cameraYaw);
+        }
     }
 
     private final Batch batch;
@@ -73,13 +84,24 @@ public final class GachaPresentationScreen extends Screen {
         String action = "";
         int spent = 0;
         List<Pull> pulls = new ArrayList<>();
+        double stageX = Double.NaN, stageY = Double.NaN, stageZ = Double.NaN;
+        float cameraYaw = Float.NaN;
         if (raw == null) raw = "";
         for (String line : raw.split("\n")) {
             if (line.isBlank()) continue;
             String[] p = line.split("\\|", -1);
             try {
                 switch (p[0]) {
-                    case "H" -> { action = p[1]; spent = Integer.parseInt(p[3]); }
+                    case "H" -> {
+                        action = p[1];
+                        spent = Integer.parseInt(p[3]);
+                        if (p.length > 7) {
+                            stageX = Double.parseDouble(p[4]);
+                            stageY = Double.parseDouble(p[5]);
+                            stageZ = Double.parseDouble(p[6]);
+                            cameraYaw = Float.parseFloat(p[7]);
+                        }
+                    }
                     case "P" -> pulls.add(new Pull(p[1], Integer.parseInt(p[2]), "1".equals(p[3]),
                             Integer.parseInt(p[4]), Integer.parseInt(p[5]),
                             p.length > 6 ? Integer.parseInt(p[6]) : 0,
@@ -89,12 +111,15 @@ public final class GachaPresentationScreen extends Screen {
                 }
             } catch (RuntimeException ignored) { }
         }
-        return new Batch(action, spent, pulls);
+        return new Batch(action, spent, pulls, stageX, stageY, stageZ, cameraYaw);
     }
 
     @Override
     protected void init() {
         super.init();
+        if (batch.hasStage()) {
+            SummonCameraController.enter(batch.stageX(), batch.stageY(), batch.stageZ(), batch.cameraYaw());
+        }
         addRenderableWidget(new BattleHudButton(width - 98, 16, 80, 22,
                 Component.literal("건너뛰기"), MUTED, ignored -> finish()));
     }
@@ -103,6 +128,12 @@ public final class GachaPresentationScreen extends Screen {
     public void tick() {
         super.tick();
         ticks++;
+        Pull focus = currentReveal();
+        if (focus != null && batch.hasStage()) {
+            SummonCameraController.update(slotTick(), currentPhase(), focus.stars());
+        } else if (SummonCameraController.active()) {
+            SummonCameraController.exit();
+        }
         queuePhaseAudio();
         if (ticks >= totalDurationTicks()) finish();
     }
@@ -114,6 +145,7 @@ public final class GachaPresentationScreen extends Screen {
     private void finish() {
         if (finishing) return;
         finishing = true;
+        SummonCameraController.exit();
         ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
         if (minecraft != null) minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.ARCHIVE));
     }
@@ -158,26 +190,29 @@ public final class GachaPresentationScreen extends Screen {
         int intensity = GachaPresentationTimeline.intensity(pull.stars());
         drawRaritySignal(graphics, accent, intensity, phase);
 
-        int modelSize = Math.min(230, Math.max(132, Math.min(width / 3, height / 2)));
-        int modelCx = width / 2;
-        int modelTop = Math.max(28, height / 2 - modelSize / 2 - 30);
+        if (!batch.hasStage()) {
+            int modelSize = Math.min(230, Math.max(132, Math.min(width / 3, height / 2)));
+            int modelCx = width / 2;
+            int modelTop = Math.max(28, height / 2 - modelSize / 2 - 30);
+            if (phase == GachaPresentationTimeline.Phase.SILHOUETTE) {
+                TurnboundPortraitRenderer.extractSilhouette(graphics, pull.characterId(),
+                        modelCx - modelSize / 2, modelTop, modelCx + modelSize / 2, modelTop + modelSize);
+                return;
+            }
+            if (phase == GachaPresentationTimeline.Phase.REVEAL || phase == GachaPresentationTimeline.Phase.NAME) {
+                TurnboundPortraitRenderer.extractBust(graphics, pull.characterId(),
+                        modelCx - modelSize / 2, modelTop, modelCx + modelSize / 2, modelTop + modelSize, false);
+            }
+        }
 
         if (phase == GachaPresentationTimeline.Phase.SILHOUETTE) {
-            TurnboundPortraitRenderer.extractSilhouette(
-                    graphics, pull.characterId(),
-                    modelCx - modelSize / 2, modelTop,
-                    modelCx + modelSize / 2, modelTop + modelSize);
+            String cue = "형상이 소환장에 응집됩니다";
+            graphics.text(font, Component.literal(cue),
+                    (width - font.width(cue)) / 2, Math.max(50, height - 52), SECONDARY, false);
             return;
         }
 
-        if (phase == GachaPresentationTimeline.Phase.REVEAL || phase == GachaPresentationTimeline.Phase.NAME) {
-            TurnboundPortraitRenderer.extractBust(
-                    graphics, pull.characterId(),
-                    modelCx - modelSize / 2, modelTop,
-                    modelCx + modelSize / 2, modelTop + modelSize,
-                    false);
-        }
-
+        // The real in-world BattleActorEntity is the reveal. Do not cover it with a flat portrait.
         if (phase != GachaPresentationTimeline.Phase.NAME) return;
 
         int w = Math.min(410, width - 44);
@@ -339,4 +374,10 @@ public final class GachaPresentationScreen extends Screen {
 
     @Override public boolean shouldCloseOnEsc() { return false; }
     @Override public void onClose() { finish(); }
+
+    @Override
+    public void removed() {
+        SummonCameraController.exit();
+        super.removed();
+    }
 }

@@ -247,6 +247,7 @@ public final class BattleAutoController {
             case "EL02" -> { CombatantState previous = state.find(actor.ref("el02_last_target")); CombatantState target = previous != null && !previous.downed() ? previous : weakest(allies); engine.useSkill(actor.instanceId(), actor.cooldown("el02_piercing_horn") == 0 ? "el02_piercing_horn" : "el02_basic", target.instanceId()); }
             case "EL03" -> { if (actor.barrier() == 0 && actor.cooldown("el03_barrier") == 0) engine.useSkill(actor.instanceId(), "el03_barrier"); else basicEnemy(engine, actor, allies); }
             case "EL04" -> { if (actor.cooldown("el04_collapse") == 0) engine.useSkill(actor.instanceId(), "el04_collapse"); else basicEnemy(engine, actor, allies); }
+            case "AV_B01" -> chooseAvsalB01(engine, actor, allies);
             case "B01" -> chooseB01(engine, actor, allies);
             case "B02" -> chooseB02(engine, state, actor, allies);
             case "B03" -> chooseB03(engine, actor, allies);
@@ -256,6 +257,20 @@ public final class BattleAutoController {
             case "E_SHIELD" -> { if (actor.cooldown("e_shield_active") == 0) engine.useSkill(actor.instanceId(), "e_shield_active", weakest(own).instanceId()); else basicEnemy(engine, actor, allies); }
             case "E_SHAMAN" -> { if (actor.cooldown("e_shaman_active") == 0) engine.useSkill(actor.instanceId(), "e_shaman_active"); else engine.useSkill(actor.instanceId(), "e_shaman_basic", weakest(own).instanceId()); }
             default -> useBasic(engine, state, actor);
+        }
+    }
+
+    private static void chooseAvsalB01(BattleEngine engine, CombatantState actor, List<CombatantState> allies) {
+        if (actor.hasStatus("av_b01_breach_warning") && actor.cooldown("av_b01_breach") == 0) {
+            engine.useSkill(actor.instanceId(), "av_b01_breach");
+        } else if (actor.barrier() == 0 && actor.cooldown("av_b01_barrier") == 0) {
+            engine.useSkill(actor.instanceId(), "av_b01_barrier");
+        } else if (actor.flag("av_b01_phase2") && actor.cooldown("av_b01_breach") == 0) {
+            engine.useSkill(actor.instanceId(), "av_b01_warn");
+        } else if (actor.cooldown("av_b01_lock") == 0) {
+            engine.useSkill(actor.instanceId(), "av_b01_lock", highestGauge(allies).instanceId());
+        } else {
+            engine.useSkill(actor.instanceId(), "av_b01_basic", distributedTarget(allies, actor).instanceId());
         }
     }
 

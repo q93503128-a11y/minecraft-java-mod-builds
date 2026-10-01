@@ -79,6 +79,7 @@ public final class AvsalExpansionCatalog {
         Set<String> encounterLocators = new HashSet<>();
         int common = 0;
         int elite = 0;
+        int boss = 0;
         for (SitePlan site : PLAN.sites()) {
             if (site.locator().isBlank() || !locators.add(site.locator())) errors.add("duplicate/blank Av'Sal site " + site.locator());
             if (site.playerLabel().isBlank()) errors.add("blank Av'Sal site label " + site.locator());
@@ -93,16 +94,18 @@ public final class AvsalExpansionCatalog {
                 if (!CampaignEncounterCatalog.contains(site.combatEncounterId())) {
                     errors.add("unknown Av'Sal combat encounter " + site.locator() + " -> " + site.combatEncounterId());
                 }
-                if (!Set.of("COMMON", "ELITE").contains(site.tier())) errors.add("invalid Av'Sal tier " + site.locator());
+                if (!Set.of("COMMON", "ELITE", "BOSS").contains(site.tier())) errors.add("invalid Av'Sal tier " + site.locator());
                 if (site.patrolSeeds().size() < 2) errors.add("Av'Sal encounter needs patrol seeds " + site.locator());
                 if ("COMMON".equals(site.tier())) common++;
                 if ("ELITE".equals(site.tier())) elite++;
+                if ("BOSS".equals(site.tier())) boss++;
             } else if (!site.encounterLocator().isBlank() || !site.tier().isBlank()) {
                 errors.add("non-combat Av'Sal site carries encounter metadata " + site.locator());
             }
         }
         if (common < 1) errors.add("Av'Sal first slice needs a common route encounter");
         if (elite < 1) errors.add("Av'Sal first slice needs an optional elite encounter");
+        if (boss < 1) errors.add("Av'Sal first slice needs its first boss encounter");
         return List.copyOf(errors);
     }
 

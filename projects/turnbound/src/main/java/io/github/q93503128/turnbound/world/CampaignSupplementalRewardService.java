@@ -18,13 +18,14 @@ public final class CampaignSupplementalRewardService {
             // the one-time 10-pull onboarding grant at the exact moment the summon facility becomes available.
             case "CV_DRABYEL_ROAD" -> 3_000;
             case "CV_WARNING_CAVE_ELITE", "AV_ROAD_ELITE" -> 300;
+            case "AV_FIRST_BOSS" -> 600;
             case DrehmalWorldBossPlacementRules.ENCOUNTER_ID -> 1_200;
             // Legacy BATTLE_B01's special bundle already contains its 1,200 boss Crystal + 1,800 tutorial Crystal.
             case "BATTLE_B02", "BATTLE_B03", "BATTLE_B04", "BATTLE_B05" -> 1_200;
             default -> 0;
         };
         String choiceTier = switch (encounterId) {
-            case "CV_WARNING_CAVE_ELITE", "CV_BRIAR_STAG", "AV_ROAD_ELITE", DrehmalWorldBossPlacementRules.ENCOUNTER_ID -> "T2";
+            case "CV_WARNING_CAVE_ELITE", "CV_BRIAR_STAG", "AV_ROAD_ELITE", "AV_FIRST_BOSS", DrehmalWorldBossPlacementRules.ENCOUNTER_ID -> "T2";
             // T3 drops are explicitly unlocked by B03; B05 is the authored T4 first-clear source.
             case "BATTLE_B03", "BATTLE_B04" -> "T3";
             case "BATTLE_B05" -> "T4";

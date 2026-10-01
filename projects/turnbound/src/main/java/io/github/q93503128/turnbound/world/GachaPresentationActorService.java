@@ -23,6 +23,8 @@ import java.util.UUID;
  * it owns only temporary presentation actors and never mutates progression.
  */
 public final class GachaPresentationActorService {
+    public record Stage(double x, double y, double z, float cameraYaw) {}
+
     private static final Map<UUID, Active> ACTIVE = new LinkedHashMap<>();
 
     private static final class Active {
@@ -32,10 +34,14 @@ public final class GachaPresentationActorService {
         int slotTick;
         int ttl;
         UUID actorId;
+        final Vec3 stage;
+        final float actorYaw;
 
-        Active(ServerLevel level, List<GachaPresentationPlan.Reveal> reveals, int pullCount) {
+        Active(ServerLevel level, List<GachaPresentationPlan.Reveal> reveals, int pullCount, Vec3 stage, float actorYaw) {
             this.level = level;
             this.reveals = reveals;
+            this.stage = stage;
+            this.actorYaw = actorYaw;
             this.ttl = GachaPresentationTimeline.totalTicks(reveals.size(), pullCount) + 80;
         }
 
@@ -46,12 +52,17 @@ public final class GachaPresentationActorService {
 
     private GachaPresentationActorService() {}
 
-    public static void begin(ServerPlayer player, GachaService.BatchResult result) {
-        if (player == null || result == null || !(player.level() instanceof ServerLevel level)) return;
+    public static Stage begin(ServerPlayer player, GachaService.BatchResult result) {
+        if (player == null || result == null || !(player.level() instanceof ServerLevel level)) return null;
         finish(player);
         List<GachaPresentationPlan.Reveal> reveals = GachaPresentationPlan.reveals(result);
-        if (reveals.isEmpty()) return;
-        ACTIVE.put(player.getUUID(), new Active(level, reveals, result.pulls().size()));
+        if (reveals.isEmpty()) return null;
+        Vec3 stage = safeStagePosition(level, player);
+        if (stage == null) return null;
+        float actorYaw = faceYaw(stage, player.position());
+        ACTIVE.put(player.getUUID(), new Active(level, reveals, result.pulls().size(), stage, actorYaw));
+        float cameraYaw = wrapDegrees(actorYaw + 180.0F);
+        return new Stage(stage.x, stage.y, stage.z, cameraYaw);
     }
 
     public static void tick(ServerPlayer player) {
@@ -64,6 +75,8 @@ public final class GachaPresentationActorService {
         }
 
         active.slotTick++;
+        if (active.slotTick == 1) stageRing(player, active, false);
+        if (active.slotTick == GachaPresentationTimeline.SIGNAL_TICKS) stageRing(player, active, true);
         if (active.slotTick == GachaPresentationTimeline.REVEAL_TICK) {
             spawnCurrent(player, active);
         }
@@ -91,12 +104,9 @@ public final class GachaPresentationActorService {
     private static void spawnCurrent(ServerPlayer player, Active active) {
         GachaPresentationPlan.Reveal reveal = active.current();
         if (reveal == null) return;
-        Vec3 position = safeRevealPosition(active.level, player);
-        if (position == null) return;
-
-        float yaw = faceYaw(position, player.position());
+        Vec3 position = active.stage;
         BattleActorEntity actor = PersonalPresentationIsolation.spawnPrivateActor(
-                active.level, reveal.characterId(), position, yaw, player.getUUID());
+                active.level, reveal.characterId(), position, active.actorYaw, player.getUUID());
         if (actor == null) return;
         actor.setCustomName(Component.literal(CanonicalData.definition(reveal.characterId()).name()));
         actor.setCustomNameVisible(false);
@@ -131,6 +141,24 @@ public final class GachaPresentationActorService {
         }
     }
 
+    private static void stageRing(ServerPlayer player, Active active, boolean charged) {
+        if (player == null || active == null) return;
+        int points = charged ? 22 : 16;
+        double radius = charged ? 2.15D : 1.65D;
+        for (int i = 0; i < points; i++) {
+            double angle = Math.PI * 2.0D * i / points;
+            double x = active.stage.x + Math.cos(angle) * radius;
+            double z = active.stage.z + Math.sin(angle) * radius;
+            PersonalPresentationIsolation.particles(active.level, player, ParticleTypes.ENCHANT,
+                    x, active.stage.y + 0.08D, z, 1, 0.02D, 0.02D, 0.02D, 0.0D);
+        }
+        if (charged) {
+            PersonalPresentationIsolation.particles(active.level, player, ParticleTypes.END_ROD,
+                    active.stage.x, active.stage.y + 0.18D, active.stage.z,
+                    18, 1.4D, 0.10D, 1.4D, 0.025D);
+        }
+    }
+
     private static void removeActor(Active active) {
         if (active.actorId == null) return;
         Entity entity = active.level.getEntity(active.actorId);
@@ -138,12 +166,12 @@ public final class GachaPresentationActorService {
         active.actorId = null;
     }
 
-    private static Vec3 safeRevealPosition(ServerLevel level, ServerPlayer player) {
+    private static Vec3 safeStagePosition(ServerLevel level, ServerPlayer player) {
         double radians = Math.toRadians(player.getYRot());
         Vec3 forward = new Vec3(-Math.sin(radians), 0.0, Math.cos(radians));
         Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
-        double[] distances = {3.4, 4.3, 2.7, 5.2, 6.0};
-        double[] lateral = {0.0, 1.25, -1.25, 2.4, -2.4};
+        double[] distances = {7.0, 8.0, 6.0, 9.0, 5.2};
+        double[] lateral = {0.0, 1.5, -1.5, 2.7, -2.7};
 
         for (double distance : distances) {
             for (double side : lateral) {
@@ -174,5 +202,12 @@ public final class GachaPresentationActorService {
         double dx = to.x - from.x;
         double dz = to.z - from.z;
         return (float)Math.toDegrees(Math.atan2(-dx, dz));
+    }
+
+    private static float wrapDegrees(float value) {
+        float wrapped = value % 360.0F;
+        if (wrapped >= 180.0F) wrapped -= 360.0F;
+        if (wrapped < -180.0F) wrapped += 360.0F;
+        return wrapped;
     }
 }

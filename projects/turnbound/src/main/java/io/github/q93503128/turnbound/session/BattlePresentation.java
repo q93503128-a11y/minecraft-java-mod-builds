@@ -261,6 +261,7 @@ final class BattlePresentation {
         if(phase==2){
             switch(visualId){
                 case "B01","B02","B03","B04","B05" -> actor.playSummon();
+                case "AV_B01" -> actor.playCast();
                 default -> actor.playPhase();
             }
             return;

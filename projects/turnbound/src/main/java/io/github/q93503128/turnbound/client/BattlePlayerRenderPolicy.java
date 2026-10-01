@@ -13,6 +13,6 @@ public final class BattlePlayerRenderPolicy {
     private BattlePlayerRenderPolicy() {}
 
     public static void onRenderPlayer(RenderPlayerEvent.Pre<?> event) {
-        if (ClientBattleState.snapshot().active()) event.setCanceled(true);
+        if (ClientBattleState.snapshot().active() || SummonCameraController.active()) event.setCanceled(true);
     }
 }

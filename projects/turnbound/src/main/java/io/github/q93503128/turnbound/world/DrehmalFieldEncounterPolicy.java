@@ -21,7 +21,7 @@ final class DrehmalFieldEncounterPolicy {
         if (encounter == null || site == null) {
             return new Policy(Archetype.ROADSIDE_THREAT, 12);
         }
-        if ("WORLD_BOSS".equals(encounter.tier())
+        if ("WORLD_BOSS".equals(encounter.tier()) || "BOSS".equals(encounter.tier())
                 || DrehmalWorldBossPlacementRules.SITE_KIND.equals(site.kind())) {
             return new Policy(Archetype.WORLD_BOSS, 30);
         }

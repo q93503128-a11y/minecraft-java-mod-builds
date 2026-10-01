@@ -88,12 +88,13 @@ public final class V04Catalogs {
             case "AV_ROAD_HOUNDS" -> 200;
             case "AV_ROAD_PATROL" -> 240;
             case "AV_RELAY_SENTRIES" -> 320;
+            case "AV_RELAY_GUARD" -> 380;
             case "AV_ROAD_ELITE" -> 700;
             default -> -1;
         };
         if (firstRoute >= 0) return firstRoute;
         if (encounter.boss()) return switch (encounter.enemies().getFirst()) {
-            case "B01" -> 12_000; case "B02" -> 18_000; case "B03" -> 24_000; case "B04" -> 32_000; case "B05" -> 50_000; default -> 0;
+            case "AV_B01" -> 9_000; case "B01" -> 12_000; case "B02" -> 18_000; case "B03" -> 24_000; case "B04" -> 32_000; case "B05" -> 50_000; default -> 0;
         };
         int perNormal = 70 + 18 * encounter.level();
         int result = 0;
@@ -110,7 +111,9 @@ public final class V04Catalogs {
             case "AV_ROAD_HOUNDS" -> 220;
             case "AV_ROAD_PATROL" -> 300;
             case "AV_RELAY_SENTRIES" -> 360;
+            case "AV_RELAY_GUARD" -> 450;
             case "AV_ROAD_ELITE" -> 700;
+            case "AV_FIRST_BOSS" -> 2_500;
             default -> 0;
         };
     }
@@ -121,12 +124,13 @@ public final class V04Catalogs {
             case "AV_ROAD_HOUNDS" -> 520;
             case "AV_ROAD_PATROL" -> 650;
             case "AV_RELAY_SENTRIES" -> 850;
+            case "AV_RELAY_GUARD" -> 1_000;
             case "AV_ROAD_ELITE" -> 1_200;
             default -> -1;
         };
         if (authoredRoute >= 0) return authoredRoute;
         if (encounter.boss()) return switch (encounter.enemies().getFirst()) {
-            case "B01" -> 5_000; case "B02" -> 8_000; case "B03" -> 12_000; case "B04" -> 18_000; case "B05" -> 28_000; default -> 0;
+            case "AV_B01" -> 3_800; case "B01" -> 5_000; case "B02" -> 8_000; case "B03" -> 12_000; case "B04" -> 18_000; case "B05" -> 28_000; default -> 0;
         };
         int perNormal = 80 + 90 * encounter.level();
         int result = 0;
@@ -135,7 +139,7 @@ public final class V04Catalogs {
     }
 
     public static int bossFirstClearEssence(String bossId) {
-        return switch (bossId) { case "B01" -> 60; case "B02" -> 80; case "B03" -> 100; case "B04" -> 150; case "B05" -> 250; default -> 0; };
+        return switch (bossId) { case "AV_B01" -> 40; case "B01" -> 60; case "B02" -> 80; case "B03" -> 100; case "B04" -> 150; case "B05" -> 250; default -> 0; };
     }
 
     public static int riftGold(int floor) {

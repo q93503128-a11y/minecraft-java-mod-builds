@@ -66,12 +66,12 @@
       "siteLocator": "turnbound:site/avsal/road_courier",
       "playerLabel": "운송인 데른",
       "visualAsset": "DRABYEL_STABLEMASTER",
-      "dialogue": "이 길은 전보다 더 시끄러워졌어. 폐허 쪽에서 움직이는 녹슨 파수기들이 수레를 두 번이나 뒤집었지. 아브살로 계속 갈 거라면 접근로부터 조심해.",
+      "dialogue": "이 길은 전보다 더 시끄러워졌어. 잿빛 사냥개가 짐 냄새를 따라오고, 앞선 수레 하나는 아직 돌아오지 않았어. 폐허 가까이에는 녹슨 파수기까지 움직이고 있지.",
       "interactionRadius": 4,
       "progressRequiresFlag": "AVSAL_MQ_AV01_BRIEFED",
       "questOfferFlag": "AVSAL_ROAD_COURIER_OFFERED",
       "questOfferId": "SQ_AV02_RELAY_SENTRIES",
-      "questOfferDialogue": "폐허 바로 앞의 녹슨 파수기들을 정리해 주면 다음 운송대가 지나갈 틈이 생길 거야. 꼭 메인 일과 함께 할 필요는 없어."
+      "questOfferDialogue": "아브살로 계속 갈 거라면 세 가지를 기억해 둬. 사냥개 무리는 길에서 떼어 놓고, 뒤집힌 수레가 보이면 흔적을 확인해 줘. 폐허 접근로의 파수기는 가능하면 정리해 줬으면 해. 가도 밖의 큰 그림자는 굳이 건드리지 않아도 되지만, 잡을 수 있다면 운송대가 훨씬 편해질 거야."
     },
     {
       "locator": "turnbound:npc/avsal/contract_broker",

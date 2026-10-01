@@ -721,7 +721,21 @@ These are initial production rates and require playtest economy review.
 They do not add random substats or extra crafting currencies.
 
 T2 New Drabyel shop unlock:
-- average active-party Lv8+, or
-- meaningful Elite / Av'Sal road clear.
+- no party-level/story hard requirement.
+- T2 price, available Gold and encounter difficulty are the natural readiness checks.
 
 The visible shop state and server BUY authority must use the same rule.
+
+
+### 20.2 No party-level content lock — 2026-10-01
+
+Average active-party level is not a server-side requirement for regional contracts or the normal T1/T2 physical shop.
+
+Rules:
+- minPartyLevel on repeat contracts is recommendation metadata for difficulty communication only.
+- contracts may be accepted below the recommendation.
+- the encounter itself remains fully difficult; no hidden scaling-down is added merely because the player accepted early.
+- Av'Sal-local contracts still require Av'Sal discovery so the world does not offer jobs for an unknown region.
+- T1/T2 shop stock is physically available; Gold price and equipment opportunity cost are the progression pressure.
+
+This replaces the earlier Lv8/Lv16 hard-gate interpretation.

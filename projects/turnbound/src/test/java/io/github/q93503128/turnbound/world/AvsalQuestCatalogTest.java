@@ -21,6 +21,12 @@ class AvsalQuestCatalogTest {
         assertTrue(AvsalQuestCatalog.visible(mq2, Set.of(AvsalExpansionProgress.OUTSKIRTS_REACHED), Set.of()));
         assertFalse(AvsalQuestCatalog.completed(mq2, Set.of(AvsalExpansionProgress.OUTSKIRTS_REACHED), Set.of()));
         assertTrue(AvsalQuestCatalog.completed(mq2, Set.of(AvsalExpansionProgress.INVESTIGATION_COMPLETE), Set.of()));
+        var mq3 = AvsalQuestCatalog.all().stream().filter(q -> "MQ_AV03".equals(q.id())).findFirst().orElseThrow();
+        var mq4 = AvsalQuestCatalog.all().stream().filter(q -> "MQ_AV04".equals(q.id())).findFirst().orElseThrow();
+        assertTrue(AvsalQuestCatalog.visible(mq3, Set.of(AvsalExpansionProgress.INVESTIGATION_COMPLETE), Set.of()));
+        assertTrue(AvsalQuestCatalog.completed(mq3, Set.of(AvsalExpansionProgress.RELAY_COMPLETE), Set.of()));
+        assertTrue(AvsalQuestCatalog.visible(mq4, Set.of(AvsalExpansionProgress.RELAY_COMPLETE), Set.of("AV_FIRST_BOSS")));
+        assertTrue(AvsalQuestCatalog.completed(mq4, Set.of(AvsalExpansionProgress.RELAY_COMPLETE), Set.of("AV_FIRST_BOSS")));
         assertTrue(AvsalQuestCatalog.all().stream()
                 .allMatch(quest -> quest.rewardCrystal() > 0 && quest.rewardGold() > 0));
     }

@@ -30,10 +30,10 @@
     {
       "id": "SQ_AV01_ELITE",
       "kind": "SIDE",
-      "title": "길을 벗어난 위험",
+      "title": "가도 밖의 큰 그림자",
       "regionLabel": "Av'Sal",
-      "objective": "가도 바깥의 강한 적을 상대할지 결정하십시오.",
-      "activationFlag": "AVSAL_ROADSIDE_ECHO_SEEN",
+      "objective": "운송인 데른이 경고한 가도 바깥의 강적을 추적해 격파하십시오.",
+      "activationFlag": "AVSAL_ROAD_COURIER_OFFERED",
       "completionFlag": "",
       "encounterId": "AV_ROAD_ELITE",
       "rewardCrystal": 400,
@@ -52,6 +52,58 @@
       "rewardCrystal": 250,
       "rewardGold": 3500,
       "rewardXp": 1200
+    },
+    {
+      "id": "SQ_AV03_HOUNDS",
+      "kind": "SIDE",
+      "title": "운송길의 잿빛 울음",
+      "regionLabel": "Av'Sal",
+      "objective": "아렌이 경고한 서쪽 가도의 잿빛 사냥개 무리를 정리하십시오.",
+      "activationFlag": "AVSAL_MQ_AV01_BRIEFED",
+      "completionFlag": "",
+      "encounterId": "AV_ROAD_HOUNDS",
+      "rewardCrystal": 180,
+      "rewardGold": 2500,
+      "rewardXp": 750
+    },
+    {
+      "id": "SQ_AV04_CART",
+      "kind": "SIDE",
+      "title": "돌아오지 않은 수레",
+      "regionLabel": "Av'Sal",
+      "objective": "운송인 데른의 앞선 수레가 남긴 흔적을 찾아 조사하십시오.",
+      "activationFlag": "AVSAL_ROAD_COURIER_OFFERED",
+      "completionFlag": "AVSAL_WAYSIDE_CACHE_SEEN",
+      "encounterId": "",
+      "rewardCrystal": 120,
+      "rewardGold": 1800,
+      "rewardXp": 500
+    },
+    {
+      "id": "MQ_AV03",
+      "kind": "MAIN",
+      "title": "끊어진 선",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살 안쪽의 중계 흔적 3곳 중 2곳을 안정화하거나 우회하십시오.",
+      "activationFlag": "AVSAL_MQ_AV02_COMPLETE",
+      "completionFlag": "AVSAL_MQ_AV03_COMPLETE",
+      "encounterId": "",
+      "rewardCrystal": 900,
+      "rewardGold": 7000,
+      "rewardXp": 2200
+    },
+    {
+      "id": "MQ_AV04",
+      "kind": "MAIN",
+      "title": "북쪽 수로문의 집행기",
+      "regionLabel": "Av'Sal",
+      "objective": "중계선 너머 북쪽 수로문을 지키는 집행기를 격파하십시오.",
+      "activationFlag": "AVSAL_MQ_AV03_COMPLETE",
+      "completionFlag": "",
+      "encounterId": "AV_FIRST_BOSS",
+      "rewardCrystal": 700,
+      "rewardGold": 6500,
+      "rewardXp": 2600
     }
   ]
 }

@@ -338,6 +338,100 @@
       "combatEncounterId": "",
       "tier": "",
       "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/relay_west",
+      "kind": "CLUE_ZONE",
+      "playerLabel": "서부 배전실의 잔향",
+      "seed": {
+        "x": -182,
+        "z": 1599
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 12,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/relay_guard",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "수로 중계기 파수조",
+      "seed": {
+        "x": -241,
+        "z": 1585
+      },
+      "searchRadius": 16,
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "detectionRadius": 34,
+      "encounterLocator": "turnbound:encounter/avsal/relay_guard",
+      "combatEncounterId": "AV_RELAY_GUARD",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": -226,
+          "z": 1560
+        },
+        {
+          "x": -241,
+          "z": 1585
+        },
+        {
+          "x": -241,
+          "z": 1605
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/relay_east",
+      "kind": "CLUE_ZONE",
+      "playerLabel": "동부 중계기의 우회선",
+      "seed": {
+        "x": -187,
+        "z": 1637
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 12,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/north_gate_boss",
+      "kind": "BOSS_ZONE",
+      "playerLabel": "북쪽 수로문",
+      "seed": {
+        "x": -238,
+        "z": 1672
+      },
+      "searchRadius": 20,
+      "safetyRadius": 0,
+      "encounterRadius": 30,
+      "detectionRadius": 42,
+      "encounterLocator": "turnbound:encounter/avsal/first_boss",
+      "combatEncounterId": "AV_FIRST_BOSS",
+      "tier": "BOSS",
+      "patrolSeeds": [
+        {
+          "x": -244,
+          "z": 1657
+        },
+        {
+          "x": -238,
+          "z": 1672
+        },
+        {
+          "x": -222,
+          "z": 1676
+        }
+      ]
     }
   ]
 }

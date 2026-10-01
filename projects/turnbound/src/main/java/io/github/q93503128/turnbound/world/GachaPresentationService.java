@@ -23,8 +23,8 @@ public final class GachaPresentationService {
                 default -> throw new IllegalStateException("Unsupported summon action");
             };
             CampaignPersistence.saveIfDirty(player);
-            GachaPresentationActorService.begin(player, result);
-            PacketDistributor.sendToPlayer(player, new GachaPresentationPayload(encode(action, result)));
+            GachaPresentationActorService.Stage stage = GachaPresentationActorService.begin(player, result);
+            PacketDistributor.sendToPlayer(player, new GachaPresentationPayload(encode(action, result, stage)));
             MetaNetwork.sync(player);
         } catch (RuntimeException ex) {
             GachaPresentationActorService.finish(player);
@@ -35,9 +35,13 @@ public final class GachaPresentationService {
         return true;
     }
 
-    private static String encode(String action, GachaService.BatchResult result) {
+    private static String encode(String action, GachaService.BatchResult result, GachaPresentationActorService.Stage stage) {
         StringBuilder out = new StringBuilder();
-        out.append("H|").append(action).append('|').append(result.pulls().size()).append('|').append(result.crystalSpent()).append('\n');
+        out.append("H|").append(action).append('|').append(result.pulls().size()).append('|').append(result.crystalSpent());
+        if (stage != null) {
+            out.append('|').append(stage.x()).append('|').append(stage.y()).append('|').append(stage.z()).append('|').append(stage.cameraYaw());
+        }
+        out.append('\n');
         java.util.Set<Integer> spotlight = java.util.Set.copyOf(GachaPresentationPlan.spotlightIndices(result));
         for (int i = 0; i < result.pulls().size(); i++) {
             GachaService.PullResult pull = result.pulls().get(i);

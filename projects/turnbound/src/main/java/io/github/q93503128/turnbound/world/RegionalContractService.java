@@ -31,13 +31,13 @@ final class RegionalContractService {
                 CampaignProgressStore.regionalContractState(player.getUUID());
 
         if (state.contractId().isBlank()) {
-            int partyLevel = CampaignProgressStore.averageActivePartyLevel(player.getUUID());
-            RegionalContractCatalog.Contract next = next(player, state.rotation(), partyLevel);
+            RegionalContractCatalog.Contract next = next(player, state.rotation());
             if (next == null) return false;
             if (!CampaignProgressStore.activateRegionalContract(player.getUUID(), next.id())) return false;
             CampaignPersistence.saveIfDirty(player);
             FieldNetwork.showDialogue(player, npcLabel,
-                    "현재 파티에 맞는 " + next.tier() + "단계 지역 의뢰입니다. 파티가 성장하거나 새로운 지역을 발견하면 더 높은 단계 의뢰가 들어옵니다.\n\n"
+                    next.tier() + "단계 지역 의뢰입니다. 레벨 제한은 없고 난이도 자체가 준비 여부를 가릅니다."
+                            + (next.minPartyLevel() > 1 ? " · 권장 Lv." + next.minPartyLevel() : "") + "\n\n"
                             + next.title() + "\n" + next.objective() + "\n보상 · "
                             + String.format(Locale.ROOT, "%,d", next.rewardGold()) + " Gold · 파티 XP " + next.rewardXp());
             return true;
@@ -67,11 +67,9 @@ final class RegionalContractService {
         if (!unlocked(player)) return "";
         CampaignProgressStore.RegionalContractState state =
                 CampaignProgressStore.regionalContractState(player.getUUID());
-        int partyLevel = CampaignProgressStore.averageActivePartyLevel(player.getUUID());
         if (state.contractId().isBlank()) {
-            int tier = highestTier(player, partyLevel);
-            return line("지역 의뢰", "반복 지역 의뢰 · " + tier + "단계",
-                    "지역 의뢰관에게서 현재 파티와 발견 지역에 맞는 반복 의뢰를 받을 수 있습니다.");
+            return line("지역 의뢰", "반복 지역 의뢰 · 레벨 제한 없음",
+                    "발견한 지역의 의뢰가 순환합니다. 높은 단계도 바로 받을 수 있지만 전투 난이도는 그대로입니다.");
         }
         RegionalContractCatalog.Contract active = RegionalContractCatalog.contract(state.contractId());
         if (active == null) return "";
@@ -84,26 +82,18 @@ final class RegionalContractService {
                 active.objective() + " · " + progress + " · 보상 " + reward);
     }
 
-    private static RegionalContractCatalog.Contract next(ServerPlayer player, int rotation, int partyLevel) {
-        int tier = highestTier(player, partyLevel);
+    private static RegionalContractCatalog.Contract next(ServerPlayer player, int rotation) {
         List<RegionalContractCatalog.Contract> pool = RegionalContractCatalog.all().stream()
-                .filter(contract -> contract.tier() == tier)
-                .filter(contract -> available(player, contract, partyLevel))
-                .sorted(Comparator.comparing(RegionalContractCatalog.Contract::id))
+                .filter(contract -> available(player, contract))
+                .sorted(Comparator.comparingInt(RegionalContractCatalog.Contract::tier)
+                        .thenComparing(RegionalContractCatalog.Contract::id))
                 .toList();
         if (pool.isEmpty()) return null;
         return pool.get(Math.floorMod(rotation, pool.size()));
     }
 
-    private static int highestTier(ServerPlayer player, int partyLevel) {
-        return RegionalContractCatalog.all().stream()
-                .filter(contract -> available(player, contract, partyLevel))
-                .mapToInt(RegionalContractCatalog.Contract::tier)
-                .max().orElse(1);
-    }
-
-    private static boolean available(ServerPlayer player, RegionalContractCatalog.Contract contract, int partyLevel) {
-        if (contract == null || contract.minPartyLevel() > partyLevel) return false;
+    private static boolean available(ServerPlayer player, RegionalContractCatalog.Contract contract) {
+        if (contract == null) return false;
         if (contract.requiredFlag().isBlank()) return true;
         if (player == null || player.level().getServer() == null) return false;
         return ExternalWorldSavedData.get(player.level().getServer())

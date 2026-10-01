@@ -378,11 +378,37 @@ Production rules:
 - Av'Sal road commons use T2 as their normal equipment target
 - first clear remains more valuable than repeating one spawn forever
 - New Drabyel T2 shop availability uses Drehmal progression, not retired chapter quest ids
-- average active-party Lv8 or a relevant Elite/Av'Sal clear opens the T2 shop
+- T1/T2 normal shop inventory has no party-level/story hard gate; Gold price and encounter difficulty are the readiness checks
 - equipment roll is derived from the durable reward transaction id, so persistence retry cannot reroll it
 
 ### Repeatable-contract continuation
 
 Av'Sal discovery sets a region-discovery flag separate from MQ numbering.
-At average active-party Lv16+, discovering Av'Sal exposes Tier 4 regional contracts.
+Discovering Av'Sal exposes Tier 4 regional contracts. Party level is shown only as a recommendation; it does not block acceptance.
 A physical outskirts broker provides the same server-authoritative contract state as New Drabyel, so reporting a repeat contract does not require an empty full-road commute.
+
+
+## First boss production slice — 2026-10-01
+
+MQ_AV03 now makes the first interior step a 2-of-3 relay problem rather than another linear kill corridor:
+- west distribution room: non-combat bypass
+- aqueduct relay guard: visible combat route
+- east relay bypass: non-combat bypass
+- any two unlock the north aqueduct gate
+
+MQ_AV04 is the first Av'Sal boss:
+- 수로 집행기 카르논 (AV_B01)
+- source-path seed around the north aqueduct approach; live 26.2 placement still owns ground/collision/source clearance
+- two-phase fight
+- Barrier counter passive, highest-Gauge lock attack, telegraphed party-wide breach
+- boss encounter is hidden before MQ_AV03 completion and removed after first clear
+
+Road-side quest cluster before arrival:
+- Ash Hound cleanup from Aren's briefing
+- Deren's missing cart
+- Deren's rusted-sentry request
+- optional off-road Elite warning
+These are optional alongside the main route and are positioned to avoid mandatory backtracking.
+
+The current boss visual uses the already-authored rusted-centurion custom 3D rig as an editable production base, scaled/presented as a boss.
+This is not documented as a final unique boss model until client visual review justifies that claim.

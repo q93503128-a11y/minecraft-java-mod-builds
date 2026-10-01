@@ -16,7 +16,8 @@ class RegionalContractCatalogTest {
                 .toList();
         assertEquals(3, avsal.size());
         assertTrue(avsal.stream().allMatch(contract -> contract.tier() == 4));
-        assertTrue(avsal.stream().allMatch(contract -> contract.minPartyLevel() >= 16));
+        assertTrue(avsal.stream().allMatch(contract -> contract.minPartyLevel() >= 1),
+                "minPartyLevel is retained only as a recommended-level display value");
         assertTrue(avsal.stream().allMatch(contract ->
                 AvsalExpansionProgress.REGION_DISCOVERED.equals(contract.requiredFlag())));
         assertTrue(avsal.stream().noneMatch(contract -> contract.requiredFlag().startsWith("MQ_")));
