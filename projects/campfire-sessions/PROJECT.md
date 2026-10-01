@@ -394,3 +394,55 @@ Required correction:
 2. create a broader 2–3 terrace village life-sim zone while preserving coastline and the outer mountain silhouette.
 3. replace the main civic shells with role-readable external prefabs.
 4. re-evaluate the full scene only after those changes are integrated.
+
+
+## Second village slice verification — Build #68 / Probe #35
+
+The first Kogtyv civic slice remains visually rejected. The second integrated review slice replaces it with a pinned MIT Chek's Mint Plains structure set and a broader authored village terrain pass.
+
+Final implementation checkpoint:
+- code commit: `7a2d753b1f5d7881ce8d49d369b6ab87e73fca06`
+- selected external village structures: **12 Chek's Mint + 1 Currents of Trade dock**
+- rejected Kogtyv Greece structures packaged in the normal JAR: **0**
+- layout footprint collision check: **0 overlaps**
+- terrain strategy:
+  - natural waterfront + existing Currents dock retained
+  - broad civic-west terrace around the mountain toe
+  - separate civic-southeast commercial terrace
+  - upper residential/museum terrace
+  - connected 3-block-wide soft path network
+- the east mountain is preserved rather than cut through.
+- ocean columns are excluded from broad terrace grading.
+- grading safety cap remains 12 blocks for broad terrain remaster; observed runtime worst deltas:
+  - civic_west: 5
+  - civic_southeast: 11
+  - upper: 11
+- harbor dock preflight: shoreline connector Y64, outer-water samples 18/18.
+
+Verification:
+- Build Campfire Sessions #68 / run `36832104709`: **SUCCESS**
+- build artifact ID `11148006460`
+- build artifact digest `sha256:ffa052438eaa04f06102805ef71d5b2c09bae8e75ae41be4e13bb29840664154`
+- Probe Campfire Canonical World Runtime #35 / run `36832104506`: **SUCCESS**
+- one-click Modrinth review-pack artifact ID `11148116319`
+- review-pack artifact digest `sha256:5ce436dadad763727ec3d73391b6ee5d7bfb43aea878788c465f202896a50438`
+- staged review-world artifact ID `11147447363`
+- v4 completion marker: VERIFIED
+- 13 external structures: SERVER PLACEMENT VERIFIED
+- terraces: SERVER PLACEMENT VERIFIED
+- connected paths: SERVER PLACEMENT VERIFIED
+- harbor dock: SERVER PLACEMENT VERIFIED
+- one-click review `.mrpack`: PRODUCED
+
+Validation labels:
+- CODE REVIEWED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CANONICAL WORLD SERVER TESTED: YES
+- SECOND VILLAGE SLICE SERVER TESTED: YES
+- SECOND VILLAGE SLICE CLIENT VISUAL TESTED: NO
+- SECOND VILLAGE VISUAL ACCEPTANCE: PENDING
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+Because the baked review world changed materially, the next client review requires a **fresh v4 Modrinth review-pack import**, not a JAR-only replacement. Continue to provide both the JAR and `.mrpack` to the user as requested.
