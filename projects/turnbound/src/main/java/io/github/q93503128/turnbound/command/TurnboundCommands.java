@@ -19,6 +19,7 @@ import io.github.q93503128.turnbound.world.DrehmalRouteSurveyService;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.FieldSessionManager;
 import io.github.q93503128.turnbound.world.MetaNetwork;
+import io.github.q93503128.turnbound.world.PreReleaseSessionReset;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.commands.Commands;
@@ -101,6 +102,9 @@ public final class TurnboundCommands {
                             BattleSessionManager.startEncounter(player, "CV_WARNING_CAVE_ELITE", true, true);
                             return Command.SINGLE_SUCCESS;
                         })))
+                .then(Commands.literal("reset")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> resetProgress(context.getSource())))
                 .then(Commands.literal("leave")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(context -> {
@@ -168,6 +172,31 @@ public final class TurnboundCommands {
             source.sendSuccess(() -> Component.literal(
                     "이 위치는 최대 4인 공유전투 formation/camera 검사에 실패했습니다. battle footprint 후보로 사용하지 마십시오."), false);
         }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int resetProgress(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        var server = player.level().getServer();
+        if (server == null || !DrehmalWorldBinding.isBound(server)) {
+            source.sendFailure(Component.literal("Drehmal 세계에서만 TURNBOUND 진행을 초기화할 수 있습니다."));
+            return 0;
+        }
+
+        if (BattleSessionManager.exists(player)) BattleSessionManager.end(player);
+        CampaignProgressStore.removeRuntime(player.getUUID());
+        CampaignPersistence.load(player);
+        if (CampaignPersistence.blocked(player)) return 0;
+
+        boolean placed = PreReleaseSessionReset.apply(player);
+        ExternalWorldBootstrap.initialize(player);
+        MetaNetwork.sync(player);
+
+        if (!placed) {
+            source.sendFailure(Component.literal("진행 상태는 초기화했지만 시작 위치로 이동하지 못했습니다. 로그를 확인해 주세요."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("TURNBOUND 진행을 New Drabyel 시작 상태로 초기화했습니다."), false);
         return Command.SINGLE_SUCCESS;
     }
 
