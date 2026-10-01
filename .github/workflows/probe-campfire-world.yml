@@ -241,6 +241,142 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
+      - name: Assemble private Modrinth village review pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon jar copyAssetReviewProbe
+
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          import shutil
+          import tomllib
+          import zipfile
+          from pathlib import Path
+
+          root = Path('.')
+          stage = root / 'build' / 'campfire-review-mrpack'
+          overrides = stage / 'overrides'
+          mods_out = overrides / 'mods'
+          world_out = overrides / 'saves' / 'campfire-village-review'
+
+          if stage.exists():
+              shutil.rmtree(stage)
+          mods_out.mkdir(parents=True)
+          world_out.parent.mkdir(parents=True, exist_ok=True)
+
+          source_world = root / 'build' / 'village-review-world'
+          if not (source_world / 'level.dat').is_file():
+              raise SystemExit('missing verified village review world')
+          shutil.copytree(source_world, world_out)
+
+          accepted_mod_ids = {
+              'balm',
+              'croptopia',
+              'epherolib',
+              'geckolib',
+              'peterwolfs_boats_and_ships',
+              'skniro_furniture',
+              'player_animation_library',
+              'puzzleslib',
+              'shroomcraft',
+              'sophisticatedbackpacks',
+              'sophisticatedcore',
+              'travelertoolbelt',
+              'cookingforblockheads',
+          }
+
+          probe_dir = root / 'build' / 'assetReviewProbe'
+          found = {}
+          for jar in sorted(probe_dir.glob('*.jar')):
+              try:
+                  with zipfile.ZipFile(jar) as zf:
+                      try:
+                          raw = zf.read('META-INF/neoforge.mods.toml')
+                      except KeyError:
+                          continue
+                  data = tomllib.loads(raw.decode('utf-8'))
+                  ids = {entry.get('modId') for entry in data.get('mods', []) if entry.get('modId')}
+              except Exception:
+                  continue
+
+              match = ids & accepted_mod_ids
+              if not match:
+                  continue
+              for mod_id in match:
+                  if mod_id in found:
+                      raise SystemExit(f'duplicate runtime mod id {mod_id}: {found[mod_id]} / {jar}')
+                  found[mod_id] = jar.name
+              shutil.copy2(jar, mods_out / jar.name)
+
+          missing = accepted_mod_ids - found.keys()
+          if missing:
+              raise SystemExit('missing review-pack runtime mods: ' + ', '.join(sorted(missing)))
+
+          own = root / 'build' / 'libs' / 'campfiresessions-0.6.0-alpha.1.jar'
+          if not own.is_file():
+              raise SystemExit(f'missing Campfire jar: {own}')
+          shutil.copy2(own, mods_out / own.name)
+
+          notice_dir = overrides / 'campfire-review'
+          notice_dir.mkdir(parents=True)
+          (notice_dir / 'README.txt').write_text(
+              'Campfire Sessions private village-layout review pack\n'
+              'Minecraft 26.2 / NeoForge 26.2.0.87\n\n'
+              'Import this .mrpack into the Modrinth App and launch it.\n'
+              'Open the included world: campfire-village-review.\n'
+              'No separate map, mod, schematic, or resource-pack installation is required.\n\n'
+              'This review save intentionally displays exterior shells for facilities that are not all\n'
+              'available on the real first in-game day. It exists to review map composition, paths,\n'
+              'building orientation, terrain fit, and harbor placement.\n'
+              'Do not publish or redistribute this private review pack.\n',
+              encoding='utf-8',
+          )
+          (notice_dir / 'WORLD_LICENSE.txt').write_text(
+              'Canonical world: Geming400 — Island map | 1024x1024 / Island - No WorldBorder.zip\n'
+              'License recorded by Campfire Sessions project: MIT\n'
+              'Pinned source archive SHA-256:\n'
+              '7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b\n',
+              encoding='utf-8',
+          )
+
+          index = {
+              'formatVersion': 1,
+              'game': 'minecraft',
+              'versionId': '0.6.0-alpha.1-village-review-25',
+              'name': 'Campfire Sessions - Village Review',
+              'summary': 'Private one-click canonical island and real-building layout review pack.',
+              'files': [],
+              'dependencies': {
+                  'minecraft': '26.2',
+                  'neoforge': '26.2.0.87',
+              },
+          }
+          (stage / 'modrinth.index.json').write_text(
+              json.dumps(index, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+
+          out = root / 'build' / 'Campfire-Sessions-Village-Review-0.6.0-alpha.1.mrpack'
+          out.unlink(missing_ok=True)
+          with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+              for file in sorted(stage.rglob('*')):
+                  if file.is_file():
+                      zf.write(file, file.relative_to(stage).as_posix())
+
+          print('MRPACK=' + str(out))
+          print('RUNTIME_MODS=' + ','.join(sorted(found)))
+          print('MRPACK_BYTES=' + str(out.stat().st_size))
+          PY
+
+      - name: Upload private Modrinth village review pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: campfire-village-review-mrpack
+          path: projects/campfire-sessions/build/Campfire-Sessions-Village-Review-0.6.0-alpha.1.mrpack
+          if-no-files-found: error
+
       - name: Upload world probe report
         if: always()
         uses: actions/upload-artifact@v4
