@@ -101,7 +101,8 @@ public final class R01CraftingService {
                     Optional.empty()
             );
         }
-        if (PlayerCurrencyService.state(player).gold() < goldCost) {
+        if (goldCost > 0L
+                && PlayerCurrencyService.state(player).gold() < goldCost) {
             return new CraftResult(
                     CraftStatus.INSUFFICIENT_GOLD,
                     0,
@@ -216,7 +217,8 @@ public final class R01CraftingService {
                 recipe.materialCostsFor(pending.quantity());
 
         if (!goldDone && !materialsDone) {
-            if (PlayerCurrencyService.state(player).gold()
+            if (pending.goldCost() > 0L
+                    && PlayerCurrencyService.state(player).gold()
                     < pending.goldCost()) {
                 replaceCraftState(
                         player,
@@ -397,6 +399,9 @@ public final class R01CraftingService {
             R01CraftingRecipe recipe,
             int quantity
     ) {
+        if (quantity > backpackRoomFor(player, recipe.outputUnit())) {
+            return false;
+        }
         var simulated = PlayerInventoryService.state(player).backpack();
         for (ProjectInventoryItem chunk : outputChunks(recipe, quantity)) {
             var inserted = simulated.insert(chunk);
