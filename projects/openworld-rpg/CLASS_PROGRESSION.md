@@ -1240,7 +1240,7 @@ The frequent-action key map, accessibility/difficulty contract and current globa
 
 ---
 
-# 25. Runtime implementation status — 2026-09-30
+# 25. Runtime implementation status — 2026-10-01
 
 The progression backend now covers specialization identity, branch milestones/doctrines, Passive Point allocation authority, authored Insight identity/reward ownership and paid passive respec. This section records runtime status only; it does not change the canon above.
 
@@ -1274,12 +1274,13 @@ Implemented:
 - all seven Warrior root passive nodes now have server-side runtime consumers: Steel Nerve, Tireless Combatant, Weapon Rhythm, Crushing Intent, Held Momentum, Counterforce and Battle Temper. Weapon Rhythm updates both the projected attack-speed attribute and the project-owned server basic-attack cadence gate, so visible cadence and damage authority use the same class bonus;
 - all seven Cleric root passive nodes now have server-side runtime consumers: Wellspring, Mercy, Sacred Guard, Resolute Faith, Lingering Grace, Balanced Service and Living Doctrine. Wellspring preserves current Mana percentage when Max Mana changes; Resolute Faith modifies only the equipment-owned Magic Resistance contribution; Balanced Service previews the discounted Mana cost during cast preflight and consumes its four-second opposite-role discount only on an accepted cast; Living Doctrine restores 8 Mana only when a newly added pip reaches maximum Grace and respects the six-second ICD.
 - all seven Mage root passive nodes now have server-side runtime consumers: Deep Well, Arcane Efficiency, Spell Edge, Quick Sigils, Weave Memory, Triune Study and Resonant Mind. Deep Well and Arcane Efficiency reuse the shared class Mana authorities; Spell Edge modifies only the project Magic Power bucket; Quick Sigils projects through `spell_power:haste`; Weave Memory extends only the three-distinct-skill sequence timer; Triune Study snapshots only a completed-Weave effect; Resonant Mind restores up to 8 Mana on a newly completed valid Weave with a five-second ICD. The server-owned Arcane Weave backend now enforces the canonical 8.0 s sequence / 8.0 s Ready windows and duplicate-sigil behavior, and Arc Bolt consumes Ready by keeping the primary hit unchanged while forking to up to two project-owned nearby hostiles at 0.50 ActionCoefficient each before Triune Study. Only Arc Bolt is currently production-bound for Mage, so joined-player gameplay still cannot form a real three-distinct-skill Weave until the remaining Mage actives are implemented.
+- all seven Guardian root passive-tree nodes now have server-side runtime consumers: Bulwark, Enduring Guard, Shieldcraft, Protective Force, Resolve Keeper, Defiant Retort and Stand Together. Bulwark and Enduring Guard reuse the shared MaxHP/Stamina publishers; Shieldcraft reduces the actual server-resolved guard-impact Stamina cost before the canonical `final cost >=18` Resolve check; Protective Force feeds the shared barrier authority; Resolve Keeper extends the server-owned Resolve expiry; Defiant Retort scales the canonical perfect-guard poise reward; Stand Together creates the shared capped six-second barrier only when a newly added Resolve pip reaches three. Resolve now gains from accepted perfect guards, ordinary guarded hits whose final Stamina cost is at least 18 with the two-second ICD, and cumulative hostile damage actually absorbed by a Guardian-owned barrier reaching 8% recipient MaxHP with the per-recipient four-second ICD. Barrier class ownership is snapshotted when the layer is created so switching into Guardian cannot harvest Resolve from a barrier created under another class. The global project perfect-guard path now applies the canonical elite/miniboss `8 + 20% PoiseMax` / boss `8 + 15% PoiseMax` reward to project-owned actors before Defiant Retort. Guardian's separate combat-kit root passive `Stand Firm`, four starting actives, root ultimate and Guardian Ultimate-Charge publishers are still not production-bound, so this closes the seven passive-tree consumers rather than the full Guardian root kit.
 
 Verification:
 
 ```text
-CODE STATE: b92b573b9b1bb36fcbcd6be214fd949451a3f91c
-BUILD OPENWORLD RPG RUN: 36799636063
+CODE STATE: 2f7915e95f5ccbf88cd7bca19139d6a9867e1b6b
+BUILD OPENWORLD RPG RUN: 36802511493
 UNIT TESTS: PASS
 CLEAN BUILD: PASS
 JAR VERIFY: PASS
@@ -1289,8 +1290,8 @@ GAMEPLAY CLIENT STARTUP: PASS
 JOINED-PLAYER ARC-BOLT VERIFICATION JAR: PRODUCED
 R01 INTEGRATION VERIFICATION JAR: PRODUCED
 MODRINTH PLAYTEST PACK: PRODUCED
-ARTIFACT: openworld-rpg-m0-b92b573b9b1bb36fcbcd6be214fd949451a3f91c
-ARTIFACT SHA-256: d77cc3ad4ad3ab101669a8b0728c0862a74161d2428cb548c023895f2bdead14
+ARTIFACT: openworld-rpg-m0-2f7915e95f5ccbf88cd7bca19139d6a9867e1b6b
+ARTIFACT SHA-256: b026a016b190b5f5a2719f3afe0bc2abd265633e252eda11fc0db49088af04dd
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
@@ -1302,7 +1303,7 @@ Still separate implementation work:
 - Rank-44 ascendant mechanic and ultimate-augment choice/effects;
 - Rank-50 Deep Mastery challenge completion and its authored world binding;
 - encounter-specific Class Insight success detectors, including the five exact R01 challenge conditions in §19.1;
-- passive combat-effect consumers for the remaining 87 catalog nodes: Guardian root nodes plus every specialization branch node; Hunter, Warrior, Cleric and Mage root nodes are runtime-bound;
+- passive combat-effect consumers for the remaining 80 catalog nodes: all five root-class passive trees are runtime-bound; the remaining consumers are the eight branch nodes for each of the ten specializations;
 - Hidden Technique discovery/runtime binding;
 - broader late-class catch-up integration across eligible quest/dungeon/encounter reward pipelines where the content-level anti-farm owner is defined; the shared math/planner and Earthloong first-boss path are already bound;
 - specialization/class/passive screen UI and final icon/animation/VFX bindings.
