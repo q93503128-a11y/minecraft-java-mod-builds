@@ -49,9 +49,9 @@ public final class VillageReviewBootstrap {
             kogtyv("resident_services", "house/shop_triple_2", -312, 71, -19, 13, 16, 8),
             kogtyv("general_store", "house/shop_triple_1", -303, 72, -46, 13, 16, 8),
             kogtyv("clinic", "house/shop_medium_3", -321, 67, -12, 7, 16, 8),
-            kogtyv("cafe", "house/shop_medium_1", -287, 73, -46, 7, 16, 8),
+            kogtyv("cafe", "house/shop_medium_1", -287, 73, -54, 7, 16, 8),
             kogtyv("clothing_shop", "house/shop_medium_2", -291, 74, -11, 7, 16, 8),
-            kogtyv("museum", "center/ratush_1", -294, 75, -32, 21, 8, 16),
+            kogtyv("museum", "center/ratush_1", -292, 75, -2, 21, 8, 16),
 
             // The source dock's street connector is local (5,2,0). CLOCKWISE_90
             // maps its long +Z pier axis westward into the canonical ocean.

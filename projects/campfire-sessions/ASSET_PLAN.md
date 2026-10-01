@@ -1787,3 +1787,12 @@ Runtime canonical-world preflight #21 rejected the previous general-store origin
 - a static footprint check covering the plaza and all land buildings reports zero overlaps for this arrangement.
 - land-building preflight now scans every building and reports the worst terrain delta for all failures in one run instead of aborting on the first bad structure.
 - grading safety remains unchanged at 8 blocks; relocation is preferred over destructive flattening.
+
+### Exact canonical relocation result — runtime probe #24
+
+Probe #24 used the canonical server's actual block columns, not 4-block sampled terrain estimates.
+- café pinned to `(-287,73,-54)`: full 7×8 footprint surface range **72..72**, worst grading delta **0**.
+- museum pinned to `(-292,75,-2)`: full 21×16 footprint surface range **71..78**, worst grading delta **4**.
+- the lower-distance museum candidate at `(-304,75,-62)` was not selected because it overlaps the exact safe café candidate; the north/east candidate preserves separation and the intended civic-landmark role.
+- static footprint re-check including plaza and all land buildings: **0 overlaps**.
+- café path now approaches from the south side of the commercial core; museum path branches from the clothing/north walk toward the museum's west edge.
