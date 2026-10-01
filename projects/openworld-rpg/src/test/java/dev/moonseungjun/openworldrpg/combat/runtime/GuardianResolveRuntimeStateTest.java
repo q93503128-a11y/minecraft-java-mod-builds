@@ -44,7 +44,7 @@ class GuardianResolveRuntimeStateTest {
         assertFalse(
                 state.recordBarrierAbsorption(
                         ally,
-                        7.99,
+                        4.0,
                         100.0,
                         0L,
                         0L
@@ -53,7 +53,7 @@ class GuardianResolveRuntimeStateTest {
         assertTrue(
                 state.recordBarrierAbsorption(
                         ally,
-                        8.0,
+                        4.0,
                         100.0,
                         1L,
                         1L

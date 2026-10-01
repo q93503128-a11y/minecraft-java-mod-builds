@@ -19,6 +19,8 @@ public final class GuardianResolveRuntimeState {
     private long guardedHitReadyTick = Long.MIN_VALUE / 4;
     private long standTogetherReadyTick = Long.MIN_VALUE / 4;
     private final Map<UUID, Long> barrierTargetReadyTick = new HashMap<>();
+    private final Map<UUID, Double> barrierAbsorptionSinceGain =
+            new HashMap<>();
 
     public int pips(long nowTick, long lastCombatActivityTick) {
         refresh(nowTick, lastCombatActivityTick);
@@ -86,9 +88,13 @@ public final class GuardianResolveRuntimeState {
             );
         }
         refresh(nowTick, lastCombatActivityTick);
-        if (absorbedDamage + 1.0e-9
-                < recipientMaxHp
-                        * BARRIER_THRESHOLD_MAX_HP_FRACTION) {
+        double accumulated = barrierAbsorptionSinceGain
+                .getOrDefault(recipientId, 0.0)
+                + absorbedDamage;
+        barrierAbsorptionSinceGain.put(recipientId, accumulated);
+        double threshold = recipientMaxHp
+                * BARRIER_THRESHOLD_MAX_HP_FRACTION;
+        if (accumulated + 1.0e-9 < threshold) {
             return GainResult.belowThreshold(pips);
         }
         long ready = barrierTargetReadyTick.getOrDefault(
@@ -102,6 +108,7 @@ public final class GuardianResolveRuntimeState {
                 recipientId,
                 Math.addExact(nowTick, BARRIER_TARGET_ICD_TICKS)
         );
+        barrierAbsorptionSinceGain.remove(recipientId);
         return grantPip(nowTick);
     }
 
@@ -135,6 +142,7 @@ public final class GuardianResolveRuntimeState {
         guardedHitReadyTick = Long.MIN_VALUE / 4;
         standTogetherReadyTick = Long.MIN_VALUE / 4;
         barrierTargetReadyTick.clear();
+        barrierAbsorptionSinceGain.clear();
     }
 
     private GainResult grantPip(long nowTick) {
