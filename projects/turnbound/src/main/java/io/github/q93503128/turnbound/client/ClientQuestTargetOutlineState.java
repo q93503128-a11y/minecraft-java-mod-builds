@@ -16,6 +16,12 @@ public final class ClientQuestTargetOutlineState {
     private ClientQuestTargetOutlineState() {}
 
     public static void update(String encoded) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level != lastLevel) {
+            clearApplied(lastLevel);
+            APPLIED.clear();
+            lastLevel = level;
+        }
         DESIRED.clear();
         if (encoded == null || encoded.isBlank()) return;
         for (String token : encoded.split(",")) {

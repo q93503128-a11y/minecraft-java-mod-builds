@@ -1,6 +1,5 @@
 package io.github.q93503128.turnbound.client;
 
-import io.github.q93503128.turnbound.network.FieldCommandPayload;
 import io.github.q93503128.turnbound.world.DrehmalFastTravelCatalog;
 import io.github.q93503128.turnbound.world.DrehmalWorldProfile;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
@@ -10,11 +9,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -43,8 +40,6 @@ final class DrehmalWorldMapScreen extends Screen {
     private double viewCenterZ = Double.NaN;
     private Bounds activeBounds;
     private Viewport activeViewport;
-    private final List<TravelHit> travelHits = new ArrayList<>();
-
     DrehmalWorldMapScreen() { super(Component.literal("월드 지도")); }
 
     @Override protected void init() {
@@ -548,7 +543,4 @@ final class DrehmalWorldMapScreen extends Screen {
 
     private record Bounds(double minX, double minZ, double span) {}
     private record Viewport(double minX, double minZ, double span) {}
-    private record TravelHit(FieldUiSnapshot.Travel travel, int minX, int minY, int maxX, int maxY) {
-        boolean contains(double x, double y) { return x >= minX && x <= maxX && y >= minY && y <= maxY; }
-    }
 }
