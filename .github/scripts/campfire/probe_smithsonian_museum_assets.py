@@ -202,21 +202,69 @@ def acquire_target(target: dict, output: pathlib.Path) -> dict:
     candidates = candidate_urls(document, document_url)
     attempts = []
     selected = None
+    selected_stats = None
     glb_path = None
-    for candidate in candidates:
+    compressed_fallback = None
+
+    for index, candidate in enumerate(candidates):
         try:
             raw, final_url = request_bytes(candidate["url"])
             if not raw.startswith(b"glTF"):
                 raise RuntimeError(f"not GLB bytes; prefix={raw[:16]!r}")
-            glb_path = target_dir / f"{target['slug']}_smithsonian_low.glb"
-            glb_path.write_bytes(raw)
+
+            probe_path = target_dir / f"candidate_{index:02d}.glb"
+            probe_path.write_bytes(raw)
+            stats = parse_glb(probe_path)
+            required = set(stats.get("extensions_required", []))
+            used = set(stats.get("extensions_used", []))
+            is_draco = "KHR_draco_mesh_compression" in required or "KHR_draco_mesh_compression" in used
+
+            attempts.append({
+                "url": candidate["url"],
+                "final_url": final_url,
+                "sha256": stats["sha256"],
+                "bytes": stats["bytes"],
+                "triangles": stats["triangle_count_from_indices"],
+                "extensions_required": stats["extensions_required"],
+                "extensions_used": stats["extensions_used"],
+                "accepted": not is_draco,
+                "rejection": "KHR_draco_mesh_compression" if is_draco else None,
+            })
+
+            if is_draco:
+                if compressed_fallback is None:
+                    compressed_fallback = {
+                        "candidate": candidate,
+                        "final_url": final_url,
+                        "path": probe_path,
+                        "stats": stats,
+                    }
+                continue
+
+            glb_path = target_dir / f"{target['slug']}_smithsonian_source.glb"
+            probe_path.replace(glb_path)
             selected = {**candidate, "final_url": final_url}
+            selected_stats = stats
             break
         except Exception as exc:
             attempts.append({
                 "url": candidate["url"],
                 "error": f"{type(exc).__name__}: {exc}",
+                "accepted": False,
             })
+
+    compressed_staging = None
+    if selected is None and compressed_fallback is not None:
+        staging_path = target_dir / f"{target['slug']}_smithsonian_draco_reference.glb"
+        compressed_fallback["path"].replace(staging_path)
+        compressed_staging = {
+            **compressed_fallback["candidate"],
+            "final_url": compressed_fallback["final_url"],
+            "glb": compressed_fallback["stats"],
+        }
+
+    for leftover in target_dir.glob("candidate_*.glb"):
+        leftover.unlink()
 
     report = {
         "target": target,
@@ -227,7 +275,8 @@ def acquire_target(target: dict, output: pathlib.Path) -> dict:
         "glb_candidates": candidates[:20],
         "download_attempts": attempts,
         "selected_glb": selected,
-        "glb": parse_glb(glb_path) if glb_path else None,
+        "compressed_reference": compressed_staging,
+        "glb": selected_stats,
     }
 
     (target_dir / "report.json").write_text(
@@ -243,13 +292,26 @@ def acquire_target(target: dict, output: pathlib.Path) -> dict:
     print(f"glb_candidates={len(candidates)}")
     for candidate in candidates[:8]:
         print(f"  candidate score={candidate['score']} {candidate['url']}")
-    if selected is None:
-        print("selected_glb=NONE")
-        for attempt in attempts[:8]:
-            print(f"  failed {attempt['url']}: {attempt['error']}")
-        raise RuntimeError(f"no downloadable non-Draco GLB found for {target['slug']}")
+    for attempt in attempts[:12]:
+        if "error" in attempt:
+            print(f"  download_error {attempt['url']}: {attempt['error']}")
+        else:
+            print(
+                "  inspected "
+                + attempt["url"]
+                + f" triangles={attempt['triangles']} bytes={attempt['bytes']}"
+                + f" accepted={attempt['accepted']}"
+                + f" required={attempt['extensions_required']}"
+            )
 
-    print(f"selected_glb={selected['final_url']}")
+    if selected is None:
+        print("selected_uncompressed_glb=NONE")
+        if compressed_staging is not None:
+            print("compressed_reference=" + compressed_staging["final_url"])
+            print("compressed_reference_stats=" + json.dumps(compressed_staging["glb"], sort_keys=True))
+        raise RuntimeError(f"no downloadable uncompressed GLB found for {target['slug']}")
+
+    print(f"selected_uncompressed_glb={selected['final_url']}")
     print("glb_stats=" + json.dumps(report["glb"], sort_keys=True))
     return report
 
