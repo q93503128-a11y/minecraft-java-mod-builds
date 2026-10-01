@@ -26,7 +26,7 @@ public enum R01CraftingRecipe {
             ProfessionMasteryState.Profession.ALCHEMY,
             Map.of(
                     R01GatheringRules.HEALING_HERB, 1,
-                    LOUXIA_GLOW, 1
+                    "openworld_rpg:louxia_glow", 1
             ),
             8L
     ),
@@ -36,7 +36,7 @@ public enum R01CraftingRecipe {
             ProfessionMasteryState.Profession.ALCHEMY,
             Map.of(
                     R01GatheringRules.HEALING_HERB, 1,
-                    LOUXIA_GLOW, 1
+                    "openworld_rpg:louxia_glow", 1
             ),
             10L
     ),
@@ -45,7 +45,7 @@ public enum R01CraftingRecipe {
             R01FixedMerchantService.BRIN_SERVICE_ID,
             ProfessionMasteryState.Profession.COOKING,
             Map.of(
-                    LOUXIA_MEAT, 2,
+                    "openworld_rpg:louxia_meat", 2,
                     R01GatheringRules.HEALING_HERB, 1
             ),
             0L
@@ -55,7 +55,7 @@ public enum R01CraftingRecipe {
             R01FixedMerchantService.BRIN_SERVICE_ID,
             ProfessionMasteryState.Profession.COOKING,
             Map.of(
-                    LOUXIA_MEAT, 1,
+                    "openworld_rpg:louxia_meat", 1,
                     R01GatheringRules.HEALING_HERB, 1
             ),
             0L
@@ -65,8 +65,8 @@ public enum R01CraftingRecipe {
             R01FixedMerchantService.BRIN_SERVICE_ID,
             ProfessionMasteryState.Profession.COOKING,
             Map.of(
-                    LOUXIA_MEAT, 1,
-                    LOUXIA_GLOW, 1,
+                    "openworld_rpg:louxia_meat", 1,
+                    "openworld_rpg:louxia_glow", 1,
                     R01GatheringRules.HEALING_HERB, 1
             ),
             0L
