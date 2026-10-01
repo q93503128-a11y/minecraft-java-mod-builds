@@ -260,24 +260,30 @@ class OrdinaryEquipmentMaterializerTest {
                 catalog,
                 "openworld_rpg:affix/weak_point_damage"
         );
-        assertFalse(catalog.runtimeImplemented(weakPoint.id()));
+        assertTrue(catalog.runtimeImplemented(weakPoint.id()));
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> OrdinaryEquipmentMaterializer.materialize(
-                        new OrdinaryEquipmentMaterializer.MaterializationRequest(
-                                OrdinaryEquipmentMaterializer.BaseProfile.weapon(
-                                        "openworld_rpg:heartland_arming_sword",
-                                        ProjectWeaponFamily.SWORD
-                                ),
-                                ProjectItemGrade.REFINED,
-                                4,
-                                List.of(physical, weakPoint),
-                                1L,
-                                60L
+        var weakPointResult = OrdinaryEquipmentMaterializer.materialize(
+                new OrdinaryEquipmentMaterializer.MaterializationRequest(
+                        OrdinaryEquipmentMaterializer.BaseProfile.weapon(
+                                "openworld_rpg:heartland_arming_sword",
+                                ProjectWeaponFamily.SWORD
                         ),
-                        catalog
-                )
+                        ProjectItemGrade.REFINED,
+                        4,
+                        List.of(physical, weakPoint),
+                        1L,
+                        60L
+                ),
+                catalog
+        );
+        assertTrue(
+                weakPointResult.inventoryItem()
+                        .equipmentProjection().orElseThrow()
+                        .affixes().stream()
+                        .anyMatch(affix ->
+                                affix.kind()
+                                        == EquipmentCombatAffixKind.WEAK_POINT_DAMAGE
+                        )
         );
     }
 

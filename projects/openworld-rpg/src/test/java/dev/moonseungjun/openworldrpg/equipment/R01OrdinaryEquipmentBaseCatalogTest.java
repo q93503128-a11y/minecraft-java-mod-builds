@@ -114,7 +114,7 @@ class R01OrdinaryEquipmentBaseCatalogTest {
     }
 
     @Test
-    void runtimeBlockersRemainVisibleInsteadOfSilentlyChangingPoolOdds() {
+    void currentR01WeaponPoolHasNoRemainingRuntimeAffixBlockers() {
         var bases = R01OrdinaryEquipmentBaseCatalogLoader.loadBundled();
         var staticCatalog = OrdinaryEquipmentAffixCatalogLoader.loadBundled();
         var parameterized =
@@ -125,27 +125,8 @@ class R01OrdinaryEquipmentBaseCatalogTest {
                 staticCatalog,
                 parameterized
         );
-        assertFalse(weaponBlockers.contains(
-                "openworld_rpg:affix/attack_speed"
-        ));
-        assertTrue(weaponBlockers.contains(
-                "openworld_rpg:affix/weak_point_damage"
-        ));
-        assertFalse(weaponBlockers.contains(
-                "openworld_rpg:affix/movement_speed"
-        ));
-        assertFalse(weaponBlockers.contains(
-                "openworld_rpg:affix/healing_done"
-        ));
-        assertFalse(weaponBlockers.contains(
-                "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction"
-        ));
-        assertFalse(weaponBlockers.contains(
-                "openworld_rpg:affix/critical_chance"
-        ));
-        assertFalse(weaponBlockers.contains(
-                "openworld_rpg:affix/weapon_family/bow_power"
-        ));
+
+        assertTrue(weaponBlockers.isEmpty());
     }
 
     @Test
