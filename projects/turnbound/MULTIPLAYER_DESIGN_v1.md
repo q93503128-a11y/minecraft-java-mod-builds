@@ -67,6 +67,8 @@ single-owner `BattleSession`을 다중 입력으로 땜질하지 않는다.
 - owner별 AUTO, 파티장 speed/flee 권한
 - 같은 서버 메모리 기반 disconnect/rejoin
 - 참가자별 reward/quest credit 및 transaction id
+- battle-clear 기반 authored quest와 활성 반복 지역 의뢰도 **실제 shared battle 참가자 각자에게** 진행 기록
+- 멀리 떨어져 shared battle에 참가하지 않은 파티원에게는 encounter/quest/contract credit을 자동 지급하지 않음
 - 온라인 참가자 결과 확인과 오프라인 참가자 WAL 기반 지연 정산
 - 참가 인원별 적 HP 배율, owner별 2×2 진형
 - 승리 후 shared field encounter/world clear 복귀

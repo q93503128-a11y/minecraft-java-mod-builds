@@ -29,6 +29,12 @@ import java.util.random.RandomGenerator;
 /** Server-side campaign progression authority shared by combat, growth, equipment, quests, gacha and persistence. */
 public final class CampaignProgressStore {
     private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "P08");
+    private static final String REGIONAL_ACTIVE_MARK_KEY = "__turnbound_regional_contract_active";
+    private static final String REGIONAL_ROTATION_COUNTER_KEY = "__turnbound_regional_contract_rotation";
+    private static final String REGIONAL_PROGRESS_PREFIX = "__turnbound_regional_contract_progress:";
+    private static final String REGIONAL_COMPLETION_PREFIX = "__turnbound_regional_contract_completions:";
+
+    public record RegionalContractState(String contractId, int progress, int completions, int rotation) {}
 
     public record Snapshot(
             PlayerProfile.Snapshot profile,
@@ -122,6 +128,7 @@ public final class CampaignProgressStore {
         if (firstClear && "TUTORIAL_2".equals(canonicalId)) grantStoryRecruit(progress, "P04");
 
         recordQuestEvent(progress, QuestProgress.Event.battleWin(canonicalId, Set.copyOf(encounter.enemies())));
+        recordRegionalContractBattle(progress, canonicalId);
         if (encounter.boss() && legacyBossQuestEncounter(canonicalId)) {
             recordQuestEvent(progress, QuestProgress.Event.bossWin(encounter.enemies().getFirst()));
         }
@@ -161,6 +168,86 @@ public final class CampaignProgressStore {
         if (playerId == null || rewardId == null || rewardId.isBlank()) return false;
         return player(playerId).quests.marks(WORLD_REWARD_MARK_KEY).contains(rewardId);
     }
+
+    public static RegionalContractState regionalContractState(UUID playerId) {
+        PlayerProgress progress = player(playerId);
+        QuestProgress.Snapshot quests = progress.quests.snapshot();
+        String contractId = quests.marks().getOrDefault(REGIONAL_ACTIVE_MARK_KEY, Set.of()).stream()
+                .sorted().findFirst().orElse("");
+        int current = contractId.isBlank() ? 0
+                : quests.counters().getOrDefault(REGIONAL_PROGRESS_PREFIX + contractId, 0);
+        int completions = contractId.isBlank() ? 0
+                : quests.counters().getOrDefault(REGIONAL_COMPLETION_PREFIX + contractId, 0);
+        int rotation = quests.counters().getOrDefault(REGIONAL_ROTATION_COUNTER_KEY, 0);
+        return new RegionalContractState(contractId, current, completions, rotation);
+    }
+
+    public static boolean activateRegionalContract(UUID playerId, String contractId) {
+        RegionalContractCatalog.Contract contract = RegionalContractCatalog.contract(contractId);
+        if (contract == null) throw new IllegalArgumentException("Unknown regional contract " + contractId);
+        PlayerProgress progress = player(playerId);
+        QuestProgress.Snapshot before = progress.quests.snapshot();
+        if (!before.marks().getOrDefault(REGIONAL_ACTIVE_MARK_KEY, Set.of()).isEmpty()) return false;
+
+        Map<String, Set<String>> marks = mutableMarks(before);
+        marks.put(REGIONAL_ACTIVE_MARK_KEY, new LinkedHashSet<>(Set.of(contract.id())));
+        Map<String, Integer> counters = new LinkedHashMap<>(before.counters());
+        counters.put(REGIONAL_PROGRESS_PREFIX + contract.id(), 0);
+        progress.quests = QuestProgress.restore(new QuestProgress.Snapshot(
+                before.completed(), before.tracked(), before.unlockFlags(), before.rewardTokens(), counters, marks));
+        progress.dirty = true;
+        return true;
+    }
+
+    public static boolean claimRegionalContract(UUID playerId) {
+        PlayerProgress progress = player(playerId);
+        QuestProgress.Snapshot before = progress.quests.snapshot();
+        String contractId = before.marks().getOrDefault(REGIONAL_ACTIVE_MARK_KEY, Set.of()).stream()
+                .sorted().findFirst().orElse("");
+        RegionalContractCatalog.Contract contract = RegionalContractCatalog.contract(contractId);
+        if (contract == null) return false;
+        int current = before.counters().getOrDefault(REGIONAL_PROGRESS_PREFIX + contractId, 0);
+        if (current < contract.requiredWins()) return false;
+
+        progress.profile.grant(PlayerProfile.Currency.GOLD, contract.rewardGold());
+        if (contract.rewardXp() > 0) grantPartyAndReserveXp(progress, contract.rewardXp());
+
+        Map<String, Set<String>> marks = mutableMarks(before);
+        marks.remove(REGIONAL_ACTIVE_MARK_KEY);
+        Map<String, Integer> counters = new LinkedHashMap<>(before.counters());
+        counters.remove(REGIONAL_PROGRESS_PREFIX + contractId);
+        counters.merge(REGIONAL_COMPLETION_PREFIX + contractId, 1, Integer::sum);
+        counters.merge(REGIONAL_ROTATION_COUNTER_KEY, 1, Integer::sum);
+        progress.quests = QuestProgress.restore(new QuestProgress.Snapshot(
+                before.completed(), before.tracked(), before.unlockFlags(), before.rewardTokens(), counters, marks));
+        progress.dirty = true;
+        return true;
+    }
+
+    private static void recordRegionalContractBattle(PlayerProgress progress, String encounterId) {
+        if (progress == null || encounterId == null || encounterId.isBlank()) return;
+        QuestProgress.Snapshot before = progress.quests.snapshot();
+        String contractId = before.marks().getOrDefault(REGIONAL_ACTIVE_MARK_KEY, Set.of()).stream()
+                .sorted().findFirst().orElse("");
+        RegionalContractCatalog.Contract contract = RegionalContractCatalog.contract(contractId);
+        if (contract == null || !contract.encounterIds().contains(encounterId)) return;
+
+        String key = REGIONAL_PROGRESS_PREFIX + contractId;
+        int current = before.counters().getOrDefault(key, 0);
+        if (current >= contract.requiredWins()) return;
+
+        Map<String, Integer> counters = new LinkedHashMap<>(before.counters());
+        counters.put(key, Math.min(contract.requiredWins(), current + 1));
+        progress.quests = QuestProgress.restore(new QuestProgress.Snapshot(
+                before.completed(), before.tracked(), before.unlockFlags(), before.rewardTokens(), counters, mutableMarks(before)));
+    }
+
+    private static Map<String, Set<String>> mutableMarks(QuestProgress.Snapshot snapshot) {
+        Map<String, Set<String>> marks = new LinkedHashMap<>();
+        snapshot.marks().forEach((key, values) -> marks.put(key, new LinkedHashSet<>(values)));
+        return marks;
+    }
+
 
     public static int gold(UUID playerId) { return Math.toIntExact(player(playerId).profile.currency(PlayerProfile.Currency.GOLD)); }
     public static long currency(UUID playerId, PlayerProfile.Currency currency) { return player(playerId).profile.currency(currency); }

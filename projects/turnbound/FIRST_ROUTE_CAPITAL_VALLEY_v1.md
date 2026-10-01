@@ -129,6 +129,7 @@ New Drabyel north gate arrival
 → blacksmith / market / waystation / summon NPC onboarding
 → return to entrance guide 아렌
 → local main quest: inspect any 2 of 3 targets in the 64-110 block town ring
+→ first north-road clear also unlocks repeatable Capital Valley regional contracts at 기록관 세린
 → optional record-keeper side hook: revisit the source-backed Explorer's Campsite
 → Capital Valley regional choice
 → Av'Sal remains locked until one additional meaningful regional milestone

@@ -23,7 +23,8 @@ final class DrehmalQuestMenuContentService {
                 .map(DrehmalFirstRouteCatalog.EncounterSlot::combatEncounterId)
                 .filter(id -> id != null && !id.isBlank()).collect(Collectors.toSet()));
         String mainObjective = DrehmalFirstRouteRuntime.explorationSnapshot(player).objective();
-        return encodeState(flags, clears, Set.copyOf(productionEncounters), mainObjective);
+        return encodeState(flags, clears, Set.copyOf(productionEncounters), mainObjective)
+                + RegionalContractService.encodeMenu(player);
     }
 
     static String encodeObjective(String objective) {

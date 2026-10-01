@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "contracts": [
+    {
+      "id": "capital_valley_gate_patrol",
+      "title": "북문 경계 순찰",
+      "regionLabel": "Capital Valley",
+      "objective": "뉴 드라비엘 북쪽 길과 탑 방면의 사람형 순찰대를 2회 정리하십시오.",
+      "encounterIds": [
+        "CV_DRABYEL_ROAD",
+        "CV_DRABYEL_NORTH",
+        "CV_TOWER_ROAD"
+      ],
+      "requiredWins": 2,
+      "rewardGold": 2500,
+      "rewardXp": 700
+    },
+    {
+      "id": "capital_valley_wildlife_control",
+      "title": "이끼등 개체 조절",
+      "regionLabel": "Capital Valley",
+      "objective": "캐피털 밸리의 이끼등 무리를 2회 흩어 길가의 피해를 줄이십시오.",
+      "encounterIds": [
+        "CV_FIRST_COMMON",
+        "CV_TEMPLE_WILDLIFE",
+        "CV_CAMP_WILDLIFE"
+      ],
+      "requiredWins": 2,
+      "rewardGold": 2200,
+      "rewardXp": 750
+    },
+    {
+      "id": "capital_valley_route_security",
+      "title": "가도 안전 확보",
+      "regionLabel": "Capital Valley",
+      "objective": "캐피털 밸리의 일반 필드 조우를 원하는 순서로 3회 해결하십시오.",
+      "encounterIds": [
+        "CV_FIRST_COMMON",
+        "CV_TEMPLE_WILDLIFE",
+        "CV_TOWER_ROAD",
+        "CV_CAMP_WILDLIFE",
+        "CV_DRABYEL_NORTH",
+        "CV_DRABYEL_ROAD"
+      ],
+      "requiredWins": 3,
+      "rewardGold": 3500,
+      "rewardXp": 1000
+    }
+  ]
+}

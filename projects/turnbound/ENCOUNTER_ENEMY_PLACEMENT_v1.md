@@ -531,10 +531,13 @@ Boss가 원본 Drehmal Repository 진행을 파괴하지 않도록 별도 TURNBO
 ## 15. Boss / Midboss respawn
 
 Common:
-- route/world policy에 따라 재생성
+- 일반 필드 잡몹은 짧은 전투 루프를 유지하기 위해 보통 **20~35초** 뒤 재생성
+- 같은 전투를 막 끝낸 자리에서 즉시 튀어나오는 수준의 2~5초 재생성은 피하지만, 1~2분 이상 비워 두지 않음
+- 현재 Capital Valley / Av'Sal common production 값은 20 / 22 / 25 / 30초 범위
+- first-clear 보너스는 1회만 유지하고 이후 전투는 기본 보상/드랍 + 활성 지역 의뢰 진행에 사용
 
 Elite:
-- 10~20분 또는 area-reset 수준의 느린 재생성 후보
+- 일반 잡몹보다 확실히 느리게 재생성하되 현재 초반/중반 production 기준은 약 **5분**
 - first-clear bonus 1회
 
 Midboss:

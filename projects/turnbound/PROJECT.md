@@ -1601,3 +1601,38 @@ Validation for this checkpoint:
 - MULTIPLAYER TESTED: NO
 
 No build/CI was requested for this content batch; validation remains intentionally deferred until a larger playable unit is ready.
+
+
+## Fast field respawn / repeatable progression checkpoint — 2026-10-01
+
+Latest explicit direction:
+- ordinary field enemies should repopulate quickly; long empty cooldowns are not desirable for farming/exploration loops
+- bosses/world bosses may remain long-reset or first-clear persistent
+- repeatable regional contracts are a major fallback growth path when authored main/side content is temporarily too difficult
+- co-op participants who actually join and win a shared battle must receive their own battle-based quest/contract progress
+
+Runtime/data changes:
+- Capital Valley common respawn seconds: 20 / 22 / 25 seconds depending on encounter
+- Av'Sal common road patrol: 30 seconds
+- Warning Cave Elite and Av'Sal road Elite: 300 seconds (5 minutes), reduced from 900
+- Graul remains first-clear world-state content and does not naturally reappear on the road
+- regional_contracts_v1.json adds three repeatable Capital Valley contracts
+- contracts unlock after the New Drabyel north-road opening battle
+- contracts are accepted/reported physically through 기록관 세린, one active at a time
+- active contract progress is visible in the existing quest journal
+- rewards are repeatable Gold + party XP; no repeatable Crystal is granted by these contracts
+- battle equipment drops continue separately, so the combined loop improves level + Gold-funded equipment progression
+- contract state reuses the existing per-player QuestProgress persistence maps; no save-format field was added
+- shared-battle settlement already commits each participant separately; regional contract battle progress now sits inside that same per-owner commit path
+- non-participating distant party members do not receive free battle quest/contract credit
+
+Validation state for this checkpoint:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- NEW JAR: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+Build/CI remains deferred until the current content batch is larger, matching the present project testing cadence.
