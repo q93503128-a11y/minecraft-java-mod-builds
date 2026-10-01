@@ -329,11 +329,22 @@ Do not use the folder/save filename as the player-facing village identity.
 If renaming is supported later, it should be a deliberate resident-services action rather than a casual per-session setting.
 
 ### Island roles
-The base world is now fixed, but exact secondary-island roles still follow the first authored route/layout pass.
-Use the real measured islands rather than inventing new procedural destinations by default.
+The base world is fixed and secondary destinations should use the real measured landmasses rather than adding generic procedural islands.
+
+The authored role mix is now:
+- **main village island** — homes, civic life, shops, museum, café, community garden, festivals and ordinary peaceful collecting.
+- **reef / coast destination** — diving, offshore fishing, sea creatures, photo spots and beach gathering.
+- **wetland / mushroom destination** — rain-biased species, mushrooms, unusual plants, insects and a few exploration landmarks.
+- **orchard / meadow destination** — fruit, flowers, seasonal gathering, resident outings, picnics and low-pressure exploration.
+- **rocky resource destination** — the primary dedicated regenerative quarry/mining site, fossils/dig spots, caves and special materials.
+- **woodland / ruins destination** — rarer bugs/plants, photography, small secrets/ruins and moderate exploration danger.
+- **far dangerous destination** — the strongest authored combat/dungeon content, rare materials and one major boss route.
+
+The exact physical landmass→role mapping is chosen during the route/layout pass from measured area, coastline, terrain and travel distance.
+Small islets may remain scenery, secrets, photo spots or event locations rather than being promoted into full destinations.
 
 Avoid turning every island into a single-resource gimmick.
-One island may have a stronger theme, but should still contain multiple useful activities and reasons to revisit it.
+Each destination should combine at least two meaningful activities so revisits are useful for more than one checklist item.
 
 ### Island map
 Players should not need raw coordinates to navigate ordinary village life.
@@ -2183,10 +2194,15 @@ Combat exists in:
 - caves.
 - dangerous outer regions.
 
+Combat scope is intentionally compact:
+- **4 regular hostile families** across the whole game, each with clearly different behavior rather than recolored stat variants.
+- **2 elite/special variants** used sparingly in deeper routes or events.
+- **2 major bosses total** for the initial complete game: one quarry/cave-side boss and one far-dangerous-destination finale boss.
+- ordinary life-sim islands have no routine combat grind.
+- repeat boss access, if retained, is for optional collection/material goals rather than mandatory stat farming.
+
 Normal exploration has light danger.
-Rare/dangerous locations may contain:
-- small dungeons.
-- bosses.
+The far-dangerous destination and selected cave route provide the highest combat density.
 
 Do not turn the project into a level-1-to-100 combat RPG.
 
@@ -2220,14 +2236,20 @@ Combat rewards feed back into island life:
 ### Authored caves/mining
 Important exploration caves/dungeons should not be permanently destroyed by unrestricted strip-mining.
 
-For authored exploration cave areas:
-- preserve core terrain, routes, landmarks and encounter spaces.
-- use renewable ore/resource nodes or controlled replaceable mining pockets.
-- regenerate ordinary mineable resources after suitable in-game intervals.
-- do not overwrite player-owned yard/home spaces.
-- keep mining useful without letting repeated excavation erase the authored level.
+Campfire does **not** retain ordinary unrestricted Minecraft mining as a progression loop, including in outer wilderness.
+The player should never improve their economy by leaving permanent random holes, quarry scars or strip-mines across the authored islands.
 
-Ordinary unrestricted wilderness mining, if retained outside these authored areas, remains a separate map-design decision.
+Mining/resource gathering uses dedicated authored resource sites only:
+- quarry/mining areas are visually obvious destinations rather than arbitrary dig-anywhere terrain.
+- mineable ore/stone/resource nodes are renewable or controlled replaceable pockets.
+- ordinary resource nodes regenerate after suitable in-game intervals.
+- regeneration is server-authoritative and must not overwrite players, placed objects, active encounters or protected landmarks.
+- important caves, routes, cliffs, coastlines and scenic silhouettes remain protected.
+- rare materials may use deeper/farther pockets, weather/season availability or dangerous-area access rather than requiring destructive excavation.
+- player yards/home decoration spaces keep their own placement/removal rules and are not treated as mining zones.
+- ordinary decorative terrain outside approved build/resource areas is not freely excavated for profit.
+
+The tactile act of mining remains, but the world should recover instead of slowly looking vandalized.
 
 ## 32. Clinic and death
 
@@ -2697,19 +2719,25 @@ Do not stack so many ambient loops that the audio mix becomes muddy.
 
 Public projects use a shared funding model.
 
-The project pool should mix functional and decorative changes, for example:
-- bridges/movement improvements.
-- harbor/pier improvements.
-- plaza/performance-space improvements.
-- public garden.
-- lookout/coastal walk.
-- campfire/picnic area.
-- museum surroundings.
-- authored access improvements to selected natural areas.
-- civic decoration/facility projects.
+The initial complete-game public-project pool is:
+1. **Harbor route expansion** — functional; unlocks the first farther secondary-island route.
+2. **Main pier upgrade** — functional/presentation; improves docking, owned-boat presentation and harbor activity space.
+3. **Plaza performance upgrade** — elective; improves the music/festival stage and event presentation.
+4. **Community garden expansion** — elective; increases shared planting/decorative space and resident activity.
+5. **Coastal lookout walk** — elective; adds a scenic path/lookout/photo destination.
+6. **Campfire & picnic grove** — elective; creates a dedicated social/music/picnic location.
+7. **Museum grounds project** — elective; improves the exterior garden/sculpture/exhibit approach around the museum.
+8. **Natural-area access project** — functional but situational; builds one authored bridge/stair/trail connection to a previously awkward exploration/resource area.
+
+Rules:
+- only **Harbor route expansion** is mandatory for core route progression.
+- the natural-area access project is required only if the chosen route actually depends on it; otherwise it remains elective.
+- the remaining projects are long-term village-expression goals and may be completed in any sensible order.
+- complete projects must visibly change the world or unlock a real use; do not fund invisible percentage upgrades.
+- do not add a long tail of near-duplicate lamp/fence/bench projects merely to create money sinks.
 
 Only a limited subset should be mandatory progression.
-Most public projects should remain elective village-development goals so the game does not become one long linear infrastructure checklist.
+Most public projects remain elective village-development goals so the game does not become one long linear infrastructure checklist.
 
 ### Community garden
 The village may include a modest shared community garden distinct from private player yards.
@@ -3287,7 +3315,7 @@ Keep one coherent external design language rather than mixing unrelated asset st
 ## 49. Open decisions / unresolved work
 
 These are intentionally not yet canonical:
-- exact secondary-island role assignment.
+- exact physical landmass→secondary-island-role mapping after the first authored route/layout pass.
 - exact house count after the first real village-layout pass.
 - exact resident asset pack and final species roster.
 - final building-prefab visual acceptance and exact production anchors/Y values.
@@ -3296,12 +3324,16 @@ These are intentionally not yet canonical:
 - exact house loan prices.
 - exact shop economy numbers.
 - exact contest reward tables.
-- exact public-project list.
-- exact combat enemies/boss count.
 - final camera/player-model/inventory dependency choices after runtime/client testing.
 - exact resident name/identity/birthday assignments after the resident asset roster is selected.
 - concrete save serialization/class layout.
 - exact numeric thresholds/content inside each required festival progression pillar.
+
+Now canonical:
+- unrestricted wilderness/strip mining is **not used**; mining happens only in dedicated regenerative resource sites.
+- secondary-island activity mix is fixed to reef/coast, wetland/mushroom, orchard/meadow, rocky resource, woodland/ruins and far-danger roles; exact physical assignment waits for route layout.
+- initial public-project pool is fixed at eight authored projects, with only harbor route expansion mandatory for core route progression.
+- initial combat scope is fixed at four regular hostile families, two elite/special variants and two major bosses.
 
 Continue planning in batches of roughly eight genuinely new decisions.
 Do not recycle already-decided topics merely to fill the count.
