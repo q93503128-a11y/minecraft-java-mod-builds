@@ -1273,12 +1273,13 @@ Implemented:
 - all seven Hunter root passive nodes now have server-side runtime consumers: Keen Eye, Light Step, Efficient Draw, Quarry Pressure, Focus Retention, Weakpoint Study and Trail Sense. Authored weak points are accepted only through explicit actor-local weak-point zones; no anatomy is inferred from a generic hitbox;
 - all seven Warrior root passive nodes now have server-side runtime consumers: Steel Nerve, Tireless Combatant, Weapon Rhythm, Crushing Intent, Held Momentum, Counterforce and Battle Temper. Weapon Rhythm updates both the projected attack-speed attribute and the project-owned server basic-attack cadence gate, so visible cadence and damage authority use the same class bonus;
 - all seven Cleric root passive nodes now have server-side runtime consumers: Wellspring, Mercy, Sacred Guard, Resolute Faith, Lingering Grace, Balanced Service and Living Doctrine. Wellspring preserves current Mana percentage when Max Mana changes; Resolute Faith modifies only the equipment-owned Magic Resistance contribution; Balanced Service previews the discounted Mana cost during cast preflight and consumes its four-second opposite-role discount only on an accepted cast; Living Doctrine restores 8 Mana only when a newly added pip reaches maximum Grace and respects the six-second ICD.
+- all seven Mage root passive nodes now have server-side runtime consumers: Deep Well, Arcane Efficiency, Spell Edge, Quick Sigils, Weave Memory, Triune Study and Resonant Mind. Deep Well and Arcane Efficiency reuse the shared class Mana authorities; Spell Edge modifies only the project Magic Power bucket; Quick Sigils projects through `spell_power:haste`; Weave Memory extends only the three-distinct-skill sequence timer; Triune Study snapshots only a completed-Weave effect; Resonant Mind restores up to 8 Mana on a newly completed valid Weave with a five-second ICD. The server-owned Arcane Weave backend now enforces the canonical 8.0 s sequence / 8.0 s Ready windows and duplicate-sigil behavior, and Arc Bolt consumes Ready by keeping the primary hit unchanged while forking to up to two project-owned nearby hostiles at 0.50 ActionCoefficient each before Triune Study. Only Arc Bolt is currently production-bound for Mage, so joined-player gameplay still cannot form a real three-distinct-skill Weave until the remaining Mage actives are implemented.
 
 Verification:
 
 ```text
-CODE STATE: d5f2e6015a34976261d0a9bd1de9ca1edb4ff079
-BUILD OPENWORLD RPG RUN: 36793554414
+CODE STATE: b92b573b9b1bb36fcbcd6be214fd949451a3f91c
+BUILD OPENWORLD RPG RUN: 36799636063
 UNIT TESTS: PASS
 CLEAN BUILD: PASS
 JAR VERIFY: PASS
@@ -1288,8 +1289,8 @@ GAMEPLAY CLIENT STARTUP: PASS
 JOINED-PLAYER ARC-BOLT VERIFICATION JAR: PRODUCED
 R01 INTEGRATION VERIFICATION JAR: PRODUCED
 MODRINTH PLAYTEST PACK: PRODUCED
-ARTIFACT: openworld-rpg-m0-d5f2e6015a34976261d0a9bd1de9ca1edb4ff079
-ARTIFACT SHA-256: 9cbcabc5bae39fd17f60b946c3cd4c3d095a017f9caa446b69f10820ba96ed40
+ARTIFACT: openworld-rpg-m0-b92b573b9b1bb36fcbcd6be214fd949451a3f91c
+ARTIFACT SHA-256: d77cc3ad4ad3ab101669a8b0728c0862a74161d2428cb548c023895f2bdead14
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
@@ -1301,7 +1302,7 @@ Still separate implementation work:
 - Rank-44 ascendant mechanic and ultimate-augment choice/effects;
 - Rank-50 Deep Mastery challenge completion and its authored world binding;
 - encounter-specific Class Insight success detectors, including the five exact R01 challenge conditions in §19.1;
-- passive combat-effect consumers for the remaining 94 catalog nodes: Mage/Guardian root nodes plus every specialization branch node; Hunter, Warrior and Cleric root nodes are runtime-bound;
+- passive combat-effect consumers for the remaining 87 catalog nodes: Guardian root nodes plus every specialization branch node; Hunter, Warrior, Cleric and Mage root nodes are runtime-bound;
 - Hidden Technique discovery/runtime binding;
 - broader late-class catch-up integration across eligible quest/dungeon/encounter reward pipelines where the content-level anti-farm owner is defined; the shared math/planner and Earthloong first-boss path are already bound;
 - specialization/class/passive screen UI and final icon/animation/VFX bindings.
