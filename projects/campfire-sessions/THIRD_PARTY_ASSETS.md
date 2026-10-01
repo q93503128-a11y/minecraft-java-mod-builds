@@ -40,6 +40,23 @@ Campfire Sessions uses Minecraft-native open-source models, CC0 music, and CC0 U
 - Build verification: **Build Campfire Sessions run 31 / run ID 36702085816 — SUCCESS**.
 - Package-contract verification confirms exactly 31 approved external structures and only source `kogtyv_tav`.
 
+## Harbor dock base — Currents of Trade
+- Project: **Currents of Trade** — Lexovian / RedLexo.
+- Source repository: https://github.com/Lexovian/Currents-of-Trade
+- Pinned source commit: `d3b769ec4cbf8d8e744785c4815b6c66107c7884`.
+- Source structure: `src/main/resources/data/currents_of_trade/structure/village/dock.nbt`.
+- Source NBT DataVersion: `3955`; Minecraft 26.2's structure loader applies its normal data-fix path when the resource is loaded.
+- Measured source bounds: **11×10×15**.
+- License: MIT; the complete `LICENSE` from the exact pinned source commit is packaged with Campfire.
+- Campfire generated target: `data/campfiresessions/structure/external/currents_of_trade/dock.nbt`.
+- Modification boundary:
+  - the Currents-only `currents_of_trade:anchor_point` palette/block-entity identifier is rewritten to `minecraft:barrel`;
+  - no Currents runtime code, economy, shipping system or custom blocks are copied;
+  - jigsaw/structure markers are filtered by Campfire's placement processor.
+- Review placement rotates the long dock axis 90° so the pier extends west from the canonical Geming400 shoreline.
+- Current status: **production-base candidate packaged for the canonical village review; client visual acceptance pending**.
+- Provenance and transformed/source SHA-256 values are emitted into `META-INF/campfiresessions/external_structure_manifest.json`.
+
 ### Explicitly not packaged as extracted structure assets
 - **Towns & Towers** structures are reference/footprint material only. Its distributed JAR states CC BY-NC-ND 4.0 and disallows modified/repackaged structure extraction.
 - **Villageria** remains compact-building reference material only. CurseForge labels the project MIT, but the tested distributed 26.2 NeoForge JAR does not embed the MIT notice; Campfire therefore does not extract/package its structures in the current provenance pipeline.

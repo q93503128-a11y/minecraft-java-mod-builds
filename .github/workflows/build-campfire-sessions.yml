@@ -64,6 +64,7 @@ jobs:
           test -n "$JAR"
 
           python3 - "$JAR" <<'PY'
+          import gzip
           import json
           import pathlib
           import sys
@@ -85,6 +86,10 @@ jobs:
               'kr/moonseungjun/campfiresessions/client/GuitarArmPoseParams.class',
               'kr/moonseungjun/campfiresessions/client/museum/MuseumStaticMeshData.class',
               'kr/moonseungjun/campfiresessions/client/museum/MuseumGpuMesh.class',
+              'kr/moonseungjun/campfiresessions/client/museum/MuseumStaticMeshRenderer.class',
+              'kr/moonseungjun/campfiresessions/client/museum/MuseumAssetReviewScene.class',
+              'kr/moonseungjun/campfiresessions/world/VillageReviewBootstrap.class',
+              'kr/moonseungjun/campfiresessions/world/VillageReviewLandscape.class',
               'META-INF/enumextensions.json',
               'assets/campfiresessions/music/track_metadata.json',
               'assets/campfiresessions/sounds.json',
@@ -126,6 +131,9 @@ jobs:
           external_structures += [
               'data/campfiresessions/structure/external/kogtyv_greece/house/triple_1.nbt',
           ]
+          external_structures += [
+              'data/campfiresessions/structure/external/currents_of_trade/dock.nbt',
+          ]
 
           with zipfile.ZipFile(jar) as z:
               names = set(z.namelist())
@@ -136,6 +144,7 @@ jobs:
               for key in ui_keys:
                   assert f'assets/campfiresessions/textures/gui/sprites/music/theme/{key}.png' in names, key
               assert not any(name.startswith('assets/campfiresessions/sounds/local/') for name in names), 'local user audio leaked into JAR'
+              assert not any(name.startswith('assets/campfiresessions/museum/') for name in names), 'asset-review museum files leaked into normal JAR'
 
               for entry in external_structures:
                   assert entry in names, entry
@@ -151,12 +160,22 @@ jobs:
               assert 'META-INF/campfiresessions/licenses/kogtyv_tav_LICENSE.txt' in names
               assert 'META-INF/campfiresessions/external_structure_manifest.json' in names
               external_manifest = json.loads(z.read('META-INF/campfiresessions/external_structure_manifest.json'))
-              assert set(external_manifest['sources']) == {'kogtyv_tav'}
-              assert len(external_manifest['assets']) == 31, len(external_manifest['assets'])
-              assert all(asset['source'] == 'kogtyv_tav' for asset in external_manifest['assets'])
+              assert set(external_manifest['sources']) == {'kogtyv_tav', 'currents_of_trade'}
+              assert len(external_manifest['assets']) == 32, len(external_manifest['assets'])
+              source_counts = {
+                  source: sum(asset['source'] == source for asset in external_manifest['assets'])
+                  for source in external_manifest['sources']
+              }
+              assert source_counts == {'kogtyv_tav': 31, 'currents_of_trade': 1}, source_counts
               assert not any('kaisyn' in asset['source_entry'].lower() for asset in external_manifest['assets'])
               assert not any('villageroles' in asset['source_entry'].lower() for asset in external_manifest['assets'])
               assert b'MIT License' in z.read('META-INF/campfiresessions/licenses/kogtyv_tav_LICENSE.txt')
+              assert b'MIT License' in z.read('META-INF/campfiresessions/licenses/currents_of_trade_LICENSE.txt')
+
+              dock = z.read('data/campfiresessions/structure/external/currents_of_trade/dock.nbt')
+              dock_payload = gzip.decompress(dock)
+              assert b'currents_of_trade:anchor_point' not in dock_payload
+              assert dock_payload.count(b'minecraft:barrel') >= 2
 
               meta = json.loads(z.read('assets/campfiresessions/music/track_metadata.json'))
               assert list(meta.keys()) == expected, (list(meta.keys()), expected)

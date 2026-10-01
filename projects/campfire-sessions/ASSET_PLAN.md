@@ -435,10 +435,13 @@ Stage transitions may adjust roof/trim/palette/porch while preserving one recogn
 - resident individuality comes from selected shell variant, palette accent, door/roof detail, yard planting, signage/props and interior theme.
 - do not require 30–40 unique building geometries.
 
-**Harbor service building**
-- Greece `shop_small_1.nbt`, **5×7**, is a good temporary direct shell candidate for ticket/harbor service.
-- the actual pier/dock geometry remains unresolved and should come from a permissive external dock/pier build or a directly reusable structure source.
-- Peterwolf provides the watercraft, not the final civic pier architecture.
+**Harbor / pier**
+- primary external base: **Currents of Trade** `village/dock.nbt`, MIT, pinned source commit `d3b769ec4cbf8d8e744785c4815b6c66107c7884`.
+- measured shell: **11×10×15**, with the sparse long end functioning as the pier and the opposite edge carrying the street connector.
+- Campfire rewrites the source-only Anchor Point block to a vanilla barrel and filters jigsaw/structure markers; no Currents runtime gameplay is adopted.
+- review placement origin: **(-329, 62, -53)** with `CLOCKWISE_90`, making the pier extend west into the canonical ocean while the street connector lands around **(-329, 64, -48)**.
+- Kogtyv `shop_small_1` is no longer the primary harbor shell; retain it in the general editable structure pool.
+- Peterwolf remains the watercraft source, while this external dock supplies the physical harbor architecture.
 
 **License boundary**
 - Villageria and Kogtyv selected structures are modifiable permissive sources.
@@ -1749,3 +1752,25 @@ This is a physical layout review path, not final accepted world composition. Ent
 
 
 Physical-footprint collision check after the first placement code pass found that the earlier café origin overlapped the 21×16 museum by 4×8 blocks. The café was moved west to the measured flat patch before any client/world review; the current first-pass civic footprints no longer overlap.
+
+
+### First connected village landscape pass
+
+The canonical review slice now has an authored walk network rather than isolated building pads.
+
+Design basis:
+- preserve the natural stepped composition from harbor ~64 → civic core ~71–73 → museum/commercial rise ~74–76.
+- do not globally flatten the 80×128 verified flat cluster.
+- use a compact three-block-ish village path network connecting all first-pass buildings.
+- path palette is derived from the selected Greece structures: restrained gravel/coarse-dirt walks.
+- the central civic plaza uses tuff/polished-tuff with a polished-diorite axis, matching materials already present in the external Greece family.
+- path/plaza grading has separate hard caps and refuses large terrain destruction.
+
+The path network connects:
+- western harbor → plaza.
+- plaza → resident services, general store, café and museum forecourt.
+- civic core → clinic, clothing shop and north house.
+- harbor/civic spine → south housing.
+- general-store side → east house.
+
+Final door-facing stubs and decorative landscaping remain subject to real client inspection because the selected external shells have not yet received in-client entrance/orientation acceptance.

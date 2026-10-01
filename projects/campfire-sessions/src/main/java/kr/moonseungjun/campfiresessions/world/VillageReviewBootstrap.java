@@ -22,15 +22,18 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 
 /**
- * Development-only first physical layout pass on the canonical Campfire island.
+ * Development-only physical village slice on the verified canonical island.
  *
- * <p>The review bootstrap is intentionally inert in ordinary gameplay. It exists
- * to place the real MIT Kogtyv Greece structures on the verified Geming400
- * terrain before the first user-facing map/building playtest.</p>
+ * <p>The bootstrap refuses arbitrary worlds, preflights every real external
+ * structure, applies a bounded authored landscape pass, then places the selected
+ * Kogtyv Greece shells plus the MIT Currents of Trade dock.</p>
  */
 public final class VillageReviewBootstrap {
     private static final String PROPERTY = "campfiresessions.villageReview";
-    private static final String MARKER_NAME = ".campfiresessions-village-review-v2";
+    private static final String SOURCE_MARKER_NAME = ".campfiresessions-canonical-world-source";
+    private static final String MARKER_NAME = ".campfiresessions-village-review-v3";
+    private static final String CANONICAL_WORLD_SHA256 =
+            "7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b";
     private static final int MAX_GRADE_DELTA = 8;
 
     private static final BlockIgnoreProcessor REVIEW_MARKER_PROCESSOR = new BlockIgnoreProcessor(List.of(
@@ -40,27 +43,31 @@ public final class VillageReviewBootstrap {
             Blocks.STRUCTURE_VOID
     ));
 
-    /**
-     * Origins are placement origins, not conceptual building centers.
-     * Y values come from the successful canonical-world terrain probe #15.
-     * Rotation stays NONE in this first physical pass so entrance direction can
-     * be judged from the real structures rather than guessed from filenames.
-     */
     private static final List<BuildingSpec> BUILDINGS = List.of(
-            spec("resident_services", "house/shop_triple_2", -312, 71, -19, 13, 16, 8),
-            spec("general_store", "house/shop_triple_1", -290, 72, -46, 13, 16, 8),
-            spec("clinic", "house/shop_medium_3", -321, 67, -12, 7, 16, 8),
-            spec("cafe", "house/shop_medium_1", -296, 73, -28, 7, 16, 8),
-            spec("clothing_shop", "house/shop_medium_2", -291, 74, -11, 7, 16, 8),
-            spec("museum", "center/ratush_1", -284, 76, -32, 21, 8, 16),
-            spec("harbor_service", "house/shop_small_1", -334, 64, -48, 5, 16, 7),
+            kogtyv("resident_services", "house/shop_triple_2", -312, 71, -19, 13, 16, 8),
+            kogtyv("general_store", "house/shop_triple_1", -290, 72, -46, 13, 16, 8),
+            kogtyv("clinic", "house/shop_medium_3", -321, 67, -12, 7, 16, 8),
+            kogtyv("cafe", "house/shop_medium_1", -296, 73, -28, 7, 16, 8),
+            kogtyv("clothing_shop", "house/shop_medium_2", -291, 74, -11, 7, 16, 8),
+            kogtyv("museum", "center/ratush_1", -284, 76, -32, 21, 8, 16),
+
+            // The source dock's street connector is local (5,2,0). CLOCKWISE_90
+            // maps its long +Z pier axis westward into the canonical ocean.
+            external(
+                    "harbor_dock",
+                    "external/currents_of_trade/dock",
+                    -329, 62, -53,
+                    Rotation.CLOCKWISE_90,
+                    11, 10, 15,
+                    false
+            ),
 
             // First housing-scale pass: real external shells, not placeholders.
-            spec("player_house_stage_1", "house/small_1", -322, 66, -72, 5, 16, 5),
-            spec("resident_house_south_1", "house/small_2", -312, 67, -72, 5, 16, 5),
-            spec("resident_house_south_2", "house/medium_1", -322, 68, -60, 7, 16, 6),
-            spec("resident_house_east_1", "house/small_3", -283, 71, -62, 5, 16, 5),
-            spec("resident_house_north_1", "house/medium_2", -300, 71, 6, 7, 16, 6)
+            kogtyv("player_house_stage_1", "house/small_1", -322, 66, -72, 5, 16, 5),
+            kogtyv("resident_house_south_1", "house/small_2", -312, 67, -72, 5, 16, 5),
+            kogtyv("resident_house_south_2", "house/medium_1", -322, 68, -60, 7, 16, 6),
+            kogtyv("resident_house_east_1", "house/small_3", -283, 71, -62, 5, 16, 5),
+            kogtyv("resident_house_north_1", "house/medium_2", -300, 71, 6, 7, 16, 6)
     );
 
     private VillageReviewBootstrap() {}
@@ -74,6 +81,8 @@ public final class VillageReviewBootstrap {
             return;
         }
 
+        verifyCanonicalSource(event.getServer().getWorldPath(LevelResource.ROOT));
+
         ServerLevel level = event.getServer().overworld();
         Path marker = event.getServer().getWorldPath(LevelResource.ROOT).resolve(MARKER_NAME);
         if (Files.exists(marker)) {
@@ -81,33 +90,68 @@ public final class VillageReviewBootstrap {
             return;
         }
 
-        preflight(level);
+        List<PreparedBuilding> prepared = prepareBuildings(level);
+        preflight(level, prepared);
 
-        for (BuildingSpec spec : BUILDINGS) {
-            place(level, spec);
+        List<BoundingBox> protectedBounds = prepared.stream().map(PreparedBuilding::bounds).toList();
+        VillageReviewLandscape.preflight(level, protectedBounds);
+        VillageReviewLandscape.place(level, protectedBounds);
+
+        for (PreparedBuilding building : prepared) {
+            place(level, building);
         }
 
         try {
             Files.writeString(
                     marker,
-                    "Campfire Sessions village review v2\n"
+                    "Campfire Sessions village review v3\n"
+                            + "canonical archive sha256: " + CANONICAL_WORLD_SHA256 + "\n"
                             + "canonical terrain probe: run 36806856318\n"
-                            + "buildings: " + BUILDINGS.size() + "\n"
+                            + "external structures: " + BUILDINGS.size() + "\n"
+                            + "landscape: plaza + connected village paths\n"
             );
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to write Campfire village review marker " + marker, exception);
         }
 
         CampfireSessions.LOGGER.info(
-                "Campfire village review layout applied: {} real Kogtyv Greece structures",
+                "Campfire village review layout applied: {} real external structures",
                 BUILDINGS.size()
         );
     }
 
-    private static void preflight(ServerLevel level) {
-        for (BuildingSpec spec : BUILDINGS) {
+    private static void verifyCanonicalSource(Path worldRoot) {
+        Path sourceMarker = worldRoot.resolve(SOURCE_MARKER_NAME);
+        if (!Files.isRegularFile(sourceMarker)) {
+            throw new IllegalStateException(
+                    "Campfire village review refused unverified world: missing " + sourceMarker
+            );
+        }
+        try {
+            String text = Files.readString(sourceMarker);
+            if (!text.contains(CANONICAL_WORLD_SHA256)) {
+                throw new IllegalStateException(
+                        "Campfire village review canonical marker does not contain the pinned archive SHA-256"
+                );
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to read Campfire canonical world marker " + sourceMarker, exception);
+        }
+    }
+
+    private static List<PreparedBuilding> prepareBuildings(ServerLevel level) {
+        return BUILDINGS.stream().map(spec -> {
             StructureTemplate template = template(level, spec);
-            Vec3i actual = template.getSize();
+            StructurePlaceSettings settings = settings(spec);
+            BoundingBox bounds = template.getBoundingBox(settings, spec.origin());
+            return new PreparedBuilding(spec, template, settings, bounds);
+        }).toList();
+    }
+
+    private static void preflight(ServerLevel level, List<PreparedBuilding> buildings) {
+        for (PreparedBuilding building : buildings) {
+            BuildingSpec spec = building.spec();
+            Vec3i actual = building.template().getSize();
             if (!actual.equals(spec.expectedSize())) {
                 throw new IllegalStateException(
                         "Campfire village review structure size changed for " + spec.role()
@@ -115,36 +159,97 @@ public final class VillageReviewBootstrap {
                 );
             }
 
-            StructurePlaceSettings settings = settings(spec);
-            BoundingBox box = template.getBoundingBox(settings, spec.origin());
-            int targetGroundY = spec.origin().getY() - 1;
-            for (int x = box.minX(); x <= box.maxX(); x++) {
-                for (int z = box.minZ(); z <= box.maxZ(); z++) {
-                    level.getChunkAt(new BlockPos(x, targetGroundY, z));
-                    int currentSurface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
-                    if (Math.abs(currentSurface - targetGroundY) > MAX_GRADE_DELTA) {
-                        throw new IllegalStateException(
-                                "Campfire village review grading limit exceeded for " + spec.role()
-                                        + " at " + x + "," + z
-                                        + ": surface=" + currentSurface + " target=" + targetGroundY
-                        );
-                    }
+            if (spec.gradeFootprint()) {
+                preflightLandBuilding(level, building);
+            } else if ("harbor_dock".equals(spec.role())) {
+                preflightDock(level, building);
+            }
+        }
+    }
+
+    private static void preflightLandBuilding(ServerLevel level, PreparedBuilding building) {
+        int targetGroundY = building.spec().origin().getY() - 1;
+        BoundingBox box = building.bounds();
+        for (int x = box.minX(); x <= box.maxX(); x++) {
+            for (int z = box.minZ(); z <= box.maxZ(); z++) {
+                level.getChunkAt(new BlockPos(x, targetGroundY, z));
+                int currentSurface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                if (Math.abs(currentSurface - targetGroundY) > MAX_GRADE_DELTA) {
+                    throw new IllegalStateException(
+                            "Campfire village review grading limit exceeded for " + building.spec().role()
+                                    + " at " + x + "," + z
+                                    + ": surface=" + currentSurface + " target=" + targetGroundY
+                    );
                 }
             }
         }
     }
 
-    private static void place(ServerLevel level, BuildingSpec spec) {
-        StructureTemplate template = template(level, spec);
-        StructurePlaceSettings settings = settings(spec);
-        BoundingBox box = template.getBoundingBox(settings, spec.origin());
+    private static void preflightDock(ServerLevel level, PreparedBuilding building) {
+        BuildingSpec spec = building.spec();
+        BlockPos streetConnector = StructureTemplate.transform(
+                new BlockPos(5, 2, 0),
+                Mirror.NONE,
+                spec.rotation(),
+                BlockPos.ZERO
+        ).offset(spec.origin());
+        level.getChunkAt(streetConnector);
+        int streetSurface = level.getHeight(
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                streetConnector.getX(),
+                streetConnector.getZ()
+        ) - 1;
+        if (Math.abs(streetSurface - streetConnector.getY()) > 3) {
+            throw new IllegalStateException(
+                    "Campfire harbor dock street connector misses canonical shoreline: connector="
+                            + streetConnector + " surface=" + streetSurface
+            );
+        }
 
-        gradeFootprint(level, box, spec.origin().getY());
-        boolean placed = template.placeInWorld(
+        BoundingBox box = building.bounds();
+        int water = 0;
+        int samples = 0;
+        int westSampleMaxX = Math.min(box.maxX(), box.minX() + 4);
+        for (int x = box.minX(); x <= westSampleMaxX; x += 2) {
+            for (int z = box.minZ(); z <= box.maxZ(); z += 2) {
+                level.getChunkAt(new BlockPos(x, 62, z));
+                samples++;
+                boolean hasFluid =
+                        !level.getFluidState(new BlockPos(x, 62, z)).isEmpty()
+                                || !level.getFluidState(new BlockPos(x, 63, z)).isEmpty();
+                if (hasFluid) {
+                    water++;
+                }
+            }
+        }
+        if (samples == 0 || water * 4 < samples) {
+            throw new IllegalStateException(
+                    "Campfire harbor dock outer pier is not sufficiently over water: waterSamples="
+                            + water + "/" + samples + " bounds=" + box
+            );
+        }
+
+        CampfireSessions.LOGGER.info(
+                "Campfire harbor dock preflight: street={} surface={} outer-water={}/{} bounds={}",
+                streetConnector,
+                streetSurface,
+                water,
+                samples,
+                box
+        );
+    }
+
+    private static void place(ServerLevel level, PreparedBuilding building) {
+        BuildingSpec spec = building.spec();
+        if (spec.gradeFootprint()) {
+            gradeFootprint(level, building.bounds(), spec.origin().getY());
+        }
+
+        boolean placed = building.template().placeInWorld(
                 level,
                 spec.origin(),
                 spec.origin(),
-                settings,
+                building.settings(),
                 level.getRandom(),
                 Block.UPDATE_ALL
         );
@@ -153,11 +258,12 @@ public final class VillageReviewBootstrap {
         }
 
         CampfireSessions.LOGGER.info(
-                "Campfire village review placed {} at {} structure={} bounds={}",
+                "Campfire village review placed {} at {} structure={} rotation={} bounds={}",
                 spec.role(),
                 spec.origin(),
                 spec.structureId(),
-                box
+                spec.rotation(),
+                building.bounds()
         );
     }
 
@@ -203,7 +309,7 @@ public final class VillageReviewBootstrap {
                 .addProcessor(REVIEW_MARKER_PROCESSOR);
     }
 
-    private static BuildingSpec spec(
+    private static BuildingSpec kogtyv(
             String role,
             String suffix,
             int x,
@@ -213,15 +319,35 @@ public final class VillageReviewBootstrap {
             int sizeY,
             int sizeZ
     ) {
+        return external(
+                role,
+                "external/kogtyv_greece/" + suffix,
+                x, y, z,
+                Rotation.NONE,
+                sizeX, sizeY, sizeZ,
+                true
+        );
+    }
+
+    private static BuildingSpec external(
+            String role,
+            String structurePath,
+            int x,
+            int y,
+            int z,
+            Rotation rotation,
+            int sizeX,
+            int sizeY,
+            int sizeZ,
+            boolean gradeFootprint
+    ) {
         return new BuildingSpec(
                 role,
-                Identifier.fromNamespaceAndPath(
-                        CampfireSessions.MOD_ID,
-                        "external/kogtyv_greece/" + suffix
-                ),
+                Identifier.fromNamespaceAndPath(CampfireSessions.MOD_ID, structurePath),
                 new BlockPos(x, y, z),
-                Rotation.NONE,
-                new Vec3i(sizeX, sizeY, sizeZ)
+                rotation,
+                new Vec3i(sizeX, sizeY, sizeZ),
+                gradeFootprint
         );
     }
 
@@ -230,6 +356,14 @@ public final class VillageReviewBootstrap {
             Identifier structureId,
             BlockPos origin,
             Rotation rotation,
-            Vec3i expectedSize
+            Vec3i expectedSize,
+            boolean gradeFootprint
+    ) {}
+
+    private record PreparedBuilding(
+            BuildingSpec spec,
+            StructureTemplate template,
+            StructurePlaceSettings settings,
+            BoundingBox bounds
     ) {}
 }

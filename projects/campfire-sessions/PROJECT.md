@@ -228,14 +228,14 @@ Completed in this checkpoint:
 - canonical terrain probe #15 / run `36806856318`: SUCCESS.
 - largest strict-flat connected village cluster is now recorded tile-by-tile, not only as an 80×128 bounding box.
 - steep draft positions were corrected before placement: clothing and museum no longer use the earlier cliff-overlap coordinates.
-- `VillageReviewBootstrap` adds a development-only physical placement path for **12 real Kogtyv Greece structures**:
+- `VillageReviewBootstrap` adds a development-only physical placement path for **12 real external structures (11 Kogtyv Greece shells + 1 Currents of Trade dock)**:
   - resident services
   - general store
   - clinic
   - café
   - clothing shop
   - museum
-  - harbor service shell
+  - real harbor dock / service structure
   - player early house
   - four first resident-house shells
 - exact packaged NBT sizes are preflighted before any placement.
@@ -275,3 +275,21 @@ Validation status:
 - MULTIPLAYER TESTED: NO
 
 Per the current playtest gate, do not ask the user to test yet. Continue with the coherent path/plaza connection, harbor/pier treatment, and canonical review-world launch/provisioning first; then request one combined map + actual-building playtest.
+
+
+## Connected canonical village review slice — 2026-10-01
+
+This unit moves the next user test from isolated assets to an actual playable map slice.
+
+Implemented:
+- real MIT Currents of Trade dock selected as the physical harbor base instead of inventing a temporary pier.
+- source pinned to commit `d3b769ec4cbf8d8e744785c4815b6c66107c7884`; the build downloads the exact dock NBT + MIT license from that commit.
+- source-only Anchor Point identifiers are converted to a vanilla barrel; no Currents runtime dependency is added.
+- `VillageReviewLandscape` adds the first connected plaza/path network across the verified stepped terrain.
+- the harbor dock is rotated to extend west into the ocean and is preflighted against both shoreline height and water presence.
+- `prepareVillageReviewWorld` provisions the verified Geming400 archive directly into the development review profile, verifies SHA-256, and refuses to overwrite an unrelated save.
+- `runVillageReviewClient` now Quick Plays directly into that canonical review save.
+- a dedicated `runVillageReviewServer` path lets CI apply the same authored slice to a disposable canonical-world copy.
+- the canonical-world workflow now requires actual server-side success for the 12 external structures, landscape pass, harbor dock and v3 completion marker.
+
+Verification for this checkpoint is pending the next Campfire build/world-probe runs. Do not label the slice CLIENT VISUAL TESTED until an actual Minecraft client is inspected.

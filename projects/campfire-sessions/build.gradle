@@ -83,6 +83,7 @@ tasks.register('copyAssetReviewProbe', Copy) {
 def licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
 def externalStructureAssetsOutput = layout.buildDirectory.dir('generated/externalStructureAssets')
 def pythonCommand = System.getProperty('os.name').startsWith('Windows') ? 'python' : 'python3'
+def villageReviewWorldDir = project.file('run-village-review/saves/campfire-village-review')
 
 def prepareLicensedAssets = tasks.register('prepareLicensedAssets', Exec) {
     inputs.file 'tools/prepare_licensed_assets.py'
@@ -99,6 +100,14 @@ def prepareExternalStructureAssets = tasks.register('prepareExternalStructureAss
         file('tools/extract_external_structure_assets.py').absolutePath,
         layout.buildDirectory.dir('externalStructureProbe').get().asFile.absolutePath,
         externalStructureAssetsOutput.get().asFile.absolutePath
+}
+
+def prepareVillageReviewWorld = tasks.register('prepareVillageReviewWorld', Exec) {
+    inputs.file 'tools/prepare_village_review_world.py'
+    outputs.dir villageReviewWorldDir
+    commandLine pythonCommand,
+        file('tools/prepare_village_review_world.py').absolutePath,
+        villageReviewWorldDir.absolutePath
 }
 
 sourceSets.main.resources {
@@ -122,11 +131,23 @@ neoForge {
             client()
             gameDirectory = project.file('run-village-review')
             systemProperty 'campfiresessions.villageReview', 'true'
+            programArgument '--quickPlaySingleplayer'
+            programArgument 'campfire-village-review'
+        }
+        villageReviewServer {
+            server()
+            gameDirectory = project.file('run-village-review-server')
+            systemProperty 'campfiresessions.villageReview', 'true'
+            programArgument '--nogui'
         }
         server { server(); programArgument '--nogui' }
         configureEach { logLevel = org.slf4j.event.Level.INFO }
     }
     mods { "${mod_id}" { sourceSet sourceSets.main } }
+}
+
+tasks.matching { it.name == 'runVillageReviewClient' }.configureEach {
+    dependsOn prepareVillageReviewWorld
 }
 
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {

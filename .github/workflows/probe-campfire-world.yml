@@ -9,6 +9,9 @@ on:
       - 'projects/campfire-sessions/tools/probe_candidate_world.py'
       - 'projects/campfire-sessions/build.gradle'
       - 'projects/campfire-sessions/gradle.properties'
+      - 'projects/campfire-sessions/tools/extract_external_structure_assets.py'
+      - 'projects/campfire-sessions/tools/prepare_village_review_world.py'
+      - 'projects/campfire-sessions/src/main/java/kr/moonseungjun/campfiresessions/world/**'
 
 permissions:
   contents: read
@@ -141,6 +144,69 @@ jobs:
             exit 1
           fi
 
+      - name: Verify authored village slice on canonical world
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORLD_ROOT="$(python3 -c "import pathlib; base=pathlib.Path('build/world-probe/unpacked'); cs=[(len(list((p.parent/'region').glob('r.*.*.mca'))) if (p.parent/'region').is_dir() else 0, len(p.parent.parts), str(p.parent)) for p in base.rglob('level.dat')]; print(max(cs)[2] if cs else '')")"
+          test -n "$WORLD_ROOT"
+
+          REVIEW=run-village-review-server
+          rm -rf "$REVIEW"
+          mkdir -p "$REVIEW/world"
+          cp -a "$WORLD_ROOT"/. "$REVIEW/world/"
+          cat > "$REVIEW/world/.campfiresessions-canonical-world-source" <<'EOF'
+          {
+            "archive_sha256": "7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b",
+            "source": "CI verified canonical Geming400 copy"
+          }
+          EOF
+          printf 'eula=true\n' > "$REVIEW/eula.txt"
+          cat > "$REVIEW/server.properties" <<'EOF'
+          level-name=world
+          online-mode=false
+          allow-flight=true
+          max-tick-time=120000
+          view-distance=6
+          simulation-distance=6
+          spawn-protection=0
+          EOF
+
+          ./gradlew --no-daemon runVillageReviewServer > build/world-probe/village-review-server.log 2>&1 &
+          pid=$!
+          success=0
+          for i in $(seq 1 180); do
+            done_ok=0
+            layout_ok=0
+            grep -Eq 'Done \([0-9.]+s\)!|Done \(' build/world-probe/village-review-server.log && done_ok=1 || true
+            grep -Fq 'Campfire village review layout applied: 12 real external structures' build/world-probe/village-review-server.log && layout_ok=1 || true
+            if [ "$done_ok" = 1 ] && [ "$layout_ok" = 1 ]; then
+              success=1
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          kill "$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+
+          if [ "$success" != 1 ]; then
+            tail -n 240 build/world-probe/village-review-server.log
+            exit 1
+          fi
+
+          test -f "$REVIEW/world/.campfiresessions-village-review-v3"
+          grep -Fq 'Campfire village review landscape applied:' build/world-probe/village-review-server.log
+          grep -Fq 'Campfire village review placed harbor_dock' build/world-probe/village-review-server.log
+          {
+            echo 'VILLAGE_REVIEW_CANONICAL_WORLD=SUCCESS'
+            echo 'REAL_EXTERNAL_BUILDINGS_PLACED=12'
+            echo 'VILLAGE_PATH_PLAZA_APPLIED=YES'
+            echo 'HARBOR_DOCK_APPLIED=YES'
+          } | tee -a build/world-probe/world-load-status.txt
+
       - name: Upload world probe report
         if: always()
         uses: actions/upload-artifact@v4
@@ -153,4 +219,5 @@ jobs:
             projects/campfire-sessions/build/world-probe/world-load-status.txt
             projects/campfire-sessions/build/world-probe/server-load.log
             projects/campfire-sessions/build/world-probe/runtime-classpath.txt
+            projects/campfire-sessions/build/world-probe/village-review-server.log
           if-no-files-found: warn
