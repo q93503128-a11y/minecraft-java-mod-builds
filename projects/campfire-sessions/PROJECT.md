@@ -139,14 +139,30 @@ Island-life expansion:
 - MUSEUM 26.2 GPU RENDER ARCHITECTURE SELECTED: YES
 - MUSEUM VERIFIED STATIC MESH CONVERTER: YES
 - MUSEUM STATIC MESH JAVA LOADER + GPU BUFFER UPLOAD CORE: BUILD VERIFIED
-- MUSEUM FEATURE RENDERER / PBR DRAW PATH IMPLEMENTED: NO
-- MUSEUM RUNTIME RENDERER IMPLEMENTED: NO
+- MUSEUM FEATURE RENDERER / SOLID SUBMIT PATH: IMPLEMENTED, BUILD VERIFICATION PENDING
+- MUSEUM BASE-COLOR GPU DRAW PATH: IMPLEMENTED, BUILD VERIFICATION PENDING
+- MUSEUM NORMAL/OCCLUSION MATERIAL PASS: NOT IMPLEMENTED
+- MUSEUM RUNTIME RENDERER: PARTIAL — verified static mesh + GPU buffer + FeatureRenderer path exists; exhibit carrier/world placement and visual acceptance remain
+- MUSEUM NORMAL-BUILD ASSET PACKAGING: NO — actual Smithsonian candidates remain asset-review-only until client visual/performance acceptance
 - RESIDENT PRODUCTION MODEL ACCEPTED: NO
 - TEMPORARY / PLACEHOLDER RESIDENT MODEL ALLOWED: NO
 - IMPLEMENTED: NO
 - CLIENT VISUAL TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+## Museum renderer checkpoint — 2026-10-01
+
+The first production static-mesh render path now has a concrete implementation target in source:
+
+- `MuseumExhibitAssets.TRICERATOPS_100K` pins the verified 100k-derived Triceratops runtime mesh SHA-256 and its real Smithsonian-derived base/normal/occlusion texture paths.
+- `MuseumRenderPipelines` defines a 32-byte CFMS-compatible triangle pipeline and base-color RenderType without per-frame CPU vertex submission.
+- `MuseumStaticMeshRenderer` submits into NeoForge's `RenderPhaseKeys.SOLID`, uploads the verified mesh once per renderer lifetime, reuses the GPU buffers, and closes them with the FeatureRenderer lifecycle.
+- the mesh is re-hashed before GPU upload; a missing or mismatched production resource fails instead of falling back to fake geometry.
+- the initial accepted draw pass samples the real base-color texture. CFMS normal data and the verified normal/occlusion textures remain preserved for the dedicated material pass, which is still pending.
+- Smithsonian runtime files are intentionally not bundled into the normal build yet. They remain an asset-review input until client visual/performance acceptance.
+
+This checkpoint is not a visual acceptance. `CLIENT VISUAL TESTED`, `PLAYTESTED`, and `MULTIPLAYER TESTED` remain NO.
 
 ## Next planning rule
 
