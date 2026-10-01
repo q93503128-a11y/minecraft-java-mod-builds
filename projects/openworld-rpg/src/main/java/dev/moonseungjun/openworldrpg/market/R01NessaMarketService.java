@@ -1,5 +1,9 @@
 package dev.moonseungjun.openworldrpg.market;
 
+import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyService;
+import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryService;
+import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryState;
+import dev.moonseungjun.openworldrpg.inventory.ProjectInventoryItem;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import dev.moonseungjun.openworldrpg.world.structure.R01AlderfordRuntimeBindingRegistry;
 import java.util.Objects;
@@ -21,6 +25,7 @@ public final class R01NessaMarketService {
 
     public static ViewResult view(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
+        reconcileInterruptedPurchases(player);
         if (R01AlderfordRuntimeBindingRegistry.productionService(
                 R01NessaMarketRules.MARKET_SERVICE_ID
         ).isEmpty()) {
@@ -83,9 +88,17 @@ public final class R01NessaMarketService {
             );
         }
 
+        R01NessaMarketState.PurchasePlan plan = state(player).purchasePlan(
+                player.getUUID().toString(),
+                expectedCycleIndex,
+                slotIndex
+        ).orElseThrow(() -> new IllegalStateException(
+                "Validated Nessa slot did not produce a purchase plan."
+        ));
+
         var materialization =
                 R01NessaEquipmentMaterialization.resolve(
-                        cycle.item(slotIndex)
+                        plan.item()
                 );
         if (materialization.status()
                 == R01NessaEquipmentMaterialization.ResolutionStatus
@@ -95,21 +108,141 @@ public final class R01NessaMarketService {
                     Optional.empty()
             );
         }
+        ProjectInventoryItem item =
+                materialization.item().orElseThrow();
 
+        var currency = PlayerCurrencyService.state(player);
+        boolean alreadyDebited =
+                currency.hasAppliedDebit(plan.transactionId());
+        if (!alreadyDebited) {
+            if (currency.gold() < plan.item().priceGold()) {
+                return new PurchaseResult(
+                        PurchaseStatus.INSUFFICIENT_GOLD,
+                        Optional.empty()
+                );
+            }
+            if (!PlayerInventoryService.canAcceptBackpack(
+                    player,
+                    item
+            )) {
+                return new PurchaseResult(
+                        PurchaseStatus.INVENTORY_FULL,
+                        Optional.empty()
+                );
+            }
+        }
+
+        var debit = PlayerCurrencyService.debitOnce(
+                player,
+                plan.transactionId(),
+                plan.item().priceGold()
+        );
+        if (!debit.success()) {
+            return new PurchaseResult(
+                    PurchaseStatus.INSUFFICIENT_GOLD,
+                    Optional.empty()
+            );
+        }
+
+        PlayerInventoryState.BackpackDeliveryResult delivery =
+                PlayerInventoryService.deliverBackpackOnce(
+                        player,
+                        plan.transactionId(),
+                        item
+                );
+
+        PurchaseStatus successStatus = PurchaseStatus.PURCHASED;
+        if (!delivery.delivered()) {
+            /*
+             * A newly accepted purchase preflights Backpack capacity on the same server thread, so
+             * this branch is only an interruption/corruption recovery guard. Gold has already been
+             * durably receipted; never lose the purchased item merely because the Backpack changed
+             * before an interrupted transaction was resumed.
+             */
+            PlayerInventoryState.DeliveryResult recovered =
+                    PlayerInventoryService.deliverImportantOnce(
+                            player,
+                            plan.transactionId(),
+                            item
+                    );
+            successStatus = switch (recovered.status()) {
+                case PENDING, STILL_PENDING ->
+                        PurchaseStatus.PURCHASED_RECOVERY_PENDING;
+                case DELIVERED, ALREADY_COMPLETED ->
+                        PurchaseStatus.PURCHASED_RECOVERED;
+            };
+        }
+
+        commitDeliveredPurchase(player, plan);
         return new PurchaseResult(
-                PurchaseStatus.READY_FOR_ITEM_MATERIALIZATION,
-                state(player).purchasePlan(
-                        player.getUUID().toString(),
-                        expectedCycleIndex,
-                        slotIndex
-                )
+                successStatus,
+                Optional.of(plan)
         );
     }
 
     /**
-     * Called only after the future shared equipment materializer has durably completed Gold debit
-     * and inventory delivery for the exact transaction.
+     * Repairs the only legal interruption window: Gold was receipted before item delivery/SOLD.
+     *
+     * <p>Normal purchases require Backpack space and never route directly to storage. Recovery is
+     * deliberately stronger: after payment already exists, Backpack -> Personal Storage -> Pending
+     * Reward Claim is allowed so a reconnect cannot destroy a paid deterministic stock item.</p>
      */
+    public static void reconcileInterruptedPurchases(
+            ServerPlayer player
+    ) {
+        Objects.requireNonNull(player, "player");
+        R01NessaMarketState current = state(player);
+        R01NessaMarketState.Cycle cycle =
+                current.currentCycle().orElse(null);
+        if (cycle == null) {
+            return;
+        }
+
+        for (int slotIndex = 1;
+             slotIndex <= R01NessaMarketRules.STOCK_SLOTS;
+             slotIndex++) {
+            if (cycle.soldSlots().contains(slotIndex)) {
+                continue;
+            }
+            R01NessaMarketState.PurchasePlan plan =
+                    current.purchasePlan(
+                            player.getUUID().toString(),
+                            cycle.cycleIndex(),
+                            slotIndex
+                    ).orElse(null);
+            if (plan == null
+                    || !PlayerCurrencyService.state(player)
+                            .hasAppliedDebit(plan.transactionId())) {
+                continue;
+            }
+
+            var materialization =
+                    R01NessaEquipmentMaterialization.resolve(
+                            plan.item()
+                    );
+            if (materialization.status()
+                    != R01NessaEquipmentMaterialization.ResolutionStatus
+                            .READY) {
+                continue;
+            }
+
+            ProjectInventoryItem item =
+                    materialization.item().orElseThrow();
+            if (!PlayerInventoryService.state(player)
+                    .deliveryCompleted(plan.transactionId())) {
+                PlayerInventoryService.deliverImportantOnce(
+                        player,
+                        plan.transactionId(),
+                        item
+                );
+            }
+            commitDeliveredPurchase(player, plan);
+            current = state(player);
+            cycle = current.currentCycle().orElseThrow();
+        }
+    }
+
+    /** Commits SOLD only after the exact purchase item has a durable inventory receipt. */
     public static void commitDeliveredPurchase(
             ServerPlayer player,
             R01NessaMarketState.PurchasePlan plan
@@ -157,12 +290,22 @@ public final class R01NessaMarketService {
     }
 
     public enum PurchaseStatus {
-        READY_FOR_ITEM_MATERIALIZATION,
+        PURCHASED,
+        PURCHASED_RECOVERED,
+        PURCHASED_RECOVERY_PENDING,
         SERVICE_NOT_PRODUCTION,
         SHRINE_NOT_ACTIVATED,
         STALE_CYCLE,
         SOLD,
-        AFFIX_RUNTIME_INCOMPLETE
+        AFFIX_RUNTIME_INCOMPLETE,
+        INSUFFICIENT_GOLD,
+        INVENTORY_FULL;
+
+        public boolean successful() {
+            return this == PURCHASED
+                    || this == PURCHASED_RECOVERED
+                    || this == PURCHASED_RECOVERY_PENDING;
+        }
     }
 
     public record PurchaseResult(
@@ -172,8 +315,7 @@ public final class R01NessaMarketService {
         public PurchaseResult {
             Objects.requireNonNull(status, "status");
             plan = Objects.requireNonNull(plan, "plan");
-            if ((status == PurchaseStatus.READY_FOR_ITEM_MATERIALIZATION)
-                    != plan.isPresent()) {
+            if (status.successful() != plan.isPresent()) {
                 throw new IllegalArgumentException(
                         "Nessa purchase status/plan mismatch."
                 );

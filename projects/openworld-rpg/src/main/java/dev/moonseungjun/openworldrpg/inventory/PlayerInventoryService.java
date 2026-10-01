@@ -16,6 +16,24 @@ public final class PlayerInventoryService {
         );
     }
 
+    public static boolean canAcceptBackpack(
+            ServerPlayer player,
+            ProjectInventoryItem item
+    ) {
+        return state(player).canAcceptInBackpack(item);
+    }
+
+    public static PlayerInventoryState.BackpackDeliveryResult deliverBackpackOnce(
+            ServerPlayer player,
+            String transactionId,
+            ProjectInventoryItem item
+    ) {
+        PlayerInventoryState.BackpackDeliveryResult result =
+                state(player).deliverBackpackOnce(transactionId, item);
+        replace(player, result.state());
+        return result;
+    }
+
     public static PlayerInventoryState.DeliveryResult deliverImportantOnce(
             ServerPlayer player,
             String transactionId,

@@ -118,6 +118,60 @@ public record PlayerInventoryState(
         return Optional.ofNullable(pendingItemRewards.get(transactionId));
     }
 
+    /** Returns whether the ordinary Backpack can accept the complete item payload right now. */
+    public boolean canAcceptInBackpack(ProjectInventoryItem item) {
+        Objects.requireNonNull(item, "item");
+        return backpack.insert(item).remainder().isEmpty();
+    }
+
+    /**
+     * Idempotent ordinary-purchase delivery. Unlike important rewards, this path never spills into
+     * Personal Storage or Pending Reward Claim: the caller must preflight legal Backpack space.
+     */
+    public BackpackDeliveryResult deliverBackpackOnce(
+            String transactionId,
+            ProjectInventoryItem item
+    ) {
+        requireStableId(transactionId);
+        Objects.requireNonNull(item, "item");
+
+        if (completedDeliveryIds.contains(transactionId)) {
+            return new BackpackDeliveryResult(
+                    this,
+                    BackpackDeliveryStatus.ALREADY_COMPLETED
+            );
+        }
+        if (pendingItemRewards.containsKey(transactionId)) {
+            throw new IllegalStateException(
+                    "Backpack-only delivery id is already reserved by a pending important delivery: "
+                            + transactionId
+            );
+        }
+
+        ProjectBackpackState.InsertResult insert = backpack.insert(item);
+        if (insert.remainder().isPresent()) {
+            return new BackpackDeliveryResult(
+                    this,
+                    BackpackDeliveryStatus.FULL
+            );
+        }
+
+        Set<String> nextCompleted = new HashSet<>(completedDeliveryIds);
+        nextCompleted.add(transactionId);
+        return new BackpackDeliveryResult(
+                copy(
+                        insert.state(),
+                        personalStorage,
+                        materialPouch,
+                        materialVault,
+                        keyItems,
+                        pendingItemRewards,
+                        Set.copyOf(nextCompleted)
+                ),
+                BackpackDeliveryStatus.DELIVERED
+        );
+    }
+
     public DeliveryResult deliverImportantOnce(
             String transactionId,
             ProjectInventoryItem item
@@ -518,6 +572,26 @@ public record PlayerInventoryState(
                         "Pending remainder cannot exceed original reward quantity."
                 );
             }
+        }
+    }
+
+    public enum BackpackDeliveryStatus {
+        DELIVERED,
+        FULL,
+        ALREADY_COMPLETED
+    }
+
+    public record BackpackDeliveryResult(
+            PlayerInventoryState state,
+            BackpackDeliveryStatus status
+    ) {
+        public BackpackDeliveryResult {
+            Objects.requireNonNull(state, "state");
+            Objects.requireNonNull(status, "status");
+        }
+
+        public boolean delivered() {
+            return status != BackpackDeliveryStatus.FULL;
         }
     }
 

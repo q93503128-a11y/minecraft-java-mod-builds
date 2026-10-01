@@ -23,6 +23,7 @@ import dev.moonseungjun.openworldrpg.housing.R01HousingAttachments;
 import dev.moonseungjun.openworldrpg.housing.R01HousingService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
+import dev.moonseungjun.openworldrpg.market.R01NessaMarketService;
 import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementAttachments;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementService;
@@ -178,6 +179,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
+                R01NessaMarketService.reconcileInterruptedPurchases(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
                 R01FishingService.reconcileInterruptedHooks(handler.getPlayer());
                 R01HousingService.reconcilePending(handler.getPlayer());

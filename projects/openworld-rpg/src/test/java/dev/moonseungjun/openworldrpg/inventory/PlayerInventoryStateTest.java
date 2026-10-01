@@ -13,6 +13,80 @@ import org.junit.jupiter.api.Test;
 
 class PlayerInventoryStateTest {
     @Test
+    void ordinaryPurchaseDeliveryRequiresBackpackSpaceAndIsIdempotent() {
+        var item = ProjectInventoryItem.ordinary(
+                "openworld_rpg:merchant_item",
+                1,
+                1,
+                25
+        );
+        var initial = PlayerInventoryState.initial();
+
+        assertTrue(initial.canAcceptInBackpack(item));
+        var delivered = initial.deliverBackpackOnce(
+                "openworld_rpg:nessa_purchase/test/0/1",
+                item
+        );
+        var retried = delivered.state().deliverBackpackOnce(
+                "openworld_rpg:nessa_purchase/test/0/1",
+                item
+        );
+
+        assertEquals(
+                PlayerInventoryState.BackpackDeliveryStatus.DELIVERED,
+                delivered.status()
+        );
+        assertEquals(1, delivered.state().backpack().usedSlots());
+        assertTrue(delivered.state().personalStorage().occupied().isEmpty());
+        assertTrue(delivered.state().pendingItemRewards().isEmpty());
+        assertEquals(
+                PlayerInventoryState.BackpackDeliveryStatus.ALREADY_COMPLETED,
+                retried.status()
+        );
+        assertSame(delivered.state(), retried.state());
+    }
+
+    @Test
+    void ordinaryPurchaseDoesNotSpillIntoStorageWhenBackpackIsFull() {
+        ProjectBackpackState fullBackpack = fullGrid(
+                "openworld_rpg:merchant_full_"
+        );
+        var full = new PlayerInventoryState(
+                1,
+                fullBackpack,
+                ProjectBackpackState.personalStorage(),
+                Map.of(),
+                Map.of(),
+                Set.of(),
+                Map.of(),
+                Set.of()
+        );
+        var item = ProjectInventoryItem.ordinary(
+                "openworld_rpg:merchant_item",
+                1,
+                1,
+                25
+        );
+
+        assertFalse(full.canAcceptInBackpack(item));
+        var blocked = full.deliverBackpackOnce(
+                "openworld_rpg:nessa_purchase/test/0/2",
+                item
+        );
+
+        assertEquals(
+                PlayerInventoryState.BackpackDeliveryStatus.FULL,
+                blocked.status()
+        );
+        assertSame(full, blocked.state());
+        assertTrue(blocked.state().personalStorage().occupied().isEmpty());
+        assertTrue(blocked.state().pendingItemRewards().isEmpty());
+        assertFalse(blocked.state().deliveryCompleted(
+                "openworld_rpg:nessa_purchase/test/0/2"
+        ));
+    }
+
+    @Test
     void importantDeliveryUsesBackpackFirstAndIsIdempotent() {
         var item = ProjectInventoryItem.ordinary(
                 "openworld_rpg:quest_reward",
