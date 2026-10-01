@@ -1,7 +1,9 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.network.FastTravelTransitionPayload;
 import io.github.q93503128.turnbound.network.FieldSnapshotPayload;
 import io.github.q93503128.turnbound.network.NpcDialoguePayload;
+import io.github.q93503128.turnbound.network.QuestTargetOutlinePayload;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
@@ -13,6 +15,16 @@ public final class ClientFieldNetwork {
     public static void register(RegisterClientPayloadHandlersEvent event) {
         event.register(FieldSnapshotPayload.TYPE, ClientFieldNetwork::handle);
         event.register(NpcDialoguePayload.TYPE, ClientFieldNetwork::handleDialogue);
+        event.register(QuestTargetOutlinePayload.TYPE, ClientFieldNetwork::handleOutline);
+        event.register(FastTravelTransitionPayload.TYPE, ClientFieldNetwork::handleFastTravelTransition);
+    }
+
+    private static void handleOutline(QuestTargetOutlinePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientQuestTargetOutlineState.update(payload.entityIds()));
+    }
+
+    private static void handleFastTravelTransition(FastTravelTransitionPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> FastTravelTransitionLayer.accept(payload.transition()));
     }
 
     private static void handleDialogue(NpcDialoguePayload payload, IPayloadContext context) {

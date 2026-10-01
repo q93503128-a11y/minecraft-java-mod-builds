@@ -1568,3 +1568,35 @@ Current production direction:
 - Av'Sal is no longer an immediate early-game destination. It requires the local New Drabyel arc plus at least one meaningful Capital Valley regional milestone and map review.
 - Source data shows a much larger world than the current route: 285 structured overworld locations and hundreds of path features, so later development should unlock whole regions over time rather than treating the existing road as the entire game.
 - Future mount support is separate from the current waystation system. Once mounts exist, long first-time journeys may be acceptable, but repeated empty walking remains unacceptable.
+
+
+## New Drabyel local-flow / physical travel checkpoint — 2026-10-01
+
+Direct source recheck:
+- pinned structured source remains `zachaa/DrehmalMap@72d82180cbe3f950f068cf2d8e8668c6b09d5c58`
+- `data/locations.json`: 376 total locations / 285 overworld locations
+- overworld structured-location bounds span about 31,409 blocks east-west and 11,122 blocks north-south
+- `data/paths.geojson`: 644 features = 643 LineStrings + 1 Polygon, with 11,066 LineString coordinate points
+- no separate named structured location sits in the >100 to <=300 block band around the New Drabyel source hub; Explorer's Campsite is the nearest next named macro landmark at roughly 313 blocks from the current opening reference
+- early progression therefore uses compact live-resolved micro-content around the hub instead of treating the lack of a named macro POI as empty travel space
+- Av'Sal remains preserved content, but its first briefing stays behind the local 2-of-3 investigation plus an additional meaningful Capital Valley milestone
+
+Physical-service / navigation repair:
+- world-map fast-travel markers are informational only; clicking the world map no longer teleports the player
+- server authority accepts fast travel only while the player is physically near the New Drabyel TRAVEL service
+- waystation travel uses a short departure fade, delayed server-authoritative safe teleport, then arrival fade
+- current tracked physical objective outline is projected per player and only within the final 52-block approach
+- the server no longer sets a shared glowing tag from the union of all players' quest targets
+- the entrance greeter player-facing name is now `문지기 아렌`, matching the current masculine model read
+- a dedicated travel sound asset is still pending; no battle/skill sound was repurposed as a fake final travel cue
+
+Validation for this checkpoint:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- NEW JAR: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+No build/CI was requested for this content batch; validation remains intentionally deferred until a larger playable unit is ready.

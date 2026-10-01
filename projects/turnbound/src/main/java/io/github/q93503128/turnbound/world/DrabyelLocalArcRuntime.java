@@ -38,7 +38,7 @@ final class DrabyelLocalArcRuntime {
         if(player==null||player.level().getServer()==null)return null;
         Set<String> flags=ExternalWorldSavedData.get(player.level().getServer()).onboardingFlags(player.getUUID());
         if(offerReady(player))return new DrehmalContextualOnboarding.Guidance(
-                "뉴 드라비엘 입구의 라나에게 주변 순찰 상황을 확인하십시오.",
+                "뉴 드라비엘 입구의 아렌에게 주변 순찰 상황을 확인하십시오.",
                 "새 지역으로 멀리 떠나기 전에 마을 바로 바깥부터 확인합니다.");
         if(!DrabyelLocalArcProgress.active(flags))return null;
         return new DrehmalContextualOnboarding.Guidance(
@@ -113,7 +113,7 @@ final class DrabyelLocalArcRuntime {
                 String text="CHEST".equals(plan.itemVisual())
                         ?"배송 상자에는 마을 바깥으로 급히 빠져나간 흔적과 끊어진 운송 표식이 남아 있습니다."
                         :"찢긴 순찰 기록에는 같은 구간에서 반복적으로 길을 잃었다는 메모가 남아 있습니다.";
-                FieldNetwork.showDialogue(player,plan.playerLabel(),text+(completed?"\n\n두 흔적이 같은 구간을 가리킵니다. 라나에게 돌아갈 만큼은 확인했습니다.":""));
+                FieldNetwork.showDialogue(player,plan.playerLabel(),text+(completed?"\n\n두 흔적이 같은 구간을 가리킵니다. 아렌에게 돌아갈 만큼은 확인했습니다.":""));
             }
             break;
         }
@@ -189,7 +189,7 @@ final class DrabyelLocalArcRuntime {
         item.setPos(p.x()+0.5D,p.y()+0.35D,p.z()+0.5D);item.setDeltaMovement(Vec3.ZERO);item.setNoGravity(true);item.setInvulnerable(true);
         item.setPickUpDelay(32767);item.setCustomName(Component.literal(plan.playerLabel()).withStyle(ChatFormatting.GOLD));
         boolean near=false;for(ServerPlayer player:level.players())if(ExternalWorldBootstrap.active(player)&&item.distanceToSqr(player)<=64.0D){near=true;break;}
-        item.setCustomNameVisible(near);item.setGlowingTag(QuestTargetGlowService.shouldGlow(level,plan.locator()));
+        item.setCustomNameVisible(near);item.setGlowingTag(false);
     }
 
     private static void discard(ServerLevel level,Map<String,UUID> objects,String locator){

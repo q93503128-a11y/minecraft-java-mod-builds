@@ -154,7 +154,7 @@ final class DrehmalFieldNpcRuntime {
             double d=actor.distanceToSqr(player);if(d<best){best=d;nearest=player;}
         }
         actor.setCustomNameVisible(nearest!=null&&best<=36.0D);
-        actor.setGlowingTag(QuestTargetGlowService.shouldGlow(level,npc.locator()));
+        actor.setGlowingTag(false);
         if(nearest!=null&&best<=64.0D)face(actor,nearest);
     }
 

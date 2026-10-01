@@ -7,11 +7,13 @@ import io.github.q93503128.turnbound.client.ClientAudioNetwork;
 import io.github.q93503128.turnbound.client.ClientAudioPlayback;
 import io.github.q93503128.turnbound.client.ClientBattleNetwork;
 import io.github.q93503128.turnbound.client.ClientFieldNetwork;
+import io.github.q93503128.turnbound.client.ClientQuestTargetOutlineState;
 import io.github.q93503128.turnbound.client.ClientMetaNetwork;
 import io.github.q93503128.turnbound.client.ClientMultiplayerPartyNetwork;
 import io.github.q93503128.turnbound.client.ClientUiFeedbackLayer;
 import io.github.q93503128.turnbound.client.ClientWorldLoadingBootstrap;
 import io.github.q93503128.turnbound.client.DrehmalAutoInstaller;
+import io.github.q93503128.turnbound.client.FastTravelTransitionLayer;
 import io.github.q93503128.turnbound.client.FieldInteractionPromptLayer;
 import io.github.q93503128.turnbound.client.FieldLocationBannerLayer;
 import io.github.q93503128.turnbound.client.DrehmalMinimapLayer;
@@ -41,6 +43,7 @@ public final class TurnboundClient {
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "quest_guide"), new QuestGuideLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle_status"), new BattleStatusLayer());
             event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "ui_feedback"), new ClientUiFeedbackLayer());
+            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "fast_travel_transition"), new FastTravelTransitionLayer());
         });
         NeoForge.EVENT_BUS.addListener(VanillaHudPolicy::onGuiLayer);
         NeoForge.EVENT_BUS.addListener(BattleCameraController::onDetachedCameraDistance);
@@ -50,6 +53,8 @@ public final class TurnboundClient {
         NeoForge.EVENT_BUS.addListener(MetaMenuKeyHandler::onKey);
         NeoForge.EVENT_BUS.addListener(DrehmalAutoInstaller::onTick);
         NeoForge.EVENT_BUS.addListener(ClientWorldLoadingBootstrap::onTick);
+        NeoForge.EVENT_BUS.addListener(ClientQuestTargetOutlineState::onTick);
+        NeoForge.EVENT_BUS.addListener(FastTravelTransitionLayer::onTick);
         NeoForge.EVENT_BUS.addListener(ClientAudioPlayback::onTick);
     }
 }

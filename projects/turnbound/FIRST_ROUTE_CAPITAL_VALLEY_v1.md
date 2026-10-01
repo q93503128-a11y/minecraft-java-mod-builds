@@ -127,7 +127,7 @@ New Drabyel north gate arrival
 → short north-road patrol (CV_DRABYEL_ROAD)
 → return to New Drabyel
 → blacksmith / market / waystation / summon NPC onboarding
-→ return to entrance guide Lara
+→ return to entrance guide 아렌
 → local main quest: inspect any 2 of 3 targets in the 64-110 block town ring
 → Capital Valley regional choice
 → Av'Sal remains locked until one additional meaningful regional milestone
@@ -147,10 +147,10 @@ Player state:
 - no equipment-management wall
 
 World:
-- begin inside the Explorer's Guide camp breathing ring
-- let the player look around and interact before any combat
-- make the road toward New Drabyel readable within a few seconds
-- objective phrasing should be diegetic: reach the settlement down the road, not “Tutorial Step 1”
+- begin at the source-backed north entrance of New Drabyel, not the retired Explorer-camp start
+- let the player read the gate, entrance guide and nearby town silhouette before any combat
+- after guide dialogue and one party check, send the player only to the short north-road patrol
+- objective phrasing should stay diegetic: respond to the gate patrol problem, not “Tutorial Step 1”
 
 Tutorial:
 - movement
@@ -614,9 +614,9 @@ NPC 역할:
 The immediate post-hub loop is deliberately compact.
 
 Main-quest giver:
-- entrance guide 문지기 라나
+- entrance guide 문지기 아렌
 - 북문 순찰 is a MAIN quest activated by the first greeter conversation
-- after the patrol and physical facility visits, Lara gives 문 밖의 세 흔적
+- after the patrol and physical facility visits, 아렌 gives 문 밖의 세 흔적
 
 문 밖의 세 흔적 uses a 2-of-3 structure:
 - 버려진 배송 상자 — object clue

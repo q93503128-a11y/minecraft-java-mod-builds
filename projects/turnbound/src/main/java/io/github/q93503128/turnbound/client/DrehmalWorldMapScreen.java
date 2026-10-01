@@ -65,19 +65,6 @@ final class DrehmalWorldMapScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            for (TravelHit hit : travelHits) {
-                if (!hit.contains(event.x(), event.y()) || hit.travel().current()) continue;
-                ClientPacketDistributor.sendToServer(new FieldCommandPayload("TRAVEL|" + hit.travel().id()));
-                onClose();
-                return true;
-            }
-        }
-        return super.mouseClicked(event, doubleClick);
-    }
-
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (scrollY == 0.0D) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
 
@@ -209,7 +196,6 @@ final class DrehmalWorldMapScreen extends Screen {
             if (mapSize >= 150) graphics.text(font, Component.literal(UiTextLayout.fit(navigation.label(), 112)), nsx + 8, nsy - 4, GOLD, false);
         }
 
-        travelHits.clear();
         for (FieldUiSnapshot.Travel travel : ClientFieldState.snapshot().travels()) {
             if (!travel.unlocked()) continue;
             DrehmalFastTravelCatalog.Node node = DrehmalFastTravelCatalog.node(travel.id());
@@ -217,7 +203,6 @@ final class DrehmalWorldMapScreen extends Screen {
             int tx = mapX + worldToMap(node.mapX(), view.minX, view.span, mapSize);
             int ty = mapY + worldToMap(node.mapZ(), view.minZ, view.span, mapSize);
             drawFastTravelMarker(graphics, tx, ty, travel.current());
-            travelHits.add(new TravelHit(travel, tx - 7, ty - 7, tx + 8, ty + 8));
         }
 
         DrehmalWorldProfile.Anchor focus = hovered != null ? hovered : nearest(anchors, px, pz);
@@ -268,7 +253,7 @@ final class DrehmalWorldMapScreen extends Screen {
             infoCursor += 76;
         }
         if (wide && infoCursor + 30 < infoY + infoH) {
-            String note = "발견한 ◇ 거점을 클릭하면 빠르게 이동합니다. 노선은 지역 단계에서 대략 표시되며, 블록 단계에서는 좌표와 격자를 기준으로 세부 위치를 확인합니다.";
+            String note = "발견한 ◇ 거점은 역참에서 목적지로 선택할 수 있습니다. 노선은 지역 단계에서 대략 표시되며, 블록 단계에서는 좌표와 격자를 기준으로 세부 위치를 확인합니다.";
             int noteY = infoCursor;
             for (String line : UiTextLayout.wrap(note, infoW - 18, 4)) {
                 if (noteY + font.lineHeight >= infoY + infoH - 6) break;

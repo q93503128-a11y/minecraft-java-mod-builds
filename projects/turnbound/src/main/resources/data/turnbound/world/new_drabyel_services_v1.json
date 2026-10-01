@@ -5,7 +5,7 @@
     {
       "locator": "turnbound:service/new_drabyel/entrance_greeter",
       "role": "GREETER",
-      "playerLabel": "문지기 라나",
+      "playerLabel": "문지기 아렌",
       "facilityHint": "",
       "zone": "ENTRANCE",
       "visualAsset": "DRABYEL_GREETER",

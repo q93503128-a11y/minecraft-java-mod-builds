@@ -1,8 +1,10 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.network.FieldCommandPayload;
+import io.github.q93503128.turnbound.network.FastTravelTransitionPayload;
 import io.github.q93503128.turnbound.network.FieldSnapshotPayload;
 import io.github.q93503128.turnbound.network.NpcDialoguePayload;
+import io.github.q93503128.turnbound.network.QuestTargetOutlinePayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -17,6 +19,8 @@ public final class FieldNetwork {
         PayloadRegistrar registrar = event.registrar(PROTOCOL);
         registrar.playToClient(FieldSnapshotPayload.TYPE, FieldSnapshotPayload.STREAM_CODEC);
         registrar.playToClient(NpcDialoguePayload.TYPE, NpcDialoguePayload.STREAM_CODEC);
+        registrar.playToClient(QuestTargetOutlinePayload.TYPE, QuestTargetOutlinePayload.STREAM_CODEC);
+        registrar.playToClient(FastTravelTransitionPayload.TYPE, FastTravelTransitionPayload.STREAM_CODEC);
         registrar.playToServer(
                 FieldCommandPayload.TYPE,
                 FieldCommandPayload.STREAM_CODEC,
@@ -30,11 +34,21 @@ public final class FieldNetwork {
     public static void sync(ServerPlayer player, FieldUiSnapshot snapshot) {
         FieldUiSnapshot projected = AsterMarchFastTravelService.project(player, snapshot);
         PacketDistributor.sendToPlayer(player, new FieldSnapshotPayload(FieldUiCodec.encode(projected)));
+        PacketDistributor.sendToPlayer(player, new QuestTargetOutlinePayload(""));
     }
 
     /** External authored-world state must not receive retired Aster March coordinate projections. */
     public static void syncExternal(ServerPlayer player, FieldUiSnapshot snapshot) {
         PacketDistributor.sendToPlayer(player, new FieldSnapshotPayload(FieldUiCodec.encode(snapshot)));
+        PacketDistributor.sendToPlayer(player,
+                new QuestTargetOutlinePayload(QuestTargetGlowService.targetEntityIds(player, snapshot)));
+    }
+
+    static void fastTravelTransition(ServerPlayer player, String phase, String label) {
+        if (player == null) return;
+        String cleanPhase = phase == null ? "" : phase.replace('\n', ' ').replace('\r', ' ').trim();
+        String cleanLabel = label == null ? "" : label.replace('\n', ' ').replace('\r', ' ').trim();
+        PacketDistributor.sendToPlayer(player, new FastTravelTransitionPayload(cleanPhase + "\n" + cleanLabel));
     }
 
     /** Short ownership handoff: field HUD yields before the first battle snapshot arrives. */

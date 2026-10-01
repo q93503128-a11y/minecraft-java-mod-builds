@@ -84,7 +84,7 @@ final class AvsalExpansionRuntime {
         if (player == null) return null;
         if (shouldGuideBriefing(player)) {
             return new DrehmalContextualOnboarding.Guidance(
-                    "뉴 드라비엘 입구의 라나에게 먼 서쪽 길의 소식을 확인하십시오.",
+                    "뉴 드라비엘 입구의 아렌에게 먼 서쪽 길의 소식을 확인하십시오.",
                     "지도와 지역 준비가 끝났다면 입구 안내원이 아브살 원정 의뢰를 이어 줍니다.");
         }
         if (!active(player)) return null;

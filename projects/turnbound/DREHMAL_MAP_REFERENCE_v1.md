@@ -240,7 +240,7 @@ data/locations.json:
 
 data/paths.geojson:
 - 644 path features
-- 11,070 path coordinate points
+- 11,066 LineString coordinate points (plus 1 Polygon feature)
 - the main path network spans roughly 10.6k × 10.5k blocks
 
 Near New Drabyel, named source landmarks are already hundreds of blocks apart: Explorer's Campsite is about 354 blocks straight-line, while Av'Sal center is about 772 blocks away. Therefore TURNBOUND early-game content should use compact live-resolved micro-objectives around the hub rather than forcing the player to commute between named macro landmarks.

@@ -155,7 +155,7 @@ final class DrehmalContextualOnboarding {
         }
         if (DrabyelLocalArcProgress.offerReady(clears, flags, roles)) {
             return new Guidance(
-                    "뉴 드라비엘 입구의 라나에게 마을 주변 상황을 다시 확인하십시오.",
+                    "뉴 드라비엘 입구의 아렌에게 마을 주변 상황을 다시 확인하십시오.",
                     "먼 지역으로 떠나기 전에 마을 바로 바깥의 짧은 지역 메인 퀘스트를 받습니다.");
         }
         if (DrabyelLocalArcProgress.active(flags)) {
@@ -165,7 +165,7 @@ final class DrehmalContextualOnboarding {
         }
         if (!DrabyelLocalArcProgress.complete(flags)) {
             return new Guidance(
-                    "뉴 드라비엘에서 시설을 둘러보고 입구의 라나에게 돌아가십시오.",
+                    "뉴 드라비엘에서 시설을 둘러보고 입구의 아렌에게 돌아가십시오.",
                     "상점·강화·소환·이동은 메뉴 바로가기가 아니라 실제 담당 NPC에게 가야 이용할 수 있습니다.");
         }
         if (!flags.contains(HUB_ROUTE_REVIEWED)) {
@@ -175,7 +175,7 @@ final class DrehmalContextualOnboarding {
         }
         if (AvsalExpansionProgress.briefingReady(clears, flags)) {
             return new Guidance(
-                    "마을 입구의 라나에게 먼 서쪽 길의 소식을 확인하십시오.",
+                    "마을 입구의 아렌에게 먼 서쪽 길의 소식을 확인하십시오.",
                     "아브살은 뉴 드라비엘 주변 진행과 캐피털 밸리의 의미 있는 목표를 마친 뒤 열립니다.");
         }
         return new Guidance(

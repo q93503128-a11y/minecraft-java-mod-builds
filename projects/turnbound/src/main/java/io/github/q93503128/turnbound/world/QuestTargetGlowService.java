@@ -2,33 +2,57 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.server.level.ServerLevel;
-import java.util.*;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-/** Per-tick server target set used by physical NPC/object outline presentation. */
+/** Resolves only this player's nearby tracked physical objective into client-local outline entity ids. */
 final class QuestTargetGlowService {
-    private record Cache(long tick,Set<String> ids){}
-    private static final Map<ServerLevel,Cache> CACHE=new IdentityHashMap<>();
-    private QuestTargetGlowService(){}
+    private static final double OUTLINE_RADIUS = 52.0D;
+    private static final double OUTLINE_RADIUS_SQR = OUTLINE_RADIUS * OUTLINE_RADIUS;
+    private static final String SERVICE_PREFIX = "turnbound_drabyel_service:";
+    private static final String FIELD_NPC_PREFIX = "turnbound_drehmal_field_npc:";
+    private static final String LOCAL_CLUE_PREFIX = "turnbound_drabyel_local_clue:";
 
-    static boolean shouldGlow(ServerLevel level,String locator){
-        return level!=null&&locator!=null&&!locator.isBlank()&&targets(level).contains(locator);
-    }
+    private QuestTargetGlowService() {}
 
-    private static Set<String> targets(ServerLevel level){
-        long tick=level.getGameTime();
-        Cache cached=CACHE.get(level);
-        if(cached!=null&&cached.tick()==tick)return cached.ids();
-        Set<String> ids=new LinkedHashSet<>();
-        for(var player:level.players()){
-            if(!ExternalWorldBootstrap.active(player)||player.isSpectator()||BattleSessionManager.exists(player))continue;
-            FieldUiSnapshot snapshot=DrehmalFirstRouteRuntime.explorationSnapshot(player);
-            if(snapshot.navigation().active())ids.add(snapshot.navigation().id());
-            for(var point:snapshot.mapPoints())if(point.objective()&&point.active())ids.add(point.id());
+    static String targetEntityIds(ServerPlayer player, FieldUiSnapshot snapshot) {
+        if (player == null || snapshot == null || !snapshot.active() || player.isSpectator()
+                || BattleSessionManager.exists(player) || !(player.level() instanceof ServerLevel level)) return "";
+        FieldUiSnapshot.Navigation navigation = snapshot.navigation();
+        if (navigation == null || !navigation.active()) return "";
+
+        String target = navigation.id();
+        List<Integer> ids = new ArrayList<>();
+        for (Entity entity : level.getEntitiesOfClass(Entity.class, player.getBoundingBox().inflate(OUTLINE_RADIUS))) {
+            if (entity == player || player.distanceToSqr(entity) > OUTLINE_RADIUS_SQR) continue;
+            if (matches(target, entity)) ids.add(entity.getId());
         }
-        Set<String> frozen=Set.copyOf(ids);
-        CACHE.put(level,new Cache(tick,frozen));
-        return frozen;
+        Collections.sort(ids);
+        if (ids.isEmpty()) return "";
+        StringBuilder result = new StringBuilder();
+        for (int id : ids) {
+            if (result.length() > 0) result.append(',');
+            result.append(id);
+        }
+        return result.toString();
     }
 
-    static void clear(){CACHE.clear();}
+    private static boolean matches(String target, Entity entity) {
+        if (target == null || target.isBlank() || entity == null) return false;
+        for (String tag : entity.entityTags()) {
+            if (tag.startsWith(SERVICE_PREFIX) && target.equals(tag.substring(SERVICE_PREFIX.length()))) return true;
+            if (tag.startsWith(LOCAL_CLUE_PREFIX) && target.equals(tag.substring(LOCAL_CLUE_PREFIX.length()))) return true;
+            if (!tag.startsWith(FIELD_NPC_PREFIX)) continue;
+            String npcLocator = tag.substring(FIELD_NPC_PREFIX.length());
+            if (target.equals(npcLocator)) return true;
+            DrehmalFieldNpcCatalog.Npc npc = DrehmalFieldNpcCatalog.npc(npcLocator);
+            if (npc != null && target.equals(npc.siteLocator())) return true;
+        }
+        return false;
+    }
+
+    static void clear() {}
 }

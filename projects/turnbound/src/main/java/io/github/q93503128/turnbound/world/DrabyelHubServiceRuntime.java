@@ -277,7 +277,7 @@ final class DrabyelHubServiceRuntime {
         // R_PG-style field readability: service identity belongs to the close-range interaction prompt,
         // not a nameplate floating over town NPCs from across the street.
         actor.setCustomNameVisible(false);
-        actor.setGlowingTag(QuestTargetGlowService.shouldGlow(level,service.locator()));
+        actor.setGlowingTag(false);
 
         if(nearest!=null&&distance<=service.interactionRadius()+2.0D){
             face(actor,nearest);
