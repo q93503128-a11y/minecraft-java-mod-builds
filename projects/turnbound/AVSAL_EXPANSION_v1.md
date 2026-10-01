@@ -323,7 +323,7 @@ Production gate:
 - complete the short New Drabyel local main quest first;
 - then clear at least one meaningful Capital Valley regional objective (north-road watch, Warning Cave Elite, or Graul);
 - review the map;
-- only then can entrance guide Lara brief the Av'Sal expedition.
+- only then can entrance guide Aren brief the Av'Sal expedition.
 
 First traversal may establish world scale. Repeated traversal must rely on discovered waypoints/shortcuts and later may use a dedicated mount system. Empty walking is never a progression requirement.
 
