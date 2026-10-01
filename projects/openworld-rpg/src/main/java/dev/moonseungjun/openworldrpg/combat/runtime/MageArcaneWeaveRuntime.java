@@ -184,9 +184,11 @@ public final class MageArcaneWeaveRuntime {
                         .isPresent();
     }
 
-    private static boolean isWeaveConsumer(String spellId) {
+    static boolean isWeaveConsumer(String spellId) {
         return ProjectSpellSpec.ARC_BOLT_ID.equals(spellId)
-                || ProjectSpellSpec.PHASE_STEP_ID.equals(spellId);
+                || ProjectSpellSpec.PHASE_STEP_ID.equals(spellId)
+                || ProjectSpellSpec.FROST_RING_ID.equals(spellId)
+                || ProjectSpellSpec.FLAME_BURST_ID.equals(spellId);
     }
 
     public record CastApplication(

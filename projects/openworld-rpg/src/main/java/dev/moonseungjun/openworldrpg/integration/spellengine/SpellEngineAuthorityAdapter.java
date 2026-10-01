@@ -15,6 +15,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcBoltRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageFlameBurstRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageFrostRingRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MagePhaseStepRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
@@ -325,6 +326,16 @@ public final class SpellEngineAuthorityAdapter {
                 )
         );
 
+        ProjectSpellSpec flameBurst = ProjectSpellSpec.flameBurst();
+        AUTHORITY.registerPolicy(
+                flameBurst.id(),
+                new ProjectSpellTransactionPolicy(
+                        flameBurst,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec radiantLance = ProjectSpellSpec.radiantLance();
         AUTHORITY.registerPolicy(
                 radiantLance.id(),
@@ -446,6 +457,12 @@ public final class SpellEngineAuthorityAdapter {
                 && player instanceof ServerPlayer serverPlayer
                 && (!acceptedStage || firstAcceptedCast)
                 && !MageFrostRingRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
+        if (ProjectSpellSpec.FLAME_BURST_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && (!acceptedStage || firstAcceptedCast)
+                && !MageFlameBurstRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
         if (ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId)
@@ -588,6 +605,22 @@ public final class SpellEngineAuthorityAdapter {
                     }
                 } else if (ProjectSpellSpec.FROST_RING_ID.equals(spellId)) {
                     if (!MageFrostRingRuntime.onAcceptedCast(
+                            serverPlayer,
+                            weave.weaveConsumed(),
+                            weave.weaveEffectMagnitudeMultiplier(),
+                            gameTick
+                    )) {
+                        return invokeStatic(attemptNone);
+                    }
+                    if (weave.weaveConsumed()) {
+                        MageArcaneWeaveRuntime.consumeEmpoweredCast(
+                                serverPlayer.getUUID(),
+                                spellId,
+                                gameTick
+                        );
+                    }
+                } else if (ProjectSpellSpec.FLAME_BURST_ID.equals(spellId)) {
+                    if (!MageFlameBurstRuntime.onAcceptedCast(
                             serverPlayer,
                             weave.weaveConsumed(),
                             weave.weaveEffectMagnitudeMultiplier(),
@@ -843,6 +876,9 @@ public final class SpellEngineAuthorityAdapter {
                 } else if (ProjectSpellSpec.FROST_RING_ID.equals(spellId)
                         && player instanceof ServerPlayer serverPlayer) {
                     MageFrostRingRuntime.release(serverPlayer);
+                } else if (ProjectSpellSpec.FLAME_BURST_ID.equals(spellId)
+                        && player instanceof ServerPlayer serverPlayer) {
+                    MageFlameBurstRuntime.release(serverPlayer, gameTick);
                 } else if (ProjectSpellSpec.requiredRootClass(spellId)
                         .filter(RootClass.WARRIOR::equals)
                         .isPresent()
@@ -1038,6 +1074,28 @@ public final class SpellEngineAuthorityAdapter {
                     hitPosition
             );
             return impactResultConstructor.newInstance(hit.accepted(), false);
+        }
+
+        if (ProjectSpellSpec.FLAME_BURST_ID.equals(spellId)) {
+            if (!(player instanceof ServerPlayer serverCaster)
+                    || !(target instanceof LivingEntity livingTarget)
+                    || livingTarget.level() != serverCaster.level()) {
+                return impactResultConstructor.newInstance(false, false);
+            }
+            Object rawPosition = invokeAccessor(impactContext, "position");
+            Vec3 center = rawPosition instanceof Vec3 vec
+                    ? vec
+                    : livingTarget.position();
+            var pulse = MageFlameBurstRuntime.applyCloudPulse(
+                    serverCaster,
+                    livingTarget,
+                    center,
+                    serverCaster.level().getGameTime()
+            );
+            return impactResultConstructor.newInstance(
+                    pulse.accepted(),
+                    false
+            );
         }
 
         if (ProjectSpellSpec.MEND_ID.equals(spellId)) {

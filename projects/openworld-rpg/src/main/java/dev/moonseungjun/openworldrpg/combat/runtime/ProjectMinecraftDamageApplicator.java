@@ -45,6 +45,19 @@ public final class ProjectMinecraftDamageApplicator {
         return applyResolved(attacker, target, finalDamage, PROJECT_DIRECT_MAGIC);
     }
 
+    public static boolean applyTimedMagic(
+            LivingEntity attacker,
+            LivingEntity target,
+            double finalDamage
+    ) {
+        return applyResolved(
+                attacker,
+                target,
+                finalDamage,
+                PROJECT_DIRECT_MAGIC
+        );
+    }
+
     public static boolean applyDirectPhysical(
             LivingEntity attacker,
             LivingEntity target,

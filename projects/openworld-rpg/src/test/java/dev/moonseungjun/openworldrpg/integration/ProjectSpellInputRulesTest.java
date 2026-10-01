@@ -104,6 +104,18 @@ class ProjectSpellInputRulesTest {
         }
         assertFalse(
                 ProjectSpellInputRules.suppressHeldRepeat(
+                        ProjectSpellSpec.FLAME_BURST_ID,
+                        true
+                )
+        );
+        assertTrue(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        ProjectSpellSpec.FLAME_BURST_ID,
+                        false
+                )
+        );
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
                         "other_mod:spell",
                         false
                 )

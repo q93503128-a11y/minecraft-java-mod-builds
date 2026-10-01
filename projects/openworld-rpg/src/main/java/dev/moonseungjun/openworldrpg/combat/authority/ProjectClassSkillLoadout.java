@@ -30,6 +30,7 @@ public final class ProjectClassSkillLoadout {
                 case 0 -> Optional.of(ProjectSpellSpec.ARC_BOLT_ID);
                 case 1 -> Optional.of(ProjectSpellSpec.PHASE_STEP_ID);
                 case 2 -> Optional.of(ProjectSpellSpec.FROST_RING_ID);
+                case 3 -> Optional.of(ProjectSpellSpec.FLAME_BURST_ID);
                 default -> Optional.empty();
             };
             case CLERIC -> switch (slotIndex) {

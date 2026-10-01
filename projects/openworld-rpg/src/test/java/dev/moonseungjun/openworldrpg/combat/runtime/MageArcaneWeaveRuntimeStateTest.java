@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectSpellSpec;
 import org.junit.jupiter.api.Test;
 
 class MageArcaneWeaveRuntimeStateTest {
@@ -78,6 +79,22 @@ class MageArcaneWeaveRuntimeStateTest {
         assertEquals(110L, damage.remainingTicks());
         assertTrue(state.atTwoSigils(129L));
         assertFalse(state.atTwoSigils(130L));
+    }
+
+    @Test
+    void everyPublishedMageActiveIsAWeaveConsumer() {
+        assertTrue(MageArcaneWeaveRuntime.isWeaveConsumer(
+                ProjectSpellSpec.ARC_BOLT_ID
+        ));
+        assertTrue(MageArcaneWeaveRuntime.isWeaveConsumer(
+                ProjectSpellSpec.PHASE_STEP_ID
+        ));
+        assertTrue(MageArcaneWeaveRuntime.isWeaveConsumer(
+                ProjectSpellSpec.FROST_RING_ID
+        ));
+        assertTrue(MageArcaneWeaveRuntime.isWeaveConsumer(
+                ProjectSpellSpec.FLAME_BURST_ID
+        ));
     }
 
     @Test

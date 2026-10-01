@@ -1,0 +1,151 @@
+{
+  "school": "spell_power:fire",
+  "range": 10.0,
+  "tier": 1,
+  "group": "mage_arcane",
+  "active": {
+    "cast": {
+      "duration": 0.0
+    }
+  },
+  "release": {
+    "animation": {
+      "id": "spell_engine:one_handed_area_release_ground_left_to_right",
+      "speed": 1.0
+    },
+    "sound": {
+      "id": "spell_engine:generic_fire_release",
+      "randomness": 0.03
+    }
+  },
+  "target": {
+    "type": "AIM",
+    "aim": {
+      "required": false,
+      "sticky": false,
+      "use_caster_as_fallback": false,
+      "reposition_vertically": 0.0
+    }
+  },
+  "deliver": {
+    "type": "CLOUD",
+    "clouds": [
+      {
+        "volume": {
+          "radius": 3.5,
+          "area": {
+            "vertical_range_multiplier": 2.0
+          }
+        },
+        "time_to_live_seconds": 2.5,
+        "impact_tick_interval": 10,
+        "impact_cap": 0,
+        "placement": {
+          "force_onto_ground": true
+        },
+        "client_data": {
+          "light_level": 13,
+          "particle_spawn_interval": 2,
+          "particles": [
+            {
+              "id": "spell_engine:flame_ground",
+              "appearance": {},
+              "batch": {
+                "count": 0.45,
+                "shape": "CIRCLE",
+                "anchor": "ENTITY",
+                "vertical_origin": 0.05,
+                "min_speed": 0.02,
+                "max_speed": 0.10,
+                "width_factor": 1.0
+              }
+            },
+            {
+              "id": "spell_engine:flame_spark",
+              "appearance": {},
+              "batch": {
+                "count": 0.25,
+                "shape": "CIRCLE",
+                "anchor": "ENTITY",
+                "vertical_origin": 0.12,
+                "min_speed": 0.04,
+                "max_speed": 0.22,
+                "width_factor": 1.0
+              }
+            }
+          ]
+        },
+        "spawn": {
+          "sound": {
+            "id": "spell_engine:generic_fire_release",
+            "randomness": 0.03
+          },
+          "visuals": {
+            "particles": [
+              {
+                "id": "spell_engine:fire_explosion",
+                "appearance": {},
+                "batch": {
+                  "count": 2.0,
+                  "shape": "NONE",
+                  "anchor": "ENTITY"
+                }
+              },
+              {
+                "id": "spell_engine:flame_medium_b",
+                "appearance": {},
+                "batch": {
+                  "count": 18.0,
+                  "shape": "CIRCLE",
+                  "anchor": "ENTITY",
+                  "vertical_origin": 0.08,
+                  "min_speed": 0.12,
+                  "max_speed": 0.45,
+                  "width_factor": 1.0
+                }
+              }
+            ]
+          }
+        },
+        "impact": {
+          "visuals": {
+            "particles": [
+              {
+                "id": "spell_engine:flame_spark",
+                "appearance": {},
+                "batch": {
+                  "count": 5.0,
+                  "shape": "SPHERE",
+                  "anchor": "ENTITY",
+                  "min_speed": 0.08,
+                  "max_speed": 0.22
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "impacts": [
+    {
+      "action": {
+        "type": "CUSTOM",
+        "custom": {
+          "intent": "HARMFUL",
+          "handler": "openworld_rpg:project_impact"
+        }
+      }
+    }
+  ],
+  "cost": {
+    "batching": false,
+    "exhaust": 0.0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0.0,
+      "duration": 0.0,
+      "hosting_item": false
+    }
+  }
+}

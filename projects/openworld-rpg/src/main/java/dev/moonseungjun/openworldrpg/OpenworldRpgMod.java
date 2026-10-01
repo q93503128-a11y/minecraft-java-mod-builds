@@ -65,11 +65,13 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageFlameBurstRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageFrostRingRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MagePhaseStepRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBurningRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHostileStatusRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
@@ -137,6 +139,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             HunterSkyfallRuntime.tick(server);
             MagePhaseStepRuntime.tick(server);
             MageFrostRingRuntime.tick(server);
+            MageFlameBurstRuntime.tick(server);
             MageArcaneWeaveRuntime.tick(server);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -147,6 +150,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             SanctuaryRuntime.tick(server);
             WarriorSkillRuntime.tick(server);
             ProjectHostileStatusRuntime.tick(server);
+            ProjectBurningRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);
             ProjectCombatNetworking.flushDodgeAccepted(server);
             if (Math.floorMod(server.getTickCount(), 20) == 0) {
@@ -217,6 +221,8 @@ public final class OpenworldRpgMod implements ModInitializer {
             MageArcaneWeaveRuntime.reset(newPlayer.getUUID());
             MagePhaseStepRuntime.reset(newPlayer.getUUID());
             MageFrostRingRuntime.reset(newPlayer.getUUID());
+            MageFlameBurstRuntime.reset(newPlayer.getUUID());
+            ProjectBurningRuntime.removeSource(newPlayer.getUUID());
             GuardianResolveRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
@@ -242,6 +248,8 @@ public final class OpenworldRpgMod implements ModInitializer {
             MageArcaneWeaveRuntime.disconnect(playerId);
             MagePhaseStepRuntime.disconnect(playerId);
             MageFrostRingRuntime.disconnect(playerId);
+            MageFlameBurstRuntime.disconnect(playerId);
+            ProjectBurningRuntime.removeSource(playerId);
             GuardianResolveRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);
