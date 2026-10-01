@@ -1,4 +1,4 @@
-name: Probe Campfire Candidate World
+name: Probe Campfire Canonical World Runtime
 
 on:
   workflow_dispatch:
@@ -7,6 +7,8 @@ on:
     paths:
       - '.github/workflows/probe-campfire-world.yml'
       - 'projects/campfire-sessions/tools/probe_candidate_world.py'
+      - 'projects/campfire-sessions/build.gradle'
+      - 'projects/campfire-sessions/gradle.properties'
 
 permissions:
   contents: read
@@ -27,7 +29,7 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Download Geming400 7-island candidate
+      - name: Download canonical Geming400 island world
         shell: bash
         run: |
           set -euo pipefail
@@ -51,13 +53,14 @@ jobs:
           done
           test "$ok" = 1
           sha256sum "$OUT" | tee build/world-probe/world.sha256
+          echo '7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b  build/world-probe/island.zip' | sha256sum -c -
           unzip -q "$OUT" -d build/world-probe/unpacked
           echo 'candidate level.dat roots:'
           find build/world-probe/unpacked -maxdepth 4 -type f -name level.dat -print
           echo 'top archive entries:'
           unzip -l "$OUT" | sed -n '1,80p'
 
-      - name: Analyze real world regions
+      - name: Analyze canonical world regions
         shell: bash
         run: |
           set -euo pipefail
@@ -66,11 +69,33 @@ jobs:
           python3 tools/probe_candidate_world.py "$WORLD_ROOT" | tee build/world-probe/probe.log
           cp "$(dirname "$WORLD_ROOT")/campfire-world-probe.json" build/world-probe/campfire-world-probe.json
 
-      - name: Test Minecraft 26.2 server world load
+      - name: Verify full runtime stack and canonical world server load
         shell: bash
         run: |
           set -euo pipefail
           WORLD_ROOT="$(python3 -c "import pathlib; base=pathlib.Path('build/world-probe/unpacked'); cs=[(len(list((p.parent/'region').glob('r.*.*.mca'))) if (p.parent/'region').is_dir() else 0, len(p.parent.parts), str(p.parent)) for p in base.rglob('level.dat')]; print(max(cs)[2] if cs else '')")"
+
+          ./gradlew --no-daemon dependencies --configuration runtimeClasspath > build/world-probe/runtime-classpath.txt
+          for dep in \
+            'croptopia' \
+            'epherolib' \
+            'cooking-for-blockheads' \
+            'balm' \
+            'shroomcrafted' \
+            'puzzles-lib' \
+            'sophisticated-backpacks' \
+            'sophisticated-core' \
+            'traveler-tool-belt' \
+            'player-animation-library' \
+            'peterwolfs-boats-ships' \
+            'geckolib-neoforge-26.2'
+          do
+            grep -qi "$dep" build/world-probe/runtime-classpath.txt || {
+              echo "missing expected runtime dependency: $dep"
+              exit 1
+            }
+          done
+
           rm -rf run/world
           mkdir -p run/world
           cp -a "$WORLD_ROOT"/. run/world/
@@ -101,9 +126,16 @@ jobs:
           kill "$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
           if [ "$success" = 1 ]; then
-            echo 'WORLD_LOAD_26_2=SUCCESS' | tee build/world-probe/world-load-status.txt
+            {
+              echo 'WORLD_LOAD_26_2=SUCCESS'
+              echo 'FULL_RUNTIME_STACK_SERVER_LOAD=SUCCESS'
+              echo 'CANONICAL_WORLD_HASH_VERIFIED=YES'
+            } | tee build/world-probe/world-load-status.txt
           else
-            echo 'WORLD_LOAD_26_2=FAIL' | tee build/world-probe/world-load-status.txt
+            {
+              echo 'WORLD_LOAD_26_2=FAIL'
+              echo 'FULL_RUNTIME_STACK_SERVER_LOAD=FAIL'
+            } | tee build/world-probe/world-load-status.txt
             tail -n 200 build/world-probe/server-load.log
             exit 1
           fi
@@ -119,4 +151,5 @@ jobs:
             projects/campfire-sessions/build/world-probe/world.sha256
             projects/campfire-sessions/build/world-probe/world-load-status.txt
             projects/campfire-sessions/build/world-probe/server-load.log
+            projects/campfire-sessions/build/world-probe/runtime-classpath.txt
           if-no-files-found: warn
