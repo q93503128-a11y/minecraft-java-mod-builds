@@ -17,17 +17,16 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
  * Review-only authored terrain pass for the second Campfire village slice.
  *
  * <p>The first client review rejected isolated per-building pads. This pass
- * shapes three coherent village levels first, then lays a connected soft path
- * network around the externally authored structures. The outer mountain and
- * coastline remain outside these bounded work zones.</p>
+ * shapes the broad civic and upper terraces first, then links them to the
+ * natural waterfront/dock level with a connected soft path network. The outer
+ * mountain, beach and pier water remain outside the broad grading zones.</p>
  */
 public final class VillageReviewLandscape {
     private static final int TERRACE_FEATHER = 3;
     private static final int MAX_TERRACE_DELTA = 12;
-    private static final int MAX_PATH_DELTA = 4;
+    private static final int MAX_PATH_DELTA = 6;
 
     private static final List<TerraceSpec> TERRACES = List.of(
-            terrace("waterfront", -338, -316, -61, -40, 64),
             terrace("civic", -323, -270, -63, -21, 72),
             terrace("upper", -317, -282, -21, 18, 75)
     );
