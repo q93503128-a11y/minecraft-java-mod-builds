@@ -217,6 +217,30 @@ jobs:
             echo 'HARBOR_DOCK_APPLIED=YES'
           } | tee -a build/world-probe/world-load-status.txt
 
+      - name: Stage one-click village review world
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f run-village-review-server/world/.campfiresessions-village-review-v3
+          rm -rf build/village-review-world
+          mkdir -p build/village-review-world
+          cp -a run-village-review-server/world/. build/village-review-world/
+          rm -f build/village-review-world/session.lock
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('build/village-review-world')
+          print('VILLAGE_REVIEW_WORLD_FILE_COUNT=' + str(sum(1 for p in root.rglob('*') if p.is_file())))
+          print('VILLAGE_REVIEW_WORLD_BYTES=' + str(sum(p.stat().st_size for p in root.rglob('*') if p.is_file())))
+          PY
+
+      - name: Upload one-click village review world
+        uses: actions/upload-artifact@v4
+        with:
+          name: campfire-village-review-world
+          path: projects/campfire-sessions/build/village-review-world
+          include-hidden-files: true
+          if-no-files-found: error
+
       - name: Upload world probe report
         if: always()
         uses: actions/upload-artifact@v4
