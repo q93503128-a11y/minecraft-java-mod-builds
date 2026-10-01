@@ -1588,6 +1588,7 @@ Physical-service / navigation repair:
 - current tracked physical objective outline is projected per player and only within the final 52-block approach
 - the server no longer sets a shared glowing tag from the union of all players' quest targets
 - the entrance greeter player-facing name is now `문지기 아렌`, matching the current masculine model read
+- after the local 2-of-3 main investigation, physically speaking with 기록관 세린 can open the optional `북쪽 옛길의 야영지` side objective; it reuses the source-backed Explorer's Campsite and naturally chains into the existing camp NPC/hidden-quest content instead of inventing another menu
 - a dedicated travel sound asset is still pending; no battle/skill sound was repurposed as a fake final travel cue
 
 Validation for this checkpoint:

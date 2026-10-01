@@ -29,6 +29,7 @@ final class DrabyelHubServiceRuntime {
     private static final String COMMON_TAG="turnbound_drabyel_service";
     private static final String LOCATOR_PREFIX=COMMON_TAG+":";
     private static final double MATERIALIZE_RADIUS=96.0D;
+    private static final String STORY_CAMP_OFFERED="HUB_STORY_CAMP_OFFERED";
     private static final Map<String,UUID> ACTORS=new HashMap<>();
 
     private static ServerLevel boundLevel;
@@ -127,8 +128,23 @@ final class DrabyelHubServiceRuntime {
             return true;
         }
         if ("STORY".equals(service.role())) {
+            if(server!=null){
+                ExternalWorldSavedData data=ExternalWorldSavedData.get(server);
+                Set<String> flags=data.onboardingFlags(player.getUUID());
+                boolean localComplete=DrabyelLocalArcProgress.complete(flags);
+                boolean campReached=flags.contains(DrehmalFirstRouteProgress.CAMP_REACHED);
+                if(localComplete&&!campReached){
+                    boolean first=!data.onboardingFlag(player.getUUID(),STORY_CAMP_OFFERED);
+                    if(first)data.markOnboardingFlag(player.getUUID(),STORY_CAMP_OFFERED);
+                    FieldNetwork.showDialogue(player,service.playerLabel(),
+                            first
+                                    ?"오래된 탐험 기록을 정리하다 보니 북쪽 옛길의 야영지에서 기록이 끊겼어요. 급한 일은 아니지만 그쪽을 지나게 되면 야영지가 아직 쓰이는지 확인해 주세요."
+                                    :"북쪽 옛길의 탐험가 야영지를 확인할 기회가 있으면 부탁할게요. 길은 지도에 표시해 두었습니다.");
+                    return true;
+                }
+            }
             FieldNetwork.showDialogue(player, service.playerLabel(),
-                    "이곳에는 캐피털 밸리와 서쪽 폐허에 관한 오래된 기록이 남아 있습니다. 길의 방향은 입구의 라나가 최근 소식과 함께 정리해 줄 겁니다.");
+                    "이곳에는 캐피털 밸리와 서쪽 폐허에 관한 오래된 기록이 남아 있습니다. 길의 방향은 입구의 아렌이 최근 소식과 함께 정리해 줄 겁니다.");
             return true;
         }
         String hint=service.facilityHint();
