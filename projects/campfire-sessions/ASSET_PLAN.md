@@ -1541,6 +1541,25 @@ Full runtime server checkpoint:
 - NeoForge 26.2 server launch with the full current runtime stack and canonical world: **SUCCESS / reached server Done state**.
 - this raises the stack to **SERVER RUNTIME VERIFIED**, but does not replace client visual/gameplay testing or multiplayer testing.
 
+External client-review checkpoint:
+- inventory/probe commit: `12db30ea9f67ca342db6feb93ee496aa7f405444`.
+- gated review command implementation/fixes: `14a91825d32b089f7b288baf26c24b19b1afdd76`, `f417e2f881e33d3a777f07bcffc44d6308e1f7af`, `cc25f291468600e367a2984c1da9483595b844c1`.
+- isolated review-run refinement: `f3a4e7807f12b7354e267dada2b5105c40cafdb2`.
+- Build Campfire Sessions run: **42** / run ID **36797946669** — SUCCESS.
+- normal client/server runs do **not** register the review command; only `runAssetReviewClient` enables it through `campfiresessions.assetReview=true` and uses separate `run-asset-review/` data.
+- actual 26.2 runtime-JAR inventory:
+  - Skniro Furniture: **2,354 item definitions / 8,481 block definitions**.
+  - Croptopia: **468 / 458**.
+  - Cooking for Blockheads: **170 / 688**.
+  - Shroomcraft: **91 / 274**.
+  - Sophisticated Backpacks: **79 / 18**.
+  - Peterwolf Boats & Ships: **5 / 1**; confirmed review items include `explorer_sloop` and `merchant_schooner`.
+  - Traveler Tool Belt: **6 item definitions**.
+- development review kits now cover furniture, kitchen, crops, mushrooms, storage/tool belts and boats from the actual loaded registries.
+- furniture/kitchen kits collapse obvious wood/color variants so a first 27-item pass emphasizes different forms/functions instead of many recolors.
+- detailed internal review procedure is recorded in `docs/ASSET_REVIEW.md`.
+- status remains **CLIENT VISUAL TESTED: NO** until the isolated review client is actually inspected in Minecraft.
+
 Resident material/animation checkpoint:
 - implementation commits: `d7a6869f7d5a4c14e14d49fa9c3a8a903cc933fc`, fix `d56b71fea33ed67a77d866fb3023cdef7413b943`, acceptance hardening `0a1a8e68674952a6f67aabfd5bac7a21b97d342c`.
 - Build Campfire Sessions run: **36** / run ID **36793642642**.
