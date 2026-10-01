@@ -75,6 +75,9 @@ public final class VillageReviewLandscape {
             int worstSurface = terrace.surfaceY();
             for (int x = terrace.minX(); x <= terrace.maxX(); x++) {
                 for (int z = terrace.minZ(); z <= terrace.maxZ(); z++) {
+                    if (isOceanColumn(level, x, z)) {
+                        continue;
+                    }
                     int surface = surfaceY(level, x, z);
                     int distance = edgeDistance(terrace, x, z);
                     int target = blendedTarget(surface, terrace.surfaceY(), distance);
@@ -110,6 +113,9 @@ public final class VillageReviewLandscape {
         for (TerraceSpec terrace : TERRACES) {
             for (int x = terrace.minX(); x <= terrace.maxX(); x++) {
                 for (int z = terrace.minZ(); z <= terrace.maxZ(); z++) {
+                    if (isOceanColumn(level, x, z)) {
+                        continue;
+                    }
                     int surface = surfaceY(level, x, z);
                     int distance = edgeDistance(terrace, x, z);
                     int target = blendedTarget(surface, terrace.surfaceY(), distance);
@@ -302,6 +308,12 @@ public final class VillageReviewLandscape {
             }
         }
         return false;
+    }
+
+    private static boolean isOceanColumn(ServerLevel level, int x, int z) {
+        BlockPos sea = new BlockPos(x, 62, z);
+        level.getChunkAt(sea);
+        return !level.getFluidState(sea).isEmpty() || surfaceY(level, x, z) < 55;
     }
 
     private static int surfaceY(ServerLevel level, int x, int z) {
