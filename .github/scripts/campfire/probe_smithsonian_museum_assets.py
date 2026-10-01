@@ -94,6 +94,8 @@ def candidate_urls(document: dict, document_url: str) -> list[dict]:
         seen.add(url)
 
         score = 0
+        if "100k-2048-high" in lowered:
+            score += 60
         if "low" in context_lower:
             score += 20
         if "low resolution" in context_lower:
@@ -306,21 +308,50 @@ def acquire_target(target: dict, output: pathlib.Path) -> dict:
 
     if selected is None:
         print("selected_uncompressed_glb=NONE")
-        if compressed_staging is not None:
-            print("compressed_reference=" + compressed_staging["final_url"])
-            print("compressed_reference_stats=" + json.dumps(compressed_staging["glb"], sort_keys=True))
-        raise RuntimeError(f"no downloadable uncompressed GLB found for {target['slug']}")
+        if compressed_staging is None:
+            raise RuntimeError(f"no downloadable GLB staging source found for {target['slug']}")
+        print("compressed_reference=" + compressed_staging["final_url"])
+        print("compressed_reference_stats=" + json.dumps(compressed_staging["glb"], sort_keys=True))
+        print("staging_status=DRACO_SOURCE_READY_FOR_LOSSLESS_DECOMPRESSION")
+        return report
 
     print(f"selected_uncompressed_glb={selected['final_url']}")
     print("glb_stats=" + json.dumps(report["glb"], sort_keys=True))
     return report
 
 
+def verify_decompressed(output: pathlib.Path) -> int:
+    files = sorted(output.glob("*/*_source_uncompressed.glb"))
+    if len(files) != len(TARGETS):
+        raise RuntimeError(f"expected {len(TARGETS)} decompressed GLBs, found {len(files)}")
+
+    reports = []
+    for path in files:
+        stats = parse_glb(path)
+        extensions = set(stats["extensions_required"]) | set(stats["extensions_used"])
+        if "KHR_draco_mesh_compression" in extensions:
+            raise RuntimeError(f"Draco still present after copy: {path}")
+        reports.append({"path": str(path), "glb": stats})
+        print(f"verified_uncompressed={path}")
+        print("  stats=" + json.dumps(stats, sort_keys=True))
+
+    (output / "decompressed_report.json").write_text(
+        json.dumps(reports, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print("Smithsonian lossless Draco removal verification: PASS")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("output", type=pathlib.Path)
+    parser.add_argument("--verify-decompressed", action="store_true")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
+
+    if args.verify_decompressed:
+        return verify_decompressed(args.output)
 
     reports = []
     for target in TARGETS:
@@ -336,9 +367,9 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    if not all(report.get("glb") for report in reports):
+    if not all(report.get("glb") or report.get("compressed_reference") for report in reports):
         return 2
-    print("Smithsonian museum asset probe: PASS")
+    print("Smithsonian museum asset staging probe: PASS")
     return 0
 
 
