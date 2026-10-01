@@ -1315,6 +1315,17 @@ If Weave Ready existed before ultimate activation:
 - completing a 3-sigil Arcane Weave: +6;
 - applying meaningful root/slow/control to an eligible elite/boss for the first time in 4 s: +2.
 
+### Astral Convergence production precision binding
+
+- Spell Engine owns the 1.0 s cast and arcane presentation only; project code owns Ultimate Gauge consumption, Weave consumption, targeting, damage, Poise and forced movement;
+- the center is fixed at the Mage's release position rather than following the player or becoming a ground-target skill;
+- the authored 5.0 s duration resolves as five server-authoritative pulses at 20-tick intervals; each base pulse carries ActionCoefficient 1.16 magic and PoiseCoefficient 0.80, preserving exact totals 5.80 / 4.00;
+- if Weave Ready existed at accepted activation, it is consumed without adding a new sigil; only pulse 5 is the empowered final detonation, using base final-pulse damage × `(1 + 0.15 × WeaveMagnitude)` and base final-pulse Poise × `(1 + 0.25 × WeaveMagnitude)`, so Triune Study scales only the incremental Weave bonus;
+- server target validation uses the real hostile bounding box against the 6.0-block horizontal radius. The current ±3.0-block vertical envelope is a playtest-tunable spatial binding, not new locked class canon;
+- forced pull requires explicit actor reaction admission. `pullStrengthMultiplier = 1.0` represents the authored normal 0.4-block pulse, an elite binding can set 0.5 for 0.2 blocks, and `pullToward = false` remains fully immovable. Miniboss/boss movement therefore stays fail-closed unless encounter data explicitly opts in;
+- Mage Ultimate-Charge publishing is server-owned and de-duplicated at each authored event boundary. Flame Burst repeated pulses cannot repeatedly charge on the same target/cast, and the meaningful-control event uses a 4.0 s caster/target ICD;
+- the current Spell Engine arcane release vocabulary is an initial production presentation binding. Final pulse readability, center/pull legibility, detonation weight, SFX and camera/impact feel remain manual playtest gates.
+
 ---
 
 # 10. Mage first specialization branches
