@@ -226,7 +226,10 @@ jobs:
           mkdir -p build/village-review-world
           cp -a run-village-review-server/world/. build/village-review-world/
           rm -f build/village-review-world/session.lock
+          rm -rf build/village-review-world/players
+          rm -f build/village-review-world/level.dat_old
           python3 tools/patch_review_level_dat.py build/village-review-world/level.dat
+          test ! -e build/village-review-world/players/data/00000000-0000-0000-0000-000000000000.dat
           python3 - <<'PY'
           from pathlib import Path
           root = Path('build/village-review-world')
@@ -354,7 +357,7 @@ jobs:
           index = {
               'formatVersion': 1,
               'game': 'minecraft',
-              'versionId': '0.6.0-alpha.1-village-review-27',
+              'versionId': '0.6.0-alpha.1-village-review-29',
               'name': 'Campfire Sessions - Village Review',
               'summary': 'Private one-click canonical island and real-building layout review pack.',
               'files': [],

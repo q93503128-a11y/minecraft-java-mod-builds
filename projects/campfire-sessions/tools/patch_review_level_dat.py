@@ -204,6 +204,11 @@ def patch(path: pathlib.Path) -> None:
     else:
         raise ValueError("Data.spawn.pos is not the expected three-int NBT value")
 
+    # The source map carries a legacy zero UUID single-player identity. In an
+    # integrated server that identity can load players/data/000...dat and place
+    # the reviewer back at the source author's position, overriding world spawn.
+    data.pop("singleplayer_uuid", None)
+
     data["allowCommands"] = Tag(TAG_BYTE, 1)
     data["LevelName"] = Tag(TAG_STRING, REVIEW_LEVEL_NAME)
     if pos.tag_id == TAG_INT_ARRAY:
@@ -230,6 +235,8 @@ def patch(path: pathlib.Path) -> None:
     else:
         verify_pos = tuple(item.value for item in verify_pos_tag.value)
 
+    if "singleplayer_uuid" in verify_data:
+        raise ValueError("review world still contains source singleplayer_uuid")
     if verify_data["allowCommands"].value != 1:
         raise ValueError("review world commands were not enabled")
     if verify_pos != REVIEW_SPAWN:
@@ -237,6 +244,7 @@ def patch(path: pathlib.Path) -> None:
     if verify_data["LevelName"].value != REVIEW_LEVEL_NAME:
         raise ValueError("review world display name was not updated")
 
+    print("REVIEW_SOURCE_SINGLEPLAYER_UUID=REMOVED")
     print("REVIEW_ALLOW_COMMANDS=YES")
     print("REVIEW_SPAWN=" + ",".join(str(v) for v in REVIEW_SPAWN))
     print("REVIEW_LEVEL_NAME=" + REVIEW_LEVEL_NAME)
