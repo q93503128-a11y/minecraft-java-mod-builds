@@ -1777,3 +1777,13 @@ Final door-facing stubs and decorative landscaping remain subject to real client
 
 
 Runtime canonical-world preflight #21 rejected the previous general-store origin because block column (-285,-42) remained terrain Y=83 even after tree-log filtering. The store is therefore moved west onto the measured flat tile rather than cutting a 12-block slope.
+
+### Runtime footprint correction after canonical probe #22
+
+- the first general-store relocation removed the Y83 east-edge terrain collision without relaxing the grading limit.
+- the previous museum origin still crossed the real eastern mountain face at `(-277,-17)`, where runtime terrain is Y111 against target Y75.
+- the museum is therefore moved onto the connected strict-flat pair at origin `(-294,75,-32)`, footprint X -294…-274 / Z -32…-17.
+- the café moves to origin `(-287,73,-46)` on the separate south-commercial flat tile so its 7×8 shell does not overlap the relocated 21×16 museum.
+- a static footprint check covering the plaza and all land buildings reports zero overlaps for this arrangement.
+- land-building preflight now scans every building and reports the worst terrain delta for all failures in one run instead of aborting on the first bad structure.
+- grading safety remains unchanged at 8 blocks; relocation is preferred over destructive flattening.

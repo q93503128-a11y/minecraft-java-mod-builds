@@ -3,6 +3,7 @@ package kr.moonseungjun.campfiresessions.world;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import kr.moonseungjun.campfiresessions.CampfireSessions;
 import net.minecraft.core.BlockPos;
@@ -48,9 +49,9 @@ public final class VillageReviewBootstrap {
             kogtyv("resident_services", "house/shop_triple_2", -312, 71, -19, 13, 16, 8),
             kogtyv("general_store", "house/shop_triple_1", -303, 72, -46, 13, 16, 8),
             kogtyv("clinic", "house/shop_medium_3", -321, 67, -12, 7, 16, 8),
-            kogtyv("cafe", "house/shop_medium_1", -296, 73, -28, 7, 16, 8),
+            kogtyv("cafe", "house/shop_medium_1", -287, 73, -46, 7, 16, 8),
             kogtyv("clothing_shop", "house/shop_medium_2", -291, 74, -11, 7, 16, 8),
-            kogtyv("museum", "center/ratush_1", -284, 76, -32, 21, 8, 16),
+            kogtyv("museum", "center/ratush_1", -294, 75, -32, 21, 8, 16),
 
             // The source dock's street connector is local (5,2,0). CLOCKWISE_90
             // maps its long +Z pier axis westward into the canonical ocean.
@@ -150,6 +151,7 @@ public final class VillageReviewBootstrap {
     }
 
     private static void preflight(ServerLevel level, List<PreparedBuilding> buildings) {
+        List<String> terrainFailures = new ArrayList<>();
         for (PreparedBuilding building : buildings) {
             BuildingSpec spec = building.spec();
             Vec3i actual = building.template().getSize();
@@ -161,31 +163,57 @@ public final class VillageReviewBootstrap {
             }
 
             if (spec.gradeFootprint()) {
-                preflightLandBuilding(level, building);
-            } else if ("harbor_dock".equals(spec.role())) {
+                String failure = landPreflightFailure(level, building);
+                if (failure != null) {
+                    terrainFailures.add(failure);
+                }
+            }
+        }
+
+        if (!terrainFailures.isEmpty()) {
+            throw new IllegalStateException(
+                    "Campfire village review terrain preflight failed: " + String.join("; ", terrainFailures)
+            );
+        }
+
+        for (PreparedBuilding building : buildings) {
+            if (!building.spec().gradeFootprint() && "harbor_dock".equals(building.spec().role())) {
                 preflightDock(level, building);
             }
         }
     }
 
-    private static void preflightLandBuilding(ServerLevel level, PreparedBuilding building) {
+    private static String landPreflightFailure(ServerLevel level, PreparedBuilding building) {
         int targetGroundY = building.spec().origin().getY() - 1;
         BoundingBox box = building.bounds();
+        int worstDelta = -1;
+        int worstX = box.minX();
+        int worstZ = box.minZ();
+        int worstSurface = targetGroundY;
+
         for (int x = box.minX(); x <= box.maxX(); x++) {
             for (int z = box.minZ(); z <= box.maxZ(); z++) {
                 level.getChunkAt(new BlockPos(x, targetGroundY, z));
                 int currentSurface = terrainSurfaceY(level, x, z);
-                if (Math.abs(currentSurface - targetGroundY) > MAX_GRADE_DELTA) {
-                    throw new IllegalStateException(
-                            "Campfire village review grading limit exceeded for " + building.spec().role()
-                                    + " at " + x + "," + z
-                                    + ": surface=" + currentSurface + " target=" + targetGroundY
-                    );
+                int delta = Math.abs(currentSurface - targetGroundY);
+                if (delta > worstDelta) {
+                    worstDelta = delta;
+                    worstX = x;
+                    worstZ = z;
+                    worstSurface = currentSurface;
                 }
             }
         }
-    }
 
+        if (worstDelta > MAX_GRADE_DELTA) {
+            return building.spec().role()
+                    + " worst=(" + worstX + "," + worstZ + ")"
+                    + " surface=" + worstSurface
+                    + " target=" + targetGroundY
+                    + " delta=" + worstDelta;
+        }
+        return null;
+    }
     private static void preflightDock(ServerLevel level, PreparedBuilding building) {
         BuildingSpec spec = building.spec();
         BlockPos streetConnector = StructureTemplate.transform(
