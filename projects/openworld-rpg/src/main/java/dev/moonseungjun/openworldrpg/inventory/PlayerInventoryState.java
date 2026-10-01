@@ -370,6 +370,104 @@ public record PlayerInventoryState(
         );
     }
 
+    /**
+     * Preflights a complete multi-material cost without mutating either material store.
+     */
+    public boolean canConsumeMaterials(
+            Map<String, Integer> costs,
+            boolean settlementMayUseVault
+    ) {
+        validateMaterialCosts(costs);
+        for (Map.Entry<String, Integer> entry : costs.entrySet()) {
+            int available = materialPouch.getOrDefault(entry.getKey(), 0);
+            if (settlementMayUseVault) {
+                available = Math.addExact(
+                        available,
+                        materialVault.getOrDefault(entry.getKey(), 0)
+                );
+            }
+            if (available < entry.getValue()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Atomically consumes a whole recipe material map exactly once.
+     *
+     * <p>The existing completed-delivery receipt set is also the durable inventory-operation
+     * receipt ledger. Crafting uses a dedicated transaction-id suffix, so delivery and material
+     * consumption receipts never collide. This keeps save compatibility while closing the
+     * crash window between multi-material consumption and the crafting-state commit.</p>
+     */
+    public MaterialsConsumeOnceResult consumeMaterialsOnce(
+            String transactionId,
+            Map<String, Integer> costs,
+            boolean settlementMayUseVault
+    ) {
+        requireStableId(transactionId);
+        validateMaterialCosts(costs);
+        if (completedDeliveryIds.contains(transactionId)) {
+            return new MaterialsConsumeOnceResult(
+                    this,
+                    MaterialsConsumeOnceStatus.ALREADY_COMPLETED,
+                    Map.of(),
+                    Map.of()
+            );
+        }
+        if (!canConsumeMaterials(costs, settlementMayUseVault)) {
+            return new MaterialsConsumeOnceResult(
+                    this,
+                    MaterialsConsumeOnceStatus.INSUFFICIENT_MATERIALS,
+                    Map.of(),
+                    Map.of()
+            );
+        }
+
+        Map<String, Integer> nextPouch = new HashMap<>(materialPouch);
+        Map<String, Integer> nextVault = new HashMap<>(materialVault);
+        Map<String, Integer> fromPouch = new HashMap<>();
+        Map<String, Integer> fromVault = new HashMap<>();
+
+        for (Map.Entry<String, Integer> entry : costs.entrySet()) {
+            String materialId = entry.getKey();
+            int amount = entry.getValue();
+            int pouchAvailable = nextPouch.getOrDefault(materialId, 0);
+            int pouchUsed = Math.min(pouchAvailable, amount);
+            int vaultUsed = amount - pouchUsed;
+
+            setOrRemove(nextPouch, materialId, pouchAvailable - pouchUsed);
+            if (vaultUsed > 0) {
+                int vaultAvailable = nextVault.getOrDefault(materialId, 0);
+                setOrRemove(nextVault, materialId, vaultAvailable - vaultUsed);
+            }
+            if (pouchUsed > 0) {
+                fromPouch.put(materialId, pouchUsed);
+            }
+            if (vaultUsed > 0) {
+                fromVault.put(materialId, vaultUsed);
+            }
+        }
+
+        Set<String> nextCompleted = new HashSet<>(completedDeliveryIds);
+        nextCompleted.add(transactionId);
+        return new MaterialsConsumeOnceResult(
+                copy(
+                        backpack,
+                        personalStorage,
+                        Map.copyOf(nextPouch),
+                        Map.copyOf(nextVault),
+                        keyItems,
+                        pendingItemRewards,
+                        Set.copyOf(nextCompleted)
+                ),
+                MaterialsConsumeOnceStatus.CONSUMED,
+                Map.copyOf(fromPouch),
+                Map.copyOf(fromVault)
+        );
+    }
+
     public MaterialConsumeResult consumeMaterial(
             String materialId,
             int amount,
@@ -552,6 +650,21 @@ public record PlayerInventoryState(
         }
     }
 
+    private static void validateMaterialCosts(Map<String, Integer> costs) {
+        Objects.requireNonNull(costs, "costs");
+        if (costs.isEmpty()) {
+            throw new IllegalArgumentException("Material cost map must not be empty.");
+        }
+        for (Map.Entry<String, Integer> entry : costs.entrySet()) {
+            requireStableId(entry.getKey());
+            if (entry.getValue() == null || entry.getValue() <= 0) {
+                throw new IllegalArgumentException(
+                        "Material costs must contain only positive quantities."
+                );
+            }
+        }
+    }
+
     private static void validateCountMap(
             Map<String, Integer> values,
             int cap,
@@ -659,6 +772,40 @@ public record PlayerInventoryState(
                         "Backpack consume status/count mismatch."
                 );
             }
+        }
+    }
+
+    public enum MaterialsConsumeOnceStatus {
+        CONSUMED,
+        ALREADY_COMPLETED,
+        INSUFFICIENT_MATERIALS
+    }
+
+    public record MaterialsConsumeOnceResult(
+            PlayerInventoryState state,
+            MaterialsConsumeOnceStatus status,
+            Map<String, Integer> fromPouch,
+            Map<String, Integer> fromVault
+    ) {
+        public MaterialsConsumeOnceResult {
+            Objects.requireNonNull(state, "state");
+            Objects.requireNonNull(status, "status");
+            fromPouch = Map.copyOf(Objects.requireNonNull(fromPouch, "fromPouch"));
+            fromVault = Map.copyOf(Objects.requireNonNull(fromVault, "fromVault"));
+            if (status != MaterialsConsumeOnceStatus.CONSUMED
+                    && (!fromPouch.isEmpty() || !fromVault.isEmpty())) {
+                throw new IllegalArgumentException(
+                        "Non-consumed material transaction cannot report source counts."
+                );
+            }
+        }
+
+        public boolean consumed() {
+            return status != MaterialsConsumeOnceStatus.INSUFFICIENT_MATERIALS;
+        }
+
+        public boolean newlyConsumed() {
+            return status == MaterialsConsumeOnceStatus.CONSUMED;
         }
     }
 

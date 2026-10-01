@@ -280,4 +280,79 @@ class PlayerInventoryStateTest {
         assertTrue(failed.state().personalStorage().occupied().isEmpty());
     }
 
+    @Test
+    void multiMaterialConsumptionIsAtomicPouchFirstAndIdempotent() {
+        var initial = new PlayerInventoryState(
+                1,
+                ProjectBackpackState.startingBackpack(),
+                ProjectBackpackState.personalStorage(),
+                Map.of(
+                        "openworld_rpg:healing_herb", 2,
+                        "openworld_rpg:louxia_glow", 1
+                ),
+                Map.of(
+                        "openworld_rpg:healing_herb", 4,
+                        "openworld_rpg:louxia_glow", 3
+                ),
+                Set.of(),
+                Map.of(),
+                Set.of()
+        );
+        Map<String, Integer> costs = Map.of(
+                "openworld_rpg:healing_herb", 5,
+                "openworld_rpg:louxia_glow", 2
+        );
+        String transactionId = "openworld_rpg:craft_material/test/0";
+
+        assertTrue(initial.canConsumeMaterials(costs, true));
+        assertFalse(initial.canConsumeMaterials(costs, false));
+
+        var consumed = initial.consumeMaterialsOnce(
+                transactionId,
+                costs,
+                true
+        );
+        assertEquals(
+                PlayerInventoryState.MaterialsConsumeOnceStatus.CONSUMED,
+                consumed.status()
+        );
+        assertEquals(
+                Map.of(
+                        "openworld_rpg:healing_herb", 2,
+                        "openworld_rpg:louxia_glow", 1
+                ),
+                consumed.fromPouch()
+        );
+        assertEquals(
+                Map.of(
+                        "openworld_rpg:healing_herb", 3,
+                        "openworld_rpg:louxia_glow", 1
+                ),
+                consumed.fromVault()
+        );
+
+        var retried = consumed.state().consumeMaterialsOnce(
+                transactionId,
+                costs,
+                true
+        );
+        assertEquals(
+                PlayerInventoryState.MaterialsConsumeOnceStatus.ALREADY_COMPLETED,
+                retried.status()
+        );
+        assertSame(consumed.state(), retried.state());
+
+        var insufficient = initial.consumeMaterialsOnce(
+                "openworld_rpg:craft_material/test/1",
+                Map.of("openworld_rpg:healing_herb", 7),
+                true
+        );
+        assertEquals(
+                PlayerInventoryState.MaterialsConsumeOnceStatus.INSUFFICIENT_MATERIALS,
+                insufficient.status()
+        );
+        assertSame(initial, insufficient.state());
+    }
+
+
 }

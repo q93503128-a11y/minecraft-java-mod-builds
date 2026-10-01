@@ -27,6 +27,9 @@ import dev.moonseungjun.openworldrpg.market.R01FixedMerchantService;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketService;
 import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
+import dev.moonseungjun.openworldrpg.profession.ProfessionMasteryAttachments;
+import dev.moonseungjun.openworldrpg.profession.R01CraftingAttachments;
+import dev.moonseungjun.openworldrpg.profession.R01CraftingService;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementAttachments;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassAdvancementService;
 import dev.moonseungjun.openworldrpg.progression.PlayerClassMilestoneAttachments;
@@ -126,6 +129,8 @@ public final class OpenworldRpgMod implements ModInitializer {
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
+        ProfessionMasteryAttachments.initialize();
+        R01CraftingAttachments.initialize();
         R01FixedMerchantAttachments.initialize();
         R01NessaMarketAttachments.initialize();
         R01NourishmentAttachments.initialize();
@@ -187,6 +192,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
                 R01FixedMerchantService.reconcilePending(handler.getPlayer());
+                R01CraftingService.reconcilePending(handler.getPlayer());
                 R01NessaMarketService.reconcileInterruptedPurchases(handler.getPlayer());
                 R01NourishmentService.reconcile(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
