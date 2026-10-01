@@ -41,6 +41,15 @@ jobs:
           mkdir -p build
           python3 tools/inspect_plumberry_assets.py --contract-only | tee build/plumberry-asset-contract.txt
           python3 tools/test_plumberry_probe.py
+      - name: Inventory external client-review assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon copyAssetReviewProbe
+          python3 tools/inspect_runtime_assets.py build/assetReviewProbe \
+            --json-output build/external-asset-review.json \
+            --markdown-output build/external-asset-review.md
+          sed -n '1,260p' build/external-asset-review.md
       - name: Probe external building structure bounds
         shell: bash
         run: |
@@ -216,6 +225,8 @@ jobs:
             projects/campfire-sessions/build.log
             projects/campfire-sessions/build/external-structure-footprints.txt
             projects/campfire-sessions/build/plumberry-asset-contract.txt
+            projects/campfire-sessions/build/external-asset-review.json
+            projects/campfire-sessions/build/external-asset-review.md
           if-no-files-found: warn
       - name: Upload alpha6
         if: success()

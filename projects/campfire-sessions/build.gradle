@@ -75,6 +75,11 @@ tasks.register('copyExternalStructureProbe', Copy) {
     into layout.buildDirectory.dir('externalStructureProbe')
 }
 
+tasks.register('copyAssetReviewProbe', Copy) {
+    from configurations.runtimeClasspath
+    into layout.buildDirectory.dir('assetReviewProbe')
+}
+
 def licensedAssetsOutput = layout.buildDirectory.dir('generated/licensedAssets')
 def externalStructureAssetsOutput = layout.buildDirectory.dir('generated/externalStructureAssets')
 def pythonCommand = System.getProperty('os.name').startsWith('Windows') ? 'python' : 'python3'
