@@ -75,14 +75,12 @@ public final class MuseumAssetReviewScene {
         }
 
         if (activePlacement == null) {
-            minecraft.player.displayClientMessage(
-                    Component.literal("Campfire museum review: no exhibit is active."),
-                    false
+            minecraft.player.sendSystemMessage(
+                    Component.literal("Campfire museum review: no exhibit is active.")
             );
         } else {
-            minecraft.player.displayClientMessage(
-                    Component.literal("Campfire museum review: Triceratops exhibit active. Use /campfire_museum_review clear to remove it."),
-                    false
+            minecraft.player.sendSystemMessage(
+                    Component.literal("Campfire museum review: Triceratops exhibit active. Use /campfire_museum_review clear to remove it.")
             );
         }
         return Command.SINGLE_SUCCESS;
@@ -97,9 +95,8 @@ public final class MuseumAssetReviewScene {
         MuseumStaticMeshAsset asset = MuseumExhibitAssets.TRICERATOPS_100K;
         if (minecraft.getResourceManager().getResource(asset.mesh()).isEmpty()
                 || minecraft.getResourceManager().getResource(asset.baseColorTexture()).isEmpty()) {
-            minecraft.player.displayClientMessage(
-                    Component.literal("Campfire museum review pack is not active. Enable campfire-museum-review-pack.zip first."),
-                    false
+            minecraft.player.sendSystemMessage(
+                    Component.literal("Campfire museum review pack is not active. Enable campfire-museum-review-pack.zip first.")
             );
             activePlacement = null;
             return 0;
@@ -127,12 +124,11 @@ public final class MuseumAssetReviewScene {
                 asset
         );
 
-        minecraft.player.displayClientMessage(
+        minecraft.player.sendSystemMessage(
                 Component.literal(
                         "Campfire museum review: placed verified Smithsonian Triceratops 100k at 1 source metre = 1 block."
-                ),
-                false
-        );
+                )
+            );
         return Command.SINGLE_SUCCESS;
     }
 
@@ -140,9 +136,8 @@ public final class MuseumAssetReviewScene {
         Minecraft minecraft = Minecraft.getInstance();
         activePlacement = null;
         if (minecraft.player != null) {
-            minecraft.player.displayClientMessage(
-                    Component.literal("Campfire museum review exhibit cleared."),
-                    false
+            minecraft.player.sendSystemMessage(
+                    Component.literal("Campfire museum review exhibit cleared.")
             );
         }
         return Command.SINGLE_SUCCESS;
