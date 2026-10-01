@@ -226,6 +226,7 @@ jobs:
           mkdir -p build/village-review-world
           cp -a run-village-review-server/world/. build/village-review-world/
           rm -f build/village-review-world/session.lock
+          python3 tools/patch_review_level_dat.py build/village-review-world/level.dat
           python3 - <<'PY'
           from pathlib import Path
           root = Path('build/village-review-world')
@@ -260,11 +261,19 @@ jobs:
           overrides = stage / 'overrides'
           mods_out = overrides / 'mods'
           world_out = overrides / 'saves' / 'campfire-village-review'
+          config_out = overrides / 'config'
 
           if stage.exists():
               shutil.rmtree(stage)
           mods_out.mkdir(parents=True)
           world_out.parent.mkdir(parents=True, exist_ok=True)
+          config_out.mkdir(parents=True, exist_ok=True)
+          (config_out / 'fml.toml').write_text(
+              '# Campfire Sessions private review pack\n'
+              '# Disable outbound NeoForge update checks during visual review.\n'
+              'versionCheck = false\n',
+              encoding='utf-8',
+          )
 
           source_world = root / 'build' / 'village-review-world'
           if not (source_world / 'level.dat').is_file():
@@ -326,6 +335,7 @@ jobs:
               'Minecraft 26.2 / NeoForge 26.2.0.87\n\n'
               'Import this .mrpack into the Modrinth App and launch it.\n'
               'Open the included world: campfire-village-review.\n'
+              'The review save starts at the village plaza and has commands enabled.\n'
               'No separate map, mod, schematic, or resource-pack installation is required.\n\n'
               'This review save intentionally displays exterior shells for facilities that are not all\n'
               'available on the real first in-game day. It exists to review map composition, paths,\n'
@@ -344,7 +354,7 @@ jobs:
           index = {
               'formatVersion': 1,
               'game': 'minecraft',
-              'versionId': '0.6.0-alpha.1-village-review-25',
+              'versionId': '0.6.0-alpha.1-village-review-27',
               'name': 'Campfire Sessions - Village Review',
               'summary': 'Private one-click canonical island and real-building layout review pack.',
               'files': [],
