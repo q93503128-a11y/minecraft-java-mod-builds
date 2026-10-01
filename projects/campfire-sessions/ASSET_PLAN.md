@@ -1457,14 +1457,35 @@ Need external assets for:
 - therefore do not make it a 26.2 dependency or copy assets.
 - use only as a quality/reference benchmark unless a compatible licensed path appears.
 
-**Public-domain / CC0 real fossil scans**
-- museum/Smithsonian-style public-domain scans can be authoritative shape references for a small number of centerpiece fossils.
-- raw scan meshes are often far too high-poly for Minecraft.
-- if used, rebuild/decimate into a deliberate Minecraft-friendly model rather than shipping the scan mesh directly.
+**Smithsonian 3D CC0 fossil centerpiece sources — ACQUIRED FOR PRODUCTION REVIEW**
+- **Triceratops horridus Marsh, 1889**, USNM PAL500000 / record `nmnhpaleobiology_3572783`.
+  - complete mounted skeleton.
+  - Smithsonian object/media usage: **CC0 / public domain**; copy, modify and distribute permitted.
+  - official 3D page exposes full/low OBJ, low GLTF/GLB and AR variants.
+  - Campfire staging selects the official **100k-triangle / 2048-texture** GLB as the first production-review source.
+  - original Smithsonian Draco GLB SHA-256: `7bb8cab59db6e34ac4f451cbc1929d9cbe49957c252d569f6f25aca47f5a6873`.
+  - losslessly Draco-decoded review GLB SHA-256: `a76b728da3c2c0369c5d1904b00a394317d285cfdc336c9306307364fea2a19f`.
+  - decoded review source: 100,000 triangles, one mesh/primitive/material, three textures/images, no skin/animation, no required glTF extensions; accessor bounds are approximately 2.81 × 5.88 × 1.69 source units and the official record labels the downloadable model scale in metres.
+- **Mammuthus primigenius**, USNM V23792 / record `nmnhpaleobiology_3447777`.
+  - complete mounted skeleton.
+  - Smithsonian object/media usage: **CC0 / public domain**.
+  - Campfire staging selects the official **100k-triangle / 2048-texture** GLB as the first production-review source.
+  - original Smithsonian Draco GLB SHA-256: `6e291273793c3be35f34f684012132ecef447312a9e28bbe4f07d4107cd04484`.
+  - losslessly Draco-decoded review GLB SHA-256: `b785898fc230252d7f5aaf8ecb7a98d3a5eae3829f324ca0607cfe5aab8b8256`.
+  - decoded review source: 100,000 triangles, one mesh/primitive/material, two textures/images, no skin/animation, no required glTF extensions.
+  - the raw accessor span is approximately 1922 × 5081 × 3447 source units, so scale must be normalized from the Smithsonian source metadata during final conversion rather than guessed.
+- acquisition/verification workflow: `.github/workflows/probe-campfire-museum-assets.yml`.
+- successful probe: **run 3 / run ID 36800064298**, commit `14cb0448d6de163e9358a79bffcc06e91044de64`.
+- staging artifact: **campfire-museum-assets**, artifact ID **11134214927**, 11 files, ~14.3 MB; source documents, compressed originals, decoded review sources and machine-readable reports are included.
+- Draco removal uses pinned **glTF Transform 4.5.0 `cp`**, which parses the source and removes Draco without intentionally recompressing geometry. The workflow verifies the resulting GLBs no longer require `KHR_draco_mesh_compression`.
+- **do not package these models into Campfire yet**. They are real final-quality production candidates, not placeholders, but client scale/readability, render cost and museum display composition still need acceptance.
+- if optimization/decimation is required, derive it from these verified CC0 sources as a deliberate final production LOD and preserve provenance/hashes; do not substitute programmer art or a temporary fake skeleton.
+- Smithsonian rights are checked **per 3D media object**. Do not assume that a CC0 collection record makes every related 3D scene reusable; for example, the separate Tyrannosaurus/Triceratops scene and T. rex media carry non-commercial restrictions.
 
 Current conclusion:
 - archaeology mechanics/reference coverage is strong.
-- **high-quality, coherent, Minecraft-friendly prehistoric skeleton art is still unresolved** and remains an active external-asset search task.
+- the **museum centerpiece skeleton source problem is now partially solved** with two verified real CC0 production candidates.
+- broader prehistoric/fossil exhibit variety is still unresolved; add only similarly verified coherent sources, not placeholder skeletons.
 
 Multipart fossil completion should visually build the exhibit rather than remain an inventory checklist.
 
@@ -1632,7 +1653,7 @@ Validation boundary:
 
 **Still materially unresolved**
 - final coherent resident biped animal roster/rig.
-- final museum dinosaur/prehistory skeleton art.
+- final broader museum dinosaur/prehistory exhibit set beyond the acquired Triceratops + woolly-mammoth centerpiece candidates.
 - coherent full lifestyle-tool family including watering can + bug net + fishing tiers.
 - final in-client visual acceptance, rotation/terrain fit and role dressing for the already-packaged Kogtyv Greece building set.
 - final coherent clothing art set beyond hats/accessory/backend candidates.
