@@ -15,6 +15,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcBoltRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageAstralConvergenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageFlameBurstRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageFrostRingRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MagePhaseStepRuntime;
@@ -336,6 +337,17 @@ public final class SpellEngineAuthorityAdapter {
                 )
         );
 
+        ProjectSpellSpec astralConvergence =
+                ProjectSpellSpec.astralConvergence();
+        AUTHORITY.registerPolicy(
+                astralConvergence.id(),
+                new ProjectSpellTransactionPolicy(
+                        astralConvergence,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec radiantLance = ProjectSpellSpec.radiantLance();
         AUTHORITY.registerPolicy(
                 radiantLance.id(),
@@ -465,6 +477,12 @@ public final class SpellEngineAuthorityAdapter {
                 && !MageFlameBurstRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
+        if (ProjectSpellSpec.ASTRAL_CONVERGENCE_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && (!acceptedStage || firstAcceptedCast)
+                && !MageAstralConvergenceRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
         if (ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId)
                 && player instanceof ServerPlayer serverPlayer
                 && (!acceptedStage || firstAcceptedCast)
@@ -548,6 +566,13 @@ public final class SpellEngineAuthorityAdapter {
                 && player instanceof ServerPlayer serverPlayer) {
             if (ProjectSpellSpec.SANCTUARY_ID.equals(spellId)) {
                 if (!SanctuaryRuntime.activate(serverPlayer).accepted()) {
+                    return invokeStatic(attemptNone);
+                }
+            } else if (ProjectSpellSpec.ASTRAL_CONVERGENCE_ID.equals(spellId)) {
+                if (!MageAstralConvergenceRuntime.onAcceptedCast(
+                        serverPlayer,
+                        gameTick
+                )) {
                     return invokeStatic(attemptNone);
                 }
             } else if (ProjectSpellSpec.HUNTER_QUICKSTEP_VOLLEY_ID.equals(spellId)) {
@@ -879,6 +904,12 @@ public final class SpellEngineAuthorityAdapter {
                 } else if (ProjectSpellSpec.FLAME_BURST_ID.equals(spellId)
                         && player instanceof ServerPlayer serverPlayer) {
                     MageFlameBurstRuntime.release(serverPlayer, gameTick);
+                } else if (ProjectSpellSpec.ASTRAL_CONVERGENCE_ID.equals(spellId)
+                        && player instanceof ServerPlayer serverPlayer) {
+                    MageAstralConvergenceRuntime.release(
+                            serverPlayer,
+                            gameTick
+                    );
                 } else if (ProjectSpellSpec.requiredRootClass(spellId)
                         .filter(RootClass.WARRIOR::equals)
                         .isPresent()

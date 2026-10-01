@@ -28,6 +28,11 @@ public final class MageArcBoltRuntime {
         Objects.requireNonNull(primaryTarget, "primaryTarget");
         Objects.requireNonNull(source, "source");
 
+        ProjectUltimateChargeRuntime.recordMagePrimaryActiveHit(
+                caster,
+                primaryTarget
+        );
+
         var empowerment = MageArcaneWeaveRuntime.consumeEmpoweredCast(
                 caster.getUUID(),
                 ProjectSpellSpec.ARC_BOLT_ID,
@@ -61,6 +66,10 @@ public final class MageArcBoltRuntime {
             if (ProjectMinecraftDamageApplicator.applyDirectMagic(caster, target, damage)) {
                 applied++;
                 totalDamage += damage;
+                ProjectUltimateChargeRuntime.recordMageAdditionalActiveHit(
+                        caster,
+                        target
+                );
             }
         }
 

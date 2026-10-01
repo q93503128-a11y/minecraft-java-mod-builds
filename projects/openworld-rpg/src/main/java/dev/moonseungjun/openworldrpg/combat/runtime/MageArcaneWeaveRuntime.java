@@ -52,6 +52,10 @@ public final class MageArcaneWeaveRuntime {
                 MageRootPassiveEffects.triuneStudyMagnitudeMultiplier(player)
         );
 
+        if (result.weaveCompleted()) {
+            ProjectUltimateChargeRuntime.recordMageWeaveCompletion(player);
+        }
+
         double restoredMana = 0.0;
         if (result.weaveCompleted()
                 && MageRootPassiveEffects.resonantMindEnabled(player)
@@ -143,6 +147,21 @@ public final class MageArcaneWeaveRuntime {
         return state == null
                 ? OptionalDouble.empty()
                 : state.consumeEmpoweredCast(spellId, nowTick);
+    }
+
+    public static OptionalDouble consumeWeaveReadyForUltimate(
+            ServerPlayer player,
+            long nowTick
+    ) {
+        Objects.requireNonNull(player, "player");
+        MageArcaneWeaveRuntimeState state = STATES.get(player.getUUID());
+        if (!isMage(player) || state == null) {
+            return OptionalDouble.empty();
+        }
+        return state.consumeWeaveReadyForUltimate(
+                nowTick,
+                MageRootPassiveEffects.triuneStudyMagnitudeMultiplier(player)
+        );
     }
 
     public static void reset(UUID playerId) {

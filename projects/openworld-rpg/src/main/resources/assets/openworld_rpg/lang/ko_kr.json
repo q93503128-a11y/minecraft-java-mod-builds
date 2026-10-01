@@ -7,6 +7,8 @@
   "spell.openworld_rpg.frost_ring.description": "주변에 서리를 폭발시켜 적에게 피해를 주고 냉기를 겁니다. 완성된 비전 직조를 소모하면 자신에게 보호막을 부여합니다.",
   "spell.openworld_rpg.flame_burst.name": "화염 폭발",
   "spell.openworld_rpg.flame_burst.description": "지정한 지면을 불태워 적에게 반복 피해를 주고 화상을 남깁니다. 비전 직조를 소모하면 폭발과 화상이 함께 강화됩니다.",
+  "spell.openworld_rpg.astral_convergence.name": "성계 수렴",
+  "spell.openworld_rpg.astral_convergence.description": "자신을 중심으로 비전력을 연속 수렴시켜 끌려올 수 있는 적을 안쪽으로 당긴 뒤 마지막 폭발을 일으킵니다. 비전 직조를 소모하면 마지막 폭발이 강화됩니다.",
   "spell.openworld_rpg.radiant_lance.name": "광휘의 창",
   "spell.openworld_rpg.radiant_lance.description": "적에게 광휘의 창을 던집니다. 은총이 가득 차면 후속 효과가 강화됩니다.",
   "spell.openworld_rpg.mend.name": "치유",

@@ -27,6 +27,7 @@ public record ProjectSpellSpec(
     public static final String PHASE_STEP_ID = "openworld_rpg:phase_step";
     public static final String FROST_RING_ID = "openworld_rpg:frost_ring";
     public static final String FLAME_BURST_ID = "openworld_rpg:flame_burst";
+    public static final String ASTRAL_CONVERGENCE_ID = "openworld_rpg:astral_convergence";
     public static final String RADIANT_LANCE_ID = "openworld_rpg:radiant_lance";
     public static final String MEND_ID = "openworld_rpg:mend";
     public static final String CONSECRATED_GROUND_ID = "openworld_rpg:consecrated_ground";
@@ -51,6 +52,8 @@ public record ProjectSpellSpec(
     public static final double FLAME_BURST_POISE_COEFFICIENT = 1.00;
     public static final double FLAME_BURST_BURNING_ACTION_COEFFICIENT = 0.40;
     public static final double FLAME_BURST_WEAVE_BURNING_ACTION_COEFFICIENT = 0.50;
+    public static final double ASTRAL_CONVERGENCE_ACTION_COEFFICIENT = 5.80;
+    public static final double ASTRAL_CONVERGENCE_POISE_COEFFICIENT = 4.00;
     public static final double RADIANT_LANCE_ACTION_COEFFICIENT = 1.35;
     public static final double RADIANT_LANCE_POISE_COEFFICIENT = 0.60;
     public static final double RADIANT_LANCE_CHAIN_ACTION_COEFFICIENT = 0.55;
@@ -252,6 +255,17 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec astralConvergence() {
+        return new ProjectSpellSpec(
+                ASTRAL_CONVERGENCE_ID,
+                0.0,
+                0,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
     public static ProjectSpellSpec radiantLance() {
         return new ProjectSpellSpec(
                 RADIANT_LANCE_ID,
@@ -312,7 +326,7 @@ public record ProjectSpellSpec(
         return switch (spellId) {
             case WARRIOR_DRIVING_SLASH_ID, WARRIOR_IRON_COUNTER_ID, WARRIOR_CYCLONE_CUT_ID, WARRIOR_BREAKER_SLAM_ID, WARRIOR_EARTHSHATTER_ID -> Optional.of(RootClass.WARRIOR);
             case HUNTER_QUICKSTEP_VOLLEY_ID, HUNTER_PINNING_SHOT_ID, HUNTER_FAN_OF_ARROWS_ID, HUNTER_POWER_SHOT_ID, HUNTER_SKYFALL_ID -> Optional.of(RootClass.HUNTER);
-            case ARC_BOLT_ID, PHASE_STEP_ID, FROST_RING_ID, FLAME_BURST_ID ->
+            case ARC_BOLT_ID, PHASE_STEP_ID, FROST_RING_ID, FLAME_BURST_ID, ASTRAL_CONVERGENCE_ID ->
                     Optional.of(RootClass.MAGE);
             case RADIANT_LANCE_ID, MEND_ID, CONSECRATED_GROUND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);

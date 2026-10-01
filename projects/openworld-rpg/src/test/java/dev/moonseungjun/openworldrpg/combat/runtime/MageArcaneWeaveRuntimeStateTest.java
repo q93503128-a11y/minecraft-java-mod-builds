@@ -98,6 +98,27 @@ class MageArcaneWeaveRuntimeStateTest {
     }
 
     @Test
+    void ultimateConsumesReadyWithoutCreatingANewSigil() {
+        var state = new MageArcaneWeaveRuntimeState();
+        state.recordAcceptedActive("openworld_rpg:a", true, 0L, 0L, 1.10);
+        state.recordAcceptedActive("openworld_rpg:b", true, 1L, 0L, 1.10);
+        state.recordAcceptedActive("openworld_rpg:c", true, 2L, 0L, 1.10);
+
+        var consumed = state.consumeWeaveReadyForUltimate(
+                3L,
+                1.10
+        );
+        assertTrue(consumed.isPresent());
+        assertEquals(1.10, consumed.getAsDouble(), 0.0001);
+        assertFalse(state.weaveReady(3L));
+        assertEquals(0, state.sigilCount(3L));
+        assertTrue(
+                state.consumeWeaveReadyForUltimate(3L, 1.10)
+                        .isEmpty()
+        );
+    }
+
+    @Test
     void weaveReadyAndResonantMindUseExactCanonicalWindows() {
         var state = new MageArcaneWeaveRuntimeState();
         state.recordAcceptedActive("openworld_rpg:a", true, 0L, 0L, 1.0);

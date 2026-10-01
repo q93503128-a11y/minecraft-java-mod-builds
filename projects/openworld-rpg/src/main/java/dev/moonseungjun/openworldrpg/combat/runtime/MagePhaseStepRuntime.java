@@ -160,12 +160,18 @@ public final class MagePhaseStepRuntime {
 
         ACTIVE_FIELDS.entrySet().removeIf(entry -> {
             ActiveField field = entry.getValue();
+            ServerPlayer caster = server.getPlayerList()
+                    .getPlayer(entry.getKey());
             long nowTick = field.level().getGameTime();
-            if (nowTick >= field.expiresAtTick()) {
+            if (caster == null
+                    || !caster.isAlive()
+                    || caster.level() != field.level()
+                    || !isMage(caster)
+                    || nowTick >= field.expiresAtTick()) {
                 return true;
             }
 
-            applyFieldSlow(field, nowTick);
+            applyFieldSlow(caster, field, nowTick);
             if (nowTick >= field.nextVisualTick()) {
                 spawnFieldRing(field.level(), field.origin());
                 field.advanceVisualTick();
@@ -290,6 +296,7 @@ public final class MagePhaseStepRuntime {
     }
 
     private static void applyFieldSlow(
+            ServerPlayer caster,
             ActiveField field,
             long nowTick
     ) {
@@ -318,11 +325,17 @@ public final class MagePhaseStepRuntime {
                     > radius * radius) {
                 continue;
             }
-            ProjectHostileStatusRuntime.applyPhaseFieldSlow(
+            if (ProjectHostileStatusRuntime.applyPhaseFieldSlow(
                     target,
                     field.utilityMagnitudeMultiplier(),
                     nowTick
-            );
+            ).isPresent()) {
+                ProjectUltimateChargeRuntime.recordMageMeaningfulControl(
+                        caster,
+                        target,
+                        nowTick
+                );
+            }
         }
     }
 

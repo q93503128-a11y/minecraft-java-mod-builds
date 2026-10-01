@@ -31,6 +31,9 @@ public final class ProjectClassSkillLoadout {
                 case 1 -> Optional.of(ProjectSpellSpec.PHASE_STEP_ID);
                 case 2 -> Optional.of(ProjectSpellSpec.FROST_RING_ID);
                 case 3 -> Optional.of(ProjectSpellSpec.FLAME_BURST_ID);
+                case 4 -> Optional.of(
+                        ProjectSpellSpec.ASTRAL_CONVERGENCE_ID
+                );
                 default -> Optional.empty();
             };
             case CLERIC -> switch (slotIndex) {

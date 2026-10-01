@@ -1,0 +1,95 @@
+{
+  "school": "spell_power:arcane",
+  "range": 6.0,
+  "tier": 1,
+  "group": "mage_arcane",
+  "active": {
+    "cast": {
+      "duration": 1.0,
+      "animation": {
+        "id": "spell_engine:one_handed_area_charge"
+      },
+      "sound": {
+        "id": "spell_engine:generic_arcane_casting",
+        "randomness": 0.0
+      },
+      "particles": [
+        {
+          "id": "spell_engine:magic_spell",
+          "appearance": {
+            "color": 4284940287,
+            "motion": "ASCEND"
+          },
+          "batch": {
+            "count": 0.7,
+            "shape": "PIPE",
+            "anchor": "ENTITY",
+            "vertical_origin": 0.2,
+            "min_speed": 0.04,
+            "max_speed": 0.16,
+            "width_factor": 1.5
+          }
+        }
+      ]
+    }
+  },
+  "release": {
+    "animation": {
+      "id": "spell_engine:one_handed_area_release",
+      "speed": 0.8
+    },
+    "visuals": {
+      "particles": [
+        {
+          "id": "spell_engine:magic_arcane",
+          "appearance": {
+            "color": 4284940287,
+            "motion": "BURST"
+          },
+          "batch": {
+            "count": 52,
+            "shape": "CIRCLE",
+            "anchor": "ENTITY",
+            "vertical_origin": 0.12,
+            "min_speed": 0.12,
+            "max_speed": 0.42,
+            "width_factor": 1
+          }
+        },
+        {
+          "id": "spell_engine:area_effect_293",
+          "appearance": {
+            "color": 4284940287,
+            "scale_with": "RANGE"
+          },
+          "batch": {
+            "count": 1,
+            "shape": "NONE",
+            "anchor": "GROUND"
+          }
+        }
+      ]
+    },
+    "sound": {
+      "id": "spell_engine:generic_arcane_release",
+      "randomness": 0.03
+    }
+  },
+  "target": {
+    "type": "NONE"
+  },
+  "deliver": {
+    "type": "DIRECT"
+  },
+  "impacts": [],
+  "cost": {
+    "batching": false,
+    "exhaust": 0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0,
+      "duration": 0,
+      "hosting_item": false
+    }
+  }
+}

@@ -127,6 +127,23 @@ public final class MageArcaneWeaveRuntimeState {
         );
     }
 
+    public OptionalDouble consumeWeaveReadyForUltimate(
+            long nowTick,
+            double weaveEffectMagnitudeMultiplier
+    ) {
+        if (nowTick < 0L
+                || !Double.isFinite(weaveEffectMagnitudeMultiplier)
+                || weaveEffectMagnitudeMultiplier < 1.0) {
+            throw new IllegalArgumentException("Invalid ultimate Weave consumption input.");
+        }
+        expire(nowTick);
+        if (weaveReadyExpiresAt <= nowTick) {
+            return OptionalDouble.empty();
+        }
+        weaveReadyExpiresAt = Long.MIN_VALUE;
+        return OptionalDouble.of(weaveEffectMagnitudeMultiplier);
+    }
+
     public OptionalDouble consumeEmpoweredCast(String spellId, long nowTick) {
         Objects.requireNonNull(spellId, "spellId");
         expire(nowTick);

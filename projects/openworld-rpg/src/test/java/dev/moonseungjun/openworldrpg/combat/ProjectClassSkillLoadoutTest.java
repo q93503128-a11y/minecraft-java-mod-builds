@@ -97,7 +97,13 @@ class ProjectClassSkillLoadoutTest {
                         .orElseThrow()
         );
         assertEquals(
-                4,
+                ProjectSpellSpec.ASTRAL_CONVERGENCE_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.MAGE, 4)
+                        .orElseThrow()
+        );
+        assertEquals(
+                5,
                 ProjectClassSkillLoadout
                         .implementedSlots(RootClass.MAGE)
                         .size()

@@ -69,6 +69,34 @@ class ProjectUltimateChargeRuntimeTest {
     }
 
     @Test
+    void mageChargeEventsMatchRootCanon() {
+        assertEquals(
+                3.0,
+                ProjectUltimateChargeRuntime.MAGE_PRIMARY_ACTIVE_HIT_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                0.5,
+                ProjectUltimateChargeRuntime.MAGE_ADDITIONAL_ACTIVE_HIT_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                6.0,
+                ProjectUltimateChargeRuntime.MAGE_WEAVE_COMPLETION_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                2.0,
+                ProjectUltimateChargeRuntime.MAGE_MEANINGFUL_CONTROL_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                80L,
+                ProjectUltimateChargeRuntime.MAGE_CONTROL_ICD_TICKS
+        );
+    }
+
+    @Test
     void supportStepsUseFivePercentAndCapAtSixChargeWorth() {
         assertEquals(
                 0,

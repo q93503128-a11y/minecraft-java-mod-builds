@@ -12,7 +12,8 @@ public record ExternalActorCombatProfile(
         double poiseMax,
         CombatRank combatRank,
         ExternalActorReactionCapabilities reactionCapabilities,
-        ExternalActorWeakPointProfile weakPointProfile
+        ExternalActorWeakPointProfile weakPointProfile,
+        boolean meaningfulControlRewardEligible
 ) {
     public ExternalActorCombatProfile {
         Objects.requireNonNull(entityId, "entityId");
@@ -37,6 +38,31 @@ public record ExternalActorCombatProfile(
                 || poiseMax < 0.0) {
             throw new IllegalArgumentException("Invalid external actor combat profile: " + entityId);
         }
+    }
+
+    public ExternalActorCombatProfile(
+            String entityId,
+            int contentLevel,
+            float maxHealth,
+            double defense,
+            double magicResistance,
+            double poiseMax,
+            CombatRank combatRank,
+            ExternalActorReactionCapabilities reactionCapabilities,
+            ExternalActorWeakPointProfile weakPointProfile
+    ) {
+        this(
+                entityId,
+                contentLevel,
+                maxHealth,
+                defense,
+                magicResistance,
+                poiseMax,
+                combatRank,
+                reactionCapabilities,
+                weakPointProfile,
+                defaultMeaningfulControlRewardEligible(combatRank)
+        );
     }
 
     public ExternalActorCombatProfile(
@@ -103,6 +129,12 @@ public record ExternalActorCombatProfile(
                 reactionCapabilities,
                 ExternalActorWeakPointProfile.none()
         );
+    }
+
+    private static boolean defaultMeaningfulControlRewardEligible(
+            CombatRank combatRank
+    ) {
+        return combatRank != CombatRank.NORMAL_ELITE;
     }
 
     public enum CombatRank {

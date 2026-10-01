@@ -65,11 +65,13 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterQuickstepVolleyRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageAstralConvergenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageFlameBurstRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageFrostRingRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MagePhaseStepRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectUltimateChargeRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBurningRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHostileStatusRuntime;
@@ -140,6 +142,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             MagePhaseStepRuntime.tick(server);
             MageFrostRingRuntime.tick(server);
             MageFlameBurstRuntime.tick(server);
+            MageAstralConvergenceRuntime.tick(server);
             MageArcaneWeaveRuntime.tick(server);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -222,6 +225,10 @@ public final class OpenworldRpgMod implements ModInitializer {
             MagePhaseStepRuntime.reset(newPlayer.getUUID());
             MageFrostRingRuntime.reset(newPlayer.getUUID());
             MageFlameBurstRuntime.reset(newPlayer.getUUID());
+            MageAstralConvergenceRuntime.reset(newPlayer.getUUID());
+            ProjectUltimateChargeRuntime.resetMageTransient(
+                    newPlayer.getUUID()
+            );
             ProjectBurningRuntime.removeSource(newPlayer.getUUID());
             GuardianResolveRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
@@ -249,6 +256,8 @@ public final class OpenworldRpgMod implements ModInitializer {
             MagePhaseStepRuntime.disconnect(playerId);
             MageFrostRingRuntime.disconnect(playerId);
             MageFlameBurstRuntime.disconnect(playerId);
+            MageAstralConvergenceRuntime.disconnect(playerId);
+            ProjectUltimateChargeRuntime.resetMageTransient(playerId);
             ProjectBurningRuntime.removeSource(playerId);
             GuardianResolveRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);

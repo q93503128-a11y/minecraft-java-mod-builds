@@ -109,6 +109,7 @@ public final class MageFrostRingRuntime {
         );
         int damagedTargets = 0;
         int chilledTargets = 0;
+        int additionalChargeTargets = 0;
         double totalDamage = 0.0;
         double totalPoiseDamage = 0.0;
 
@@ -162,6 +163,18 @@ public final class MageFrostRingRuntime {
                 continue;
             }
 
+            if (damagedTargets == 0) {
+                ProjectUltimateChargeRuntime.recordMagePrimaryActiveHit(
+                        caster,
+                        target
+                );
+            } else if (additionalChargeTargets < 6) {
+                ProjectUltimateChargeRuntime.recordMageAdditionalActiveHit(
+                        caster,
+                        target
+                );
+                additionalChargeTargets++;
+            }
             damagedTargets++;
             totalDamage += damage;
             if (poiseDamage > 0.0) {
@@ -177,6 +190,11 @@ public final class MageFrostRingRuntime {
                     nowTick
             ).isPresent()) {
                 chilledTargets++;
+                ProjectUltimateChargeRuntime.recordMageMeaningfulControl(
+                        caster,
+                        target,
+                        nowTick
+                );
             }
         }
 

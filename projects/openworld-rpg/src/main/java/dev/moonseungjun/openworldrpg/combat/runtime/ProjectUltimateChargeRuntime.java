@@ -8,11 +8,13 @@ import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRunti
 import dev.moonseungjun.openworldrpg.progression.ProjectProgressionRules;
 import java.util.Objects;
 import java.util.OptionalInt;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * Server-owned shared Ultimate Gauge authority plus current Cleric event publishers.
+ * Server-owned shared Ultimate Gauge authority and class event publishers.
  */
 public final class ProjectUltimateChargeRuntime {
     public static final double CLERIC_DAMAGING_ACTIVE_CHARGE = 2.0;
@@ -27,8 +29,16 @@ public final class ProjectUltimateChargeRuntime {
     public static final double HUNTER_WEAK_POINT_HIT_CHARGE = 3.0;
     public static final double HUNTER_RANGED_POISE_BREAK_CHARGE = 6.0;
     public static final double HUNTER_ACTIVE_QUARRY_HIT_CHARGE = 3.0;
+    public static final double MAGE_PRIMARY_ACTIVE_HIT_CHARGE = 3.0;
+    public static final double MAGE_ADDITIONAL_ACTIVE_HIT_CHARGE = 0.5;
+    public static final double MAGE_WEAVE_COMPLETION_CHARGE = 6.0;
+    public static final double MAGE_MEANINGFUL_CONTROL_CHARGE = 2.0;
+    public static final long MAGE_CONTROL_ICD_TICKS = 80L;
     public static final double SUPPORT_STEP_MAX_HP_FRACTION = 0.05;
     public static final int MAX_SUPPORT_STEPS_PER_SOURCE_RECIPIENT = 3;
+
+    private static final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, Long>>
+            MAGE_CONTROL_READY_AT = new ConcurrentHashMap<>();
 
     private ProjectUltimateChargeRuntime() {
     }
@@ -302,6 +312,79 @@ public final class ProjectUltimateChargeRuntime {
         );
     }
 
+    public static GainApplication recordMagePrimaryActiveHit(
+            ServerPlayer mage,
+            LivingEntity hostile
+    ) {
+        return recordMageHostileEvent(mage, hostile, MAGE_PRIMARY_ACTIVE_HIT_CHARGE);
+    }
+
+    public static GainApplication recordMageAdditionalActiveHit(
+            ServerPlayer mage,
+            LivingEntity hostile
+    ) {
+        return recordMageHostileEvent(mage, hostile, MAGE_ADDITIONAL_ACTIVE_HIT_CHARGE);
+    }
+
+    public static GainApplication recordMageWeaveCompletion(ServerPlayer mage) {
+        Objects.requireNonNull(mage, "mage");
+        if (!isMage(mage)) {
+            return GainApplication.rejected();
+        }
+        int encounterLevel = ProjectActiveEncounterRuntime
+                .supportEncounterLevel(mage, mage)
+                .orElse(PlayerProgressionService.state(mage).combatLevel());
+        return recordClassEvent(mage, MAGE_WEAVE_COMPLETION_CHARGE, encounterLevel);
+    }
+
+    public static GainApplication recordMageMeaningfulControl(
+            ServerPlayer mage,
+            LivingEntity target,
+            long nowTick
+    ) {
+        Objects.requireNonNull(mage, "mage");
+        Objects.requireNonNull(target, "target");
+        if (nowTick < 0L || !isMage(mage) || mage.level() != target.level()) {
+            return GainApplication.rejected();
+        }
+        var profile = ExternalActorBindingRuntime.combatProfile(target).orElse(null);
+        if (profile == null || !profile.meaningfulControlRewardEligible()) {
+            return GainApplication.rejected();
+        }
+        var readyByTarget = MAGE_CONTROL_READY_AT.computeIfAbsent(
+                mage.getUUID(), ignored -> new ConcurrentHashMap<>()
+        );
+        Long readyAt = readyByTarget.get(target.getUUID());
+        if (readyAt != null && nowTick < readyAt) {
+            return GainApplication.rejected();
+        }
+        readyByTarget.put(target.getUUID(), Math.addExact(nowTick, MAGE_CONTROL_ICD_TICKS));
+        return recordClassEvent(mage, MAGE_MEANINGFUL_CONTROL_CHARGE, profile.contentLevel());
+    }
+
+    public static void resetMageTransient(UUID mageId) {
+        if (mageId != null) {
+            MAGE_CONTROL_READY_AT.remove(mageId);
+        }
+    }
+
+    private static GainApplication recordMageHostileEvent(
+            ServerPlayer mage,
+            LivingEntity hostile,
+            double authoredCharge
+    ) {
+        Objects.requireNonNull(mage, "mage");
+        Objects.requireNonNull(hostile, "hostile");
+        if (!isMage(mage) || mage.level() != hostile.level()) {
+            return GainApplication.rejected();
+        }
+        var profile = ExternalActorBindingRuntime.combatProfile(hostile).orElse(null);
+        if (profile == null) {
+            return GainApplication.rejected();
+        }
+        return recordClassEvent(mage, authoredCharge, profile.contentLevel());
+    }
+
     private static GainApplication recordWarriorHostileEvent(
             ServerPlayer warrior,
             LivingEntity hostile,
@@ -429,6 +512,13 @@ public final class ProjectUltimateChargeRuntime {
         return PlayerProgressionService.state(player)
                 .activeClass()
                 .filter(RootClass.CLERIC::equals)
+                .isPresent();
+    }
+
+    private static boolean isMage(ServerPlayer player) {
+        return PlayerProgressionService.state(player)
+                .activeClass()
+                .filter(RootClass.MAGE::equals)
                 .isPresent();
     }
 

@@ -201,6 +201,21 @@ public final class MageFlameBurstRuntime {
             return PulseApplication.rejected();
         }
 
+        int ultimateChargeKind = active.claimUltimateChargeTarget(
+                target.getUUID()
+        );
+        if (ultimateChargeKind == 1) {
+            ProjectUltimateChargeRuntime.recordMagePrimaryActiveHit(
+                    caster,
+                    target
+            );
+        } else if (ultimateChargeKind == 2) {
+            ProjectUltimateChargeRuntime.recordMageAdditionalActiveHit(
+                    caster,
+                    target
+            );
+        }
+
         if (poiseDamage > 0.0) {
             ExternalActorBindingRuntime.applyProjectPoiseDamage(
                     target,
@@ -407,6 +422,9 @@ public final class MageFlameBurstRuntime {
                 new HashMap<>();
         private final Set<UUID> burningAppliedTargets =
                 new HashSet<>();
+        private final Set<UUID> ultimateChargeTargets =
+                new HashSet<>();
+        private int additionalUltimateChargeTargets;
 
         private ActiveCast(
                 ServerLevel level,
@@ -482,6 +500,20 @@ public final class MageFlameBurstRuntime {
             );
             return previous == null
                     || previous.longValue() != nowTick;
+        }
+
+        private int claimUltimateChargeTarget(UUID targetId) {
+            if (!ultimateChargeTargets.add(targetId)) {
+                return 0;
+            }
+            if (ultimateChargeTargets.size() == 1) {
+                return 1;
+            }
+            if (additionalUltimateChargeTargets >= 6) {
+                return 0;
+            }
+            additionalUltimateChargeTargets++;
+            return 2;
         }
 
         private boolean markBurningApplied(UUID targetId) {

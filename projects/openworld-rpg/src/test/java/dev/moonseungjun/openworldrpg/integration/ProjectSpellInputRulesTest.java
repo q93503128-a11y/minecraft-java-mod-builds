@@ -116,6 +116,18 @@ class ProjectSpellInputRulesTest {
         );
         assertFalse(
                 ProjectSpellInputRules.suppressHeldRepeat(
+                        ProjectSpellSpec.ASTRAL_CONVERGENCE_ID,
+                        true
+                )
+        );
+        assertTrue(
+                ProjectSpellInputRules.suppressHeldRepeat(
+                        ProjectSpellSpec.ASTRAL_CONVERGENCE_ID,
+                        false
+                )
+        );
+        assertFalse(
+                ProjectSpellInputRules.suppressHeldRepeat(
                         "other_mod:spell",
                         false
                 )
