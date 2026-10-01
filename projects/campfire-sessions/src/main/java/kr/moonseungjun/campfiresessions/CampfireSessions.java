@@ -8,6 +8,7 @@ import kr.moonseungjun.campfiresessions.registry.ModBlocks;
 import kr.moonseungjun.campfiresessions.registry.ModCreativeTabs;
 import kr.moonseungjun.campfiresessions.registry.ModItems;
 import kr.moonseungjun.campfiresessions.registry.ModSounds;
+import kr.moonseungjun.campfiresessions.world.VillageReviewBootstrap;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -31,6 +32,10 @@ public final class CampfireSessions {
         if (AssetReviewCommands.enabled()) {
             NeoForge.EVENT_BUS.addListener(AssetReviewCommands::register);
             LOGGER.info("Campfire external asset review command enabled for this development run");
+        }
+        if (VillageReviewBootstrap.enabled()) {
+            NeoForge.EVENT_BUS.addListener(VillageReviewBootstrap::onServerStarted);
+            LOGGER.info("Campfire canonical village review bootstrap enabled for this development run");
         }
         NeoForge.EVENT_BUS.addListener(ChairSeatManager::onUseBlock);
         NeoForge.EVENT_BUS.addListener(ChairSeatManager::onServerTick);
