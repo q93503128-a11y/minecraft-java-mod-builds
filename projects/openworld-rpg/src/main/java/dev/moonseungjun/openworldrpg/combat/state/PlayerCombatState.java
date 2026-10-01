@@ -34,6 +34,8 @@ public final class PlayerCombatState {
     private int classMaxManaFlatBonus;
     private int classMaxStaminaFlatBonus;
     private double classStaminaRecoveryBonus;
+    private double nourishmentManaRecoveryBonus;
+    private double nourishmentStaminaRecoveryBonus;
     private double manaCostReduction;
     private double classSkillManaCostMultiplier = 1.0;
     private double dodgeSprintStaminaCostReduction;
@@ -218,6 +220,31 @@ public final class PlayerCombatState {
                 newMax,
                 newMax * fraction
         );
+    }
+
+    public void synchronizeNourishmentRecoveryModifiers(
+            double manaRecoveryBonus,
+            double staminaRecoveryBonus,
+            long nowTick
+    ) {
+        if (!Double.isFinite(manaRecoveryBonus)
+                || !Double.isFinite(staminaRecoveryBonus)
+                || manaRecoveryBonus < 0.0
+                || staminaRecoveryBonus < 0.0) {
+            throw new IllegalArgumentException(
+                    "Nourishment recovery modifiers must be finite and non-negative."
+            );
+        }
+        refresh(nowTick);
+        nourishmentManaRecoveryBonus = manaRecoveryBonus;
+        nourishmentStaminaRecoveryBonus = staminaRecoveryBonus;
+    }
+
+    public boolean isCombatActive(long nowTick) {
+        refresh(nowTick);
+        return lastCombatActivityTick > Long.MIN_VALUE / 8
+                && nowTick < lastCombatActivityTick
+                        + OUT_OF_COMBAT_BONUS_TICKS;
     }
 
     public EquipmentResourceModifiers resourceModifiers() {
@@ -695,7 +722,9 @@ public final class PlayerCombatState {
                 long bonusTicks = Math.max(0L, end - Math.max(regenStart, outOfCombatAt));
 
                 double perTick = baseManaRegenPerSecondForWill(will)
-                        * (1.0 + manaRecoveryBonus)
+                        * (1.0
+                        + manaRecoveryBonus
+                        + nourishmentManaRecoveryBonus)
                         / 20.0;
                 mana += normalTicks * perTick;
                 mana += bonusTicks * perTick * 2.0;
@@ -711,7 +740,8 @@ public final class PlayerCombatState {
                         * baseStaminaRegenPerSecondForEndurance(endurance)
                         * (1.0
                         + staminaRecoveryBonus
-                        + classStaminaRecoveryBonus)
+                        + classStaminaRecoveryBonus
+                        + nourishmentStaminaRecoveryBonus)
                         / 20.0;
                 stamina = Math.min(maxStamina(), stamina);
             }

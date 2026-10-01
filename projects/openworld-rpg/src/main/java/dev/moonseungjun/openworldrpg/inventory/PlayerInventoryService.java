@@ -106,6 +106,20 @@ public final class PlayerInventoryService {
         );
     }
 
+    public static PlayerInventoryState.BackpackConsumeResult consumeBackpackStackable(
+            ServerPlayer player,
+            String itemId,
+            int amount
+    ) {
+        PlayerInventoryState.BackpackConsumeResult result =
+                state(player).consumeBackpackStackable(
+                        itemId,
+                        amount
+                );
+        replace(player, result.state());
+        return result;
+    }
+
     public static PlayerInventoryState.MaterialConsumeResult consumeMaterial(
             ServerPlayer player,
             String materialId,

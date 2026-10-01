@@ -243,4 +243,41 @@ class PlayerInventoryStateTest {
         }
         return state;
     }
+
+    @Test
+    void backpackStackableConsumeIsAtomicAndDoesNotUseStorage() {
+        var item = ProjectInventoryItem.ordinary(
+                "openworld_rpg:trail_skewers",
+                2,
+                50,
+                0
+        );
+        var inserted = PlayerInventoryState.initial()
+                .deliverBackpackOnce(
+                        "openworld_rpg:test/meal_delivery",
+                        item
+                )
+                .state();
+
+        var consumed = inserted.consumeBackpackStackable(
+                "openworld_rpg:trail_skewers",
+                1
+        );
+        assertTrue(consumed.consumed());
+        assertEquals(1, consumed.removed());
+        assertEquals(
+                1,
+                consumed.state().backpack()
+                        .itemAt(0).orElseThrow().quantity()
+        );
+
+        var failed = consumed.state().consumeBackpackStackable(
+                "openworld_rpg:trail_skewers",
+                2
+        );
+        assertFalse(failed.consumed());
+        assertSame(consumed.state(), failed.state());
+        assertTrue(failed.state().personalStorage().occupied().isEmpty());
+    }
+
 }

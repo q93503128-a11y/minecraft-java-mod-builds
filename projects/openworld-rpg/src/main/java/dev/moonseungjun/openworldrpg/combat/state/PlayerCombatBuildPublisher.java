@@ -12,6 +12,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
+import dev.moonseungjun.openworldrpg.recovery.R01NourishmentService;
 import java.util.Optional;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -57,6 +58,10 @@ public final class PlayerCombatBuildPublisher {
                                         )
                                         + GuardianRootPassiveEffects
                                                 .maxHealthPercentBonus(
+                                                        serverPlayer
+                                                )
+                                        + R01NourishmentService
+                                                .maxHealthBonus(
                                                         serverPlayer
                                                 )
                                 : 0.0)
@@ -161,6 +166,19 @@ public final class PlayerCombatBuildPublisher {
                                                 .staminaRecoveryBonus(
                                                         serverPlayer
                                                 )
+                                : 0.0,
+                        gameTick
+                );
+        CombatStateServices.states()
+                .getOrCreate(player.getUUID(), gameTick)
+                .synchronizeNourishmentRecoveryModifiers(
+                        serverPlayer != null
+                                ? R01NourishmentService
+                                        .manaRecoveryBonus(serverPlayer)
+                                : 0.0,
+                        serverPlayer != null
+                                ? R01NourishmentService
+                                        .staminaRecoveryBonus(serverPlayer)
                                 : 0.0,
                         gameTick
                 );

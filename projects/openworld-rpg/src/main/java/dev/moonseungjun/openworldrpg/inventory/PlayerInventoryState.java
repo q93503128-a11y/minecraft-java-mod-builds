@@ -340,6 +340,36 @@ public record PlayerInventoryState(
         );
     }
 
+    public BackpackConsumeResult consumeBackpackStackable(
+            String itemId,
+            int amount
+    ) {
+        requireStableId(itemId);
+        if (amount <= 0) {
+            throw new IllegalArgumentException(
+                    "Backpack consume amount must be positive."
+            );
+        }
+        ProjectBackpackState.WithdrawResult withdrawn =
+                backpack.withdrawStackable(itemId, amount);
+        if (withdrawn.removed() != amount) {
+            return new BackpackConsumeResult(this, false, 0);
+        }
+        return new BackpackConsumeResult(
+                copy(
+                        withdrawn.state(),
+                        personalStorage,
+                        materialPouch,
+                        materialVault,
+                        keyItems,
+                        pendingItemRewards,
+                        completedDeliveryIds
+                ),
+                true,
+                amount
+        );
+    }
+
     public MaterialConsumeResult consumeMaterial(
             String materialId,
             int amount,
@@ -609,6 +639,26 @@ public record PlayerInventoryState(
         public DeliveryResult {
             Objects.requireNonNull(state, "state");
             Objects.requireNonNull(status, "status");
+        }
+    }
+
+    public record BackpackConsumeResult(
+            PlayerInventoryState state,
+            boolean consumed,
+            int removed
+    ) {
+        public BackpackConsumeResult {
+            Objects.requireNonNull(state, "state");
+            if (removed < 0) {
+                throw new IllegalArgumentException(
+                        "Backpack removed count must be non-negative."
+                );
+            }
+            if (consumed != (removed > 0)) {
+                throw new IllegalArgumentException(
+                        "Backpack consume status/count mismatch."
+                );
+            }
         }
     }
 

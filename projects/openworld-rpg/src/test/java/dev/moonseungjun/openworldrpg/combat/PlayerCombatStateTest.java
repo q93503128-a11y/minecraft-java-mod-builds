@@ -394,4 +394,28 @@ class PlayerCombatStateTest {
         assertEquals(100, state.maxMana());
         assertEquals(50.0, state.mana(0L), 0.0001);
     }
+
+    @Test
+    void nourishmentRecoveryBonusUsesTheSameAdditiveRecoveryLaneAsGearAndClass() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        state.synchronizeNourishmentRecoveryModifiers(
+                0.10,
+                0.0,
+                0
+        );
+        assertTrue(state.spendMana(50.0, 0));
+
+        assertEquals(54.4, state.mana(40), 0.0001);
+    }
+
+    @Test
+    void combatActiveWindowMatchesTheExistingFiveSecondOutOfCombatBoundary() {
+        PlayerCombatState state = new PlayerCombatState(5, 0);
+        assertFalse(state.isCombatActive(0));
+
+        state.markCombatActivity(20);
+        assertTrue(state.isCombatActive(119));
+        assertFalse(state.isCombatActive(120));
+    }
+
 }

@@ -22,6 +22,8 @@ import dev.moonseungjun.openworldrpg.gathering.R01GatheringService;
 import dev.moonseungjun.openworldrpg.housing.R01HousingAttachments;
 import dev.moonseungjun.openworldrpg.housing.R01HousingService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryAttachments;
+import dev.moonseungjun.openworldrpg.market.R01FixedMerchantAttachments;
+import dev.moonseungjun.openworldrpg.market.R01FixedMerchantService;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketService;
 import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
@@ -53,6 +55,8 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01RepeatRewardAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
+import dev.moonseungjun.openworldrpg.recovery.R01NourishmentAttachments;
+import dev.moonseungjun.openworldrpg.recovery.R01NourishmentService;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
@@ -122,7 +126,9 @@ public final class OpenworldRpgMod implements ModInitializer {
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
+        R01FixedMerchantAttachments.initialize();
         R01NessaMarketAttachments.initialize();
+        R01NourishmentAttachments.initialize();
         R01GatheringAttachments.initialize();
         R01FishingAttachments.initialize();
         R01HousingAttachments.initialize();
@@ -153,6 +159,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
+            R01NourishmentService.tick(server);
             RecoveryEffectRuntime.tick(server);
             RecoveryUseRuntime.tick(server);
             ConsecratedGroundRuntime.tick(server);
@@ -179,7 +186,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             PlayerRewardTransactionService.resumePending(handler.getPlayer());
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01PlayerStateService.reconcileActiveTimeEpochs(handler.getPlayer());
+                R01FixedMerchantService.reconcilePending(handler.getPlayer());
                 R01NessaMarketService.reconcileInterruptedPurchases(handler.getPlayer());
+                R01NourishmentService.reconcile(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
                 R01FishingService.reconcileInterruptedHooks(handler.getPlayer());
                 R01HousingService.reconcilePending(handler.getPlayer());
@@ -253,6 +262,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             var playerId = handler.getPlayer().getUUID();
             RecoveryUseRuntime.disconnect(playerId);
             RecoveryEffectRuntime.disconnect(playerId);
+            R01NourishmentService.disconnect(playerId);
             R01EarthloongMythicRuntime.disconnect(playerId);
             ConsecratedGroundRuntime.disconnect(playerId);
             SanctuaryRuntime.disconnect(playerId);
