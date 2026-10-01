@@ -1238,6 +1238,18 @@ Weave effect:
 
 - caster receives `BarrierCoefficient 0.10` using Mage's BarrierReference.
 
+Initial runtime precision binding:
+
+- cast presentation duration: **0.5 s**; this is a playtest-tunable presentation binding referenced from the already-reviewed Wizards Frost Nova pattern and does not alter the locked project damage/resource contract;
+- Spell Engine owns only the area-cast presentation; donor damage/status/cost authority is not used;
+- the server resolves a horizontal 4.2-block ring against real hostile bounding boxes with a current ±2.5-block vertical acceptance envelope;
+- direct damage and Poise use the locked project 1.45 / 1.20 coefficients once per admitted target;
+- Chilled is project-owned movement control only: common/elite 0.65 movement multiplier for 70 ticks, miniboss 0.80 for 50 ticks, boss 0.85 for 40 ticks;
+- Chilled reapplication keeps the strongest active magnitude and refreshes duration without adding attack-speed or cast-speed penalties;
+- Chilled, Snared, Skyfall slow and Phase Step field use one strongest-movement-control projection rather than multiplicative slow stacking;
+- if Frost Ring consumes Weave Ready, the caster receives BarrierCoefficient 0.10 through the shared barrier authority; Triune Study scales only that empowered barrier output;
+- final ring thickness, vertical feel, frost readability and audio weight remain manual playtest gates.
+
 ## 9.7 Active 4 — Flame Burst
 
 ```text
