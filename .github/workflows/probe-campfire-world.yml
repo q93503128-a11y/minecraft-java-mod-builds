@@ -12,6 +12,7 @@ on:
       - 'projects/campfire-sessions/tools/extract_external_structure_assets.py'
       - 'projects/campfire-sessions/tools/prepare_village_review_world.py'
       - 'projects/campfire-sessions/src/main/java/kr/moonseungjun/campfiresessions/world/**'
+      - 'projects/campfire-sessions/src/main/java/kr/moonseungjun/campfiresessions/CampfireSessions.java'
 
 permissions:
   contents: read
