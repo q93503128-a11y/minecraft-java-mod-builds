@@ -178,3 +178,18 @@ Before implementation, finish the major unresolved items listed in `GAME_DESIGN.
 - player/resident animation stack validation, including the Player Animation Library candidate and final full-body guitar performance.
 - economy numbers.
 - concrete save serialization details and remaining Household implementation edge cases.
+
+
+## Museum asset-review placement checkpoint — 2026-10-01
+
+The next museum integration unit now connects the existing GPU renderer to an actual client-world review scene without introducing a fake block/entity/model:
+
+- `MuseumAssetReviewScene` exists only when `campfiresessions.assetReview=true`.
+- `/campfire_museum_review triceratops` requires the real verified Triceratops CFMS + Smithsonian base-color resource before activation.
+- the review state is extracted through `ExtractLevelRenderStateEvent`, frustum-culled, then submitted through `SubmitCustomGeometryEvent`.
+- the verified Smithsonian source metre scale is kept at 1 block per metre for this first visual review.
+- the source Z-up geometry is mapped to Minecraft Y-up, centered horizontally and grounded from the verified source bounds.
+- the normal Campfire JAR is explicitly checked to contain no `assets/campfiresessions/museum/` review files.
+- the Smithsonian probe workflow now emits `campfire-museum-review-pack.zip` as an asset-review-only resource pack.
+
+This checkpoint does **not** count as client visual acceptance. Final transform, 20k-vs-100k LOD choice, and normal/occlusion material work remain gated on real client inspection.

@@ -54,6 +54,29 @@ jobs:
             --expected-source-sha256 b785898fc230252d7f5aaf8ecb7a98d3a5eae3829f324ca0607cfe5aab8b8256
           test "$(find build/campfire-museum-runtime -name '*.cfmesh' | wc -l)" -eq 2
           find build/campfire-museum-runtime -maxdepth 3 -type f -print | sort
+      - name: Assemble museum asset-review resource pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK=build/campfire-museum-review-pack
+          mkdir -p "$PACK/assets/campfiresessions/museum"
+          cp -R build/campfire-museum-runtime/triceratops_horridus "$PACK/assets/campfiresessions/museum/"
+          cp -R build/campfire-museum-runtime/mammuthus_primigenius "$PACK/assets/campfiresessions/museum/"
+          cat > "$PACK/pack.mcmeta" <<'JSON'
+          {
+            "pack": {
+              "description": "Campfire Sessions Smithsonian museum asset review",
+              "min_format": [88, 0],
+              "max_format": [88, 0]
+            }
+          }
+          JSON
+          (
+            cd "$PACK"
+            zip -qr ../campfire-museum-review-pack.zip .
+          )
+          test -s build/campfire-museum-review-pack.zip
+          unzip -l build/campfire-museum-review-pack.zip | sed -n '1,120p'
       - name: Upload museum asset staging package
         uses: actions/upload-artifact@v4
         with:
@@ -62,5 +85,6 @@ jobs:
             build/campfire-museum-assets
             build/campfire-museum-assets.log
             build/campfire-museum-runtime
+            build/campfire-museum-review-pack.zip
           if-no-files-found: error
           retention-days: 14

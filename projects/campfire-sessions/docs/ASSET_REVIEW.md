@@ -78,3 +78,43 @@ Record states separately:
 - MULTIPLAYER TESTED
 
 Only promote a dependency from trial to adopted after the relevant visual/gameplay checks pass.
+
+
+## Smithsonian museum centerpiece review
+
+The museum centerpiece renderer uses a separate resource pack so the real Smithsonian review files never enter the normal Campfire JAR before visual/performance acceptance.
+
+1. Open the latest successful **Probe Campfire Museum Assets** workflow artifact named `campfire-museum-assets`.
+2. Extract `campfire-museum-review-pack.zip`.
+3. Put that ZIP into `projects/campfire-sessions/run-asset-review/resourcepacks/`.
+4. Launch `./gradlew runAssetReviewClient`.
+5. Enable **Campfire Sessions Smithsonian museum asset review** in Resource Packs.
+6. Enter a disposable Creative review world and run:
+
+```text
+/campfire_museum_review triceratops
+/campfire_museum_review
+/campfire_museum_review clear
+```
+
+The placement command:
+- refuses to activate if the verified CFMS mesh or real Smithsonian base-color texture is missing;
+- places the real 100k-derived Triceratops about 8 blocks in front of the reviewer;
+- uses the Smithsonian source metre scale as 1 Minecraft block for this review pass;
+- converts the source Z-up geometry to Minecraft Y-up;
+- centers the source footprint and aligns the source minimum Z to the review floor;
+- uses the current player's facing to present the skeleton broadly across the view;
+- submits through `SubmitCustomGeometryEvent` into the existing static GPU `FeatureRenderer` path;
+- performs frustum rejection before submitting the exhibit.
+
+Expected review size from the verified source bounds is approximately **2.81 × 5.88 × 1.69 blocks** (width × length × height).
+
+This transform is a review transform, not final museum placement acceptance. Record:
+- silhouette and anatomical readability;
+- texture correctness;
+- world scale next to the player/buildings;
+- orientation and floor contact;
+- clipping/z-fighting;
+- frame cost at practical museum viewing distances.
+
+If the command reports that the review pack is not active, do not substitute a placeholder model. Fix/enable the real review pack first.
