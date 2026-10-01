@@ -10,6 +10,17 @@ It is NOT the same as THIRD_PARTY_ASSETS.md:
 
 ## 1. Absolute visual rule
 
+### Production-only visual asset rule
+Campfire does **not** place temporary or placeholder character, resident, creature, tool, furniture or landmark models into the playable game merely to fill an unresolved art slot.
+
+Rules:
+- unresolved visual content stays absent until a plausible final-quality source is selected;
+- gray boxes, programmer meshes, hastily recolored vanilla models and "replace this later" resident models are not acceptable player-facing substitutes;
+- technical renderer/animation/test scaffolds may exist in source, but they must not create a fake resident/model in normal gameplay;
+- an external model may enter the game only when it is being evaluated as a genuine production candidate with source, license/provenance, conversion path and visual-quality rationale recorded;
+- if a candidate fails license, conversion, visual or performance review, reject/remove it rather than retaining it as temporary content;
+- playtest screenshots must distinguish missing content from genuine production candidates rather than hiding missing art behind placeholders.
+
 For final player-facing art, prefer strong external assets/designs over improvised AI-authored final design.
 
 Search external sources first for:
@@ -686,7 +697,7 @@ Current external resident/model source pool:
 - **license gate before packaging:** download both packs and preserve/inspect each included `TERMS.md`. Do not put the original FBX/GLB/OBJ source bundles into the Campfire JAR or Modrinth pack. Only ship the converted/integrated runtime assets if the full terms confirm that Campfire's embedded converted representation is permitted.
 - itch.io currently marks the character packs as AI-assisted graphics; record that provenance but judge adoption on final visual/runtime quality and license compatibility.
 - current missing area: no matching modular clothing/rainwear/winterwear set has been verified yet. The sockets solve hats/back/chest props, but full body outfit swapping still needs a separate test or authored overlay/mesh layer.
-- **status: PROVISIONAL ADOPT FOR PROTOTYPE**, not final production acceptance until license-file inspection + Minecraft conversion + in-client visual test pass.
+- **status: PRIMARY PRODUCTION CANDIDATE**, not final production acceptance until license-file inspection + Minecraft conversion + in-client visual test pass. Do not represent it with a temporary substitute resident model while the real files are unavailable.
 - implementation checkpoint:
   - added `tools/plumberry_asset_contract.json` with the observed 20-character roster, shared GTB rig bones, five prop sockets and 26 required everyday animation names.
   - added read-only `tools/inspect_plumberry_assets.py`; it accepts the original ZIPs or extracted directories, records archive SHA-256, locates TERMS/README/CONTENTS, reads GLB JSON metadata without extracting/repacking the assets, and fails on missing rig/socket/animation contract.
@@ -706,6 +717,26 @@ Companion same-style asset:
 - **Plumberry Plains Tools Set Vol. 1** includes a fishing pole, watering can, garden shovel, axe, hammer, cooking knife and paint brush with grip-point origins designed for the resident hand sockets.
 - this is unusually valuable because it can keep resident tools and resident body art in one visual language.
 - its downloadable package terms still need the same license-file inspection before Campfire packages converted derivatives.
+
+Additional coherent production candidates found during the no-placeholder review:
+
+**Pixelius Vita — Cozy World Bundle / Cozy Kit — large-roster production candidate, license gate unresolved**
+- public Unity/Godot pages advertise **60+ animal characters**, **16 animal species**, modular outfits, hand props and **80 animations** covering idle, walk, run, jump, sit, sleep, dialogue, 19 emotes, farming, fishing, digging, sword and swimming sets.
+- the pack advertises one shared stylized palette-texture workflow, making it unusually strong for coherent resident + clothing + tool presentation.
+- current public entry price is **$25**.
+- this is not a temporary-model source. It is worth integrating only if it can plausibly become the final Campfire resident family.
+- the public bundle page does not currently expose a sufficiently explicit bundle-specific license statement for Campfire's converted-runtime distribution boundary.
+- creator comments elsewhere state commercial game/application use with no standalone asset redistribution, but do **not** treat that as bundle-specific proof.
+- **status: LICENSE HOLD / DO NOT BUY OR PACKAGE YET**. First obtain explicit bundle terms confirming use outside Unity/Godot and distribution of converted runtime representations inside a Minecraft mod.
+- if the license clears, compare it head-to-head with Plumberry on final visual quality, species variety, clothing, hand props, animation breadth, Minecraft conversion complexity and runtime cost.
+
+**meeshey — CozyLife Asset Pack — clothing-rich production candidate with provenance caution**
+- public page advertises 7 base avatars (human + bear/wolf/moose/hedgehog/beaver/red squirrel), **24 mix-and-match animal characters**, **50+ clothing/hair models**, one standardized skeleton and base actions including running, walking, chopping and fishing plus body emotes.
+- current public terms grant purchased users personal/commercial project use and prohibit redistribution/resale of raw assets.
+- the creator publicly states that an earlier FAB version was DMCA'd and that the current itch version was almost entirely remade.
+- because of that history, Campfire requires current-version provenance/terms review before purchase or integration.
+- do not extract or reuse assets from the free demo.
+- **status: REFERENCE / HOLD**, not adopted.
 
 Minecraft-native comparison:
 
@@ -762,7 +793,7 @@ Current conclusion:
 - Kenney/Quaternius remain useful CC0 fallback/reference sources if the Plumberry license or conversion quality fails.
 - Wagi's Furry Villager remains a Minecraft-native reference/fallback, not the current primary pipeline.
 
-Actual final resident pack/rig is **not yet production-accepted**, but the project now has a clear primary prototype candidate instead of an unresolved broad search.
+Actual final resident pack/rig is **not yet production-accepted**. Plumberry is the primary production candidate; Pixelius Cozy World is the strongest large-roster alternative pending a bundle-specific license grant. Until one candidate passes the full gate, Campfire intentionally ships **no temporary resident model**.
 
 Resident identity rule:
 - one approved external appearance/model/variant maps to one fixed authored resident.
