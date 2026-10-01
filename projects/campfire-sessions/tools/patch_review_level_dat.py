@@ -195,12 +195,21 @@ def patch(path: pathlib.Path) -> None:
 
     spawn = require_compound(data.get("spawn"), "Data.spawn")
     pos = spawn.get("pos")
-    if pos is None or pos.tag_id != TAG_LIST or pos.list_type != TAG_INT or len(pos.value) != 3:
-        raise ValueError("Data.spawn.pos is not the expected three-int NBT list")
+    if pos is None:
+        raise ValueError("Data.spawn.pos is missing")
+    if pos.tag_id == TAG_INT_ARRAY and len(pos.value) == 3:
+        pass
+    elif pos.tag_id == TAG_LIST and pos.list_type == TAG_INT and len(pos.value) == 3:
+        pass
+    else:
+        raise ValueError("Data.spawn.pos is not the expected three-int NBT value")
 
     data["allowCommands"] = Tag(TAG_BYTE, 1)
     data["LevelName"] = Tag(TAG_STRING, REVIEW_LEVEL_NAME)
-    pos.value = [Tag(TAG_INT, value) for value in REVIEW_SPAWN]
+    if pos.tag_id == TAG_INT_ARRAY:
+        pos.value = list(REVIEW_SPAWN)
+    else:
+        pos.value = [Tag(TAG_INT, value) for value in REVIEW_SPAWN]
     spawn["dimension"] = Tag(TAG_STRING, "minecraft:overworld")
     spawn["yaw"] = Tag(TAG_FLOAT, REVIEW_YAW)
     spawn["pitch"] = Tag(TAG_FLOAT, REVIEW_PITCH)
@@ -215,7 +224,11 @@ def patch(path: pathlib.Path) -> None:
     _, verify_root = read_nbt(gzip.decompress(path.read_bytes()))
     verify_data = require_compound(require_compound(verify_root, "root")["Data"], "Data")
     verify_spawn = require_compound(verify_data["spawn"], "Data.spawn")
-    verify_pos = tuple(item.value for item in verify_spawn["pos"].value)
+    verify_pos_tag = verify_spawn["pos"]
+    if verify_pos_tag.tag_id == TAG_INT_ARRAY:
+        verify_pos = tuple(verify_pos_tag.value)
+    else:
+        verify_pos = tuple(item.value for item in verify_pos_tag.value)
 
     if verify_data["allowCommands"].value != 1:
         raise ValueError("review world commands were not enabled")
