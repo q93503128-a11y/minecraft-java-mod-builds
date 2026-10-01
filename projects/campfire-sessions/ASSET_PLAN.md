@@ -1497,6 +1497,9 @@ Verified through Campfire's real GitHub Actions clean-build workflow:
 - **Traveler Tool Belt 1.0.4** — BUILD VERIFIED in the same combined stack.
 - **Player Animation Library 1.2.6** — BUILD VERIFIED in the same combined stack.
 - **Sophisticated Core 1.5.0.2349 + Sophisticated Backpacks 3.26.3.2170** — BUILD VERIFIED in the same combined stack.
+- **Croptopia 4.3.2 + EpheroLib 1.3.0** — BUILD VERIFIED in the full Campfire dependency stack.
+- **Cooking for Blockheads 26.2.0.3 + Balm 26.2.0.6** — BUILD VERIFIED in the full Campfire dependency stack.
+- **Shroomcraft 26.2.2 + Puzzles Lib 26.2.4** — BUILD VERIFIED in the full Campfire dependency stack.
 - external building probe resolves Villageria, SY Village, Towns & Towers and kogtyv-Towny and Village for analysis.
 - **Kogtyv Greece selected structure pack — 31 NBTs — PACKAGED AND CONTRACT VERIFIED.**
 - embedded Kogtyv MIT license notice and provenance manifest — PACKAGED AND VERIFIED.
@@ -1518,6 +1521,16 @@ Resident mesh-renderer checkpoint:
 - Plumberry asset contract step: SUCCESS.
 - existing external-structure probe + packaged-asset contracts: SUCCESS.
 - this verifies API/build compatibility only; no real Plumberry GLB has been converted or rendered in Minecraft yet.
+
+Life-sim content dependency checkpoint:
+- implementation commit: `520f49689a48dcb86246c480026ea5582630c326`.
+- Build Campfire Sessions run: **37** / run ID **36794628074**.
+- clean build with Croptopia/EpheroLib + Cooking for Blockheads/Balm + Shroomcraft/Puzzles Lib added to the existing external stack: SUCCESS.
+- resident asset contract: SUCCESS.
+- external structure probe: SUCCESS.
+- packaged alpha.6 asset/contracts: SUCCESS.
+- this is dependency/classpath verification only; crop worldgen, kitchen UX, mushroom worldgen/creatures, visuals and multiplayer behavior remain **NOT PLAYTESTED**.
+- ARR dependencies (Cooking for Blockheads, Balm) stay external-distribution dependencies; do not vendor/extract their raw JAR assets into Campfire.
 
 Resident material/animation checkpoint:
 - implementation commits: `d7a6869f7d5a4c14e14d49fa9c3a8a903cc933fc`, fix `d56b71fea33ed67a77d866fb3023cdef7413b943`, acceptance hardening `0a1a8e68674952a6f67aabfd5bac7a21b97d342c`.
