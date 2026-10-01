@@ -71,7 +71,6 @@ public final class AssetReviewCommands {
         }
 
         var root = Commands.literal("campfire_review")
-                .requires(source -> source.hasPermission(2))
                 .executes(context -> status(context));
 
         for (String category : CATEGORY_HINTS.keySet().stream().sorted().toList()) {
