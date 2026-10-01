@@ -1746,3 +1746,6 @@ The development-only `villageReviewClient` profile now places the actual Kogtyv 
 - normal gameplay remains inert unless `campfiresessions.villageReview=true`.
 
 This is a physical layout review path, not final accepted world composition. Entrance-facing rotations remain unguessed in the first pass and will be authored after the real buildings can be judged together.
+
+
+Physical-footprint collision check after the first placement code pass found that the earlier café origin overlapped the 21×16 museum by 4×8 blocks. The café was moved west to the measured flat patch before any client/world review; the current first-pass civic footprints no longer overlap.

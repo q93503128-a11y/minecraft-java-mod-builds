@@ -50,7 +50,7 @@ public final class VillageReviewBootstrap {
             spec("resident_services", "house/shop_triple_2", -312, 71, -19, 13, 16, 8),
             spec("general_store", "house/shop_triple_1", -290, 72, -46, 13, 16, 8),
             spec("clinic", "house/shop_medium_3", -321, 67, -12, 7, 16, 8),
-            spec("cafe", "house/shop_medium_1", -287, 74, -28, 7, 16, 8),
+            spec("cafe", "house/shop_medium_1", -296, 73, -28, 7, 16, 8),
             spec("clothing_shop", "house/shop_medium_2", -291, 74, -11, 7, 16, 8),
             spec("museum", "center/ratush_1", -284, 76, -32, 21, 8, 16),
             spec("harbor_service", "house/shop_small_1", -334, 64, -48, 5, 16, 7),
