@@ -4,6 +4,7 @@ import dev.moonseungjun.openworldrpg.economy.PlayerCurrencyService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryState;
 import dev.moonseungjun.openworldrpg.inventory.ProjectInventoryItem;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RiverbankRemediesService;
 import dev.moonseungjun.openworldrpg.world.structure.R01AlderfordRuntimeBindingRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,7 +94,8 @@ public final class R01CraftingService {
         if (!PlayerInventoryService.canConsumeMaterials(
                 player,
                 costs,
-                true
+                true,
+                R01RiverbankRemediesService.protectedPouchCounts(player)
         )) {
             return new CraftResult(
                     CraftStatus.INSUFFICIENT_MATERIALS,
@@ -157,9 +159,14 @@ public final class R01CraftingService {
 
         long maximum = Integer.MAX_VALUE;
         PlayerInventoryState inventory = PlayerInventoryService.state(player);
+        Map<String, Integer> protectedPouch =
+                R01RiverbankRemediesService.protectedPouchCounts(player);
         for (Map.Entry<String, Integer> cost : recipe.unitMaterialCosts().entrySet()) {
-            long available = inventory.materialPouch()
-                    .getOrDefault(cost.getKey(), 0);
+            long available = Math.max(
+                    0,
+                    inventory.materialPouch().getOrDefault(cost.getKey(), 0)
+                            - protectedPouch.getOrDefault(cost.getKey(), 0)
+            );
             available += inventory.materialVault()
                     .getOrDefault(cost.getKey(), 0);
             maximum = Math.min(maximum, available / cost.getValue());
@@ -235,7 +242,8 @@ public final class R01CraftingService {
             if (!PlayerInventoryService.canConsumeMaterials(
                     player,
                     materialCosts,
-                    true
+                    true,
+                    R01RiverbankRemediesService.protectedPouchCounts(player)
             )) {
                 replaceCraftState(
                         player,
@@ -283,7 +291,8 @@ public final class R01CraftingService {
                         player,
                         materialTransactionId,
                         materialCosts,
-                        true
+                        true,
+                        R01RiverbankRemediesService.protectedPouchCounts(player)
                 );
         if (!materialResult.consumed()) {
             return new CraftResult(

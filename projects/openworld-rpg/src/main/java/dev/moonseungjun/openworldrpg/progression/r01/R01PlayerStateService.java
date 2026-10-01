@@ -50,6 +50,61 @@ public final class R01PlayerStateService {
         return replace(player, state(player).markStarterPackageClaimed(gameTick(player)));
     }
 
+    public static R01PlayerState acceptRiverbankRemedies(
+            ServerPlayer player
+    ) {
+        return replace(
+                player,
+                state(player).acceptRiverbankRemedies(gameTick(player))
+        );
+    }
+
+    public static R01PlayerState abandonRiverbankRemedies(
+            ServerPlayer player
+    ) {
+        return replace(
+                player,
+                state(player).abandonRiverbankRemedies(gameTick(player))
+        );
+    }
+
+    public static R01PlayerState recordRiverbankHealingHerbGather(
+            ServerPlayer player,
+            String harvestTransactionId,
+            int quantity
+    ) {
+        return replace(
+                player,
+                state(player).recordRiverbankHealingHerbGather(
+                        harvestTransactionId,
+                        quantity,
+                        gameTick(player)
+                )
+        );
+    }
+
+    public static R01PlayerState beginRiverbankRemediesTurnIn(
+            ServerPlayer player,
+            String rewardClassId
+    ) {
+        return replace(
+                player,
+                state(player).beginRiverbankRemediesTurnIn(
+                        rewardClassId,
+                        gameTick(player)
+                )
+        );
+    }
+
+    public static R01PlayerState completeRiverbankRemedies(
+            ServerPlayer player
+    ) {
+        return replace(
+                player,
+                state(player).completeRiverbankRemedies(gameTick(player))
+        );
+    }
+
     public static R01PlayerState markDodgeHintSeen(ServerPlayer player) {
         return replace(player, state(player).markDodgeHintSeen(gameTick(player)));
     }

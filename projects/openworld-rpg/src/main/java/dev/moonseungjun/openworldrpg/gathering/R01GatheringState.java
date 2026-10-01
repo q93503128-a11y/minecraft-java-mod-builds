@@ -160,6 +160,39 @@ public record R01GatheringState(
         return R01GatheringRules.masteryRankForXp(masteryXp(discipline));
     }
 
+    public R01GatheringState awardMasteryXpOnce(
+            R01GatheringRules.GatheringDiscipline discipline,
+            String awardFlag,
+            int xp
+    ) {
+        Objects.requireNonNull(discipline, "discipline");
+        requireStableId(awardFlag);
+        if (xp <= 0) {
+            throw new IllegalArgumentException("Mastery bonus XP must be positive.");
+        }
+        if (discoveryFlags.contains(awardFlag)) {
+            return this;
+        }
+
+        Map<String, Integer> nextMastery = new HashMap<>(masteryXp);
+        nextMastery.put(
+                discipline.id(),
+                Math.addExact(
+                        nextMastery.getOrDefault(discipline.id(), 0),
+                        xp
+                )
+        );
+        Set<String> nextFlags = new HashSet<>(discoveryFlags);
+        nextFlags.add(awardFlag);
+        return copy(
+                toolTiers,
+                Map.copyOf(nextMastery),
+                Set.copyOf(nextFlags),
+                nodeCycles,
+                pendingHarvests
+        );
+    }
+
     public boolean isNodeAvailable(String nodeId, long activeTicks) {
         requireStableId(nodeId);
         if (activeTicks < 0L) {

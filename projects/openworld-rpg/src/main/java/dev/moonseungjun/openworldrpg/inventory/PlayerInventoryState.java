@@ -377,9 +377,30 @@ public record PlayerInventoryState(
             Map<String, Integer> costs,
             boolean settlementMayUseVault
     ) {
+        return canConsumeMaterials(
+                costs,
+                settlementMayUseVault,
+                Map.of()
+        );
+    }
+
+    public boolean canConsumeMaterials(
+            Map<String, Integer> costs,
+            boolean settlementMayUseVault,
+            Map<String, Integer> protectedPouchCounts
+    ) {
         validateMaterialCosts(costs);
+        validateProtectedPouchCounts(protectedPouchCounts);
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
-            int available = materialPouch.getOrDefault(entry.getKey(), 0);
+            int pouchAvailable = Math.max(
+                    0,
+                    materialPouch.getOrDefault(entry.getKey(), 0)
+                            - protectedPouchCounts.getOrDefault(
+                                    entry.getKey(),
+                                    0
+                            )
+            );
+            int available = pouchAvailable;
             if (settlementMayUseVault) {
                 available = Math.addExact(
                         available,
@@ -406,8 +427,23 @@ public record PlayerInventoryState(
             Map<String, Integer> costs,
             boolean settlementMayUseVault
     ) {
+        return consumeMaterialsOnce(
+                transactionId,
+                costs,
+                settlementMayUseVault,
+                Map.of()
+        );
+    }
+
+    public MaterialsConsumeOnceResult consumeMaterialsOnce(
+            String transactionId,
+            Map<String, Integer> costs,
+            boolean settlementMayUseVault,
+            Map<String, Integer> protectedPouchCounts
+    ) {
         requireStableId(transactionId);
         validateMaterialCosts(costs);
+        validateProtectedPouchCounts(protectedPouchCounts);
         if (completedDeliveryIds.contains(transactionId)) {
             return new MaterialsConsumeOnceResult(
                     this,
@@ -416,7 +452,11 @@ public record PlayerInventoryState(
                     Map.of()
             );
         }
-        if (!canConsumeMaterials(costs, settlementMayUseVault)) {
+        if (!canConsumeMaterials(
+                costs,
+                settlementMayUseVault,
+                protectedPouchCounts
+        )) {
             return new MaterialsConsumeOnceResult(
                     this,
                     MaterialsConsumeOnceStatus.INSUFFICIENT_MATERIALS,
@@ -434,7 +474,12 @@ public record PlayerInventoryState(
             String materialId = entry.getKey();
             int amount = entry.getValue();
             int pouchAvailable = nextPouch.getOrDefault(materialId, 0);
-            int pouchUsed = Math.min(pouchAvailable, amount);
+            int protectedCount = protectedPouchCounts.getOrDefault(
+                    materialId,
+                    0
+            );
+            int usablePouch = Math.max(0, pouchAvailable - protectedCount);
+            int pouchUsed = Math.min(usablePouch, amount);
             int vaultUsed = amount - pouchUsed;
 
             setOrRemove(nextPouch, materialId, pouchAvailable - pouchUsed);
@@ -647,6 +692,24 @@ public record PlayerInventoryState(
             values.remove(id);
         } else {
             values.put(id, amount);
+        }
+    }
+
+    private static void validateProtectedPouchCounts(
+            Map<String, Integer> protectedPouchCounts
+    ) {
+        Objects.requireNonNull(
+                protectedPouchCounts,
+                "protectedPouchCounts"
+        );
+        for (Map.Entry<String, Integer> entry
+                : protectedPouchCounts.entrySet()) {
+            requireStableId(entry.getKey());
+            if (entry.getValue() == null || entry.getValue() < 0) {
+                throw new IllegalArgumentException(
+                        "Protected pouch counts must be non-negative."
+                );
+            }
         }
     }
 

@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.gathering;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryState;
 import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RiverbankRemediesService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerState;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01WorldActionService;
@@ -131,6 +132,23 @@ public final class R01GatheringService {
         );
     }
 
+    public static R01GatheringState awardMasteryBonusOnce(
+            ServerPlayer player,
+            R01GatheringRules.GatheringDiscipline discipline,
+            String awardFlag,
+            int xp
+    ) {
+        Objects.requireNonNull(player, "player");
+        return replace(
+                player,
+                state(player).awardMasteryXpOnce(
+                        discipline,
+                        awardFlag,
+                        xp
+                )
+        );
+    }
+
     private static boolean resolvePending(
             ServerPlayer player,
             R01GatheringState.PendingHarvest pending
@@ -145,6 +163,16 @@ public final class R01GatheringService {
         if (delivery.status()
                 == PlayerInventoryState.MaterialDeliveryStatus.CAPACITY_BLOCKED) {
             return false;
+        }
+
+        if (R01GatheringRules.HEALING_HERB.equals(
+                pending.resourceId()
+        )) {
+            R01RiverbankRemediesService.recordHealingHerbHarvest(
+                    player,
+                    pending.transactionId(),
+                    pending.quantity()
+            );
         }
 
         R01GatheringRules.ResourceDefinition definition =

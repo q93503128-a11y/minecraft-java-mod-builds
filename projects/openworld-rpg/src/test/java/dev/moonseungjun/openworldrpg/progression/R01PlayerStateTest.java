@@ -226,4 +226,77 @@ class R01PlayerStateTest {
 
         assertEquals(original, decoded);
     }
+    @Test
+    void riverbankRemediesReservesFreshHerbsAndReacceptStartsNewGeneration() {
+        var available = R01PlayerState.initial()
+                .markFirstShrineActivated(1);
+        var accepted = available.acceptRiverbankRemedies(2);
+        assertEquals("active", accepted.riverbankRemediesState());
+        assertEquals(0, accepted.riverbankRemediesGeneration());
+
+        var first = accepted.recordRiverbankHealingHerbGather(
+                "openworld_rpg:gather_delivery/test/1",
+                2,
+                3
+        );
+        var duplicate = first.recordRiverbankHealingHerbGather(
+                "openworld_rpg:gather_delivery/test/1",
+                2,
+                4
+        );
+        assertEquals(2, first.riverbankRemediesGatherProgress());
+        assertEquals(2, first.riverbankReservedHealingHerbs());
+        assertEquals(first, duplicate);
+
+        var ready = first.recordRiverbankHealingHerbGather(
+                "openworld_rpg:gather_delivery/test/2",
+                2,
+                5
+        );
+        assertEquals("return", ready.riverbankRemediesState());
+        assertEquals(3, ready.riverbankRemediesGatherProgress());
+        assertEquals(3, ready.riverbankReservedHealingHerbs());
+
+        var abandoned = ready.abandonRiverbankRemedies(6);
+        assertEquals("abandoned", abandoned.riverbankRemediesState());
+        assertEquals(0, abandoned.riverbankReservedHealingHerbs());
+
+        var reaccepted = abandoned.acceptRiverbankRemedies(7);
+        assertEquals(1, reaccepted.riverbankRemediesGeneration());
+        assertEquals(0, reaccepted.riverbankRemediesGatherProgress());
+        assertEquals(0, reaccepted.riverbankReservedHealingHerbs());
+    }
+
+    @Test
+    void riverbankTurnInLocksRewardClassBeforeCompletion() {
+        var ready = R01PlayerState.initial()
+                .markFirstShrineActivated(1)
+                .acceptRiverbankRemedies(2)
+                .recordRiverbankHealingHerbGather(
+                        "openworld_rpg:gather_delivery/a/1",
+                        2,
+                        3
+                )
+                .recordRiverbankHealingHerbGather(
+                        "openworld_rpg:gather_delivery/b/1",
+                        1,
+                        4
+                );
+        var pending = ready.beginRiverbankRemediesTurnIn("mage", 5);
+        assertEquals("turn_in_pending", pending.riverbankRemediesState());
+        assertEquals("mage", pending.riverbankRewardClassId().orElseThrow());
+        assertThrows(
+                IllegalStateException.class,
+                () -> pending.beginRiverbankRemediesTurnIn("warrior", 6)
+        );
+
+        var completed = pending.completeRiverbankRemedies(7);
+        assertEquals("completed", completed.riverbankRemediesState());
+        assertEquals(0, completed.riverbankReservedHealingHerbs());
+        assertTrue(completed.ledger().completedStepIds().contains(
+                R01PlayerState.RIVERBANK_REMEDIES_COMPLETION_ID
+        ));
+    }
+
+
 }

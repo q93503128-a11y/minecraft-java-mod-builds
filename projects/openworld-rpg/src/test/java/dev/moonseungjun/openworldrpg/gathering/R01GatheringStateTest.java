@@ -227,4 +227,25 @@ class R01GatheringStateTest {
         assertEquals(5, R01GatheringRules.ordinaryBonusChancePercent(3));
         assertEquals(10, R01GatheringRules.ordinaryBonusChancePercent(5));
     }
+    @Test
+    void authoredMasteryBonusIsIdempotent() {
+        var initial = R01GatheringState.initial();
+        var once = initial.awardMasteryXpOnce(
+                R01GatheringRules.GatheringDiscipline.HERBALISM,
+                "openworld_rpg:r01/mastery/riverbank_remedies",
+                10
+        );
+        var twice = once.awardMasteryXpOnce(
+                R01GatheringRules.GatheringDiscipline.HERBALISM,
+                "openworld_rpg:r01/mastery/riverbank_remedies",
+                10
+        );
+
+        assertEquals(10, once.masteryXp(
+                R01GatheringRules.GatheringDiscipline.HERBALISM
+        ));
+        assertEquals(once, twice);
+    }
+
+
 }

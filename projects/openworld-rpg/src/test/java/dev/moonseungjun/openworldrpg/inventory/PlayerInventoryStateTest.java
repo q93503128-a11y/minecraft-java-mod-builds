@@ -355,4 +355,58 @@ class PlayerInventoryStateTest {
     }
 
 
+    @Test
+    void protectedPouchCountsRemainUntouchedWhileVaultCanCoverCosts() {
+        var initial = new PlayerInventoryState(
+                1,
+                ProjectBackpackState.startingBackpack(),
+                ProjectBackpackState.personalStorage(),
+                Map.of("openworld_rpg:healing_herb", 5),
+                Map.of("openworld_rpg:healing_herb", 4),
+                Set.of(),
+                Map.of(),
+                Set.of()
+        );
+        Map<String, Integer> protectedCounts =
+                Map.of("openworld_rpg:healing_herb", 3);
+
+        assertFalse(initial.canConsumeMaterials(
+                Map.of("openworld_rpg:healing_herb", 3),
+                false,
+                protectedCounts
+        ));
+        assertTrue(initial.canConsumeMaterials(
+                Map.of("openworld_rpg:healing_herb", 3),
+                true,
+                protectedCounts
+        ));
+
+        var consumed = initial.consumeMaterialsOnce(
+                "openworld_rpg:test/protected_materials",
+                Map.of("openworld_rpg:healing_herb", 3),
+                true,
+                protectedCounts
+        );
+        assertTrue(consumed.consumed());
+        assertEquals(
+                3,
+                consumed.state().materialPouch()
+                        .get("openworld_rpg:healing_herb")
+        );
+        assertEquals(
+                3,
+                consumed.state().materialVault()
+                        .get("openworld_rpg:healing_herb")
+        );
+        assertEquals(
+                2,
+                consumed.fromPouch().get("openworld_rpg:healing_herb")
+        );
+        assertEquals(
+                1,
+                consumed.fromVault().get("openworld_rpg:healing_herb")
+        );
+    }
+
+
 }

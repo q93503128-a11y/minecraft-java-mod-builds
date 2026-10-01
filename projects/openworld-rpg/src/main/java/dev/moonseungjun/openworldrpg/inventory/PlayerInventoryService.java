@@ -128,6 +128,19 @@ public final class PlayerInventoryService {
         return state(player).canConsumeMaterials(costs, settlementMayUseVault);
     }
 
+    public static boolean canConsumeMaterials(
+            ServerPlayer player,
+            java.util.Map<String, Integer> costs,
+            boolean settlementMayUseVault,
+            java.util.Map<String, Integer> protectedPouchCounts
+    ) {
+        return state(player).canConsumeMaterials(
+                costs,
+                settlementMayUseVault,
+                protectedPouchCounts
+        );
+    }
+
     public static PlayerInventoryState.MaterialsConsumeOnceResult consumeMaterialsOnce(
             ServerPlayer player,
             String transactionId,
@@ -139,6 +152,24 @@ public final class PlayerInventoryService {
                         transactionId,
                         costs,
                         settlementMayUseVault
+                );
+        replace(player, result.state());
+        return result;
+    }
+
+    public static PlayerInventoryState.MaterialsConsumeOnceResult consumeMaterialsOnce(
+            ServerPlayer player,
+            String transactionId,
+            java.util.Map<String, Integer> costs,
+            boolean settlementMayUseVault,
+            java.util.Map<String, Integer> protectedPouchCounts
+    ) {
+        PlayerInventoryState.MaterialsConsumeOnceResult result =
+                state(player).consumeMaterialsOnce(
+                        transactionId,
+                        costs,
+                        settlementMayUseVault,
+                        protectedPouchCounts
                 );
         replace(player, result.state());
         return result;

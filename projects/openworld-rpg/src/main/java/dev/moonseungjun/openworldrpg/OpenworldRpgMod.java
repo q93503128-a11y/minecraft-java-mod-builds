@@ -26,6 +26,8 @@ import dev.moonseungjun.openworldrpg.market.R01FixedMerchantAttachments;
 import dev.moonseungjun.openworldrpg.market.R01FixedMerchantService;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketAttachments;
 import dev.moonseungjun.openworldrpg.market.R01NessaMarketService;
+import dev.moonseungjun.openworldrpg.market.R01MaterialMarketAttachments;
+import dev.moonseungjun.openworldrpg.market.R01MaterialMarketService;
 import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
 import dev.moonseungjun.openworldrpg.profession.ProfessionMasteryAttachments;
 import dev.moonseungjun.openworldrpg.profession.R01CraftingAttachments;
@@ -55,6 +57,7 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01QuarryRoomEncounterContr
 import dev.moonseungjun.openworldrpg.progression.r01.R01QuarryRunAttributionService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RoadsideTroubleController;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RepeatRewardAttachments;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RiverbankRemediesService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionAttachments;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
@@ -133,6 +136,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01CraftingAttachments.initialize();
         R01FixedMerchantAttachments.initialize();
         R01NessaMarketAttachments.initialize();
+        R01MaterialMarketAttachments.initialize();
         R01NourishmentAttachments.initialize();
         R01GatheringAttachments.initialize();
         R01FishingAttachments.initialize();
@@ -194,6 +198,8 @@ public final class OpenworldRpgMod implements ModInitializer {
                 R01FixedMerchantService.reconcilePending(handler.getPlayer());
                 R01CraftingService.reconcilePending(handler.getPlayer());
                 R01NessaMarketService.reconcileInterruptedPurchases(handler.getPlayer());
+                R01MaterialMarketService.reconcilePending(handler.getPlayer());
+                R01RiverbankRemediesService.reconcilePending(handler.getPlayer());
                 R01NourishmentService.reconcile(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
                 R01FishingService.reconcileInterruptedHooks(handler.getPlayer());

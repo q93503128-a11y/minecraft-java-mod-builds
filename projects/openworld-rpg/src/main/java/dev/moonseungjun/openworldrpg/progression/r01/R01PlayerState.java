@@ -84,6 +84,14 @@ public record R01PlayerState(
             "openworld_rpg:r01/dust_on_quarry_road";
     public static final String ROOTS_BELOW_STONE_QUEST_ID =
             "openworld_rpg:r01/roots_below_stone";
+    public static final String RIVERBANK_REMEDIES_QUEST_ID =
+            "openworld_rpg:r01/riverbank_remedies";
+    public static final String RIVERBANK_REMEDIES_COMPLETION_ID =
+            "openworld_rpg:r01/riverbank_remedies/complete";
+    private static final String RIVERBANK_REMEDIES_GATHER_PREFIX =
+            "openworld_rpg:r01/riverbank_remedies/gather/";
+    private static final String RIVERBANK_REMEDIES_REWARD_CLASS_PREFIX =
+            "openworld_rpg:r01/riverbank_remedies/reward_class/";
     public static final String EARTHLOONG_CHOICE_CLAIM_ID =
             "openworld_rpg:r01/earthloong_first_clear_choice";
     public static final String EARTHLOONG_SCALE_CLAIM_ID =
@@ -599,6 +607,260 @@ public record R01PlayerState(
         );
     }
 
+
+    public String riverbankRemediesState() {
+        return opening.optionalContractStates().getOrDefault(
+                RIVERBANK_REMEDIES_QUEST_ID,
+                "available"
+        );
+    }
+
+    public int riverbankRemediesGeneration() {
+        return worldLoops.propertyProfession()
+                .contractReacceptGeneration(RIVERBANK_REMEDIES_QUEST_ID);
+    }
+
+    public int riverbankRemediesGatherProgress() {
+        return ledger.objectiveProgress().getOrDefault(
+                riverbankRemediesProgressId(riverbankRemediesGeneration()),
+                0
+        );
+    }
+
+    public int riverbankReservedHealingHerbs() {
+        String state = riverbankRemediesState();
+        if (!state.equals("active")
+                && !state.equals("return")
+                && !state.equals("turn_in_pending")) {
+            return 0;
+        }
+        return Math.min(3, riverbankRemediesGatherProgress());
+    }
+
+    public Optional<String> riverbankRewardClassId() {
+        String found = null;
+        for (String flag : ledger.choiceFlags()) {
+            if (!flag.startsWith(RIVERBANK_REMEDIES_REWARD_CLASS_PREFIX)) {
+                continue;
+            }
+            String value = flag.substring(
+                    RIVERBANK_REMEDIES_REWARD_CLASS_PREFIX.length()
+            );
+            if (found != null && !found.equals(value)) {
+                throw new IllegalStateException(
+                        "Multiple Riverbank Remedies reward classes are committed."
+                );
+            }
+            found = value;
+        }
+        return Optional.ofNullable(found);
+    }
+
+    public R01PlayerState acceptRiverbankRemedies(long worldTick) {
+        validateTick(worldTick);
+        if (!opening.firstShrineActivated()) {
+            throw new IllegalStateException(
+                    "Riverbank Remedies is unavailable before first Alderford arrival."
+            );
+        }
+        String current = riverbankRemediesState();
+        if (current.equals("completed")
+                || current.equals("active")
+                || current.equals("return")
+                || current.equals("turn_in_pending")) {
+            return this;
+        }
+
+        PropertyProfessionState profession = worldLoops.propertyProfession();
+        if (current.equals("abandoned")) {
+            profession = profession.incrementContractReacceptGeneration(
+                    RIVERBANK_REMEDIES_QUEST_ID
+            );
+        }
+
+        OpeningState nextOpening = opening.withOptionalContractState(
+                RIVERBANK_REMEDIES_QUEST_ID,
+                "active"
+        );
+        TransactionLedger nextLedger = ledger.withQuestStepId(
+                RIVERBANK_REMEDIES_QUEST_ID,
+                "active"
+        );
+        return changed(
+                nextOpening,
+                quarry,
+                worldLoops.withPropertyProfession(profession),
+                economy,
+                nextLedger,
+                worldTick
+        );
+    }
+
+    public R01PlayerState abandonRiverbankRemedies(long worldTick) {
+        validateTick(worldTick);
+        String current = riverbankRemediesState();
+        if (current.equals("completed")) {
+            return this;
+        }
+        if (current.equals("turn_in_pending")) {
+            throw new IllegalStateException(
+                    "Riverbank Remedies cannot be abandoned during committed turn-in."
+            );
+        }
+        if (!current.equals("active") && !current.equals("return")) {
+            return this;
+        }
+        return changed(
+                opening.withOptionalContractState(
+                        RIVERBANK_REMEDIES_QUEST_ID,
+                        "abandoned"
+                ),
+                quarry,
+                worldLoops,
+                economy,
+                ledger.withQuestStepId(
+                        RIVERBANK_REMEDIES_QUEST_ID,
+                        "abandoned"
+                ),
+                worldTick
+        );
+    }
+
+    public R01PlayerState recordRiverbankHealingHerbGather(
+            String harvestTransactionId,
+            int quantity,
+            long worldTick
+    ) {
+        requireStableId(harvestTransactionId, "harvestTransactionId");
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Gather credit quantity must be positive.");
+        }
+        validateTick(worldTick);
+        if (!riverbankRemediesState().equals("active")) {
+            return this;
+        }
+
+        String creditId = RIVERBANK_REMEDIES_GATHER_PREFIX
+                + harvestTransactionId.replace(':', '/');
+        if (ledger.completedStepIds().contains(creditId)) {
+            return this;
+        }
+
+        int current = riverbankRemediesGatherProgress();
+        if (current >= 3) {
+            return this;
+        }
+        int nextProgress = Math.min(3, Math.addExact(current, quantity));
+        int generation = riverbankRemediesGeneration();
+        TransactionLedger nextLedger = ledger
+                .withObjectiveProgress(
+                        riverbankRemediesProgressId(generation),
+                        nextProgress
+                )
+                .withCompletedStepId(creditId);
+
+        OpeningState nextOpening = opening;
+        if (nextProgress >= 3) {
+            nextOpening = nextOpening.withOptionalContractState(
+                    RIVERBANK_REMEDIES_QUEST_ID,
+                    "return"
+            );
+            nextLedger = nextLedger.withQuestStepId(
+                    RIVERBANK_REMEDIES_QUEST_ID,
+                    "return"
+            );
+        }
+        return changed(
+                nextOpening,
+                quarry,
+                worldLoops,
+                economy,
+                nextLedger,
+                worldTick
+        );
+    }
+
+    public R01PlayerState beginRiverbankRemediesTurnIn(
+            String rewardClassId,
+            long worldTick
+    ) {
+        requireStableId(rewardClassId, "rewardClassId");
+        validateTick(worldTick);
+        if (!riverbankRemediesState().equals("return")
+                || riverbankRemediesGatherProgress() < 3) {
+            throw new IllegalStateException(
+                    "Riverbank Remedies turn-in requires three fresh gathered herbs."
+            );
+        }
+
+        Optional<String> existing = riverbankRewardClassId();
+        if (existing.isPresent()
+                && !existing.orElseThrow().equals(rewardClassId)) {
+            throw new IllegalStateException(
+                    "Riverbank Remedies reward class cannot change after commit."
+            );
+        }
+
+        TransactionLedger nextLedger = ledger
+                .withQuestStepId(
+                        RIVERBANK_REMEDIES_QUEST_ID,
+                        "turn_in_pending"
+                )
+                .withChoiceFlag(
+                        RIVERBANK_REMEDIES_REWARD_CLASS_PREFIX + rewardClassId
+                );
+        return changed(
+                opening.withOptionalContractState(
+                        RIVERBANK_REMEDIES_QUEST_ID,
+                        "turn_in_pending"
+                ),
+                quarry,
+                worldLoops,
+                economy,
+                nextLedger,
+                worldTick
+        );
+    }
+
+    public R01PlayerState completeRiverbankRemedies(long worldTick) {
+        validateTick(worldTick);
+        if (riverbankRemediesState().equals("completed")) {
+            return this;
+        }
+        if (!riverbankRemediesState().equals("turn_in_pending")) {
+            throw new IllegalStateException(
+                    "Riverbank Remedies completion requires committed turn-in."
+            );
+        }
+        return changed(
+                opening.withOptionalContractState(
+                        RIVERBANK_REMEDIES_QUEST_ID,
+                        "completed"
+                ),
+                quarry,
+                worldLoops,
+                economy,
+                ledger.withQuestStepId(
+                                RIVERBANK_REMEDIES_QUEST_ID,
+                                "completed"
+                        )
+                        .withCompletedStepId(
+                                RIVERBANK_REMEDIES_COMPLETION_ID
+                        ),
+                worldTick
+        );
+    }
+
+    private static String riverbankRemediesProgressId(int generation) {
+        if (generation < 0) {
+            throw new IllegalArgumentException(
+                    "Riverbank Remedies generation must be non-negative."
+            );
+        }
+        return "openworld_rpg:r01/riverbank_remedies/generation/"
+                + generation + "/healing_herbs";
+    }
+
     private TransactionLedger reconcileQuarryRoadQuestLedger(
             OpeningState candidate,
             TransactionLedger candidateLedger
@@ -822,6 +1084,37 @@ public record R01PlayerState(
             return copy(mainStage, firstShrineActivated, firstRootClassSelected, starterPackageClaimed,
                     bits, regalhartCluesSeenBits, regalhartDiscovered,
                     dodgeHintSeen, dodgeUsedOnce);
+        }
+
+        public OpeningState withOptionalContractState(
+                String contractId,
+                String stateId
+        ) {
+            requireStableId(contractId, "contractId");
+            requireStableId(stateId, "stateId");
+            if (stateId.equals(optionalContractStates.get(contractId))) {
+                return this;
+            }
+            Map<String, String> nextContracts =
+                    new java.util.HashMap<>(optionalContractStates);
+            nextContracts.put(contractId, stateId);
+            return new OpeningState(
+                    mainStage,
+                    firstShrineActivated,
+                    firstRootClassSelected,
+                    starterPackageClaimed,
+                    quarryRoadActionBits,
+                    Map.copyOf(nextContracts),
+                    trailStagState,
+                    trailStagUnlocked,
+                    regalhartCluesSeenBits,
+                    regalhartDiscovered,
+                    postQuarryBriefingSeen,
+                    act1WesternRelayLeadKnown,
+                    act1WhitecrestStationLeadKnown,
+                    dodgeHintSeen,
+                    dodgeUsedOnce
+            );
         }
 
         public OpeningState withRegalhartCluesSeenBits(int bits) {
@@ -1062,6 +1355,16 @@ public record R01PlayerState(
             );
         }
 
+        public WorldLoopState withPropertyProfession(
+                PropertyProfessionState next
+        ) {
+            Objects.requireNonNull(next, "next");
+            if (propertyProfession.equals(next)) {
+                return this;
+            }
+            return new WorldLoopState(repeatAndCamp, next, fishingService);
+        }
+
         public WorldLoopState withRepeatAndCamp(RepeatAndCampState next) {
             Objects.requireNonNull(next, "next");
             if (repeatAndCamp.equals(next)) {
@@ -1199,6 +1502,29 @@ public record R01PlayerState(
             );
             contractReacceptGeneration.values().forEach(
                     value -> requireNonNegative(value, "contractReacceptGeneration")
+            );
+        }
+
+        public int contractReacceptGeneration(String contractId) {
+            requireStableId(contractId, "contractId");
+            return contractReacceptGeneration.getOrDefault(contractId, 0);
+        }
+
+        public PropertyProfessionState incrementContractReacceptGeneration(
+                String contractId
+        ) {
+            requireStableId(contractId, "contractId");
+            Map<String, Integer> next =
+                    new java.util.HashMap<>(contractReacceptGeneration);
+            next.put(
+                    contractId,
+                    Math.addExact(contractReacceptGeneration(contractId), 1)
+            );
+            return new PropertyProfessionState(
+                    propertyInspectedIds,
+                    propertyOwnerState,
+                    professionInsightFlags,
+                    Map.copyOf(next)
             );
         }
 
