@@ -15,6 +15,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkyfallRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcBoltRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.MagePhaseStepRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
@@ -303,6 +304,16 @@ public final class SpellEngineAuthorityAdapter {
                 )
         );
 
+        ProjectSpellSpec phaseStep = ProjectSpellSpec.phaseStep();
+        AUTHORITY.registerPolicy(
+                phaseStep.id(),
+                new ProjectSpellTransactionPolicy(
+                        phaseStep,
+                        COMBAT_STATES,
+                        ProjectSpellTransactionPolicy.SpellImpactPort.failClosed()
+                )
+        );
+
         ProjectSpellSpec radiantLance = ProjectSpellSpec.radiantLance();
         AUTHORITY.registerPolicy(
                 radiantLance.id(),
@@ -412,6 +423,12 @@ public final class SpellEngineAuthorityAdapter {
                 && player instanceof ServerPlayer serverPlayer
                 && (!acceptedStage || firstAcceptedCast)
                 && !SanctuaryRuntime.canActivate(serverPlayer)) {
+            return invokeStatic(attemptNone);
+        }
+        if (ProjectSpellSpec.PHASE_STEP_ID.equals(spellId)
+                && player instanceof ServerPlayer serverPlayer
+                && (!acceptedStage || firstAcceptedCast)
+                && !MagePhaseStepRuntime.canActivate(serverPlayer)) {
             return invokeStatic(attemptNone);
         }
         if (ProjectSpellSpec.CONSECRATED_GROUND_ID.equals(spellId)
@@ -531,11 +548,28 @@ public final class SpellEngineAuthorityAdapter {
             } else if (ProjectSpellSpec.requiredRootClass(spellId)
                     .filter(RootClass.MAGE::equals)
                     .isPresent()) {
-                MageArcaneWeaveRuntime.onAcceptedCast(
+                var weave = MageArcaneWeaveRuntime.onAcceptedCast(
                         serverPlayer,
                         spellId,
                         gameTick
                 );
+                if (ProjectSpellSpec.PHASE_STEP_ID.equals(spellId)) {
+                    var phase = MagePhaseStepRuntime.activate(
+                            serverPlayer,
+                            weave.weaveConsumed(),
+                            weave.weaveEffectMagnitudeMultiplier()
+                    );
+                    if (!phase.accepted()) {
+                        return invokeStatic(attemptNone);
+                    }
+                    if (weave.weaveConsumed()) {
+                        MageArcaneWeaveRuntime.consumeEmpoweredCast(
+                                serverPlayer.getUUID(),
+                                spellId,
+                                gameTick
+                        );
+                    }
+                }
             } else {
                 ClericSkillRuntime.onAcceptedCast(
                         serverPlayer,

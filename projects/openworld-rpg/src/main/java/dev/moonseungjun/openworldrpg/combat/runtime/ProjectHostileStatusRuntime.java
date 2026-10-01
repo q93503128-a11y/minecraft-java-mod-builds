@@ -36,6 +36,10 @@ public final class ProjectHostileStatusRuntime {
     public static final double SKYFALL_BOSS_LIKE_MOVEMENT_MULTIPLIER = 0.90;
     public static final long SKYFALL_REFRESH_TICKS = 2L;
 
+    public static final double PHASE_FIELD_STANDARD_MOVEMENT_MULTIPLIER = 0.75;
+    public static final double PHASE_FIELD_BOSS_MOVEMENT_MULTIPLIER = 0.90;
+    public static final long PHASE_FIELD_REFRESH_TICKS = 2L;
+
     private static final Identifier SNARED_MOVEMENT_MODIFIER_ID =
             Identifier.fromNamespaceAndPath(
                     OpenworldRpgMod.MOD_ID,
@@ -46,6 +50,11 @@ public final class ProjectHostileStatusRuntime {
                     OpenworldRpgMod.MOD_ID,
                     "hostile_skyfall_slow"
             );
+    private static final Identifier PHASE_FIELD_MOVEMENT_MODIFIER_ID =
+            Identifier.fromNamespaceAndPath(
+                    OpenworldRpgMod.MOD_ID,
+                    "hostile_phase_field_slow"
+            );
 
     private static final ConcurrentHashMap<UUID, RebukedRuntimeState>
             REBUKED = new ConcurrentHashMap<>();
@@ -53,6 +62,8 @@ public final class ProjectHostileStatusRuntime {
             SNARED = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<UUID, SkyfallSlowEntry>
             SKYFALL_SLOW = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, PhaseFieldSlowEntry>
+            PHASE_FIELD_SLOW = new ConcurrentHashMap<>();
 
     private ProjectHostileStatusRuntime() {
     }
@@ -168,11 +179,7 @@ public final class ProjectHostileStatusRuntime {
                 duration,
                 nowTick
         );
-        removeSkyfallModifier(target);
-        synchronizeSnaredModifier(
-                target,
-                applied.movementMultiplier()
-        );
+        synchronizeMovementControl(target, nowTick);
 
         return Optional.of(
                 new SnaredApplication(
@@ -218,11 +225,7 @@ public final class ProjectHostileStatusRuntime {
 
         boolean strongerSnareActive =
                 snaredSnapshot(target, nowTick).isPresent();
-        if (strongerSnareActive) {
-            removeSkyfallModifier(target);
-        } else {
-            synchronizeSkyfallModifier(target, multiplier);
-        }
+        synchronizeMovementControl(target, nowTick);
         return Optional.of(
                 new SkyfallSlowApplication(
                         multiplier,
@@ -231,6 +234,74 @@ public final class ProjectHostileStatusRuntime {
                         profile.combatRank()
                 )
         );
+    }
+
+    public static Optional<PhaseFieldSlowApplication>
+            applyPhaseFieldSlow(
+                    LivingEntity target,
+                    double utilityMagnitudeMultiplier,
+                    long nowTick
+            ) {
+        if (target.level().isClientSide()
+                || !Double.isFinite(utilityMagnitudeMultiplier)
+                || utilityMagnitudeMultiplier < 1.0
+                || ExternalActorBindingRuntime.combatProfile(target).isEmpty()
+                || target.getAttribute(Attributes.MOVEMENT_SPEED) == null
+                || !(target.level() instanceof ServerLevel level)) {
+            return Optional.empty();
+        }
+
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(target)
+                .orElseThrow();
+        double multiplier = phaseFieldMovementMultiplier(
+                profile.combatRank(),
+                utilityMagnitudeMultiplier
+        );
+        long expiresAtTick = Math.addExact(
+                nowTick,
+                PHASE_FIELD_REFRESH_TICKS
+        );
+        PHASE_FIELD_SLOW.put(
+                target.getUUID(),
+                new PhaseFieldSlowEntry(
+                        level,
+                        multiplier,
+                        expiresAtTick
+                )
+        );
+        boolean strongerControlActive =
+                strongestMovementMultiplier(target, nowTick)
+                        < multiplier - 1.0e-9;
+        synchronizeMovementControl(target, nowTick);
+        return Optional.of(
+                new PhaseFieldSlowApplication(
+                        multiplier,
+                        expiresAtTick,
+                        strongerControlActive,
+                        profile.combatRank()
+                )
+        );
+    }
+
+    public static double phaseFieldMovementMultiplier(
+            ExternalActorCombatProfile.CombatRank rank,
+            double utilityMagnitudeMultiplier
+    ) {
+        if (rank == null
+                || !Double.isFinite(utilityMagnitudeMultiplier)
+                || utilityMagnitudeMultiplier < 1.0) {
+            throw new IllegalArgumentException(
+                    "Invalid Phase Step field slow input."
+            );
+        }
+        double baseline =
+                rank == ExternalActorCombatProfile.CombatRank.BOSS
+                        ? PHASE_FIELD_BOSS_MOVEMENT_MULTIPLIER
+                        : PHASE_FIELD_STANDARD_MOVEMENT_MULTIPLIER;
+        double slowFraction =
+                (1.0 - baseline) * utilityMagnitudeMultiplier;
+        return Math.max(0.0, 1.0 - slowFraction);
     }
 
     public static double outgoingDirectDamageMultiplier(
@@ -295,11 +366,7 @@ public final class ProjectHostileStatusRuntime {
                 removeSnaredModifier(living);
                 return true;
             }
-            removeSkyfallModifier(living);
-            synchronizeSnaredModifier(
-                    living,
-                    snapshot.movementMultiplier()
-            );
+            synchronizeMovementControl(living, nowTick);
             return false;
         });
 
@@ -314,14 +381,22 @@ public final class ProjectHostileStatusRuntime {
                 removeSkyfallModifier(living);
                 return true;
             }
-            if (snaredSnapshot(living, nowTick).isPresent()) {
-                removeSkyfallModifier(living);
-                return false;
+            synchronizeMovementControl(living, nowTick);
+            return false;
+        });
+
+        PHASE_FIELD_SLOW.entrySet().removeIf(entry -> {
+            PhaseFieldSlowEntry slow = entry.getValue();
+            var entity = slow.level().getEntity(entry.getKey());
+            if (!(entity instanceof LivingEntity living)) {
+                return true;
             }
-            synchronizeSkyfallModifier(
-                    living,
-                    slow.movementMultiplier()
-            );
+            long nowTick = slow.level().getGameTime();
+            if (nowTick >= slow.expiresAtTick()) {
+                removePhaseFieldModifier(living);
+                return true;
+            }
+            synchronizeMovementControl(living, nowTick);
             return false;
         });
     }
@@ -330,14 +405,18 @@ public final class ProjectHostileStatusRuntime {
         REBUKED.remove(entityId);
         SnaredEntry entry = SNARED.remove(entityId);
         SkyfallSlowEntry skyfall = SKYFALL_SLOW.remove(entityId);
+        PhaseFieldSlowEntry phase = PHASE_FIELD_SLOW.remove(entityId);
         ServerLevel level = entry != null
                 ? entry.level()
-                : skyfall != null ? skyfall.level() : null;
+                : skyfall != null
+                        ? skyfall.level()
+                        : phase != null ? phase.level() : null;
         if (level != null) {
             var entity = level.getEntity(entityId);
             if (entity instanceof LivingEntity living) {
                 removeSnaredModifier(living);
                 removeSkyfallModifier(living);
+                removePhaseFieldModifier(living);
             }
         }
     }
@@ -348,6 +427,100 @@ public final class ProjectHostileStatusRuntime {
     ) {
         SNARED.remove(target.getUUID(), expected);
         removeSnaredModifier(target);
+    }
+
+    private static void synchronizeMovementControl(
+            LivingEntity target,
+            long nowTick
+    ) {
+        double strongest = 1.0;
+        MovementControlSource source = MovementControlSource.NONE;
+
+        var snared = snaredSnapshot(target, nowTick).orElse(null);
+        if (snared != null
+                && snared.movementMultiplier() < strongest) {
+            strongest = snared.movementMultiplier();
+            source = MovementControlSource.SNARED;
+        }
+
+        SkyfallSlowEntry skyfall = SKYFALL_SLOW.get(
+                target.getUUID()
+        );
+        if (skyfall != null
+                && skyfall.level() == target.level()
+                && nowTick < skyfall.expiresAtTick()
+                && skyfall.movementMultiplier() < strongest) {
+            strongest = skyfall.movementMultiplier();
+            source = MovementControlSource.SKYFALL;
+        }
+
+        PhaseFieldSlowEntry phase = PHASE_FIELD_SLOW.get(
+                target.getUUID()
+        );
+        if (phase != null
+                && phase.level() == target.level()
+                && nowTick < phase.expiresAtTick()
+                && phase.movementMultiplier() < strongest) {
+            strongest = phase.movementMultiplier();
+            source = MovementControlSource.PHASE_FIELD;
+        }
+
+        removeSnaredModifier(target);
+        removeSkyfallModifier(target);
+        removePhaseFieldModifier(target);
+        switch (source) {
+            case SNARED -> synchronizeSnaredModifier(
+                    target,
+                    strongest
+            );
+            case SKYFALL -> synchronizeSkyfallModifier(
+                    target,
+                    strongest
+            );
+            case PHASE_FIELD -> synchronizePhaseFieldModifier(
+                    target,
+                    strongest
+            );
+            case NONE -> {
+            }
+        }
+    }
+
+    private static double strongestMovementMultiplier(
+            LivingEntity target,
+            long nowTick
+    ) {
+        double strongest = 1.0;
+        var snared = snaredSnapshot(target, nowTick).orElse(null);
+        if (snared != null) {
+            strongest = Math.min(
+                    strongest,
+                    snared.movementMultiplier()
+            );
+        }
+        SkyfallSlowEntry skyfall = SKYFALL_SLOW.get(
+                target.getUUID()
+        );
+        if (skyfall != null
+                && skyfall.level() == target.level()
+                && nowTick < skyfall.expiresAtTick()) {
+            strongest = Math.min(
+                    strongest,
+                    skyfall.movementMultiplier()
+            );
+        }
+        PhaseFieldSlowEntry phase = PHASE_FIELD_SLOW.get(
+                target.getUUID()
+        );
+        if (phase != null
+                && phase.level() == target.level()
+                && nowTick < phase.expiresAtTick()) {
+            strongest = Math.min(
+                    strongest,
+                    phase.movementMultiplier()
+            );
+        }
+        return strongest;
     }
 
     private static void synchronizeSnaredModifier(
@@ -408,6 +581,42 @@ public final class ProjectHostileStatusRuntime {
         }
     }
 
+    private static void synchronizePhaseFieldModifier(
+            LivingEntity target,
+            double multiplier
+    ) {
+        var movement = target.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement == null) {
+            throw new IllegalStateException(
+                    "Phase-field target lost MOVEMENT_SPEED attribute."
+            );
+        }
+        movement.removeModifier(PHASE_FIELD_MOVEMENT_MODIFIER_ID);
+        movement.addOrUpdateTransientModifier(
+                new AttributeModifier(
+                        PHASE_FIELD_MOVEMENT_MODIFIER_ID,
+                        multiplier - 1.0,
+                        AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                )
+        );
+    }
+
+    private static void removePhaseFieldModifier(
+            LivingEntity target
+    ) {
+        var movement = target.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement != null) {
+            movement.removeModifier(PHASE_FIELD_MOVEMENT_MODIFIER_ID);
+        }
+    }
+
+    private enum MovementControlSource {
+        NONE,
+        SNARED,
+        SKYFALL,
+        PHASE_FIELD
+    }
+
     public record Application(
             double multiplier,
             long durationTicks,
@@ -432,6 +641,14 @@ public final class ProjectHostileStatusRuntime {
     ) {
     }
 
+    public record PhaseFieldSlowApplication(
+            double movementMultiplier,
+            long expiresAtTick,
+            boolean suppressedByStrongerControl,
+            ExternalActorCombatProfile.CombatRank combatRank
+    ) {
+    }
+
     private record SnaredEntry(
             ServerLevel level,
             SnaredRuntimeState state
@@ -439,6 +656,13 @@ public final class ProjectHostileStatusRuntime {
     }
 
     private record SkyfallSlowEntry(
+            ServerLevel level,
+            double movementMultiplier,
+            long expiresAtTick
+    ) {
+    }
+
+    private record PhaseFieldSlowEntry(
             ServerLevel level,
             double movementMultiplier,
             long expiresAtTick

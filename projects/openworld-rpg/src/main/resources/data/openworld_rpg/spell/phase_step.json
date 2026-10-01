@@ -1,0 +1,57 @@
+{
+  "school": "spell_power:arcane",
+  "range": 0.0,
+  "tier": 1,
+  "group": "mage_arcane",
+  "active": {
+    "cast": {
+      "duration": 0.0
+    }
+  },
+  "release": {
+    "animation": {
+      "id": "spell_engine:one_handed_area_release",
+      "speed": 1.0
+    },
+    "visuals": {
+      "particles": [
+        {
+          "id": "spell_engine:magic_arcane",
+          "appearance": {
+            "color": 4284940287,
+            "motion": "BURST"
+          },
+          "batch": {
+            "count": 16.0,
+            "shape": "SPHERE",
+            "anchor": "ENTITY",
+            "vertical_origin": 0.8,
+            "min_speed": 0.08,
+            "max_speed": 0.30
+          }
+        }
+      ]
+    },
+    "sound": {
+      "id": "minecraft:entity.enderman.teleport",
+      "randomness": 0.03
+    }
+  },
+  "target": {
+    "type": "NONE"
+  },
+  "deliver": {
+    "type": "DIRECT"
+  },
+  "impacts": [],
+  "cost": {
+    "batching": false,
+    "exhaust": 0.0,
+    "durability": 0,
+    "cooldown": {
+      "attempt_duration": 0.0,
+      "duration": 0.0,
+      "hosting_item": false
+    }
+  }
+}

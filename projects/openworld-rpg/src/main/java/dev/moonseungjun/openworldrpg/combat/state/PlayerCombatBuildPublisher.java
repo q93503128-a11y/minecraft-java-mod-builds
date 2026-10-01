@@ -7,6 +7,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.GuardianResolveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.GuardianRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
+import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
@@ -75,6 +76,11 @@ public final class PlayerCombatBuildPublisher {
                                 serverPlayer,
                                 mainWeaponFamily
                         )
+                                + MageArcaneWeaveRuntime
+                                        .arcaneMemoryMovementSpeedBonus(
+                                                serverPlayer,
+                                                gameTick
+                                        )
                         : 0.0
         );
         PlayerAttackSpeedRuntime.synchronize(

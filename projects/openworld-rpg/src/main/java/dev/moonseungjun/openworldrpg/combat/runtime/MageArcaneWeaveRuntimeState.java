@@ -78,6 +78,55 @@ public final class MageArcaneWeaveRuntimeState {
         return weaveReadyExpiresAt > nowTick;
     }
 
+    public boolean atTwoSigils(long nowTick) {
+        expire(nowTick);
+        return sequenceIds.size() == 2;
+    }
+
+    public long sequenceRemainingTicks(long nowTick) {
+        expire(nowTick);
+        return sequenceIds.isEmpty()
+                ? 0L
+                : Math.max(0L, sequenceExpiresAt - nowTick);
+    }
+
+    public DirectHpDamageResult recordDirectHpDamage(
+            long nowTick,
+            long shortenTicks
+    ) {
+        if (nowTick < 0L || shortenTicks < 0L) {
+            throw new IllegalArgumentException(
+                    "Arcane Memory damage timing must be non-negative."
+            );
+        }
+        expire(nowTick);
+        if (sequenceIds.size() != 2 || shortenTicks == 0L) {
+            return new DirectHpDamageResult(
+                    false,
+                    0L,
+                    sequenceRemainingTicks(nowTick),
+                    sequenceIds.size()
+            );
+        }
+
+        long remainingBefore = Math.max(
+                0L,
+                sequenceExpiresAt - nowTick
+        );
+        long shortened = Math.min(
+                shortenTicks,
+                remainingBefore
+        );
+        sequenceExpiresAt -= shortened;
+        expire(nowTick);
+        return new DirectHpDamageResult(
+                true,
+                shortened,
+                sequenceRemainingTicks(nowTick),
+                sequenceIds.size()
+        );
+    }
+
     public OptionalDouble consumeEmpoweredCast(String spellId, long nowTick) {
         Objects.requireNonNull(spellId, "spellId");
         expire(nowTick);
@@ -110,6 +159,25 @@ public final class MageArcaneWeaveRuntimeState {
         empoweredCasts.entrySet().removeIf(
                 entry -> entry.getValue().expiresAtTick() <= nowTick
         );
+    }
+
+    public record DirectHpDamageResult(
+            boolean arcaneMemoryActive,
+            long shortenedTicks,
+            long remainingTicks,
+            int sigilCountAfter
+    ) {
+        public DirectHpDamageResult {
+            if (shortenedTicks < 0L
+                    || remainingTicks < 0L
+                    || sigilCountAfter < 0
+                    || sigilCountAfter > 2
+                    || (!arcaneMemoryActive && shortenedTicks != 0L)) {
+                throw new IllegalArgumentException(
+                        "Invalid Arcane Memory damage result."
+                );
+            }
+        }
     }
 
     private record EmpoweredCast(double magnitudeMultiplier, long expiresAtTick) {

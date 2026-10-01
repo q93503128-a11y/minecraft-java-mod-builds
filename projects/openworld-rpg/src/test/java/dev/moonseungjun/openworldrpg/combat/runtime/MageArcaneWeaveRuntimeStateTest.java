@@ -48,6 +48,39 @@ class MageArcaneWeaveRuntimeStateTest {
     }
 
     @Test
+    void arcaneMemoryActivatesAtTwoSigilsAndDirectHpDamageShortensByTwoSeconds() {
+        var state = new MageArcaneWeaveRuntimeState();
+        state.recordAcceptedActive(
+                "openworld_rpg:a",
+                true,
+                0L,
+                0L,
+                1.0
+        );
+        state.recordAcceptedActive(
+                "openworld_rpg:b",
+                true,
+                10L,
+                0L,
+                1.0
+        );
+
+        assertTrue(state.atTwoSigils(20L));
+        assertEquals(150L, state.sequenceRemainingTicks(20L));
+
+        var damage = state.recordDirectHpDamage(
+                20L,
+                MageArcaneWeaveRuntime
+                        .ARCANE_MEMORY_DAMAGE_SHORTEN_TICKS
+        );
+        assertTrue(damage.arcaneMemoryActive());
+        assertEquals(40L, damage.shortenedTicks());
+        assertEquals(110L, damage.remainingTicks());
+        assertTrue(state.atTwoSigils(129L));
+        assertFalse(state.atTwoSigils(130L));
+    }
+
+    @Test
     void weaveReadyAndResonantMindUseExactCanonicalWindows() {
         var state = new MageArcaneWeaveRuntimeState();
         state.recordAcceptedActive("openworld_rpg:a", true, 0L, 0L, 1.0);

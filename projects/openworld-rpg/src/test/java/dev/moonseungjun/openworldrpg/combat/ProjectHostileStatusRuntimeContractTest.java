@@ -53,6 +53,44 @@ class ProjectHostileStatusRuntimeContractTest {
     }
 
     @Test
+    void phaseFieldSlowMatchesMageCanonAndTriuneUtilityMagnitude() {
+        assertEquals(
+                0.75,
+                ProjectHostileStatusRuntime
+                        .PHASE_FIELD_STANDARD_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                0.90,
+                ProjectHostileStatusRuntime
+                        .PHASE_FIELD_BOSS_MOVEMENT_MULTIPLIER,
+                0.0001
+        );
+        assertEquals(
+                0.725,
+                ProjectHostileStatusRuntime
+                        .phaseFieldMovementMultiplier(
+                                dev.moonseungjun.openworldrpg.integration.actor
+                                        .ExternalActorCombatProfile.CombatRank
+                                        .NORMAL_ELITE,
+                                1.10
+                        ),
+                0.0001
+        );
+        assertEquals(
+                0.89,
+                ProjectHostileStatusRuntime
+                        .phaseFieldMovementMultiplier(
+                                dev.moonseungjun.openworldrpg.integration.actor
+                                        .ExternalActorCombatProfile.CombatRank
+                                        .BOSS,
+                                1.10
+                        ),
+                0.0001
+        );
+    }
+
+    @Test
     void snaredNumbersMatchHunterCanon() {
         assertEquals(
                 0.65,

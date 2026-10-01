@@ -57,6 +57,28 @@ public final class ProjectPlayerIncomingDamageRuntime {
             return IncomingApplication.rejected();
         }
 
+        long gameTick = target.level().getGameTime();
+        if (MagePhaseStepRuntime.invulnerable(
+                target,
+                gameTick
+        )) {
+            CombatStateServices.states()
+                    .getOrCreate(target.getUUID(), gameTick)
+                    .markCombatActivity(gameTick);
+            return IncomingApplication.accepted(
+                    false,
+                    new PlayerDefenseRuntimeState.IncomingDefenseResult(
+                            hit.rawDamage(),
+                            0.0,
+                            0.0,
+                            false,
+                            false,
+                            false,
+                            false
+                    )
+            );
+        }
+
         var defenseSnapshot = CombatStateServices.defenseSnapshots()
                 .snapshot(target.getUUID());
         if (defenseSnapshot.isEmpty()) {
@@ -64,7 +86,6 @@ public final class ProjectPlayerIncomingDamageRuntime {
             return IncomingApplication.rejected();
         }
 
-        long gameTick = target.level().getGameTime();
         double outgoingDirectDamageMultiplier =
                 ProjectHostileStatusRuntime.outgoingDirectDamageMultiplier(
                         attacker,
@@ -190,6 +211,10 @@ public final class ProjectPlayerIncomingDamageRuntime {
             );
         };
         if (applied) {
+            MageArcaneWeaveRuntime.onDirectHpDamage(
+                    target,
+                    gameTick
+            );
             HunterSkillRuntime.onDirectHpDamage(
                     target,
                     gameTick,

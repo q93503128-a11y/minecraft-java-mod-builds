@@ -26,9 +26,11 @@ public final class ProjectClassSkillLoadout {
         validateSlot(slotIndex);
 
         return switch (rootClass) {
-            case MAGE -> slotIndex == 0
-                    ? Optional.of(ProjectSpellSpec.ARC_BOLT_ID)
-                    : Optional.empty();
+            case MAGE -> switch (slotIndex) {
+                case 0 -> Optional.of(ProjectSpellSpec.ARC_BOLT_ID);
+                case 1 -> Optional.of(ProjectSpellSpec.PHASE_STEP_ID);
+                default -> Optional.empty();
+            };
             case CLERIC -> switch (slotIndex) {
                 case 0 -> Optional.of(ProjectSpellSpec.RADIANT_LANCE_ID);
                 case 1 -> Optional.of(ProjectSpellSpec.MEND_ID);
