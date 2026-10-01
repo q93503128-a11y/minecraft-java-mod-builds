@@ -98,6 +98,47 @@ class PlayerNegativeStatusRuntimeStateTest {
     }
 
     @Test
+    void equipmentDurationReductionAppliesOnlyWhenNewStatusDurationIsResolved() {
+        var state = new PlayerNegativeStatusRuntimeState();
+        state.applyStatus(
+                "openworld_rpg:existing_mark",
+                Set.of("minor_dispellable"),
+                200L
+        );
+        state.synchronizeEquipmentNegativeStatusDurationReduction(0.25);
+        assertTrue(state.hasStatus("openworld_rpg:existing_mark", 199L));
+
+        state.applyStatusForDuration(
+                "openworld_rpg:new_mark",
+                Set.of("minor_dispellable"),
+                100L,
+                100L
+        );
+        assertTrue(state.hasStatus("openworld_rpg:new_mark", 174L));
+        assertFalse(state.hasStatus("openworld_rpg:new_mark", 175L));
+
+        state.applyNegativeStatusDurationMultiplier(0.80, 20L, 200L);
+        state.applyStatusForDuration(
+                "openworld_rpg:stacked_protection_mark",
+                Set.of("minor_dispellable"),
+                100L,
+                200L
+        );
+        assertTrue(
+                state.hasStatus(
+                        "openworld_rpg:stacked_protection_mark",
+                        259L
+                )
+        );
+        assertFalse(
+                state.hasStatus(
+                        "openworld_rpg:stacked_protection_mark",
+                        260L
+                )
+        );
+    }
+
+    @Test
     void sanctuaryStyleDurationModifierAffectsOnlyStatusesAppliedInsideWindow() {
         var state = new PlayerNegativeStatusRuntimeState();
         state.applyNegativeStatusDurationMultiplier(

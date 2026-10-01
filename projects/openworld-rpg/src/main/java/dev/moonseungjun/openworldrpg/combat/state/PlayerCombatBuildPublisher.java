@@ -179,6 +179,11 @@ public final class PlayerCombatBuildPublisher {
                                 : 1.0,
                         gameTick
                 );
+        CombatStateServices.negativeStatusStates()
+                .getOrCreate(player.getUUID())
+                .synchronizeEquipmentNegativeStatusDurationReduction(
+                        loadout.aggregateNegativeStatusDurationReduction()
+                );
         PlayerDefenseAuthority.DefenseSnapshot defenseSnapshot =
                 loadout.aggregateDefenseSnapshot();
         if (serverPlayer != null) {

@@ -1,7 +1,6 @@
 package dev.moonseungjun.openworldrpg.market;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.moonseungjun.openworldrpg.combat.state.ProjectEquipmentSlot;
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 class R01NessaEquipmentMaterializationTest {
     @Test
-    void currentWeaponStockFailsClosedOnRealRemainingRuntimeBlockers() {
+    void currentWeaponStockMaterializesWithAllStaticAffixesRuntimeReady() {
         var stock = new R01NessaMarketRules.StockItem(
                 1,
                 R01NessaMarketRules.RIVERWOOD_BOW,
@@ -25,32 +24,15 @@ class R01NessaEquipmentMaterializationTest {
         var resolution = R01NessaEquipmentMaterialization.resolve(stock);
 
         assertEquals(
-                R01NessaEquipmentMaterialization.ResolutionStatus
-                        .RUNTIME_AFFIX_BLOCKED,
+                R01NessaEquipmentMaterialization.ResolutionStatus.READY,
                 resolution.status()
         );
-        assertTrue(resolution.item().isEmpty());
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/attack_speed"
-        ));
-        assertTrue(resolution.blockers().contains(
-                "openworld_rpg:affix/weak_point_damage"
-        ));
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/movement_speed"
-        ));
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/dodge_sprint_stamina_cost_reduction"
-        ));
-
-        // Matching weapon-family power, Attack Speed and Movement Speed are live and must not block.
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/weapon_family/bow_power"
-        ));
+        assertTrue(resolution.blockers().isEmpty());
+        assertTrue(resolution.item().isPresent());
     }
 
     @Test
-    void currentArmorStockReportsUnsupportedGenericAffixesWithoutDroppingThem() {
+    void currentArmorStockMaterializesWithoutDroppingUtilityAffixes() {
         var stock = new R01NessaMarketRules.StockItem(
                 3,
                 R01NessaMarketRules.IRONBOUND_GUARD,
@@ -65,21 +47,10 @@ class R01NessaEquipmentMaterializationTest {
         var resolution = R01NessaEquipmentMaterialization.resolve(stock);
 
         assertEquals(
-                R01NessaEquipmentMaterialization.ResolutionStatus
-                        .RUNTIME_AFFIX_BLOCKED,
+                R01NessaEquipmentMaterialization.ResolutionStatus.READY,
                 resolution.status()
         );
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/attack_speed"
-        ));
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/healing_done"
-        ));
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/healing_received"
-        ));
-        assertFalse(resolution.blockers().contains(
-                "openworld_rpg:affix/critical_chance"
-        ));
+        assertTrue(resolution.blockers().isEmpty());
+        assertTrue(resolution.item().isPresent());
     }
 }

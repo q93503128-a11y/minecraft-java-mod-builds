@@ -36,12 +36,14 @@ class ProjectRangedProjectileContextTest {
                 ProjectWeaponFamily.BOW,
                 bowBuild,
                 0.75,
-                new Vec3(1.0, 2.0, 3.0)
+                new Vec3(1.0, 2.0, 3.0),
+                0.15
         );
 
         assertSame(bowBuild, shot.build());
         assertEquals(ProjectWeaponFamily.BOW, shot.weaponFamily());
         assertEquals(0.75, shot.drawPower(), 0.0001);
+        assertEquals(0.15, shot.weakPointDamageBonus(), 0.0001);
         assertEquals(
                 new Vec3(1.0, 2.0, 3.0),
                 shot.launchPosition()
@@ -71,7 +73,8 @@ class ProjectRangedProjectileContextTest {
                         ProjectWeaponFamily.CROSSBOW,
                         crossbowBuild,
                         1.0,
-                        Vec3.ZERO
+                        Vec3.ZERO,
+                        0.0
                 ).drawPower(),
                 0.0001
         );
@@ -82,7 +85,8 @@ class ProjectRangedProjectileContextTest {
                         ProjectWeaponFamily.CROSSBOW,
                         crossbowBuild,
                         0.5,
-                        Vec3.ZERO
+                        Vec3.ZERO,
+                        0.0
                 )
         );
         assertThrows(
@@ -92,7 +96,8 @@ class ProjectRangedProjectileContextTest {
                         ProjectWeaponFamily.CROSSBOW,
                         bowBuild,
                         1.0,
-                        Vec3.ZERO
+                        Vec3.ZERO,
+                        0.0
                 )
         );
     }

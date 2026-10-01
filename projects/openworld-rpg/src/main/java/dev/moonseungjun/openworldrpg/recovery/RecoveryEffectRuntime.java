@@ -30,10 +30,14 @@ public final class RecoveryEffectRuntime {
 
         var resources = CombatStateServices.states()
                 .getOrCreate(player.getUUID(), nowTick);
-        RecoveryEffectAuthority.Effect effect = RecoveryEffectAuthority.resolve(
-                consumable,
-                player.getMaxHealth(),
-                resources.maxMana()
+        RecoveryEffectAuthority.Effect effect = RecoveryEffectAuthority.strengthen(
+                RecoveryEffectAuthority.resolve(
+                        consumable,
+                        player.getMaxHealth(),
+                        resources.maxMana()
+                ),
+                PlayerEquipmentService.state(player)
+                        .aggregatePotionFoodEffectStrengthBonus()
         );
 
         float healthBefore = player.getHealth();

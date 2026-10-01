@@ -46,6 +46,42 @@ class RecoveryEffectAuthorityTest {
     }
 
     @Test
+    void potionFoodStrengthScalesNumericPotionMagnitudeButNotQualitativeCleanse() {
+        var healing = RecoveryEffectAuthority.strengthen(
+                RecoveryEffectAuthority.resolve(
+                        RecoveryConsumable.HEALING_POTION,
+                        200.0,
+                        120.0
+                ),
+                0.10
+        );
+        assertEquals(77.0, healing.hpRestore(), 0.0001);
+
+        var focus = RecoveryEffectAuthority.strengthen(
+                RecoveryEffectAuthority.resolve(
+                        RecoveryConsumable.FOCUS_DRAUGHT,
+                        200.0,
+                        120.0
+                ),
+                0.10
+        );
+        assertEquals(33.0, focus.immediateManaRestore(), 0.0001);
+        assertEquals(0.33, focus.manaRestorePerTick(), 0.0001);
+        assertEquals(60, focus.manaTailTicks());
+
+        var tonic = RecoveryEffectAuthority.strengthen(
+                RecoveryEffectAuthority.resolve(
+                        RecoveryConsumable.CLEANSING_TONIC,
+                        200.0,
+                        120.0
+                ),
+                0.10
+        );
+        assertTrue(tonic.cleanseMinorDispellable());
+        assertEquals(200, tonic.negativeBuildupResistanceTicks());
+    }
+
+    @Test
     void canonicalRecoveryTimingsRemainLocked() {
         assertEquals(19, RecoveryActionRules.USE_DURATION_TICKS);
         assertEquals(14, RecoveryActionRules.RESOLUTION_TICKS);

@@ -21,6 +21,7 @@ public final class PlayerNegativeStatusRuntimeState {
     private long negativeBuildupResistanceUntilTick = Long.MIN_VALUE / 4;
     private double negativeStatusDurationMultiplier = 1.0;
     private long negativeStatusDurationMultiplierUntilTick = Long.MIN_VALUE / 4;
+    private double equipmentNegativeStatusDurationReduction = 0.0;
 
     public void applyStatus(String statusId, Set<String> tags, long expiresAtTick) {
         requireStableId(statusId);
@@ -100,7 +101,26 @@ public final class PlayerNegativeStatusRuntimeState {
             throw new IllegalArgumentException("nowTick must be non-negative.");
         }
         refreshNegativeStatusDurationMultiplier(nowTick);
-        return negativeStatusDurationMultiplier;
+        return Math.max(
+                0.0,
+                (1.0 - equipmentNegativeStatusDurationReduction)
+                        * negativeStatusDurationMultiplier
+        );
+    }
+
+    public void synchronizeEquipmentNegativeStatusDurationReduction(
+            double reduction
+    ) {
+        if (!Double.isFinite(reduction) || reduction < 0.0) {
+            throw new IllegalArgumentException(
+                    "Equipment negative-status duration reduction must be finite and non-negative."
+            );
+        }
+        equipmentNegativeStatusDurationReduction = Math.min(1.0, reduction);
+    }
+
+    public double equipmentNegativeStatusDurationReduction() {
+        return equipmentNegativeStatusDurationReduction;
     }
 
     public PlayerCombatSessionState.NegativeStatusesSnapshot
@@ -148,9 +168,10 @@ public final class PlayerNegativeStatusRuntimeState {
                 snapshot.negativeBuildupResistanceUntilTick(),
                 rebase
         );
-        // Sanctuary and similar area protection is transient world state, not reconnect state.
+        // Sanctuary and equipment projection are transient runtime state, not reconnect state.
         negativeStatusDurationMultiplier = 1.0;
         negativeStatusDurationMultiplierUntilTick = Long.MIN_VALUE / 4;
+        equipmentNegativeStatusDurationReduction = 0.0;
     }
 
     public int cleanseTagged(String tag, long nowTick) {

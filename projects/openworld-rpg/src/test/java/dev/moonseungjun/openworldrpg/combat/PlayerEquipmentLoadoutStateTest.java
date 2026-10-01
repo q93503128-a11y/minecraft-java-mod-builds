@@ -280,6 +280,83 @@ class PlayerEquipmentLoadoutStateTest {
     }
 
     @Test
+    void remainingUtilityAffixesAggregateAcrossGearWithoutInventingCanonCaps() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.gear(
+                        "openworld_rpg:utility_band",
+                        ProjectEquipmentSlot.RING_1,
+                        8,
+                        List.of(
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.WEAK_POINT_DAMAGE,
+                                        0.12
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.NEGATIVE_STATUS_DURATION_REDUCTION,
+                                        0.15
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.POTION_FOOD_EFFECT_STRENGTH,
+                                        0.10
+                                )
+                        )
+                ),
+                EquippedCombatItem.gear(
+                        "openworld_rpg:utility_pendant",
+                        ProjectEquipmentSlot.NECKLACE,
+                        8,
+                        List.of(
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.WEAK_POINT_DAMAGE,
+                                        0.08
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.NEGATIVE_STATUS_DURATION_REDUCTION,
+                                        0.10
+                                ),
+                                EquipmentCombatAffix.flat(
+                                        EquipmentCombatAffixKind.POTION_FOOD_EFFECT_STRENGTH,
+                                        0.06
+                                )
+                        )
+                )
+        ));
+
+        assertEquals(0.20, loadout.aggregateWeakPointDamageBonus(), 0.0001);
+        assertEquals(
+                0.25,
+                loadout.aggregateNegativeStatusDurationReduction(),
+                0.0001
+        );
+        assertEquals(
+                0.16,
+                loadout.aggregatePotionFoodEffectStrengthBonus(),
+                0.0001
+        );
+    }
+
+    @Test
+    void negativeStatusReductionCannotProduceNegativeDurationMultiplier() {
+        var loadout = new PlayerEquipmentLoadoutState(List.of(
+                EquippedCombatItem.gear(
+                        "openworld_rpg:test_relic",
+                        ProjectEquipmentSlot.RELIC,
+                        8,
+                        List.of(EquipmentCombatAffix.flat(
+                                EquipmentCombatAffixKind.NEGATIVE_STATUS_DURATION_REDUCTION,
+                                1.25
+                        ))
+                )
+        ));
+
+        assertEquals(
+                1.0,
+                loadout.aggregateNegativeStatusDurationReduction(),
+                0.0001
+        );
+    }
+
+    @Test
     void missingMainWeaponProducesNoCombatEquipmentAuthority() {
         var loadout = new PlayerEquipmentLoadoutState(List.of(
                 EquippedCombatItem.gear(

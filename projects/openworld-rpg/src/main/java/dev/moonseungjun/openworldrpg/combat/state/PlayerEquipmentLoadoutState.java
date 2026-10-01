@@ -227,6 +227,56 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
     }
 
     /**
+     * Adds equipment weak-point damage only after an authored weak-point volume accepted the hit.
+     *
+     * <p>No extra aggregate cap is invented because the equipment canon defines only the per-affix
+     * range for this stat. The caller still owns whether a target actually exposes a weak point.</p>
+     */
+    public double aggregateWeakPointDamageBonus() {
+        return aggregateUncappedPercentage(
+                EquipmentCombatAffixKind.WEAK_POINT_DAMAGE
+        );
+    }
+
+    /**
+     * Negative-status duration reduction is summed from gear, then bounded only at 100% so duration
+     * math cannot become negative. This is a mathematical floor, not a new balance cap.
+     */
+    public double aggregateNegativeStatusDurationReduction() {
+        return Math.min(
+                1.0,
+                aggregateUncappedPercentage(
+                        EquipmentCombatAffixKind.NEGATIVE_STATUS_DURATION_REDUCTION
+                )
+        );
+    }
+
+    /**
+     * Shared magnitude bonus for project-owned potion and food effects.
+     *
+     * <p>The canon does not define a separate aggregate cap, so equipped values sum directly.</p>
+     */
+    public double aggregatePotionFoodEffectStrengthBonus() {
+        return aggregateUncappedPercentage(
+                EquipmentCombatAffixKind.POTION_FOOD_EFFECT_STRENGTH
+        );
+    }
+
+    private double aggregateUncappedPercentage(
+            EquipmentCombatAffixKind kind
+    ) {
+        double result = 0.0;
+        for (EquippedCombatItem item : equipped) {
+            for (EquipmentCombatAffix affix : item.affixes()) {
+                if (affix.kind() == kind) {
+                    result += affix.value();
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
      * Aggregates the canonical equipment-only movement bonus independently of weapon authority.
      * Heavy armor has no implicit movement penalty; only explicit Movement Speed affixes contribute.
      */
@@ -391,6 +441,9 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     case ATTACK_SPEED -> {
                         // Preserved in the item payload; dedicated cadence publisher owns runtime use.
                     }
+                    case WEAK_POINT_DAMAGE -> {
+                        // Snapshotted by the authored weak-point projectile authority.
+                    }
                     case MOVEMENT_SPEED -> {
                         // Published independently by the server-owned movement runtime.
                     }
@@ -399,6 +452,12 @@ public record PlayerEquipmentLoadoutState(List<EquippedCombatItem> equipped) {
                     }
                     case HEALING_RECEIVED -> {
                         // Published independently by aggregateHealingReceivedBonus().
+                    }
+                    case NEGATIVE_STATUS_DURATION_REDUCTION -> {
+                        // Published independently by the player negative-status boundary.
+                    }
+                    case POTION_FOOD_EFFECT_STRENGTH -> {
+                        // Consumed by project-owned potion/food effect resolution.
                     }
                     case ULTIMATE_CHARGE_GAIN -> {
                         // Published independently by aggregateUltimateChargeGainBonus().

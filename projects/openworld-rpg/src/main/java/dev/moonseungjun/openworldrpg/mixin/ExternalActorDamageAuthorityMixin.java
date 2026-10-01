@@ -94,6 +94,9 @@ public abstract class ExternalActorDamageAuthorityMixin {
                                         ? HunterRootPassiveEffects
                                                 .DEFAULT_AUTHORED_WEAK_POINT_MULTIPLIER
                                         : 1.0;
+                if (weakPointHit) {
+                    weakPointMultiplier += shot.weakPointDamageBonus();
+                }
 
                 CombatDamageAuthority.RangedDamageDecision decision =
                         switch (shot.weaponFamily()) {

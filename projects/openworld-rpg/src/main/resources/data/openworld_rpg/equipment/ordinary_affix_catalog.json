@@ -114,7 +114,7 @@
       "min": 5,
       "max": 15,
       "runtime_payload": "openworld_rpg:runtime_affix/weak_point_damage",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/defense",
@@ -258,7 +258,7 @@
       "min": 5,
       "max": 15,
       "runtime_payload": "openworld_rpg:runtime_affix/negative_status_duration_reduction",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     },
     {
       "id": "openworld_rpg:affix/potion_food_effect_strength",
@@ -267,7 +267,7 @@
       "min": 4,
       "max": 12,
       "runtime_payload": "openworld_rpg:runtime_affix/potion_food_effect_strength",
-      "runtime_state": "stored_only"
+      "runtime_state": "implemented"
     }
   ]
 }

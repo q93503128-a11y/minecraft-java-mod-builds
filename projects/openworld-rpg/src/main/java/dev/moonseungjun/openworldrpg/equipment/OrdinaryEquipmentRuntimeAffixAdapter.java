@@ -85,6 +85,11 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
                             EquipmentCombatAffixKind.ATTACK_SPEED,
                             affix.value()
                     );
+            case "openworld_rpg:runtime_affix/weak_point_damage" ->
+                    percentage(
+                            EquipmentCombatAffixKind.WEAK_POINT_DAMAGE,
+                            affix.value()
+                    );
             case "openworld_rpg:runtime_affix/defense" ->
                     percentage(
                             EquipmentCombatAffixKind.DEFENSE,
@@ -149,6 +154,16 @@ public final class OrdinaryEquipmentRuntimeAffixAdapter {
             case "openworld_rpg:runtime_affix/healing_received" ->
                     percentage(
                             EquipmentCombatAffixKind.HEALING_RECEIVED,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/negative_status_duration_reduction" ->
+                    percentage(
+                            EquipmentCombatAffixKind.NEGATIVE_STATUS_DURATION_REDUCTION,
+                            affix.value()
+                    );
+            case "openworld_rpg:runtime_affix/potion_food_effect_strength" ->
+                    percentage(
+                            EquipmentCombatAffixKind.POTION_FOOD_EFFECT_STRENGTH,
                             affix.value()
                     );
             case "openworld_rpg:runtime_affix/guard_strength" ->

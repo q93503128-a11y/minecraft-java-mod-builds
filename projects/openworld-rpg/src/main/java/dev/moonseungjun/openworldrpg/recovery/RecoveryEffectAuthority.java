@@ -52,6 +52,28 @@ public final class RecoveryEffectAuthority {
         };
     }
 
+    public static Effect strengthen(
+            Effect effect,
+            double potionFoodEffectStrengthBonus
+    ) {
+        Objects.requireNonNull(effect, "effect");
+        if (!Double.isFinite(potionFoodEffectStrengthBonus)
+                || potionFoodEffectStrengthBonus < 0.0) {
+            throw new IllegalArgumentException(
+                    "Potion/food effect-strength bonus must be finite and non-negative."
+            );
+        }
+        double multiplier = 1.0 + potionFoodEffectStrengthBonus;
+        return new Effect(
+                effect.hpRestore() * multiplier,
+                effect.immediateManaRestore() * multiplier,
+                effect.manaRestorePerTick() * multiplier,
+                effect.manaTailTicks(),
+                effect.cleanseMinorDispellable(),
+                effect.negativeBuildupResistanceTicks()
+        );
+    }
+
     public record Effect(
             double hpRestore,
             double immediateManaRestore,

@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildState;
+import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import java.util.Collections;
 import java.util.Map;
@@ -74,7 +75,9 @@ public final class ProjectRangedProjectileContext {
                         expectedFamily,
                         build,
                         drawPower,
-                        shooter.position()
+                        shooter.position(),
+                        PlayerEquipmentService.state(player)
+                                .aggregateWeakPointDamageBonus()
                 )
         );
     }
@@ -95,13 +98,20 @@ public final class ProjectRangedProjectileContext {
             ProjectWeaponFamily weaponFamily,
             PlayerCombatBuildState build,
             double drawPower,
-            Vec3 launchPosition
+            Vec3 launchPosition,
+            double weakPointDamageBonus
     ) {
         public RangedShot {
             Objects.requireNonNull(shooterId, "shooterId");
             Objects.requireNonNull(weaponFamily, "weaponFamily");
             Objects.requireNonNull(build, "build");
             Objects.requireNonNull(launchPosition, "launchPosition");
+            if (!Double.isFinite(weakPointDamageBonus)
+                    || weakPointDamageBonus < 0.0) {
+                throw new IllegalArgumentException(
+                        "weakPointDamageBonus must be finite and non-negative."
+                );
+            }
             if (weaponFamily != ProjectWeaponFamily.BOW
                     && weaponFamily != ProjectWeaponFamily.CROSSBOW) {
                 throw new IllegalArgumentException(

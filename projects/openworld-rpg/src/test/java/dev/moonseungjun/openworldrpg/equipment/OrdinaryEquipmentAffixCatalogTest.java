@@ -16,7 +16,7 @@ class OrdinaryEquipmentAffixCatalogTest {
                 data.id()
         );
         assertEquals(29, data.affixes().size());
-        assertEquals(26, data.implementedDefinitions().size());
+        assertEquals(29, data.implementedDefinitions().size());
         assertTrue(data.resourceAuthorityReady());
         assertTrue(data.criticalAuthorityReady());
         assertTrue(data.attackSpeedAuthorityReady());
@@ -24,6 +24,33 @@ class OrdinaryEquipmentAffixCatalogTest {
         assertTrue(data.healingDoneAuthorityReady());
         assertTrue(data.healingReceivedAuthorityReady());
         assertTrue(data.ultimateChargeAuthorityReady());
+        assertTrue(data.affixes().stream().allMatch(
+                OrdinaryEquipmentAffixCatalogData.AffixEntry::runtimeImplemented
+        ));
+
+        var weakPoint = data.affixes().stream()
+                .filter(value -> value.id().equals(
+                        "openworld_rpg:affix/weak_point_damage"
+                ))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(weakPoint.runtimeImplemented());
+
+        var negativeDuration = data.affixes().stream()
+                .filter(value -> value.id().equals(
+                        "openworld_rpg:affix/negative_status_duration_reduction"
+                ))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(negativeDuration.runtimeImplemented());
+
+        var potionFood = data.affixes().stream()
+                .filter(value -> value.id().equals(
+                        "openworld_rpg:affix/potion_food_effect_strength"
+                ))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(potionFood.runtimeImplemented());
 
         var physical = data.affixes().stream()
                 .filter(value -> value.id().equals(
