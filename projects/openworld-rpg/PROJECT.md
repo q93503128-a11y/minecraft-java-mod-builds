@@ -319,6 +319,25 @@ mrpack packaging and artifact upload. This is backend/build evidence only: live 
 world interaction, final crafting UI/presentation, integrated R01 playtest and multiplayer are not
 claimed.
 
+
+The R01 personal-contract/economy backend now also binds `Riverbank Remedies` and Nessa Material
+Pouch selling. Fresh contract Herbs are tracked from durable valid R01 harvest transactions,
+protected inside the ordinary Pouch rather than converted into quest tokens, released on Abandon,
+and reset through the existing contract-reaccept generation on Reaccept. That reservation is now
+respected by Alchemy/Cooking preflight, Craft Max, atomic Pouch→Vault consumption, individual
+material sales and bulk material sales. Lysa turn-in persists the reward class before mutation and
+reconciles exact three-Herb consumption, 40% EXP + 30% Class XP + 60 Gold, Healing Potion x1,
+Herbalism +10 and Contract completion without duplicate recovery. Nessa material selling uses the
+canonical nine R01 unit values, requires explicit confirmation for Regalhart Antler/Earthloong
+Scale, excludes those boss materials from bulk sell, and persists sale intent before material/Gold
+mutation. Build Openworld RPG run `36830800234` is SUCCESS at
+`76e3cab9a1c1251b66ddc2256305d61e4f842918`, including clean tests/build, core and gameplay
+server smoke, gameplay client startup, verification JARs, mrpack packaging and artifact upload.
+This remains backend/build evidence: final board/service/material-sale UI, physical Alderford
+binding, integrated gameplay and multiplayer are not claimed. Exact non-Earthloong donor actor
+registry bindings also remain gated, so this pass does not fabricate Louxia/Tough-Hide creature
+drop hooks.
+
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
 
 ---

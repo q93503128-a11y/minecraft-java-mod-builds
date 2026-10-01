@@ -609,6 +609,89 @@ Client world join for these crafting services, integrated R01 playtest and multi
 **NOT RUN**.
 
 
+## 10.5 R01 Riverbank Remedies and Material Pouch selling backend — 2026-10-01
+
+The R01 non-visual economy/contract loop now also binds `Riverbank Remedies` and Nessa's
+Material Pouch selling authority.
+
+`Riverbank Remedies` uses the existing personal R01 save schema rather than inventing a second
+quest store. First accept starts generation 0; Abandon releases the protected herb quantity back
+to ordinary ownership; Reaccept increments the existing contract generation and starts a new
+0/3 gather counter. Only Healing Herbs delivered by valid personal R01 harvest transactions after
+the current accept/reaccept commit count. Replaying the same durable harvest receipt cannot add
+progress twice.
+
+The fresh gathered count is treated as a **protected quantity inside the normal Material Pouch**,
+not as a fake quest-token stack. While the contract is active/returning/committed for turn-in:
+
+- crafting cannot consume the protected Healing Herbs;
+- Craft Max excludes the protected quantity;
+- Nessa's individual or bulk material sale cannot consume the protected quantity;
+- settlement crafting may still use unprotected Pouch material first and same-player Material Vault
+  material second;
+- Abandon immediately removes the protection without moving or duplicating items.
+
+Lysa turn-in is a reconnect-safe server transaction. The reward class is persisted before mutation;
+then the three protected Healing Herbs are consumed exactly once, the canonical 40% current
+next-Lv EXP + 30% current Class Rank XP + 60 Gold reward is applied through the existing reward
+transaction coordinator, Healing Potion x1 is delivered through the normal important-reward
+fallback, Herbalism receives the canonical one-time +10 Mastery XP, and the Contract is completed.
+A disconnect may resume the same committed transaction but cannot reroll its class, duplicate
+materials/reward, or reopen a completed Contract.
+
+Nessa's material-selling backend now owns the exact R01 direct values:
+
+| Material | Gold / unit |
+|---|---:|
+| Iron Ore | 5 |
+| Hardwood | 4 |
+| Healing Herb | 5 |
+| Verdant Crystal | 24 |
+| Louxia Meat | 3 |
+| Louxia Glow | 8 |
+| Tough Hide | 6 |
+| Regalhart Antler | 45 |
+| Earthloong Scale | 45 |
+
+Individual signature-material sales require explicit confirmation. Regalhart Antler and Earthloong
+Scale are excluded from bulk sale. Material sale is Pouch-only, records a durable pending sale
+before mutation, consumes the exact material set idempotently, credits Gold idempotently and
+reconciles interrupted sales on join.
+
+This closes **backend authority only**. The final Nessa Sell → Materials screen, Lysa contract
+board/dialogue presentation, physical Alderford service interaction and accepted world/UI assets
+remain behind their existing production binding gates. Louxia/Bison/Grizzly/Gazelle material-drop
+sources are also not claimed here because their exact current 26.2 donor entity registry bindings
+still require the external-actor intake gate.
+
+Verification for code state `76e3cab9a1c1251b66ddc2256305d61e4f842918`:
+
+- Build Openworld RPG run `36830800234`: **SUCCESS**;
+- clean test/build: PASS;
+- bootstrap JAR verification: PASS;
+- core-profile dedicated server smoke: PASS;
+- gameplay dependency server smoke: PASS;
+- gameplay client startup smoke: PASS;
+- M0 and R01 verification JAR build/marker isolation: PASS;
+- Modrinth playtest pack packaging: PASS;
+- artifact upload: PASS;
+- artifact: `openworld-rpg-m0-76e3cab9a1c1251b66ddc2256305d61e4f842918`;
+- artifact ID: `11146529387`;
+- artifact ZIP SHA-256: `f678d7814e8019303186efc27df321422121c257f7ed2d15facad6ed306b62c2`;
+- normal JAR SHA-256: `1d67c048a4ff7efbc9dce10d062a2847bf1b94d0bd525290d77f875c20793d4b`;
+- M0 JAR SHA-256: `cd01cbd8997f73981aac2bc8b3c0c57497156e2d48e2e96bd713fa99c94fa371`;
+- R01 integration JAR SHA-256: `904591616719f61f4065aaca070bc3aeb6209b92521b99a9a157b72f29f799ce`.
+
+Validation state:
+
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+
 ---
 
 # 11. Armor / apparel visual canon
