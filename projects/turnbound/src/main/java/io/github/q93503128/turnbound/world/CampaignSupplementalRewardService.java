@@ -24,7 +24,7 @@ public final class CampaignSupplementalRewardService {
             default -> 0;
         };
         String choiceTier = switch (encounterId) {
-            case "CV_WARNING_CAVE_ELITE", "AV_ROAD_ELITE", DrehmalWorldBossPlacementRules.ENCOUNTER_ID -> "T2";
+            case "CV_WARNING_CAVE_ELITE", "CV_BRIAR_STAG", "AV_ROAD_ELITE", DrehmalWorldBossPlacementRules.ENCOUNTER_ID -> "T2";
             // T3 drops are explicitly unlocked by B03; B05 is the authored T4 first-clear source.
             case "BATTLE_B03", "BATTLE_B04" -> "T3";
             case "BATTLE_B05" -> "T4";

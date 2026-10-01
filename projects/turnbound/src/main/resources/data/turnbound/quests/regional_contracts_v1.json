@@ -15,7 +15,8 @@
       ],
       "requiredWins": 2,
       "rewardGold": 2500,
-      "rewardXp": 700
+      "rewardXp": 700,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_wildlife_control",
@@ -31,7 +32,8 @@
       ],
       "requiredWins": 2,
       "rewardGold": 2200,
-      "rewardXp": 750
+      "rewardXp": 750,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_route_security",
@@ -51,7 +53,8 @@
       ],
       "requiredWins": 3,
       "rewardGold": 3500,
-      "rewardXp": 1000
+      "rewardXp": 1000,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_predator_pressure",
@@ -68,7 +71,8 @@
       ],
       "requiredWins": 3,
       "rewardGold": 5200,
-      "rewardXp": 1800
+      "rewardXp": 1800,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_grove_stability",
@@ -82,7 +86,8 @@
       ],
       "requiredWins": 2,
       "rewardGold": 6000,
-      "rewardXp": 2200
+      "rewardXp": 2200,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_elite_watch",
@@ -97,7 +102,8 @@
       ],
       "requiredWins": 1,
       "rewardGold": 7500,
-      "rewardXp": 3000
+      "rewardXp": 3000,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_high_risk_patrol",
@@ -114,7 +120,8 @@
       ],
       "requiredWins": 3,
       "rewardGold": 11000,
-      "rewardXp": 4200
+      "rewardXp": 4200,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_elite_cycle",
@@ -129,7 +136,8 @@
       ],
       "requiredWins": 2,
       "rewardGold": 13500,
-      "rewardXp": 5200
+      "rewardXp": 5200,
+      "requiredFlag": ""
     },
     {
       "id": "capital_valley_roaming_sweep",
@@ -150,7 +158,55 @@
       ],
       "requiredWins": 5,
       "rewardGold": 12000,
-      "rewardXp": 4800
+      "rewardXp": 4800,
+      "requiredFlag": ""
+    },
+    {
+      "id": "avsal_road_recovery",
+      "title": "서쪽 가도 회복",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살로 이어지는 가도와 폐허 접근부의 일반 조우를 합계 4회 해결하십시오.",
+      "tier": 4,
+      "minPartyLevel": 16,
+      "requiredFlag": "AVSAL_REGION_DISCOVERED",
+      "encounterIds": [
+        "AV_ROAD_HOUNDS",
+        "AV_ROAD_PATROL",
+        "AV_RELAY_SENTRIES"
+      ],
+      "requiredWins": 4,
+      "rewardGold": 16000,
+      "rewardXp": 6000
+    },
+    {
+      "id": "avsal_relay_suppression",
+      "title": "접근로 파수기 억제",
+      "regionLabel": "Av'Sal",
+      "objective": "폐허 접근로의 녹슨 파수기 조우를 3회 정리하십시오.",
+      "tier": 4,
+      "minPartyLevel": 16,
+      "requiredFlag": "AVSAL_REGION_DISCOVERED",
+      "encounterIds": [
+        "AV_RELAY_SENTRIES"
+      ],
+      "requiredWins": 3,
+      "rewardGold": 18000,
+      "rewardXp": 6800
+    },
+    {
+      "id": "avsal_elite_contract",
+      "title": "폐허길 강적 토벌",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살 가도 바깥의 정예 조우를 1회 격파하십시오.",
+      "tier": 4,
+      "minPartyLevel": 16,
+      "requiredFlag": "AVSAL_REGION_DISCOVERED",
+      "encounterIds": [
+        "AV_ROAD_ELITE"
+      ],
+      "requiredWins": 1,
+      "rewardGold": 22000,
+      "rewardXp": 8000
     }
   ]
 }

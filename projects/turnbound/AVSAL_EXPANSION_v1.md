@@ -13,7 +13,7 @@ Av'Sal 확장은 단순히 적 수를 늘리는 패치가 아니다.
 New Drabyel 로컬 메인 완료
 → Capital Valley 지역 목표 최소 1개 추가 해결
 → M 지도에서 먼 서쪽 지역 확인
-→ 입구 안내원 라나에게 원정 의뢰 수령
+→ 입구 안내원 아렌에게 원정 의뢰 수령
 → 해금된 역참망/이후 이동수단을 활용해 실제 도로를 따라 Av'Sal 접근
 → 순찰 / 사건 / 선택 Elite
 → 폐허 외곽에서 상황 파악
@@ -326,3 +326,63 @@ Production gate:
 - only then can entrance guide Lara brief the Av'Sal expedition.
 
 First traversal may establish world scale. Repeated traversal must rely on discovered waypoints/shortcuts and later may use a dedicated mount system. Empty walking is never a progression requirement.
+
+
+## First user-test gate: New Drabyel to Av'Sal outskirts — 2026-10-01
+
+The first real client-playtest milestone is not the entire Av'Sal chapter. It is the complete playable route from the New Drabyel opening through Capital Valley growth and into Av'Sal outskirts.
+
+Required flow before that playtest:
+- New Drabyel opening patrol / local investigation / physical services
+- Capital Valley side content and repeatable progression
+- T1 equipment acquisition + Gold enhancement loop
+- T2 equipment entry before or during the Av'Sal road
+- source-backed west-road travel with several different readable beats instead of one patrol across ~1.4k blocks
+- Av'Sal outskirts arrival, physical NPCs and MQ_AV02 investigation start
+- region discovery opens the next repeatable-contract tier without requiring a specific later main-quest completion
+
+### West-road content density
+
+Pinned source remains:
+- zachaa/DrehmalMap@72d82180cbe3f950f068cf2d8e8668c6b09d5c58
+- data/paths.geojson
+- data/locations.json
+
+The road uses source corridor seeds and live-world collision/source-content validation.
+
+Current sequence:
+- broken-road echo around the source corridor near x379/z1577
+- roaming Ash Hound group around the west road near x458/z1560
+- mixed road patrol around x241/z1522
+- physical courier NPC around x164/z1520
+- overturned transport cart clue around x97/z1549
+- rusted sentries on the ruin approach around x-36/z1492
+- optional off-route Elite
+- Av'Sal outskirts / Scavengers House region around x-162/z1413
+
+These are search seeds, not fixed final 26.2 actor coordinates. Runtime placement still rejects unsafe ground, source entities/block entities and unusable battle footprints.
+
+### Equipment progression on the route
+
+The early open-world equipment loop is:
+field combat / regional contract
+→ T1 or T2 normal equipment
+→ Gold
+→ physical New Drabyel forge
+→ stronger party
+→ higher repeat-contract tier / harder road encounter.
+
+Production rules:
+- Capital Valley common encounters can drop T1 equipment
+- Capital Valley Elite and higher Capital Valley threats introduce T2
+- Av'Sal road commons use T2 as their normal equipment target
+- first clear remains more valuable than repeating one spawn forever
+- New Drabyel T2 shop availability uses Drehmal progression, not retired chapter quest ids
+- average active-party Lv8 or a relevant Elite/Av'Sal clear opens the T2 shop
+- equipment roll is derived from the durable reward transaction id, so persistence retry cannot reroll it
+
+### Repeatable-contract continuation
+
+Av'Sal discovery sets a region-discovery flag separate from MQ numbering.
+At average active-party Lv16+, discovering Av'Sal exposes Tier 4 regional contracts.
+A physical outskirts broker provides the same server-authoritative contract state as New Drabyel, so reporting a repeat contract does not require an empty full-road commute.

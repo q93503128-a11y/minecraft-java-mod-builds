@@ -27,6 +27,7 @@ public final class RegionalContractCatalog {
             String objective,
             int tier,
             int minPartyLevel,
+            String requiredFlag,
             List<String> encounterIds,
             int requiredWins,
             int rewardGold,
@@ -96,6 +97,7 @@ public final class RegionalContractCatalog {
                         required(value, "objective"),
                         integer(value, "tier", 0),
                         integer(value, "minPartyLevel", 0),
+                        optional(value, "requiredFlag"),
                         encounters,
                         integer(value, "requiredWins", 0),
                         integer(value, "rewardGold", 0),
@@ -106,6 +108,11 @@ public final class RegionalContractCatalog {
             if (exception instanceof RuntimeException runtime) throw runtime;
             throw new IllegalStateException("Failed loading regional contract catalog", exception);
         }
+    }
+
+    private static String optional(JsonObject raw, String key) {
+        if (raw == null || !raw.has(key) || raw.get(key).isJsonNull()) return "";
+        return raw.get(key).getAsString().trim();
     }
 
     private static String required(JsonObject raw, String key) {

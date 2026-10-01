@@ -47,11 +47,11 @@ public final class MetaMenuService {
                 .map(c->new MetaUiSnapshot.ChallengeRow(c.id(),c.ordinal(),c.label(),challengeClears.contains(c.id()),c.autoEvaluable(),c.unresolvedReason())).toList();
         List<MetaUiSnapshot.RegionQuestRow> regionQuests=external?List.of():RegionQuestCatalog.all().stream().map(q->new MetaUiSnapshot.RegionQuestRow(q.id(),q.region(),q.objectiveSpecified(),completedQuests.contains(q.id()),q.chestRule())).toList();
         List<MetaUiSnapshot.ArchiveRow> archive=new ArrayList<>();List<PlayerProfile.SummonHistory> source=campaign.profile().summonHistory();for(int i=source.size()-1;i>=0;i--){var row=source.get(i);archive.add(new MetaUiSnapshot.ArchiveRow(row.characterId(),CanonicalData.definition(row.characterId()).name(),row.nativeStars(),row.newlyOwned(),row.starEssenceGranted(),row.pityAfter(),row.bonusLevelGranted(),row.bonusLevelAfter()));}
-        int shopChapter=currentShopChapter(completedQuests);List<MetaUiSnapshot.ShopRow> shop=V04Catalogs.equipment().stream()
+        int shopChapter=external?DrehmalEquipmentProgression.shopChapter(id):currentShopChapter(completedQuests);List<MetaUiSnapshot.ShopRow> shop=V04Catalogs.equipment().stream()
                 .filter(item->item.tier().equals("T1")||item.tier().equals("T2"))
                 .filter(item->!external||DrehmalMetaPresentationRules.firstHubShopVisible(item.tier()))
                 .sorted(Comparator.comparing(V04Catalogs.EquipmentSpec::tier).thenComparing(V04Catalogs.EquipmentSpec::slot).thenComparing(V04Catalogs.EquipmentSpec::id))
-                .map(item->{int unlockChapter=item.tier().equals("T1")?1:2;boolean unlocked=external||shopChapter>=unlockChapter;return new MetaUiSnapshot.ShopRow(item.id(),item.name(),item.tier(),item.slot(),EquipmentRules.shopPrice(item.tier()),unlocked);}).toList();
+                .map(item->{int unlockChapter=item.tier().equals("T1")?1:2;boolean unlocked=shopChapter>=unlockChapter;return new MetaUiSnapshot.ShopRow(item.id(),item.name(),item.tier(),item.slot(),EquipmentRules.shopPrice(item.tier()),unlocked);}).toList();
         List<MetaUiSnapshot.CodexRow> codex=codexRows(campaign,characters,completedQuests.contains("MQ_C03_03_oro7"),external);
         return new MetaUiSnapshot(campaign.profile().gold(),campaign.profile().summonCrystal(),campaign.profile().starEssence(),0,partyCp,riftUnlocked,campaign.profile().fiveStarPity(),CampaignProgressStore.starterArchiveAvailable(id),party,campaign.profile().partyPresets(),characters,equipment,endgame,challenges,regionQuests,archive,shop,codex,pendingEquipment);
     }
@@ -87,7 +87,11 @@ public final class MetaMenuService {
             case"ESSENCE_CRYSTAL"->mutate(player,"별의 정수 교환 실패",()->CampaignProgressStore.exchangeEssenceForCrystal(player.getUUID()));
             case"ESSENCE_PICK4"->{if(parts.length<2)return;mutate(player,"★4 선택 교환 실패",()->CampaignProgressStore.exchangeEssenceCharacter(player.getUUID(),4,parts[1]));}
             case"ESSENCE_PICK5"->{if(parts.length<2)return;mutate(player,"★5 선택 교환 실패",()->CampaignProgressStore.exchangeEssenceCharacter(player.getUUID(),5,parts[1]));}
-            case"BUY"->{if(parts.length<2)return;mutate(player,"구매 실패",()->CampaignProgressStore.buyEquipment(player.getUUID(),parts[1]));}
+            case"BUY"->{if(parts.length<2)return;mutate(player,"구매 실패",()->{
+                if(ExternalWorldBootstrap.active(player))CampaignProgressStore.buyEquipment(
+                        player.getUUID(),parts[1],DrehmalEquipmentProgression.shopChapter(player.getUUID()));
+                else CampaignProgressStore.buyEquipment(player.getUUID(),parts[1]);
+            });}
             case"SELL"->{if(parts.length<2)return;cleanupMutate(player,"판매 실패",()->CampaignProgressStore.sellEquipment(player.getUUID(),parts[1]));}
             case"REWARD_CLAIM"->{if(parts.length<2)return;cleanupMutate(player,"장비 보상 수령 실패",()->CampaignProgressStore.claimPendingEquipment(player.getUUID(),parts[1]));}
             case"REWARD_SELL"->{if(parts.length<2)return;cleanupMutate(player,"장비 보상 판매 실패",()->CampaignProgressStore.sellPendingEquipment(player.getUUID(),parts[1]));}

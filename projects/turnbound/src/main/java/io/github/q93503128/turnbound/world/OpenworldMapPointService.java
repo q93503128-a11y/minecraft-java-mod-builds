@@ -69,7 +69,10 @@ final class OpenworldMapPointService {
 
     private static boolean fieldNpcVisible(DrehmalFieldNpcCatalog.Npc npc, Set<String> flags) {
         if (DrabyelLocalArcRuntime.ownsSite(npc.siteLocator())) return DrabyelLocalArcProgress.available(flags);
-        if (AvsalExpansionRuntime.ownsSite(npc.siteLocator())) return flags.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED);
+        if (AvsalExpansionRuntime.ownsSite(npc.siteLocator())) {
+            if (!npc.progressRequiresFlag().isBlank()) return flags.contains(npc.progressRequiresFlag());
+            return flags.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED);
+        }
         if (npc.siteLocator().contains("tower_watch")) return flags.contains(DrehmalFirstRouteProgress.TOWER_REACHED);
         if (npc.siteLocator().contains("camp_explorer")) return flags.contains(DrehmalFirstRouteProgress.CAMP_REACHED);
         return true;

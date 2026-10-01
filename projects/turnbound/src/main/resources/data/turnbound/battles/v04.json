@@ -89,7 +89,7 @@
       "id": "AV_ROAD_PATROL",
       "label": "아브살 가도 순찰대",
       "region": "AVSAL",
-      "level": 4,
+      "level": 7,
       "enemies": [
         "CV_B",
         "CV_C",
@@ -102,7 +102,7 @@
       "id": "AV_ROAD_ELITE",
       "label": "폐허길 정예대",
       "region": "AVSAL",
-      "level": 5,
+      "level": 11,
       "enemies": [
         "CV_B",
         "CV_C",
@@ -521,6 +521,30 @@
         "EL02"
       ],
       "respawnSeconds": 180,
+      "boss": false
+    },
+    {
+      "id": "AV_ROAD_HOUNDS",
+      "label": "서쪽 가도의 잿빛 사냥개",
+      "region": "AVSAL",
+      "level": 6,
+      "enemies": [
+        "E012",
+        "E012"
+      ],
+      "respawnSeconds": 24,
+      "boss": false
+    },
+    {
+      "id": "AV_RELAY_SENTRIES",
+      "label": "폐허 접근로의 녹슨 파수기",
+      "region": "AVSAL",
+      "level": 9,
+      "enemies": [
+        "E009",
+        "E011"
+      ],
+      "respawnSeconds": 28,
       "boss": false
     }
   ]

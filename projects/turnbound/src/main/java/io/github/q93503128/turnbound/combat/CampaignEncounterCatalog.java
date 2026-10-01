@@ -59,7 +59,9 @@ public final class CampaignEncounterCatalog {
             case "CV_DRABYEL_NORTH" -> 0.30;
             case "CV_DRABYEL_ROAD" -> 0.38;
             case "CV_WARNING_CAVE_ELITE" -> 0.42;
+            case "AV_ROAD_HOUNDS" -> 0.42;
             case "AV_ROAD_PATROL" -> 0.40;
+            case "AV_RELAY_SENTRIES" -> 0.48;
             case "AV_ROAD_ELITE" -> 0.52;
             default -> {
                 if (encounter.id().startsWith("TUTORIAL_")) yield 0.68;

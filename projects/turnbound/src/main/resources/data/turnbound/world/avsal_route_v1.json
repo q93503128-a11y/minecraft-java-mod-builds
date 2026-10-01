@@ -222,7 +222,118 @@
       "searchRadius": 14,
       "safetyRadius": 0,
       "encounterRadius": 0,
-      "detectionRadius": 8,
+      "detectionRadius": 12,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/road_hounds",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "서쪽 가도의 잿빛 사냥개",
+      "seed": {
+        "x": 458,
+        "z": 1560
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "detectionRadius": 34,
+      "encounterLocator": "turnbound:encounter/avsal/road_hounds",
+      "combatEncounterId": "AV_ROAD_HOUNDS",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 507,
+          "z": 1565
+        },
+        {
+          "x": 458,
+          "z": 1560
+        },
+        {
+          "x": 405,
+          "z": 1570
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/road_courier",
+      "kind": "NPC_ZONE",
+      "playerLabel": "길가 운송인",
+      "seed": {
+        "x": 164,
+        "z": 1520
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 18,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/wayside_cache",
+      "kind": "CLUE_ZONE",
+      "playerLabel": "뒤집힌 운송수레",
+      "seed": {
+        "x": 97,
+        "z": 1549
+      },
+      "searchRadius": 10,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 12,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/relay_sentries",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "폐허 접근로의 녹슨 파수기",
+      "seed": {
+        "x": -36,
+        "z": 1492
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "detectionRadius": 34,
+      "encounterLocator": "turnbound:encounter/avsal/relay_sentries",
+      "combatEncounterId": "AV_RELAY_SENTRIES",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": -13,
+          "z": 1566
+        },
+        {
+          "x": -36,
+          "z": 1492
+        },
+        {
+          "x": -76,
+          "z": 1470
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/contract_broker",
+      "kind": "NPC_ZONE",
+      "playerLabel": "아브살 외곽 의뢰 중개소",
+      "seed": {
+        "x": -145,
+        "z": 1435
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 18,
       "encounterLocator": "",
       "combatEncounterId": "",
       "tier": "",

@@ -39,6 +39,19 @@
       "rewardCrystal": 400,
       "rewardGold": 4000,
       "rewardXp": 1000
+    },
+    {
+      "id": "SQ_AV02_RELAY_SENTRIES",
+      "kind": "SIDE",
+      "title": "뒤집힌 수레의 길",
+      "regionLabel": "Av'Sal",
+      "objective": "운송인 데른이 지목한 폐허 접근로의 녹슨 파수기를 정리하십시오.",
+      "activationFlag": "AVSAL_ROAD_COURIER_OFFERED",
+      "completionFlag": "",
+      "encounterId": "AV_RELAY_SENTRIES",
+      "rewardCrystal": 250,
+      "rewardGold": 3500,
+      "rewardXp": 1200
     }
   ]
 }

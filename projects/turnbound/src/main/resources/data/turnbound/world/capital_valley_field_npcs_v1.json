@@ -60,6 +60,27 @@
       "interactionRadius": 4,
       "progressFlag": "DRABYEL_LOCAL_SCOUT",
       "progressRequiresFlag": "DRABYEL_LOCAL_ACCEPTED"
+    },
+    {
+      "locator": "turnbound:npc/avsal/road_courier",
+      "siteLocator": "turnbound:site/avsal/road_courier",
+      "playerLabel": "운송인 데른",
+      "visualAsset": "DRABYEL_STABLEMASTER",
+      "dialogue": "이 길은 전보다 더 시끄러워졌어. 폐허 쪽에서 움직이는 녹슨 파수기들이 수레를 두 번이나 뒤집었지. 아브살로 계속 갈 거라면 접근로부터 조심해.",
+      "interactionRadius": 4,
+      "progressRequiresFlag": "AVSAL_MQ_AV01_BRIEFED",
+      "questOfferFlag": "AVSAL_ROAD_COURIER_OFFERED",
+      "questOfferId": "SQ_AV02_RELAY_SENTRIES",
+      "questOfferDialogue": "폐허 바로 앞의 녹슨 파수기들을 정리해 주면 다음 운송대가 지나갈 틈이 생길 거야. 꼭 메인 일과 함께 할 필요는 없어."
+    },
+    {
+      "locator": "turnbound:npc/avsal/contract_broker",
+      "siteLocator": "turnbound:site/avsal/contract_broker",
+      "playerLabel": "의뢰 중개인 사엘",
+      "visualAsset": "DRABYEL_STORYKEEPER",
+      "dialogue": "외곽에 남아 있는 사람들끼리 필요한 일을 모아 두고 있어요. 마을까지 돌아가지 않아도 여기서 지역 의뢰를 받고 보고할 수 있습니다.",
+      "interactionRadius": 4,
+      "progressRequiresFlag": "AVSAL_REGION_DISCOVERED"
     }
   ]
 }

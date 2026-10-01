@@ -128,9 +128,9 @@ final class DrabyelHubServiceRuntime {
             return true;
         }
         if ("CONTRACT".equals(service.role())) {
-            if (!RegionalContractService.interact(player)) {
+            if (!RegionalContractService.interact(player, service.playerLabel())) {
                 FieldNetwork.showDialogue(player, service.playerLabel(),
-                        "마을에 도착한 뒤부터 지역 의뢰를 받을 수 있습니다. 의뢰는 메인 이야기와 별개로 파티 성장에 따라 단계가 올라갑니다.");
+                        "지역 의뢰는 파티가 성장하고 새로운 지역을 발견할수록 더 어려운 단계가 들어옵니다.");
             }
             return true;
         }

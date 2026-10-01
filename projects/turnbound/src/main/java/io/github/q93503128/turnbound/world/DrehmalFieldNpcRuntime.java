@@ -34,7 +34,7 @@ final class DrehmalFieldNpcRuntime {
             if(site==null||site.runtimePosition()==null||!DrabyelServiceActors.supports(npc.visualAsset()))continue;
             active.add(npc.locator());
             Vec3 pos=vec(site.runtimePosition());
-            if(!demanded(level,pos)){discard(level,npc.locator());continue;}
+            if(!demanded(level,npc,pos)){discard(level,npc.locator());continue;}
             if(!DrehmalAdaptiveRoutePlacement.sourceContentClear(
                     level,site.runtimePosition().x(),site.runtimePosition().y(),site.runtimePosition().z(),2.75D)){
                 discard(level,npc.locator());
@@ -50,13 +50,16 @@ final class DrehmalFieldNpcRuntime {
         String locator=locator(target);
         if(player==null||locator==null)return false;
         var npc=DrehmalFieldNpcCatalog.npc(locator);
-        if(npc==null)return false;
+        if(npc==null||!eligible(player,npc))return false;
         var site=site(player,npc.siteLocator());
         if(site==null||site.runtimePosition()==null)return false;
         Vec3 pos=vec(site.runtimePosition());
         double radius=npc.interactionRadius()+1.0D;
         if(player.position().distanceToSqr(pos)>radius*radius)return false;
         if(target instanceof BattleActorEntity actor){face(actor,player);actor.playServiceGreeting();}
+        if("turnbound:npc/avsal/contract_broker".equals(npc.locator())){
+            if(RegionalContractService.interact(player,npc.playerLabel()))return true;
+        }
         String dialogue=npc.dialogue();
         var server=player.level().getServer();
         if(server!=null){
@@ -116,13 +119,24 @@ final class DrehmalFieldNpcRuntime {
         return player!=null && player.level() instanceof ServerLevel level ? site(level,player,locator) : null;
     }
 
-    private static boolean demanded(ServerLevel level,Vec3 pos){
+    private static boolean demanded(ServerLevel level,DrehmalFieldNpcCatalog.Npc npc,Vec3 pos){
         double radiusSq=MATERIALIZE_RADIUS*MATERIALIZE_RADIUS;
         for(ServerPlayer player:level.players()){
             if(!ExternalWorldBootstrap.active(player)||BattleSessionManager.exists(player)||player.isSpectator())continue;
+            if(!eligible(player,npc))continue;
             if(player.position().distanceToSqr(pos)<=radiusSq)return true;
         }
         return false;
+    }
+
+    private static boolean eligible(ServerPlayer player,DrehmalFieldNpcCatalog.Npc npc){
+        if(player==null||npc==null)return false;
+        if(!AvsalExpansionRuntime.ownsSite(npc.siteLocator()))return true;
+        var server=player.level().getServer();
+        if(server==null)return false;
+        Set<String> flags=ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        if(!npc.progressRequiresFlag().isBlank())return flags.contains(npc.progressRequiresFlag());
+        return flags.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED);
     }
 
     private static BattleActorEntity ensure(ServerLevel level,DrehmalFieldNpcCatalog.Npc npc,Vec3 pos){

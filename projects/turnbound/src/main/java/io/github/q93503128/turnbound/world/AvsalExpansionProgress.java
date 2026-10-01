@@ -9,6 +9,8 @@ final class AvsalExpansionProgress {
     static final String BRIEFED = "AVSAL_MQ_AV01_BRIEFED";
     static final String ROADSIDE_ECHO_SEEN = "AVSAL_ROADSIDE_ECHO_SEEN";
     static final String ROAD_PATROL_SEEN = "AVSAL_ROAD_PATROL_SEEN";
+    static final String WAYSIDE_CACHE_SEEN = "AVSAL_WAYSIDE_CACHE_SEEN";
+    static final String REGION_DISCOVERED = "AVSAL_REGION_DISCOVERED";
     static final String OUTSKIRTS_REACHED = "AVSAL_MQ_AV01_COMPLETE";
     static final String CLUE_SCAVENGER = "AVSAL_MQ_AV02_SCAVENGER";
     static final String CLUE_SURVIVOR = "AVSAL_MQ_AV02_SURVIVOR";

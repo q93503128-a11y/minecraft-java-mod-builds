@@ -1562,7 +1562,7 @@ Current production direction:
 
 - Physical NPC services are authoritative. Global E-menu is management only; shop, sell, forge, summon and travel actions must stay at their corresponding world NPC/facility.
 - MetaFacilityActionGate remains the server-side anti-shortcut boundary.
-- Entrance guide Lara is now the main-quest giver for the New Drabyel opening sequence.
+- Entrance guide Aren is now the main-quest giver for the New Drabyel opening sequence.
 - Post-hub early movement targets a 64-110 block ring, with a 2-of-3 local investigation before larger regional travel.
 - Quest targets represented by actual entities use a wall-through glowing outline while active; coordinate-only targets should be promoted to physical interactable proxies when they need the same treatment.
 - Av'Sal is no longer an immediate early-game destination. It requires the local New Drabyel arc plus at least one meaningful Capital Valley regional milestone and map review.
@@ -1676,3 +1676,39 @@ Validation:
 - MULTIPLAYER TESTED: NO
 
 No build/CI for this content/data batch yet.
+
+
+## New Drabyel → Av'Sal first playtest gate — 2026-10-01
+
+Latest explicit milestone:
+- continue expanding content/equipment rather than stopping at feature scaffolding
+- first user playtest happens after the route through Av'Sal arrival is content-complete enough to judge
+- map placement quality is part of the gate
+
+Implemented in the current content batch:
+- Av'Sal west road gains Ash Hounds, a courier NPC, an overturned-cart discovery and rusted-sentry encounter in addition to the existing echo/patrol/Elite
+- all added route positions are source-corridor search seeds; live 26.2 terrain and source-content clearance still decide final actor/arena positions
+- Av'Sal road encounter levels now progress through Lv6 / Lv7 / Lv9 with the optional Elite at Lv11
+- Capital Valley common fights feed T1 equipment; harder Capital Valley and Av'Sal feed T2 equipment
+- early equipment drops use the existing durable settlement transaction as the deterministic roll source
+- New Drabyel T2 shop display and BUY authority share the same Drehmal progression gate
+- stale loot-data shop/sale numbers were aligned to the current equipment-economy canon
+- Av'Sal physical discovery unlocks Tier 4 regional contracts at average active-party Lv16+
+- the Tier 4 pool is region-discovery + party-growth gated, not hard-wired to a later MQ completion
+- Av'Sal outskirts gains a physical contract broker sharing the player's existing server-owned regional-contract state
+- multiplayer field NPC eligibility checks the interacting player's own Av'Sal flags
+
+Remaining before calling the first route playtest-ready:
+- static/compile validation of this integrated batch at the chosen checkpoint
+- actual client validation of live map placement, travel density, encounter sightlines, NPC collision and equipment pacing
+- travel SFX remains pending
+- rideable mount production remains pending and is not required to fake-complete the Av'Sal arrival gate
+
+Validation for this content checkpoint:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- NEW JAR: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO

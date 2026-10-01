@@ -23,6 +23,10 @@ final class AvsalExpansionRuntime {
     static final String ROAD_EVENT_SITE = "turnbound:site/avsal/roadside_echo";
     static final String ROAD_PATROL_SITE = "turnbound:site/avsal/road_patrol";
     static final String ROAD_ELITE_SITE = "turnbound:site/avsal/road_elite";
+    static final String ROAD_HOUNDS_SITE = "turnbound:site/avsal/road_hounds";
+    static final String ROAD_COURIER_SITE = "turnbound:site/avsal/road_courier";
+    static final String WAYSIDE_CACHE_SITE = "turnbound:site/avsal/wayside_cache";
+    static final String RELAY_SENTRIES_SITE = "turnbound:site/avsal/relay_sentries";
     static final String OUTSKIRTS_SITE = "turnbound:site/avsal/outskirts";
     static final String SCAVENGER_CLUE_SITE = "turnbound:site/avsal/scavenger_contact";
     static final String SURVIVOR_CLUE_SITE = "turnbound:site/avsal/survivor_shelter";
@@ -166,6 +170,13 @@ final class AvsalExpansionRuntime {
                 && inside(player, AvsalExpansionCatalog.site(ROAD_PATROL_SITE), snapshot.sites().get(ROAD_PATROL_SITE))) {
             AvsalExpansionProgress.mark(player, AvsalExpansionProgress.ROAD_PATROL_SEEN);
         }
+        if (!flags.contains(AvsalExpansionProgress.WAYSIDE_CACHE_SEEN)
+                && inside(player, AvsalExpansionCatalog.site(WAYSIDE_CACHE_SITE), snapshot.sites().get(WAYSIDE_CACHE_SITE))) {
+            if (AvsalExpansionProgress.mark(player, AvsalExpansionProgress.WAYSIDE_CACHE_SEEN)) {
+                FieldNetwork.showDialogue(player, "뒤집힌 운송수레",
+                        "찢어진 포장과 부서진 금속 고리가 남아 있습니다. 오래된 폐허의 물건이라기보다 최근 운송 중 버려진 짐에 가깝습니다.");
+            }
+        }
         if (!flags.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED)
                 && inside(player, AvsalExpansionCatalog.site(OUTSKIRTS_SITE), snapshot.sites().get(OUTSKIRTS_SITE))) {
             if (AvsalExpansionProgress.mark(player, AvsalExpansionProgress.OUTSKIRTS_REACHED)) {
@@ -175,6 +186,11 @@ final class AvsalExpansionRuntime {
         }
 
         Set<String> refreshed = ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        if (refreshed.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED)
+                && !refreshed.contains(AvsalExpansionProgress.REGION_DISCOVERED)) {
+            AvsalExpansionProgress.mark(player, AvsalExpansionProgress.REGION_DISCOVERED);
+            refreshed = ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        }
         if (refreshed.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED)
                 && !refreshed.contains(AvsalExpansionProgress.CLUE_RECORDS)
                 && inside(player, AvsalExpansionCatalog.site(RECORDS_CLUE_SITE), snapshot.sites().get(RECORDS_CLUE_SITE))) {

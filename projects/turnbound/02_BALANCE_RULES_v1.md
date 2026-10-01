@@ -378,7 +378,7 @@ trait는 강화로 반복 상승하지 않거나 특정 milestone에서 1회만 
 - 지역 Boss 첫 클리어: 900~1,500 Crystal
 - 던전/대형 폐허 첫 클리어: 300~700 Crystal
 - 업적/고난도: 150~300 Crystal
-- 반복 지역 목표: 40~90 Crystal + Gold/XP/일반 장비 중심
+- 반복 지역 목표: 기본 계약은 Gold/XP/일반 장비 중심. 반복 Crystal은 기본 보상에서 제외하고, 희귀한 최초 발견/첫 클리어/특수 계약에만 별도 검토
 
 반복 목표는 현실 시간으로 잠그지 않는다. 같은 전투를 제자리에서 계속 도는 것보다 이동/조사/호위/방어/사냥 등 여러 유형의 지역 목표를 순환해서 플레이하는 편이 더 좋은 보상을 받게 설계한다.
 
@@ -704,3 +704,24 @@ Capital Valley Gold:
 - Warning Cave Elite: 600
 
 이 값은 v1 경제 목표인 일반 필드전 80~160 / Elite 350~700 안에서 첫 루트의 탐험 템포를 맞추는 값이다.
+
+
+### 20.1 Drehmal early equipment loop — 2026-10-01
+
+The first client-test route must support recovery from a power wall without forcing main-story progress.
+
+Production target:
+- Capital Valley common: T1 first-clear drop chance 45%, repeat 18%
+- Warning Cave Elite: T2 20%
+- Briar Stag Elite: T2 first clear 35%, repeat 25%, plus first-clear T2 choice token
+- Av'Sal road common: T2 first clear 55%, repeat 22%
+- Av'Sal road Elite: T2 repeat 30%, with the existing first-clear T2 choice token
+
+These are initial production rates and require playtest economy review.
+They do not add random substats or extra crafting currencies.
+
+T2 New Drabyel shop unlock:
+- average active-party Lv8+, or
+- meaningful Elite / Av'Sal road clear.
+
+The visible shop state and server BUY authority must use the same rule.

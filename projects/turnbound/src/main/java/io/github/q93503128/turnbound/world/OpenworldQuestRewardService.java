@@ -35,6 +35,7 @@ final class OpenworldQuestRewardService {
         discovery(player, flags, DrehmalFirstRouteProgress.TOWER_REACHED, "캐피털 밸리 탑 발견", 80, 500, granted);
         discovery(player, flags, DrehmalFirstRouteProgress.CAMP_REACHED, "탐험가 야영지 발견", 60, 400, granted);
         discovery(player, flags, AvsalExpansionProgress.ROADSIDE_ECHO_SEEN, "가도의 이상 신호 발견", 60, 500, granted);
+        discovery(player, flags, AvsalExpansionProgress.WAYSIDE_CACHE_SEEN, "뒤집힌 운송수레 조사", 40, 700, granted);
 
         if (granted.isEmpty()) return;
         int crystal = granted.stream().mapToInt(Grant::crystal).sum();

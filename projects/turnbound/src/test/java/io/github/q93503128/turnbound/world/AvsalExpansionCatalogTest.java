@@ -32,5 +32,15 @@ class AvsalExpansionCatalogTest {
         assertTrue(spec.enemies().contains("CV_B"));
         assertTrue(spec.enemies().contains("CV_C"));
         assertTrue(spec.enemies().contains("E005"));
+
+        var hounds = AvsalExpansionCatalog.site(AvsalExpansionRuntime.ROAD_HOUNDS_SITE);
+        var sentries = AvsalExpansionCatalog.site(AvsalExpansionRuntime.RELAY_SENTRIES_SITE);
+        assertEquals("AV_ROAD_HOUNDS", hounds.combatEncounterId());
+        assertEquals("AV_RELAY_SENTRIES", sentries.combatEncounterId());
+        assertTrue(hounds.patrolSeeds().size() >= 2);
+        assertTrue(sentries.patrolSeeds().size() >= 2);
+        assertTrue(AvsalExpansionCatalog.site(AvsalExpansionRuntime.ROAD_COURIER_SITE).kind().equals("NPC_ZONE"));
+        assertTrue(AvsalExpansionCatalog.site(AvsalExpansionRuntime.WAYSIDE_CACHE_SITE).detectionRadius() >= 12);
+        assertTrue(AvsalExpansionCatalog.site("turnbound:site/avsal/contract_broker").kind().equals("NPC_ZONE"));
     }
 }

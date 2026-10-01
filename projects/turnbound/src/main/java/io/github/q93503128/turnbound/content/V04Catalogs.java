@@ -85,7 +85,9 @@ public final class V04Catalogs {
             case "CV_FIRST_COMMON" -> 120;
             case "CV_DRABYEL_ROAD" -> 160;
             case "CV_WARNING_CAVE_ELITE" -> 600;
-            case "AV_ROAD_PATROL" -> 220;
+            case "AV_ROAD_HOUNDS" -> 200;
+            case "AV_ROAD_PATROL" -> 240;
+            case "AV_RELAY_SENTRIES" -> 320;
             case "AV_ROAD_ELITE" -> 700;
             default -> -1;
         };
@@ -105,7 +107,9 @@ public final class V04Catalogs {
             case "CV_TOWER_ROAD", "CV_CAMP_WILDLIFE" -> 180;
             case "CV_DRABYEL_NORTH", "CV_DRABYEL_ROAD" -> 240;
             case "CV_WARNING_CAVE_ELITE" -> 600;
+            case "AV_ROAD_HOUNDS" -> 220;
             case "AV_ROAD_PATROL" -> 300;
+            case "AV_RELAY_SENTRIES" -> 360;
             case "AV_ROAD_ELITE" -> 700;
             default -> 0;
         };
@@ -114,7 +118,9 @@ public final class V04Catalogs {
     public static int battleXp(Encounter encounter) {
         if (tutorialBridge(encounter.id())) return 0;
         int authoredRoute = switch (encounter.id()) {
-            case "AV_ROAD_PATROL" -> 420;
+            case "AV_ROAD_HOUNDS" -> 520;
+            case "AV_ROAD_PATROL" -> 650;
+            case "AV_RELAY_SENTRIES" -> 850;
             case "AV_ROAD_ELITE" -> 1_200;
             default -> -1;
         };

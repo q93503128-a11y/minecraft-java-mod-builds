@@ -12,15 +12,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Battle equipment drop authority for rates fully specified by v0.4 §99.
+ * Server-authoritative deterministic equipment drops.
  *
- * Canon fixes T3 Elite=20% and repeat regional Boss=15%, with T3 drops unlocked after B03.
- * It does not define per-item weights inside a tier, so this implementation bridge selects uniformly
- * from the six authored T3 items. The roll is derived from the durable reward transaction id so a
- * persistence retry cannot reroll the reward.
- *
- * T4 Rift 21-30 / Hard Boss repeat distribution is intentionally not rolled here because v0.4 names
- * those sources but does not author a rate or T3/T4 split for Hard repeat rewards.
+ * <p>Drehmal open-world progression uses T1/T2 drops before the legacy B03 T3 gate so repeatable field content
+ * can actually improve equipment while Gold is spent at the forge. Legacy T3 rules remain unchanged after B03.
+ * Every roll is derived from the durable reward transaction id, so save retries cannot reroll equipment.</p>
  */
 public final class EquipmentDropService {
     public record Drop(String itemId, String tier, String name, boolean queued) {
@@ -28,31 +24,32 @@ public final class EquipmentDropService {
         public boolean present() { return !itemId.isBlank(); }
     }
 
-    private static final List<V04Catalogs.EquipmentSpec> T3_POOL = V04Catalogs.equipment().stream()
-            .filter(spec -> "T3".equals(spec.tier())).toList();
+    private record DropRule(String tier, double rate) {}
+
+    private static final List<V04Catalogs.EquipmentSpec> T1_POOL = pool("T1");
+    private static final List<V04Catalogs.EquipmentSpec> T2_POOL = pool("T2");
+    private static final List<V04Catalogs.EquipmentSpec> T3_POOL = pool("T3");
 
     private EquipmentDropService() {}
 
     public static Drop preview(UUID playerId, String transactionId, String encounterId, BattleResultSummary result) {
         if (playerId == null || transactionId == null || transactionId.isBlank()
                 || encounterId == null || encounterId.isBlank() || result == null) return Drop.none();
-        if (!CampaignContentUnlocks.chapter3Complete(playerId) || !V04Catalogs.hasEncounter(encounterId)) return Drop.none();
+        if (!V04Catalogs.hasEncounter(encounterId)) return Drop.none();
 
         V04Catalogs.Encounter encounter = V04Catalogs.encounter(encounterId);
-        double rate = 0.0;
-        if (!encounter.boss() && encounter.enemies().stream().anyMatch(id -> id.startsWith("EL"))) {
-            rate = 0.20;
-        } else if (encounter.boss() && !result.firstClear()) {
-            rate = 0.15;
-        }
-        if (rate <= 0.0 || unit(transactionId, encounterId, "rate") >= rate || T3_POOL.isEmpty()) return Drop.none();
+        DropRule early = openworldRule(encounterId, result.firstClear());
+        if (early != null) return roll(playerId, transactionId, encounterId, early);
 
-        int index = (int)Math.floor(unit(transactionId, encounterId, "item") * T3_POOL.size());
-        if (index >= T3_POOL.size()) index = T3_POOL.size() - 1;
-        V04Catalogs.EquipmentSpec item = T3_POOL.get(Math.max(0, index));
-        EquipmentInventory.Snapshot inventory = CampaignProgressStore.equipment(playerId);
-        boolean queued = inventory.items().size() >= EquipmentInventory.MAX_INSTANCES || !inventory.pendingRewards().isEmpty();
-        return new Drop(item.id(), item.tier(), item.name(), queued);
+        if (!CampaignContentUnlocks.chapter3Complete(playerId)) return Drop.none();
+        double rate = 0.0D;
+        if (!encounter.boss() && encounter.enemies().stream().anyMatch(id -> id.startsWith("EL"))) {
+            rate = 0.20D;
+        } else if (encounter.boss() && !result.firstClear()) {
+            rate = 0.15D;
+        }
+        return rate <= 0.0D ? Drop.none()
+                : roll(playerId, transactionId, encounterId, new DropRule("T3", rate));
     }
 
     public static Drop commit(UUID playerId, String transactionId, String encounterId, BattleResultSummary result) {
@@ -62,10 +59,52 @@ public final class EquipmentDropService {
         return drop;
     }
 
+    private static DropRule openworldRule(String encounterId, boolean firstClear) {
+        return switch (encounterId) {
+            case "CV_FIRST_COMMON", "CV_TEMPLE_WILDLIFE", "CV_TOWER_ROAD", "CV_CAMP_WILDLIFE",
+                    "CV_DRABYEL_NORTH", "CV_DRABYEL_ROAD", "CV_HOUND_ROAM", "CV_SPORE_GROVE" ->
+                    new DropRule("T1", firstClear ? 0.45D : 0.18D);
+            case "CV_WARNING_CAVE_ELITE" ->
+                    new DropRule("T2", firstClear ? 0.20D : 0.20D);
+            case "CV_BRIAR_STAG" ->
+                    new DropRule("T2", firstClear ? 0.35D : 0.25D);
+            case "AV_ROAD_HOUNDS", "AV_ROAD_PATROL", "AV_RELAY_SENTRIES" ->
+                    new DropRule("T2", firstClear ? 0.55D : 0.22D);
+            case "AV_ROAD_ELITE" ->
+                    new DropRule("T2", firstClear ? 0.25D : 0.30D);
+            default -> null;
+        };
+    }
+
+    private static Drop roll(UUID playerId, String transactionId, String encounterId, DropRule rule) {
+        List<V04Catalogs.EquipmentSpec> pool = switch (rule.tier()) {
+            case "T1" -> T1_POOL;
+            case "T2" -> T2_POOL;
+            case "T3" -> T3_POOL;
+            default -> List.of();
+        };
+        if (pool.isEmpty() || unit(transactionId, encounterId, "rate:" + rule.tier()) >= rule.rate()) {
+            return Drop.none();
+        }
+
+        int index = (int)Math.floor(unit(transactionId, encounterId, "item:" + rule.tier()) * pool.size());
+        if (index >= pool.size()) index = pool.size() - 1;
+        V04Catalogs.EquipmentSpec item = pool.get(Math.max(0, index));
+        EquipmentInventory.Snapshot inventory = CampaignProgressStore.equipment(playerId);
+        boolean queued = inventory.items().size() >= EquipmentInventory.MAX_INSTANCES
+                || !inventory.pendingRewards().isEmpty();
+        return new Drop(item.id(), item.tier(), item.name(), queued);
+    }
+
+    private static List<V04Catalogs.EquipmentSpec> pool(String tier) {
+        return V04Catalogs.equipment().stream().filter(spec -> tier.equals(spec.tier())).toList();
+    }
+
     private static double unit(String transactionId, String encounterId, String salt) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest((transactionId + "|" + encounterId + "|" + salt).getBytes(StandardCharsets.UTF_8));
+            byte[] bytes = digest.digest((transactionId + "|" + encounterId + "|" + salt)
+                    .getBytes(StandardCharsets.UTF_8));
             long raw = ByteBuffer.wrap(bytes, 0, Long.BYTES).getLong() & Long.MAX_VALUE;
             return raw / (double)Long.MAX_VALUE;
         } catch (NoSuchAlgorithmException impossible) {

@@ -476,6 +476,14 @@ public final class CampaignProgressStore {
         return item;
     }
 
+    public static EquipmentInventory.Item buyEquipment(UUID playerId, String itemId, int shopChapterOverride) {
+        PlayerProgress progress = player(playerId);
+        int chapter = Math.max(1, Math.min(2, shopChapterOverride));
+        EquipmentInventory.Item item = EquipmentRules.buyNormal(progress.equipment, progress.profile, itemId, chapter);
+        progress.dirty = true;
+        return item;
+    }
+
     public static int sellEquipment(UUID playerId, String instanceId) {
         PlayerProgress progress = player(playerId);
         int gold = progress.equipment.sell(instanceId, progress.profile);
