@@ -24,6 +24,26 @@ class R01EarthloongThreatTableTest {
     }
 
     @Test
+    void authoredTargetWeightCanRedirectWithoutMutatingStoredThreat() {
+        var table = new R01EarthloongThreatTable();
+        table.engageInitial(A, 0);
+        table.addThreat(A, 20.0, 0);
+        table.engageInitial(B, 0);
+        assertEquals(A, table.selectTarget(List.of(A, B), 0).orElseThrow());
+
+        assertEquals(
+                B,
+                table.selectTarget(
+                        List.of(A, B),
+                        0,
+                        id -> id.equals(B) ? 4.0 : 1.0
+                ).orElseThrow()
+        );
+        assertEquals(30.0, table.threatOf(A, 0), 0.000001);
+        assertEquals(10.0, table.threatOf(B, 0), 0.000001);
+    }
+
+    @Test
     void threatDecayStartsAfterSixSecondGraceAndFloorsAtTen() {
         var table = new R01EarthloongThreatTable();
         table.engageInitial(A, 0);

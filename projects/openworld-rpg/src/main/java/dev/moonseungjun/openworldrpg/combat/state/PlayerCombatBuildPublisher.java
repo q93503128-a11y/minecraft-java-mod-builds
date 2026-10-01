@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.GuardianResolveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.GuardianRootPassiveEffects;
+import dev.moonseungjun.openworldrpg.combat.runtime.GuardianSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageArcaneWeaveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.MageRootPassiveEffects;
@@ -217,7 +218,10 @@ public final class PlayerCombatBuildPublisher {
                 effectiveEnd,
                 loadout.aggregateArmorPoise(),
                 loadout.aggregatePoiseStaggerResistanceBonus()
-        );
+        ) * (serverPlayer != null
+                ? GuardianSkillRuntime
+                        .standFirmPoiseMaxMultiplier(serverPlayer)
+                : 1.0);
         CombatStateServices.playerPoiseStates().synchronize(
                 player.getUUID(),
                 maxPoise,

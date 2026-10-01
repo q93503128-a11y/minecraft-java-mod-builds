@@ -34,11 +34,20 @@ public final class ProjectUltimateChargeRuntime {
     public static final double MAGE_WEAVE_COMPLETION_CHARGE = 6.0;
     public static final double MAGE_MEANINGFUL_CONTROL_CHARGE = 2.0;
     public static final long MAGE_CONTROL_ICD_TICKS = 80L;
+    public static final double GUARDIAN_GUARDED_HIT_CHARGE = 2.0;
+    public static final double GUARDIAN_PERFECT_GUARD_CHARGE = 6.0;
+    public static final double GUARDIAN_BARRIER_STEP_CHARGE = 2.0;
+    public static final double GUARDIAN_PROVOKED_HIT_CHARGE = 2.0;
+    public static final double GUARDIAN_GUARDED_HIT_STAMINA_THRESHOLD = 12.0;
+    public static final long GUARDIAN_PROVOKED_HIT_ICD_TICKS = 40L;
+    public static final int MAX_GUARDIAN_BARRIER_STEPS_PER_SOURCE_RECIPIENT = 3;
     public static final double SUPPORT_STEP_MAX_HP_FRACTION = 0.05;
     public static final int MAX_SUPPORT_STEPS_PER_SOURCE_RECIPIENT = 3;
 
     private static final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, Long>>
             MAGE_CONTROL_READY_AT = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, Long>>
+            GUARDIAN_PROVOKED_HIT_READY_AT = new ConcurrentHashMap<>();
 
     private ProjectUltimateChargeRuntime() {
     }
@@ -362,6 +371,122 @@ public final class ProjectUltimateChargeRuntime {
         return recordClassEvent(mage, MAGE_MEANINGFUL_CONTROL_CHARGE, profile.contentLevel());
     }
 
+    public static GainApplication recordGuardianOrdinaryGuardedHit(
+            ServerPlayer guardian,
+            LivingEntity hostile,
+            double finalStaminaCost
+    ) {
+        Objects.requireNonNull(guardian, "guardian");
+        Objects.requireNonNull(hostile, "hostile");
+        if (!isGuardian(guardian)
+                || guardian.level() != hostile.level()
+                || !Double.isFinite(finalStaminaCost)
+                || finalStaminaCost + 1.0e-9
+                        < GUARDIAN_GUARDED_HIT_STAMINA_THRESHOLD) {
+            return GainApplication.rejected();
+        }
+        return recordGuardianHostileEvent(
+                guardian,
+                hostile,
+                GUARDIAN_GUARDED_HIT_CHARGE
+        );
+    }
+
+    public static GainApplication recordGuardianPerfectGuard(
+            ServerPlayer guardian,
+            LivingEntity hostile
+    ) {
+        return recordGuardianHostileEvent(
+                guardian,
+                hostile,
+                GUARDIAN_PERFECT_GUARD_CHARGE
+        );
+    }
+
+    public static GainApplication recordGuardianBarrierConsumption(
+            ServerPlayer guardian,
+            ServerPlayer recipient,
+            int newlyQualifiedFivePercentSteps,
+            LivingEntity hostileSource
+    ) {
+        Objects.requireNonNull(guardian, "guardian");
+        Objects.requireNonNull(recipient, "recipient");
+        Objects.requireNonNull(hostileSource, "hostileSource");
+        if (!isGuardian(guardian)
+                || guardian.level() != recipient.level()
+                || hostileSource.level() != recipient.level()
+                || newlyQualifiedFivePercentSteps <= 0) {
+            return GainApplication.rejected();
+        }
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(hostileSource)
+                .orElse(null);
+        if (profile == null) {
+            return GainApplication.rejected();
+        }
+        int steps = Math.min(
+                MAX_GUARDIAN_BARRIER_STEPS_PER_SOURCE_RECIPIENT,
+                newlyQualifiedFivePercentSteps
+        );
+        return recordClassEvent(
+                guardian,
+                steps * GUARDIAN_BARRIER_STEP_CHARGE,
+                profile.contentLevel()
+        );
+    }
+
+    public static GainApplication recordGuardianProvokedHit(
+            ServerPlayer guardian,
+            LivingEntity hostile,
+            long nowTick
+    ) {
+        Objects.requireNonNull(guardian, "guardian");
+        Objects.requireNonNull(hostile, "hostile");
+        if (nowTick < 0L
+                || !isGuardian(guardian)
+                || guardian.level() != hostile.level()
+                || !GuardianProvokedRuntime.isProvokedToward(
+                        hostile,
+                        guardian,
+                        nowTick
+                )) {
+            return GainApplication.rejected();
+        }
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(hostile)
+                .orElse(null);
+        if (profile == null) {
+            return GainApplication.rejected();
+        }
+        var readyByTarget = GUARDIAN_PROVOKED_HIT_READY_AT
+                .computeIfAbsent(
+                        guardian.getUUID(),
+                        ignored -> new ConcurrentHashMap<>()
+                );
+        Long readyAt = readyByTarget.get(hostile.getUUID());
+        if (readyAt != null && nowTick < readyAt) {
+            return GainApplication.rejected();
+        }
+        readyByTarget.put(
+                hostile.getUUID(),
+                Math.addExact(
+                        nowTick,
+                        GUARDIAN_PROVOKED_HIT_ICD_TICKS
+                )
+        );
+        return recordClassEvent(
+                guardian,
+                GUARDIAN_PROVOKED_HIT_CHARGE,
+                profile.contentLevel()
+        );
+    }
+
+    public static void resetGuardianTransient(UUID guardianId) {
+        if (guardianId != null) {
+            GUARDIAN_PROVOKED_HIT_READY_AT.remove(guardianId);
+        }
+    }
+
     public static void resetMageTransient(UUID mageId) {
         if (mageId != null) {
             MAGE_CONTROL_READY_AT.remove(mageId);
@@ -383,6 +508,30 @@ public final class ProjectUltimateChargeRuntime {
             return GainApplication.rejected();
         }
         return recordClassEvent(mage, authoredCharge, profile.contentLevel());
+    }
+
+    private static GainApplication recordGuardianHostileEvent(
+            ServerPlayer guardian,
+            LivingEntity hostile,
+            double authoredCharge
+    ) {
+        Objects.requireNonNull(guardian, "guardian");
+        Objects.requireNonNull(hostile, "hostile");
+        if (!isGuardian(guardian)
+                || guardian.level() != hostile.level()) {
+            return GainApplication.rejected();
+        }
+        var profile = ExternalActorBindingRuntime
+                .combatProfile(hostile)
+                .orElse(null);
+        if (profile == null) {
+            return GainApplication.rejected();
+        }
+        return recordClassEvent(
+                guardian,
+                authoredCharge,
+                profile.contentLevel()
+        );
     }
 
     private static GainApplication recordWarriorHostileEvent(
@@ -512,6 +661,13 @@ public final class ProjectUltimateChargeRuntime {
         return PlayerProgressionService.state(player)
                 .activeClass()
                 .filter(RootClass.CLERIC::equals)
+                .isPresent();
+    }
+
+    private static boolean isGuardian(ServerPlayer player) {
+        return PlayerProgressionService.state(player)
+                .activeClass()
+                .filter(RootClass.GUARDIAN::equals)
                 .isPresent();
     }
 

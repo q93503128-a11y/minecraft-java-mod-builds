@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.ToDoubleFunction;
 
 public final class R01EarthloongThreatTable {
     private static final double INITIAL_THREAT = 10.0;
@@ -40,23 +41,59 @@ public final class R01EarthloongThreatTable {
         entries.put(playerId, new Entry(effectiveThreat(previous, gameTick) + amount, gameTick));
     }
 
-    public Optional<UUID> selectTarget(Collection<UUID> validPlayerIds, long gameTick) {
+    public Optional<UUID> selectTarget(
+            Collection<UUID> validPlayerIds,
+            long gameTick
+    ) {
+        return selectTarget(
+                validPlayerIds,
+                gameTick,
+                ignored -> 1.0
+        );
+    }
+
+    public Optional<UUID> selectTarget(
+            Collection<UUID> validPlayerIds,
+            long gameTick,
+            ToDoubleFunction<UUID> authoredWeightMultiplier
+    ) {
         requireTick(gameTick);
-        Set<UUID> valid = new HashSet<>(Objects.requireNonNull(validPlayerIds, "validPlayerIds"));
+        Objects.requireNonNull(
+                authoredWeightMultiplier,
+                "authoredWeightMultiplier"
+        );
+        Set<UUID> valid = new HashSet<>(
+                Objects.requireNonNull(
+                        validPlayerIds,
+                        "validPlayerIds"
+                )
+        );
         valid.retainAll(entries.keySet());
         if (valid.isEmpty()) {
             currentTarget = null;
             return Optional.empty();
         }
 
-        UUID best = bestThreat(valid, gameTick);
+        UUID best = bestThreat(
+                valid,
+                gameTick,
+                authoredWeightMultiplier
+        );
         if (currentTarget == null || !valid.contains(currentTarget)) {
             currentTarget = best;
             return Optional.of(currentTarget);
         }
 
         if (!currentTarget.equals(best)
-                && threatOf(best, gameTick) >= threatOf(currentTarget, gameTick) * SWITCH_RATIO) {
+                && weightedThreat(
+                        best,
+                        gameTick,
+                        authoredWeightMultiplier
+                ) >= weightedThreat(
+                        currentTarget,
+                        gameTick,
+                        authoredWeightMultiplier
+                ) * SWITCH_RATIO) {
             currentTarget = best;
         }
         return Optional.of(currentTarget);
@@ -101,11 +138,19 @@ public final class R01EarthloongThreatTable {
         }
     }
 
-    private UUID bestThreat(Set<UUID> valid, long gameTick) {
+    private UUID bestThreat(
+            Set<UUID> valid,
+            long gameTick,
+            ToDoubleFunction<UUID> authoredWeightMultiplier
+    ) {
         UUID best = null;
         double bestValue = Double.NEGATIVE_INFINITY;
         for (UUID candidate : valid) {
-            double value = threatOf(candidate, gameTick);
+            double value = weightedThreat(
+                    candidate,
+                    gameTick,
+                    authoredWeightMultiplier
+            );
             if (best == null || value > bestValue + 1.0e-9
                     || (Math.abs(value - bestValue) <= 1.0e-9
                     && candidate.toString().compareTo(best.toString()) < 0)) {
@@ -114,6 +159,23 @@ public final class R01EarthloongThreatTable {
             }
         }
         return Objects.requireNonNull(best, "best");
+    }
+
+    private double weightedThreat(
+            UUID playerId,
+            long gameTick,
+            ToDoubleFunction<UUID> authoredWeightMultiplier
+    ) {
+        double multiplier = authoredWeightMultiplier.applyAsDouble(
+                playerId
+        );
+        if (!Double.isFinite(multiplier)
+                || multiplier <= 0.0) {
+            throw new IllegalArgumentException(
+                    "Threat weight multiplier must be finite and positive."
+            );
+        }
+        return threatOf(playerId, gameTick) * multiplier;
     }
 
     private static double effectiveThreat(Entry entry, long gameTick) {

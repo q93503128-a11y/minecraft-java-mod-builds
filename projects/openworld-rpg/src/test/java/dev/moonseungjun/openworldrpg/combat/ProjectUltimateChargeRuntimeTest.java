@@ -97,6 +97,46 @@ class ProjectUltimateChargeRuntimeTest {
     }
 
     @Test
+    void guardianChargeEventsMatchRootCanon() {
+        assertEquals(
+                2.0,
+                ProjectUltimateChargeRuntime.GUARDIAN_GUARDED_HIT_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                6.0,
+                ProjectUltimateChargeRuntime.GUARDIAN_PERFECT_GUARD_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                2.0,
+                ProjectUltimateChargeRuntime.GUARDIAN_BARRIER_STEP_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                2.0,
+                ProjectUltimateChargeRuntime.GUARDIAN_PROVOKED_HIT_CHARGE,
+                0.0001
+        );
+        assertEquals(
+                12.0,
+                ProjectUltimateChargeRuntime
+                        .GUARDIAN_GUARDED_HIT_STAMINA_THRESHOLD,
+                0.0001
+        );
+        assertEquals(
+                40L,
+                ProjectUltimateChargeRuntime
+                        .GUARDIAN_PROVOKED_HIT_ICD_TICKS
+        );
+        assertEquals(
+                3,
+                ProjectUltimateChargeRuntime
+                        .MAX_GUARDIAN_BARRIER_STEPS_PER_SOURCE_RECIPIENT
+        );
+    }
+
+    @Test
     void supportStepsUseFivePercentAndCapAtSixChargeWorth() {
         assertEquals(
                 0,

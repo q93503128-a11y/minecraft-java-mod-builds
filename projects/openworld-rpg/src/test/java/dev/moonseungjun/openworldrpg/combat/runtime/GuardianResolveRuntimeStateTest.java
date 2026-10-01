@@ -23,6 +23,25 @@ class GuardianResolveRuntimeStateTest {
     }
 
     @Test
+    void counterwallPerfectGuardGrantsTwoResolveWithoutOvercapping() {
+        var state = new GuardianResolveRuntimeState();
+
+        var first = state.recordCounterwallGuard(0L, 0L);
+        assertTrue(first.pipAdded());
+        assertEquals(2, first.currentPips());
+        assertFalse(first.reachedMaxNow());
+
+        var second = state.recordCounterwallGuard(1L, 1L);
+        assertTrue(second.pipAdded());
+        assertEquals(3, second.currentPips());
+        assertTrue(second.reachedMaxNow());
+
+        var capped = state.recordCounterwallGuard(2L, 2L);
+        assertFalse(capped.pipAdded());
+        assertEquals(3, capped.currentPips());
+    }
+
+    @Test
     void guardedHitUsesFinalCostThresholdAndExactTwoSecondIcd() {
         var state = new GuardianResolveRuntimeState();
 

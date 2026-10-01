@@ -70,7 +70,14 @@ public final class ProjectClassSkillLoadout {
                 );
                 default -> Optional.empty();
             };
-            case GUARDIAN -> Optional.empty();
+            case GUARDIAN -> switch (slotIndex) {
+                case 0 -> Optional.of(ProjectSpellSpec.GUARDIAN_BULWARK_RUSH_ID);
+                case 1 -> Optional.of(ProjectSpellSpec.GUARDIAN_WARDING_STRIKE_ID);
+                case 2 -> Optional.of(ProjectSpellSpec.GUARDIAN_AEGIS_FIELD_ID);
+                case 3 -> Optional.of(ProjectSpellSpec.GUARDIAN_COUNTERWALL_ID);
+                case 4 -> Optional.of(ProjectSpellSpec.GUARDIAN_UNBROKEN_LINE_ID);
+                default -> Optional.empty();
+            };
         };
     }
 

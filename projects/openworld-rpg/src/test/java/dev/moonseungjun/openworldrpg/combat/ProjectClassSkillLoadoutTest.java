@@ -156,6 +156,42 @@ class ProjectClassSkillLoadoutTest {
                         .implementedSlots(RootClass.WARRIOR)
                         .size()
         );
+        assertEquals(
+                ProjectSpellSpec.GUARDIAN_BULWARK_RUSH_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.GUARDIAN, 0)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.GUARDIAN_WARDING_STRIKE_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.GUARDIAN, 1)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.GUARDIAN_AEGIS_FIELD_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.GUARDIAN, 2)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.GUARDIAN_COUNTERWALL_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.GUARDIAN, 3)
+                        .orElseThrow()
+        );
+        assertEquals(
+                ProjectSpellSpec.GUARDIAN_UNBROKEN_LINE_ID,
+                ProjectClassSkillLoadout
+                        .spellId(RootClass.GUARDIAN, 4)
+                        .orElseThrow()
+        );
+        assertEquals(
+                5,
+                ProjectClassSkillLoadout
+                        .implementedSlots(RootClass.GUARDIAN)
+                        .size()
+        );
     }
 
     @Test

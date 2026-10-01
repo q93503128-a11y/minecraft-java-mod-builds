@@ -46,5 +46,15 @@
   "spell.openworld_rpg.hunter_power_shot.name": "강궁 사격",
   "spell.openworld_rpg.hunter_power_shot.description": "강하게 활시위를 당긴 뒤 고속 화살을 발사합니다. 명시된 약점을 맞히면 피해가 증폭되며, 집중이 가득 차면 사격과 약점 배율이 함께 강화됩니다.",
   "spell.openworld_rpg.hunter_skyfall.name": "천공 화살비",
-  "spell.openworld_rpg.hunter_skyfall.description": "지면을 지정해 지속되는 화살비를 퍼붓습니다. 노출된 범위에 머무는 적은 둔화되고 반복적인 물리 피해와 포이즈 압력을 받습니다."
+  "spell.openworld_rpg.hunter_skyfall.description": "지면을 지정해 지속되는 화살비를 퍼붓습니다. 노출된 범위에 머무는 적은 둔화되고 반복적인 물리 피해와 포이즈 압력을 받습니다.",
+  "spell.openworld_rpg.guardian_bulwark_rush.name": "철벽 돌진",
+  "spell.openworld_rpg.guardian_bulwark_rush.description": "방어 태세를 유지하며 전진해 돌진 중 전방의 방어 가능한 피해를 줄이고 처음 충돌한 적을 강타합니다.",
+  "spell.openworld_rpg.guardian_warding_strike.name": "수호의 일격",
+  "spell.openworld_rpg.guardian_warding_strike.description": "전방을 휩쓸어 적에게 피해를 주고 AI 적의 위협을 자신에게 집중시키는 도발을 겁니다.",
+  "spell.openworld_rpg.guardian_aegis_field.name": "수호 방벽",
+  "spell.openworld_rpg.guardian_aegis_field.description": "보유한 결의를 모두 소모해 자신과 주변 아군에게 보호막을 부여합니다. 결의가 많을수록 보호막이 강해집니다.",
+  "spell.openworld_rpg.guardian_counterwall.name": "반격 장벽",
+  "spell.openworld_rpg.guardian_counterwall.description": "짧게 방어 태세를 잡습니다. 처음 들어오는 유효한 정밀 방어 가능 공격을 막고 강한 전방 반격파를 방출합니다.",
+  "spell.openworld_rpg.guardian_unbroken_line.name": "불굴의 전선",
+  "spell.openworld_rpg.guardian_unbroken_line.description": "자신을 중심으로 이동하는 방어 전선을 펼쳐 아군을 보호하고 피해 경감과 방어 효율을 높이며 자신의 포이즈를 강화합니다."
 }

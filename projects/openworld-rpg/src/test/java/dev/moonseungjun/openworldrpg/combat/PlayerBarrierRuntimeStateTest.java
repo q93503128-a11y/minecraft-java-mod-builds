@@ -223,6 +223,12 @@ class PlayerBarrierRuntimeStateTest {
                         .getFirst()
                         .guardianResolveSource()
         );
+        assertEquals(
+                1,
+                absorbed.sourceConsumptions()
+                        .getFirst()
+                        .guardianUltimateChargeStepsReached()
+        );
 
         state.grant(
                 "openworld_rpg:ordinary_barrier",
@@ -246,6 +252,16 @@ class PlayerBarrierRuntimeStateTest {
                         .findFirst()
                         .orElseThrow()
                         .guardianResolveSource()
+        );
+        assertEquals(
+                0,
+                ordinary.sourceConsumptions()
+                        .stream()
+                        .filter(consumption -> consumption.sourceId()
+                                .equals("openworld_rpg:ordinary_barrier"))
+                        .findFirst()
+                        .orElseThrow()
+                        .guardianUltimateChargeStepsReached()
         );
     }
 

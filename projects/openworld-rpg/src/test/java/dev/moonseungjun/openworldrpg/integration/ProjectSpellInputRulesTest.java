@@ -126,6 +126,26 @@ class ProjectSpellInputRulesTest {
                         false
                 )
         );
+        for (String spellId : java.util.List.of(
+                ProjectSpellSpec.GUARDIAN_BULWARK_RUSH_ID,
+                ProjectSpellSpec.GUARDIAN_WARDING_STRIKE_ID,
+                ProjectSpellSpec.GUARDIAN_AEGIS_FIELD_ID,
+                ProjectSpellSpec.GUARDIAN_COUNTERWALL_ID,
+                ProjectSpellSpec.GUARDIAN_UNBROKEN_LINE_ID
+        )) {
+            assertFalse(
+                    ProjectSpellInputRules.suppressHeldRepeat(
+                            spellId,
+                            true
+                    )
+            );
+            assertTrue(
+                    ProjectSpellInputRules.suppressHeldRepeat(
+                            spellId,
+                            false
+                    )
+            );
+        }
         assertFalse(
                 ProjectSpellInputRules.suppressHeldRepeat(
                         "other_mod:spell",

@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerPoisePressureRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerShockRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.GuardianProvokedRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import java.util.ArrayList;
@@ -356,7 +357,16 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             List<ServerPlayer> validPlayers = validPlayers(level);
             Set<UUID> ids = new HashSet<>();
             for (ServerPlayer player : validPlayers) ids.add(player.getUUID());
-            UUID targetId = threat.selectTarget(ids, gameTick).orElse(null);
+            UUID targetId = threat.selectTarget(
+                    ids,
+                    gameTick,
+                    playerId -> GuardianProvokedRuntime
+                            .threatWeightMultiplier(
+                                    actor,
+                                    playerId,
+                                    gameTick
+                            )
+            ).orElse(null);
             ServerPlayer target = targetId == null ? null : playerById(validPlayers, targetId);
             if (target == null) {
                 currentThreatTargetId = null;

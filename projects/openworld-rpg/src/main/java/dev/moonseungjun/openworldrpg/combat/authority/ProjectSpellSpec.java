@@ -33,6 +33,11 @@ public record ProjectSpellSpec(
     public static final String CONSECRATED_GROUND_ID = "openworld_rpg:consecrated_ground";
     public static final String REBUKE_ID = "openworld_rpg:rebuke";
     public static final String SANCTUARY_ID = "openworld_rpg:sanctuary";
+    public static final String GUARDIAN_BULWARK_RUSH_ID = "openworld_rpg:guardian_bulwark_rush";
+    public static final String GUARDIAN_WARDING_STRIKE_ID = "openworld_rpg:guardian_warding_strike";
+    public static final String GUARDIAN_AEGIS_FIELD_ID = "openworld_rpg:guardian_aegis_field";
+    public static final String GUARDIAN_COUNTERWALL_ID = "openworld_rpg:guardian_counterwall";
+    public static final String GUARDIAN_UNBROKEN_LINE_ID = "openworld_rpg:guardian_unbroken_line";
     public static final double HUNTER_PINNING_ACTION_COEFFICIENT = 1.55;
     public static final double HUNTER_PINNING_POISE_COEFFICIENT = 1.00;
     public static final double HUNTER_PINNING_EMPOWERED_POISE_COEFFICIENT = 1.50;
@@ -321,6 +326,66 @@ public record ProjectSpellSpec(
         );
     }
 
+    public static ProjectSpellSpec guardianBulwarkRush() {
+        return new ProjectSpellSpec(
+                GUARDIAN_BULWARK_RUSH_ID,
+                0.0,
+                20.0,
+                160,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec guardianWardingStrike() {
+        return new ProjectSpellSpec(
+                GUARDIAN_WARDING_STRIKE_ID,
+                20.0,
+                0.0,
+                140,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec guardianAegisField() {
+        return new ProjectSpellSpec(
+                GUARDIAN_AEGIS_FIELD_ID,
+                30.0,
+                0.0,
+                300,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec guardianCounterwall() {
+        return new ProjectSpellSpec(
+                GUARDIAN_COUNTERWALL_ID,
+                0.0,
+                22.0,
+                240,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
+    public static ProjectSpellSpec guardianUnbrokenLine() {
+        return new ProjectSpellSpec(
+                GUARDIAN_UNBROKEN_LINE_ID,
+                0.0,
+                0.0,
+                0,
+                0.0,
+                0.0,
+                1
+        );
+    }
+
     public static Optional<RootClass> requiredRootClass(String spellId) {
         Objects.requireNonNull(spellId, "spellId");
         return switch (spellId) {
@@ -330,6 +395,9 @@ public record ProjectSpellSpec(
                     Optional.of(RootClass.MAGE);
             case RADIANT_LANCE_ID, MEND_ID, CONSECRATED_GROUND_ID, REBUKE_ID, SANCTUARY_ID ->
                     Optional.of(RootClass.CLERIC);
+            case GUARDIAN_BULWARK_RUSH_ID, GUARDIAN_WARDING_STRIKE_ID, GUARDIAN_AEGIS_FIELD_ID,
+                    GUARDIAN_COUNTERWALL_ID, GUARDIAN_UNBROKEN_LINE_ID ->
+                    Optional.of(RootClass.GUARDIAN);
             default -> Optional.empty();
         };
     }

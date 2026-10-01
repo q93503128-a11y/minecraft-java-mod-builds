@@ -44,7 +44,14 @@ public final class ProjectPlayerPoisePressureRuntime {
                         gameTick
                 );
         double effectivePressure = pressure
-                / Math.max(1.0, hyperarmorMultiplier);
+                / Math.max(1.0, hyperarmorMultiplier)
+                / Math.max(
+                        1.0,
+                        GuardianSkillRuntime.unbrokenLinePoiseMultiplier(
+                                target,
+                                gameTick
+                        )
+                );
         var result = state.orElseThrow().apply(
                 effectivePressure,
                 gameTick

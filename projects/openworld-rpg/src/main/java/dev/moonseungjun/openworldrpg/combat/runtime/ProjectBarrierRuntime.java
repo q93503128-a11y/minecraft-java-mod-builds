@@ -186,6 +186,18 @@ public final class ProjectBarrierRuntime {
                         consumption.absorbedDamage(),
                         sourceTick
                 );
+                if (hostileSource != null
+                        && consumption
+                                .guardianUltimateChargeStepsReached() > 0) {
+                    ProjectUltimateChargeRuntime
+                            .recordGuardianBarrierConsumption(
+                                    sourcePlayer,
+                                    target,
+                                    consumption
+                                            .guardianUltimateChargeStepsReached(),
+                                    hostileSource
+                            );
+                }
             }
 
             boolean graceQualified =

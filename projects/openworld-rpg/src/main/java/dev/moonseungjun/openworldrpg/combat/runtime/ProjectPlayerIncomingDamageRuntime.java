@@ -96,6 +96,14 @@ public final class ProjectPlayerIncomingDamageRuntime {
                         hit,
                         outgoingDirectDamageMultiplier
                 );
+        effectiveHit = scaleDirectDamage(
+                effectiveHit,
+                GuardianSkillRuntime.incomingDamageTakenMultiplier(
+                        target,
+                        effectiveHit,
+                        gameTick
+                )
+        );
 
         var resources = CombatStateServices.states()
                 .getOrCreate(target.getUUID(), gameTick);
@@ -103,6 +111,39 @@ public final class ProjectPlayerIncomingDamageRuntime {
                 resources.lastCombatActivityTick();
         var activeDefense = CombatStateServices.defenseStates()
                 .getOrCreate(target.getUUID());
+
+        var counterwall = GuardianSkillRuntime.tryResolveCounterwall(
+                attacker,
+                target,
+                effectiveHit,
+                defenseSnapshot.orElseThrow(),
+                gameTick
+        );
+        if (counterwall.isPresent()) {
+            resources.markCombatActivity(gameTick);
+            ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
+                    target,
+                    attacker,
+                    gameTick
+            );
+            ProjectUltimateChargeRuntime.recordGuardianPerfectGuard(
+                    target,
+                    attacker
+            );
+            ProjectUltimateChargeRuntime.recordGuardianProvokedHit(
+                    target,
+                    attacker,
+                    gameTick
+            );
+            R01EarthloongMythicRuntime.onPerfectGuard(
+                    target,
+                    gameTick
+            );
+            return IncomingApplication.accepted(
+                    false,
+                    counterwall.orElseThrow()
+            );
+        }
 
         var counter = WarriorSkillRuntime.tryResolveIronCounter(
                 attacker,
@@ -132,15 +173,43 @@ public final class ProjectPlayerIncomingDamageRuntime {
             );
         }
 
-        var resolution = activeDefense.resolveIncoming(
-                resources,
-                defenseSnapshot.orElseThrow(),
-                effectiveHit,
-                gameTick,
-                GuardianRootPassiveEffects
-                        .guardImpactStaminaCostMultiplier(target)
-        );
+        var bulwarkGuard = GuardianSkillRuntime
+                .tryResolveBulwarkRushGuard(
+                        attacker,
+                        target,
+                        effectiveHit,
+                        defenseSnapshot.orElseThrow(),
+                        gameTick
+                );
+        PlayerDefenseRuntimeState.IncomingDefenseResult resolution;
+        if (bulwarkGuard.isPresent()) {
+            resolution = bulwarkGuard.orElseThrow();
+        } else {
+            resolution = activeDefense.resolveIncoming(
+                    resources,
+                    defenseSnapshot.orElseThrow(),
+                    effectiveHit,
+                    gameTick,
+                    GuardianRootPassiveEffects
+                            .guardImpactStaminaCostMultiplier(target)
+                            * GuardianSkillRuntime
+                                    .guardStaminaCostMultiplier(
+                                            target,
+                                            gameTick
+                                    )
+            );
+        }
         resources.markCombatActivity(gameTick);
+
+        if (!resolution.dodged()
+                && (resolution.guarded()
+                        || resolution.finalDamage() > 0.0)) {
+            ProjectUltimateChargeRuntime.recordGuardianProvokedHit(
+                    target,
+                    attacker,
+                    gameTick
+            );
+        }
 
         var barrier = ProjectBarrierRuntime.absorbHostileDamage(
                 attacker,
@@ -170,6 +239,10 @@ public final class ProjectPlayerIncomingDamageRuntime {
                     target,
                     gameTick
             );
+            ProjectUltimateChargeRuntime.recordGuardianPerfectGuard(
+                    target,
+                    attacker
+            );
             R01EarthloongMythicRuntime.onPerfectGuard(target, gameTick);
             WarriorSkillRuntime.onSuccessfulPerfectGuard(
                     target,
@@ -183,6 +256,12 @@ public final class ProjectPlayerIncomingDamageRuntime {
                     resolution.staminaSpent(),
                     gameTick
             );
+            ProjectUltimateChargeRuntime
+                    .recordGuardianOrdinaryGuardedHit(
+                            target,
+                            attacker,
+                            resolution.staminaSpent()
+                    );
         }
         if (resolution.guardBroken()) {
             ProjectPlayerReactionRuntime.applyGuardBreak(

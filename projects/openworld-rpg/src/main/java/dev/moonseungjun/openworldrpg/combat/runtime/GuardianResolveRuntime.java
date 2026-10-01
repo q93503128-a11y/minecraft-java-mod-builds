@@ -47,6 +47,23 @@ public final class GuardianResolveRuntime {
         return applyGain(player, gain, nowTick);
     }
 
+    public static GainApplication onCounterwallPerfectGuard(
+            ServerPlayer player,
+            long nowTick
+    ) {
+        if (!isActiveGuardian(player)) {
+            return GainApplication.rejected();
+        }
+        synchronize(player);
+        var combat = CombatStateServices.states()
+                .getOrCreate(player.getUUID(), nowTick);
+        var gain = state(player.getUUID()).recordCounterwallGuard(
+                nowTick,
+                combat.lastCombatActivityTick()
+        );
+        return applyGain(player, gain, nowTick);
+    }
+
     public static GainApplication onOrdinaryGuardedHit(
             ServerPlayer player,
             double finalStaminaCost,

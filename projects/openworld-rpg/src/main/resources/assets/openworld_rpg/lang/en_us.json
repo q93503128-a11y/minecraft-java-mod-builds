@@ -46,5 +46,15 @@
   "spell.openworld_rpg.hunter_power_shot.name": "Power Shot",
   "spell.openworld_rpg.hunter_power_shot.description": "Commit to a heavy draw, then loose a high-speed arrow. Authored weak points amplify the hit; full Focus strengthens both the shot and its weak-point multiplier.",
   "spell.openworld_rpg.hunter_skyfall.name": "Skyfall",
-  "spell.openworld_rpg.hunter_skyfall.description": "Mark the ground for a sustained arrow storm. Enemies remaining in the exposed field are slowed and take repeated physical and poise pressure."
+  "spell.openworld_rpg.hunter_skyfall.description": "Mark the ground for a sustained arrow storm. Enemies remaining in the exposed field are slowed and take repeated physical and poise pressure.",
+  "spell.openworld_rpg.guardian_bulwark_rush.name": "Bulwark Rush",
+  "spell.openworld_rpg.guardian_bulwark_rush.description": "Drive forward behind your guard, reducing frontal guardable damage during the rush and crashing into the first enemy.",
+  "spell.openworld_rpg.guardian_warding_strike.name": "Warding Strike",
+  "spell.openworld_rpg.guardian_warding_strike.description": "Sweep a guarded arc that damages enemies and Provokes AI-controlled targets toward you.",
+  "spell.openworld_rpg.guardian_aegis_field.name": "Aegis Field",
+  "spell.openworld_rpg.guardian_aegis_field.description": "Consume all Resolve to shield yourself and nearby allies. Each Resolve pip strengthens the barrier.",
+  "spell.openworld_rpg.guardian_counterwall.name": "Counterwall",
+  "spell.openworld_rpg.guardian_counterwall.description": "Brace briefly. The first valid perfect-guardable hit is denied and answered by a heavy frontal counter wave.",
+  "spell.openworld_rpg.guardian_unbroken_line.name": "Unbroken Line",
+  "spell.openworld_rpg.guardian_unbroken_line.description": "Raise a moving defensive line around you, shielding allies and reinforcing damage resistance, guard efficiency, and your poise."
 }

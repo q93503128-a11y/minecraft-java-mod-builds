@@ -37,7 +37,12 @@ public final class ProjectSpellInputRules {
                 || ProjectSpellSpec.HUNTER_PINNING_SHOT_ID.equals(spellId)
                 || ProjectSpellSpec.HUNTER_FAN_OF_ARROWS_ID.equals(spellId)
                 || ProjectSpellSpec.HUNTER_POWER_SHOT_ID.equals(spellId)
-                || ProjectSpellSpec.HUNTER_SKYFALL_ID.equals(spellId))
+                || ProjectSpellSpec.HUNTER_SKYFALL_ID.equals(spellId)
+                || ProjectSpellSpec.GUARDIAN_BULWARK_RUSH_ID.equals(spellId)
+                || ProjectSpellSpec.GUARDIAN_WARDING_STRIKE_ID.equals(spellId)
+                || ProjectSpellSpec.GUARDIAN_AEGIS_FIELD_ID.equals(spellId)
+                || ProjectSpellSpec.GUARDIAN_COUNTERWALL_ID.equals(spellId)
+                || ProjectSpellSpec.GUARDIAN_UNBROKEN_LINE_ID.equals(spellId))
                 && !freshPress;
     }
 }

@@ -45,6 +45,23 @@ public final class GuardianResolveRuntimeState {
         return grantPip(nowTick);
     }
 
+    public GainResult recordCounterwallGuard(
+            long nowTick,
+            long lastCombatActivityTick
+    ) {
+        refresh(nowTick, lastCombatActivityTick);
+        int before = pips;
+        pips = Math.min(MAX_PIPS, pips + 2);
+        lastResolveActivityTick = nowTick;
+        return new GainResult(
+                true,
+                pips != before,
+                false,
+                pips,
+                before < MAX_PIPS && pips == MAX_PIPS
+        );
+    }
+
     public GainResult recordGuardedHit(
             double finalStaminaCost,
             long nowTick,

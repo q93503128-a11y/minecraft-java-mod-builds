@@ -57,7 +57,9 @@ import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ConsecratedGroundRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.GuardianProvokedRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.GuardianResolveRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.GuardianSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterFanOfArrowsRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPinningShotRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterPowerShotRuntime;
@@ -74,6 +76,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectUltimateChargeRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDodgeRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBurningRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectGuardRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHostileStatusRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
@@ -133,6 +136,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.START_SERVER_TICK.register(server -> {
             ProjectPlayerActionRuntime.tick(server);
+            ProjectGuardRuntime.tick(server);
             ProjectDodgeRuntime.tick(server);
             HunterQuickstepVolleyRuntime.tick(server);
             HunterPinningShotRuntime.tick(server);
@@ -144,6 +148,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             MageFlameBurstRuntime.tick(server);
             MageAstralConvergenceRuntime.tick(server);
             MageArcaneWeaveRuntime.tick(server);
+            GuardianSkillRuntime.tick(server);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
@@ -153,6 +158,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             SanctuaryRuntime.tick(server);
             WarriorSkillRuntime.tick(server);
             ProjectHostileStatusRuntime.tick(server);
+            GuardianProvokedRuntime.tick(server);
             ProjectBurningRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);
             ProjectCombatNetworking.flushDodgeAccepted(server);
@@ -229,7 +235,11 @@ public final class OpenworldRpgMod implements ModInitializer {
             ProjectUltimateChargeRuntime.resetMageTransient(
                     newPlayer.getUUID()
             );
+            ProjectUltimateChargeRuntime.resetGuardianTransient(
+                    newPlayer.getUUID()
+            );
             ProjectBurningRuntime.removeSource(newPlayer.getUUID());
+            GuardianSkillRuntime.reset(newPlayer.getUUID());
             GuardianResolveRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
@@ -258,7 +268,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             MageFlameBurstRuntime.disconnect(playerId);
             MageAstralConvergenceRuntime.disconnect(playerId);
             ProjectUltimateChargeRuntime.resetMageTransient(playerId);
+            ProjectUltimateChargeRuntime.resetGuardianTransient(playerId);
             ProjectBurningRuntime.removeSource(playerId);
+            GuardianSkillRuntime.disconnect(playerId);
             GuardianResolveRuntime.disconnect(playerId);
             ProjectPlayerActionRuntime.disconnect(playerId);
             ProjectDodgeRuntime.disconnect(playerId);
