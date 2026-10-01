@@ -42,9 +42,9 @@ final class OpenworldQuestRewardService {
         int gold = granted.stream().mapToInt(Grant::gold).sum();
         int xp = granted.stream().mapToInt(Grant::xp).sum();
         String names = granted.size() == 1 ? granted.getFirst().label() : granted.size() + "개 목표/발견";
-        player.displayClientMessage(Component.literal(names + " 보상 · "
+        player.sendSystemMessage(Component.literal(names + " 보상 · "
                 + crystal + " Crystal · " + String.format(Locale.ROOT, "%,d", gold) + " Gold"
-                + (xp > 0 ? " · 파티 XP " + xp : "")), false);
+                + (xp > 0 ? " · 파티 XP " + xp : "")));
     }
 
     private static void discovery(ServerPlayer player, Set<String> flags, String flag, String label,
