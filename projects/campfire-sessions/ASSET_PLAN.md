@@ -1774,3 +1774,6 @@ The path network connects:
 - general-store side → east house.
 
 Final door-facing stubs and decorative landscaping remain subject to real client inspection because the selected external shells have not yet received in-client entrance/orientation acceptance.
+
+
+Runtime canonical-world preflight #21 rejected the previous general-store origin because block column (-285,-42) remained terrain Y=83 even after tree-log filtering. The store is therefore moved west onto the measured flat tile rather than cutting a 12-block slope.

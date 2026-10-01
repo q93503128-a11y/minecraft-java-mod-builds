@@ -46,7 +46,7 @@ public final class VillageReviewBootstrap {
 
     private static final List<BuildingSpec> BUILDINGS = List.of(
             kogtyv("resident_services", "house/shop_triple_2", -312, 71, -19, 13, 16, 8),
-            kogtyv("general_store", "house/shop_triple_1", -290, 72, -46, 13, 16, 8),
+            kogtyv("general_store", "house/shop_triple_1", -303, 72, -46, 13, 16, 8),
             kogtyv("clinic", "house/shop_medium_3", -321, 67, -12, 7, 16, 8),
             kogtyv("cafe", "house/shop_medium_1", -296, 73, -28, 7, 16, 8),
             kogtyv("clothing_shop", "house/shop_medium_2", -291, 74, -11, 7, 16, 8),
