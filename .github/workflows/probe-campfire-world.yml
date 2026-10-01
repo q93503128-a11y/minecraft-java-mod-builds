@@ -33,6 +33,15 @@ jobs:
           distribution: temurin
           java-version: '25'
 
+      - name: Verify village review bootstrap wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'VillageReviewBootstrap::onServerStarted' \
+            src/main/java/kr/moonseungjun/campfiresessions/CampfireSessions.java
+          grep -Fq "jvmArgument '-Dcampfiresessions.villageReview=true'" build.gradle
+          grep -Fq 'villageReviewServer' build.gradle
+
       - name: Download canonical Geming400 island world
         shell: bash
         run: |
