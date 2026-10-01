@@ -1868,3 +1868,14 @@ Validation before that integrated build:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+### Roadhorn rental ownership hardening — 2026-10-01
+
+Multiplayer rental ownership is server-fixed:
+- the waystation rental stores the renter UUID on the transient Roadhorn entity;
+- only that renter can remount after dismounting;
+- another player cannot steal/reassign the rental by interacting with it;
+- logout, battle entry, fast travel, dimension/runtime exit and server clear still recall the transient mount.
+
+This is the final code-side correction before the integrated first-slice build checkpoint.

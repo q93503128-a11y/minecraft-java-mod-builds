@@ -50,6 +50,7 @@ final class DrehmalMountService {
             deny(player, "역참 주변에서 탈것이 설 안전한 자리를 찾지 못했습니다.");
             return true;
         }
+        mount.assignRentalOwner(player.getUUID());
         mount.setCustomName(Component.literal("길뿔 산양").withStyle(ChatFormatting.GOLD));
         mount.setCustomNameVisible(false);
         RENTALS.put(player.getUUID(), new Rental(level, mount.getUUID(), 0L));

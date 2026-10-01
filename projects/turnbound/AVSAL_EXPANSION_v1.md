@@ -507,3 +507,10 @@ First production mount:
 - one rental per player; it is transient and cannot accumulate in saves.
 - battle entry, fast travel and logout recall it automatically.
 - source model retains the original saddle/chest geometry; hostile Cavehorn remains a separate entity.
+
+
+### Mount multiplayer ownership — 2026-10-01
+
+Waystation Roadhorn rentals are player-owned runtime objects.
+Only the renting player may remount a dismounted Roadhorn; another player interaction never transfers ownership.
+The mount remains transient and is recalled by battle entry, fast travel, logout or runtime teardown.

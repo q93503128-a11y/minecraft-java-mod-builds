@@ -13,6 +13,8 @@ import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
+import java.util.UUID;
+
 /** Player-controlled rental mount used by the physical waystation network. */
 public final class RoadhornMountEntity extends AbstractHorse implements GeoEntity {
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.roadhorn_mount.idle");
@@ -21,6 +23,7 @@ public final class RoadhornMountEntity extends AbstractHorse implements GeoEntit
     private static final RawAnimation JUMP = RawAnimation.begin().thenLoop("animation.roadhorn_mount.jump");
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
+    private UUID rentalOwner;
 
     public RoadhornMountEntity(EntityType<? extends RoadhornMountEntity> type, Level level) {
         super(type, level);
@@ -47,6 +50,7 @@ public final class RoadhornMountEntity extends AbstractHorse implements GeoEntit
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (player == null || isBaby()) return InteractionResult.PASS;
+        if (rentalOwner == null || !rentalOwner.equals(player.getUUID())) return InteractionResult.SUCCESS;
         if (!level().isClientSide() && !isVehicle()) {
             setOwner(player);
             setTamed(true);
@@ -60,8 +64,16 @@ public final class RoadhornMountEntity extends AbstractHorse implements GeoEntit
         // No vanilla horse inventory/saddle management for a waystation rental.
     }
 
+    public void assignRentalOwner(UUID ownerId) {
+        rentalOwner = ownerId;
+    }
+
+    public boolean rentedBy(Player player) {
+        return player != null && rentalOwner != null && rentalOwner.equals(player.getUUID());
+    }
+
     public void ride(Player player) {
-        if (player == null || level().isClientSide()) return;
+        if (player == null || level().isClientSide() || !rentedBy(player)) return;
         setOwner(player);
         setTamed(true);
         doPlayerRide(player);
