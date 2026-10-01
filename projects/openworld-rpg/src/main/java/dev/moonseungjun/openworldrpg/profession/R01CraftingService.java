@@ -303,7 +303,7 @@ public final class R01CraftingService {
                     pending.transactionId(),
                     i
             );
-            ProjectInventoryState inventory =
+            PlayerInventoryState inventory =
                     PlayerInventoryService.state(player);
             if (inventory.pendingReward(outputId).isPresent()) {
                 PlayerInventoryState.DeliveryResult claimed =
