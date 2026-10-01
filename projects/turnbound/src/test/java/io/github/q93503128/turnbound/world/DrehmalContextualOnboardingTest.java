@@ -22,12 +22,19 @@ class DrehmalContextualOnboardingTest {
                 "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED), roles);
         assertTrue(forge.objective().contains("대장장이"));
+        var travel = DrehmalContextualOnboarding.resolve(
+                "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
+                Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED,
+                        DrehmalContextualOnboarding.serviceFlag("BLACKSMITH"), DrehmalContextualOnboarding.serviceFlag("MARKET")), roles);
+        assertTrue(travel.objective().contains("역참"));
+        assertTrue(travel.hint().contains("길뿔 산양"));
+
         var localOffer = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED,
                         DrehmalContextualOnboarding.serviceFlag("BLACKSMITH"), DrehmalContextualOnboarding.serviceFlag("MARKET"),
                         DrehmalContextualOnboarding.serviceFlag("TRAVEL"), DrehmalContextualOnboarding.serviceFlag("SUMMON")), roles);
-        assertTrue(localOffer.objective().contains("라나"));
+        assertTrue(localOffer.objective().contains("아렌"));
 
         var map = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),

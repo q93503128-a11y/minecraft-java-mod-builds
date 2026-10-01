@@ -2,8 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class DrehmalQuestCatalogTest {
     @Test
@@ -13,21 +12,38 @@ class DrehmalQuestCatalogTest {
     }
 
     @Test
-    void routeUsesSequentialMainQuestsAndSurveyGatedPlaceSideQuests() {
+    void routeUsesSequentialMainQuestsAndSupportsCombatAndNonCombatSideQuests() {
         assertEquals(3, DrehmalQuestCatalog.all().stream()
                 .filter(quest -> quest.kind() == DrehmalQuestCatalog.Kind.MAIN)
                 .count());
-        assertTrue(DrehmalQuestCatalog.all().stream()
-                .filter(quest -> quest.kind() == DrehmalQuestCatalog.Kind.SIDE)
-                .allMatch(DrehmalQuestCatalog.Quest::requiresProductionEncounter));
-        var patrol=DrehmalQuestCatalog.all().stream()
-                .filter(quest->quest.id().equals("turnbound:quest/drehmal/drabyel_approach_patrol")).findFirst().orElseThrow();
-        assertEquals(DrehmalQuestCatalog.Kind.MAIN,patrol.kind());
-        assertEquals(DrabyelOpeningTutorial.GREETER_FLAG,patrol.activationFlag());
-        var local=DrehmalQuestCatalog.all().stream()
-                .filter(quest->quest.id().equals("turnbound:quest/drehmal/drabyel_local_signs")).findFirst().orElseThrow();
-        assertEquals(DrabyelLocalArcProgress.ACCEPTED,local.activationFlag());
-        assertEquals(DrabyelLocalArcProgress.COMPLETE,local.completionFlag());
+
+        var warning = DrehmalQuestCatalog.all().stream()
+                .filter(q -> q.id().equals("turnbound:quest/drehmal/warning_cave_elite"))
+                .findFirst().orElseThrow();
+        assertEquals(DrehmalQuestCatalog.Kind.SIDE, warning.kind());
+        assertTrue(warning.requiresProductionEncounter());
+        assertEquals("CV_WARNING_CAVE_ELITE", warning.encounterId());
+
+        var camp = DrehmalQuestCatalog.all().stream()
+                .filter(q -> q.id().equals("turnbound:quest/drehmal/explorer_camp_records"))
+                .findFirst().orElseThrow();
+        assertEquals(DrehmalQuestCatalog.Kind.SIDE, camp.kind());
+        assertFalse(camp.requiresProductionEncounter());
+        assertEquals(DrehmalFirstRouteProgress.CAMP_REACHED, camp.completionFlag());
+
+        var patrol = DrehmalQuestCatalog.all().stream()
+                .filter(quest -> quest.id().equals("turnbound:quest/drehmal/drabyel_approach_patrol"))
+                .findFirst().orElseThrow();
+        assertEquals(DrehmalQuestCatalog.Kind.MAIN, patrol.kind());
+        assertEquals(DrabyelOpeningTutorial.GREETER_FLAG, patrol.activationFlag());
+
+        var local = DrehmalQuestCatalog.all().stream()
+                .filter(quest -> quest.id().equals("turnbound:quest/drehmal/drabyel_local_signs"))
+                .findFirst().orElseThrow();
+        assertEquals(DrabyelLocalArcProgress.ACCEPTED, local.activationFlag());
+        assertEquals(DrabyelLocalArcProgress.COMPLETE, local.completionFlag());
+        assertTrue(local.objective().contains("아렌이"));
+
         assertTrue(DrehmalQuestCatalog.all().stream()
                 .allMatch(quest -> quest.rewardCrystal() > 0 && quest.rewardGold() > 0));
         assertEquals(2, DrehmalQuestCatalog.all().stream()

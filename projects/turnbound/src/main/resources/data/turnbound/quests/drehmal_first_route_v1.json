@@ -43,7 +43,7 @@
       "kind": "MAIN",
       "title": "문 밖의 세 흔적",
       "regionLabel": "New Drabyel",
-      "objective": "아렌가 표시한 마을 주변 세 조사 지점 중 두 곳을 확인하십시오.",
+      "objective": "아렌이 표시한 마을 주변 세 조사 지점 중 두 곳을 확인하십시오.",
       "activationFlag": "DRABYEL_LOCAL_ACCEPTED",
       "completionFlag": "DRABYEL_LOCAL_COMPLETE",
       "rewardCrystal": 500,

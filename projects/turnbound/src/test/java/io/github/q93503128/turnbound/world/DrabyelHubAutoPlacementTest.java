@@ -10,13 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrabyelHubAutoPlacementTest {
     @Test
-    void sourcePlanCoversAllSixHubServicesWithoutChangingStaticCatalog() {
+    void sourcePlanCoversAllSevenHubServicesWithoutChangingStaticCatalog() {
         Set<String> roles = DrabyelMapPlacementCatalog.plan().placements().stream()
                 .map(placement -> DrabyelHubServiceCatalog.service(placement.serviceLocator()))
                 .filter(java.util.Objects::nonNull)
                 .map(DrabyelHubServiceCatalog.Service::role)
                 .collect(java.util.stream.Collectors.toSet());
-        assertEquals(Set.of("GREETER","TRAVEL","MARKET","BLACKSMITH","STORY","SUMMON"), roles);
+        assertEquals(Set.of("GREETER","TRAVEL","MARKET","BLACKSMITH","CONTRACT","STORY","SUMMON"), roles);
         assertTrue(DrabyelHubServiceCatalog.productionServices().isEmpty(),
                 "live-world auto placement must not rewrite static source verification flags");
     }

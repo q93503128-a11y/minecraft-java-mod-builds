@@ -148,7 +148,7 @@ final class DrehmalContextualOnboarding {
             return new Guidance("장비 상인을 찾아 다음 여정에 필요한 장비를 확인하십시오.", "구매가 필요 없다면 확인만 하고 지나가도 됩니다. M 지도에서 상인의 위치를 확인할 수 있습니다.");
         }
         if ("TRAVEL".equals(nextService)) {
-            return new Guidance("역참지기를 찾아 발견한 이동 거점을 확인하십시오.", "역참은 탈것 지급소가 아니라, 이미 발견한 거점으로 빠르게 이동하는 시설입니다.");
+            return new Guidance("역참지기를 찾아 이동 거점과 탈것을 확인하십시오.", "발견한 역참으로 빠르게 이동하거나 길뿔 산양을 빌릴 수 있습니다.");
         }
         if ("SUMMON".equals(nextService)) {
             return new Guidance("정령술사를 찾아 새 동료를 부를 수 있는지 확인하십시오.", "캐피털 밸리의 강적을 넘겼다면 소환이 열려 있습니다.");

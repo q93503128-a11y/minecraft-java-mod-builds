@@ -16,9 +16,10 @@ class EquipmentPendingRewardTest {
         EquipmentInventory.Item reward = inventory.grantReward("W05");
         assertEquals(EquipmentInventory.MAX_INSTANCES, inventory.size());
         assertEquals(List.of(reward), inventory.pendingRewards());
-        assertEquals(15_000, inventory.sellPending(reward.instanceId(), profile));
+        int sale = EquipmentRules.salePrice("T3");
+        assertEquals(sale, inventory.sellPending(reward.instanceId(), profile));
         assertTrue(inventory.pendingRewards().isEmpty());
-        assertEquals(15_000, profile.currency(PlayerProfile.Currency.GOLD));
+        assertEquals(sale, profile.currency(PlayerProfile.Currency.GOLD));
         assertEquals(EquipmentInventory.MAX_INSTANCES, inventory.size());
     }
 

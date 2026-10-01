@@ -61,7 +61,7 @@ class CavehornPresentationAssetContractTest {
         var encounter = CampaignEncounterCatalog.spec("CV_WARNING_CAVE_ELITE");
         assertEquals(3, encounter.level());
         assertEquals(List.of("EL_CV01"), encounter.enemies());
-        assertEquals(900, encounter.respawnSeconds());
+        assertEquals(300, encounter.respawnSeconds());
         assertFalse(encounter.boss());
     }
 

@@ -73,6 +73,9 @@ final class DrehmalQuestMenuContentService {
     }
 
     private static String safe(String value) {
-        return value == null ? "" : value.replace('|', '/').replace('\n', ' ').replace('\r', ' ').trim();
+        if (value == null) return "";
+        String clean = value.replace('|', '/').replace('\n', ' ').replace('\r', ' ').trim();
+        while (clean.contains("  ")) clean = clean.replace("  ", " ");
+        return clean;
     }
 }

@@ -13,12 +13,12 @@ class DrabyelHubSurveyPlanTest {
     @Test
     void surveyPlanCoversEveryServiceRoleWithoutPromotingCoordinates() {
         var lines = DrabyelHubSurveyPlan.serviceSeedLines();
-        assertEquals(6, lines.size());
+        assertEquals(7, lines.size());
 
         Set<String> roles = DrabyelHubServiceCatalog.hub().services().stream()
                 .map(DrabyelHubServiceCatalog.Service::role)
                 .collect(Collectors.toSet());
-        assertEquals(Set.of("GREETER","TRAVEL","MARKET","BLACKSMITH","STORY","SUMMON"), roles);
+        assertEquals(Set.of("GREETER","TRAVEL","MARKET","BLACKSMITH","CONTRACT","STORY","SUMMON"), roles);
 
         for (String role : roles) {
             assertFalse(DrabyelHubSurveyPlan.sourceHint(role).isBlank(), role);
@@ -29,6 +29,8 @@ class DrabyelHubSurveyPlanTest {
                 .anyMatch(line -> line.contains("516 67 1851")));
         assertTrue(DrabyelHubSurveyPlan.sourceSeedLines("BLACKSMITH").stream()
                 .anyMatch(line -> line.contains("526 65 1841")));
+        assertTrue(DrabyelHubSurveyPlan.sourceSeedLines("CONTRACT").stream()
+                .anyMatch(line -> line.contains("520 67 1862")));
         assertTrue(DrabyelHubSurveyPlan.sourceSeedLines("SUMMON").stream()
                 .anyMatch(line -> line.contains("516 65 1861") && line.contains("conflict")));
 

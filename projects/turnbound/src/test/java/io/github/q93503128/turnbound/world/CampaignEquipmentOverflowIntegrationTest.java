@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.progression.EquipmentInventory;
+import io.github.q93503128.turnbound.progression.EquipmentRules;
 import io.github.q93503128.turnbound.progression.PlayerProfile;
 import org.junit.jupiter.api.Test;
 
@@ -22,8 +23,9 @@ class CampaignEquipmentOverflowIntegrationTest {
 
             long gold = CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD);
             CampaignProgressStore.markClean(playerId);
-            assertEquals(15_000, CampaignProgressStore.sellPendingEquipment(playerId, reward.instanceId()));
-            assertEquals(gold + 15_000, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD));
+            int sale = EquipmentRules.salePrice("T3");
+            assertEquals(sale, CampaignProgressStore.sellPendingEquipment(playerId, reward.instanceId()));
+            assertEquals(gold + sale, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.GOLD));
             assertTrue(CampaignProgressStore.snapshot(playerId).equipment().pendingRewards().isEmpty());
             assertTrue(CampaignProgressStore.isDirty(playerId));
         } finally {

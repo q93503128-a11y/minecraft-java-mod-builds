@@ -23,6 +23,7 @@ public final class DrabyelHubSurveyPlan {
             "TRAVEL", "stables are immediately to the right on entry; preserve horse access and doorway clearance",
             "MARKET", "Adventuring Merchant frontage is the primary TURNBOUND market candidate; central booths are secondary context",
             "BLACKSMITH", "Goibhniu's Smithy / Runic Blacksmith is the strongest authored forge anchor",
+            "CONTRACT", "use the market/church edge as a roadside contract-board context without blocking map displays, Cat Map or church access",
             "STORY", "use the statue/farmhouse/church-side landmark space without blocking source signs, graveyard or original loot",
             "SUMMON", "pick an existing interior only after inspection; church/artifact space and Cat Map basement are source-content conflict zones"
     );
@@ -39,6 +40,8 @@ public final class DrabyelHubSurveyPlan {
                     new SourceSeed("Wheat Merchant",541,67,1830,"central booth cluster reference")),
             "BLACKSMITH", List.of(
                     new SourceSeed("Runic Blacksmith",526,65,1841,"Goibhniu's Smithy; blue-awning exterior smithy")),
+            "CONTRACT", List.of(
+                    new SourceSeed("market/church edge search origin",520,67,1862,"derived roadside search seed; preserve nearby source map frames, Cat Map and church entrance")),
             "STORY", List.of(
                     new SourceSeed("farmhouse / statue search zone",null,null,null,"statue is in front of the farmhouse; church is south of town")),
             "SUMMON", List.of(

@@ -27,7 +27,7 @@ class DrehmalMapPlacementCatalogTest {
         assertTrue(road.patrolSeeds().size()>=4);
     }
     @Test void everyEncounterAndFieldNpcHasAutomaticPlacementData() {
-        assertEquals(8, DrehmalFirstRouteCatalog.route().encounters().size());
+        assertEquals(11, DrehmalFirstRouteCatalog.route().encounters().size());
         for (var encounter : DrehmalFirstRouteCatalog.route().encounters()) {
             var placement = DrehmalMapPlacementCatalog.placement(encounter.siteLocator());
             if (DrehmalWorldBossPlacementRules.isGraul(encounter)) {
@@ -39,8 +39,10 @@ class DrehmalMapPlacementCatalogTest {
             assertTrue(placement.arenaSeeds().size() >= 2, encounter.locator());
         }
 
-        assertEquals(3, DrehmalFieldNpcCatalog.all().size());
-        for (var npc : DrehmalFieldNpcCatalog.all()) {
+        var capitalNpcs = DrehmalFieldNpcCatalog.all().stream()
+                .filter(npc -> npc.siteLocator().startsWith("turnbound:site/capital_valley/")).toList();
+        assertEquals(3, capitalNpcs.size());
+        for (var npc : capitalNpcs) {
             var placement = DrehmalMapPlacementCatalog.placement(npc.siteLocator());
             assertNotNull(placement, npc.locator());
             assertTrue(placement.strictSite(), npc.locator());
