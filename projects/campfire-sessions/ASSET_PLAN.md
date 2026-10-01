@@ -1532,6 +1532,15 @@ Life-sim content dependency checkpoint:
 - this is dependency/classpath verification only; crop worldgen, kitchen UX, mushroom worldgen/creatures, visuals and multiplayer behavior remain **NOT PLAYTESTED**.
 - ARR dependencies (Cooking for Blockheads, Balm) stay external-distribution dependencies; do not vendor/extract their raw JAR assets into Campfire.
 
+Full runtime server checkpoint:
+- runtime probe workflow hardening commits: `74cf8776bfb4b0b1e8b12de22ca6b76b58906537`, coordinate-check fix `731b061582fff5014c01da2c521b3172f4dd0212`.
+- Probe Campfire Canonical World Runtime run: **11** / run ID **36795734221**.
+- canonical Geming400 world SHA-256: VERIFIED.
+- canonical world region analysis: SUCCESS.
+- expected external runtime dependency coordinates: VERIFIED on runtimeClasspath.
+- NeoForge 26.2 server launch with the full current runtime stack and canonical world: **SUCCESS / reached server Done state**.
+- this raises the stack to **SERVER RUNTIME VERIFIED**, but does not replace client visual/gameplay testing or multiplayer testing.
+
 Resident material/animation checkpoint:
 - implementation commits: `d7a6869f7d5a4c14e14d49fa9c3a8a903cc933fc`, fix `d56b71fea33ed67a77d866fb3023cdef7413b943`, acceptance hardening `0a1a8e68674952a6f67aabfd5bac7a21b97d342c`.
 - Build Campfire Sessions run: **36** / run ID **36793642642**.
