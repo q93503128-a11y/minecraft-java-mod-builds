@@ -1,0 +1,33 @@
+name: Probe Campfire Museum Assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/scripts/campfire/probe_smithsonian_museum_assets.py'
+      - '.github/workflows/probe-campfire-museum-assets.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire and inspect curated CC0 Smithsonian museum assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/campfire/probe_smithsonian_museum_assets.py build/campfire-museum-assets | tee build/campfire-museum-assets.log
+      - name: Upload museum asset staging package
+        uses: actions/upload-artifact@v4
+        with:
+          name: campfire-museum-assets
+          path: |
+            build/campfire-museum-assets
+            build/campfire-museum-assets.log
+          if-no-files-found: error
+          retention-days: 14
