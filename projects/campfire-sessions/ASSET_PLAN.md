@@ -1719,3 +1719,30 @@ Before adopting any candidate:
 7. integrate only after it has a clear role.
 
 When a candidate is actually adopted, move/document it in THIRD_PARTY_ASSETS.md with source and usage notes.
+
+
+### Canonical terrain probe #15 — physical placement input
+
+Run `36806856318` re-probed the canonical Geming400 world after the terrain tool was extended to retain every strict-flat 16×16 tile in the largest connected cluster.
+
+Verified largest cluster:
+- bounds: **X -336…-257 / Z -96…31**
+- size: **80×128 blocks**
+- strict-flat connected tiles: **25**
+- all selected first civic shells fit inside or directly against this measured stepped terrain.
+
+The earlier clothing-shop and museum draft positions overlapped steep terrain:
+- clothing draft radius had p90−p10 ≈33 blocks.
+- museum draft radius had p90−p10 ≈19 blocks.
+
+They are therefore corrected before physical preview rather than flattened aggressively.
+
+The development-only `villageReviewClient` profile now places the actual Kogtyv MIT structures with a strict preflight:
+- packaged structure must exist.
+- measured NBT size must match the pinned expected size.
+- terrain delta under every structure footprint must stay within 8 blocks.
+- jigsaw, barrier, structure-block and structure-void states are filtered from placement.
+- grading is limited to each structure footprint instead of flattening the full village zone.
+- normal gameplay remains inert unless `campfiresessions.villageReview=true`.
+
+This is a physical layout review path, not final accepted world composition. Entrance-facing rotations remain unguessed in the first pass and will be authored after the real buildings can be judged together.

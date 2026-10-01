@@ -118,6 +118,11 @@ neoForge {
             gameDirectory = project.file('run-asset-review')
             systemProperty 'campfiresessions.assetReview', 'true'
         }
+        villageReviewClient {
+            client()
+            gameDirectory = project.file('run-village-review')
+            systemProperty 'campfiresessions.villageReview', 'true'
+        }
         server { server(); programArgument '--nogui' }
         configureEach { logLevel = org.slf4j.event.Level.INFO }
     }

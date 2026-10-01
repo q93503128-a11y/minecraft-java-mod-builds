@@ -218,3 +218,33 @@ Validation labels after this checkpoint:
 - MULTIPLAYER TESTED: NO
 
 The next gate is real client visual/performance review of the Triceratops, not more renderer architecture work.
+
+
+## Canonical village physical-layout checkpoint — 2026-10-01
+
+User playtest gate: do **not** request a user test for renderer/assets alone. The next user test is deferred until the canonical island is presented with the real main-village exterior shells placed as a coherent playable slice.
+
+Completed in this checkpoint:
+- canonical terrain probe #15 / run `36806856318`: SUCCESS.
+- largest strict-flat connected village cluster is now recorded tile-by-tile, not only as an 80×128 bounding box.
+- steep draft positions were corrected before placement: clothing and museum no longer use the earlier cliff-overlap coordinates.
+- `VillageReviewBootstrap` adds a development-only physical placement path for **12 real Kogtyv Greece structures**:
+  - resident services
+  - general store
+  - clinic
+  - café
+  - clothing shop
+  - museum
+  - harbor service shell
+  - player early house
+  - four first resident-house shells
+- exact packaged NBT sizes are preflighted before any placement.
+- placement filters Kogtyv worldgen-only jigsaw/barrier/structure markers so those do not become player-facing village content.
+- terrain grading is footprint-local and capped; the system refuses a placement requiring excessive terrain destruction.
+- ordinary Campfire gameplay does not activate this bootstrap. It is gated behind the `villageReviewClient` development profile.
+
+Still required before asking the user to test:
+- build verification of this placement checkpoint.
+- canonical review-world provisioning/launch path.
+- first coherent path/plaza connection and harbor/pier treatment.
+- then one combined map + real-building client review, instead of separate micro-tests.
