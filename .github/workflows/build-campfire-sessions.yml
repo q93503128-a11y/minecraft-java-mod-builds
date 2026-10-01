@@ -83,6 +83,8 @@ jobs:
               'kr/moonseungjun/campfiresessions/client/CampfireClientSetup.class',
               'kr/moonseungjun/campfiresessions/client/LocalMusicLibrary.class',
               'kr/moonseungjun/campfiresessions/client/GuitarArmPoseParams.class',
+              'kr/moonseungjun/campfiresessions/client/museum/MuseumStaticMeshData.class',
+              'kr/moonseungjun/campfiresessions/client/museum/MuseumGpuMesh.class',
               'META-INF/enumextensions.json',
               'assets/campfiresessions/music/track_metadata.json',
               'assets/campfiresessions/sounds.json',

@@ -42,12 +42,16 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/campfire-museum-runtime
-          for source in build/campfire-museum-assets/*/*_smithsonian_source_uncompressed.glb; do
-            slug="$(basename "$source" _smithsonian_source_uncompressed.glb)"
-            python3 .github/scripts/campfire/convert_static_museum_glb.py \
-              "$source" \
-              "build/campfire-museum-runtime/$slug"
-          done
+
+          python3 .github/scripts/campfire/convert_static_museum_glb.py \
+            build/campfire-museum-assets/triceratops_horridus/triceratops_horridus_smithsonian_source_uncompressed.glb \
+            build/campfire-museum-runtime/triceratops_horridus \
+            --expected-source-sha256 a76b728da3c2c0369c5d1904b00a394317d285cfdc336c9306307364fea2a19f
+
+          python3 .github/scripts/campfire/convert_static_museum_glb.py \
+            build/campfire-museum-assets/mammuthus_primigenius/mammuthus_primigenius_smithsonian_source_uncompressed.glb \
+            build/campfire-museum-runtime/mammuthus_primigenius \
+            --expected-source-sha256 b785898fc230252d7f5aaf8ecb7a98d3a5eae3829f324ca0607cfe5aab8b8256
           test "$(find build/campfire-museum-runtime -name '*.cfmesh' | wc -l)" -eq 2
           find build/campfire-museum-runtime -maxdepth 3 -type f -print | sort
       - name: Upload museum asset staging package

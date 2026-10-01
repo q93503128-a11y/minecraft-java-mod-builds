@@ -453,7 +453,14 @@ def verify_runtime_mesh(path: pathlib.Path) -> dict[str, Any]:
     }
 
 
-def convert(input_path: pathlib.Path, output_dir: pathlib.Path) -> dict[str, Any]:
+def convert(input_path: pathlib.Path, output_dir: pathlib.Path, expected_source_sha256: str) -> dict[str, Any]:
+    actual_source_sha256 = sha256_file(input_path)
+    expected_source_sha256 = expected_source_sha256.lower()
+    if actual_source_sha256.lower() != expected_source_sha256:
+        raise ValueError(
+            f"verified museum source hash mismatch: expected={expected_source_sha256} actual={actual_source_sha256}"
+        )
+
     glb = parse_glb(input_path)
     doc = glb.document
     require_static_source(doc)
@@ -486,7 +493,8 @@ def convert(input_path: pathlib.Path, output_dir: pathlib.Path) -> dict[str, Any
         "version": VERSION,
         "source": {
             "file": input_path.name,
-            "sha256": sha256_file(input_path),
+            "sha256": actual_source_sha256,
+            "verified_expected_sha256": expected_source_sha256,
             "asset_generator": doc.get("asset", {}).get("generator"),
             "gltf_version": doc.get("asset", {}).get("version"),
         },
@@ -541,10 +549,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=pathlib.Path)
     parser.add_argument("output", type=pathlib.Path)
+    parser.add_argument("--expected-source-sha256", required=True)
     args = parser.parse_args()
 
     try:
-        convert(args.input, args.output)
+        convert(args.input, args.output, args.expected_source_sha256)
     except Exception as exc:
         print(f"ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
