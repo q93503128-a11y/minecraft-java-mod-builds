@@ -128,3 +128,15 @@ Candidate repository inspected: `strikeknight57/BCA-Datapack`, master observed a
 - README states MIT.
 - repository tree inspection found **no LICENSE file**.
 - despite useful centers/shops/paths/decor structure inventory, direct asset intake is blocked pending license resolution.
+
+
+### Chek's Mint Structures
+Source: `Chekmate90/Chek-s-Mint-Structures`
+Pinned candidate commit: `6ffadba091c4a07bcdac9f1c89d3d1202f0015b9`
+License: **MIT**; the exact pinned source includes `LICENSE`.
+
+Campfire second-village-review intake uses 12 selected Plains Village NBTs as editable external bases. The inspected public NBT inventory shows the selected structures are built from Minecraft block content rather than a custom runtime block namespace. Campfire filters source jigsaw/structure markers during placement.
+
+The source files and license are downloaded from the pinned commit during the generated-resource build, and their SHA-256 values are recorded in `external_structure_manifest.json`.
+
+Status: **INTEGRATED REVIEW CANDIDATE — not final accepted visual art until actual Minecraft client inspection**.

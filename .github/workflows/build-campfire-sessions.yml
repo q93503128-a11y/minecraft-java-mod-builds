@@ -108,36 +108,18 @@ jobs:
               'rough_panel', 'rough_card', 'rough_button',
           ]
           external_structures = [
-              'data/campfiresessions/structure/external/kogtyv_greece/center/ratush_1.nbt',
-          ]
-          external_structures += [
-              f'data/campfiresessions/structure/external/kogtyv_greece/house/small_{i}.nbt'
-              for i in range(1, 9)
-          ]
-          external_structures += [
-              f'data/campfiresessions/structure/external/kogtyv_greece/house/medium_{i}.nbt'
-              for i in range(1, 7)
-          ]
-          external_structures += [
-              f'data/campfiresessions/structure/external/kogtyv_greece/house/big_{i}.nbt'
-              for i in range(1, 5)
-          ]
-          external_structures += [
-              f'data/campfiresessions/structure/external/kogtyv_greece/house/shop_small_{i}.nbt'
-              for i in range(1, 6)
-          ]
-          external_structures += [
-              f'data/campfiresessions/structure/external/kogtyv_greece/house/shop_medium_{i}.nbt'
-              for i in range(1, 4)
-          ]
-          external_structures += [
-              f'data/campfiresessions/structure/external/kogtyv_greece/house/shop_triple_{i}.nbt'
-              for i in range(1, 4)
-          ]
-          external_structures += [
-              'data/campfiresessions/structure/external/kogtyv_greece/house/triple_1.nbt',
-          ]
-          external_structures += [
+              'data/campfiresessions/structure/external/cheks_mint/plains_meeting_point_4.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_medium_house_1.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_butcher_shop_1.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_butcher_shop_2.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_shepherds_house_1.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_temple_3.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_library_1.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_1.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_2.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_medium_house_2.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_big_house_1.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_fisher_cottage_1.nbt',
               'data/campfiresessions/structure/external/currents_of_trade/dock.nbt',
           ]
 
@@ -163,19 +145,19 @@ jobs:
                   sorted(packaged_external - set(external_structures)),
                   sorted(set(external_structures) - packaged_external),
               )
-              assert 'META-INF/campfiresessions/licenses/kogtyv_tav_LICENSE.txt' in names
+              assert 'META-INF/campfiresessions/licenses/cheks_mint_LICENSE.txt' in names
               assert 'META-INF/campfiresessions/external_structure_manifest.json' in names
               external_manifest = json.loads(z.read('META-INF/campfiresessions/external_structure_manifest.json'))
-              assert set(external_manifest['sources']) == {'kogtyv_tav', 'currents_of_trade'}
-              assert len(external_manifest['assets']) == 32, len(external_manifest['assets'])
+              assert set(external_manifest['sources']) == {'cheks_mint', 'currents_of_trade'}
+              assert len(external_manifest['assets']) == 13, len(external_manifest['assets'])
               source_counts = {
                   source: sum(asset['source'] == source for asset in external_manifest['assets'])
                   for source in external_manifest['sources']
               }
-              assert source_counts == {'kogtyv_tav': 31, 'currents_of_trade': 1}, source_counts
+              assert source_counts == {'cheks_mint': 12, 'currents_of_trade': 1}, source_counts
               assert not any('kaisyn' in asset['source_entry'].lower() for asset in external_manifest['assets'])
               assert not any('villageroles' in asset['source_entry'].lower() for asset in external_manifest['assets'])
-              assert b'MIT License' in z.read('META-INF/campfiresessions/licenses/kogtyv_tav_LICENSE.txt')
+              assert b'MIT License' in z.read('META-INF/campfiresessions/licenses/cheks_mint_LICENSE.txt')
               assert b'MIT License' in z.read('META-INF/campfiresessions/licenses/currents_of_trade_LICENSE.txt')
 
               dock = z.read('data/campfiresessions/structure/external/currents_of_trade/dock.nbt')

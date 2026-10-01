@@ -27,13 +27,13 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  * Development-only physical village slice on the verified canonical island.
  *
  * <p>The bootstrap refuses arbitrary worlds, preflights every real external
- * structure, applies a bounded authored landscape pass, then places the selected
- * Kogtyv Greece shells plus the MIT Currents of Trade dock.</p>
+ * structure, shapes a bounded three-level village landscape, then places the selected
+ * Chek's Mint vanilla-block structures plus the MIT Currents of Trade dock.</p>
  */
 public final class VillageReviewBootstrap {
     private static final String PROPERTY = "campfiresessions.villageReview";
     private static final String SOURCE_MARKER_NAME = ".campfiresessions-canonical-world-source";
-    private static final String MARKER_NAME = ".campfiresessions-village-review-v3";
+    private static final String MARKER_NAME = ".campfiresessions-village-review-v4";
     private static final String CANONICAL_WORLD_SHA256 =
             "7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b";
     private static final int MAX_GRADE_DELTA = 8;
@@ -46,15 +46,14 @@ public final class VillageReviewBootstrap {
     ));
 
     private static final List<BuildingSpec> BUILDINGS = List.of(
-            kogtyv("resident_services", "house/shop_triple_2", -312, 71, -19, 13, 16, 8),
-            kogtyv("general_store", "house/shop_triple_1", -303, 72, -46, 13, 16, 8),
-            kogtyv("clinic", "house/shop_medium_3", -321, 67, -12, 7, 16, 8),
-            kogtyv("cafe", "house/shop_medium_1", -287, 73, -54, 7, 16, 8),
-            kogtyv("clothing_shop", "house/shop_medium_2", -291, 74, -11, 7, 16, 8),
-            kogtyv("museum", "center/ratush_1", -292, 75, -2, 21, 8, 16),
+            cheks("plaza_pavilion", "plains_meeting_point_4", -302, 73, -42, 10, 7, 16),
+            cheks("resident_services", "plains_medium_house_1", -318, 73, -35, 13, 9, 11),
+            cheks("general_store", "plains_butcher_shop_1", -318, 73, -56, 11, 8, 12),
+            cheks("cafe", "plains_butcher_shop_2", -303, 73, -56, 15, 13, 7),
+            cheks("clothing_shop", "plains_shepherds_house_1", -285, 73, -56, 9, 7, 13),
+            cheks("clinic", "plains_temple_3", -284, 73, -38, 11, 11, 7),
+            cheks("museum", "plains_library_1", -314, 76, -17, 11, 11, 17),
 
-            // The source dock's street connector is local (5,2,0). CLOCKWISE_90
-            // maps its long +Z pier axis westward into the canonical ocean.
             external(
                     "harbor_dock",
                     "external/currents_of_trade/dock",
@@ -64,14 +63,12 @@ public final class VillageReviewBootstrap {
                     false
             ),
 
-            // First housing-scale pass: real external shells, not placeholders.
-            kogtyv("player_house_stage_1", "house/small_1", -322, 66, -72, 5, 16, 5),
-            kogtyv("resident_house_south_1", "house/small_2", -312, 67, -72, 5, 16, 5),
-            kogtyv("resident_house_south_2", "house/medium_1", -322, 68, -60, 7, 16, 6),
-            kogtyv("resident_house_east_1", "house/small_3", -283, 71, -62, 5, 16, 5),
-            kogtyv("resident_house_north_1", "house/medium_2", -300, 71, 6, 7, 16, 6)
+            cheks("player_house_stage_1", "plains_small_house_1", -301, 76, -15, 7, 9, 7),
+            cheks("resident_house_1", "plains_small_house_2", -292, 76, -15, 7, 9, 7),
+            cheks("resident_house_2", "plains_medium_house_2", -301, 76, 1, 7, 8, 13),
+            cheks("resident_house_3", "plains_big_house_1", -292, 76, 1, 7, 13, 11),
+            cheks("resident_house_4", "plains_fisher_cottage_1", -314, 76, 4, 11, 10, 10)
     );
-
     private VillageReviewBootstrap() {}
 
     public static boolean enabled() {
@@ -93,24 +90,27 @@ public final class VillageReviewBootstrap {
         }
 
         List<PreparedBuilding> prepared = prepareBuildings(level);
+
+        VillageReviewLandscape.preflightTerraces(level);
+        VillageReviewLandscape.placeTerraces(level);
         preflight(level, prepared);
 
         List<BoundingBox> protectedBounds = prepared.stream().map(PreparedBuilding::bounds).toList();
-        VillageReviewLandscape.preflight(level, protectedBounds);
-        VillageReviewLandscape.place(level, protectedBounds);
+        VillageReviewLandscape.preflightPaths(level, protectedBounds);
 
         for (PreparedBuilding building : prepared) {
             place(level, building);
         }
+        VillageReviewLandscape.placePaths(level, protectedBounds);
 
         try {
             Files.writeString(
                     marker,
-                    "Campfire Sessions village review v3\n"
+                    "Campfire Sessions village review v4\n"
                             + "canonical archive sha256: " + CANONICAL_WORLD_SHA256 + "\n"
                             + "canonical terrain probe: run 36806856318\n"
                             + "external structures: " + BUILDINGS.size() + "\n"
-                            + "landscape: plaza + connected village paths\n"
+                            + "landscape: waterfront + civic + upper terraces + connected village paths\n"
             );
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to write Campfire village review marker " + marker, exception);
@@ -459,9 +459,9 @@ public final class VillageReviewBootstrap {
                 .addProcessor(REVIEW_MARKER_PROCESSOR);
     }
 
-    private static BuildingSpec kogtyv(
+    private static BuildingSpec cheks(
             String role,
-            String suffix,
+            String structureName,
             int x,
             int y,
             int z,
@@ -471,7 +471,7 @@ public final class VillageReviewBootstrap {
     ) {
         return external(
                 role,
-                "external/kogtyv_greece/" + suffix,
+                "external/cheks_mint/" + structureName,
                 x, y, z,
                 Rotation.NONE,
                 sizeX, sizeY, sizeZ,

@@ -189,7 +189,7 @@ jobs:
             done_ok=0
             layout_ok=0
             grep -Eq 'Done \([0-9.]+s\)!|Done \(' build/world-probe/village-review-server.log && done_ok=1 || true
-            grep -Fq 'Campfire village review layout applied: 12 real external structures' build/world-probe/village-review-server.log && layout_ok=1 || true
+            grep -Fq 'Campfire village review layout applied: 13 real external structures' build/world-probe/village-review-server.log && layout_ok=1 || true
             if [ "$done_ok" = 1 ] && [ "$layout_ok" = 1 ]; then
               success=1
               break
@@ -207,12 +207,13 @@ jobs:
             exit 1
           fi
 
-          test -f "$REVIEW/world/.campfiresessions-village-review-v3"
-          grep -Fq 'Campfire village review landscape applied:' build/world-probe/village-review-server.log
+          test -f "$REVIEW/world/.campfiresessions-village-review-v4"
+          grep -Fq 'Campfire village review terraces applied:' build/world-probe/village-review-server.log
+          grep -Fq 'Campfire village review paths applied:' build/world-probe/village-review-server.log
           grep -Fq 'Campfire village review placed harbor_dock' build/world-probe/village-review-server.log
           {
             echo 'VILLAGE_REVIEW_CANONICAL_WORLD=SUCCESS'
-            echo 'REAL_EXTERNAL_BUILDINGS_PLACED=12'
+            echo 'REAL_EXTERNAL_BUILDINGS_PLACED=13'
             echo 'VILLAGE_PATH_PLAZA_APPLIED=YES'
             echo 'HARBOR_DOCK_APPLIED=YES'
           } | tee -a build/world-probe/world-load-status.txt
@@ -221,7 +222,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f run-village-review-server/world/.campfiresessions-village-review-v3
+          test -f run-village-review-server/world/.campfiresessions-village-review-v4
           rm -rf build/village-review-world
           mkdir -p build/village-review-world
           cp -a run-village-review-server/world/. build/village-review-world/
@@ -357,7 +358,7 @@ jobs:
           index = {
               'formatVersion': 1,
               'game': 'minecraft',
-              'versionId': '0.6.0-alpha.1-village-review-29',
+              'versionId': '0.6.0-alpha.1-village-review-v4',
               'name': 'Campfire Sessions - Village Review',
               'summary': 'Private one-click canonical island and real-building layout review pack.',
               'files': [],

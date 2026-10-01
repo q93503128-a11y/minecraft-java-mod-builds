@@ -1834,3 +1834,27 @@ The source remains valid MIT material and may still be used for secondary/refere
 - several are published as MIT and demonstrate compact readable town composition and distinct civic silhouettes.
 - however many buildings intentionally reproduce recognizable Pokémon locations/roles.
 - use them as layout/legibility reference, not as Campfire's direct identifiable franchise architecture unless an individual generic asset is separately reviewed and de-branded beyond recognizable identity.
+
+
+## Second village physical slice — Chek's Mint intake
+
+The visually rejected Kogtyv Greece civic shells are no longer packaged for the active review slice.
+
+Pinned replacement source:
+- repository: `Chekmate90/Chek-s-Mint-Structures`
+- commit: `6ffadba091c4a07bcdac9f1c89d3d1202f0015b9`
+- license: MIT, verified from `LICENSE` at the same pinned commit
+- selected structures: 12 Plains Village NBTs
+- selected inventory uses vanilla `minecraft:` block content; no external runtime structure mod is required.
+
+Role mapping for the second integrated slice:
+- plaza/social center → `plains_meeting_point_4`
+- resident services → `plains_medium_house_1`
+- general store → `plains_butcher_shop_1`
+- café → `plains_butcher_shop_2`
+- clothing shop → `plains_shepherds_house_1`
+- clinic → `plains_temple_3`
+- museum exterior → `plains_library_1`
+- player + four resident houses → small/medium/big/fisher cottage variants.
+
+This is still a **client-review candidate**, not final visual acceptance. The main difference from the rejected pass is structural: the village terrain is shaped as three coherent levels before prefab placement instead of creating isolated pads under each building.
