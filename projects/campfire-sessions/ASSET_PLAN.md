@@ -1796,3 +1796,41 @@ Probe #24 used the canonical server's actual block columns, not 4-block sampled 
 - the lower-distance museum candidate at `(-304,75,-62)` was not selected because it overlaps the exact safe café candidate; the north/east candidate preserves separation and the intended civic-landmark role.
 - static footprint re-check including plaza and all land buildings: **0 overlaps**.
 - café path now approaches from the south side of the commercial core; museum path branches from the clothing/north walk toward the museum's west edge.
+
+
+## Exterior prefab decision after first real client review — 2026-10-01
+
+### Rejected final set: Kogtyv Greece
+The first physical client review showed that the selected Greece shells do not meet Campfire's main-village presentation standard.
+
+Why rejected for final civic use:
+- too many buildings share the same narrow stone-tower silhouette.
+- roles are not readable from exterior form.
+- repetition makes the village feel generated rather than authored.
+- the set fights the desired cozy island-life visual language.
+- relocating/rotating the same shells will not fix the underlying silhouette problem.
+
+The source remains valid MIT material and may still be used for secondary/reference purposes, but **do not use the current Greece set as the final resident-services/store/café/clinic/clothing/museum family**.
+
+### New primary external-base research
+
+**MineColonies schematic repository — PRIMARY DIRECT-USE CANDIDATE**
+- repository: `ldtteam/minecolonies-schematics`
+- repository license: GPL-3.0
+- dedicated schematic repository, distinct from the main MineColonies runtime asset tree.
+- useful semantic building families include town hall, residence/citizen, cook/restaurant, baker, warehouse, library, shepherd and other profession buildings.
+- multiple coherent style families exist, allowing role differentiation without mixing unrelated visual languages.
+- direct use requires preserving GPL source/license obligations for the redistributed schematic derivatives.
+- first styles to inspect physically: Medieval Oak / alternative Medieval Oak and the lighter generic wooden/birch families.
+- status: **CANDIDATE — acquire/inspect actual NBTs before acceptance**.
+
+**Brocraft Cobblemon Additions datapack — HOLD**
+- strong structure organization: centers, houses, paths, store/service structures and decor.
+- README claims MIT, but the inspected repository tree currently contains no LICENSE file.
+- do not package its structures until provenance/license is resolved independently.
+- status: **HOLD**.
+
+**CobbleTowns / other Pokémon-town packs — REFERENCE ONLY by default**
+- several are published as MIT and demonstrate compact readable town composition and distinct civic silhouettes.
+- however many buildings intentionally reproduce recognizable Pokémon locations/roles.
+- use them as layout/legibility reference, not as Campfire's direct identifiable franchise architecture unless an individual generic asset is separately reviewed and de-branded beyond recognizable identity.

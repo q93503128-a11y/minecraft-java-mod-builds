@@ -367,3 +367,30 @@ Packaging validation:
 - Probe Campfire Canonical World Runtime #27: SUCCESS.
 - private review mrpack artifact produced and uploaded.
 - extracted mrpack structure verified locally: valid `modrinth.index.json`, 14 bundled mod JARs including Campfire Sessions, canonical review save `level.dat`, v3 placement marker and review README all present.
+
+
+## Main-village client visual review — 2026-10-01
+
+Actual Minecraft client inspection of the canonical island + first Kogtyv/Currents village slice has now occurred.
+
+Observed result:
+- canonical Geming400 island loads correctly.
+- the authored review village and Currents dock are physically present.
+- the first Kogtyv Greece civic/residential shell set is visually unacceptable for Campfire's main village.
+- the structures read as repeated narrow stone towers with similar timber caps rather than clearly differentiated resident services / store / café / clinic / clothing / museum buildings.
+- individual footprint grading produces visible terrace cuts and fragmented circulation.
+- the mountain/forest backdrop overwhelms the civic center; the village does not read immediately as the primary cozy life-sim hub.
+- this is not a missing-chunk or renderer bug. It is an art-direction / prefab-selection / village-composition failure.
+
+Validation labels:
+- CLIENT VISUAL TESTED: **YES**
+- FIRST VILLAGE VISUAL ACCEPTANCE: **FAILED**
+- KOGTYV GREECE AS FINAL MAIN-CIVIC PREFAB SET: **REJECTED**
+- CURRENTS OF TRADE DOCK: still a usable harbor candidate; not rejected by this building review.
+- CANONICAL BASE WORLD: retained, but the main-village terrain/layout requires a wider authored terrace pass before final placement.
+
+Required correction:
+1. stop optimizing the rejected Kogtyv civic layout.
+2. create a broader 2–3 terrace village life-sim zone while preserving coastline and the outer mountain silhouette.
+3. replace the main civic shells with role-readable external prefabs.
+4. re-evaluate the full scene only after those changes are integrated.

@@ -108,3 +108,23 @@ The asset preparation script validates each OGG, derives its real duration from 
 - Pinned mirror commit: `3694c6879e487c108f55677be7dd2ca75b07cc3b`
 - Five themed sets are packaged: Clean, Neon, Ocean, Desert, Rough.
 - The player uses the external nine-slice panels/cards/buttons directly and switches them per track theme.
+
+
+## Village prefab review status — 2026-10-01
+
+### Kogtyv Towny and Village / Greece structures
+License/source status remains valid as already recorded, but the first actual Campfire client review **rejected this structure family as the final main-village civic set**. This is a quality/art-direction rejection, not a licensing rejection. Retain attribution records; do not silently delete provenance because the assets may remain useful as references or secondary-world structures.
+
+### MineColonies schematic repository
+Candidate source: `https://github.com/ldtteam/minecolonies-schematics`
+- inspected repository license metadata: **GPL-3.0**
+- purpose: dedicated MineColonies schematic distribution repository
+- candidate use: editable external bases for differentiated Campfire civic/residential exteriors
+- no files are accepted into Campfire yet.
+- before packaging: pin exact branch/commit/file, inspect NBT block dependencies, verify vanilla/custom-block requirements, record original author/style metadata where available, preserve GPL license/source requirements.
+
+### Brocraft Cobblemon Additions
+Candidate repository inspected: `strikeknight57/BCA-Datapack`, master observed at `c50e264e90140c068e5945a1c639ea7e56a6621f`.
+- README states MIT.
+- repository tree inspection found **no LICENSE file**.
+- despite useful centers/shops/paths/decor structure inventory, direct asset intake is blocked pending license resolution.
