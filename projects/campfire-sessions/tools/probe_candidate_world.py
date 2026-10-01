@@ -451,6 +451,15 @@ def main() -> int:
             (max(gx) - min(gx) + 1) * 16,
             (max(gz) - min(gz) + 1) * 16,
         ]
+        summary["largest_buildable_cluster_tiles"] = [
+            {
+                "tile": [tx, tz],
+                "block_bounds": [tx * 16, tz * 16, tx * 16 + 15, tz * 16 + 15],
+                **tile_detail[(tx, tz)],
+                "median_y": statistics.median(tile_heights[(tx, tz)]),
+            }
+            for tx, tz in sorted(largest, key=lambda p: (p[1], p[0]))
+        ]
 
     summary["best_128x128_window"] = best_window(good_tiles, 8)
     summary["best_160x160_window"] = best_window(good_tiles, 10)
