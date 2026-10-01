@@ -6,6 +6,7 @@ import java.util.Map;
 import kr.moonseungjun.campfiresessions.CampfireSessions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -183,7 +184,16 @@ public final class VillageReviewLandscape {
     }
 
     private static int surfaceY(ServerLevel level, int x, int z) {
-        return level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+        int floor = Math.max(level.getMinY(), y - 32);
+        while (y > floor) {
+            var state = level.getBlockState(new BlockPos(x, y, z));
+            if (!state.is(BlockTags.LOGS) && !state.is(BlockTags.LEAVES)) {
+                return y;
+            }
+            y--;
+        }
+        return y;
     }
 
     private static BlockState roadMaterial(int x, int z) {

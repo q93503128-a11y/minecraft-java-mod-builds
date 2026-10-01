@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
@@ -173,7 +174,7 @@ public final class VillageReviewBootstrap {
         for (int x = box.minX(); x <= box.maxX(); x++) {
             for (int z = box.minZ(); z <= box.maxZ(); z++) {
                 level.getChunkAt(new BlockPos(x, targetGroundY, z));
-                int currentSurface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                int currentSurface = terrainSurfaceY(level, x, z);
                 if (Math.abs(currentSurface - targetGroundY) > MAX_GRADE_DELTA) {
                     throw new IllegalStateException(
                             "Campfire village review grading limit exceeded for " + building.spec().role()
@@ -194,11 +195,7 @@ public final class VillageReviewBootstrap {
                 BlockPos.ZERO
         ).offset(spec.origin());
         level.getChunkAt(streetConnector);
-        int streetSurface = level.getHeight(
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                streetConnector.getX(),
-                streetConnector.getZ()
-        ) - 1;
+        int streetSurface = terrainSurfaceY(level, streetConnector.getX(), streetConnector.getZ());
         if (Math.abs(streetSurface - streetConnector.getY()) > 3) {
             throw new IllegalStateException(
                     "Campfire harbor dock street connector misses canonical shoreline: connector="
@@ -273,7 +270,7 @@ public final class VillageReviewBootstrap {
 
         for (int x = box.minX(); x <= box.maxX(); x++) {
             for (int z = box.minZ(); z <= box.maxZ(); z++) {
-                int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                int surface = terrainSurfaceY(level, x, z);
 
                 if (surface < targetGroundY) {
                     for (int y = surface + 1; y < targetGroundY; y++) {
@@ -292,6 +289,19 @@ public final class VillageReviewBootstrap {
                 }
             }
         }
+    }
+
+    private static int terrainSurfaceY(ServerLevel level, int x, int z) {
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+        int floor = Math.max(level.getMinY(), y - 32);
+        while (y > floor) {
+            var state = level.getBlockState(new BlockPos(x, y, z));
+            if (!state.is(BlockTags.LOGS) && !state.is(BlockTags.LEAVES)) {
+                return y;
+            }
+            y--;
+        }
+        return y;
     }
 
     private static StructureTemplate template(ServerLevel level, BuildingSpec spec) {
