@@ -1487,6 +1487,34 @@ Current conclusion:
 - the **museum centerpiece skeleton source problem is now partially solved** with two verified real CC0 production candidates.
 - broader prehistoric/fossil exhibit variety is still unresolved; add only similarly verified coherent sources, not placeholder skeletons.
 
+### Museum static-mesh rendering decision — 26.2 architecture locked, implementation pending
+
+Source inspection performed against Minecraft/NeoForge 26.2 and current open-source renderers establishes the following production path:
+
+- **do not use raw OpenGL calls.** Minecraft 26.2 supports both OpenGL and Vulkan backends; Campfire must stay on Blaze3D/NeoForge rendering abstractions.
+- **do not use NeoForge's OBJ loader as the final Smithsonian display path.** The 26.2 loader correctly handles arbitrary positions/UVs/normals, but bakes faces into Minecraft model quads and does not preserve the Smithsonian PBR material stack well enough for a 100k-triangle centerpiece.
+- **do not depend on Polymesh 1.0.0 as-is.** Its architecture confirms the value of shared GPU buffers for static glTF meshes, but the released library targets Minecraft 1.20.1 and its renderer does not apply the normal/occlusion/metallic-roughness maps required to preserve the verified Smithsonian material data.
+- **do not make CrankShaft/Flywheel a core dependency solely for two museum exhibits.** The available 26.2 port is too new and broad for this narrow need.
+- use NeoForge 26.2's **`RegisterFeatureRenderersEvent` + `RenderPhaseKeys.SOLID` + custom `SubmitNode`/`FeatureRenderer`** for exhibit submission.
+- upload static exhibit geometry once into Blaze3D **`GpuBuffer`** objects during preparation/resource load, then reuse those GPU buffers across frames. CC:Tweaked's current 26.2 monitor renderer demonstrates this exact backend-safe pattern with `RenderType.prepare().drawFromBuffer(...)`.
+- release/rebuild GPU buffers on resource reload and client shutdown; never allocate or upload the 100k-triangle mesh once per rendered frame.
+- use a registered custom **`RenderPipeline`** through NeoForge's `RegisterRenderPipelinesEvent`; 26.2 pipelines can bind multiple samplers, so the production material path can keep base color, normal and occlusion textures rather than flattening them by default.
+- the first renderer target is **opaque static museum geometry only**. No animation, skinning, dynamic morphing or general-purpose glTF engine is justified for these two exhibits.
+- keep source GLB parsing/conversion as an offline build/content step. Runtime should load a compact Campfire-owned static mesh representation generated only from the verified Smithsonian source hashes.
+- scale/orientation are content metadata, not guessed renderer constants. The Triceratops source uses metre-labelled bounds; the mammoth source needs explicit Smithsonian-metadata normalization before acceptance.
+- any LOD/decimation must be derived from the verified CC0 originals as a deliberate final asset and recorded with source + derived hashes. A temporary low-detail proxy is forbidden.
+- final acceptance still requires side-by-side in-client review of at least 20k/100k-derived production variants for silhouette, bone readability and frame cost before either skeleton enters the normal museum.
+
+**Current renderer status**
+- 26.2 render architecture researched: **YES**
+- Vulkan-safe renderer path selected: **YES**
+- real Smithsonian source meshes acquired: **YES**
+- static GPU renderer implemented: **NO**
+- PBR material pipeline implemented: **NO**
+- museum models packaged into Campfire runtime: **NO**
+- client visual tested: **NO**
+- performance tested: **NO**
+
 Multipart fossil completion should visually build the exhibit rather than remain an inventory checklist.
 
 ## 16. Audio / ambience / resident voice candidates
