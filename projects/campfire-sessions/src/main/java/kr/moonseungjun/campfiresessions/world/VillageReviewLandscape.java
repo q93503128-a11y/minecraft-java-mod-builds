@@ -27,7 +27,8 @@ public final class VillageReviewLandscape {
     private static final int MAX_PATH_DELTA = 6;
 
     private static final List<TerraceSpec> TERRACES = List.of(
-            terrace("civic", -323, -270, -63, -21, 72),
+            terrace("civic_west", -323, -286, -63, -21, 72),
+            terrace("civic_southeast", -289, -270, -63, -29, 72),
             terrace("upper", -317, -282, -21, 18, 75)
     );
 
