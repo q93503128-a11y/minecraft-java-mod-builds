@@ -1879,3 +1879,41 @@ Multiplayer rental ownership is server-fixed:
 - logout, battle entry, fast travel, dimension/runtime exit and server clear still recall the transient mount.
 
 This is the final code-side correction before the integrated first-slice build checkpoint.
+
+
+## Av'Sal first-slice build verification — Build #961
+
+Verified code commit:
+`25b2db6e1d2acd7b6640d778703bafe0ff1b4ca4`
+
+GitHub Actions:
+- workflow: Build TURNBOUND
+- run: 36811002004 / #961
+- Gradle clean test build oneClickPack: PASS
+- NeoForge dedicated-server smoke: PASS — Done (6.039s)
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+- artifact: turnbound-v04-workbranch / ID 11139483913
+
+Hashes:
+- JAR turnbound-0.1.0-alpha.17.jar
+  - SHA-256 9e6ec9355dec4ab5e1ca870454e9fc13bdb93a26998ff4a9d63ffd42942649da
+- TURNBOUND-oneclick-0.1.0-alpha.17.mrpack
+  - SHA-256 4843d8fc931c66320c364676715bdd9f22b0bf8e41133df2c8cc7d54ff11ea5c
+- uploaded artifact ZIP
+  - SHA-256 c10f085ad788ca5311286c464fd5da4259230c862e5464846df3aff7b3cfa54a
+
+This is the handoff point to the first real client playtest.
+The required route is documented in AVSAL_FIRST_PLAYTEST_CHECKLIST.md.
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
