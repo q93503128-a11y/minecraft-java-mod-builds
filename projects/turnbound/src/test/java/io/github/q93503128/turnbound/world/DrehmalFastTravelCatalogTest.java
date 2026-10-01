@@ -9,7 +9,7 @@ class DrehmalFastTravelCatalogTest {
                 ()->String.join("; ",DrehmalFastTravelCatalog.validate()));
     }
 
-    @Test void firstRouteStaysSparseWhileLongWestRoadGetsReturnWaypoints(){
+    @Test void firstRouteUsesFivePhysicalWaystationDestinationsWithoutErasingTraversal(){
         var nodes=DrehmalFastTravelCatalog.nodes();
         assertEquals(5,nodes.size());
         assertEquals("프라이멀 길머리",nodes.get(0).label());
@@ -19,7 +19,7 @@ class DrehmalFastTravelCatalogTest {
         assertEquals("아브살 외곽",nodes.get(4).label());
         for(int i=1;i<3;i++){
             double distance=Math.hypot(nodes.get(i).mapX()-nodes.get(i-1).mapX(),nodes.get(i).mapZ()-nodes.get(i-1).mapZ());
-            assertTrue(distance>=450.0,"Capital Valley discovery nodes must not erase first-route traversal");
+            assertTrue(distance>=450.0,"Capital Valley waystations must not erase first-route traversal");
         }
     }
 }

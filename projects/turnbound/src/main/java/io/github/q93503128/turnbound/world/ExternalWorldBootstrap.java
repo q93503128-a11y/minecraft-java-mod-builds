@@ -92,6 +92,7 @@ public final class ExternalWorldBootstrap {
         DrabyelLocalArcRuntime.tick(player);
         DrehmalFieldNpcRuntime.tick(player);
         DrabyelHubServiceRuntime.tick(player);
+        DrehmalWaystationRuntime.tick(player);
         DrehmalFirstRouteRuntime.recordProgress(player);
         String location = DrehmalFirstRouteRuntime.locationId(player);
         String previousLocation = LAST_LOCATION.put(player.getUUID(), location);
@@ -145,13 +146,16 @@ public final class ExternalWorldBootstrap {
     public static boolean interactEntity(ServerPlayer player, net.minecraft.world.entity.Entity target) {
         if (!active(player)) return false;
         boolean handled = DrehmalFieldNpcRuntime.interact(player, target)
-                || DrabyelHubServiceRuntime.interact(player, target);
+                || DrabyelHubServiceRuntime.interact(player, target)
+                || DrehmalWaystationRuntime.interact(player, target);
         if (handled) refreshFieldContext(player);
         return handled;
     }
 
     public static boolean serviceActor(net.minecraft.world.entity.Entity target) {
-        return DrehmalFieldNpcRuntime.isNpc(target) || DrabyelHubServiceRuntime.serviceLocator(target) != null;
+        return DrehmalFieldNpcRuntime.isNpc(target)
+                || DrabyelHubServiceRuntime.serviceLocator(target) != null
+                || DrehmalWaystationRuntime.isKeeper(target);
     }
 
     public static boolean onBattleEnded(ServerPlayer player, String encounterId, BattleOutcome outcome) {
@@ -186,6 +190,7 @@ public final class ExternalWorldBootstrap {
         DrabyelLocalArcRuntime.clear();
         QuestTargetGlowService.clear();
         DrehmalFastTravelService.clear();
+        DrehmalWaystationRuntime.clear();
         AvsalExpansionRuntime.clear();
         DrabyelHubServiceRuntime.clear();
         ACTIVE.clear();

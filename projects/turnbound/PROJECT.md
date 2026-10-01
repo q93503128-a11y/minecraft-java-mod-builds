@@ -1796,3 +1796,26 @@ Validation:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+## Physical waystation network checkpoint — 2026-10-01
+
+Fast travel authority is now explicitly physical:
+- map markers are information only
+- New Drabyel departure uses the existing TRAVEL stablemaster
+- Primal Roadhead / Capital Valley Tower / Broken West Road / Av'Sal Outskirts use physical waystation keepers
+- remote keepers reuse the authored stablemaster 3D asset, not a placeholder
+- keepers resolve against live safe ground and reject nearby source villagers, item frames, armor stands and block-entity content
+- the server accepts TRAVEL only while the player is actually beside a physical waystation keeper/stablemaster
+- discovery is proximity-based and destinations remain player-specific
+
+Current network size for the implemented first-route/Av'Sal slice: 5 nodes.
+This is not the final whole-map station count; later regions extend the network as their content is authored.
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO

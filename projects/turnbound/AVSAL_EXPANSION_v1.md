@@ -452,3 +452,24 @@ Using it:
 
 This is distinct from closing the summon result entirely.
 Single-pull skip behavior remains a normal presentation close.
+
+
+## Physical waystation network — 2026-10-01
+
+Fast travel is a physical-world service.
+
+Current first-route network:
+- 프라이멀 길머리
+- 캐피털 밸리 탑
+- 뉴 드라비엘
+- 끊긴 가도
+- 아브살 외곽
+
+Rules:
+- the M map only shows discovered fast-travel markers; it never teleports the player.
+- New Drabyel uses its existing physical stablemaster.
+- the other first-route nodes materialize a physical waystation keeper near the source-backed node, using live terrain/source-content clearance before placement.
+- travel commands are accepted only while the player is physically beside a waystation keeper/stablemaster.
+- approaching a node discovers it; only discovered nodes appear as destinations.
+- waystations are intentionally sparse enough that first-time traversal still matters.
+- later regions add more nodes region-by-region rather than filling every landmark with teleport points.

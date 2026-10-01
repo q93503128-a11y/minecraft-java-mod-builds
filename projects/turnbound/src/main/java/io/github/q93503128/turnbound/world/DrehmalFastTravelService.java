@@ -51,8 +51,8 @@ final class DrehmalFastTravelService {
         var node = DrehmalFastTravelCatalog.node(destinationId);
         if (node == null) return false;
         if (!ExternalWorldBootstrap.active(player)) return true;
-        if (!DrabyelHubServiceRuntime.nearFacility(player, "TRAVEL")) {
-            deny(player, "빠른 이동은 역참지기와 대화 중일 때만 사용할 수 있습니다.");
+        if (!DrehmalWaystationRuntime.nearWaystation(player)) {
+            deny(player, "빠른 이동은 실제 역참지기 곁에서만 사용할 수 있습니다.");
             return true;
         }
         if (PENDING.containsKey(player.getUUID())) {
