@@ -63,7 +63,11 @@ class AvsalExpansionProgressTest {
         assertTrue(AvsalExpansionProgress.relayComplete(relays));
         assertEquals(2,AvsalExpansionProgress.relayCount(relays));
         assertEquals(AvsalExpansionProgress.Stage.BOSS,AvsalExpansionProgress.stage(relays,clear));
-        assertEquals(AvsalExpansionProgress.Stage.CLEARED,
+        assertEquals(AvsalExpansionProgress.Stage.REPORT,
                 AvsalExpansionProgress.stage(relays,Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID,"AV_FIRST_BOSS")));
+        Set<String> reported=new java.util.HashSet<>(relays);
+        reported.add(AvsalExpansionProgress.FIRST_BOSS_REPORTED);
+        assertEquals(AvsalExpansionProgress.Stage.CLEARED,
+                AvsalExpansionProgress.stage(reported,Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID,"AV_FIRST_BOSS")));
     }
 }

@@ -57,11 +57,24 @@ final class DrehmalFieldNpcRuntime {
         double radius=npc.interactionRadius()+1.0D;
         if(player.position().distanceToSqr(pos)>radius*radius)return false;
         if(target instanceof BattleActorEntity actor){face(actor,player);actor.playServiceGreeting();}
+        var server=player.level().getServer();
         if("turnbound:npc/avsal/contract_broker".equals(npc.locator())){
+            if(server!=null){
+                ExternalWorldSavedData data=ExternalWorldSavedData.get(server);
+                Set<String> flags=data.onboardingFlags(player.getUUID());
+                Set<String> clears=CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+                if(clears.contains("AV_FIRST_BOSS")&&!flags.contains(AvsalExpansionProgress.FIRST_BOSS_REPORTED)){
+                    data.markOnboardingFlag(player.getUUID(),AvsalExpansionProgress.FIRST_BOSS_CLEARED);
+                    data.markOnboardingFlag(player.getUUID(),AvsalExpansionProgress.FIRST_BOSS_REPORTED);
+                    FieldNetwork.showDialogue(player,npc.playerLabel(),
+                            "북쪽 수로문이 열렸다는 소식이 벌써 여기까지 왔어요. 카르논과 호위대가 멈췄다면 당분간 운송대가 폐허 안쪽까지 접근할 수 있겠네요.\n\n첫 원정 기록은 제가 정리하겠습니다. 이후에는 여기서 아브살 지역 의뢰를 계속 받을 수 있어요.");
+                    ExternalWorldBootstrap.refreshFieldContext(player);
+                    return true;
+                }
+            }
             if(RegionalContractService.interact(player,npc.playerLabel()))return true;
         }
         String dialogue=npc.dialogue();
-        var server=player.level().getServer();
         if(server!=null){
             ExternalWorldSavedData data=ExternalWorldSavedData.get(server);
             if(!npc.progressFlag().isBlank()
@@ -75,7 +88,7 @@ final class DrehmalFieldNpcRuntime {
                 }else if(npc.progressFlag().startsWith("DRABYEL_LOCAL_")){
                     int count=DrabyelLocalArcProgress.count(data.onboardingFlags(player.getUUID()));
                     dialogue=dialogue+"\n\n조사 진척 "+Math.min(count,2)+"/2";
-                    if(DrabyelLocalArcProgress.reconcile(player))dialogue=dialogue+" · 두 곳을 확인했습니다. 라나에게 돌아갈 수 있습니다.";
+                    if(DrabyelLocalArcProgress.reconcile(player))dialogue=dialogue+" · 두 곳을 확인했습니다. 아렌에게 돌아갈 수 있습니다.";
                 }
             }
             if(!npc.questOfferFlag().isBlank()){

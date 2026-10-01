@@ -5,6 +5,7 @@ import io.github.q93503128.turnbound.command.TurnboundCommands;
 import io.github.q93503128.turnbound.presentation.DrabyelServiceActors;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
+import io.github.q93503128.turnbound.presentation.TurnboundMounts;
 import io.github.q93503128.turnbound.presentation.TurnboundVisualItems;
 import io.github.q93503128.turnbound.session.BattleInteractionGuard;
 import io.github.q93503128.turnbound.session.BattleNetwork;
@@ -45,6 +46,7 @@ public final class Turnbound {
         TurnboundBattleActors.register(modEventBus);
         SignatureBattleActors.register(modEventBus);
         DrabyelServiceActors.register(modEventBus);
+        TurnboundMounts.register(modEventBus);
         modEventBus.addListener(BattleNetwork::register);
         modEventBus.addListener(FieldNetwork::register);
         modEventBus.addListener(MetaNetwork::register);

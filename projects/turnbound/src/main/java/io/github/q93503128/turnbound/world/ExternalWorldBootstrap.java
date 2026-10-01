@@ -88,6 +88,7 @@ public final class ExternalWorldBootstrap {
 
         if (player.tickCount % 20 == 0) DrehmalHubEntityPolicy.sweep(player);
         if (DrehmalFastTravelService.tick(player)) return true;
+        DrehmalMountService.tick(player);
         DrehmalVisibleEncounterService.tick(player);
         DrabyelLocalArcRuntime.tick(player);
         DrehmalFieldNpcRuntime.tick(player);
@@ -140,6 +141,10 @@ public final class ExternalWorldBootstrap {
                 && DrehmalFastTravelService.handle(player, parts[1])) {
             return;
         }
+        if (parts.length == 2 && "MOUNT".equals(parts[0])
+                && DrehmalMountService.handle(player, parts[1])) {
+            return;
+        }
         refreshFieldContext(player);
     }
 
@@ -177,6 +182,7 @@ public final class ExternalWorldBootstrap {
         if (player == null) return;
         DrehmalVisibleEncounterService.onPlayerRemoved(player);
         DrehmalFastTravelService.remove(player);
+        DrehmalMountService.release(player);
         ACTIVE.remove(player.getUUID());
         LAST_LOCATION.remove(player.getUUID());
         LAST_INTERACTION.remove(player.getUUID());
@@ -191,6 +197,7 @@ public final class ExternalWorldBootstrap {
         QuestTargetGlowService.clear();
         DrehmalFastTravelService.clear();
         DrehmalWaystationRuntime.clear();
+        DrehmalMountService.clearAll();
         AvsalExpansionRuntime.clear();
         DrabyelHubServiceRuntime.clear();
         ACTIVE.clear();

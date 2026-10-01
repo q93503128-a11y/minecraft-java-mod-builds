@@ -98,6 +98,34 @@ final class DrehmalWaystationRuntime {
         return false;
     }
 
+    static DrabyelInteractionPromptRules.Prompt prompt(ServerPlayer player) {
+        if (player == null || BattleSessionManager.exists(player) || player.isSpectator()
+                || !(player.level() instanceof ServerLevel level)) {
+            return DrabyelInteractionPromptRules.none();
+        }
+        BattleActorEntity best = null;
+        String bestNode = "";
+        double bestDistance = Double.MAX_VALUE;
+        double radiusSq = INTERACTION_RADIUS * INTERACTION_RADIUS;
+        for (var node : DrehmalFastTravelCatalog.nodes()) {
+            if (isNewDrabyel(node)) continue;
+            UUID actorId = ACTORS.get(node.id());
+            Entity entity = actorId == null ? null : level.getEntity(actorId);
+            if (!(entity instanceof BattleActorEntity actor) || !node.id().equals(nodeId(actor))) continue;
+            double distance = player.distanceToSqr(actor);
+            if (distance <= radiusSq && distance < bestDistance) {
+                best = actor;
+                bestNode = node.id();
+                bestDistance = distance;
+            }
+        }
+        if (best == null) return DrabyelInteractionPromptRules.none();
+        var node = DrehmalFastTravelCatalog.node(bestNode);
+        return node == null
+                ? DrabyelInteractionPromptRules.none()
+                : new DrabyelInteractionPromptRules.Prompt(bestNode, "역참지기 · " + node.label(), "이동 지도 보기");
+    }
+
     static boolean isKeeper(Entity entity) {
         return nodeId(entity) != null;
     }

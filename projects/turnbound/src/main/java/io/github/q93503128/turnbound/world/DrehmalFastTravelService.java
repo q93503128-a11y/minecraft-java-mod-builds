@@ -85,6 +85,7 @@ final class DrehmalFastTravelService {
             return true;
         }
 
+        DrehmalMountService.release(player);
         PENDING.put(player.getUUID(), new PendingTravel(node.id(), level.getGameTime() + DEPARTURE_TICKS));
         player.setDeltaMovement(Vec3.ZERO);
         FieldNetwork.fastTravelTransition(player, "START", node.label());

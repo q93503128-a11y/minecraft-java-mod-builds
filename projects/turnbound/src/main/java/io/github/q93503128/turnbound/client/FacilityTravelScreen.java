@@ -9,18 +9,18 @@ import org.jetbrains.annotations.NotNull;
 /** Physical waystation UI. Fast travel remains a world service rather than a global menu category. */
 final class FacilityTravelScreen extends FacilityScreen {
     FacilityTravelScreen() {
-        super("역참", 0xFF6DC6FF, 350, 205, 300, 188);
+        super("역참", 0xFF6DC6FF, 350, 230, 300, 210);
     }
 
     @Override
     protected String subtitle() {
-        return "직접 발견한 거점으로 빠르게 이동";
+        return "발견한 역참으로 이동하거나 승용 산양을 빌립니다";
     }
 
     @Override
     protected void buildFacility() {
         int y = bodyTop() + 6;
-        int maxY = bodyBottom() - 4;
+        int maxY = bodyBottom() - 29;
         for (var travel : ClientFieldState.snapshot().travels()) {
             if (!travel.unlocked()) continue;
             if (y + 18 > maxY) break;
@@ -36,6 +36,14 @@ final class FacilityTravelScreen extends FacilityScreen {
             addRenderableWidget(button);
             y += 21;
         }
+        addRenderableWidget(new BattleHudButton(
+                left + 14, bodyBottom() - 22, panelWidth - 28, 18,
+                Component.literal("길뿔 산양 부르기"),
+                0xFFD7A45F,
+                ignored -> {
+                    ClientPacketDistributor.sendToServer(new FieldCommandPayload("MOUNT|ROADHORN"));
+                    onClose();
+                }));
     }
 
     @Override

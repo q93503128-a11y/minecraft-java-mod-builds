@@ -4,6 +4,8 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.gui.GuiLayer;
 import org.jetbrains.annotations.NotNull;
@@ -24,10 +26,21 @@ public final class FastTravelTransitionLayer implements GuiLayer {
         String command = parts.length == 0 ? "" : parts[0].trim();
         label = parts.length < 2 ? "" : parts[1].trim();
         switch (command) {
-            case "START" -> { phase = Phase.OUT; ticks = 0; }
-            case "ARRIVE", "CANCEL" -> { phase = Phase.IN; ticks = 0; }
+            case "START" -> { phase = Phase.OUT; ticks = 0; playTravelSound(SoundEvents.HORSE_GALLOP, 0.72F, 0.92F); }
+            case "ARRIVE" -> { phase = Phase.IN; ticks = 0; playTravelSound(SoundEvents.HORSE_LAND, 0.78F, 1.02F); }
+            case "CANCEL" -> { phase = Phase.IN; ticks = 0; }
             default -> { phase = Phase.NONE; ticks = 0; label = ""; }
         }
+    }
+
+    private static void playTravelSound(net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!TurnboundClientSettings.sfxEnabled()
+                || minecraft.level == null || minecraft.player == null || sound == null) return;
+        minecraft.level.playLocalSound(
+                minecraft.player.getX(), minecraft.player.getY(), minecraft.player.getZ(),
+                sound, SoundSource.PLAYERS,
+                volume * TurnboundClientSettings.sfxGain(), pitch, false);
     }
 
     public static void onTick(ClientTickEvent.Post event) {

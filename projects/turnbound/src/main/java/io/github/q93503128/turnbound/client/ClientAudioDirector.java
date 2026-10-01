@@ -118,7 +118,7 @@ public final class ClientAudioDirector {
         for (ClientBattleState.Unit unit : snapshot.units()) {
             String id = unit.defId();
             if ("B05".equals(id)) return MusicSlot.BATTLE_FINAL;
-            boss |= id != null && id.matches("B0[1-4]");
+            boss |= id != null && (id.matches("B0[1-4]") || "AV_B01".equals(id));
             elite |= id != null && id.startsWith("EL");
         }
         if (boss) return MusicSlot.BATTLE_BOSS;

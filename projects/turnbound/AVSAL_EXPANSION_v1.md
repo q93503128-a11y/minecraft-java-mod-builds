@@ -473,3 +473,37 @@ Rules:
 - approaching a node discovers it; only discovered nodes appear as destinations.
 - waystations are intentionally sparse enough that first-time traversal still matters.
 - later regions add more nodes region-by-region rather than filling every landmark with teleport points.
+
+
+## First-slice closure and mount loop — 2026-10-01
+
+The first Av'Sal playtest slice closes with a physical report rather than ending on the boss result screen.
+
+Production chain:
+1. MQ_AV01 — 서쪽 길의 이상 신호
+2. MQ_AV02 — 가도를 오가는 사람
+3. MQ_AV03 — 폐허의 문턱
+4. MQ_AV04 — 폐허를 쓰는 사람들
+5. MQ_AV05 — 끊어진 선
+6. MQ_AV06 — 북쪽 수로문의 집행기
+7. MQ_AV07 — 열린 수로문의 보고
+
+After Karnon:
+- AV_FIRST_BOSS clear marks a dedicated first-boss-clear flag.
+- navigation points back to physical broker Sael.
+- Sael records the opened north aqueduct gate and closes MQ_AV07.
+- subsequent Sael interaction returns to the repeatable regional-contract loop.
+- the slice is considered CLEARED only after this report.
+
+Physical waystation polish:
+- remote waystation keepers now expose the same close-range interaction prompt language as New Drabyel.
+- departure / arrival transition uses short horse-travel feedback rather than a silent fade.
+- the M map remains information-only.
+
+First production mount:
+- 길뿔 산양 is a separate GeckoLib AbstractHorse-based rental entity.
+- it is summoned only from a physical waystation.
+- movement speed / jump / step height / safe-fall performance exceed ordinary vanilla horse travel.
+- one rental per player; it is transient and cannot accumulate in saves.
+- battle entry, fast travel and logout recall it automatically.
+- source model retains the original saddle/chest geometry; hostile Cavehorn remains a separate entity.

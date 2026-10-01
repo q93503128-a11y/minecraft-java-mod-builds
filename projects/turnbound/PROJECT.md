@@ -1552,8 +1552,8 @@ Current production direction:
 - exact server-resolved NPC/service positions are projected to the world map/minimap with small readable names
 - current navigation points directly at the next required hub NPC when that NPC has a verified runtime position
 - field NPCs can reveal hidden quests by conversation; hidden quests remain invisible before discovery
-- New Drabyel's former player-facing "마구간" service is now **역참**. It is a discovered-waypoint fast-travel service, not a mount-grant system.
-- a future mount system, if adopted, is separate content and must use a vetted external model/animation rather than pretending the current waystation already grants mounts
+- New Drabyel's former player-facing "마구간" service is now **역참**. Fast travel and mount rental are separate physical actions at the same waystation service.
+- the first production mount is the external-asset-based 길뿔 산양; it is a dedicated rental entity, not an enemy or vanilla-horse reskin
 - avoid travel padding: first-time traversal may establish scale, but repeated routes receive discovered waypoints/shortcuts; long roads should contain meaningful encounters, NPCs, discoveries or route choices instead of empty walking
 - the New Drabyel → Av'Sal road gains return waypoints at 끊긴 가도 and 아브살 외곽 so the long first journey does not become repeated commuting
 
@@ -1567,7 +1567,7 @@ Current production direction:
 - Quest targets represented by actual entities use a wall-through glowing outline while active; coordinate-only targets should be promoted to physical interactable proxies when they need the same treatment.
 - Av'Sal is no longer an immediate early-game destination. It requires the local New Drabyel arc plus at least one meaningful Capital Valley regional milestone and map review.
 - Source data shows a much larger world than the current route: 285 structured overworld locations and hundreds of path features, so later development should unlock whole regions over time rather than treating the existing road as the entire game.
-- Future mount support is separate from the current waystation system. Once mounts exist, long first-time journeys may be acceptable, but repeated empty walking remains unacceptable.
+- Physical waystations now support the 길뿔 산양 rental mount. Long first-time journeys may establish scale, but repeated empty walking remains unacceptable.
 
 
 ## New Drabyel local-flow / physical travel checkpoint — 2026-10-01
@@ -1583,13 +1583,13 @@ Direct source recheck:
 
 Physical-service / navigation repair:
 - world-map fast-travel markers are informational only; clicking the world map no longer teleports the player
-- server authority accepts fast travel only while the player is physically near the New Drabyel TRAVEL service
+- server authority accepts fast travel only while the player is physically beside a New Drabyel stablemaster or a remote waystation keeper
 - waystation travel uses a short departure fade, delayed server-authoritative safe teleport, then arrival fade
 - current tracked physical objective outline is projected per player and only within the final 52-block approach
 - the server no longer sets a shared glowing tag from the union of all players' quest targets
 - the entrance greeter player-facing name is now `문지기 아렌`, matching the current masculine model read
 - after the local 2-of-3 main investigation, physically speaking with 기록관 세린 can open the optional `북쪽 옛길의 야영지` side objective; it reuses the source-backed Explorer's Campsite and naturally chains into the existing camp NPC/hidden-quest content instead of inventing another menu
-- a dedicated travel sound asset is still pending; no battle/skill sound was repurposed as a fake final travel cue
+- waystation departure/arrival now has short vanilla horse-travel feedback layered onto the existing fade; no battle/skill sound is repurposed
 
 Validation for this checkpoint:
 - CODE REVIEWED: YES
@@ -1701,8 +1701,8 @@ Implemented in the current content batch:
 Remaining before calling the first route playtest-ready:
 - static/compile validation of this integrated batch at the chosen checkpoint
 - actual client validation of live map placement, travel density, encounter sightlines, NPC collision and equipment pacing
-- travel SFX remains pending
-- rideable mount production remains pending and is not required to fake-complete the Av'Sal arrival gate
+- travel transition SFX is implemented with horse travel/landing feedback
+- the rideable 길뿔 산양 rental mount is implemented from a tracked MIT external rig
 
 Validation for this content checkpoint:
 - CODE REVIEWED: YES
@@ -1768,7 +1768,7 @@ Validation state for this checkpoint remains:
 Locked direction:
 - boss support mobs are authored per boss as a fixed encounter roster; no random add composition
 - solo bosses remain valid
-- Av'Sal first-boss route uses six main-quest beats instead of compressing the road/outskirts/relay into four
+- Av'Sal first slice uses seven main-quest beats including a post-boss physical report
 - ten-pull summon presentation supports a result-only skip without discarding the results screen
 
 Current first-boss route:
@@ -1777,7 +1777,8 @@ MQ_AV01 road echo
 → MQ_AV03 Av'Sal outskirts arrival
 → MQ_AV04 2-of-3 outskirts investigation
 → MQ_AV05 2-of-3 relay resolution
-→ MQ_AV06 Karnon boss.
+→ MQ_AV06 Karnon boss
+→ MQ_AV07 report the opened aqueduct gate to Sael.
 
 AV_FIRST_BOSS fixed roster:
 - AV_B01 Karnon
@@ -1816,6 +1817,54 @@ Validation:
 - CODE REVIEWED: YES
 - TESTED: NO
 - BUILD VERIFIED: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+
+## Av'Sal first-slice completion candidate — 2026-10-01
+
+The implementation target for the first user playtest is now closed at the content/system level.
+
+Main chain:
+MQ_AV01 road echo
+→ MQ_AV02 courier Deren
+→ MQ_AV03 Av'Sal outskirts arrival
+→ MQ_AV04 2-of-3 outskirts investigation
+→ MQ_AV05 2-of-3 relay resolution
+→ MQ_AV06 Karnon + fixed support roster
+→ MQ_AV07 physical report to Sael.
+
+Post-boss closure:
+- clearing AV_FIRST_BOSS records a dedicated first-boss-clear state
+- navigation returns to Sael
+- reporting to Sael marks the first Av'Sal slice CLEARED
+- subsequent Sael interaction resumes the regional repeat-contract loop
+
+Travel completeness:
+- five physical waystation nodes in the current first-route slice
+- map markers are information-only
+- close-range waystation interaction prompt is available at remote nodes
+- departure/arrival fade now has travel/landing sound feedback
+- 길뿔 산양 can be rented from a physical waystation
+- rental mount uses a dedicated MIT external saddle rig, custom gallop/jump, server-authoritative rider movement inherited from the 26.2 horse base
+- one transient rental per player; battle entry / fast travel / logout recalls it
+
+First-boss presentation:
+- Karnon is classified as boss music, not normal-battle music
+- Barrier counter / phase transition / telegraphed breach are authoritative combat rules
+- support roster is fixed, not random
+
+Remaining gate before asking the user to playtest:
+- integrated compile/tests/build
+- dedicated-server smoke/JAR production
+- then client-side user validation of live placement, summon camera, mount feel, Karnon readability and economy pacing
+
+Validation before that integrated build:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- JAR PRODUCED: NO
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO

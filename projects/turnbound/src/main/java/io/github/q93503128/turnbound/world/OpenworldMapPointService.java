@@ -121,6 +121,7 @@ final class OpenworldMapPointService {
             case "MQ_AV01"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.ROAD_EVENT_SITE);
             case "MQ_AV02"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.ROAD_COURIER_SITE);
             case "MQ_AV03"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.OUTSKIRTS_SITE);
+            case "MQ_AV07"->AvsalExpansionRuntime.site(player,"turnbound:site/avsal/contract_broker");
             case "SQ_AV04_CART"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.WAYSIDE_CACHE_SITE);
             default->null;
         };

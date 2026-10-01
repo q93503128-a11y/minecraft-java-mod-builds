@@ -68,6 +68,7 @@ public final class DrehmalFirstRouteRuntime {
         DrehmalFirstRouteCatalog.Site location = combinedLocationSite(player);
         DrehmalContextualOnboarding.Guidance guidance = guidance(player, location);
         DrabyelInteractionPromptRules.Prompt interaction = DrabyelHubServiceRuntime.prompt(player);
+        if (!interaction.active()) interaction = DrehmalWaystationRuntime.prompt(player);
         FieldUiSnapshot.Navigation navigation = navigation(player);
         return new FieldUiSnapshot(
                 true,
@@ -100,7 +101,9 @@ public final class DrehmalFirstRouteRuntime {
     }
 
     static String interactionId(ServerPlayer player) {
-        return DrabyelHubServiceRuntime.prompt(player).id();
+        DrabyelInteractionPromptRules.Prompt prompt = DrabyelHubServiceRuntime.prompt(player);
+        if (!prompt.active()) prompt = DrehmalWaystationRuntime.prompt(player);
+        return prompt.id();
     }
 
     static String navigationId(ServerPlayer player) {

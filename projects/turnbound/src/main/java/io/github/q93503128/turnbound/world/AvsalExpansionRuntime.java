@@ -111,9 +111,12 @@ final class AvsalExpansionRuntime {
             case BOSS -> new DrehmalContextualOnboarding.Guidance(
                     "북쪽 수로문으로 이동해 수로 집행기 카르논을 격파하십시오.",
                     "카르논은 Barrier가 남아 있을 때 직접 공격을 반격합니다. 장벽을 끊고 예고된 수문 충돌에 대비하십시오.");
+            case REPORT -> new DrehmalContextualOnboarding.Guidance(
+                    "아브살 외곽의 의뢰 중개인 사엘에게 수로문 상황을 보고하십시오.",
+                    "첫 아브살 원정의 정리 단계입니다. 보고 후 지역 의뢰와 역참을 이용해 자유롭게 정비할 수 있습니다.");
             case CLEARED -> new DrehmalContextualOnboarding.Guidance(
-                    "북쪽 수로문이 열렸습니다. 아브살 안쪽을 더 조사할 수 있습니다.",
-                    "외곽 의뢰 중개소와 발견한 이동 지점을 이용해 정비할 수 있습니다.");
+                    "북쪽 수로문까지의 첫 아브살 원정을 마쳤습니다.",
+                    "외곽 의뢰 중개소와 역참을 이용해 장비를 정비하거나 지역 의뢰를 반복할 수 있습니다.");
             case ROAD_EVENT -> new DrehmalContextualOnboarding.Guidance(
                     "뉴 드라비엘 서쪽 가도를 따라 아브살 외곽으로 향하십시오.",
                     "길에서 이상한 흔적을 발견해도 모든 것을 조사할 필요는 없습니다.");
@@ -158,6 +161,13 @@ final class AvsalExpansionRuntime {
                 if (boss != null && boss.runtimePosition() != null) {
                     var pos = boss.runtimePosition();
                     return new FieldUiSnapshot.Navigation(boss.locator(), boss.playerLabel(), pos.x() + 0.5D, pos.z() + 0.5D);
+                }
+            }
+            if (!flags.contains(AvsalExpansionProgress.FIRST_BOSS_REPORTED)) {
+                DrehmalFirstRouteCatalog.Site broker = site(player, "turnbound:site/avsal/contract_broker");
+                if (broker != null && broker.runtimePosition() != null) {
+                    var pos = broker.runtimePosition();
+                    return new FieldUiSnapshot.Navigation(broker.locator(), "의뢰 중개인 사엘", pos.x() + 0.5D, pos.z() + 0.5D);
                 }
             }
             return FieldUiSnapshot.Navigation.none();
@@ -210,6 +220,11 @@ final class AvsalExpansionRuntime {
         }
 
         Set<String> refreshed = ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        Set<String> latestClears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+        if (latestClears.contains("AV_FIRST_BOSS") && !refreshed.contains(AvsalExpansionProgress.FIRST_BOSS_CLEARED)) {
+            AvsalExpansionProgress.mark(player, AvsalExpansionProgress.FIRST_BOSS_CLEARED);
+            refreshed = ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
+        }
         if (refreshed.contains(AvsalExpansionProgress.OUTSKIRTS_REACHED)
                 && !refreshed.contains(AvsalExpansionProgress.REGION_DISCOVERED)) {
             AvsalExpansionProgress.mark(player, AvsalExpansionProgress.REGION_DISCOVERED);

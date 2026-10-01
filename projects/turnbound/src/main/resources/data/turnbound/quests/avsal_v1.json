@@ -130,6 +130,19 @@
       "rewardCrystal": 700,
       "rewardGold": 6500,
       "rewardXp": 2600
+    },
+    {
+      "id": "MQ_AV07",
+      "kind": "MAIN",
+      "title": "열린 수로문의 보고",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살 외곽의 의뢰 중개인 사엘에게 북쪽 수로문 상황을 보고하십시오.",
+      "activationFlag": "AVSAL_FIRST_BOSS_CLEARED",
+      "completionFlag": "AVSAL_FIRST_BOSS_REPORTED",
+      "encounterId": "",
+      "rewardCrystal": 500,
+      "rewardGold": 4500,
+      "rewardXp": 1400
     }
   ]
 }

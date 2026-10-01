@@ -177,3 +177,18 @@ Adoption rule:
 - current Capital Valley production uses already integrated licensed creature bases first
 - do not import a new pack merely to increase file count
 - when a new silhouette is needed, choose the external model/animation first, record license/source, then bind gameplay identity around it
+
+
+### Roadhorn Mount production base
+- Type: direct_asset / editable_base
+- Model + texture + idle/walk base: Tolkien Tweaks - Mobs Edition goat
+- Immutable upstream commit: `2e3b65a4cbe6cdd5ececdfdbf9afb658ccb805d7`
+- License: MIT
+- Intended use: physical-waystation rental mount for Capital Valley / Av'Sal traversal
+- Design rule: this is a dedicated mount entity, not the hostile Cavehorn Elite reused as a vehicle
+- Original chest and Saddle/Saddle2..Saddle7 geometry is retained
+- Upstream idle/walk is retained; TURNBOUND adds dedicated gallop and jump motion
+- Texture reuses the already imported unchanged upstream goat texture
+- Runtime speed/jump deliberately exceed ordinary vanilla horse travel performance
+- Status: adopted production base
+- Tracking: `THIRD_PARTY/roadhorn_mount/`

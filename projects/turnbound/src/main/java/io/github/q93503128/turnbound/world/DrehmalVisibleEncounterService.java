@@ -503,6 +503,7 @@ final class DrehmalVisibleEncounterService {
                 if(!DrehmalAdaptiveRoutePlacement.sourceContentClear(
                         level,arenaPosition.x(),arenaPosition.y(),arenaPosition.z(),5.5D))continue;
                 Vec3 center = vec(arenaPosition);
+                for (ServerPlayer participant : participants) DrehmalMountService.release(participant);
                 boolean started = participants.size() > 1
                         ? BattleSessionManager.startSharedEncounterAt(
                                 participants, player.getUUID(), slot.combatEncounterId(), false, false,
