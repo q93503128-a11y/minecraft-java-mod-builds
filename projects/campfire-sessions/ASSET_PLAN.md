@@ -1509,11 +1509,28 @@ Source inspection performed against Minecraft/NeoForge 26.2 and current open-sou
 - 26.2 render architecture researched: **YES**
 - Vulkan-safe renderer path selected: **YES**
 - real Smithsonian source meshes acquired: **YES**
-- static GPU renderer implemented: **NO**
-- PBR material pipeline implemented: **NO**
-- museum models packaged into Campfire runtime: **NO**
+- verified GLB -> Campfire static runtime mesh converter implemented: **YES**
+- production source SHA-256 gate enforced during conversion: **YES**
+- Java `.cfmesh` loader implemented: **YES**
+- Blaze3D static vertex/index `GpuBuffer` upload core implemented: **YES**
+- FeatureRenderer submit/draw integration implemented: **NO**
+- PBR base-color/normal/occlusion RenderPipeline implemented: **NO**
+- museum models packaged into normal Campfire runtime: **NO**
 - client visual tested: **NO**
 - performance tested: **NO**
+
+Implementation checkpoint:
+- commit: `01241bd8b352d75b1f3121e4b4a12e770dd04c5e`.
+- Build Campfire Sessions **run 43 / 36802980656**: **SUCCESS**.
+- Probe Campfire Museum Assets **run 5 / 36802980664**: **SUCCESS**.
+- current museum staging artifact: `campfire-museum-assets`, artifact ID **11136374167**, 22 files, ~23.1 MB compressed.
+- Triceratops runtime mesh: **74,036 vertices / 300,000 indices / 100,000 triangles**, SHA-256 `89ec914596997248b7e6c7f542f5bd63d22f48d4fdd3010f49a98681a34febcf`.
+  - material staging preserves base color + normal + occlusion source textures.
+- woolly mammoth runtime mesh: **73,968 vertices / 300,000 indices / 100,000 triangles**, SHA-256 `a2dbdf97f5d29f6bc2f6d507393b0bfdfd68d4e994cfde7d9ad090e98d6f4e82`.
+  - material staging preserves normal + occlusion; Smithsonian source uses factor-only base color.
+- `MuseumStaticMeshData` rejects invalid magic/version/count/payload lengths; it never synthesizes fallback geometry.
+- `MuseumGpuMesh` uploads verified vertex and index payloads through Blaze3D `RenderSystem.getDevice()` using `GpuBuffer.USAGE_VERTEX/USAGE_INDEX`, keeping the path backend-safe for OpenGL/Vulkan.
+- this checkpoint proves conversion, binary validation, Java compilation/JAR inclusion and GPU-upload API compatibility. It does **not** prove that the models have been drawn on-screen yet.
 
 Multipart fossil completion should visually build the exhibit rather than remain an inventory checklist.
 
