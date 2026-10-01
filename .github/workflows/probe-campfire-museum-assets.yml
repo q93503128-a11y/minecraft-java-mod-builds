@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/scripts/campfire/probe_smithsonian_museum_assets.py'
+      - '.github/scripts/campfire/convert_static_museum_glb.py'
       - '.github/workflows/probe-campfire-museum-assets.yml'
 
 permissions:
@@ -36,6 +37,19 @@ jobs:
             npx --yes @gltf-transform/cli@4.5.0 cp "$source" "$output"
           done
           python3 .github/scripts/campfire/probe_smithsonian_museum_assets.py build/campfire-museum-assets --verify-decompressed | tee -a build/campfire-museum-assets.log
+      - name: Convert verified sources to Campfire static runtime meshes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/campfire-museum-runtime
+          for source in build/campfire-museum-assets/*/*_smithsonian_source_uncompressed.glb; do
+            slug="$(basename "$source" _smithsonian_source_uncompressed.glb)"
+            python3 .github/scripts/campfire/convert_static_museum_glb.py \
+              "$source" \
+              "build/campfire-museum-runtime/$slug"
+          done
+          test "$(find build/campfire-museum-runtime -name '*.cfmesh' | wc -l)" -eq 2
+          find build/campfire-museum-runtime -maxdepth 3 -type f -print | sort
       - name: Upload museum asset staging package
         uses: actions/upload-artifact@v4
         with:
@@ -43,5 +57,6 @@ jobs:
           path: |
             build/campfire-museum-assets
             build/campfire-museum-assets.log
+            build/campfire-museum-runtime
           if-no-files-found: error
           retention-days: 14
