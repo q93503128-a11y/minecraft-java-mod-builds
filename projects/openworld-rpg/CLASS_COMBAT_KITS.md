@@ -1206,6 +1206,16 @@ Weave effect:
 - enemies inside: -25% movement; bosses -10%;
 - field deals no damage.
 
+Initial runtime precision binding:
+
+- cast/release is immediate; Spell Engine supplies only the cast presentation/input bridge while project code owns displacement and invulnerability;
+- forward path is block-ray validated before the project transaction is committed;
+- accepted destination search starts at the farthest legal point and backs off in 0.25-block steps, with a current 0.50-block minimum useful displacement;
+- destination collision uses the real player bounding box and the vertical search is limited to current Y / +1 / -1 block;
+- the 2-tick invulnerability exists only after an accepted displacement and does not reuse the ordinary dodge state;
+- the empowered field refreshes a short server-owned movement-control state while a project-owned hostile remains inside; Snared, Skyfall slow and this field select the strongest movement multiplier rather than stacking multiplicatively;
+- current arrival/release presentation uses the pinned Spell Engine arcane release vocabulary and a restrained radius-matched field telegraph; final Minecraft visual/audio acceptance remains a playtest gate.
+
 ## 9.6 Active 3 — Frost Ring
 
 ```text
