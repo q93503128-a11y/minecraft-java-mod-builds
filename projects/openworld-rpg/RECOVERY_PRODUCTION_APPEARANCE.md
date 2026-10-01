@@ -436,6 +436,23 @@ Exact food model bindings come from the CC0 KayKit Restaurant Bits / compatible 
 - do not attach bonus EXP/Gold to ordinary food at baseline;
 - food should not need to be refreshed every five minutes.
 
+## 7.4 Production precision binding — 2026-10-01
+
+The meal numbers above remain the canon. The current server runtime binds the unresolved execution details as follows:
+
+- the 1.20 s meal action is exactly **24 server ticks** and occupies the existing shared player-action authority for the full action;
+- meal use is accepted only after the existing combat-state/out-of-combat boundary has been clear for **5.0 s**. This reuses the already-authoritative Mana out-of-combat boundary instead of inventing a second hidden combat timer; the exact feel of this reuse remains a joined-player playtest point;
+- one real prepared-meal item is removed from the ordinary Backpack only when the action completes; an interrupted/missing-item action grants no healing or Nourishment;
+- prepared food follows the global food/utility stack cap **50**;
+- the immediate meal heal is the canonical **15% MaxHP**, then the single Nourishment identity is replaced for **24,000 personal active-world ticks** (20 active minutes);
+- offline time does not advance that timer because it is based on `PlayerActiveWorldTimeService`, and the persistent attachment copies through defeat/respawn;
+- Herbed Louxia Roast publishes its +6% MaxHP through the normal MaxHP rebuild, while Trail Skewers / Glow Broth publish +10% recovery into the existing Stamina/Mana regeneration lanes rather than running parallel timers;
+- equipped `Potion/Food Effect Strength` scales numeric meal healing and the meal's numeric Nourishment magnitude; generic Healing Received still modifies the actual HP restored;
+- replacement/expiry republishes the combat build so MaxHP/recovery cannot remain stale after the meal changes;
+- this backend does **not** waive the external eating-animation/food-model/UI acceptance gate.
+
+The fixed-stock R01 merchant backend now also materializes Lysa Fen's three recovery items and Brin Hale's three prepared meals at the exact prices in `R01_CONTENT_BIBLE.md`, using reconnect-safe Gold/inventory transactions. That does not implement the recipe-crafting/Mastery layer below; alchemy/cooking recipe transactions and profession Insight remain separate work.
+
 ---
 
 # 8. Alchemy service
