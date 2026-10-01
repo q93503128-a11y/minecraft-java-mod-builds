@@ -667,6 +667,20 @@ projectile_reflectable: true/false
 - unguardable attacks require a distinctive telegraph/VFX/sound language established in the enemy's design;
 - projectile reflection is never granted globally just because perfect guard exists.
 
+## Guard production input binding — 2026-10-01
+
+The numeric guard/perfect-guard contract above is unchanged. The production input bridge now binds it to server-observed Minecraft blocking:
+
+- project guard can open only when the current authoritative defensive-equipment snapshot exposes a validated guard type;
+- the server observes blocking state each tick; the client never submits perfect-guard success, absorption, Stamina cost or guard-break result;
+- a newly accepted guard press opens the existing 4-tick perfect-guard window and existing 10-tick re-entry floor through `PlayerDefenseRuntimeState`;
+- if block is held during another non-cancellable project action, guard becomes active on the first tick at which the shared action/guard-break authority accepts it rather than queueing an independent long-lived client command;
+- block release and an accepted dodge close held guard; guard break already clears it inside the same defense transaction;
+- entering/leaving held guard republishes the current combat build so Guardian Stand Firm can modify actual PlayerPoiseMax instead of existing as a detached multiplier;
+- no weapon-guard rating is invented. The bridge uses only a guard type/rating already admitted by the authoritative defensive snapshot.
+
+This is build/startup verified, not joined-player timing verified. The exact feel of Minecraft's visible shield/block raise versus the project's first authoritative guard tick, low/high latency perfect-guard usability, shield animation/audio alignment and guard HUD feedback remain manual acceptance gates.
+
 ---
 
 # 13. Enemy poise / stagger

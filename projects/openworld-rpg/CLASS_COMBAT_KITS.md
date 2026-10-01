@@ -1619,6 +1619,33 @@ Mitigation caps still apply. This ultimate does not make anyone invulnerable.
 - every 5% recipient MaxHP of Guardian barrier consumed by hostile damage: +2, max +6 per barrier source/recipient;
 - hit from a currently Provoked target that the Guardian guards or receives: +2, ICD 2 s per target.
 
+### Guardian production precision binding
+
+The root numbers above remain the canon. The current runtime binds the unresolved physical/input details as follows without changing those totals:
+
+- project guard authority now observes a real server-side blocking state only when the authoritative defensive equipment snapshot exposes a guard type; it does not accept client-authored perfect-guard success;
+- holding block while another committed action is active enters project guard on the first later tick accepted by the shared action/guard-break gate; releasing block or starting an accepted dodge closes guard;
+- Stand Firm multiplies actual PlayerPoiseMax by `1.25` while project guard is held. Its ordinary non-launch knockback multiplier is `0.70`, but it is applied only when an authored hostile attack publishes such displacement; current R01 attacks do not, so no hidden knockback is fabricated;
+- Bulwark Rush uses a narrow server frontal binding with the authored 3.8-block maximum travel, collision-resolved movement and first substantial project target as the impact stop. Its current 8-tick defensive portion and 16-tick action commitment are playtest precision bindings;
+- Warding Strike uses a 3.5-block frontal arc. Until a separate skill-profile damage-school field exists, Staff/Wand resolves its 1.60 coefficient as Magic and the other current weapon families resolve it as Physical; this is an implementation binding, not a new class restriction;
+- Aegis Field consumes Resolve only on the accepted release and computes `0.18 + 0.04 × consumed Resolve` before passing the result through the shared six-second barrier authority and global barrier cap;
+- Counterwall owns one 15-tick server stance. Its first accepted `perfect_guardable` hit is the perfect guard event and grants exactly two Resolve total; it does not also add the ordinary +1 perfect-guard Resolve event;
+- Unbroken Line follows the Guardian's live position for all aura membership checks for 160 ticks, applies the initial 0.22 barrier, `0.80` ordinary admitted damage multiplier, `0.80` guard-cost multiplier and `1.75` Guardian poise multiplier, and refreshes Provoked every 40 ticks only while an authored encounter is actually active;
+- Provoked remains target weighting, not a hard AI lock: `NORMAL_ELITE` uses x4 and miniboss/boss uses x2. R01 Earthloong's project threat selector consumes the x2 weight without changing stored threat, so encounter-script target selection remains authoritative;
+- Guardian barrier Ultimate Charge is derived from actual hostile barrier consumption, not barrier creation. The barrier layer snapshots Guardian ownership and emits at most three 5%-MaxHP charge steps per source/recipient;
+- Guardian spells use donor-neutral Spell Engine resources with project-owned Mana/Stamina/cooldown/Ultimate transactions. Current cast/action timings, cone half-angles, reused admitted spell-effect textures and SFX are production starting bindings that still require joined-player feel/visual review.
+
+Manual gates still open:
+
+- shield/block press-to-perfect-window feel under the pinned Minecraft/Fabric runtime;
+- Bulwark travel/contact feel and frontal protection readability;
+- Warding Strike arc readability and Provoked feedback;
+- Aegis barrier readability and Resolve-consumption feedback;
+- Counterwall timing, counter-wave weight and failure recovery feel;
+- Unbroken Line aura boundary/readability and Ultimate-charge pacing;
+- final Guardian skill icons/HUD/audio;
+- client world-join playtest and multiplayer latency/authority validation.
+
 ---
 
 # 12. Guardian first specialization branches
