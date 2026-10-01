@@ -193,3 +193,28 @@ The next museum integration unit now connects the existing GPU renderer to an ac
 - the Smithsonian probe workflow now emits `campfire-museum-review-pack.zip` as an asset-review-only resource pack.
 
 This checkpoint does **not** count as client visual acceptance. Final transform, 20k-vs-100k LOD choice, and normal/occlusion material work remain gated on real client inspection.
+
+
+### Museum asset-review verification — Build #46 / Probe #6
+
+- code commit chain: `d48fd3f75d82d5b4fbf7a398e82568f125b93764` → `9dd27817a128b26a1aa8dbf039f03367b417532c`
+- Build Campfire Sessions #46: **SUCCESS**, run `36806177255`
+- packaged Campfire artifact: `campfire-sessions-alpha6`, artifact `11137424132`
+- build workflow verified that `MuseumAssetReviewScene.class` is compiled and that normal Campfire JAR resources contain no `assets/campfiresessions/museum/` review assets.
+- Probe Campfire Museum Assets #6: **SUCCESS**, run `36805989072`
+- museum staging artifact: `campfire-museum-assets`, artifact `11137134340`
+- generated review pack: `campfire-museum-review-pack.zip`
+- review pack SHA-256 from the successful artifact: `95ddb0efcfcea5cf7006efddb207513b8018b68b85fda33c2ecfe51b2942c0c7`
+- review pack contents were inspected after CI and contain the real Triceratops/Mammuthus CFMS meshes, manifests and Smithsonian-derived textures plus the 26.2 resource-pack metadata.
+- first build attempt #45 failed only because the removed 26.2 client method `LocalPlayer.displayClientMessage` was used in the review helper; it was corrected to the current system-message API before #46.
+
+Validation labels after this checkpoint:
+- CODE REVIEWED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- MUSEUM REVIEW RESOURCE PACK PRODUCED: YES
+- CLIENT VISUAL TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+The next gate is real client visual/performance review of the Triceratops, not more renderer architecture work.
