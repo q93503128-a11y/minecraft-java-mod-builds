@@ -1917,3 +1917,46 @@ Validation:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+## Command-driven playtest reset — Build #962
+
+Verified code commit:
+`835742cf00947b599bb8ba6e9f615e5ad8662aba`
+
+GitHub Actions:
+- workflow: Build TURNBOUND
+- run: 36815324409 / #962
+- Gradle tests/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+
+Behavior change:
+- normal login/reconnect no longer resets campaign progress;
+- explicit OP command `/turnbound reset` performs the former fresh-playtest reset and returns the player to the New Drabyel opening state;
+- this keeps ordinary persistence testable while retaining a reusable fresh-run command.
+
+Build outputs:
+- JAR `turnbound-0.1.0-alpha.17.jar`
+  - SHA-256 `06db5a045d4ba16efd52a55206bed089c030ca3f15525261bb5fa459dc41fbf5`
+- one-click `TURNBOUND-oneclick-0.1.0-alpha.17.mrpack`
+  - SHA-256 `fbff676fcd5c95b761b509f852514eb05563814bc5e4c17343f0c90e8508eaca`
+- uploaded artifact ZIP
+  - SHA-256 `0e56d655c3647bae156e05b38bff3c8618292f5315157c6e9a89c1003759abfb`
+
+Client runtime observation still open:
+- a real join reported repeated model-load errors from legacy Drehmal parent id `minecraft:item/spawn_egg_2D`;
+- the repository already contains a tested 26.2 resource-pack migrator for this exact legacy parent, so the next reproduction must distinguish the installed world `resources.zip` from any other active/cached resource-pack source before changing unrelated assets.
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: PARTIAL — join reached; resource-pack model errors observed
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO

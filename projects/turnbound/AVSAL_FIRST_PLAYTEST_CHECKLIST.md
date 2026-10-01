@@ -1,13 +1,14 @@
 # TURNBOUND — New Drabyel → Av'Sal First Playtest Checklist
 
-> 기준 코드: `25b2db6e1d2acd7b6640d778703bafe0ff1b4ca4`
-> Build TURNBOUND: #961 / run 36811002004
+> 기준 코드: `835742cf00947b599bb8ba6e9f615e5ad8662aba`
+> Build TURNBOUND: #962 / run 36815324409
 > 목적: 첫 지역의 실제 게임성, 동선, 장비 성장, 역참/탈것, Av'Sal 첫 보스까지를 한 번에 검증한다.
 
 ## 1. 시작 원칙
 
 첫 플레이는 가능한 한 정상 진행으로 한다.
 텔레포트나 전투 강제 시작을 먼저 사용하면 이동 밀도, 보상 속도, 퀘스트 연결 문제가 가려진다.
+일반 재접속은 진행 상태를 유지해야 한다. 완전 새 진행이 필요할 때만 OP 권한으로 `/turnbound reset`을 사용한다.
 
 확인할 핵심 감각:
 - 길이 비어 있거나 지루하지 않은가
