@@ -56,6 +56,12 @@ jobs:
           set -euo pipefail
           ./gradlew --no-daemon copyExternalStructureProbe
           python3 tools/inspect_structure_jars.py build/externalStructureProbe | tee build/external-structure-footprints.txt
+      - name: Probe MineColonies village prefab candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/probe_minecolonies_village_candidates.py build/minecoloniesCandidateProbe
+          sed -n '1,260p' build/minecoloniesCandidateProbe/minecolonies-candidates.md
       - name: Verify alpha6 packaged assets and contracts
         shell: bash
         run: |
@@ -245,6 +251,8 @@ jobs:
           path: |
             projects/campfire-sessions/build.log
             projects/campfire-sessions/build/external-structure-footprints.txt
+            projects/campfire-sessions/build/minecoloniesCandidateProbe/minecolonies-candidates.json
+            projects/campfire-sessions/build/minecoloniesCandidateProbe/minecolonies-candidates.md
             projects/campfire-sessions/build/plumberry-asset-contract.txt
             projects/campfire-sessions/build/external-asset-review.json
             projects/campfire-sessions/build/external-asset-review.md
