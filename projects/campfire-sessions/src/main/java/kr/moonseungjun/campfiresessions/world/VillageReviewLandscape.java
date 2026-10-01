@@ -303,7 +303,7 @@ public final class VillageReviewLandscape {
             cells.put(key, y);
             return;
         }
-        if (Math.abs(previous - y) > 1) {
+        if (Math.abs(previous - y) > 2) {
             throw new IllegalStateException(
                     "Campfire village path height conflict at " + x + "," + z
                             + " while adding " + pathName + ": " + previous + " vs " + y
