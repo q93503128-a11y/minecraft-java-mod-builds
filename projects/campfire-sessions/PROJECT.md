@@ -293,3 +293,52 @@ Implemented:
 - the canonical-world workflow now requires actual server-side success for the 12 external structures, landscape pass, harbor dock and v3 completion marker.
 
 Verification for this checkpoint is pending the next Campfire build/world-probe runs. Do not label the slice CLIENT VISUAL TESTED until an actual Minecraft client is inspected.
+
+
+## Canonical village review slice verification — Build #57 / Probe #25
+
+The combined map + real-building review slice is now server-runtime verified on the pinned Geming400 canonical world.
+
+Final canonical review placement corrections were driven by actual runtime block-column scans rather than coarse terrain estimates:
+- general store: moved west onto the verified flat tile after the old east edge hit Y83 terrain.
+- café: `(-287, 73, -54)`; its full 7×8 footprint is runtime surface Y72 throughout, worst grading delta 0.
+- museum: `(-292, 75, -2)`; its full 21×16 footprint is runtime surface Y71..78, worst grading delta 4.
+- grading safety remains capped at 8 blocks. No limit was relaxed to force these structures into the terrain.
+- static footprint review for the current land-building set and plaza reports zero overlaps.
+
+Verification:
+- code/design checkpoint: `c7f7ab6610e0f82d3c2ae58f1dce0b4ebbb3585b`
+- Build Campfire Sessions #57 / run `36812656837`: **SUCCESS**
+- packaged artifact: `campfire-sessions-alpha6`, artifact `11140500942`
+- artifact digest: `sha256:ca64f13d8ad00e80a79a478987f9fd568f58c16c7b0804c068ed9b4ba443dac3`
+- Probe Campfire Canonical World Runtime #25 / run `36812656475`: **SUCCESS**
+- probe artifact: `campfire-world-probe`, artifact `11140187283`
+- canonical world SHA-256: VERIFIED
+- Minecraft 26.2 canonical-world server load: SUCCESS
+- full external/runtime dependency stack server load: SUCCESS
+- canonical village review bootstrap: SUCCESS
+- real external structures placed: 12
+- connected village path/plaza pass: APPLIED
+- MIT Currents of Trade harbor dock: APPLIED
+- v3 completion marker: VERIFIED by the probe workflow.
+
+Review launch path:
+- `prepareVillageReviewWorld` automatically provisions the pinned canonical world only when the review save is absent.
+- an existing marked review save is preserved rather than overwritten.
+- `runVillageReviewClient` Quick Plays directly into `campfire-village-review`.
+- ordinary Campfire saves do not run the review bootstrap.
+
+Validation labels after this checkpoint:
+- CODE REVIEWED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CANONICAL WORLD SERVER TESTED: YES
+- CANONICAL VILLAGE REVIEW SLICE SERVER TESTED: YES
+- REAL EXTERNAL BUILDINGS PLACED ON CANONICAL WORLD: YES
+- HARBOR DOCK SERVER PLACEMENT VERIFIED: YES
+- VILLAGE PATH / PLAZA SERVER PLACEMENT VERIFIED: YES
+- CLIENT VISUAL TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+The next meaningful gate is the first combined **client visual/play review** of the canonical island slice. That review should judge building orientation/entrances, path readability, terrain cuts/fills, dock shoreline fit, village composition and sightlines as one scene rather than as isolated assets.
