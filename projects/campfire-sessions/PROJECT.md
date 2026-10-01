@@ -248,3 +248,30 @@ Still required before asking the user to test:
 - canonical review-world provisioning/launch path.
 - first coherent path/plaza connection and harbor/pier treatment.
 - then one combined map + real-building client review, instead of separate micro-tests.
+
+
+### Canonical village placement build verification — Build #49
+
+- final code commit: `1b9c80cb920aa2700603f27a83ad9f0336e3c0b2`
+- Build Campfire Sessions #49: **SUCCESS**, run `36807829486`
+- clean build: SUCCESS
+- resident asset contract: SUCCESS
+- external client-review inventory: SUCCESS
+- external building structure bounds probe: SUCCESS
+- packaged asset/contract verification: SUCCESS
+- packaged artifact: `campfire-sessions-alpha6`, artifact `11137444902`
+- artifact digest: `sha256:5e266a1e0c65e436a1af658b0418b9e51b70f222d21008475239f57e554ca736`
+
+A static footprint collision pass was also performed over all 12 first-pass structures. The initial café coordinate overlapped the museum; the café was moved to the verified west flat patch before this successful build. Current first-pass footprints have **0 overlaps**.
+
+Validation status:
+- CODE REVIEWED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CANONICAL TERRAIN PROBED: YES
+- REAL BUILDING PLACEMENT PATH IMPLEMENTED: YES
+- CLIENT VISUAL TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+Per the current playtest gate, do not ask the user to test yet. Continue with the coherent path/plaza connection, harbor/pier treatment, and canonical review-world launch/provisioning first; then request one combined map + actual-building playtest.
