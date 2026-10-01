@@ -152,6 +152,7 @@ public final class VillageReviewBootstrap {
 
     private static void preflight(ServerLevel level, List<PreparedBuilding> buildings) {
         List<String> terrainFailures = new ArrayList<>();
+        List<PreparedBuilding> failedBuildings = new ArrayList<>();
         for (PreparedBuilding building : buildings) {
             BuildingSpec spec = building.spec();
             Vec3i actual = building.template().getSize();
@@ -166,13 +167,21 @@ public final class VillageReviewBootstrap {
                 String failure = landPreflightFailure(level, building);
                 if (failure != null) {
                     terrainFailures.add(failure);
+                    failedBuildings.add(building);
                 }
             }
         }
 
         if (!terrainFailures.isEmpty()) {
+            List<String> suggestions = failedBuildings.stream()
+                    .map(building -> building.spec().role() + "="
+                            + relocationSuggestions(level, building, buildings, failedBuildings))
+                    .toList();
             throw new IllegalStateException(
-                    "Campfire village review terrain preflight failed: " + String.join("; ", terrainFailures)
+                    "Campfire village review terrain preflight failed: "
+                            + String.join("; ", terrainFailures)
+                            + " | relocation candidates: "
+                            + String.join("; ", suggestions)
             );
         }
 
@@ -213,6 +222,109 @@ public final class VillageReviewBootstrap {
                     + " delta=" + worstDelta;
         }
         return null;
+    }
+
+    private static String relocationSuggestions(
+            ServerLevel level,
+            PreparedBuilding building,
+            List<PreparedBuilding> buildings,
+            List<PreparedBuilding> failedBuildings
+    ) {
+        BuildingSpec spec = building.spec();
+        int desiredGroundY = spec.origin().getY() - 1;
+        List<RelocationCandidate> candidates = new ArrayList<>();
+        int radius = "museum".equals(spec.role()) ? 48 : 36;
+
+        for (int originX = spec.origin().getX() - radius; originX <= spec.origin().getX() + radius; originX += 2) {
+            for (int originZ = spec.origin().getZ() - radius; originZ <= spec.origin().getZ() + radius; originZ += 2) {
+                BlockPos probeOrigin = new BlockPos(originX, spec.origin().getY(), originZ);
+                BoundingBox box = building.template().getBoundingBox(building.settings(), probeOrigin);
+                if (intersectsPlaza(box) || intersectsFixedBuilding(box, building, buildings, failedBuildings)) {
+                    continue;
+                }
+
+                int minSurface = Integer.MAX_VALUE;
+                int maxSurface = Integer.MIN_VALUE;
+                for (int x = box.minX(); x <= box.maxX(); x++) {
+                    for (int z = box.minZ(); z <= box.maxZ(); z++) {
+                        level.getChunkAt(new BlockPos(x, desiredGroundY, z));
+                        int surface = terrainSurfaceY(level, x, z);
+                        minSurface = Math.min(minSurface, surface);
+                        maxSurface = Math.max(maxSurface, surface);
+                    }
+                }
+
+                if (maxSurface - minSurface > MAX_GRADE_DELTA * 2) {
+                    continue;
+                }
+                int targetMin = maxSurface - MAX_GRADE_DELTA;
+                int targetMax = minSurface + MAX_GRADE_DELTA;
+                int targetGroundY = Math.max(targetMin, Math.min(desiredGroundY, targetMax));
+                if (targetGroundY < desiredGroundY - 6 || targetGroundY > desiredGroundY + 4) {
+                    continue;
+                }
+                int worstDelta = Math.max(maxSurface - targetGroundY, targetGroundY - minSurface);
+                int movement = Math.abs(originX - spec.origin().getX()) + Math.abs(originZ - spec.origin().getZ());
+                int score = worstDelta * 10000
+                        + Math.abs(targetGroundY - desiredGroundY) * 250
+                        + movement;
+                candidates.add(new RelocationCandidate(
+                        new BlockPos(originX, targetGroundY + 1, originZ),
+                        worstDelta,
+                        minSurface,
+                        maxSurface,
+                        movement,
+                        score
+                ));
+            }
+        }
+
+        candidates.sort((a, b) -> Integer.compare(a.score(), b.score()));
+        if (candidates.isEmpty()) {
+            return "none within scan radius";
+        }
+        return candidates.stream().limit(6).map(RelocationCandidate::summary).toList().toString();
+    }
+
+    private static boolean intersectsFixedBuilding(
+            BoundingBox candidate,
+            PreparedBuilding subject,
+            List<PreparedBuilding> buildings,
+            List<PreparedBuilding> failedBuildings
+    ) {
+        for (PreparedBuilding other : buildings) {
+            if (other == subject || failedBuildings.contains(other)) {
+                continue;
+            }
+            if (intersectsXZ(candidate, other.bounds())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean intersectsPlaza(BoundingBox box) {
+        return box.maxX() >= -311 && box.minX() <= -299
+                && box.maxZ() >= -37 && box.minZ() <= -27;
+    }
+
+    private static boolean intersectsXZ(BoundingBox a, BoundingBox b) {
+        return a.maxX() >= b.minX() && a.minX() <= b.maxX()
+                && a.maxZ() >= b.minZ() && a.minZ() <= b.maxZ();
+    }
+
+    private record RelocationCandidate(
+            BlockPos origin,
+            int worstDelta,
+            int minSurface,
+            int maxSurface,
+            int movement,
+            int score
+    ) {
+        private String summary() {
+            return origin + " range=" + minSurface + ".." + maxSurface
+                    + " worst=" + worstDelta + " move=" + movement;
+        }
     }
     private static void preflightDock(ServerLevel level, PreparedBuilding building) {
         BuildingSpec spec = building.spec();
