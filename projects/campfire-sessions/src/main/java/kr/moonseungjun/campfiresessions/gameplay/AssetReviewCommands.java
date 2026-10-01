@@ -2,6 +2,7 @@ package kr.moonseungjun.campfiresessions.gameplay;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -29,6 +30,25 @@ import java.util.Set;
 public final class AssetReviewCommands {
     public static final String ENABLE_PROPERTY = "campfiresessions.assetReview";
     private static final int MAX_KIT_ITEMS = 27;
+
+    private static final Set<String> CONTENT_NAMESPACES = Set.of(
+            "skniro_furniture",
+            "peterwolfs_boats_and_ships",
+            "croptopia",
+            "cookingforblockheads",
+            "shroomcraft",
+            "sophisticatedbackpacks",
+            "travelertoolbelt"
+    );
+
+    private static final Map<String, Set<String>> CATEGORY_NAMESPACES = Map.of(
+            "furniture", Set.of("skniro_furniture"),
+            "kitchen", Set.of("cookingforblockheads", "skniro_furniture"),
+            "crops", Set.of("croptopia"),
+            "mushrooms", Set.of("shroomcraft"),
+            "storage", Set.of("sophisticatedbackpacks", "travelertoolbelt"),
+            "boats", Set.of("peterwolfs_boats_and_ships")
+    );
 
     private static final Map<String, List<String>> CATEGORY_HINTS = Map.of(
             "furniture", List.of("chair", "table", "sofa", "couch", "bed", "cabinet", "shelf", "lamp", "desk", "bench", "stool"),
@@ -64,7 +84,7 @@ public final class AssetReviewCommands {
 
     private static int status(CommandContext<CommandSourceStack> context) {
         long externalItems = BuiltInRegistries.ITEM.entrySet().stream()
-                .filter(entry -> isExternal(entry.getKey().identifier()))
+                .filter(entry -> CONTENT_NAMESPACES.contains(entry.getKey().identifier().getNamespace()))
                 .count();
 
         context.getSource().sendSuccess(
@@ -78,17 +98,18 @@ public final class AssetReviewCommands {
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int giveCategory(CommandContext<CommandSourceStack> context, String category) throws Exception {
+    private static int giveCategory(CommandContext<CommandSourceStack> context, String category) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         List<String> hints = CATEGORY_HINTS.get(category);
-        if (hints == null) {
+        Set<String> namespaces = CATEGORY_NAMESPACES.get(category);
+        if (hints == null || namespaces == null) {
             return 0;
         }
 
         List<Map.Entry<net.minecraft.resources.ResourceKey<Item>, Item>> candidates = new ArrayList<>();
         for (Map.Entry<net.minecraft.resources.ResourceKey<Item>, Item> entry : BuiltInRegistries.ITEM.entrySet()) {
             Identifier id = entry.getKey().identifier();
-            if (!isExternal(id) || !matches(id, hints)) {
+            if (!namespaces.contains(id.getNamespace()) || !matches(id, hints)) {
                 continue;
             }
             candidates.add(entry);
@@ -129,10 +150,6 @@ public final class AssetReviewCommands {
         );
 
         return Math.max(1, added);
-    }
-
-    private static boolean isExternal(Identifier id) {
-        return !Set.of("minecraft", "neoforge", "campfiresessions").contains(id.getNamespace());
     }
 
     private static boolean matches(Identifier id, List<String> hints) {

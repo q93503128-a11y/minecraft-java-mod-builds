@@ -85,13 +85,13 @@ def collect_ids(names: list[str], namespace: str, kind: str) -> set[str]:
     found = set()
     if kind == 'item':
         patterns = [
-            re.compile(rf"^assets/{re.escape(namespace)}/items/(.+)\\.json$"),
-            re.compile(rf"^assets/{re.escape(namespace)}/models/item/(.+)\\.json$"),
+            re.compile(rf"^assets/{re.escape(namespace)}/items/(.+)\.json$"),
+            re.compile(rf"^assets/{re.escape(namespace)}/models/item/(.+)\.json$"),
         ]
     else:
         patterns = [
-            re.compile(rf"^assets/{re.escape(namespace)}/blockstates/(.+)\\.json$"),
-            re.compile(rf"^assets/{re.escape(namespace)}/models/block/(.+)\\.json$"),
+            re.compile(rf"^assets/{re.escape(namespace)}/blockstates/(.+)\.json$"),
+            re.compile(rf"^assets/{re.escape(namespace)}/models/block/(.+)\.json$"),
         ]
     for name in names:
         for pattern in patterns:
