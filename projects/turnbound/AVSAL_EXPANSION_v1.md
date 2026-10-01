@@ -412,3 +412,43 @@ These are optional alongside the main route and are positioned to avoid mandator
 
 The current boss visual uses the already-authored rusted-centurion custom 3D rig as an editable production base, scaled/presented as a boss.
 This is not documented as a final unique boss model until client visual review justifies that claim.
+
+
+## Production main-chain renumbering — 2026-10-01
+
+The first-boss route is intentionally not compressed into four main quests.
+
+Current production sequence to the first boss:
+1. MQ_AV01 — 서쪽 길의 이상 신호: inspect the first road echo.
+2. MQ_AV02 — 가도를 오가는 사람: meet courier Deren and obtain the road situation.
+3. MQ_AV03 — 폐허의 문턱: continue through the western road and reach Av'Sal outskirts.
+4. MQ_AV04 — 폐허를 쓰는 사람들: investigate any 2 of 3 outskirts clues.
+5. MQ_AV05 — 끊어진 선: resolve any 2 of 3 inner relay paths.
+6. MQ_AV06 — 북쪽 수로문의 집행기: defeat Karnon and his authored support roster.
+
+The earlier six-beat chapter outline remains a long-range design reference, but its old MQ numbering is superseded by this production sequence.
+Later central-island / chapter-outcome beats continue after MQ_AV06 and will receive later IDs rather than overwriting these route milestones.
+
+Boss encounter roster rule:
+- every boss encounter has an authored fixed enemy list;
+- support units, when present, are part of that fixed list and are not rolled randomly;
+- a boss may also be authored as a solo encounter;
+- phase-spawned support, if introduced later, must likewise use an explicit authored roster/count.
+
+Karnon currently starts with:
+- AV_B01 — Karnon
+- E009 — fixed shield/sentry support
+- E011 — fixed support unit
+
+## Ten-pull presentation skip — 2026-10-01
+
+For ten-pulls, the presentation screen exposes 결과만 보기.
+Using it:
+- stops the private 3D summon actor/VFX presentation;
+- restores the normal camera;
+- keeps the summon result screen open;
+- reveals all ten result cards immediately;
+- changes the control to 닫기.
+
+This is distinct from closing the summon result entirely.
+Single-pull skip behavior remains a normal presentation close.

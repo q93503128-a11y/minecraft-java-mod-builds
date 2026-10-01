@@ -51,23 +51,23 @@ final class OpenworldMapPointService {
         }
         for (var quest : AvsalQuestCatalog.all()) {
             if (!AvsalQuestCatalog.visible(quest, flags, production) || AvsalQuestCatalog.completed(quest, flags, clears)) continue;
-            if ("MQ_AV02".equals(quest.id())) {
+            if ("MQ_AV04".equals(quest.id())) {
                 if (!flags.contains(AvsalExpansionProgress.CLUE_RECORDS)) {
                     var records=AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.RECORDS_CLUE_SITE);
                     if(records!=null&&records.runtimePosition()!=null){
                         var pos=records.runtimePosition();
-                        out.add(new FieldUiSnapshot.MapPoint("quest:MQ_AV02:records","낡은 기록","QUEST",pos.x()+0.5D,pos.z()+0.5D,true));
+                        out.add(new FieldUiSnapshot.MapPoint("quest:MQ_AV04:records","낡은 기록","QUEST",pos.x()+0.5D,pos.z()+0.5D,true));
                     }
                 }
                 continue;
             }
-            if ("MQ_AV03".equals(quest.id())) {
-                addAvsalQuestPoint(out, player, "quest:MQ_AV03:west", "서부 배전실",
+            if ("MQ_AV05".equals(quest.id())) {
+                addAvsalQuestPoint(out, player, "quest:MQ_AV05:west", "서부 배전실",
                         AvsalExpansionRuntime.RELAY_WEST_SITE, !flags.contains(AvsalExpansionProgress.RELAY_WEST));
-                addAvsalQuestPoint(out, player, "quest:MQ_AV03:guard", "수로 중계기 파수조",
+                addAvsalQuestPoint(out, player, "quest:MQ_AV05:guard", "수로 중계기 파수조",
                         AvsalExpansionRuntime.RELAY_GUARD_SITE,
                         !flags.contains(AvsalExpansionProgress.RELAY_GUARD) && !clears.contains("AV_RELAY_GUARD"));
-                addAvsalQuestPoint(out, player, "quest:MQ_AV03:east", "동부 중계기",
+                addAvsalQuestPoint(out, player, "quest:MQ_AV05:east", "동부 중계기",
                         AvsalExpansionRuntime.RELAY_EAST_SITE, !flags.contains(AvsalExpansionProgress.RELAY_EAST));
                 continue;
             }
@@ -118,7 +118,9 @@ final class OpenworldMapPointService {
     private static DrehmalFirstRouteCatalog.Site avsalQuestTarget(ServerPlayer player,AvsalQuestCatalog.Quest quest){
         if(!quest.encounterId().isBlank())for(var encounter:AvsalExpansionRuntime.productionEncounters(player))if(quest.encounterId().equals(encounter.combatEncounterId()))return AvsalExpansionRuntime.site(player,encounter.siteLocator());
         return switch(quest.id()){
-            case "MQ_AV01","MQ_AV02"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.OUTSKIRTS_SITE);
+            case "MQ_AV01"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.ROAD_EVENT_SITE);
+            case "MQ_AV02"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.ROAD_COURIER_SITE);
+            case "MQ_AV03"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.OUTSKIRTS_SITE);
             case "SQ_AV04_CART"->AvsalExpansionRuntime.site(player,AvsalExpansionRuntime.WAYSIDE_CACHE_SITE);
             default->null;
         };

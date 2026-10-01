@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 class AvsalExpansionCatalogTest {
     @Test
     void firstProductionSliceIsSourceBackedAndValid() {
@@ -51,5 +53,7 @@ class AvsalExpansionCatalogTest {
         assertEquals("BOSS", firstBoss.tier());
         assertTrue(CampaignEncounterCatalog.contains("AV_FIRST_BOSS"));
         assertTrue(firstBoss.patrolSeeds().size() >= 2);
+        assertEquals(List.of("AV_B01","E009","E011"), CampaignEncounterCatalog.spec("AV_FIRST_BOSS").enemies(),
+                "boss support units are an authored fixed roster, never random adds");
     }
 }

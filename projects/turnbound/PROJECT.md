@@ -1761,3 +1761,38 @@ Validation state for this checkpoint remains:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+## Boss roster / six-beat Av'Sal road / ten-pull result skip — 2026-10-01
+
+Locked direction:
+- boss support mobs are authored per boss as a fixed encounter roster; no random add composition
+- solo bosses remain valid
+- Av'Sal first-boss route uses six main-quest beats instead of compressing the road/outskirts/relay into four
+- ten-pull summon presentation supports a result-only skip without discarding the results screen
+
+Current first-boss route:
+MQ_AV01 road echo
+→ MQ_AV02 courier Deren
+→ MQ_AV03 Av'Sal outskirts arrival
+→ MQ_AV04 2-of-3 outskirts investigation
+→ MQ_AV05 2-of-3 relay resolution
+→ MQ_AV06 Karnon boss.
+
+AV_FIRST_BOSS fixed roster:
+- AV_B01 Karnon
+- E009 fixed sentry
+- E011 fixed support unit
+
+10-pull:
+- 결과만 보기 immediately clears the private summon actor/camera presentation
+- all ten cards become visible
+- the same control becomes 닫기
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO

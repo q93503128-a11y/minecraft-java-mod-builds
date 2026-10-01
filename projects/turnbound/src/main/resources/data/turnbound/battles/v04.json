@@ -562,11 +562,13 @@
     },
     {
       "id": "AV_FIRST_BOSS",
-      "label": "북쪽 수로문의 집행기",
+      "label": "북쪽 수로문의 집행기와 고정 호위대",
       "region": "AVSAL",
       "level": 15,
       "enemies": [
-        "AV_B01"
+        "AV_B01",
+        "E009",
+        "E011"
       ],
       "respawnSeconds": 0,
       "boss": true

@@ -4,28 +4,28 @@
     {
       "id": "MQ_AV01",
       "kind": "MAIN",
-      "title": "무너진 길의 끝",
+      "title": "서쪽 길의 이상 신호",
       "regionLabel": "Av'Sal",
-      "objective": "뉴 드라비엘에서 서쪽 가도를 따라 아브살 외곽까지 이동하십시오.",
+      "objective": "아렌의 원정 의뢰를 받고 서쪽 가도의 이상 신호가 남은 지점을 확인하십시오.",
       "activationFlag": "AVSAL_MQ_AV01_BRIEFED",
-      "completionFlag": "AVSAL_MQ_AV01_COMPLETE",
+      "completionFlag": "AVSAL_ROADSIDE_ECHO_SEEN",
       "encounterId": "",
-      "rewardCrystal": 800,
-      "rewardGold": 6000,
-      "rewardXp": 1800
+      "rewardCrystal": 300,
+      "rewardGold": 2200,
+      "rewardXp": 700
     },
     {
       "id": "MQ_AV02",
       "kind": "MAIN",
-      "title": "폐허를 쓰는 사람들",
+      "title": "가도를 오가는 사람",
       "regionLabel": "Av'Sal",
-      "objective": "아브살 외곽의 폐품상, 생존자, 낡은 기록 세 조사점 중 두 곳을 확인하십시오.",
-      "activationFlag": "AVSAL_MQ_AV01_COMPLETE",
-      "completionFlag": "AVSAL_MQ_AV02_COMPLETE",
+      "objective": "이상 신호 너머 가도에서 운송인 데른을 찾아 최근 길 상황을 확인하십시오.",
+      "activationFlag": "AVSAL_ROADSIDE_ECHO_SEEN",
+      "completionFlag": "AVSAL_ROAD_COURIER_OFFERED",
       "encounterId": "",
-      "rewardCrystal": 1000,
-      "rewardGold": 8000,
-      "rewardXp": 2400
+      "rewardCrystal": 350,
+      "rewardGold": 2600,
+      "rewardXp": 800
     },
     {
       "id": "SQ_AV01_ELITE",
@@ -82,6 +82,32 @@
     {
       "id": "MQ_AV03",
       "kind": "MAIN",
+      "title": "폐허의 문턱",
+      "regionLabel": "Av'Sal",
+      "objective": "데른의 경고를 들은 뒤 서쪽 가도를 따라 아브살 외곽까지 이동하십시오.",
+      "activationFlag": "AVSAL_ROAD_COURIER_OFFERED",
+      "completionFlag": "AVSAL_MQ_AV01_COMPLETE",
+      "encounterId": "",
+      "rewardCrystal": 450,
+      "rewardGold": 3200,
+      "rewardXp": 1000
+    },
+    {
+      "id": "MQ_AV04",
+      "kind": "MAIN",
+      "title": "폐허를 쓰는 사람들",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살 외곽의 폐품상, 생존자, 낡은 기록 세 조사점 중 두 곳을 확인하십시오.",
+      "activationFlag": "AVSAL_MQ_AV01_COMPLETE",
+      "completionFlag": "AVSAL_MQ_AV02_COMPLETE",
+      "encounterId": "",
+      "rewardCrystal": 1000,
+      "rewardGold": 8000,
+      "rewardXp": 2400
+    },
+    {
+      "id": "MQ_AV05",
+      "kind": "MAIN",
       "title": "끊어진 선",
       "regionLabel": "Av'Sal",
       "objective": "아브살 안쪽의 중계 흔적 3곳 중 2곳을 안정화하거나 우회하십시오.",
@@ -93,11 +119,11 @@
       "rewardXp": 2200
     },
     {
-      "id": "MQ_AV04",
+      "id": "MQ_AV06",
       "kind": "MAIN",
       "title": "북쪽 수로문의 집행기",
       "regionLabel": "Av'Sal",
-      "objective": "중계선 너머 북쪽 수로문을 지키는 집행기를 격파하십시오.",
+      "objective": "중계선 너머 북쪽 수로문에서 수로 집행기 카르논과 고정 호위대를 격파하십시오.",
       "activationFlag": "AVSAL_MQ_AV03_COMPLETE",
       "completionFlag": "",
       "encounterId": "AV_FIRST_BOSS",

@@ -117,6 +117,9 @@ final class AvsalExpansionRuntime {
             case ROAD_EVENT -> new DrehmalContextualOnboarding.Guidance(
                     "뉴 드라비엘 서쪽 가도를 따라 아브살 외곽으로 향하십시오.",
                     "길에서 이상한 흔적을 발견해도 모든 것을 조사할 필요는 없습니다.");
+            case COURIER -> new DrehmalContextualOnboarding.Guidance(
+                    "서쪽 가도의 운송인 데른을 찾아 최근 길 상황을 확인하십시오.",
+                    "데른은 가도 한가운데의 물류 지점에 있습니다. 그의 요청 중 전투 의뢰는 선택입니다.");
             case ROAD_PATROL -> new DrehmalContextualOnboarding.Guidance(
                     "끊긴 가도를 따라 폐허 방향으로 계속 이동하십시오.",
                     "앞쪽에서 움직이는 순찰이 보입니다. 먼저 보고 전투하거나 지나갈 길을 살필 수 있습니다.");
@@ -162,6 +165,8 @@ final class AvsalExpansionRuntime {
 
         String target = !flags.contains(AvsalExpansionProgress.ROADSIDE_ECHO_SEEN)
                 ? ROAD_EVENT_SITE
+                : !flags.contains("AVSAL_ROAD_COURIER_OFFERED")
+                ? ROAD_COURIER_SITE
                 : !flags.contains(AvsalExpansionProgress.ROAD_PATROL_SEEN)
                 ? ROAD_PATROL_SITE
                 : OUTSKIRTS_SITE;

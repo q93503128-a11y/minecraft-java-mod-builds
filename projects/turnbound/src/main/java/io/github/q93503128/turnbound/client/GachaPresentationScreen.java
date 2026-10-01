@@ -57,6 +57,8 @@ public final class GachaPresentationScreen extends Screen {
     private int lastAudioRevealIndex = -1;
     private GachaPresentationTimeline.Phase lastAudioPhase;
     private boolean finishing;
+    private boolean summaryOnly;
+    private BattleHudButton skipButton;
 
     public GachaPresentationScreen(Batch batch) {
         super(Component.literal("정령의 기록"));
@@ -120,13 +122,15 @@ public final class GachaPresentationScreen extends Screen {
         if (batch.hasStage()) {
             SummonCameraController.enter(batch.stageX(), batch.stageY(), batch.stageZ(), batch.cameraYaw());
         }
-        addRenderableWidget(new BattleHudButton(width - 98, 16, 80, 22,
-                Component.literal("건너뛰기"), MUTED, ignored -> finish()));
+        skipButton = addRenderableWidget(new BattleHudButton(width - 118, 16, 100, 22,
+                Component.literal(batch.pulls().size() >= 10 ? "결과만 보기" : "건너뛰기"),
+                MUTED, ignored -> skipOrFinish()));
     }
 
     @Override
     public void tick() {
         super.tick();
+        if (summaryOnly) return;
         ticks++;
         Pull focus = currentReveal();
         if (focus != null && batch.hasStage()) {
@@ -140,6 +144,17 @@ public final class GachaPresentationScreen extends Screen {
 
     private int totalDurationTicks() {
         return GachaPresentationTimeline.totalTicks(revealPulls.size(), batch.pulls().size());
+    }
+
+    private void skipOrFinish() {
+        if (batch.pulls().size() >= 10 && !summaryOnly) {
+            summaryOnly = true;
+            SummonCameraController.exit();
+            ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
+            if (skipButton != null) skipButton.setMessage(Component.literal("닫기"));
+            return;
+        }
+        finish();
     }
 
     private void finish() {
@@ -158,7 +173,7 @@ public final class GachaPresentationScreen extends Screen {
         graphics.text(font, Component.literal(batch.pulls().size() + "회 소환 · 크리스탈 -" + batch.crystalSpent()),
                 18, 34, SECONDARY, false);
 
-        Pull focus = currentReveal();
+        Pull focus = summaryOnly ? null : currentReveal();
         if (focus != null) drawWorldRevealOverlay(graphics, focus, currentPhase());
         else if (batch.pulls().size() <= 1) drawSingleSummary(graphics);
         else drawTenSummary(graphics);
@@ -308,7 +323,8 @@ public final class GachaPresentationScreen extends Screen {
         int startX = (width - totalW) / 2;
         int startY = Math.max(62, (height - (cardH * 2 + gap)) / 2 + 14);
         int summaryTicks = Math.max(0, ticks - Math.max(1, revealPulls.size()) * GachaPresentationTimeline.SLOT_TICKS);
-        int visible = Math.min(batch.pulls().size(), Math.max(1, summaryTicks / 4 + 1));
+        int visible = summaryOnly ? batch.pulls().size()
+                : Math.min(batch.pulls().size(), Math.max(1, summaryTicks / 4 + 1));
 
         for (int i = 0; i < batch.pulls().size() && i < 10; i++) {
             int x = startX + (i % 5) * (cardW + gap);
@@ -366,7 +382,8 @@ public final class GachaPresentationScreen extends Screen {
     public boolean keyPressed(KeyEvent event) {
         if (event.key() == GLFW.GLFW_KEY_ESCAPE || event.key() == GLFW.GLFW_KEY_ENTER
                 || event.key() == GLFW.GLFW_KEY_KP_ENTER || event.key() == GLFW.GLFW_KEY_SPACE) {
-            finish();
+            if (batch.pulls().size() >= 10 && !summaryOnly && event.key() != GLFW.GLFW_KEY_ESCAPE) skipOrFinish();
+            else finish();
             return true;
         }
         return super.keyPressed(event);

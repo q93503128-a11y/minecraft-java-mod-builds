@@ -25,10 +25,15 @@ class AvsalExpansionProgressTest {
         Set<String> clear = Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID);
         assertEquals(AvsalExpansionProgress.Stage.ROAD_EVENT,
                 AvsalExpansionProgress.stage(Set.of(AvsalExpansionProgress.BRIEFED), clear));
-        assertEquals(AvsalExpansionProgress.Stage.ROAD_PATROL,
+        assertEquals(AvsalExpansionProgress.Stage.COURIER,
                 AvsalExpansionProgress.stage(Set.of(
                         AvsalExpansionProgress.BRIEFED,
                         AvsalExpansionProgress.ROADSIDE_ECHO_SEEN), clear));
+        assertEquals(AvsalExpansionProgress.Stage.ROAD_PATROL,
+                AvsalExpansionProgress.stage(Set.of(
+                        AvsalExpansionProgress.BRIEFED,
+                        AvsalExpansionProgress.ROADSIDE_ECHO_SEEN,
+                        "AVSAL_ROAD_COURIER_OFFERED"), clear));
         Set<String> investigating=Set.of(
                 AvsalExpansionProgress.BRIEFED,
                 AvsalExpansionProgress.ROADSIDE_ECHO_SEEN,

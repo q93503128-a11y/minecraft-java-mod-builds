@@ -23,7 +23,7 @@ final class AvsalExpansionProgress {
     private static final Set<String> INVESTIGATION_CLUES = Set.of(CLUE_SCAVENGER, CLUE_SURVIVOR, CLUE_RECORDS);
     private static final Set<String> RELAY_CLUES = Set.of(RELAY_WEST, RELAY_GUARD, RELAY_EAST);
 
-    enum Stage { LOCKED, BRIEFING, ROAD_EVENT, ROAD_PATROL, OUTSKIRTS, INVESTIGATE, RELAYS, BOSS, CLEARED }
+    enum Stage { LOCKED, BRIEFING, ROAD_EVENT, COURIER, ROAD_PATROL, OUTSKIRTS, INVESTIGATE, RELAYS, BOSS, CLEARED }
 
     private AvsalExpansionProgress() {}
 
@@ -47,6 +47,7 @@ final class AvsalExpansionProgress {
             return clears.contains("AV_FIRST_BOSS") ? Stage.CLEARED : Stage.BOSS;
         }
         if (!flags.contains(ROADSIDE_ECHO_SEEN)) return Stage.ROAD_EVENT;
+        if (!flags.contains("AVSAL_ROAD_COURIER_OFFERED")) return Stage.COURIER;
         if (!flags.contains(ROAD_PATROL_SEEN)) return Stage.ROAD_PATROL;
         return Stage.OUTSKIRTS;
     }
