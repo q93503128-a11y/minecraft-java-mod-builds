@@ -152,6 +152,36 @@
       "encounterRadius": 24,
       "verifiedIn26_2": false,
       "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/hound_roam",
+      "kind": "ENCOUNTER_ZONE",
+      "surveySeedAnchor": "turnbound:hub/new_drabyel",
+      "playerLabel": "뉴 드라비엘 북쪽 들판",
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/spore_grove",
+      "kind": "ENCOUNTER_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/explorers_guide_camp",
+      "playerLabel": "야영지 남쪽 숲 가장자리",
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
+      "locator": "turnbound:site/capital_valley/briar_stag",
+      "kind": "ELITE_ZONE",
+      "surveySeedAnchor": "turnbound:landmark/capital_valley_tower",
+      "playerLabel": "탑 동쪽 가시풀 지대",
+      "safetyRadius": 0,
+      "encounterRadius": 30,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
     }
   ],
   "footprints": [
@@ -231,6 +261,36 @@
       "radius": 14,
       "allySlots": 4,
       "enemySlots": 2,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/hound_roam",
+      "siteLocator": "turnbound:site/capital_valley/hound_roam",
+      "radius": 14,
+      "allySlots": 4,
+      "enemySlots": 2,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/spore_grove",
+      "siteLocator": "turnbound:site/capital_valley/spore_grove",
+      "radius": 14,
+      "allySlots": 4,
+      "enemySlots": 2,
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "candidates": []
+    },
+    {
+      "locator": "turnbound:footprint/capital_valley/briar_stag",
+      "siteLocator": "turnbound:site/capital_valley/briar_stag",
+      "radius": 16,
+      "allySlots": 4,
+      "enemySlots": 1,
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "candidates": []
@@ -335,6 +395,39 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_DRABYEL_NORTH",
+      "fieldVisibleCount": 1
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/hound_roam",
+      "siteLocator": "turnbound:site/capital_valley/hound_roam",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/hound_roam",
+      "playerLabel": "회색들 사냥개 무리",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_HOUND_ROAM",
+      "fieldVisibleCount": 1
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/spore_grove",
+      "siteLocator": "turnbound:site/capital_valley/spore_grove",
+      "tier": "COMMON",
+      "footprintLocator": "turnbound:footprint/capital_valley/spore_grove",
+      "playerLabel": "포자등불과 뿌리수호병",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_SPORE_GROVE",
+      "fieldVisibleCount": 1
+    },
+    {
+      "locator": "turnbound:encounter/capital_valley/briar_stag",
+      "siteLocator": "turnbound:site/capital_valley/briar_stag",
+      "tier": "ELITE",
+      "footprintLocator": "turnbound:footprint/capital_valley/briar_stag",
+      "playerLabel": "가시뿔 수사슴",
+      "verifiedIn26_2": false,
+      "productionEnabled": false,
+      "combatEncounterId": "CV_BRIAR_STAG",
       "fieldVisibleCount": 1
     }
   ]

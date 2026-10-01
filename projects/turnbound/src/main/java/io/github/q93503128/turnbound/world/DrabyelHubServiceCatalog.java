@@ -11,7 +11,7 @@ public final class DrabyelHubServiceCatalog {
     public static final String HUB_LOCATOR=DrehmalWorldProfile.HUB_LOCATOR;
     private static final String RESOURCE="/data/turnbound/world/new_drabyel_services_v1.json";
     private static final Hub HUB=load();
-    private static final Set<String> ROLES=Set.of("GREETER","TRAVEL","MARKET","BLACKSMITH","STORY","SUMMON");
+    private static final Set<String> ROLES=Set.of("GREETER","TRAVEL","MARKET","BLACKSMITH","CONTRACT","STORY","SUMMON");
     private static final Set<String> HINTS=Set.of("","MAP","MARKET","FORGE","TRAVEL","SUMMON","ARCHIVE","QUESTS");
 
     public record Position(int x,int y,int z){}
@@ -41,7 +41,7 @@ public final class DrabyelHubServiceCatalog {
             if(s.runtimeYaw()!=null&&(s.runtimeYaw()<-180.0F||s.runtimeYaw()>180.0F))errors.add("invalid Drabyel service yaw "+s.locator());
             if(s.productionEnabled()&&(!s.verifiedIn26_2()||s.runtimePosition()==null||s.runtimeYaw()==null))errors.add("unverified Drabyel production service "+s.locator());
         }
-        for(String required:List.of("GREETER","TRAVEL","MARKET","BLACKSMITH","STORY","SUMMON"))if(!roles.contains(required))errors.add("missing Drabyel service role "+required);
+        for(String required:List.of("GREETER","TRAVEL","MARKET","BLACKSMITH","CONTRACT","STORY","SUMMON"))if(!roles.contains(required))errors.add("missing Drabyel service role "+required);
         return List.copyOf(errors);
     }
 

@@ -632,8 +632,9 @@ terrain flatten으로 해결하지 않는다.
 The first Capital Valley production pass does not require manual per-encounter coordinates.
 
 Coverage:
-- 6 Common field groups
-- 1 optional Warning Cave Elite
+- 8 Common field groups in the first Capital Valley production slice
+- 2 optional Elite groups (Warning Cave + Briar Stag)
+- 1 optional world boss
 - 3 non-service field NPCs
 
 Resolver order:
@@ -806,3 +807,31 @@ Field-proxy placement also uses a different clearance rule from battle arenas:
 - the New Drabyel opening logical site and presentation patrol points use this narrow proxy rule for the same reason
 
 The player-facing invariant is: while an encounter is available and an eligible observer is near its live objective, the objective must not point at an empty location.
+
+
+### Capital Valley roaming-diversity expansion — 2026-10-01
+
+The early open world must not read as humanoid patrols with occasional boars.
+
+Current first-region roaming silhouettes now include:
+- Mossback Boar / wildlife groups
+- Ash Hound-derived field predators
+- Spore Lantern + Root Guard mixed nature encounter
+- Briar Stag Elite
+- humanoid cutthroat / marksman patrols
+- Cavehorn Ravager Elite
+- Graul world boss
+
+Production additions:
+- CV_HOUND_ROAM — two hound-type enemies, common, 22s respawn
+- CV_SPORE_GROVE — spore + root mixed encounter, common, 25s respawn
+- CV_BRIAR_STAG — horned beast Elite, 180s respawn
+
+Existing common encounter placements also receive presentation patrol seeds where source-backed route geometry supports it.
+The visible field representative should therefore move between several valid points instead of appearing as a stationary spawn marker.
+
+Density rule:
+- the player should normally have another readable creature, patrol, NPC, landmark, event or route choice within a short traversal
+- do not solve density by stacking multiple hostile proxies into the same camera space
+- mix wildlife, humanoids, constructs, plants/fungi, spirits and other silhouettes over time
+- region identity matters more than humanoid faction count

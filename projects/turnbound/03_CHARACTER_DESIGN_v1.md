@@ -707,3 +707,27 @@ P01~P08 모두:
 - Auto behavior
 - low rarity niche
 를 simulator로 비교한 뒤 최종 수치를 고정한다.
+
+
+## Playable body-type diversity — 2026-10-01
+
+The playable roster is **not humanoid-only**.
+
+Future party members may be:
+- beasts / intelligent animals
+- constructs / robots
+- spirits
+- plant/fungal beings
+- unusual small or massive creatures
+- humanoids when that is genuinely the best fit
+
+Rules:
+- do not force a good external creature asset into a humanoid costume just to fit the current roster shape
+- a non-humanoid playable must still expose readable formation position, target marker, hit/down/victory state and skill telegraphs
+- collision/render scale and battle-camera framing are authored per body type
+- equipment presentation may be abstracted or slot-specific when a literal humanoid weapon/armor attachment makes no visual sense
+- gameplay role comes first; species/body type should reinforce the mechanic instead of being cosmetic only
+- P09~P12 visual selection is still external-asset-first, and at least one candidate pass must actively evaluate a non-humanoid base rather than only browsing humanoid packs
+- later roster expansion should continue mixing humanoids and non-humanoids instead of converging back to one body template
+
+Current external candidate pools include CC0 animated animals, monsters and robots already recorded in EXTERNAL_ASSETS.md.

@@ -163,3 +163,17 @@
 
 Unknown-license files are reference-only until verified.
 A file appearing on GitHub, Modrinth, CurseForge, Planet Minecraft, itch.io or a wiki does not itself prove redistribution permission.
+
+
+## Creature / mount pool recheck — 2026-10-01
+
+Official Quaternius pages were rechecked before expanding the roaming/non-humanoid direction.
+
+- Ultimate Animated Animal Pack — CC0, 12 textured animated animals, 12+ animations each, FBX / OBJ / Blend / glTF. Candidate for wildlife, playable beasts and mounts.
+- Ultimate Monsters — CC0, 50 fully animated textured monsters, FBX / OBJ / Blend / glTF. Candidate for later-region non-humanoid common/Elite/Midboss/playable silhouettes.
+- Animated Robot / Sci-Fi creature pools remain candidate sources for construct enemies or allies where the world/kit supports them.
+
+Adoption rule:
+- current Capital Valley production uses already integrated licensed creature bases first
+- do not import a new pack merely to increase file count
+- when a new silhouette is needed, choose the external model/animation first, record license/source, then bind gameplay identity around it

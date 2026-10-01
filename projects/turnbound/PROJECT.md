@@ -1636,3 +1636,43 @@ Validation state for this checkpoint:
 - MULTIPLAYER TESTED: NO
 
 Build/CI remains deferred until the current content batch is larger, matching the present project testing cadence.
+
+
+## Open-world roaming / contract-tier / non-humanoid checkpoint — 2026-10-01
+
+Direction locked:
+- enemies and playable parties are not humanoid-only
+- Capital Valley must visibly mix wildlife, humanoids and supernatural/construct/nature silhouettes
+- roaming field presence should be distributed through meaningful territories instead of isolated stationary spawn dots
+- higher repeatable-contract tiers unlock from party growth, not from a hard dependency on main-story completion
+- repeatable contracts have their own physical New Drabyel NPC rather than piggybacking on the story archivist
+
+Current data/runtime additions:
+- new common encounter CV_HOUND_ROAM — Ash Hound pair, level 5, 22s respawn
+- new common encounter CV_SPORE_GROVE — Spore Lantern + Root Guard, level 8, 25s respawn
+- new Elite CV_BRIAR_STAG — Briar Stag, level 12, 180s respawn
+- route/map placement adds live-resolved sites/arenas/patrol seeds for all three
+- existing first-region common sites gain roaming presentation patrol seeds where available
+- New Drabyel adds physical 지역 의뢰관 로웬 as the regional-contract NPC
+- contract Tier 1: level 1+
+- contract Tier 2: average active-party level 8+
+- contract Tier 3: average active-party level 16+
+- contract tier selection is independent of specific main-quest completion after the player reaches New Drabyel
+- contract pool contains 9 contracts across three tiers
+- future playable roster selection explicitly evaluates beasts/constructs/spirits and other non-humanoid bodies
+
+External-asset recheck:
+- Quaternius Ultimate Animated Animal Pack remains CC0 with 12 animated animals
+- Quaternius Ultimate Monsters remains CC0 with 50 animated monsters
+- current Capital Valley uses already integrated creature assets first; new imports happen only when a new silhouette is actually needed
+
+Validation:
+- CODE REVIEWED: YES
+- TESTED: NO
+- BUILD VERIFIED: NO
+- NEW JAR: NO
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+No build/CI for this content/data batch yet.

@@ -47,6 +47,17 @@
       "productionEnabled": false
     },
     {
+      "locator": "turnbound:service/new_drabyel/contracts",
+      "role": "CONTRACT",
+      "playerLabel": "지역 의뢰관 로웬",
+      "facilityHint": "",
+      "zone": "MARKET_FRONTAGE",
+      "visualAsset": "DRABYEL_MERCHANT",
+      "interactionRadius": 5,
+      "verifiedIn26_2": false,
+      "productionEnabled": false
+    },
+    {
       "locator": "turnbound:service/new_drabyel/story_square",
       "role": "STORY",
       "playerLabel": "기록관 세린",

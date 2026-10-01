@@ -127,6 +127,13 @@ final class DrabyelHubServiceRuntime {
                     "북쪽 길이 다시 조용해졌네요. 수고했어요. 대장간, 시장, 역참과 정령술사를 직접 찾아 정비한 뒤 다시 들러 주세요.");
             return true;
         }
+        if ("CONTRACT".equals(service.role())) {
+            if (!RegionalContractService.interact(player)) {
+                FieldNetwork.showDialogue(player, service.playerLabel(),
+                        "마을에 도착한 뒤부터 지역 의뢰를 받을 수 있습니다. 의뢰는 메인 이야기와 별개로 파티 성장에 따라 단계가 올라갑니다.");
+            }
+            return true;
+        }
         if ("STORY".equals(service.role())) {
             if(server!=null){
                 ExternalWorldSavedData data=ExternalWorldSavedData.get(server);
@@ -140,7 +147,6 @@ final class DrabyelHubServiceRuntime {
                     return true;
                 }
             }
-            if(RegionalContractService.interact(player))return true;
             if(server!=null){
                 Set<String> flags=ExternalWorldSavedData.get(server).onboardingFlags(player.getUUID());
                 if(DrabyelLocalArcProgress.complete(flags)

@@ -260,6 +260,21 @@ public final class CampaignProgressStore {
     public static QuestProgress.Snapshot quests(UUID playerId) { return player(playerId).quests.snapshot(); }
     public static List<String> activeParty(UUID playerId) { return List.copyOf(player(playerId).activeParty); }
 
+    public static int averageActivePartyLevel(UUID playerId) {
+        PlayerProgress progress = player(playerId);
+        if (progress.activeParty.isEmpty()) return 1;
+        int total = 0;
+        int count = 0;
+        for (String characterId : progress.activeParty) {
+            CharacterProgression.State state = progress.characters.get(characterId);
+            if (state == null) continue;
+            total += Math.max(1, state.level());
+            count++;
+        }
+        return count == 0 ? 1 : Math.max(1, total / count);
+    }
+
+
     public static void setActiveParty(UUID playerId, List<String> characterIds) {
         PlayerProgress progress = player(playerId);
         List<String> validated = validateParty(progress.profile.snapshot(), characterIds);

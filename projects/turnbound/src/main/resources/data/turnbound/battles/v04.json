@@ -487,6 +487,41 @@
       ],
       "respawnSeconds": 0,
       "boss": true
+    },
+    {
+      "id": "CV_HOUND_ROAM",
+      "label": "회색들 사냥개 무리",
+      "region": "Capital Valley",
+      "level": 5,
+      "enemies": [
+        "E012",
+        "E012"
+      ],
+      "respawnSeconds": 22,
+      "boss": false
+    },
+    {
+      "id": "CV_SPORE_GROVE",
+      "label": "포자등불과 뿌리수호병",
+      "region": "Capital Valley",
+      "level": 8,
+      "enemies": [
+        "E007",
+        "E008"
+      ],
+      "respawnSeconds": 25,
+      "boss": false
+    },
+    {
+      "id": "CV_BRIAR_STAG",
+      "label": "가시뿔 수사슴",
+      "region": "Capital Valley",
+      "level": 12,
+      "enemies": [
+        "EL02"
+      ],
+      "respawnSeconds": 180,
+      "boss": false
     }
   ]
 }

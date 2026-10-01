@@ -6,6 +6,8 @@
       "title": "북문 경계 순찰",
       "regionLabel": "Capital Valley",
       "objective": "뉴 드라비엘 북쪽 길과 탑 방면의 사람형 순찰대를 2회 정리하십시오.",
+      "tier": 1,
+      "minPartyLevel": 1,
       "encounterIds": [
         "CV_DRABYEL_ROAD",
         "CV_DRABYEL_NORTH",
@@ -19,7 +21,9 @@
       "id": "capital_valley_wildlife_control",
       "title": "이끼등 개체 조절",
       "regionLabel": "Capital Valley",
-      "objective": "캐피털 밸리의 이끼등 무리를 2회 흩어 길가의 피해를 줄이십시오.",
+      "objective": "캐피털 밸리의 이끼등 무리를 2회 흩어 길가 피해를 줄이십시오.",
+      "tier": 1,
+      "minPartyLevel": 1,
       "encounterIds": [
         "CV_FIRST_COMMON",
         "CV_TEMPLE_WILDLIFE",
@@ -34,17 +38,119 @@
       "title": "가도 안전 확보",
       "regionLabel": "Capital Valley",
       "objective": "캐피털 밸리의 일반 필드 조우를 원하는 순서로 3회 해결하십시오.",
+      "tier": 1,
+      "minPartyLevel": 1,
       "encounterIds": [
         "CV_FIRST_COMMON",
         "CV_TEMPLE_WILDLIFE",
         "CV_TOWER_ROAD",
         "CV_CAMP_WILDLIFE",
         "CV_DRABYEL_NORTH",
-        "CV_DRABYEL_ROAD"
+        "CV_DRABYEL_ROAD",
+        "CV_HOUND_ROAM"
       ],
       "requiredWins": 3,
       "rewardGold": 3500,
       "rewardXp": 1000
+    },
+    {
+      "id": "capital_valley_predator_pressure",
+      "title": "들판 포식자 억제",
+      "regionLabel": "Capital Valley",
+      "objective": "멧돼지와 사냥개 같은 야생 조우를 합계 3회 정리하십시오.",
+      "tier": 2,
+      "minPartyLevel": 8,
+      "encounterIds": [
+        "CV_HOUND_ROAM",
+        "CV_CAMP_WILDLIFE",
+        "CV_TEMPLE_WILDLIFE",
+        "CV_FIRST_COMMON"
+      ],
+      "requiredWins": 3,
+      "rewardGold": 5200,
+      "rewardXp": 1800
+    },
+    {
+      "id": "capital_valley_grove_stability",
+      "title": "뒤틀린 숲 가장자리",
+      "regionLabel": "Capital Valley",
+      "objective": "포자등불과 뿌리수호병이 모인 숲 가장자리 조우를 2회 해결하십시오.",
+      "tier": 2,
+      "minPartyLevel": 8,
+      "encounterIds": [
+        "CV_SPORE_GROVE"
+      ],
+      "requiredWins": 2,
+      "rewardGold": 6000,
+      "rewardXp": 2200
+    },
+    {
+      "id": "capital_valley_elite_watch",
+      "title": "강적 감시",
+      "regionLabel": "Capital Valley",
+      "objective": "캐피털 밸리의 정예 조우 중 하나를 격파하십시오.",
+      "tier": 2,
+      "minPartyLevel": 8,
+      "encounterIds": [
+        "CV_WARNING_CAVE_ELITE",
+        "CV_BRIAR_STAG"
+      ],
+      "requiredWins": 1,
+      "rewardGold": 7500,
+      "rewardXp": 3000
+    },
+    {
+      "id": "capital_valley_high_risk_patrol",
+      "title": "고위험 순찰",
+      "regionLabel": "Capital Valley",
+      "objective": "정예와 고레벨 야생 조우를 합계 3회 해결하십시오.",
+      "tier": 3,
+      "minPartyLevel": 16,
+      "encounterIds": [
+        "CV_BRIAR_STAG",
+        "CV_WARNING_CAVE_ELITE",
+        "CV_SPORE_GROVE",
+        "CV_HOUND_ROAM"
+      ],
+      "requiredWins": 3,
+      "rewardGold": 11000,
+      "rewardXp": 4200
+    },
+    {
+      "id": "capital_valley_elite_cycle",
+      "title": "강적 연속 토벌",
+      "regionLabel": "Capital Valley",
+      "objective": "서로 다른 정예 구역을 오가며 정예 조우를 2회 격파하십시오.",
+      "tier": 3,
+      "minPartyLevel": 16,
+      "encounterIds": [
+        "CV_WARNING_CAVE_ELITE",
+        "CV_BRIAR_STAG"
+      ],
+      "requiredWins": 2,
+      "rewardGold": 13500,
+      "rewardXp": 5200
+    },
+    {
+      "id": "capital_valley_roaming_sweep",
+      "title": "광역 배회 정리",
+      "regionLabel": "Capital Valley",
+      "objective": "캐피털 밸리 전역의 일반·야생 조우를 5회 해결하십시오.",
+      "tier": 3,
+      "minPartyLevel": 16,
+      "encounterIds": [
+        "CV_FIRST_COMMON",
+        "CV_TEMPLE_WILDLIFE",
+        "CV_TOWER_ROAD",
+        "CV_CAMP_WILDLIFE",
+        "CV_DRABYEL_NORTH",
+        "CV_DRABYEL_ROAD",
+        "CV_HOUND_ROAM",
+        "CV_SPORE_GROVE"
+      ],
+      "requiredWins": 5,
+      "rewardGold": 12000,
+      "rewardXp": 4800
     }
   ]
 }

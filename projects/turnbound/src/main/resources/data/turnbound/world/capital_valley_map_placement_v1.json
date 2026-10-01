@@ -243,7 +243,20 @@
           "yaw": 270
         }
       ],
-      "patrolSeeds": []
+      "patrolSeeds": [
+        {
+          "x": 575,
+          "z": 1015
+        },
+        {
+          "x": 595,
+          "z": 1035
+        },
+        {
+          "x": 578,
+          "z": 1060
+        }
+      ]
     },
     {
       "siteLocator": "turnbound:site/capital_valley/tower",
@@ -505,7 +518,20 @@
           "yaw": 270
         }
       ],
-      "patrolSeeds": []
+      "patrolSeeds": [
+        {
+          "x": 575,
+          "z": 890
+        },
+        {
+          "x": 600,
+          "z": 910
+        },
+        {
+          "x": 585,
+          "z": 940
+        }
+      ]
     },
     {
       "siteLocator": "turnbound:site/capital_valley/tower_road",
@@ -558,7 +584,20 @@
           "yaw": 270
         }
       ],
-      "patrolSeeds": []
+      "patrolSeeds": [
+        {
+          "x": 575,
+          "z": 1088
+        },
+        {
+          "x": 603,
+          "z": 1110
+        },
+        {
+          "x": 588,
+          "z": 1132
+        }
+      ]
     },
     {
       "siteLocator": "turnbound:site/capital_valley/tower_watch",
@@ -633,7 +672,20 @@
           "yaw": 270
         }
       ],
-      "patrolSeeds": []
+      "patrolSeeds": [
+        {
+          "x": 558,
+          "z": 1348
+        },
+        {
+          "x": 588,
+          "z": 1365
+        },
+        {
+          "x": 602,
+          "z": 1390
+        }
+      ]
     },
     {
       "siteLocator": "turnbound:site/capital_valley/camp_explorer",
@@ -708,7 +760,222 @@
           "yaw": 270
         }
       ],
-      "patrolSeeds": []
+      "patrolSeeds": [
+        {
+          "x": 505,
+          "z": 1558
+        },
+        {
+          "x": 535,
+          "z": 1572
+        },
+        {
+          "x": 520,
+          "z": 1600
+        }
+      ]
+    },
+    {
+      "siteLocator": "turnbound:site/capital_valley/hound_roam",
+      "zoneId": "drabyel_approach",
+      "strictSite": true,
+      "searchRadius": 7,
+      "siteSeeds": [
+        {
+          "x": 542,
+          "z": 1620
+        },
+        {
+          "x": 512,
+          "z": 1628
+        },
+        {
+          "x": 552,
+          "z": 1635
+        }
+      ],
+      "arenaSeeds": [
+        {
+          "x": 570,
+          "z": 1620,
+          "yaw": 90
+        },
+        {
+          "x": 570,
+          "z": 1620,
+          "yaw": 270
+        },
+        {
+          "x": 490,
+          "z": 1625,
+          "yaw": 90
+        },
+        {
+          "x": 490,
+          "z": 1625,
+          "yaw": 270
+        },
+        {
+          "x": 555,
+          "z": 1645,
+          "yaw": 90
+        },
+        {
+          "x": 500,
+          "z": 1645,
+          "yaw": 270
+        }
+      ],
+      "patrolSeeds": [
+        {
+          "x": 530,
+          "z": 1608
+        },
+        {
+          "x": 548,
+          "z": 1624
+        },
+        {
+          "x": 535,
+          "z": 1644
+        },
+        {
+          "x": 512,
+          "z": 1634
+        }
+      ]
+    },
+    {
+      "siteLocator": "turnbound:site/capital_valley/spore_grove",
+      "zoneId": "camp_transition",
+      "strictSite": true,
+      "searchRadius": 7,
+      "siteSeeds": [
+        {
+          "x": 604,
+          "z": 1420
+        },
+        {
+          "x": 558,
+          "z": 1425
+        },
+        {
+          "x": 600,
+          "z": 1442
+        }
+      ],
+      "arenaSeeds": [
+        {
+          "x": 622,
+          "z": 1420,
+          "yaw": 90
+        },
+        {
+          "x": 622,
+          "z": 1420,
+          "yaw": 270
+        },
+        {
+          "x": 542,
+          "z": 1422,
+          "yaw": 90
+        },
+        {
+          "x": 542,
+          "z": 1422,
+          "yaw": 270
+        },
+        {
+          "x": 615,
+          "z": 1450,
+          "yaw": 90
+        },
+        {
+          "x": 548,
+          "z": 1450,
+          "yaw": 270
+        }
+      ],
+      "patrolSeeds": [
+        {
+          "x": 585,
+          "z": 1408
+        },
+        {
+          "x": 607,
+          "z": 1427
+        },
+        {
+          "x": 590,
+          "z": 1450
+        }
+      ]
+    },
+    {
+      "siteLocator": "turnbound:site/capital_valley/briar_stag",
+      "zoneId": "tower_cave_choice",
+      "strictSite": true,
+      "searchRadius": 7,
+      "siteSeeds": [
+        {
+          "x": 621,
+          "z": 1210
+        },
+        {
+          "x": 636,
+          "z": 1230
+        },
+        {
+          "x": 615,
+          "z": 1242
+        }
+      ],
+      "arenaSeeds": [
+        {
+          "x": 650,
+          "z": 1218,
+          "yaw": 90
+        },
+        {
+          "x": 650,
+          "z": 1218,
+          "yaw": 270
+        },
+        {
+          "x": 612,
+          "z": 1260,
+          "yaw": 0
+        },
+        {
+          "x": 612,
+          "z": 1260,
+          "yaw": 180
+        },
+        {
+          "x": 645,
+          "z": 1248,
+          "yaw": 135
+        },
+        {
+          "x": 604,
+          "z": 1238,
+          "yaw": 315
+        }
+      ],
+      "patrolSeeds": [
+        {
+          "x": 618,
+          "z": 1205
+        },
+        {
+          "x": 640,
+          "z": 1228
+        },
+        {
+          "x": 620,
+          "z": 1250
+        }
+      ]
     }
   ]
 }

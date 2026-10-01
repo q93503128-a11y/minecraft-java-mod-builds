@@ -636,3 +636,26 @@ Target readability:
 - M map still shows all unresolved objectives and the single navigation pointer chooses the nearest unresolved target
 - physical facilities remain physical: global E-menu has no buy/sell/forge/summon/travel shortcut
 - server-side MetaFacilityActionGate rejects economy actions unless the player is actually near the corresponding NPC facility
+
+
+## Roaming fauna / regional-contract ladder — 2026-10-01
+
+Capital Valley is no longer authored as a mostly humanoid patrol corridor.
+
+Additional source-backed live-resolved encounter candidates:
+- New Drabyel north fields: roaming hound pack
+- camp-transition grove: spore lantern + root guardian
+- tower/cave choice area: Briar Stag Elite
+
+Common encounter placements use several presentation patrol seeds when the live world validates them, so available enemies roam within their territory rather than waiting on a single fixed point.
+
+Repeatable growth:
+- a dedicated physical NPC, 지역 의뢰관 로웬, owns regional contracts
+- reaching New Drabyel is enough to access the contract system; later tiers do not require specific main-quest completion
+- Tier 1 starts immediately
+- Tier 2 enters the offer pool at average active-party level 8
+- Tier 3 enters at average active-party level 16
+- only one regional contract is active at once
+- the next offered contract comes from the highest currently unlocked tier
+- reward scale rises with tier
+- future regions append further tiers instead of turning the first three contracts into the permanent endgame grind

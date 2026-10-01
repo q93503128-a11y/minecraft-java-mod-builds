@@ -25,6 +25,8 @@ public final class RegionalContractCatalog {
             String title,
             String regionLabel,
             String objective,
+            int tier,
+            int minPartyLevel,
             List<String> encounterIds,
             int requiredWins,
             int rewardGold,
@@ -55,6 +57,8 @@ public final class RegionalContractCatalog {
             if (contract.title().isBlank()) errors.add("blank regional contract title " + contract.id());
             if (contract.regionLabel().isBlank()) errors.add("blank regional contract region " + contract.id());
             if (contract.objective().isBlank()) errors.add("blank regional contract objective " + contract.id());
+            if (contract.tier() < 1) errors.add("regional contract tier < 1 " + contract.id());
+            if (contract.minPartyLevel() < 1) errors.add("regional contract minPartyLevel < 1 " + contract.id());
             if (contract.encounterIds().isEmpty()) errors.add("regional contract has no encounters " + contract.id());
             for (String encounterId : contract.encounterIds()) {
                 if (!CampaignEncounterCatalog.contains(encounterId)) {
@@ -90,6 +94,8 @@ public final class RegionalContractCatalog {
                         required(value, "title"),
                         required(value, "regionLabel"),
                         required(value, "objective"),
+                        integer(value, "tier", 0),
+                        integer(value, "minPartyLevel", 0),
                         encounters,
                         integer(value, "requiredWins", 0),
                         integer(value, "rewardGold", 0),

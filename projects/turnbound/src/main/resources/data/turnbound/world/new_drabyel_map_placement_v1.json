@@ -271,6 +271,54 @@
       ],
       "expectedY": 67,
       "preferredRoadDistance": 5
+    },
+    {
+      "serviceLocator": "turnbound:service/new_drabyel/contracts",
+      "searchRadius": 6,
+      "faceTarget": {
+        "x": 515,
+        "z": 1850
+      },
+      "seeds": [
+        {
+          "x": 520,
+          "z": 1862
+        },
+        {
+          "x": 522,
+          "z": 1864
+        },
+        {
+          "x": 518,
+          "z": 1865
+        },
+        {
+          "x": 524,
+          "z": 1861
+        }
+      ],
+      "exclusions": [
+        {
+          "x": 522,
+          "z": 1853,
+          "radius": 2.5,
+          "reason": "source map display frames"
+        },
+        {
+          "x": 516,
+          "z": 1861,
+          "radius": 2.5,
+          "reason": "farmhouse basement Cat Map source content"
+        },
+        {
+          "x": 527,
+          "z": 1854,
+          "radius": 3,
+          "reason": "Church of the Split Deities source entrance/sign"
+        }
+      ],
+      "expectedY": 67,
+      "preferredRoadDistance": 5
     }
   ]
 }

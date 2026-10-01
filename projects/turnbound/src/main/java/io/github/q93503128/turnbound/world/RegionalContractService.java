@@ -2,17 +2,22 @@ package io.github.q93503128.turnbound.world;
 
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 /** Physical-NPC entry point and journal projection for repeatable regional contracts. */
 final class RegionalContractService {
+    static final String NPC_LABEL = "지역 의뢰관 로웬";
+
     private RegionalContractService() {}
 
     static boolean unlocked(ServerPlayer player) {
-        if (player == null) return false;
-        Set<String> clears = CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
-        return clears.contains(DrabyelOpeningTutorial.ENCOUNTER_ID);
+        if (player == null || player.level().getServer() == null) return false;
+        Set<String> flags = ExternalWorldSavedData.get(player.level().getServer())
+                .onboardingFlags(player.getUUID());
+        return flags.contains(DrehmalFirstRouteProgress.HUB_REACHED);
     }
 
     static boolean interact(ServerPlayer player) {
@@ -21,12 +26,13 @@ final class RegionalContractService {
                 CampaignProgressStore.regionalContractState(player.getUUID());
 
         if (state.contractId().isBlank()) {
-            RegionalContractCatalog.Contract next = next(state.rotation());
+            int partyLevel = CampaignProgressStore.averageActivePartyLevel(player.getUUID());
+            RegionalContractCatalog.Contract next = next(state.rotation(), partyLevel);
             if (next == null) return false;
             if (!CampaignProgressStore.activateRegionalContract(player.getUUID(), next.id())) return false;
             CampaignPersistence.saveIfDirty(player);
-            FieldNetwork.showDialogue(player, "기록관 세린",
-                    "마을 주변에서 계속 들어오는 의뢰가 하나 있어요. 급한 이야기는 아니니 필요할 때 처리해 주세요.\n\n"
+            FieldNetwork.showDialogue(player, NPC_LABEL,
+                    "현재 파티에 맞는 " + next.tier() + "단계 지역 의뢰입니다. 스토리를 더 진행하지 않아도 성장하면 더 높은 단계 의뢰가 열립니다.\n\n"
                             + next.title() + "\n" + next.objective() + "\n보상 · "
                             + String.format(Locale.ROOT, "%,d", next.rewardGold()) + " Gold · 파티 XP " + next.rewardXp());
             return true;
@@ -38,15 +44,15 @@ final class RegionalContractService {
         if (state.progress() >= active.requiredWins()) {
             if (!CampaignProgressStore.claimRegionalContract(player.getUUID())) return false;
             CampaignPersistence.saveIfDirty(player);
-            FieldNetwork.showDialogue(player, "기록관 세린",
-                    active.title() + " 확인했어요. 필요한 사람들에게 기록을 넘겨 둘게요.\n\n보상 · "
+            FieldNetwork.showDialogue(player, NPC_LABEL,
+                    active.title() + " 완료를 확인했습니다.\n\n보상 · "
                             + String.format(Locale.ROOT, "%,d", active.rewardGold()) + " Gold · 파티 XP " + active.rewardXp()
-                            + "\n다음 지역 의뢰가 필요하면 다시 말을 걸어 주세요.");
+                            + "\n다음 의뢰가 필요하면 다시 말을 걸어 주세요.");
             return true;
         }
 
-        FieldNetwork.showDialogue(player, "기록관 세린",
-                active.title() + "\n" + active.objective() + "\n진행 "
+        FieldNetwork.showDialogue(player, NPC_LABEL,
+                active.tier() + "단계 · " + active.title() + "\n" + active.objective() + "\n진행 "
                         + state.progress() + "/" + active.requiredWins()
                         + "\n완료하면 여기로 돌아와 주세요.");
         return true;
@@ -56,25 +62,39 @@ final class RegionalContractService {
         if (!unlocked(player)) return "";
         CampaignProgressStore.RegionalContractState state =
                 CampaignProgressStore.regionalContractState(player.getUUID());
+        int partyLevel = CampaignProgressStore.averageActivePartyLevel(player.getUUID());
         if (state.contractId().isBlank()) {
-            return line("지역 의뢰", "지역 의뢰 · Capital Valley",
-                    "기록관 세린에게서 반복 가능한 지역 의뢰를 받을 수 있습니다.");
+            int tier = highestTier(partyLevel);
+            return line("지역 의뢰", "반복 지역 의뢰 · " + tier + "단계",
+                    NPC_LABEL + "에게서 현재 파티 레벨에 맞는 반복 의뢰를 받을 수 있습니다.");
         }
         RegionalContractCatalog.Contract active = RegionalContractCatalog.contract(state.contractId());
         if (active == null) return "";
         String progress = state.progress() >= active.requiredWins()
-                ? "완료 · 기록관 세린에게 보고"
+                ? "완료 · " + NPC_LABEL + "에게 보고"
                 : "진행 " + state.progress() + "/" + active.requiredWins();
         String reward = String.format(Locale.ROOT, "%,d", active.rewardGold())
                 + " Gold / 파티 XP " + active.rewardXp();
-        return line(active.title(), "지역 의뢰 · " + active.regionLabel(),
+        return line(active.title(), "반복 지역 의뢰 · " + active.tier() + "단계 · " + active.regionLabel(),
                 active.objective() + " · " + progress + " · 보상 " + reward);
     }
 
-    private static RegionalContractCatalog.Contract next(int rotation) {
-        var all = RegionalContractCatalog.all();
-        if (all.isEmpty()) return null;
-        return all.get(Math.floorMod(rotation, all.size()));
+    private static RegionalContractCatalog.Contract next(int rotation, int partyLevel) {
+        int tier = highestTier(partyLevel);
+        List<RegionalContractCatalog.Contract> pool = RegionalContractCatalog.all().stream()
+                .filter(contract -> contract.tier() == tier)
+                .filter(contract -> contract.minPartyLevel() <= partyLevel)
+                .sorted(Comparator.comparing(RegionalContractCatalog.Contract::id))
+                .toList();
+        if (pool.isEmpty()) return null;
+        return pool.get(Math.floorMod(rotation, pool.size()));
+    }
+
+    private static int highestTier(int partyLevel) {
+        return RegionalContractCatalog.all().stream()
+                .filter(contract -> contract.minPartyLevel() <= partyLevel)
+                .mapToInt(RegionalContractCatalog.Contract::tier)
+                .max().orElse(1);
     }
 
     private static String line(String title, String category, String objective) {
