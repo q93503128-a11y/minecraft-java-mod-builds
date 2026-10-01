@@ -1,5 +1,6 @@
 package kr.moonseungjun.campfiresessions.world;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +28,8 @@ public final class VillageReviewLandscape {
     private static final int MAX_PATH_DELTA = 6;
 
     private static final List<TerraceSpec> TERRACES = List.of(
-            terrace("civic_west", -323, -286, -63, -21, 72),
-            terrace("civic_southeast", -289, -270, -63, -29, 72),
+            terrace("civic_west", -323, -292, -63, -21, 72),
+            terrace("civic_southeast", -293, -270, -63, -29, 72),
             terrace("upper", -317, -282, -21, 18, 75)
     );
 
@@ -69,6 +70,7 @@ public final class VillageReviewLandscape {
     private VillageReviewLandscape() {}
 
     public static void preflightTerraces(ServerLevel level) {
+        List<String> failures = new ArrayList<>();
         for (TerraceSpec terrace : TERRACES) {
             int worstDelta = 0;
             int worstX = terrace.minX();
@@ -91,20 +93,28 @@ public final class VillageReviewLandscape {
                     }
                 }
             }
+            CampfireSessions.LOGGER.info(
+                    "Campfire village terrace preflight {}: targetY={} worstDelta={} worst=({},{} surface={})",
+                    terrace.name(),
+                    terrace.surfaceY(),
+                    worstDelta,
+                    worstX,
+                    worstZ,
+                    worstSurface
+            );
             if (worstDelta > MAX_TERRACE_DELTA) {
-                throw new IllegalStateException(
-                        "Campfire village terrace " + terrace.name() + " exceeds grading limit"
-                                + " at " + worstX + "," + worstZ
-                                + ": surface=" + worstSurface
+                failures.add(
+                        terrace.name()
+                                + " worst=(" + worstX + "," + worstZ + ")"
+                                + " surface=" + worstSurface
                                 + " target=" + terrace.surfaceY()
                                 + " blendedDelta=" + worstDelta
                 );
             }
-            CampfireSessions.LOGGER.info(
-                    "Campfire village terrace preflight {}: targetY={} worstDelta={}",
-                    terrace.name(),
-                    terrace.surfaceY(),
-                    worstDelta
+        }
+        if (!failures.isEmpty()) {
+            throw new IllegalStateException(
+                    "Campfire village terrace grading failed: " + String.join("; ", failures)
             );
         }
     }
