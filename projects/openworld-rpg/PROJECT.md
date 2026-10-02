@@ -339,22 +339,27 @@ non-Earthloong donor actor registry bindings were still gated, so that pass corr
 fabricate Louxia/Tough-Hide creature drop hooks.
 
 The pinned 26.2 creature surface has since been inspected directly from the dependency JARs.
-Nine R01 registry targets are now exact and startup-verified:
+Thirteen R01 registry targets are now exact and startup-verified. The Alex's Mobs set is
 `alexsmobs:gazelle`, `alexsmobs:bison`, `alexsmobs:raccoon`, `alexsmobs:crow`,
-`alexsmobs:grizzly_bear`, `threateningly_mobs:louxia`,
-`threateningly_mobs:steelboar`, `threateningly_mobs:the_regalhart` and
-`threateningly_mobs:the_earthloong`. Canonical project combat-stat authority is currently bound
-for Bison, Grizzly, Steelboar, Regalhart and Earthloong using the locked R01 stat table. This does
-not make those actors production-spawn-ready: only Earthloong is currently admitted through the
-authored production spawn path, while the other bound actors remain fail-closed until their
-attack/reward/presentation contracts are connected. Gazelle/Raccoon/Crow remain ecology identities
-without invented hostile combat profiles, and Louxia remains passive food ecology rather than a
-fabricated combat kit. Cave Centipede remains excluded from the closed registry catalog pending its
-multipart donor-surface binding review; Nature Spirit remains excluded until the pinned
-Threateningly registry initializer's legacy naming is resolved exactly. Build Openworld RPG run
-`36960785079` at code state `2849d24a5f39eacfc27323bd8a6a1a7c4e84e452` verifies the exact
-nine-target startup gate. Registry closure is therefore distinct from spawn/attack/loot/presentation
-closure.
+`alexsmobs:grizzly_bear`, `alexsmobs:centipede_head`, `alexsmobs:centipede_body` and
+`alexsmobs:centipede_tail`; the Threateningly set is `threateningly_mobs:louxia`,
+`threateningly_mobs:steelboar`, `threateningly_mobs:nature_hamony`,
+`threateningly_mobs:the_regalhart` and `threateningly_mobs:the_earthloong`.
+Canonical project combat-stat authority is bound for Bison, Grizzly, Cave Centipede head,
+Steelboar, Nature Spirit, Regalhart and Earthloong using the locked R01 stat table. Cave Centipede
+is intentionally head-owned: the donor body/tail multipart entities are startup-verified but do not
+receive duplicate project HP/poise states because their donor damage path forwards to the parent.
+The project-facing Nature Spirit role intentionally maps to the pinned donor's legacy
+`nature_hamony` registry spelling rather than inventing `nature_spirit`. This registry/stat
+closure still does not make those actors production-spawn-ready: only Earthloong is admitted
+through the authored production spawn path. Cave Centipede, Nature Spirit and the other bound
+actors remain fail-closed until their authored attack/reward/presentation contracts are connected.
+Gazelle/Raccoon/Crow remain ecology identities without invented hostile combat profiles, and Louxia
+remains passive food ecology rather than a fabricated combat kit. Build Openworld RPG run
+`36967514764` at code/workflow state `24de568d84f6c81d80cfe6651b37272d652bc0a4` verifies the
+13-target startup gate, tests/build, core/gameplay server smoke, gameplay client startup,
+verification JARs and pack packaging. Registry/stat closure is therefore distinct from
+spawn/attack/loot/presentation closure.
 
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
