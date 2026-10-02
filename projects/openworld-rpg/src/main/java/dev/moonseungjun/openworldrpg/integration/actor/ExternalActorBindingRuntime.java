@@ -242,7 +242,17 @@ public final class ExternalActorBindingRuntime {
     public static Entity spawnAuthored(ServerLevel level, BlockPos pos, String entityId) {
         ExternalActorCombatProfile profile = COMBAT_PROFILES.get(entityId);
         if (profile == null) {
-            throw new IllegalArgumentException("No project external-actor binding exists for: " + entityId);
+            throw new IllegalArgumentException(
+                    "No project external-actor combat binding exists for: "
+                            + entityId
+            );
+        }
+        if (!R01ExternalActorCatalog.productionSpawnReady(entityId)) {
+            throw new IllegalStateException(
+                    "R01 external actor is registry/stat bound but its production spawn path "
+                            + "is still gated by attack/reward/presentation acceptance: "
+                            + entityId
+            );
         }
 
         EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.parse(entityId))

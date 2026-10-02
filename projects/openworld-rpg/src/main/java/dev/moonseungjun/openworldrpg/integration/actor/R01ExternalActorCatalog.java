@@ -35,6 +35,9 @@ public final class R01ExternalActorCatalog {
             EARTHLOONG
     );
 
+    private static final Set<String> PRODUCTION_SPAWN_READY =
+            Set.of(EARTHLOONG);
+
     private static final List<ExternalActorCombatProfile> COMBAT_PROFILES =
             List.of(
                     new ExternalActorCombatProfile(
@@ -93,5 +96,9 @@ public final class R01ExternalActorCatalog {
 
     public static boolean registryTargetClosed(String entityId) {
         return REQUIRED_REGISTRY_TARGETS.contains(entityId);
+    }
+
+    public static boolean productionSpawnReady(String entityId) {
+        return PRODUCTION_SPAWN_READY.contains(entityId);
     }
 }

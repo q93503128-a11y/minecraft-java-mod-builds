@@ -28,6 +28,40 @@ class R01ExternalActorCatalogTest {
     }
 
     @Test
+    void registryBindingDoesNotAccidentallyOpenProductionSpawns() {
+        assertTrue(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.EARTHLOONG
+                )
+        );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.BISON
+                )
+        );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.GRIZZLY
+                )
+        );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.STEELBOAR
+                )
+        );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.REGALHART
+                )
+        );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.LOUXIA
+                )
+        );
+    }
+
+    @Test
     void combatProfilesMatchTheCanonicalR01StatTable() {
         Map<String, ExternalActorCombatProfile> profiles =
                 R01ExternalActorCatalog.combatProfiles().stream()
