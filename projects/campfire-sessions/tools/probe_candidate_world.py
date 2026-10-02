@@ -465,6 +465,95 @@ def main() -> int:
     summary["best_160x160_window"] = best_window(good_tiles, 10)
     summary["best_192x192_window"] = best_window(good_tiles, 12)
 
+    # Distributed 24x24 housing-lot candidates for the life-sim village.
+    #
+    # The second in-client village review proved that building footprints alone
+    # are insufficient: homes need yards, upgrade reserve and breathing room.
+    # Search the actual dominant island rather than only the compact civic flat
+    # cluster, then greedily keep candidates at least 30 blocks apart.
+    main_land = set(land_comps[0]) if land_comps else set()
+    home_lot_candidates = []
+    if main_land:
+        mx = [p[0] for p in main_land]
+        mz = [p[1] for p in main_land]
+        lot_radius = 12
+        expected_lot_samples = ((lot_radius * 2) // SAMPLE_STEP + 1) ** 2
+
+        for cx in range(min(mx) + lot_radius, max(mx) - lot_radius + 1, SAMPLE_STEP * 2):
+            for cz in range(min(mz) + lot_radius, max(mz) - lot_radius + 1, SAMPLE_STEP * 2):
+                # Keep civic/public space around the plaza and harbor free.
+                if -344 <= cx <= -258 and -72 <= cz <= 36:
+                    continue
+
+                vals = []
+                land_count = 0
+                sample_count = 0
+                for x in range(cx - lot_radius, cx + lot_radius + 1, SAMPLE_STEP):
+                    for z in range(cz - lot_radius, cz + lot_radius + 1, SAMPLE_STEP):
+                        pos = (x, z)
+                        if pos not in surface_y:
+                            continue
+                        sample_count += 1
+                        if pos in main_land:
+                            land_count += 1
+                            vals.append(surface_y[pos])
+
+                if sample_count < int(expected_lot_samples * 0.90) or not vals:
+                    continue
+                land_fraction = land_count / sample_count
+                if land_fraction < 0.95:
+                    continue
+
+                p10 = percentile(vals, 0.10)
+                p90 = percentile(vals, 0.90)
+                spread = p90 - p10
+                median_y = statistics.median(vals)
+                if spread > 6 or median_y < 62 or median_y > 92:
+                    continue
+
+                distance_to_plaza = abs(cx + 300) + abs(cz + 30)
+                score = (
+                    spread * 100
+                    + abs(median_y - 70) * 4
+                    + max(0, distance_to_plaza - 220)
+                )
+                home_lot_candidates.append({
+                    "x": cx,
+                    "z": cz,
+                    "lot_bounds": [
+                        cx - lot_radius,
+                        cz - lot_radius,
+                        cx + lot_radius,
+                        cz + lot_radius,
+                    ],
+                    "median_y": median_y,
+                    "p10_y": p10,
+                    "p90_y": p90,
+                    "spread": spread,
+                    "land_fraction": round(land_fraction, 4),
+                    "distance_to_plaza": distance_to_plaza,
+                    "score": score,
+                })
+
+        home_lot_candidates.sort(key=lambda row: (
+            row["score"],
+            row["distance_to_plaza"],
+            row["x"],
+            row["z"],
+        ))
+
+    distributed_home_lots = []
+    for candidate in home_lot_candidates:
+        if all(
+            (candidate["x"] - chosen["x"]) ** 2 + (candidate["z"] - chosen["z"]) ** 2 >= 30 ** 2
+            for chosen in distributed_home_lots
+        ):
+            distributed_home_lots.append(candidate)
+        if len(distributed_home_lots) >= 20:
+            break
+
+    summary["distributed_home_lot_candidates_24x24"] = distributed_home_lots
+
     # Terrain samples around the current Campfire village-layout working anchors.
     anchors = {
         "harbor": (-336, -48),
