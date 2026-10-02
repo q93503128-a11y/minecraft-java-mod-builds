@@ -402,6 +402,19 @@ Players do not freely relocate or manually build:
 
 Upgrades stay on the same anchor and swap to an upgraded external prefab.
 
+### Building frontage and approach
+Every fixed building/house has an authored **frontage**.
+
+Rules:
+- inspect the actual external prefab's entrance connector/door side before placement.
+- rotate each prefab per anchor; never default the whole village to one global building rotation.
+- the primary door must face its plaza edge, road, yard path or short natural approach.
+- paths terminate at the usable entrance side rather than merely touching the structure footprint.
+- each residential parcel includes a short readable door-to-yard/front-trail connection even when the home is intentionally isolated from the civic road network.
+- upgrades on the same anchor preserve a valid frontage or explicitly author the revised entrance/approach.
+- frontage clearance is part of parcel capacity; a building that technically fits but opens into a slope, wall, neighbor parcel or dead grass strip does not fit.
+
+
 ### Construction presentation
 Buildings should not instantly appear the moment a condition is met.
 Where appropriate:
@@ -458,7 +471,10 @@ Terrain direction:
 Relative village levels:
 1. **Waterfront level** — harbor/pier, arrival, shoreline props.
 2. **Civic/commercial level** — plaza, resident services, general store, café, clothing shop, clinic.
-3. **Upper/residential level** — most homes, museum garden/forecourt and selected public green space.
+3. **Upper/green level** — museum garden/forecourt, selected homes and selected public green space.
+
+Housing is **not** required to live in one upper residential cluster.
+Following the accepted client-review direction, the shared 10–12-house pool should use several authored residential parcels across the main island so homes feel discovered/lived-in rather than packed into one subdivision. Keep only a few homes near the civic core; outlying homes use yards and short natural approaches instead of an island-wide paved road.
 
 Exact Y values are derived from the real terrain during template authoring.
 Do not force predetermined Y numbers that require excessive fill/cut.
@@ -491,11 +507,12 @@ They are not final save-contract coordinates yet.
 - clinic: around **(-318, -8)**, local median Y≈67.
 - museum: around **(-266, -28)**, compact patch median Y≈78 with ~5 blocks spread; intentionally read as an upper landmark terrace.
 - community garden/public green: around **(-322, 12)**, local median Y≈63.
-- housing cluster A: southwest/south of the plaza.
-- housing cluster B: southeast of the plaza.
-- housing cluster C: north/northeast of the plaza.
+- housing: several fixed residential parcels distributed across the main island, with only a few homes near the plaza and the rest using natural/coastal/hillside pockets selected from measured terrain.
+- starting shared housing pool: roughly **10–12 houses** total, including the player's chosen home and resident homes.
+- residential parcels reserve yard and upgrade space around the current shell; the initial terrain edit should be smaller than the full reserved parcel where possible.
+- outlying homes use short front trails/natural approaches; do not draw a formal paved road across the whole island merely to connect every house.
 
-House clusters should each contain only a few homes so the village feels grown rather than plotted as one rectangular suburb.
+The older A/B/C cluster concept is superseded by this distributed-parcel direction from client review.
 
 ### Arrival spawn
 The original downloaded world spawn at approximately **(334, 71, -86)** is not used as the normal Campfire first-arrival point because it lies on a secondary island.

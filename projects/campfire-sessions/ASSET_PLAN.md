@@ -1916,3 +1916,18 @@ V5 housing review:
 - explicit source AIR is filtered during review placement to prevent prefab voids from cutting roads/yards.
 
 This is still an **integrated client-review candidate**, not final accepted village art. V5 must pass actual Minecraft visual review before house anchors or this exterior family become final.
+
+
+## V6 frontage metadata — Chek's Mint
+
+Direct inspection of the packaged Chek structure NBTs confirmed that the selected shells expose a `minecraft:building_entrance` jigsaw on the source west edge for the primary entrance. The previous helper ignored that metadata and forced `Rotation.NONE`.
+
+V6 rules:
+- treat the source entrance connector as frontage metadata.
+- choose rotation per physical anchor/approach.
+- preserve roughly the same parcel center while rotating the footprint.
+- civic paths terminate on the rotated entrance side.
+- every distributed home receives a short front-yard trail aligned with the rotated entrance.
+- never infer future building orientation from filename alone; inspect the actual structure connector/door when a prefab changes.
+
+Current v6 is still a visual-review slice. Passing server placement proves geometry/terrain compatibility, not final visual acceptance or final house-upgrade progression.

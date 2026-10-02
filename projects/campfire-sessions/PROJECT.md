@@ -529,3 +529,54 @@ Validation labels:
 - MULTIPLAYER TESTED: NO
 
 Because the baked village world changed materially from v4, client review requires a **fresh v5 Modrinth review-pack import**. A JAR-only replacement cannot update the already-baked v4 review save.
+
+
+## V5 client review — entrance/orientation correction
+
+The user completed the real Minecraft client review of the distributed v5 village.
+
+Accepted from v5:
+- housing is materially more distributed and no longer reads as one dense suburb.
+- 11-house shared pool is in the intended starting scale.
+- separated residential parcels/yard reserve remain the correct direction.
+
+Rejected/corrected:
+- all Chek structures were placed through a helper that hard-coded `Rotation.NONE`.
+- the selected Chek village NBTs use a west-side `minecraft:building_entrance` connector by default, so the helper caused most doors/frontages to face the same world direction regardless of road/yard approach.
+- several public paths therefore met a side/back rather than the intended front door.
+- this violated the already intended entrance-aware village composition and is not accepted as final placement.
+
+The external NBTs were inspected directly in the packaged Build #76 JAR. Entrance connector locations were confirmed for all selected Chek shells rather than inferred only from screenshots.
+
+## V6 entrance-aware placement verification
+
+Code checkpoint:
+- `68fd6f03b467454378a416f358689691e41a7f0b`
+- Chek placement now takes an explicit per-building `Rotation`.
+- public buildings are rotated toward their civic path/approach.
+- distributed homes receive varied authored rotations and a short front-door trail inside the residential parcel.
+- the fisher cottage is oriented toward its coastal side rather than inheriting the same frontage as inland homes.
+- review marker advanced to `.campfiresessions-village-review-v6`.
+
+Verification:
+- Build Campfire Sessions #77 / run `36955747832`: **SUCCESS**
+- build artifact `campfire-sessions-alpha6`: ID `11205532858`
+- build digest: `sha256:6a9b8ee1cb0b9714fd054e10e9d36f2571794d393f713029785b9c039bf609df`
+- Probe Campfire Canonical World Runtime #41 / run `36955747814`: **SUCCESS**
+- v6 review-pack artifact: ID `11206057591`
+- v6 review-pack digest: `sha256:ecf45a5e8dc705974280b7979c15974ed3d919e345faa47a48739b1cff4c15fe`
+- v6 staged world artifact: ID `11206062416`
+- rotated 19-structure canonical placement: SERVER VERIFIED
+- entrance/front-trail path grading: SERVER VERIFIED
+
+Validation labels:
+- V5 CLIENT VISUAL TESTED: YES
+- V5 DISTRIBUTION DIRECTION: RETAINED
+- V5 ENTRANCE/ORIENTATION ACCEPTANCE: FAILED
+- V6 BUILD VERIFIED: YES
+- V6 CANONICAL SERVER TESTED: YES
+- V6 CLIENT VISUAL TESTED: NO
+- V6 VISUAL ACCEPTANCE: PENDING
+
+Important scope:
+The current exterior shells are still **review/production candidates**, not the completed building-progression implementation. Construction states, locked/unlocked facility presentation, managed interiors, house upgrade prefab chains and final façade customization remain separate work.
