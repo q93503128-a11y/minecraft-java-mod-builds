@@ -63,6 +63,18 @@ public final class ProjectMinecraftDamageApplicator {
             LivingEntity target,
             double finalDamage
     ) {
+        final LivingEntity combatTarget;
+        if (ExternalActorBindingRuntime.ownsDamageAuthority(target)) {
+            combatTarget = ExternalActorBindingRuntime
+                    .damageAuthorityTarget(target)
+                    .orElse(null);
+            if (combatTarget == null) {
+                return false;
+            }
+        } else {
+            combatTarget = target;
+        }
+
         if (attacker instanceof ServerPlayer hunter) {
             finalDamage = ProjectCombatRules.roundFinal(
                     finalDamage
@@ -71,14 +83,14 @@ public final class ProjectMinecraftDamageApplicator {
                                             hunter,
                                             HunterSkillRuntime.isCurrentQuarry(
                                                     hunter,
-                                                    target
+                                                    combatTarget
                                             )
                                     )
             );
         }
         return applyResolved(
                 attacker,
-                target,
+                combatTarget,
                 finalDamage,
                 PROJECT_DIRECT_PHYSICAL
         );
@@ -90,9 +102,23 @@ public final class ProjectMinecraftDamageApplicator {
             double finalDamage,
             ResourceKey<DamageType> damageTypeKey
     ) {
+        final boolean externalTarget =
+                ExternalActorBindingRuntime.ownsDamageAuthority(target);
+        final LivingEntity damageTarget;
+        if (externalTarget) {
+            damageTarget = ExternalActorBindingRuntime
+                    .damageAuthorityTarget(target)
+                    .orElse(null);
+            if (damageTarget == null) {
+                return false;
+            }
+        } else {
+            damageTarget = target;
+        }
+
         if (!(attacker.level() instanceof ServerLevel serverLevel)
-                || target.level() != serverLevel
-                || target == attacker
+                || damageTarget.level() != serverLevel
+                || damageTarget == attacker
                 || !Double.isFinite(finalDamage)
                 || finalDamage <= 0.0) {
             return false;
@@ -102,15 +128,16 @@ public final class ProjectMinecraftDamageApplicator {
         var damageType = damageTypes.getOrThrow(damageTypeKey);
         DamageSource source = new DamageSource(damageType, attacker);
 
-        if (ExternalActorBindingRuntime.ownsDamageAuthority(target)) {
+        if (externalTarget) {
             double encounterAdjustedDamage = finalDamage
-                    * R01EarthloongPhysicalEncounterRuntime.incomingDamageMultiplier(target);
+                    * R01EarthloongPhysicalEncounterRuntime
+                            .incomingDamageMultiplier(damageTarget);
             var application = ExternalActorBindingRuntime.applyProjectHealthDamage(
-                    target,
+                    damageTarget,
                     encounterAdjustedDamage,
                     proxyDamage -> ProjectDamageApplicationContext.authorizeNext(
-                            target,
-                            () -> target.hurtServer(
+                            damageTarget,
+                            () -> damageTarget.hurtServer(
                                     serverLevel,
                                     source,
                                     (float) Math.min(proxyDamage, Float.MAX_VALUE)
@@ -123,30 +150,30 @@ public final class ProjectMinecraftDamageApplicator {
             var applied = application.orElseThrow();
             if (attacker instanceof ServerPlayer player) {
                 R01EarthloongEncounterService.recordDamageContribution(
-                        target,
+                        damageTarget,
                         player
                 );
                 R01EarthloongPhysicalEncounterRuntime.recordProjectDamageThreat(
-                        target,
+                        damageTarget,
                         player,
                         applied.appliedDamage(),
                         serverLevel.getGameTime()
                 );
             }
             if (applied.killed()) {
-                R01EarthloongEncounterService.resolveDefeat(target);
+                R01EarthloongEncounterService.resolveDefeat(damageTarget);
             }
             return true;
         }
 
         float amount = (float) Math.min(finalDamage, Float.MAX_VALUE);
-        if (target instanceof Player
+        if (damageTarget instanceof Player
                 && ExternalActorBindingRuntime.ownsDamageAuthority(attacker)) {
             return ProjectDamageApplicationContext.authorizeNext(
-                    target,
-                    () -> target.hurtServer(serverLevel, source, amount)
+                    damageTarget,
+                    () -> damageTarget.hurtServer(serverLevel, source, amount)
             );
         }
-        return target.hurtServer(serverLevel, source, amount);
+        return damageTarget.hurtServer(serverLevel, source, amount);
     }
 }

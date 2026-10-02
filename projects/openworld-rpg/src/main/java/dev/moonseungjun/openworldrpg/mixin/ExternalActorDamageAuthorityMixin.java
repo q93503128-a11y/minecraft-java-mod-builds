@@ -47,6 +47,13 @@ public abstract class ExternalActorDamageAuthorityMixin {
         }
 
         if (ExternalActorBindingRuntime.ownsDamageAuthority(self)) {
+            LivingEntity authorityTarget =
+                    ExternalActorBindingRuntime.damageAuthorityTarget(self)
+                            .orElse(null);
+            if (authorityTarget == null) {
+                cir.setReturnValue(false);
+                return;
+            }
             if (ProjectDamageApplicationContext.consumeIfAuthorized(self)) {
                 return;
             }
@@ -59,7 +66,7 @@ public abstract class ExternalActorDamageAuthorityMixin {
                         shooter
                 ).orElse(null);
                 var targetSnapshot = ExternalActorBindingRuntime
-                        .projectTargetSnapshot(self, gameTick)
+                        .projectTargetSnapshot(authorityTarget, gameTick)
                         .orElse(null);
                 if (shot == null || targetSnapshot == null) {
                     cir.setReturnValue(false);
@@ -73,7 +80,7 @@ public abstract class ExternalActorDamageAuthorityMixin {
                 boolean weakPointHit =
                         ExternalActorBindingRuntime
                                 .isAuthoredWeakPointHit(
-                                        self,
+                                        authorityTarget,
                                         arrow.position()
                                 );
                 double criticalChanceBonus =
@@ -128,13 +135,13 @@ public abstract class ExternalActorDamageAuthorityMixin {
 
                 boolean applied = ProjectMinecraftDamageApplicator.applyDirectPhysical(
                         shooter,
-                        self,
+                        authorityTarget,
                         decision.finalDamage()
                 );
                 var poiseApplication = applied
                         && decision.poiseDamage() > 0.0
                         ? ExternalActorBindingRuntime.applyProjectPoiseDamage(
-                                self,
+                                authorityTarget,
                                 decision.poiseDamage(),
                                 gameTick
                         ).orElse(null)
@@ -147,7 +154,7 @@ public abstract class ExternalActorDamageAuthorityMixin {
                     if (serverShooter != null) {
                         HunterSkillRuntime.onRangedBasicHit(
                                 serverShooter,
-                                self,
+                                authorityTarget,
                                 shot.launchPosition().distanceTo(
                                         arrow.position()
                                 ),

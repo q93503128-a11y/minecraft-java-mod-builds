@@ -65,9 +65,16 @@ public abstract class PlayerAttackAuthorityMixin {
                 || !ExternalActorBindingRuntime.ownsDamageAuthority(livingTarget)) {
             return original.call(target, source, proposedDamage);
         }
+        LivingEntity authorityTarget =
+                ExternalActorBindingRuntime.damageAuthorityTarget(livingTarget)
+                        .orElse(null);
+        if (authorityTarget == null) {
+            return false;
+        }
+
         var build = CombatStateServices.combatBuilds().build(attacker.getUUID()).orElse(null);
         var targetSnapshot = ExternalActorBindingRuntime
-                .projectTargetSnapshot(livingTarget, gameTick)
+                .projectTargetSnapshot(authorityTarget, gameTick)
                 .orElse(null);
         if (build == null || targetSnapshot == null) {
             return false;
@@ -113,7 +120,7 @@ public abstract class PlayerAttackAuthorityMixin {
                 equipmentAttackSpeedBonus,
                 classAttackSpeedBonus,
                 context.comboCount(),
-                livingTarget.getId(),
+                authorityTarget.getId(),
                 gameTick
         )) {
             return false;
@@ -121,7 +128,7 @@ public abstract class PlayerAttackAuthorityMixin {
 
         boolean applied = ProjectMinecraftDamageApplicator.applyDirectPhysical(
                 attacker,
-                livingTarget,
+                authorityTarget,
                 decision.finalDamage()
         );
         if (!applied) {
@@ -140,7 +147,7 @@ public abstract class PlayerAttackAuthorityMixin {
                             : 1.0;
             var poiseApplication =
                     ExternalActorBindingRuntime.applyProjectPoiseDamage(
-                            livingTarget,
+                            authorityTarget,
                             decision.poiseDamage()
                                     * warriorPoiseMultiplier,
                             gameTick
@@ -152,7 +159,7 @@ public abstract class PlayerAttackAuthorityMixin {
                     && attacker instanceof ServerPlayer serverPlayer) {
                 R01EarthloongMythicRuntime.onPersonalEliteBossPoiseBreak(
                         serverPlayer,
-                        livingTarget,
+                        authorityTarget,
                         build,
                         gameTick
                 );
@@ -161,7 +168,7 @@ public abstract class PlayerAttackAuthorityMixin {
         if (attacker instanceof ServerPlayer serverPlayer) {
             WarriorSkillRuntime.onMeleeBasicHit(
                     serverPlayer,
-                    livingTarget,
+                    authorityTarget,
                     decision.cycleFinisher(),
                     poiseBreakTriggered,
                     gameTick

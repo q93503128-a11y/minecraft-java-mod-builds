@@ -11,6 +11,7 @@ import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlay
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlayValidator;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
@@ -37,8 +38,12 @@ public final class ExternalActorBindingRuntime {
             "/data/openworld_rpg/integration/actors/r01_earthloong.json";
     private static final String AUTHORED_SPAWN_TAG = "openworld_rpg.authored_spawn";
     private static final String NO_CAPTURE_TAG = "openworld_rpg.no_capture";
+    private static final String CAVE_CENTIPEDE_BODY_CLASS =
+            "com.github.alexthe666.alexsmobs.entity.EntityCentipedeBody";
 
     private static final Map<String, ExternalActorCombatProfile> COMBAT_PROFILES = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Method> MULTIPART_PARENT_METHODS =
+            new ConcurrentHashMap<>();
     private static final Map<UUID, ProjectHealthRuntimeState> HEALTH_STATES = new ConcurrentHashMap<>();
     private static final Map<UUID, ProjectPoiseRuntimeState> POISE_STATES = new ConcurrentHashMap<>();
     private static volatile boolean initialized;
@@ -98,6 +103,8 @@ public final class ExternalActorBindingRuntime {
             );
         }
 
+        validateCaveCentipedeMultipartBridge(logger);
+
         /*
          * Fabric does not guarantee a dependency's ModInitializer runs before ours merely because the
          * dependency is present. Validate the concrete registry target at SERVER_STARTING, after all
@@ -142,23 +149,68 @@ public final class ExternalActorBindingRuntime {
     }
 
     public static Optional<ExternalActorCombatProfile> combatProfile(Entity entity) {
-        Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        String id = registryId(entity);
         if (id == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(COMBAT_PROFILES.get(id.toString()));
+        return Optional.ofNullable(COMBAT_PROFILES.get(id));
+    }
+
+    /**
+     * Resolves the LivingEntity that owns canonical project HP/poise for an attacked entity.
+     *
+     * <p>Most actors own themselves. Cave Centipede body/tail parts walk the donor parent chain to
+     * the exact bound head. Broken/missing chains return empty so damage fails closed.</p>
+     */
+    public static Optional<LivingEntity> damageAuthorityTarget(Entity entity) {
+        if (!(entity instanceof LivingEntity living)) {
+            return Optional.empty();
+        }
+        if (combatProfile(living).isPresent()) {
+            return Optional.of(living);
+        }
+
+        String id = registryId(entity);
+        if (!R01ExternalActorCatalog.multipartCombatProxy(id)) {
+            return Optional.empty();
+        }
+        String expectedOwnerId = R01ExternalActorCatalog.combatOwnerId(id);
+
+        Entity current = entity;
+        for (int depth = 0; depth < 16; depth++) {
+            Entity parent = multipartParent(current);
+            if (parent == null || parent == current) {
+                return Optional.empty();
+            }
+            String parentId = registryId(parent);
+            if (expectedOwnerId.equals(parentId)
+                    && parent instanceof LivingEntity owner
+                    && combatProfile(owner).isPresent()) {
+                return Optional.of(owner);
+            }
+            if (!R01ExternalActorCatalog.multipartCombatProxy(parentId)) {
+                return Optional.empty();
+            }
+            current = parent;
+        }
+        return Optional.empty();
     }
 
     public static boolean ownsProgression(Entity entity) {
-        return combatProfile(entity).isPresent();
+        String id = registryId(entity);
+        return combatProfile(entity).isPresent()
+                || R01ExternalActorCatalog.multipartCombatProxy(id);
     }
 
     public static boolean ownsDamageAuthority(Entity entity) {
-        return combatProfile(entity).isPresent();
+        String id = registryId(entity);
+        return combatProfile(entity).isPresent()
+                || R01ExternalActorCatalog.multipartCombatProxy(id);
     }
 
     public static boolean captureForbidden(Entity entity) {
-        return combatProfile(entity).isPresent() || entity.entityTags().contains(NO_CAPTURE_TAG);
+        return ownsDamageAuthority(entity)
+                || entity.entityTags().contains(NO_CAPTURE_TAG);
     }
 
     public static boolean isAuthoredWeakPointHit(
@@ -168,18 +220,24 @@ public final class ExternalActorBindingRuntime {
         if (target == null || hitPosition == null) {
             return false;
         }
-        return combatProfile(target)
+        return damageAuthorityTarget(target)
+                .flatMap(ExternalActorBindingRuntime::combatProfile)
                 .map(ExternalActorCombatProfile::weakPointProfile)
                 .filter(profile -> !profile.isEmpty())
-                .map(profile -> profile.contains(target, hitPosition))
+                .map(profile -> profile.contains(
+                        damageAuthorityTarget(target).orElse(target),
+                        hitPosition
+                ))
                 .orElse(false);
     }
 
     public static Optional<ProjectHealthRuntimeState.Snapshot> canonicalHealthSnapshot(
             LivingEntity living
     ) {
-        return combatProfile(living).map(profile ->
-                ensureHealthStateFromProxy(living, profile).snapshot()
+        return damageAuthorityTarget(living).flatMap(owner ->
+                combatProfile(owner).map(profile ->
+                        ensureHealthStateFromProxy(owner, profile).snapshot()
+                )
         );
     }
 
@@ -214,19 +272,25 @@ public final class ExternalActorBindingRuntime {
             LivingEntity living,
             long gameTick
     ) {
-        return combatProfile(living).map(profile -> {
-            ProjectPoiseRuntimeState.Snapshot poise =
-                    ensurePoiseState(living, profile, gameTick).snapshot(gameTick);
-            return profile.projectTargetSnapshot(poise.damageTakenMultiplier());
-        });
+        return damageAuthorityTarget(living).flatMap(owner ->
+                combatProfile(owner).map(profile -> {
+                    ProjectPoiseRuntimeState.Snapshot poise =
+                            ensurePoiseState(owner, profile, gameTick).snapshot(gameTick);
+                    return profile.projectTargetSnapshot(
+                            poise.damageTakenMultiplier()
+                    );
+                })
+        );
     }
 
     public static Optional<ProjectPoiseRuntimeState.Snapshot> poiseSnapshot(
             LivingEntity living,
             long gameTick
     ) {
-        return combatProfile(living).map(profile ->
-                ensurePoiseState(living, profile, gameTick).snapshot(gameTick)
+        return damageAuthorityTarget(living).flatMap(owner ->
+                combatProfile(owner).map(profile ->
+                        ensurePoiseState(owner, profile, gameTick).snapshot(gameTick)
+                )
         );
     }
 
@@ -235,8 +299,13 @@ public final class ExternalActorBindingRuntime {
             double rawPoiseDamage,
             long gameTick
     ) {
-        return combatProfile(living).map(profile ->
-                ensurePoiseState(living, profile, gameTick).apply(rawPoiseDamage, gameTick)
+        return damageAuthorityTarget(living).flatMap(owner ->
+                combatProfile(owner).map(profile ->
+                        ensurePoiseState(owner, profile, gameTick).apply(
+                                rawPoiseDamage,
+                                gameTick
+                        )
+                )
         );
     }
 
@@ -326,6 +395,70 @@ public final class ExternalActorBindingRuntime {
                             );
                 }
         );
+    }
+
+    private static String registryId(Entity entity) {
+        if (entity == null) {
+            return null;
+        }
+        Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        return id == null ? null : id.toString();
+    }
+
+    private static Entity multipartParent(Entity segment) {
+        try {
+            Object parent = multipartParentMethod(segment.getClass()).invoke(segment);
+            return parent instanceof Entity entity ? entity : null;
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException(
+                    "Could not resolve Cave Centipede multipart parent for "
+                            + registryId(segment),
+                    exception
+            );
+        }
+    }
+
+    private static Method multipartParentMethod(Class<?> type) {
+        return MULTIPART_PARENT_METHODS.computeIfAbsent(type, current -> {
+            try {
+                Method method = current.getMethod("getParent");
+                if (!Entity.class.isAssignableFrom(method.getReturnType())) {
+                    throw new IllegalStateException(
+                            "Cave Centipede getParent() no longer returns Entity: "
+                                    + current.getName()
+                    );
+                }
+                return method;
+            } catch (NoSuchMethodException exception) {
+                throw new IllegalStateException(
+                        "Pinned Cave Centipede multipart API no longer exposes public getParent(): "
+                                + current.getName(),
+                        exception
+                );
+            }
+        });
+    }
+
+    private static void validateCaveCentipedeMultipartBridge(Logger logger) {
+        try {
+            Class<?> bodyClass = Class.forName(
+                    CAVE_CENTIPEDE_BODY_CLASS,
+                    false,
+                    ExternalActorBindingRuntime.class.getClassLoader()
+            );
+            multipartParentMethod(bodyClass);
+            logger.info(
+                    "Openworld RPG Cave Centipede multipart damage bridge verified: "
+                            + "body/tail hit proxies route through public getParent() to {}.",
+                    R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD
+            );
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException(
+                    "Pinned Cave Centipede body class is missing: "
+                            + CAVE_CENTIPEDE_BODY_CLASS,
+                    exception
+            );
+        }
     }
 
     private static void validateRequiredRegistryTarget(String entityId, Logger logger) {

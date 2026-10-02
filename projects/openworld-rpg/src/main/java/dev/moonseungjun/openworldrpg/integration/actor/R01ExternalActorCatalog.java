@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.integration.actor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -42,6 +43,11 @@ public final class R01ExternalActorCatalog {
             NATURE_SPIRIT,
             REGALHART,
             EARTHLOONG
+    );
+
+    private static final Map<String, String> COMBAT_OWNER_BY_TARGET = Map.of(
+            CAVE_CENTIPEDE_BODY, CAVE_CENTIPEDE_HEAD,
+            CAVE_CENTIPEDE_TAIL, CAVE_CENTIPEDE_HEAD
     );
 
     private static final Set<String> PRODUCTION_SPAWN_READY =
@@ -121,6 +127,23 @@ public final class R01ExternalActorCatalog {
 
     public static List<ExternalActorCombatProfile> combatProfiles() {
         return COMBAT_PROFILES;
+    }
+
+    /**
+     * Returns the registry id that owns canonical project combat state for an attacked target.
+     *
+     * <p>Cave Centipede body/tail entities are hit proxies only. They route to the head instead of
+     * receiving independent HP/poise pools.</p>
+     */
+    public static String combatOwnerId(String entityId) {
+        if (entityId == null) {
+            throw new IllegalArgumentException("entityId cannot be null.");
+        }
+        return COMBAT_OWNER_BY_TARGET.getOrDefault(entityId, entityId);
+    }
+
+    public static boolean multipartCombatProxy(String entityId) {
+        return entityId != null && COMBAT_OWNER_BY_TARGET.containsKey(entityId);
     }
 
     public static boolean registryTargetClosed(String entityId) {

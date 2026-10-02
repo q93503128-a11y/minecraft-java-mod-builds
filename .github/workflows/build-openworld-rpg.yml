@@ -121,6 +121,7 @@ jobs:
 
           grep -q 'Openworld RPG M0 integration bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external runtime containment verified before gameplay server start' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG Cave Centipede multipart damage bridge verified: body/tail hit proxies route through public getParent() to alexsmobs:centipede_head.' build/logs/server-gameplay.log
           grep -q 'Openworld RPG R01 external actor registry gate armed for 13 exact pinned targets; 7 have project combat-stat authority.' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_earthloong.' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_regalhart.' build/logs/server-gameplay.log

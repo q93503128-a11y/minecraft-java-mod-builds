@@ -75,6 +75,37 @@ class R01ExternalActorCatalogTest {
     }
 
     @Test
+    void caveCentipedeSegmentsResolveToOneCanonicalCombatOwner() {
+        assertEquals(
+                R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD,
+                R01ExternalActorCatalog.combatOwnerId(
+                        R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD
+                )
+        );
+        assertEquals(
+                R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD,
+                R01ExternalActorCatalog.combatOwnerId(
+                        R01ExternalActorCatalog.CAVE_CENTIPEDE_BODY
+                )
+        );
+        assertEquals(
+                R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD,
+                R01ExternalActorCatalog.combatOwnerId(
+                        R01ExternalActorCatalog.CAVE_CENTIPEDE_TAIL
+                )
+        );
+        assertFalse(R01ExternalActorCatalog.multipartCombatProxy(
+                R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD
+        ));
+        assertTrue(R01ExternalActorCatalog.multipartCombatProxy(
+                R01ExternalActorCatalog.CAVE_CENTIPEDE_BODY
+        ));
+        assertTrue(R01ExternalActorCatalog.multipartCombatProxy(
+                R01ExternalActorCatalog.CAVE_CENTIPEDE_TAIL
+        ));
+    }
+
+    @Test
     void combatProfilesMatchTheCanonicalR01StatTable() {
         Map<String, ExternalActorCombatProfile> profiles =
                 R01ExternalActorCatalog.combatProfiles().stream()
