@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EnemyControlContributionBridge;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
@@ -53,6 +54,7 @@ public final class GuardianProvokedRuntime {
                 ? NORMAL_ELITE_WEIGHT
                 : MINIBOSS_BOSS_WEIGHT;
         long expiresAt = Math.addExact(nowTick, DURATION_TICKS);
+        Entry previous = liveEntry(target, nowTick);
         ENTRIES.put(
                 target.getUUID(),
                 new Entry(
@@ -62,6 +64,15 @@ public final class GuardianProvokedRuntime {
                         weight
                 )
         );
+        if (previous == null
+                || !previous.guardianId()
+                        .equals(guardian.getUUID())) {
+            R01EnemyControlContributionBridge
+                    .recordSuccessfulControl(
+                            guardian,
+                            target
+                    );
+        }
         return new Application(true, expiresAt, weight);
     }
 

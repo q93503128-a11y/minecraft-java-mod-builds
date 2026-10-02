@@ -1,9 +1,11 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EnemyControlContributionBridge;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -325,16 +327,28 @@ public final class MagePhaseStepRuntime {
                     > radius * radius) {
                 continue;
             }
-            if (ProjectHostileStatusRuntime.applyPhaseFieldSlow(
+            var control = ProjectHostileStatusRuntime.applyPhaseFieldSlow(
                     target,
                     field.utilityMagnitudeMultiplier(),
                     nowTick
-            ).isPresent()) {
-                ProjectUltimateChargeRuntime.recordMageMeaningfulControl(
-                        caster,
-                        target,
-                        nowTick
-                );
+            ).orElse(null);
+            if (control == null) {
+                continue;
+            }
+            ProjectUltimateChargeRuntime.recordMageMeaningfulControl(
+                    caster,
+                    target,
+                    nowTick
+            );
+            if (!control.strongerControlActive()
+                    && field.markControlContributionPublished(
+                            target.getUUID()
+                    )) {
+                R01EnemyControlContributionBridge
+                        .recordSuccessfulControl(
+                                caster,
+                                target
+                        );
             }
         }
     }
@@ -398,6 +412,8 @@ public final class MagePhaseStepRuntime {
         private final Vec3 origin;
         private final double utilityMagnitudeMultiplier;
         private final long expiresAtTick;
+        private final Set<UUID> controlContributionTargets =
+                new HashSet<>();
         private long nextVisualTick;
 
         private ActiveField(
@@ -441,6 +457,14 @@ public final class MagePhaseStepRuntime {
 
         private long nextVisualTick() {
             return nextVisualTick;
+        }
+
+        private boolean markControlContributionPublished(
+                UUID targetId
+        ) {
+            return controlContributionTargets.add(
+                    Objects.requireNonNull(targetId, "targetId")
+            );
         }
 
         private void advanceVisualTick() {
