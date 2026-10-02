@@ -375,6 +375,28 @@ their authored attack/reward/presentation acceptance is still outstanding, and E
 the only production-spawn-ready R01 external actor. Registry/stat + multipart damage closure is
 therefore distinct from spawn/attack/loot/presentation closure.
 
+The next creature-authority pass at code state `40dd83b8b0b0c871ad75783674238ea0f4033280`
+closes the server-owned **authored action-contract layer** for Cave Centipede and Nature Spirit
+without opening either production spawn. Cave Centipede now has data-validated Scuttle Bite /
+Body Rake / physically-gated Ceiling Drop timing, weights, the exact 8.0 s Ceiling Drop cooldown,
+damage/guard-pressure contracts, Poison buildup payloads and deterministic weighted selection;
+the controller can only choose Ceiling Drop when an eventual physical binder reports a real
+climbed-above-target position and otherwise repositions rather than teleporting. Nature Spirit now
+has data-validated Rooted Swipe / Earthen Ram / Bloom Quake action rules plus the exact Living Shell
+authority contract: 20% MaxHP hostile post-mitigation damage over 4.0 s or <=40% poise requests the
+next legal Shell, Shell lasts 2.5 s, reuses after 12.0 s, applies 0.65 direct-damage taken and 1.25
+poise-damage taken multipliers, ends immediately on poise break, and a natural end forces Bloom
+Quake only when an eligible target is within 4.0 blocks. Bloom Quake cannot immediately select
+itself again through normal selection. Build Openworld RPG run `36970730169` is **SUCCESS** for
+this state: unit tests/build, pinned creature inspection, core/gameplay dedicated-server smoke,
+gameplay client startup, both verification JARs, mrpack packaging and artifact upload all passed.
+The produced artifact is
+`openworld-rpg-m0-40dd83b8b0b0c871ad75783674238ea0f4033280` (artifact `11212086150`).
+This is still **not** donor animation/contact binding, reward delivery, production spawn acceptance
+or an in-world playtest. Cave Centipede and Nature Spirit therefore remain fail-closed for production
+spawning until their real dependency presentation/contact surfaces and reward hooks are connected and
+accepted.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
