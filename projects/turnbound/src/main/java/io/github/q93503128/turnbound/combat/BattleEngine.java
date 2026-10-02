@@ -254,9 +254,9 @@ public final class BattleEngine {
     }
 
     private int applyHeal(CombatantState source, CombatantState target, int raw, String detail) {
-        int sourceAdjusted = Math.max(0, (int)Math.floor(raw * (1.0 + rulePercent(source, "HEAL_DONE_"))));
+        int sourceAdjusted = Math.max(0, (int)Math.floor(raw * (1.0 + rulePercent(source, "HEAL_DONE_")) + 1.0e-9));
         int missingBefore = Math.max(0, target.maxHp() - target.hp());
-        int receivedAdjusted = Math.max(0, (int)Math.floor(sourceAdjusted * Math.max(0.0, 1.0 + target.healingReceivedModifier())));
+        int receivedAdjusted = Math.max(0, (int)Math.floor(sourceAdjusted * Math.max(0.0, 1.0 + target.healingReceivedModifier()) + 1.0e-9));
         int healed = target.heal(sourceAdjusted);
         state.addEvent(new BattleEvent("HEAL", source.instanceId(), target.instanceId(), healed, detail));
         if (source.definition().id().equals("P04") && source.definition().hasRule("SIG_P04_OVERHEAL_BARRIER_60")) {

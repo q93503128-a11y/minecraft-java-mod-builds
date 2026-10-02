@@ -162,7 +162,7 @@ public final class CombatantState {
 
     public int heal(int amount) {
         if (downed || amount <= 0) return 0;
-        int adjusted = Math.max(0, (int)Math.floor(amount * Math.max(0.0, 1.0 + healingReceivedModifier())));
+        int adjusted = Math.max(0, (int)Math.floor(amount * Math.max(0.0, 1.0 + healingReceivedModifier()) + 1.0e-9));
         int before = hp;
         hp = Math.min(maxHp(), hp + adjusted);
         return hp - before;
