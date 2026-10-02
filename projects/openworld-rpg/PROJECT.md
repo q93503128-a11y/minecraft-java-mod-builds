@@ -443,6 +443,22 @@ packaging and artifact upload all passed. Artifact:
 production spawn binder and attack-specific player-facing model/animation presentation, so the reward
 bridge remains dormant for real R01 production spawning until those gates are accepted.
 
+The support-eligibility follow-up at code state
+`efb63e028f5db5f0a802ff499b4457a693dfd668` closes the currently implementable
+encounter-linked **heal + barrier contribution** path without broadening reward eligibility. A skill
+heal can qualify only when the caller passes the actual Earthloong/Nature Spirit encounter actor,
+the caster heals another player, and real missing HP is restored. A skill barrier can qualify only
+through the explicit encounter-linked barrier entry point, when it gives another engaged player a
+positive effective barrier; self-barriers, proximity, zero-effect applications and ordinary
+non-encounter heal/barrier calls do not manufacture participation. Both encounter services perform
+their own actor validation, and Nature Spirit still additionally requires the accepted authored-spawn
+tag. Build Openworld RPG run `37003375371` is **SUCCESS** for this state: tests/build, pinned
+creature inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification
+JARs, mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-efb63e028f5db5f0a802ff499b4457a693dfd668`
+(`11224598410`). Control/debuff/revive support callers are not fabricated here because their real
+encounter-linked runtime paths are not yet present.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

@@ -1101,6 +1101,27 @@ Build Openworld RPG run `36975176112` is SUCCESS for this backend state and prod
 `openworld-rpg-m0-199d82437a854603a7443ea9ad7d9a00fc10b09f`
 (`11213159221`). This is not an in-world Nature Spirit playtest.
 
+The encounter-linked support bridge is additionally bound at
+`efb63e028f5db5f0a802ff499b4457a693dfd668`:
+
+- one real skill heal qualifies only after restoring missing HP to another actively engaged player
+  through an explicit Nature Spirit encounter actor;
+- one barrier qualifies on a positive effective grant to another actively engaged player through the
+  explicit Nature Spirit encounter-linked barrier path; it does not need to wait for later damage
+  absorption, matching `PARTY_MULTIPLAYER.md`;
+- self-heal/self-barrier, full-HP no-op heal, zero-effective barrier, party membership and proximity
+  alone do not qualify;
+- the Nature Spirit reward service still independently rejects non-Nature-Spirit actors and
+  non-authored spawns;
+- the same explicit barrier API also closes the previously missing Earthloong barrier-support
+  participation boundary without changing its existing reward ownership rules;
+- control/debuff/revive participation stays open until those concrete runtime actions exist.
+
+Build Openworld RPG run `37003375371` is **SUCCESS** for this support bridge and produced artifact
+`openworld-rpg-m0-efb63e028f5db5f0a802ff499b4457a693dfd668`
+(`11224598410`). This still is not an in-world Nature Spirit encounter playtest and does not open
+Nature Spirit production spawning.
+
 ---
 
 # 19. Regalhart — optional R01 field boss
