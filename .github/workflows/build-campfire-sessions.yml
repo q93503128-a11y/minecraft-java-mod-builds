@@ -56,6 +56,7 @@ jobs:
           set -euo pipefail
           ./gradlew --no-daemon copyExternalStructureProbe
           python3 tools/inspect_structure_jars.py build/externalStructureProbe | tee build/external-structure-footprints.txt
+          python3 tools/probe_cheks_source_structures.py | tee build/cheks-source-structures.txt
       - name: Probe MineColonies village prefab candidates
         shell: bash
         run: |
@@ -233,6 +234,8 @@ jobs:
           path: |
             projects/campfire-sessions/build.log
             projects/campfire-sessions/build/external-structure-footprints.txt
+            projects/campfire-sessions/build/cheks-source-structures.txt
+            projects/campfire-sessions/build/cheks-source-structures.json
             projects/campfire-sessions/build/minecoloniesCandidateProbe/minecolonies-candidates.json
             projects/campfire-sessions/build/minecoloniesCandidateProbe/minecolonies-candidates.md
             projects/campfire-sessions/build/plumberry-asset-contract.txt
