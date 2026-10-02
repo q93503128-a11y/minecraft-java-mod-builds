@@ -21,38 +21,8 @@ public final class RecoveryUseRuntime {
 
     private static final ConcurrentHashMap<UUID, RecoveryUseActionState> ACTIVE =
             new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<UUID, Long> LAST_SEQUENCE =
-            new ConcurrentHashMap<>();
 
     private RecoveryUseRuntime() {
-    }
-
-    /**
-     * Accepts client intent only. The server derives every eligibility flag and owns the action
-     * duration, movement penalty, selected dose and effect resolution.
-     */
-    public static StartResult request(ServerPlayer player, long sequence) {
-        Objects.requireNonNull(player, "player");
-        if (sequence < 0L || !player.isAlive() || player.isSpectator()) {
-            return new StartResult(StartStatus.INVALID_STATE, Optional.empty());
-        }
-
-        UUID playerId = player.getUUID();
-        long previous = LAST_SEQUENCE.getOrDefault(playerId, -1L);
-        if (sequence <= previous) {
-            return new StartResult(StartStatus.DUPLICATE, Optional.empty());
-        }
-        LAST_SEQUENCE.put(playerId, sequence);
-
-        return tryStart(
-                player,
-                new UseContext(
-                        false,
-                        player.getVehicle() != null,
-                        player.onClimbable(),
-                        !ProjectPlayerActionRuntime.canStartAction(player)
-                )
-        );
     }
 
     public static StartResult tryStart(ServerPlayer player, UseContext context) {
@@ -117,6 +87,10 @@ public final class RecoveryUseRuntime {
             long nowTick = player.level().getGameTime();
             if (!action.resolved() && !player.isAlive()) {
                 ACTIVE.remove(playerId, action);
+                ProjectPlayerActionRuntime.cancelAction(
+                        player,
+                        RECOVERY_ACTION_ID
+                );
                 continue;
             }
 
@@ -194,7 +168,6 @@ public final class RecoveryUseRuntime {
 
     public static void disconnect(UUID playerId) {
         ACTIVE.remove(playerId);
-        LAST_SEQUENCE.remove(playerId);
     }
 
     public enum StartStatus {
@@ -202,8 +175,7 @@ public final class RecoveryUseRuntime {
         ALREADY_ACTIVE,
         INVALID_STATE,
         LOCKED_OUT,
-        EMPTY_SLOT,
-        DUPLICATE
+        EMPTY_SLOT
     }
 
     public record StartResult(

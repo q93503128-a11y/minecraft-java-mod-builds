@@ -20,12 +20,6 @@ public final class OpenworldRpgClient implements ClientModInitializer {
                     GLFW.GLFW_KEY_Q
             );
 
-    private static final KeyMapping RECOVERY_KEY =
-            key(
-                    "key.openworld_rpg.recovery_belt",
-                    GLFW.GLFW_KEY_N
-            );
-
     private static final List<KeyMapping> SKILL_KEYS =
             List.of(
                     key("key.openworld_rpg.active_skill_1", GLFW.GLFW_KEY_F),
@@ -41,7 +35,6 @@ public final class OpenworldRpgClient implements ClientModInitializer {
             KeyMappingHelper.registerKeyMapping(key);
         }
         KeyMappingHelper.registerKeyMapping(DODGE_KEY);
-        KeyMappingHelper.registerKeyMapping(RECOVERY_KEY);
         ProjectDodgeClientBridge.initialize();
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
@@ -74,11 +67,6 @@ public final class OpenworldRpgClient implements ClientModInitializer {
             }
             while (DODGE_KEY.consumeClick()) {
                 ProjectDodgeClientBridge.request(
-                        client.player
-                );
-            }
-            while (RECOVERY_KEY.consumeClick()) {
-                ProjectRecoveryClientBridge.request(
                         client.player
                 );
             }
