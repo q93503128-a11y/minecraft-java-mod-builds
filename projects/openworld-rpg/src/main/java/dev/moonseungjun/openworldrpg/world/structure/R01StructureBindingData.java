@@ -33,8 +33,17 @@ public record R01StructureBindingData(
     public static final String CANONICAL_ID =
             "openworld_rpg:r01/alderford_structure_bindings";
     public static final String CANONICAL_MAP_BUILD = "AzariNEW4252026";
-    public static final String CANONICAL_SOURCE_STATUS =
+    public static final String CANDIDATE_SOURCE_STATUS =
             "family_bound_composition_gated";
+    public static final String PRODUCTION_SOURCE_STATUS =
+            "production_composition_bound";
+    public static final String CANONICAL_SOURCE_STATUS =
+            CANDIDATE_SOURCE_STATUS;
+
+    private static final Set<String> ALLOWED_SOURCE_STATUSES = Set.of(
+            CANDIDATE_SOURCE_STATUS,
+            PRODUCTION_SOURCE_STATUS
+    );
 
     public static final String MEDIEVAL_VILLAGE_FAMILY =
             "openworld_rpg:asset_family/quaternius_medieval_village_standard";
@@ -115,6 +124,9 @@ public record R01StructureBindingData(
     }
 
     public Optional<StructureBinding> productionStructure(String structureId) {
+        if (!productionSource()) {
+            return Optional.empty();
+        }
         return structure(structureId)
                 .filter(StructureBinding::productionReady);
     }
@@ -127,6 +139,9 @@ public record R01StructureBindingData(
     }
 
     public Optional<ServiceBinding> productionService(String serviceId) {
+        if (!productionSource()) {
+            return Optional.empty();
+        }
         return service(serviceId).filter(service -> {
             if (!service.production()) {
                 return false;
@@ -145,6 +160,9 @@ public record R01StructureBindingData(
     }
 
     public Optional<PropertyBinding> productionProperty(String propertyId) {
+        if (!productionSource()) {
+            return Optional.empty();
+        }
         return property(propertyId).filter(property -> {
             if (!property.production()) {
                 return false;
@@ -156,12 +174,17 @@ public record R01StructureBindingData(
     }
 
     public boolean productionReady() {
-        return !structures.isEmpty()
+        return productionSource()
+                && !structures.isEmpty()
                 && !services.isEmpty()
                 && !properties.isEmpty()
                 && structures.stream().allMatch(StructureBinding::productionReady)
                 && services.stream().allMatch(ServiceBinding::production)
                 && properties.stream().allMatch(PropertyBinding::production);
+    }
+
+    public boolean productionSource() {
+        return PRODUCTION_SOURCE_STATUS.equals(sourceStatus);
     }
 
     public record StructureBinding(
@@ -272,7 +295,7 @@ public record R01StructureBindingData(
                     "Unexpected R01 structure map build: " + data.mapBuild()
             );
         }
-        if (!CANONICAL_SOURCE_STATUS.equals(data.sourceStatus())) {
+        if (!ALLOWED_SOURCE_STATUSES.contains(data.sourceStatus())) {
             throw new IllegalArgumentException(
                     "Unexpected R01 structure source status: " + data.sourceStatus()
             );
@@ -455,10 +478,20 @@ public record R01StructureBindingData(
             }
         }
 
-        if (data.productionReady()) {
+        boolean anyProduction =
+                data.structures().stream().anyMatch(StructureBinding::production)
+                        || data.services().stream().anyMatch(ServiceBinding::production)
+                        || data.properties().stream().anyMatch(PropertyBinding::production);
+        if (!data.productionSource() && anyProduction) {
             throw new IllegalArgumentException(
-                    "Bundled Alderford bindings must stay gated until exact prefab and spatial "
-                            + "production acceptance are complete."
+                    "Gated Alderford source cannot expose production bindings before "
+                            + "source-level composition acceptance."
+            );
+        }
+        if (data.productionSource() && !data.productionReady()) {
+            throw new IllegalArgumentException(
+                    "Production Alderford source requires every structure, service and property "
+                            + "to be production-ready with accepted exact compositions."
             );
         }
     }
@@ -475,9 +508,13 @@ public record R01StructureBindingData(
                             "R01 structure references missing spatial anchor: "
                                     + structure.id() + " -> " + structure.spatialAnchorId()
                     ));
-            if (structure.productionReady() && !anchor.production()) {
+            if (structure.productionReady()
+                    && spatial.productionAnchor(
+                            structure.spatialAnchorId()
+                    ).isEmpty()) {
                 throw new IllegalArgumentException(
-                        "Production-ready R01 structure cannot bind a non-production spatial anchor: "
+                        "Production-ready R01 structure requires a source-promoted production "
+                                + "spatial anchor: "
                                 + structure.id() + " -> " + structure.spatialAnchorId()
                 );
             }

@@ -29,6 +29,15 @@ public record R01SpatialBindingData(
     public static final String CANONICAL_ID =
             "openworld_rpg:r01/azari_spatial_candidates";
     public static final String CANONICAL_MAP_BUILD = "AzariNEW4252026";
+    public static final String CANDIDATE_SOURCE_STATUS =
+            "actual_r01_slice_candidate";
+    public static final String PRODUCTION_SOURCE_STATUS =
+            "actual_r01_slice_production";
+
+    private static final Set<String> ALLOWED_SOURCE_STATUSES = Set.of(
+            CANDIDATE_SOURCE_STATUS,
+            PRODUCTION_SOURCE_STATUS
+    );
 
     public R01SpatialBindingData {
         anchors = List.copyOf(Objects.requireNonNull(anchors, "anchors"));
@@ -43,6 +52,9 @@ public record R01SpatialBindingData(
     }
 
     public Optional<Anchor> productionAnchor(String anchorId) {
+        if (!productionSource()) {
+            return Optional.empty();
+        }
         return anchor(anchorId).filter(Anchor::production);
     }
 
@@ -52,6 +64,9 @@ public record R01SpatialBindingData(
     }
 
     public Optional<Area> productionArea(String areaId) {
+        if (!productionSource()) {
+            return Optional.empty();
+        }
         return area(areaId).filter(Area::production);
     }
 
@@ -61,6 +76,9 @@ public record R01SpatialBindingData(
     }
 
     public Optional<Volume> productionVolume(String volumeId) {
+        if (!productionSource()) {
+            return Optional.empty();
+        }
         return volume(volumeId).filter(Volume::production);
     }
 
@@ -69,15 +87,16 @@ public record R01SpatialBindingData(
         return routes.stream().filter(route -> route.id().equals(routeId)).findFirst();
     }
 
+    /**
+     * Source-level production gate. Candidate/review evidence may remain in the same dataset after
+     * promotion; only entries explicitly marked production are visible through production accessors.
+     */
     public boolean productionReady() {
-        return !anchors.isEmpty()
-                && !areas.isEmpty()
-                && !volumes.isEmpty()
-                && !routes.isEmpty()
-                && anchors.stream().allMatch(Anchor::production)
-                && areas.stream().allMatch(Area::production)
-                && volumes.stream().allMatch(Volume::production)
-                && routes.stream().allMatch(Route::production);
+        return productionSource();
+    }
+
+    public boolean productionSource() {
+        return PRODUCTION_SOURCE_STATUS.equals(sourceStatus);
     }
 
     public record Anchor(
@@ -193,7 +212,7 @@ public record R01SpatialBindingData(
                     "Unexpected R01 Azari map build: " + data.mapBuild()
             );
         }
-        if (!"actual_r01_slice_candidate".equals(data.sourceStatus())) {
+        if (!ALLOWED_SOURCE_STATUSES.contains(data.sourceStatus())) {
             throw new IllegalArgumentException(
                     "Unexpected R01 spatial source status: " + data.sourceStatus()
             );
@@ -313,10 +332,18 @@ public record R01SpatialBindingData(
             if (!Set.of(
                     "natural_seam",
                     "transition_probe",
-                    "solid_carve_probe"
+                    "solid_carve_probe",
+                    "runtime_authored"
             ).contains(volume.reviewMode())) {
                 throw new IllegalArgumentException(
                         "Unknown R01 spatial volume review mode: " + volume.reviewMode()
+                );
+            }
+            if (volume.production()
+                    && !"runtime_authored".equals(volume.reviewMode())) {
+                throw new IllegalArgumentException(
+                        "Production R01 spatial volume must be authored runtime geometry: "
+                                + volume.id()
                 );
             }
             if (volume.role().isBlank()) {
@@ -349,10 +376,27 @@ public record R01SpatialBindingData(
             }
         }
 
-        if (data.productionReady()) {
+        boolean anyProduction =
+                data.anchors().stream().anyMatch(Anchor::production)
+                        || data.areas().stream().anyMatch(Area::production)
+                        || data.volumes().stream().anyMatch(Volume::production)
+                        || data.routes().stream().anyMatch(Route::production);
+        if (!data.productionSource() && anyProduction) {
             throw new IllegalArgumentException(
-                    "Bundled R01 Pass-3 data must not claim production readiness before client review."
+                    "Candidate R01 spatial source cannot expose production entries before "
+                            + "source-level promotion."
             );
+        }
+        if (data.productionSource()) {
+            if (data.anchors().stream().noneMatch(Anchor::production)
+                    || data.areas().stream().noneMatch(Area::production)
+                    || data.volumes().stream().noneMatch(Volume::production)
+                    || data.routes().stream().noneMatch(Route::production)) {
+                throw new IllegalArgumentException(
+                        "Production R01 spatial source requires accepted production bindings "
+                                + "for anchors, areas, authored runtime volumes and routes."
+                );
+            }
         }
     }
 

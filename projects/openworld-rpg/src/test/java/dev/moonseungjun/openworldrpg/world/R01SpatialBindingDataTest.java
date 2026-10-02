@@ -2,9 +2,12 @@ package dev.moonseungjun.openworldrpg.world;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingData;
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingLoader;
+import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 
 class R01SpatialBindingDataTest {
@@ -193,4 +196,131 @@ class R01SpatialBindingDataTest {
         assertEquals(4832, quarry.maxZ());
         assertEquals("candidate", quarry.status());
     }
+
+    @Test
+    void candidateSourceCannotLeakAnIndividuallyProductionFlaggedEntry() {
+        var bundled = R01SpatialBindingLoader.loadBundled();
+        var anchors = new ArrayList<>(bundled.anchors());
+        var original = anchors.get(0);
+        anchors.set(
+                0,
+                new R01SpatialBindingData.Anchor(
+                        original.id(),
+                        "production",
+                        original.x(),
+                        original.y(),
+                        original.z(),
+                        original.role()
+                )
+        );
+
+        var inconsistent = new R01SpatialBindingData(
+                bundled.schemaVersion(),
+                bundled.id(),
+                bundled.mapBuild(),
+                R01SpatialBindingData.CANDIDATE_SOURCE_STATUS,
+                anchors,
+                bundled.areas(),
+                bundled.volumes(),
+                bundled.routes()
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> R01SpatialBindingData.validate(inconsistent)
+        );
+        assertTrue(inconsistent.productionAnchor(original.id()).isEmpty());
+    }
+
+    @Test
+    void productionSourceCanKeepCandidateReviewEvidenceAlongsideRuntimeBindings() {
+        var bundled = R01SpatialBindingLoader.loadBundled();
+
+        var anchors = new ArrayList<>(bundled.anchors());
+        var anchor = anchors.get(0);
+        anchors.set(
+                0,
+                new R01SpatialBindingData.Anchor(
+                        anchor.id(),
+                        "production",
+                        anchor.x(),
+                        anchor.y(),
+                        anchor.z(),
+                        anchor.role()
+                )
+        );
+
+        var areas = new ArrayList<>(bundled.areas());
+        var area = areas.get(0);
+        areas.set(
+                0,
+                new R01SpatialBindingData.Area(
+                        area.id(),
+                        "production",
+                        area.minX(),
+                        area.maxX(),
+                        area.minZ(),
+                        area.maxZ(),
+                        area.role()
+                )
+        );
+
+        var volumes = new ArrayList<>(bundled.volumes());
+        volumes.add(
+                new R01SpatialBindingData.Volume(
+                        "openworld_rpg:r01/test/runtime_volume",
+                        "production",
+                        -2210,
+                        -2206,
+                        64,
+                        72,
+                        3998,
+                        4002,
+                        "runtime_authored",
+                        "Synthetic accepted runtime geometry for production-gate coverage"
+                )
+        );
+
+        var routes = new ArrayList<>(bundled.routes());
+        var route = routes.get(0);
+        routes.set(
+                0,
+                new R01SpatialBindingData.Route(
+                        route.id(),
+                        "production",
+                        route.points(),
+                        route.role()
+                )
+        );
+
+        var promoted = new R01SpatialBindingData(
+                bundled.schemaVersion(),
+                bundled.id(),
+                bundled.mapBuild(),
+                R01SpatialBindingData.PRODUCTION_SOURCE_STATUS,
+                anchors,
+                areas,
+                volumes,
+                routes
+        );
+
+        R01SpatialBindingData.validate(promoted);
+
+        assertTrue(promoted.productionReady());
+        assertTrue(promoted.productionAnchor(anchor.id()).isPresent());
+        assertTrue(promoted.productionArea(area.id()).isPresent());
+        assertTrue(promoted.productionVolume(
+                "openworld_rpg:r01/test/runtime_volume"
+        ).isPresent());
+        assertTrue(promoted.productionVolume(
+                "openworld_rpg:r01/quarry/upper_gallery_review"
+        ).isEmpty());
+        assertEquals(
+                "candidate",
+                promoted.volume(
+                        "openworld_rpg:r01/quarry/upper_gallery_review"
+                ).orElseThrow().status()
+        );
+    }
+
 }

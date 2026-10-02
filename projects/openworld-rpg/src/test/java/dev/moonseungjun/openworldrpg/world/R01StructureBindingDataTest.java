@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.world;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingLoader;
@@ -174,4 +175,88 @@ class R01StructureBindingDataTest {
             assertTrue(spatial.productionAnchor(anchor.id()).isEmpty());
         }
     }
+
+    @Test
+    void productionCompositionSourceIsARealPromotionPathButCandidateSourceCannotLeakIt() {
+        var bundled = R01StructureBindingLoader.loadBundled();
+
+        var structures = bundled.structures().stream()
+                .map(value -> new R01StructureBindingData.StructureBinding(
+                        value.id(),
+                        "production",
+                        value.kind(),
+                        value.spatialAnchorId(),
+                        value.architectureFamilyId(),
+                        value.propFamilyIds(),
+                        new R01StructureBindingData.CompositionBinding(
+                                value.composition().id(),
+                                "accepted",
+                                value.composition().selectionMode(),
+                                value.composition().id() + "/accepted_prefab"
+                        ),
+                        value.role()
+                ))
+                .toList();
+        var services = bundled.services().stream()
+                .map(value -> new R01StructureBindingData.ServiceBinding(
+                        value.id(),
+                        "production",
+                        value.structureId(),
+                        value.interactionSocketId(),
+                        value.role()
+                ))
+                .toList();
+        var properties = bundled.properties().stream()
+                .map(value -> new R01StructureBindingData.PropertyBinding(
+                        value.id(),
+                        "production",
+                        value.displayName(),
+                        value.structureId(),
+                        value.tier(),
+                        value.purchasePrice(),
+                        value.saleCreditRate(),
+                        value.storageCapacity()
+                ))
+                .toList();
+
+        var promoted = new R01StructureBindingData(
+                bundled.schemaVersion(),
+                bundled.id(),
+                bundled.mapBuild(),
+                R01StructureBindingData.PRODUCTION_SOURCE_STATUS,
+                structures,
+                services,
+                properties
+        );
+        R01StructureBindingData.validate(promoted);
+
+        assertTrue(promoted.productionReady());
+        assertTrue(promoted.productionStructure(
+                "openworld_rpg:r01/alderford/copper_kettle"
+        ).isPresent());
+        assertTrue(promoted.productionService(
+                "openworld_rpg:service/alderford/copper_kettle"
+        ).isPresent());
+        assertTrue(promoted.productionProperty(
+                "openworld_rpg:property/alderford/gate_cottage"
+        ).isPresent());
+
+        var leaked = new R01StructureBindingData(
+                bundled.schemaVersion(),
+                bundled.id(),
+                bundled.mapBuild(),
+                R01StructureBindingData.CANDIDATE_SOURCE_STATUS,
+                structures,
+                services,
+                properties
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> R01StructureBindingData.validate(leaked)
+        );
+        assertTrue(leaked.productionStructure(
+                "openworld_rpg:r01/alderford/copper_kettle"
+        ).isEmpty());
+    }
+
 }
