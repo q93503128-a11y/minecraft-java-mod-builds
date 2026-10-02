@@ -193,6 +193,7 @@ final class SharedBattleSession {
             presentation.clearFocus(level);
             int eventStart=engine.state().events().size();
             if(skill.targetRule()==TargetRule.SELF||skill.targetRule()==TargetRule.ALLY_ALL||skill.targetRule()==TargetRule.ENEMY_ALL)engine.useSkill(actorId,skillId);
+            else if(skill.targetRule()==TargetRule.ENEMY_TWO)engine.useSkill(actorId,skillId,splitTargetIds(targetId));
             else engine.useSkill(actorId,skillId,targetId);
             barkSkillAll(actor.definition().id(),skill.id());
             int visualTicks=presentResolvedAction(actor,skill,targetId,eventStart);
@@ -357,11 +358,14 @@ final class SharedBattleSession {
         SkillDefinition basic=actor.definition().skill(actor.definition().basicSkillId());
         switch(basic.targetRule()){
             case SELF,ALLY_ALL,ENEMY_ALL->engine.useSkill(actor.instanceId(),basic.id());
+            case ENEMY_TWO->{String[] targets=engine.state().living(actor.side().opposite()).stream().limit(2).map(CombatantState::instanceId).toArray(String[]::new);if(targets.length>0)engine.useSkill(actor.instanceId(),basic.id(),targets);}
             case ENEMY_SINGLE->{List<CombatantState> targets=engine.state().living(actor.side().opposite());if(!targets.isEmpty())engine.useSkill(actor.instanceId(),basic.id(),targets.getFirst().instanceId());}
             case ALLY_SINGLE->{CombatantState target=engine.state().living(actor.side()).stream().min(Comparator.comparingDouble(u->u.hp()/(double)u.maxHp())).orElse(actor);engine.useSkill(actor.instanceId(),basic.id(),target.instanceId());}
             case DEAD_ALLY_SINGLE->{List<CombatantState> targets=engine.state().downed(actor.side());if(!targets.isEmpty())engine.useSkill(actor.instanceId(),basic.id(),targets.getFirst().instanceId());}
         }
     }
+
+    private static String[] splitTargetIds(String raw){return raw==null||raw.isBlank()?new String[0]:java.util.Arrays.stream(raw.split(",")).map(String::trim).filter(id->!id.isBlank()).toArray(String[]::new);}
 
     private void enterBattle(ServerPlayer p,Vec3 anchor){p.setInvisible(true);p.setPos(anchor.x,anchor.y,anchor.z);p.setYRot(battleYaw);p.setXRot(18F);p.setDeltaMovement(Vec3.ZERO);}
     private void restorePlayer(ServerPlayer p){ReturnState s=returnStates.get(p.getUUID());if(s==null)return;p.setInvisible(s.invisible());p.setPos(s.position().x,s.position().y,s.position().z);p.setYRot(s.yaw());p.setXRot(s.pitch());p.setDeltaMovement(Vec3.ZERO);}

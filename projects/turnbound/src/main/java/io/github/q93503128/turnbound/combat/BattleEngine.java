@@ -118,8 +118,38 @@ public final class BattleEngine {
             case ENEMY_ALL -> state.living(actor.side().opposite());
             case ALLY_SINGLE -> List.of(single(ids, actor.side(), false, actor));
             case ENEMY_SINGLE -> List.of(single(ids, actor.side().opposite(), false, actor));
+            case ENEMY_TWO -> enemyTwo(ids, actor);
             case DEAD_ALLY_SINGLE -> List.of(single(ids, actor.side(), true, actor));
         };
+    }
+
+    private List<CombatantState> enemyTwo(String[] ids, CombatantState actor) {
+        List<CombatantState> living = state.living(actor.side().opposite());
+        int required = Math.min(2, living.size());
+        if (required < 1 || ids.length != required) {
+            throw new IllegalArgumentException("Enemy-two skill requires " + required + " distinct living target(s)");
+        }
+        List<CombatantState> targets = new ArrayList<>(required);
+        Set<String> seen = new HashSet<>();
+        for (String id : ids) {
+            if (id == null || id.isBlank() || !seen.add(id)) {
+                throw new IllegalArgumentException("Enemy-two targets must be distinct");
+            }
+            CombatantState target = state.combatant(id);
+            if (target.side() != actor.side().opposite() || target.downed()) {
+                throw new IllegalArgumentException("Invalid enemy-two target");
+            }
+            targets.add(target);
+        }
+        StatusInstance taunt = actor.status("taunt");
+        if (taunt != null) {
+            CombatantState taunter = state.find(taunt.sourceId());
+            if (taunter != null && !taunter.downed() && taunter.side() == actor.side().opposite()
+                    && !targets.contains(taunter)) {
+                throw new IllegalArgumentException("Taunt requires including " + taunter.instanceId());
+            }
+        }
+        return List.copyOf(targets);
     }
 
     private CombatantState single(String[] ids, CombatantSide side, boolean down, CombatantState actor) {
@@ -783,8 +813,11 @@ public final class BattleEngine {
 
         boolean preciseAdvance = skill.id().equals("p02_time_leap")
                 && (before < 0 || before >= 2) && after >= 0 && after < 2;
-        boolean preciseDelay = skill.id().equals("p02_delay_field")
-                && before >= 0 && before < 2 && (after < 0 || after >= 2);
+        boolean preciseDelay = skill.id().equals("p02_delay_field") && targets.stream().anyMatch(enemy -> {
+            int enemyBefore = orderIndex(futureBefore, enemy.instanceId());
+            int enemyAfter = orderIndex(futureAfter, enemy.instanceId());
+            return enemyBefore >= 0 && enemyBefore < 2 && (enemyAfter < 0 || enemyAfter >= 2);
+        });
         if (preciseAdvance || preciseDelay) {
             int refund = actor.definition().intParam("awakenPreciseGauge", 60);
             actor.addGauge(refund);
@@ -804,8 +837,10 @@ public final class BattleEngine {
             state.addEvent(new BattleEvent("BARRIER", actor.instanceId(), actor.instanceId(), barrier, "P03_BASIC"));
         } else if (skill.id().equals("p03_shield_pressure") && actor.counter("guard") >= 50 && !targets.isEmpty()) {
             actor.incrementCounter("guard", -50, actor.definition().intParam("guardMax", 100));
-            applyGauge(actor, targets.getFirst(),
-                    actor.definition().intParam("guardPressureExtraDelay", -80), "P03_GUARD_PRESSURE");
+            for (CombatantState target : targets) {
+                applyGauge(actor, target,
+                        actor.definition().intParam("guardPressureExtraDelay", -60), "P03_GUARD_PRESSURE");
+            }
             int barrier = actor.addBarrier((int)Math.floor(actor.maxHp() * actor.definition().param("guardPressureBarrier", 0.08)));
             state.addEvent(new BattleEvent("BARRIER", actor.instanceId(), actor.instanceId(), barrier, "P03_GUARD_PRESSURE"));
         }

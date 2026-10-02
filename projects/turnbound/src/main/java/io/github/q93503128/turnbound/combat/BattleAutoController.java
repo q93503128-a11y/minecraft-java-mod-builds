@@ -21,7 +21,11 @@ public final class BattleAutoController {
             case "P06" -> chooseMorwen(engine, actor, enemies);
             case "P07" -> chooseMarion(engine, state, actor, enemies);
             case "P08" -> chooseRaze(engine, actor, enemies);
-            case "F01" -> engine.useSkill(actor.instanceId(), "f01_wood_sword", priorityEnemy(enemies).instanceId());
+            case "F01" -> engine.useSkill(actor.instanceId(), "f01_wood_sword",
+                    targetIds(enemies,
+                            Comparator.comparingInt((CombatantState unit) -> enemyPriority(unit.definition().id()))
+                                    .thenComparingDouble(unit -> unit.hp() / (double)unit.maxHp()),
+                            2));
             case "F02" -> engine.useSkill(actor.instanceId(), "f02_first_aid", weakest(allies).instanceId());
             case "F03" -> {
                 CombatantState target = priorityEnemy(enemies);
@@ -72,7 +76,8 @@ public final class BattleAutoController {
                 .filter(unit -> unit.side() == CombatantSide.ENEMY && !unit.downed())
                 .findFirst().orElse(null);
         if (imminentEnemy != null && actor.cooldown("p02_delay_field") == 0) {
-            engine.useSkill(actor.instanceId(), "p02_delay_field", imminentEnemy.instanceId());
+            engine.useSkill(actor.instanceId(), "p02_delay_field",
+                    targetIds(enemies, Comparator.comparingLong(CombatantState::gauge).reversed(), 2));
             return;
         }
 
@@ -108,7 +113,8 @@ public final class BattleAutoController {
                 && actor.cooldown("p03_guard_transfer") == 0) {
             engine.useSkill(actor.instanceId(), "p03_guard_transfer", endangered.instanceId());
         } else if (actor.counter("guard") >= 50 && actor.cooldown("p03_shield_pressure") == 0) {
-            engine.useSkill(actor.instanceId(), "p03_shield_pressure", highestGauge(enemies).instanceId());
+            engine.useSkill(actor.instanceId(), "p03_shield_pressure",
+                    targetIds(enemies, Comparator.comparingLong(CombatantState::gauge).reversed(), 2));
         } else {
             engine.useSkill(actor.instanceId(), "p03_guard_stance", priorityEnemy(enemies).instanceId());
         }
@@ -154,7 +160,11 @@ public final class BattleAutoController {
         } else if (actor.counter("records") >= 2 && actor.cooldown("p06_condolence") == 0) {
             engine.useSkill(actor.instanceId(), "p06_condolence", priorityEnemy(enemies).instanceId());
         } else {
-            engine.useSkill(actor.instanceId(), "p06_echo", priorityEnemy(enemies).instanceId());
+            engine.useSkill(actor.instanceId(), "p06_echo",
+                    targetIds(enemies,
+                            Comparator.comparingInt((CombatantState unit) -> enemyPriority(unit.definition().id()))
+                                    .thenComparingDouble(unit -> unit.hp() / (double)unit.maxHp()),
+                            2));
         }
     }
     private static void chooseMarion(BattleEngine engine, BattleState state, CombatantState actor, List<CombatantState> enemies) {
@@ -183,7 +193,7 @@ public final class BattleAutoController {
             engine.useSkill(actor.instanceId(), "p08_battle_mania");
         } else if (actor.hp() * 100 > actor.maxHp() * 45 && actor.counter("fury") < 80
                 && actor.cooldown("p08_blood_charge") == 0) {
-            engine.useSkill(actor.instanceId(), "p08_blood_charge", target.instanceId());
+            engine.useSkill(actor.instanceId(), "p08_blood_charge");
         } else {
             engine.useSkill(actor.instanceId(), "p08_frenzy", target.instanceId());
         }
@@ -319,10 +329,17 @@ public final class BattleAutoController {
         SkillDefinition basic = actor.definition().skill(actor.definition().basicSkillId());
         switch (basic.targetRule()) {
             case SELF, ALLY_ALL, ENEMY_ALL -> engine.useSkill(actor.instanceId(), basic.id());
+            case ENEMY_TWO -> engine.useSkill(actor.instanceId(), basic.id(),
+                    targetIds(state.living(actor.side().opposite()), Comparator.comparingInt(CombatantState::initiativeSeed), 2));
             case ENEMY_SINGLE -> engine.useSkill(actor.instanceId(), basic.id(), distributedTarget(state.living(actor.side().opposite()), actor).instanceId());
             case ALLY_SINGLE -> engine.useSkill(actor.instanceId(), basic.id(), weakest(state.living(actor.side())).instanceId());
             case DEAD_ALLY_SINGLE -> { List<CombatantState> downed = state.downed(actor.side()); if (!downed.isEmpty()) engine.useSkill(actor.instanceId(), basic.id(), downed.getFirst().instanceId()); else throw new IllegalStateException("No dead ally for basic revive"); }
         }
+    }
+
+    private static String[] targetIds(List<CombatantState> units, Comparator<CombatantState> comparator, int max) {
+        return units.stream().sorted(comparator.thenComparingInt(CombatantState::initiativeSeed))
+                .limit(Math.max(1, max)).map(CombatantState::instanceId).toArray(String[]::new);
     }
 
     private static CombatantState weakest(List<CombatantState> units) { return units.stream().min(Comparator.comparingDouble((CombatantState unit) -> unit.hp() / (double)unit.maxHp()).thenComparingInt(CombatantState::initiativeSeed)).orElseThrow(); }
