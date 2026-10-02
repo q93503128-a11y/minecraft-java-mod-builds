@@ -451,7 +451,7 @@ The meal numbers above remain the canon. The current server runtime binds the un
 - replacement/expiry republishes the combat build so MaxHP/recovery cannot remain stale after the meal changes;
 - this backend does **not** waive the external eating-animation/food-model/UI acceptance gate.
 
-The fixed-stock R01 merchant backend now also materializes Lysa Fen's three recovery items and Brin Hale's three prepared meals at the exact prices in `R01_CONTENT_BIBLE.md`, using reconnect-safe Gold/inventory transactions. That does not implement the recipe-crafting/Mastery layer below; alchemy/cooking recipe transactions and profession Insight remain separate work.
+The fixed-stock R01 merchant backend now also materializes Lysa Fen's three recovery items and Brin Hale's three prepared meals at the exact prices in `R01_CONTENT_BIBLE.md`, using reconnect-safe Gold/inventory transactions. The later §10.4 production binding supersedes the old backend-only boundary here: settlement Alchemy/Cooking recipe transactions and persistent profession Insight are now implemented, while Grilled Catch, Smithing award events, final station UI/presentation and production world interaction remain separate gates.
 
 ---
 
