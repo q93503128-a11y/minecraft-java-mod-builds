@@ -459,6 +459,28 @@ JARs, mrpack packaging and artifact upload all passed. Artifact:
 (`11224598410`). Control/debuff/revive support callers are not fabricated here because their real
 encounter-linked runtime paths are not yet present.
 
+The next control-support pass is closed at code state
+`6fe9862b489d154cb36c96464cd7d8ca5f2b0dd1` (bridge introduced at
+`9565c9ff22070d52b9ff43980cd0033abb10c9aa`). It uses only concrete server-owned control that
+already exists: Mage Phase Step's Weave field publishes one contribution for a target only when its
+actual movement slow is accepted and is not suppressed by a stronger control, with same-field refresh
+ticks deduplicated; Guardian `Provoked` publishes on the first accepted owner or an ownership change,
+not on same-Guardian duration refreshes. The bridge routes only the exact Earthloong registry or the
+exact legacy Nature Spirit registry `threateningly_mobs:nature_hamony`; Nature Spirit additionally
+requires the accepted authored-spawn tag, so an invented `nature_spirit` ID or ordinary nearby mob
+cannot create participation. This closes a real non-damaging control contribution path without
+manufacturing a revive caller or granting party/proximity credit.
+
+Build Openworld RPG run `37007134482` failed at `compileJava` only because the first bridge revision
+called a non-existent Phase-field result accessor; code state
+`6fe9862b489d154cb36c96464cd7d8ca5f2b0dd1` corrects that call to the existing
+`suppressedByStrongerControl()` contract. Run `37007506464` is **SUCCESS** for the corrected state:
+tests/build, pinned creature inspection, core/gameplay dedicated-server smoke, gameplay client startup,
+both verification JARs, mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-6fe9862b489d154cb36c96464cd7d8ca5f2b0dd1`
+(`11226493360`). This is automated runtime/build evidence, not an in-world Nature Spirit playtest;
+production spawning remains closed by presentation/asset acceptance.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

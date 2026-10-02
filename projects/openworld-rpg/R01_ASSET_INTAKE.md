@@ -288,6 +288,13 @@ Until that exact binary/clip review passes, Nature Spirit remains presentation-b
 dependency model is not treated as a final production visual merely because its registry/stat backend is
 already bound.
 
+Source metadata was rechecked on **2026-10-02** and still advertises the same creator-controlled
+`Treant Package.7z`, 44 MB package size, two rigged stylized tree creatures, Attack01/02/03 clip set
+and CC0/no-attribution terms. The exact archive bytes were **not acquired in this pass**, so there is
+still no project-local SHA-256, rig/playback acceptance, Minecraft-scale check or hit-contact/radius
+review to record. Status therefore remains `ARCHIVE_INSPECTION_REQUIRED`; published clip names alone
+are not treated as animation acceptance.
+
 ---
 
 # 4. Exact public-safe KayKit file bindings

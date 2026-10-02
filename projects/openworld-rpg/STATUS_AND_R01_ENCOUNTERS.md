@@ -1122,6 +1122,30 @@ Build Openworld RPG run `37003375371` is **SUCCESS** for this support bridge and
 (`11224598410`). This still is not an in-world Nature Spirit encounter playtest and does not open
 Nature Spirit production spawning.
 
+A concrete non-damaging control contribution path is additionally bound at corrected code state
+`6fe9862b489d154cb36c96464cd7d8ca5f2b0dd1`:
+
+- Mage Phase Step's Weave field records support only after the Phase-field slow is actually accepted
+  and is not suppressed by a stronger movement control;
+- one Weave field publishes at most once per target, so its two-tick refresh does not manufacture
+  repeated participation;
+- Guardian `Provoked` records control support only on a first accepted controller or a controller
+  ownership change; same-Guardian refreshes do not republish;
+- exact target routing is fail-closed: Earthloong uses its exact registry, while Nature Spirit requires
+  both `threateningly_mobs:nature_hamony` and the accepted project authored-spawn tag;
+- damaging skills that also carry a debuff still qualify normally through their real damage path; no
+  separate fake contribution is required;
+- revive participation remains open because no concrete encounter-linked revive caller is admitted yet.
+
+The first CI for this pass, run `37007134482`, stopped at `compileJava` because the bridge referenced
+a non-existent Phase-field accessor. The correction uses the already-existing
+`suppressedByStrongerControl()` result contract and changes no authored combat value. Build Openworld
+RPG run `37007506464` is **SUCCESS** for the corrected state and produced artifact
+`openworld-rpg-m0-6fe9862b489d154cb36c96464cd7d8ca5f2b0dd1`
+(`11226493360`). Tests/build, R01 creature/dependency inspection, core/gameplay server smoke, gameplay
+client startup, both verification JARs and mrpack packaging passed. This does not promote Nature Spirit
+production spawning or resolve its attack-presentation gate.
+
 ---
 
 # 19. Regalhart — optional R01 field boss
