@@ -9,13 +9,19 @@ import dev.moonseungjun.openworldrpg.combat.state.ProjectWeaponFamily;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorCombatProfile;
+import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
 import java.util.List;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
@@ -36,6 +42,9 @@ public final class M0PlayerVerificationBootstrap {
     private static final String EARTHLOONG_MOTION_2_COMMAND = "owr_earthloong_motion_2";
     private static final String EARTHLOONG_MOTION_3_COMMAND = "owr_earthloong_motion_3";
     private static final String EARTHLOONG_MOTION_4_COMMAND = "owr_earthloong_motion_4";
+    private static final String CAVE_CENTIPEDE_PREVIEW_COMMAND = "owr_preview_cave_centipede";
+    private static final String NATURE_SPIRIT_PREVIEW_COMMAND = "owr_preview_nature_spirit";
+    private static final String VERIFICATION_FIXTURE_TAG = "openworld_rpg.verification_fixture";
     private static final String SWORD_PROFILE_COMMAND = "owr_test_sword";
     private static final String CROSSBOW_PROFILE_COMMAND = "owr_test_crossbow";
     private static final String MAGIC_PROFILE_COMMAND = "owr_test_magic";
@@ -80,6 +89,18 @@ public final class M0PlayerVerificationBootstrap {
                                     context.getSource().getEntity(), 4))
             );
             dispatcher.register(
+                    Commands.literal(CAVE_CENTIPEDE_PREVIEW_COMMAND)
+                            .executes(context -> spawnExternalPresentationFixture(
+                                    context.getSource().getEntity(),
+                                    R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD))
+            );
+            dispatcher.register(
+                    Commands.literal(NATURE_SPIRIT_PREVIEW_COMMAND)
+                            .executes(context -> spawnExternalPresentationFixture(
+                                    context.getSource().getEntity(),
+                                    R01ExternalActorCatalog.NATURE_SPIRIT))
+            );
+            dispatcher.register(
                     Commands.literal(SWORD_PROFILE_COMMAND)
                             .executes(context -> prepareSwordProfile(
                                     context.getSource().getEntity()))
@@ -121,6 +142,48 @@ public final class M0PlayerVerificationBootstrap {
                 || !R01EarthloongPhysicalEncounterRuntime.armVerificationFixture(living, player)) {
             spawned.discard();
             return 0;
+        }
+        return 1;
+    }
+
+    private static int spawnExternalPresentationFixture(
+            Entity commandEntity,
+            String entityId
+    ) {
+        if (!(commandEntity instanceof ServerPlayer player)) {
+            return 0;
+        }
+
+        Vec3 look = player.getLookAngle();
+        double horizontal = Math.hypot(look.x, look.z);
+        double forwardX = horizontal > 1.0e-6 ? look.x / horizontal : 0.0;
+        double forwardZ = horizontal > 1.0e-6 ? look.z / horizontal : 1.0;
+        BlockPos spawnPos = BlockPos.containing(
+                player.getX() + forwardX * 7.0,
+                player.getY() + 1.0,
+                player.getZ() + forwardZ * 7.0
+        );
+
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE
+                .getOptional(Identifier.parse(entityId))
+                .orElse(null);
+        if (type == null) {
+            return 0;
+        }
+
+        Entity spawned = type.spawn(
+                (ServerLevel) player.level(),
+                spawnPos,
+                EntitySpawnReason.COMMAND
+        );
+        if (spawned == null) {
+            return 0;
+        }
+
+        spawned.addTag(VERIFICATION_FIXTURE_TAG);
+        if (spawned instanceof Mob mob) {
+            mob.setPersistenceRequired();
+            mob.setTarget(player);
         }
         return 1;
     }

@@ -417,13 +417,14 @@ runtime and the R01 canon does not specify Cave Centipede's fixed source-Lv Pois
 no value is invented. Body Rake / Ceiling Drop also remain unbound to accepted donor presentation.
 A 2026-10-02 byte-level reinspection of the exact pinned Alex dependency confirms this is a real donor
 surface limit, not merely a missing adapter: the head exposes ordinary donor melee contact plus
-procedural locomotion/segment following, but no dedicated Body Rake/Ceiling Drop animation state.
-`R01_ASSET_INTAKE.md` now records the first serious replacement queue instead of leaving that
-blocker abstract. The primary acquisition candidate is Assets_Animated's royalty-free
-`Centipede Monster V1,2,3` family, whose published surface contains three attacks plus GetDown/GetUp
-and locomotion; it remains `PAID_LOCAL_ONLY_ACQUISITION_REQUIRED` until lawful acquisition,
-purchase-time license evidence, exact archive hash, clip playback, Minecraft-scale/contact and
-performance review. No purchase or production promotion is implied by the shortlist.
+procedural multipart locomotion/segment following, but no dedicated Body Rake/Ceiling Drop animation
+state. The older R01 encounter canon already fixes Alex's Mobs Continued as Cave Centipede's external
+presentation, so model selection is **not reopened**. The next gate is direct client review of that
+fixed multipart model's real locomotion/contact surface; only if an authored move cannot be shown
+honestly does the existing canon permit revising the move to one the accepted model can show.
+Dedicated verification artifacts now expose raw fixed-model preview commands for Cave Centipede and
+Nature Spirit without adding the project `authored_spawn` tag or opening production spawn/reward
+eligibility.
 The same pinned Threateningly Mobs Nature Spirit inspection exposes only
 `naturehamony_spawn`, `naturehamony_idle` and `naturehamony_end` animation states, with no
 attack-specific animation surface for Rooted Swipe / Earthen Ram / Bloom Quake. Per the external-first
