@@ -89,16 +89,16 @@ public final class QuestGuideLayer implements GuiLayer {
             graphics.text(minecraft.font, Component.literal(progress), x + width - minecraft.font.width(progress) - 10, y + 22, GREEN, true);
         }
 
-        for (FieldUiSnapshot.QuestTracker tracker : auxiliary) {
+        for (FieldUiSnapshot.QuestTracker quest : auxiliary) {
             if (ty + 19 >= y + height) break;
             ty += 4;
-            String category = tracker.repeatable() ? "지역 의뢰" : tracker.category();
-            String head = category + " · " + tracker.title();
+            String category = quest.repeatable() ? "지역 의뢰" : quest.category();
+            String head = category + " · " + quest.title();
             graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(head, width - 20)),
-                    x + 10, ty, tracker.repeatable() ? GREEN : GOLD, true);
+                    x + 10, ty, quest.repeatable() ? GREEN : GOLD, true);
             ty += 10;
-            graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(tracker.objective(), width - 20)),
-                    x + 10, ty, SECONDARY, false);
+            graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(quest.objective(), width - 20)),
+                    x + 10, ty, MUTED, false);
             ty += 8;
         }
         if (hiddenAuxiliary > 0 && ty + 8 < y + height) {
