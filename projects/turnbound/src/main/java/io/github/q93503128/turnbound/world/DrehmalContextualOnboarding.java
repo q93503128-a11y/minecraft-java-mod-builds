@@ -168,10 +168,10 @@ final class DrehmalContextualOnboarding {
                     "뉴 드라비엘에서 시설을 둘러보고 입구의 아렌에게 돌아가십시오.",
                     "상점·강화·소환·이동은 메뉴 바로가기가 아니라 실제 담당 NPC에게 가야 이용할 수 있습니다.");
         }
-        if (!flags.contains(HUB_ROUTE_REVIEWED)) {
+        if (!DrabyelLocalArcProgress.regionalAccepted(flags)) {
             return new Guidance(
-                    "M 지도를 열어 캐피털 밸리의 다음 선택지를 확인하십시오.",
-                    "아브살은 바로 떠나는 초반 목적지가 아닙니다. 먼저 주변 지역의 위협과 이동 거점을 확보합니다.");
+                    "뉴 드라비엘 입구의 아렌에게 캐피털 밸리 정찰 의뢰를 받으십시오.",
+                    "아렌의 설명을 듣고 의뢰를 수락하면 세 지역 목표가 지도에 표시됩니다.");
         }
         if (AvsalExpansionProgress.briefingReady(clears, flags)) {
             return new Guidance(
@@ -179,8 +179,8 @@ final class DrehmalContextualOnboarding {
                     "아브살은 뉴 드라비엘 주변 진행과 캐피털 밸리의 의미 있는 목표를 마친 뒤 열립니다.");
         }
         return new Guidance(
-                "캐피털 밸리에서 지역 목표를 하나 더 해결하고 뉴 드라비엘로 돌아오십시오.",
-                "별도 수락은 필요 없습니다. M 지도에 표시된 북부 도로, 경고 동굴의 강적, 들이받는 왕 그라울 중 하나를 선택하십시오.");
+                "캐피털 밸리 정찰 의뢰의 지역 목표 하나를 해결하고 뉴 드라비엘로 돌아오십시오.",
+                "M 지도에 표시된 북부 도로, 경고 동굴의 강적, 들이받는 왕 그라울 중 하나를 선택하십시오.");
     }
 
     static String nextHubServiceRole(Set<String> clears, Set<String> flags, Set<String> roles) {

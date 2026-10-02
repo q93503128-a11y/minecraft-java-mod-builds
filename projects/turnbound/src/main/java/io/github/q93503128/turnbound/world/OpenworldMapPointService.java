@@ -45,7 +45,7 @@ final class OpenworldMapPointService {
         AvsalExpansionRuntime.productionEncounters(player).stream().map(DrehmalFirstRouteCatalog.EncounterSlot::combatEncounterId).filter(id->id!=null&&!id.isBlank()).forEach(production::add);
 
         if (DrabyelLocalArcProgress.complete(flags)
-                && flags.contains(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED)
+                && DrabyelLocalArcProgress.regionalAccepted(flags)
                 && !DrabyelLocalArcProgress.regionalGateReady(clears, flags)) {
             addCapitalValleyChoices(out, player, clears);
         }

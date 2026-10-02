@@ -2,12 +2,16 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.DrabyelServiceActors;
+import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -59,6 +63,7 @@ final class DrabyelHubServiceRuntime {
             }
             BattleActorEntity actor=ensure(level,service);
             if(actor!=null)updatePresentation(level,service,actor,gameTime);
+            if("SUMMON".equals(service.role())&&gameTime%20L==0L)presentSummonStage(level,service);
         }
 
         for(String locator:List.copyOf(ACTORS.keySet())){
@@ -113,13 +118,29 @@ final class DrabyelHubServiceRuntime {
                             "표시해 둔 세 곳 중 두 곳만 확인하면 충분해요. 너무 멀리 돌아다닐 필요는 없습니다.");
                     return true;
                 }
+                if(DrabyelLocalArcProgress.complete(flags)&&!DrabyelLocalArcProgress.regionalAccepted(flags)){
+                    FieldNetwork.showDialogueChoices(player,service.playerLabel(),
+                            "마을 주변은 정리됐어요. 이제 캐피털 밸리의 상황을 직접 확인할 사람이 필요합니다.\n\n"
+                                    +"북부 도로의 순찰, 경고 동굴의 강적, 들판의 그라울 중 하나를 해결하고 돌아와 주세요. 어느 쪽을 택할지는 맡기겠습니다.",
+                            java.util.List.of(
+                                    new FieldNetwork.DialogueChoice("정찰 의뢰 수락","QUEST_ACCEPT|CAPITAL_VALLEY"),
+                                    new FieldNetwork.DialogueChoice("나중에","CLOSE")));
+                    return true;
+                }
+                if(DrabyelLocalArcProgress.complete(flags)
+                        &&DrabyelLocalArcProgress.regionalAccepted(flags)
+                        &&!DrabyelLocalArcProgress.regionalGateReady(clears,flags)){
+                    FieldNetwork.showDialogue(player,service.playerLabel(),
+                            "정찰 의뢰는 진행 중이에요. M 지도에 표시한 세 목표 중 하나만 해결하면 충분합니다. 돌아오면 서쪽 길 이야기를 이어가죠.");
+                    return true;
+                }
                 if(DrabyelLocalArcProgress.complete(flags)&&AvsalExpansionProgress.briefingReady(clears,flags)){
                     FieldNetwork.showDialogue(player,service.playerLabel(),AvsalExpansionRuntime.storyDialogue(player));
                     return true;
                 }
                 if(DrabyelLocalArcProgress.complete(flags)){
                     FieldNetwork.showDialogue(player,service.playerLabel(),
-                            "마을 주변은 정리됐어요. 이제 캐피털 밸리에서 원하는 지역 목표를 하나 더 해결해 보세요. 먼 서쪽 길은 그 뒤에 준비해도 늦지 않아요.");
+                            "캐피털 밸리 정찰은 끝났어요. 서쪽 길에 대한 다음 이야기가 필요하면 다시 말을 걸어 주세요.");
                     return true;
                 }
             }
@@ -210,6 +231,79 @@ final class DrabyelHubServiceRuntime {
             if(DrabyelServiceActors.supports(service.visualAsset()))roles.add(service.role());
         }
         return Set.copyOf(roles);
+    }
+
+    static boolean nearRole(ServerPlayer player,String role){
+        if(player==null||role==null||role.isBlank()||!(player.level() instanceof ServerLevel level))return false;
+        var service=serviceByRole(player,role);
+        if(service==null||service.runtimePosition()==null)return false;
+        double radius=service.interactionRadius()+2.0D;
+        return player.position().distanceToSqr(vec(service.runtimePosition()))<=radius*radius;
+    }
+
+    record SummonStage(Vec3 position,float actorYaw){}
+
+    static SummonStage summonStage(ServerPlayer player){
+        if(player==null||!(player.level() instanceof ServerLevel level))return null;
+        var service=serviceByRole(player,"SUMMON");
+        return service==null?null:resolveSummonStage(level,service);
+    }
+
+    private static SummonStage resolveSummonStage(ServerLevel level,DrabyelHubServiceCatalog.Service service){
+        if(level==null||service==null||service.runtimePosition()==null)return null;
+        float yaw=service.runtimeYaw()==null?0.0F:service.runtimeYaw();
+        double radians=Math.toRadians(yaw);
+        Vec3 forward=new Vec3(-Math.sin(radians),0.0D,Math.cos(radians));
+        Vec3 right=new Vec3(-forward.z,0.0D,forward.x);
+        Vec3 origin=vec(service.runtimePosition());
+        double[] distances={3.8D,3.0D,4.6D,2.4D};
+        double[] lateral={0.0D,1.2D,-1.2D,2.0D,-2.0D};
+        for(double distance:distances)for(double side:lateral){
+            Vec3 raw=origin.add(forward.scale(distance)).add(right.scale(side));
+            int x=(int)Math.floor(raw.x),z=(int)Math.floor(raw.z);
+            int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
+            if(Math.abs(y-origin.y)>3.0D)continue;
+            BlockPos feet=new BlockPos(x,y,z);
+            if(!stageOpen(level,feet)||!DrehmalAdaptiveRoutePlacement.fieldProxyContentClear(level,x,y,z))continue;
+            return new SummonStage(new Vec3(x+0.5D,y,z+0.5D),wrapYaw(yaw+180.0F));
+        }
+        return null;
+    }
+
+    private static boolean stageOpen(ServerLevel level,BlockPos feet){
+        BlockPos below=feet.below();
+        if(level.getBlockState(below).getCollisionShape(level,below).isEmpty()||!level.getFluidState(below).isEmpty())return false;
+        for(int dy=0;dy<=2;dy++){
+            BlockPos pos=feet.above(dy);
+            if(!level.getBlockState(pos).getCollisionShape(level,pos).isEmpty()||!level.getFluidState(pos).isEmpty())return false;
+        }
+        return true;
+    }
+
+    private static void presentSummonStage(ServerLevel level,DrabyelHubServiceCatalog.Service service){
+        SummonStage stage=resolveSummonStage(level,service);
+        if(stage==null)return;
+        for(ServerPlayer player:level.players()){
+            if(!ExternalWorldBootstrap.active(player)||player.isSpectator())continue;
+            if(player.position().distanceToSqr(stage.position())>64.0D*64.0D)continue;
+            for(int i=0;i<18;i++){
+                double angle=Math.PI*2.0D*i/18.0D;
+                double x=stage.position().x+Math.cos(angle)*1.8D;
+                double z=stage.position().z+Math.sin(angle)*1.8D;
+                PersonalPresentationIsolation.particles(level,player,ParticleTypes.ENCHANT,
+                        x,stage.position().y+0.06D,z,1,0.01D,0.01D,0.01D,0.0D);
+            }
+            PersonalPresentationIsolation.particles(level,player,ParticleTypes.END_ROD,
+                    stage.position().x,stage.position().y+0.12D,stage.position().z,
+                    2,0.6D,0.04D,0.6D,0.01D);
+        }
+    }
+
+    private static float wrapYaw(float value){
+        float wrapped=value%360.0F;
+        if(wrapped>=180.0F)wrapped-=360.0F;
+        if(wrapped<-180.0F)wrapped+=360.0F;
+        return wrapped;
     }
 
     static void clear(){

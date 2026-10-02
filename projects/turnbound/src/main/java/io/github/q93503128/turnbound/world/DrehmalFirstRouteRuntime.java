@@ -118,6 +118,7 @@ public final class DrehmalFirstRouteRuntime {
         DrehmalFirstRouteProgress.record(data, player.getUUID(), locationSite(player));
         DrehmalFastTravelService.recordDiscovery(player);
         DrabyelLocalArcRuntime.recordProgress(player);
+        DrabyelLocalArcProgress.reconcileRegional(player);
         AvsalExpansionRuntime.recordProgress(player);
         if (insideHubCoordinates(player.getX(), player.getZ())) {
             data.markOnboardingFlag(player.getUUID(), DrehmalFirstRouteProgress.HUB_REACHED);
@@ -188,7 +189,7 @@ public final class DrehmalFirstRouteRuntime {
                 }
             }
             if (DrabyelLocalArcProgress.complete(flags)
-                    && flags.contains(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED)
+                    && DrabyelLocalArcProgress.regionalAccepted(flags)
                     && !DrabyelLocalArcProgress.regionalGateReady(clears, flags)) {
                 FieldUiSnapshot.Navigation regional = regionalGoalNavigation(player, clears);
                 if (regional.active()) return regional;

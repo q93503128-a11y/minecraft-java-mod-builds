@@ -51,6 +51,18 @@
       "rewardXp": 900
     },
     {
+      "id": "turnbound:quest/drehmal/capital_valley_scouting",
+      "kind": "MAIN",
+      "title": "캐피털 밸리 정찰 의뢰",
+      "regionLabel": "Capital Valley",
+      "objective": "아렌의 정찰 의뢰를 받아 북부 도로, 경고 동굴의 강적, 들이받는 왕 그라울 중 하나를 해결하십시오.",
+      "activationFlag": "CAPITAL_VALLEY_REGIONAL_ACCEPTED",
+      "completionFlag": "CAPITAL_VALLEY_REGIONAL_COMPLETE",
+      "rewardCrystal": 650,
+      "rewardGold": 5200,
+      "rewardXp": 1300
+    },
+    {
       "id": "turnbound:quest/drehmal/explorer_camp_records",
       "kind": "SIDE",
       "title": "북쪽 옛길의 야영지",
