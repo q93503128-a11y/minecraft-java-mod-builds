@@ -22,6 +22,7 @@ final class BattleSkillTooltip {
             case "ALLY_SINGLE" -> "아군 1명";
             case "ALLY_ALL" -> "아군 전체";
             case "ENEMY_SINGLE" -> "적 1명";
+            case "ENEMY_TWO" -> "적 최대 2명";
             case "ENEMY_ALL" -> "적 전체";
             case "DEAD_ALLY_SINGLE" -> "전투불능 아군 1명";
             default -> "대상 지정";

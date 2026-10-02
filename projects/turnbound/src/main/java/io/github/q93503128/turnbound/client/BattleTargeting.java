@@ -12,7 +12,7 @@ final class BattleTargeting {
         return switch (rule) {
             case "ALLY_SINGLE" -> ally && !unit.downed();
             case "ALLY_SINGLE_EXCEPT_SELF" -> ally && !unit.downed() && !unit.id().equals(actorId);
-            case "ENEMY_SINGLE" -> !ally && !unit.downed();
+            case "ENEMY_SINGLE", "ENEMY_TWO" -> !ally && !unit.downed();
             case "DEAD_ALLY_SINGLE" -> ally && unit.downed();
             default -> false;
         };
@@ -32,6 +32,17 @@ final class BattleTargeting {
             int current,
             int direction
     ) {
+        return cycle(units, rule, actorId, current, direction, -1);
+    }
+
+    static int cycle(
+            List<ClientBattleState.Unit> units,
+            String rule,
+            String actorId,
+            int current,
+            int direction,
+            int excluded
+    ) {
         if (units.isEmpty() || direction == 0) return -1;
 
         int cursor = current;
@@ -41,7 +52,7 @@ final class BattleTargeting {
 
         for (int step = 1; step <= units.size(); step++) {
             int candidate = Math.floorMod(cursor + direction * step, units.size());
-            if (validTarget(rule, units.get(candidate), actorId)) return candidate;
+            if (candidate != excluded && validTarget(rule, units.get(candidate), actorId)) return candidate;
         }
         return -1;
     }
