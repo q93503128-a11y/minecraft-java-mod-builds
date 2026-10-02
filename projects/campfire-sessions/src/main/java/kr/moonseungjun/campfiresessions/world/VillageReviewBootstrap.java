@@ -33,7 +33,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 public final class VillageReviewBootstrap {
     private static final String PROPERTY = "campfiresessions.villageReview";
     private static final String SOURCE_MARKER_NAME = ".campfiresessions-canonical-world-source";
-    private static final String MARKER_NAME = ".campfiresessions-village-review-v5";
+    private static final String MARKER_NAME = ".campfiresessions-village-review-v6";
     private static final String CANONICAL_WORLD_SHA256 =
             "7a3d98ff75feb26913e2d4c32ca7339448d3c660c14f986ce9f5e4ff340d3d3b";
     private static final int MAX_GRADE_DELTA = 8;
@@ -47,14 +47,14 @@ public final class VillageReviewBootstrap {
     ));
 
     private static final List<BuildingSpec> BUILDINGS = List.of(
-            cheks("plaza_pavilion", "plains_meeting_point_4", -305, 73, -42, 10, 7, 16),
-            cheks("resident_services", "plains_medium_house_1", -322, 73, -32, 13, 9, 11),
-            cheks("general_store", "plains_butcher_shop_1", -286, 73, -56, 11, 8, 12),
-            cheks("cafe", "plains_butcher_shop_2", -296, 76, -18, 15, 13, 7),
-            cheks("clothing_shop", "plains_shepherds_house_1", -310, 76, 2, 9, 7, 13),
+            cheks("plaza_pavilion", "plains_meeting_point_4", -305, 73, -42, Rotation.NONE, 10, 7, 16),
+            cheks("resident_services", "plains_medium_house_1", -311, 73, -33, Rotation.CLOCKWISE_90, 13, 9, 11),
+            cheks("general_store", "plains_butcher_shop_1", -286, 73, -56, Rotation.NONE, 11, 8, 12),
+            cheks("cafe", "plains_butcher_shop_2", -296, 76, -18, Rotation.NONE, 15, 13, 7),
+            cheks("clothing_shop", "plains_shepherds_house_1", -300, 76, 4, Rotation.CLOCKWISE_90, 9, 7, 13),
 
-            cheks("clinic", "plains_temple_3", -185, 66, -135, 11, 11, 7),
-            cheks("museum", "plains_library_1", -241, 65, 52, 11, 11, 17),
+            cheks("clinic", "plains_temple_3", -183, 66, -127, Rotation.COUNTERCLOCKWISE_90, 11, 11, 7),
+            cheks("museum", "plains_library_1", -228, 65, 55, Rotation.CLOCKWISE_90, 11, 11, 17),
 
             external(
                     "harbor_dock",
@@ -65,17 +65,17 @@ public final class VillageReviewBootstrap {
                     false
             ),
 
-            cheks("player_house_stage_1", "plains_small_house_1", -311, 69, -79, 7, 9, 7),
-            cheks("resident_house_1", "plains_small_house_2", -167, 64, -167, 7, 9, 7),
-            cheks("resident_house_2", "plains_small_house_3", -159, 68, 73, 7, 9, 7),
-            cheks("resident_house_3", "plains_small_house_4", -15, 66, 73, 7, 8, 7),
-            cheks("resident_house_4", "plains_small_house_5", 16, 66, 64, 9, 11, 9),
-            cheks("resident_house_5", "plains_small_house_6", 41, 68, 41, 7, 9, 7),
-            cheks("resident_house_6", "plains_small_house_7", 73, 66, 32, 7, 8, 8),
-            cheks("resident_house_7", "plains_small_house_8", 112, 66, -112, 8, 11, 9),
-            cheks("resident_house_8", "plains_medium_house_2", 161, 65, -106, 7, 8, 13),
-            cheks("resident_house_9", "plains_big_house_1", 97, 92, -49, 7, 13, 11),
-            cheks("resident_house_10", "plains_fisher_cottage_1", 167, 73, -32, 11, 10, 10)
+            cheks("player_house_stage_1", "plains_small_house_1", -311, 69, -73, Rotation.COUNTERCLOCKWISE_90, 7, 9, 7),
+            cheks("resident_house_1", "plains_small_house_2", -167, 64, -161, Rotation.COUNTERCLOCKWISE_90, 7, 9, 7),
+            cheks("resident_house_2", "plains_small_house_3", -153, 68, 73, Rotation.CLOCKWISE_90, 7, 9, 7),
+            cheks("resident_house_3", "plains_small_house_4", -9, 66, 73, Rotation.CLOCKWISE_90, 7, 8, 7),
+            cheks("resident_house_4", "plains_small_house_5", 16, 66, 64, Rotation.NONE, 9, 11, 9),
+            cheks("resident_house_5", "plains_small_house_6", 41, 68, 41, Rotation.NONE, 7, 9, 7),
+            cheks("resident_house_6", "plains_small_house_7", 79, 66, 32, Rotation.CLOCKWISE_90, 7, 8, 8),
+            cheks("resident_house_7", "plains_small_house_8", 112, 66, -105, Rotation.COUNTERCLOCKWISE_90, 8, 11, 9),
+            cheks("resident_house_8", "plains_medium_house_2", 158, 65, -97, Rotation.COUNTERCLOCKWISE_90, 7, 8, 13),
+            cheks("resident_house_9", "plains_big_house_1", 97, 92, -49, Rotation.NONE, 7, 13, 11),
+            cheks("resident_house_10", "plains_fisher_cottage_1", 177, 73, -23, Rotation.CLOCKWISE_180, 11, 10, 10)
     );
 
     private VillageReviewBootstrap() {}
@@ -115,11 +115,11 @@ public final class VillageReviewBootstrap {
         try {
             Files.writeString(
                     marker,
-                    "Campfire Sessions village review v5\n"
+                    "Campfire Sessions village review v6\n"
                             + "canonical archive sha256: " + CANONICAL_WORLD_SHA256 + "\n"
                             + "canonical terrain probe: run 36806856318\n"
                             + "external structures: " + BUILDINGS.size() + "\n"
-                            + "landscape: compact civic hub + satellite facilities + 11 distributed 25x25 housing lots + short organic paths\n"
+                            + "landscape: entrance-aware civic hub + satellite facilities + 11 distributed housing lots + front-door trails\n"
             );
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to write Campfire village review marker " + marker, exception);
@@ -474,6 +474,7 @@ public final class VillageReviewBootstrap {
             int x,
             int y,
             int z,
+            Rotation rotation,
             int sizeX,
             int sizeY,
             int sizeZ
@@ -482,7 +483,7 @@ public final class VillageReviewBootstrap {
                 role,
                 "external/cheks_mint/" + structureName,
                 x, y, z,
-                Rotation.NONE,
+                rotation,
                 sizeX, sizeY, sizeZ,
                 true
         );

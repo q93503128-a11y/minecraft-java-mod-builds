@@ -15,10 +15,10 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /**
- * Review-only authored terrain pass for the third Campfire village slice.
+ * Review-only authored terrain pass for the entrance-aware Campfire village slice.
  *
  * <p>The second client review rejected the dense civic block and oversized
- * continuous terrace. V5 keeps one compact public hub, gives later facilities
+ * continuous terrace. V6 keeps one compact public hub, gives later facilities
  * their own satellite parcels, and distributes the shared housing pool across
  * actual 25x25 reserved lots selected from the canonical-world terrain probe. The initial pass only grades a 17x17 inner pad so yards keep natural edges and future upgrades still have reserved space.</p>
  */
@@ -56,22 +56,61 @@ public final class VillageReviewLandscape {
                     node(-306, 72, -39)),
             path("plaza_to_services",
                     node(-306, 72, -36),
-                    node(-312, 72, -33),
-                    node(-316, 72, -31)),
+                    node(-311, 72, -35),
+                    node(-315, 72, -34)),
             path("plaza_to_store",
                     node(-301, 72, -42),
                     node(-295, 72, -47),
-                    node(-287, 72, -51)),
-            path("upper_walk",
-                    node(-300, 72, -27),
-                    node(-300, 73, -23),
-                    node(-299, 75, -19),
-                    node(-295, 75, -17)),
+                    node(-288, 72, -53)),
+            path("plaza_to_cafe",
+                    node(-299, 72, -31),
+                    node(-298, 73, -24),
+                    node(-298, 75, -15)),
             path("upper_clothing_branch",
                     node(-299, 75, -16),
                     node(-302, 75, -8),
-                    node(-306, 75, 0),
-                    node(-307, 75, 5))
+                    node(-304, 75, 2)),
+
+            path("clinic_front",
+                    node(-180, 65, -126),
+                    node(-180, 65, -122)),
+            path("museum_front",
+                    node(-236, 64, 54),
+                    node(-236, 64, 50)),
+
+            path("player_house_front",
+                    node(-308, 68, -72),
+                    node(-308, 68, -68)),
+            path("resident_house_1_front",
+                    node(-164, 63, -160),
+                    node(-164, 63, -156)),
+            path("resident_house_2_front",
+                    node(-156, 67, 72),
+                    node(-156, 67, 68)),
+            path("resident_house_3_front",
+                    node(-12, 65, 72),
+                    node(-12, 65, 68)),
+            path("resident_house_4_front",
+                    node(15, 65, 68),
+                    node(11, 65, 68)),
+            path("resident_house_5_front",
+                    node(40, 67, 44),
+                    node(36, 67, 44)),
+            path("resident_house_6_front",
+                    node(75, 65, 31),
+                    node(75, 65, 27)),
+            path("resident_house_7_front",
+                    node(117, 65, -104),
+                    node(117, 65, -100)),
+            path("resident_house_8_front",
+                    node(164, 64, -96),
+                    node(164, 64, -92)),
+            path("resident_house_9_front",
+                    node(96, 91, -44),
+                    node(92, 91, -44)),
+            path("resident_house_10_front",
+                    node(178, 72, -30),
+                    node(182, 72, -30))
     );
 
     private VillageReviewLandscape() {}
