@@ -422,6 +422,27 @@ acceptance rule, those attacks are therefore still presentation-blocked rather t
 invisible AoE or generic particle substitutes. Earthloong remains the only production-spawn-ready
 R01 external actor.
 
+The following Nature Spirit reward-authority pass at code state
+`199d82437a854603a7443ea9ad7d9a00fc10b09f` closes the server-owned **personal
+elite reward plan** without opening production spawn. One accepted project damage/support contribution
+fixes that player's reward class for the encounter instance; defeat pre-rolls and persists each eligible
+player's personal result before delivery, so reconnect cannot reroll the canonical 30% equipment roll,
+60% Healing Herb 1–2 roll or 35% Verdant Crystal roll. The five Nature Spirit equipment base families
+are the canon-locked equal-weight pool (Initiate Staff / Initiate Wand / Apprentice Focus /
+River Scholar Garb / Greenwater Pendant), River Scholar Garb resolves one of the five armor slots at
+equal weight, and grade plus source-Lv ±2 Item-Lv variation use the global ordinary-loot rules. The
+6% current next-Lv EXP + 5% current Class Rank XP + 20 Gold layer is routed through the existing
+idempotent personal reward transaction and material delivery is reconnect-safe. A successful
+equipment roll intentionally remains pending rather than fabricating an item while the ordinary
+Exalted equipment sell/materialization value is not yet closed. Build Openworld RPG run
+`36975176112` is **SUCCESS** at this code state: tests/build, pinned creature inspection,
+core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs, mrpack
+packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-199d82437a854603a7443ea9ad7d9a00fc10b09f`
+(`11213159221`). This is backend/runtime evidence only. Nature Spirit still lacks an accepted
+production spawn binder and attack-specific player-facing model/animation presentation, so the reward
+bridge remains dormant for real R01 production spawning until those gates are accepted.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
