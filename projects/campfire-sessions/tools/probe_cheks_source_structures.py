@@ -2,8 +2,9 @@
 """Inspect the pinned Chek's Mint Plains structure family before Campfire intake.
 
 Downloads only the exact pinned MIT source commit already recorded by Campfire.
-Reports size, vanilla palette usage and entrance-jigsaw positions so housing lots
-can be planned from real source data instead of guessed filenames.
+Reports the six additional residential candidates needed for the v5 housing
+expansion. The broader village source contains legacy/special NBT payloads that
+are irrelevant to this decision, so this probe deliberately stays narrow.
 """
 from __future__ import annotations
 
@@ -22,20 +23,12 @@ COMMIT = "6ffadba091c4a07bcdac9f1c89d3d1202f0015b9"
 ROOT = f"https://raw.githubusercontent.com/{REPOSITORY}/{COMMIT}/"
 PREFIX = "data/minecraft/structure/village/plains/houses/"
 NAMES = [
-    "plains_accessory_1", "plains_accessory_2", "plains_accessory_3", "plains_accessory_4",
-    "plains_animal_pen_1", "plains_animal_pen_2", "plains_animal_pen_3",
-    "plains_armorer_house_1", "plains_big_house_1",
-    "plains_butcher_shop_1", "plains_butcher_shop_2",
-    "plains_cartographer_1", "plains_fisher_cottage_1", "plains_fletcher_house_1",
-    "plains_large_farm_1", "plains_library_1", "plains_library_2",
-    "plains_masons_house_1", "plains_medium_house_1", "plains_medium_house_2",
-    "plains_meeting_point_4", "plains_meeting_point_5",
-    "plains_shepherds_house_1", "plains_small_farm_1",
-    "plains_small_house_1", "plains_small_house_2", "plains_small_house_3",
-    "plains_small_house_4", "plains_small_house_5", "plains_small_house_6",
-    "plains_small_house_7", "plains_small_house_8",
-    "plains_stable_1", "plains_stable_2", "plains_tannery_1",
-    "plains_temple_3", "plains_tool_smith_1", "plains_weaponsmith_1",
+    "plains_small_house_3",
+    "plains_small_house_4",
+    "plains_small_house_5",
+    "plains_small_house_6",
+    "plains_small_house_7",
+    "plains_small_house_8",
 ]
 USER_AGENT = "CampfireSessionsCheksProbe/1.0"
 
