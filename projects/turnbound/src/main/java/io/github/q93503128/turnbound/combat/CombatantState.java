@@ -51,7 +51,7 @@ public final class CombatantState {
     public int speed() {
         double statusMod = cappedStatMod("speed_multiplier", 0.50);
         double signatureMultiplier = definition.hasRule("SIG_P08_LOW_HP_SPEED_15") && hp * 2 <= maxHp() ? 1.15 : 1.0;
-        return Math.max(30, (int)Math.floor(definition.stats().speed() * Math.max(0.50, 1.0 + statusMod) * signatureMultiplier));
+        return Math.max(30, (int)Math.floor(definition.stats().speed() * Math.max(0.50, 1.0 + statusMod) * signatureMultiplier + 1.0e-9));
     }
 
     public double damageReduction() {
