@@ -397,6 +397,31 @@ or an in-world playtest. Cave Centipede and Nature Spirit therefore remain fail-
 spawning until their real dependency presentation/contact surfaces and reward hooks are connected and
 accepted.
 
+The next donor-contact pass at code state `f9cb315406926b29f0b724b582efd2d1efb4fa94`
+narrows that gate without falsely promoting either creature. The pinned Alex's Mobs Continued 2.1.13
+Cave Centipede exposes a real donor melee contact and `alexsmobs:centipede_attack`; the project now
+intercepts only an accepted authored Cave Centipede head's donor melee proposal, keeps donor damage
+and vanilla instant Poison rejected, holds the actor through the canonical 7-tick Scuttle Bite tell,
+revalidates the <=2.3-block target at the hit frame, applies only the project-owned 11% same-Lv
+benchmark physical hit, and enforces the canonical 8-tick recovery. Donor natural spawns and
+verification fixtures do not inherit this bridge merely because their registry/stat profile is bound.
+Build Openworld RPG run `36972385046` is **SUCCESS**: unit tests/build, pinned creature inspection,
+core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs, mrpack
+packaging and artifact upload all passed; the gameplay server log explicitly armed the 7/8-tick bridge
+with `alexsmobs:centipede_attack`. Artifact:
+`openworld-rpg-m0-f9cb315406926b29f0b724b582efd2d1efb4fa94` (`11212397093`).
+
+This remains a **technical contact binder, not presentation acceptance**. Cave Centipede Poison
+buildup stays fail-closed because the project does not yet have the complete player Poison buildup/proc
+runtime and the R01 canon does not specify Cave Centipede's fixed source-Lv Poison proc damage budget;
+no value is invented. Body Rake / Ceiling Drop also remain unbound to accepted donor presentation.
+The same pinned Threateningly Mobs Nature Spirit inspection exposes only
+`naturehamony_spawn`, `naturehamony_idle` and `naturehamony_end` animation states, with no
+attack-specific animation surface for Rooted Swipe / Earthen Ram / Bloom Quake. Per the external-first
+acceptance rule, those attacks are therefore still presentation-blocked rather than implemented as
+invisible AoE or generic particle substitutes. Earthloong remains the only production-spawn-ready
+R01 external actor.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
