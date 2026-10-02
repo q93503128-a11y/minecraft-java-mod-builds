@@ -33,17 +33,17 @@ final class FacilitySummonScreen extends FacilityScreen {
         int gap = 3;
         int w = (panelWidth - 24 - gap * 2) / 3;
 
-        var one = new BattleHudButton(x, y, w, 18, Component.literal("1회 · 300"), 0xFF6DC6FF,
+        var one = new BattleHudButton(x, y, w, 18, Component.literal("1회 · 크리스탈 300"), 0xFF6DC6FF,
                 ignored -> send("SUMMON1"));
         one.active = state.crystal() >= GachaCatalog.SINGLE_COST;
         addRenderableWidget(one);
 
-        var ten = new BattleHudButton(x + w + gap, y, w, 18, Component.literal("10회 · 3000"), 0xFFFFC857,
+        var ten = new BattleHudButton(x + w + gap, y, w, 18, Component.literal("10회 · 크리스탈 3000"), 0xFFFFC857,
                 ignored -> send("SUMMON10"));
         ten.active = state.crystal() >= GachaCatalog.TEN_COST;
         addRenderableWidget(ten);
 
-        var starter = new BattleHudButton(x + (w + gap) * 2, y, w, 18, Component.literal("초기 10회"), 0xFF62D39A,
+        var starter = new BattleHudButton(x + (w + gap) * 2, y, w, 18, Component.literal("첫 10회 · ★4+ 보장"), 0xFF62D39A,
                 ignored -> send("STARTER"));
         starter.active = state.starterArchiveAvailable() && state.crystal() >= GachaCatalog.TEN_COST;
         addRenderableWidget(starter);
@@ -63,7 +63,7 @@ final class FacilitySummonScreen extends FacilityScreen {
                 .sorted(Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar).reversed()
                         .thenComparing(ClientMetaState.CharacterRow::name))
                 .toList();
-        int gridY = exchangeY + 23;
+        int gridY = exchangeY + 36;
         int cols = 3;
         int cardGap = 3;
         int cardW = (panelWidth - 24 - cardGap * (cols - 1)) / cols;
@@ -88,6 +88,8 @@ final class FacilitySummonScreen extends FacilityScreen {
     @Override
     protected void renderFacility(@NotNull GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         inset(g, left + 8, bodyTop() + 1, panelWidth - 16, panelHeight - 62);
+        g.text(font, Component.literal("첫 10회 · 계정당 1회 · 크리스탈 3000 · 미보유 ★4+ 1명 확정"),
+                left + 14, bodyTop() + 52, TurnboundUiTokens.TEXT_SECONDARY, false);
     }
 
     private void send(String raw) {

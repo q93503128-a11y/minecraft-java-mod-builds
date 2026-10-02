@@ -169,7 +169,7 @@ public final class MetaMenuScreen extends Screen {
         int gridTop=contentTop()+2,gap=4;
         int cols=panelWidth>=700?5:panelWidth>=520?4:3;
         int cardH=36;
-        int footerTop=top+panelHeight-47;
+        int footerTop=top+panelHeight-72;
         int rows=UiPaging.rowsThatFit(gridTop,footerTop-5,cardH+4,2),per=cols*rows;
         setPaging(owned.size(),per);
         int start=page*per,end=Math.min(owned.size(),start+per),cardW=(panelWidth-24-gap*(cols-1))/cols;
@@ -202,7 +202,7 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(actionX,row1,actionW,17,Component.literal("협동 파티"),BLUE,ignored->switchTab(Tab.COOP)));
         addRenderableWidget(new BattleHudButton(actionX,row2,actionW,17,
                 Component.literal("편성 적용 "+draftParty.size()+"/4"),GREEN,ignored->saveParty()));
-        buildPager();
+        buildPagerAt(top+panelHeight-65);
     }
 
 
@@ -332,10 +332,22 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildEquipment(){
         int y=contentTop(),x=left+16;
-        addRenderableWidget(new BattleHudButton(x,y,106,CONTROL_H,Component.literal("부위 · "+slotLabel(equipSlotFilter)),MUTED,ignored->cycleEquipSlot()));
-        addRenderableWidget(new BattleHudButton(x+112,y,106,CONTROL_H,Component.literal("정렬 · "+sortLabel(equipSort)),MUTED,ignored->cycleEquipSort()));
+        ensureEquipmentTarget();
+        int listW=equipmentListWidth();
+        addRenderableWidget(new BattleHudButton(x,y,96,CONTROL_H,Component.literal("부위 · "+slotLabel(equipSlotFilter)),MUTED,ignored->cycleEquipSlot()));
+        addRenderableWidget(new BattleHudButton(x+102,y,96,CONTROL_H,Component.literal("정렬 · "+sortLabel(equipSort)),MUTED,ignored->cycleEquipSort()));
+
+        int targetX=x+204,targetW=Math.max(116,left+panelWidth-16-targetX);
+        if(!ownedEquipmentTargets().isEmpty()){
+            int arrowW=24,centerW=Math.max(64,targetW-arrowW*2-6);
+            addRenderableWidget(new BattleHudButton(targetX,y,arrowW,CONTROL_H,Component.literal("‹"),MUTED,ignored->cycleEquipmentTarget(-1)));
+            addRenderableWidget(new BattleHudButton(targetX+arrowW+3,y,centerW,CONTROL_H,
+                    Component.literal("장착 대상 · "+equipmentTargetName()),GREEN,ignored->cycleEquipmentTarget(1)));
+            addRenderableWidget(new BattleHudButton(targetX+arrowW+3+centerW+3,y,arrowW,CONTROL_H,Component.literal("›"),MUTED,ignored->cycleEquipmentTarget(1)));
+        }
+
         List<ClientMetaState.EquipmentRow> rows=filteredEquipment();
-        int listTop=y+21,listW=Math.min(310,Math.max(210,panelWidth/2-12)),rowH=19;
+        int listTop=y+21,rowH=19;
         int per=UiPaging.rowsThatFit(listTop,contentBottom(),rowH+2,4);
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per);
@@ -361,16 +373,9 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildEquipmentActions(ClientMetaState.EquipmentRow selected,int rx,int y,int rw){
         rw=Math.max(120,rw);
-        var owned=ClientMetaState.snapshot().characters().stream().filter(ClientMetaState.CharacterRow::owned).toList();
-        int targetY=y+58,cols=2,gap=3,bw=(rw-gap)/2;
-        for(int i=0;i<Math.min(owned.size(),4);i++){
-            var c=owned.get(i);
-            int xx=rx+(i%cols)*(bw+gap),yy=targetY+(i/cols)*21;
-            addRenderableWidget(new BattleHudButton(xx,yy,bw,17,Component.literal(c.name()),
-                    c.id().equals(equipmentTargetCharacterId)?GREEN:MUTED,ignored->selectEquipmentTarget(c.id())));
-        }
-        int actionY=targetY+45;
-        var equip=new BattleHudButton(rx,actionY,Math.min(92,rw),17,Component.literal("장착"),GREEN,ignored->equipSelected());
+        int actionY=Math.min(contentBottom()-19,y+98);
+        var equip=new BattleHudButton(rx,actionY,rw,17,
+                Component.literal(equipmentTargetCharacterId.isBlank()?"장착할 캐릭터 선택":"이 캐릭터에게 장착"),GREEN,ignored->equipSelected());
         equip.active=!equipmentTargetCharacterId.isBlank();
         addRenderableWidget(equip);
     }
@@ -396,8 +401,8 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildCodex(){
-        int x=left+16,y=contentTop(),gap=3,count=5,w=(panelWidth-32-gap*(count-1))/count;
-        for(String category:List.of("CHARACTERS","ENEMIES","BOSSES","EQUIPMENT","TUTORIAL")){
+        int x=left+16,y=contentTop(),gap=3,count=4,w=(panelWidth-32-gap*(count-1))/count;
+        for(String category:List.of("CHARACTERS","ENEMIES","BOSSES","EQUIPMENT")){
             addRenderableWidget(new BattleHudButton(x,y,w,15,Component.literal(codexLabel(category)),category.equals(codexCategory)?BLUE:MUTED,ignored->selectCodex(category)));
             x+=w+gap;
         }
@@ -502,10 +507,12 @@ public final class MetaMenuScreen extends Screen {
 
     private void setPaging(int total,int per){currentTotal=Math.max(0,total);currentPerPage=Math.max(1,per);page=UiPaging.clampPage(page,currentTotal,currentPerPage);}
 
-    private void buildPager(){
+    private void buildPager(){ buildPagerAt(top+panelHeight-22); }
+
+    private void buildPagerAt(int y){
         int pages=UiPaging.pageCount(currentTotal,currentPerPage);
         if(pages<=1)return;
-        int y=top+panelHeight-22,center=left+panelWidth/2;
+        int center=left+panelWidth/2;
         var prev=new BattleHudButton(center-78,y,52,16,Component.literal("< 이전"),MUTED,ignored->movePage(-1));prev.active=page>0;addRenderableWidget(prev);
         var next=new BattleHudButton(center+26,y,52,16,Component.literal("다음 >"),MUTED,ignored->movePage(1));next.active=page+1<pages;addRenderableWidget(next);
     }
@@ -555,6 +562,41 @@ public final class MetaMenuScreen extends Screen {
     private void cycleEquipSort(){equipSort=EquipSort.values()[(equipSort.ordinal()+1)%EquipSort.values().length];page=0;rebuild();}
     private void selectEquipment(String id){selectedEquipmentId=id;if(equipmentTargetCharacterId.isBlank())equipmentTargetCharacterId=ClientMetaState.snapshot().activeParty().stream().findFirst().orElse("");rebuild();}
     private void selectEquipmentTarget(String id){equipmentTargetCharacterId=id;rebuild();}
+
+    private List<ClientMetaState.CharacterRow> ownedEquipmentTargets(){
+        return ClientMetaState.snapshot().characters().stream()
+                .filter(ClientMetaState.CharacterRow::owned)
+                .sorted(Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar).reversed()
+                        .thenComparing(ClientMetaState.CharacterRow::name))
+                .toList();
+    }
+
+    private void ensureEquipmentTarget(){
+        var owned=ownedEquipmentTargets();
+        if(owned.isEmpty()){equipmentTargetCharacterId="";return;}
+        boolean valid=owned.stream().anyMatch(row->row.id().equals(equipmentTargetCharacterId));
+        if(valid)return;
+        equipmentTargetCharacterId=ClientMetaState.snapshot().activeParty().stream()
+                .filter(id->owned.stream().anyMatch(row->row.id().equals(id)))
+                .findFirst().orElse(owned.getFirst().id());
+    }
+
+    private void cycleEquipmentTarget(int delta){
+        var owned=ownedEquipmentTargets();
+        if(owned.isEmpty()){equipmentTargetCharacterId="";rebuild();return;}
+        int index=0;
+        for(int i=0;i<owned.size();i++)if(owned.get(i).id().equals(equipmentTargetCharacterId)){index=i;break;}
+        index=Math.floorMod(index+delta,owned.size());
+        equipmentTargetCharacterId=owned.get(index).id();
+        rebuild();
+    }
+
+    private String equipmentTargetName(){
+        return equipmentTargetCharacterId.isBlank()?"선택 없음":characterName(equipmentTargetCharacterId);
+    }
+
+    private int equipmentListWidth(){return Math.min(310,Math.max(210,panelWidth/2-12));}
+
     private void equipSelected(){if(!selectedEquipmentId.isBlank()&&!equipmentTargetCharacterId.isBlank())send("EQUIP|"+equipmentTargetCharacterId+"|"+selectedEquipmentId);}
     private void sellSelected(){var e=equipment(selectedEquipmentId);if(e!=null&&e.sellable())send("SELL|"+e.instanceId());}
     private void selectCodex(String c){codexCategory=c;page=0;rebuild();}
@@ -607,7 +649,8 @@ public final class MetaMenuScreen extends Screen {
         int pages=UiPaging.pageCount(currentTotal,currentPerPage);
         if(pages>1){
             String p=(page+1)+" / "+pages+" · 휠 스크롤";
-            graphics.text(font,Component.literal(p),left+panelWidth/2-font.width(p)/2,top+panelHeight-27,MUTED,false);
+            int pageY=tab==Tab.PARTY?top+panelHeight-61:top+panelHeight-27;
+            graphics.text(font,Component.literal(p),left+panelWidth/2-font.width(p)/2,pageY,MUTED,false);
         }
         super.extractRenderState(graphics,mouseX,mouseY,partialTick);
     }
@@ -824,20 +867,23 @@ public final class MetaMenuScreen extends Screen {
 
     private void drawEquipment(GuiGraphicsExtractor g){
         var selected=equipment(selectedEquipmentId);if(selected==null)return;
-        int listW=Math.min(420,Math.max(240,panelWidth/2-18)),x=left+26+listW,y=contentTop()+29,w=panelWidth-listW-58;
+        int listW=equipmentListWidth(),x=left+26+listW,y=contentTop()+23,w=panelWidth-listW-58;
         g.text(font,Component.literal(UiTextLayout.fit(selected.tier()+" · "+selected.name()+" +"+selected.enhancement(),w)),x,y,tierColor(selected.tier()),true);
         String current=statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())+" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
-        g.text(font,Component.literal(UiTextLayout.fit("현재 · "+current,w)),x,y+18,TEXT,false);
+        g.text(font,Component.literal(UiTextLayout.fit("현재 · "+current,w)),x,y+16,TEXT,false);
         if(selected.enhancement()<GrowthRulesV1.maxEnhancement()){
             double nextMain=selected.mainValue()/Math.max(0.0001,1.0+0.04*selected.enhancement())*(1.0+0.04*(selected.enhancement()+1));
             String next="+"+(selected.enhancement()+1)+" · "+statTypeLabel(selected.mainType())+" "+stat(nextMain)
                     +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
-            g.text(font,Component.literal(UiTextLayout.fit(next,w)),x,y+36,GREEN,false);
+            g.text(font,Component.literal(UiTextLayout.fit(next,w)),x,y+32,GREEN,false);
         }else{
-            g.text(font,Component.literal("강화 최대치"),x,y+36,GREEN,false);
+            g.text(font,Component.literal("강화 최대치"),x,y+32,GREEN,false);
         }
         g.text(font,Component.literal(UiTextLayout.fit("+10 최대 · "+statTypeLabel(selected.mainType())+" "+stat(selected.mainAt20())
-                +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+54,GOLD,false);
+                +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+48,GOLD,false);
+        String owner=selected.equippedCharacterId().isBlank()?"미장착":characterName(selected.equippedCharacterId());
+        g.text(font,Component.literal(UiTextLayout.fit("현재 장착 · "+owner,w)),x,y+66,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit("장착 대상 · "+equipmentTargetName(),w)),x,y+80,GREEN,false);
     }
 
     private void drawArchive(GuiGraphicsExtractor g){
@@ -1006,7 +1052,7 @@ public final class MetaMenuScreen extends Screen {
 
     private static String primaryRoleLabel(String r){return switch(r){case"DPS"->"공격";case"SUPPORT"->"지원";case"TANK"->"수호";case"SUMMON"->"소환";default->r;};}
     private static String slotLabel(String s){return switch(s){case"WEAPON"->"무기";case"ARMOR"->"방어구";case"ACCESSORY"->"장신구";case"SIGNATURE"->"전용 장비";case"ALL"->"전체";default->s;};}
-    private static String codexLabel(String c){return switch(c){case"CHARACTERS"->"캐릭터";case"ENEMIES"->"적";case"BOSSES"->"보스";case"EQUIPMENT"->"장비";default->"튜토리얼";};}
+    private static String codexLabel(String c){return switch(c){case"CHARACTERS"->"캐릭터";case"ENEMIES"->"적";case"BOSSES"->"보스";case"EQUIPMENT"->"장비";default->"도감";};}
     private static int tierRank(String t){return switch(t){case"SIGNATURE"->5;case"T4"->4;case"T3"->3;case"T2"->2;case"T1"->1;default->0;};}
     private static int tierColor(String t){return switch(t){case"SIGNATURE"->0xFFC794FF;case"T4"->0xFFFFC857;case"T3"->0xFFB68CFF;case"T2"->0xFF6DC6FF;default->0xFFAEB7C6;};}
     private static String stat(double v){return Math.abs(v)<=1.0?String.format(Locale.ROOT,"%.1f%%",v*100):String.format(Locale.ROOT,"%.1f",v);}

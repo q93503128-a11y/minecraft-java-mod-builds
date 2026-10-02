@@ -1,9 +1,15 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.world.DrehmalFastTravelCatalog;
+import io.github.q93503128.turnbound.world.DrehmalMapPlacementCatalog;
 import io.github.q93503128.turnbound.world.DrehmalWorldProfile;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -35,11 +41,17 @@ final class DrehmalWorldMapScreen extends Screen {
 
     private int left, top, panelWidth, panelHeight;
     private int mapViewX, mapViewY, mapViewSize;
-    private double zoom = 1.0D;
+    private double zoom = 2.4D;
     private double viewCenterX = Double.NaN;
     private double viewCenterZ = Double.NaN;
     private Bounds activeBounds;
     private Viewport activeViewport;
+    private int[][] terrainCache = new int[0][0];
+    private int terrainSamples;
+    private double terrainMinX = Double.NaN;
+    private double terrainMinZ = Double.NaN;
+    private double terrainSpan = Double.NaN;
+    private int terrainTick = Integer.MIN_VALUE;
     DrehmalWorldMapScreen() { super(Component.literal("월드 지도")); }
 
     @Override protected void init() {
@@ -144,8 +156,9 @@ final class DrehmalWorldMapScreen extends Screen {
         Viewport view = viewport(bounds, px, pz);
         activeBounds = bounds;
         activeViewport = view;
+        drawLoadedTerrain(graphics, minecraft, mapX, mapY, mapSize, view);
         drawBlockGrid(graphics, mapX, mapY, mapSize, view);
-        drawRouteNetwork(graphics, mapX, mapY, mapSize, view, anchors);
+        drawRouteNetwork(graphics, mapX, mapY, mapSize, view);
 
         DrehmalWorldProfile.Anchor hovered = null;
         double hoveredDistance = Double.MAX_VALUE;
@@ -402,6 +415,74 @@ final class DrehmalWorldMapScreen extends Screen {
         g.fill(x + size - 18, y + 8, x + size - 11, y + 9, 0xFFB6AA8B);
     }
 
+    private void drawLoadedTerrain(
+            GuiGraphicsExtractor g, Minecraft minecraft,
+            int mapX, int mapY, int mapSize, Viewport view
+    ) {
+        if (minecraft.level == null || minecraft.player == null) return;
+        int samples = Math.max(24, Math.min(52, Math.max(1, mapSize / 7)));
+        int tick = minecraft.player.tickCount;
+        double cellWorld = view.span / samples;
+        boolean changed = terrainSamples != samples
+                || Double.isNaN(terrainMinX)
+                || Math.abs(terrainMinX - view.minX) > cellWorld * 0.35D
+                || Math.abs(terrainMinZ - view.minZ) > cellWorld * 0.35D
+                || Math.abs(terrainSpan - view.span) > cellWorld * 0.35D;
+        if (changed || tick - terrainTick >= 16) {
+            terrainSamples = samples;
+            terrainMinX = view.minX;
+            terrainMinZ = view.minZ;
+            terrainSpan = view.span;
+            terrainTick = tick;
+            terrainCache = new int[samples][samples];
+            int playerY = (int)Math.floor(minecraft.player.getY());
+            for (int gz = 0; gz < samples; gz++) for (int gx = 0; gx < samples; gx++) {
+                int worldX = (int)Math.floor(view.minX + (gx + 0.5D) * cellWorld);
+                int worldZ = (int)Math.floor(view.minZ + (gz + 0.5D) * cellWorld);
+                terrainCache[gx][gz] = terrainColor(minecraft, worldX, worldZ, playerY);
+            }
+        }
+        int cellPx = Math.max(1, (int)Math.ceil(mapSize / (double)samples));
+        for (int gz = 0; gz < samples; gz++) for (int gx = 0; gx < samples; gx++) {
+            int color = terrainCache[gx][gz];
+            if (color == 0) continue;
+            int sx = mapX + gx * mapSize / samples;
+            int sy = mapY + gz * mapSize / samples;
+            int ex = mapX + Math.min(mapSize, gx * mapSize / samples + cellPx + 1);
+            int ey = mapY + Math.min(mapSize, gz * mapSize / samples + cellPx + 1);
+            g.fill(sx, sy, ex, ey, color);
+        }
+    }
+
+    private static int terrainColor(Minecraft minecraft, int x, int z, int playerY) {
+        if (!minecraft.level.hasChunk(x >> 4, z >> 4)) return 0;
+        int y = minecraft.level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+        BlockPos pos = new BlockPos(x, y, z);
+        BlockState state = minecraft.level.getBlockState(pos);
+        int base;
+        if (!state.getFluidState().isEmpty()) base = 0xFF3979A9;
+        else if (state.is(BlockTags.LEAVES)) base = 0xFF315F3D;
+        else if (state.is(BlockTags.LOGS)) base = 0xFF694B33;
+        else if (state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.MOSS_BLOCK) || state.is(Blocks.PODZOL)) base = 0xFF5B8748;
+        else if (state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT) || state.is(Blocks.DIRT_PATH) || state.is(Blocks.MUD)) base = 0xFF796047;
+        else if (state.is(Blocks.SAND) || state.is(Blocks.SANDSTONE)) base = 0xFFD6C58A;
+        else if (state.is(Blocks.SNOW_BLOCK) || state.is(Blocks.SNOW) || state.is(Blocks.ICE)) base = 0xFFE3ECF2;
+        else if (state.is(Blocks.DEEPSLATE) || state.is(Blocks.DEEPSLATE_TILES) || state.is(Blocks.BLACKSTONE) || state.is(Blocks.OBSIDIAN)) base = 0xFF343A42;
+        else if (state.is(Blocks.STONE) || state.is(Blocks.STONE_BRICKS) || state.is(Blocks.ANDESITE)
+                || state.is(Blocks.POLISHED_ANDESITE) || state.is(Blocks.COBBLESTONE) || state.is(Blocks.GRAVEL)) base = 0xFF777D82;
+        else if (state.is(Blocks.OAK_PLANKS) || state.is(Blocks.SPRUCE_PLANKS) || state.is(Blocks.DARK_OAK_PLANKS)) base = 0xFF9A7650;
+        else base = y <= minecraft.level.getSeaLevel() + 1 ? 0xFF61717A : 0xFF6F7D64;
+        int delta = Math.max(-7, Math.min(7, y - playerY));
+        return shade(base, delta * 3);
+    }
+
+    private static int shade(int color, int delta) {
+        int r = Math.max(0, Math.min(255, ((color >>> 16) & 0xFF) + delta));
+        int g = Math.max(0, Math.min(255, ((color >>> 8) & 0xFF) + delta));
+        int b = Math.max(0, Math.min(255, (color & 0xFF) + delta));
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
+    }
+
     private static void drawBlockGrid(GuiGraphicsExtractor g, int mapX, int mapY, int mapSize, Viewport view) {
         double pixelsPerBlock = mapSize / view.span;
         if (pixelsPerBlock < 2.0D) return;
@@ -423,54 +504,41 @@ final class DrehmalWorldMapScreen extends Screen {
     }
 
     private static void drawRouteNetwork(
-            GuiGraphicsExtractor g,
-            int mapX,
-            int mapY,
-            int mapSize,
-            Viewport view,
-            List<DrehmalWorldProfile.Anchor> anchors
+            GuiGraphicsExtractor g, int mapX, int mapY, int mapSize, Viewport view
     ) {
-        // The route overlay is intentionally schematic. At block scale, hiding it avoids implying
-        // one-block road precision that the source-backed overview does not claim.
-        if (view.span < 64.0D) return;
-        drawRoute(g, mapX, mapY, mapSize, view, anchors,
-                "turnbound:region/stasis_facility", "turnbound:landmark/primal_caverns", 0x887F745A);
-        drawRoute(g, mapX, mapY, mapSize, view, anchors,
-                "turnbound:landmark/primal_caverns", "turnbound:landmark/capital_valley_tower", 0xAA9D8458);
-        drawRoute(g, mapX, mapY, mapSize, view, anchors,
-                "turnbound:landmark/capital_valley_tower", "turnbound:landmark/explorers_guide_camp", 0xAA9D8458);
-        drawRoute(g, mapX, mapY, mapSize, view, anchors,
-                "turnbound:landmark/explorers_guide_camp", "turnbound:hub/new_drabyel", 0xAA9D8458);
-        drawRoute(g, mapX, mapY, mapSize, view, anchors,
-                "turnbound:landmark/capital_valley_tower", "turnbound:landmark/warning_cave", 0x777A604C);
-        drawRoute(g, mapX, mapY, mapSize, view, anchors,
-                "turnbound:hub/new_drabyel", "turnbound:region/avsal", 0x887F745A);
+        for (DrehmalMapPlacementCatalog.Zone zone : DrehmalMapPlacementCatalog.plan().zones()) {
+            int color = switch (zone.role()) {
+                case "HUB_APPROACH" -> 0xCCB38A52;
+                case "CHOICE_ELITE" -> 0xAA8C7258;
+                case "BREATHING" -> 0xAA7F745A;
+                default -> 0xBB9D8458;
+            };
+            List<DrehmalMapPlacementCatalog.Seed> points = zone.corridor();
+            for (int i = 1; i < points.size(); i++) {
+                drawRouteSegment(g, mapX, mapY, mapSize, view, points.get(i - 1), points.get(i), color);
+            }
+        }
     }
 
-    private static void drawRoute(
-            GuiGraphicsExtractor g,
-            int mapX,
-            int mapY,
-            int mapSize,
-            Viewport view,
-            List<DrehmalWorldProfile.Anchor> anchors,
-            String fromId,
-            String toId,
-            int color
+    private static void drawRouteSegment(
+            GuiGraphicsExtractor g, int mapX, int mapY, int mapSize, Viewport view,
+            DrehmalMapPlacementCatalog.Seed from, DrehmalMapPlacementCatalog.Seed to, int color
     ) {
-        DrehmalWorldProfile.Anchor from = anchor(anchors, fromId);
-        DrehmalWorldProfile.Anchor to = anchor(anchors, toId);
-        if (from == null || to == null || !inside(from.x(), from.z(), view) || !inside(to.x(), to.z(), view)) return;
-        int x0 = mapX + worldToMap(from.x(), view.minX, view.span, mapSize);
-        int y0 = mapY + worldToMap(from.z(), view.minZ, view.span, mapSize);
-        int x1 = mapX + worldToMap(to.x(), view.minX, view.span, mapSize);
-        int y1 = mapY + worldToMap(to.z(), view.minZ, view.span, mapSize);
-        int steps = Math.max(1, Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
+        double minX = Math.min(from.x(), to.x()), maxX = Math.max(from.x(), to.x());
+        double minZ = Math.min(from.z(), to.z()), maxZ = Math.max(from.z(), to.z());
+        if (maxX < view.minX || minX > view.minX + view.span
+                || maxZ < view.minZ || minZ > view.minZ + view.span) return;
+        double dx = to.x() - from.x(), dz = to.z() - from.z();
+        double length = Math.max(1.0D, Math.hypot(dx, dz));
+        double worldPerPixel = Math.max(0.25D, view.span / Math.max(1, mapSize));
+        int steps = Math.max(1, Math.min(320, (int)Math.ceil(length / Math.max(1.0D, worldPerPixel * 1.5D))));
         for (int i = 0; i <= steps; i++) {
             double t = i / (double)steps;
-            int x = (int)Math.round(x0 + (x1 - x0) * t);
-            int y = (int)Math.round(y0 + (y1 - y0) * t);
-            g.fill(x - 1, y - 1, x + 3, y + 3, 0x55201D18);
+            double wx = from.x() + dx * t, wz = from.z() + dz * t;
+            if (!inside(wx, wz, view)) continue;
+            int x = mapX + worldToMap(wx, view.minX, view.span, mapSize);
+            int y = mapY + worldToMap(wz, view.minZ, view.span, mapSize);
+            g.fill(x - 1, y - 1, x + 3, y + 3, 0x66201D18);
             g.fill(x, y, x + 2, y + 2, color);
         }
     }

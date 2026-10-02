@@ -14,7 +14,7 @@ final class FacilityTravelScreen extends FacilityScreen {
 
     @Override
     protected String subtitle() {
-        return "발견한 역참으로 이동하거나 승용 산양을 빌립니다";
+        return "발견한 역참으로 이동하거나 길뿔 산양을 무료로 빌립니다";
     }
 
     @Override
@@ -38,7 +38,7 @@ final class FacilityTravelScreen extends FacilityScreen {
         }
         addRenderableWidget(new BattleHudButton(
                 left + 14, bodyBottom() - 22, panelWidth - 28, 18,
-                Component.literal("길뿔 산양 부르기"),
+                Component.literal("길뿔 산양 무료 대여"),
                 0xFFD7A45F,
                 ignored -> {
                     ClientPacketDistributor.sendToServer(new FieldCommandPayload("MOUNT|ROADHORN"));

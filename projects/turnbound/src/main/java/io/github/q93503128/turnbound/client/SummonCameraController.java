@@ -11,8 +11,8 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /** Client-only camera rig for the private in-world summon stage. */
 public final class SummonCameraController {
-    private static final float MIN_DISTANCE = 4.8F;
-    private static final float MAX_DISTANCE = 10.5F;
+    private static final float MIN_DISTANCE = 4.0F;
+    private static final float MAX_DISTANCE = 9.0F;
     private static final float VIEW_LERP = 0.34F;
     private static final float DISTANCE_LERP = 0.30F;
     private static final float FOV_LERP = 0.28F;
@@ -53,13 +53,13 @@ public final class SummonCameraController {
         }
 
         pivotX = x;
-        pivotY = y + 1.05D;
+        pivotY = y + 1.45D;
         pivotZ = z;
         baseYaw = Mth.wrapDegrees(cameraYaw);
-        currentYaw = targetYaw = Mth.wrapDegrees(baseYaw + 18.0F);
-        currentPitch = targetPitch = 25.0F;
-        currentDistance = targetDistance = 9.0F;
-        currentFov = targetFov = 55.0F;
+        currentYaw = targetYaw = Mth.wrapDegrees(baseYaw + 12.0F);
+        currentPitch = targetPitch = 14.0F;
+        currentDistance = targetDistance = 7.6F;
+        currentFov = targetFov = 50.0F;
 
         anchor = new ArmorStand(minecraft.level, pivotX, pivotY, pivotZ);
         anchor.setInvisible(true);
@@ -72,32 +72,32 @@ public final class SummonCameraController {
 
     public static void update(int slotTick, GachaPresentationTimeline.Phase phase, int stars) {
         if (!active || phase == null) return;
-        float rarityPush = Math.max(0, Math.min(5, stars) - 3) * 0.18F;
+        float rarityPush = Math.max(0, Math.min(5, stars) - 3) * 0.12F;
         float drift = (float)Math.sin(Math.max(0, slotTick) * 0.115F) * 2.2F;
         switch (phase) {
             case SIGNAL -> {
-                targetYaw = Mth.wrapDegrees(baseYaw + 18.0F + drift);
-                targetPitch = 25.0F;
-                targetDistance = 9.0F;
-                targetFov = 55.0F;
+                targetYaw = Mth.wrapDegrees(baseYaw + 12.0F + drift);
+                targetPitch = 14.0F;
+                targetDistance = 7.6F;
+                targetFov = 50.0F;
             }
             case SILHOUETTE -> {
-                targetYaw = Mth.wrapDegrees(baseYaw + 10.0F + drift * 0.7F);
-                targetPitch = 22.0F;
-                targetDistance = 7.8F - rarityPush;
-                targetFov = 50.0F;
-            }
-            case REVEAL -> {
-                targetYaw = Mth.wrapDegrees(baseYaw - 4.0F + drift * 0.35F);
-                targetPitch = 18.5F;
-                targetDistance = 5.9F - rarityPush;
+                targetYaw = Mth.wrapDegrees(baseYaw + 7.0F + drift * 0.7F);
+                targetPitch = 12.0F;
+                targetDistance = 6.4F - rarityPush;
                 targetFov = 47.0F;
             }
+            case REVEAL -> {
+                targetYaw = Mth.wrapDegrees(baseYaw - 2.0F + drift * 0.35F);
+                targetPitch = 10.0F;
+                targetDistance = 4.9F - rarityPush;
+                targetFov = 44.0F;
+            }
             case NAME -> {
-                targetYaw = Mth.wrapDegrees(baseYaw - 11.0F + drift * 0.25F);
-                targetPitch = 20.0F;
-                targetDistance = 6.5F - rarityPush * 0.5F;
-                targetFov = 50.0F;
+                targetYaw = Mth.wrapDegrees(baseYaw - 6.0F + drift * 0.25F);
+                targetPitch = 11.0F;
+                targetDistance = 5.4F - rarityPush * 0.5F;
+                targetFov = 46.0F;
             }
             case COMPLETE -> { }
         }
