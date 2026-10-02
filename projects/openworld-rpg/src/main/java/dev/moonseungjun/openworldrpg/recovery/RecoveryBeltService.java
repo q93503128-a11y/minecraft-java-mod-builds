@@ -21,8 +21,49 @@ public final class RecoveryBeltService {
         );
     }
 
+    public static RecoveryBeltSetupState setup(ServerPlayer player) {
+        Objects.requireNonNull(player, "player");
+        return player.getAttachedOrSet(
+                RecoveryBeltAttachments.RECOVERY_BELT_SETUP,
+                RecoveryBeltSetupState.empty()
+        );
+    }
+
     public static RecoveryBeltState selectSlot(ServerPlayer player, int slot) {
         return replace(player, state(player).withSelectedSlot(slot));
+    }
+
+    public static RecoveryBeltSetupState configureSetupSlot(
+            ServerPlayer player,
+            int slot,
+            RecoveryBeltSlot desired
+    ) {
+        Objects.requireNonNull(desired, "desired");
+        return replaceSetup(
+                player,
+                setup(player).withSlot(slot, desired)
+        );
+    }
+
+    /**
+     * Save-compatible migration for the pre-setup attachment era. It mirrors only doses that are
+     * already physically loaded, so a legacy empty belt never receives an invented default ratio.
+     */
+    public static RecoveryBeltSetupState reconcileSetupFromLoadedBeltIfEmpty(
+            ServerPlayer player
+    ) {
+        RecoveryBeltSetupState current = setup(player);
+        if (!current.isEmpty()) {
+            return current;
+        }
+        RecoveryBeltState belt = state(player);
+        if (belt.loadedCount() == 0) {
+            return current;
+        }
+        return replaceSetup(
+                player,
+                RecoveryBeltSetupState.fromLoadedBelt(belt)
+        );
     }
 
     public static RecoveryBeltState loadCommittedReserveDoseOnce(
@@ -58,7 +99,7 @@ public final class RecoveryBeltService {
         return resolution;
     }
 
-    private static RecoveryBeltState replace(
+    static RecoveryBeltState replace(
             ServerPlayer player,
             RecoveryBeltState next
     ) {
@@ -67,6 +108,21 @@ public final class RecoveryBeltService {
             return current;
         }
         player.setAttached(RecoveryBeltAttachments.RECOVERY_BELT, next);
+        return next;
+    }
+
+    private static RecoveryBeltSetupState replaceSetup(
+            ServerPlayer player,
+            RecoveryBeltSetupState next
+    ) {
+        RecoveryBeltSetupState current = setup(player);
+        if (current.equals(next)) {
+            return current;
+        }
+        player.setAttached(
+                RecoveryBeltAttachments.RECOVERY_BELT_SETUP,
+                next
+        );
         return next;
     }
 }

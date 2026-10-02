@@ -19,6 +19,18 @@ public final class RecoveryBeltAttachments {
                             .copyOnDeath()
             );
 
+    public static final AttachmentType<RecoveryBeltSetupState> RECOVERY_BELT_SETUP =
+            AttachmentRegistry.create(
+                    Identifier.fromNamespaceAndPath(
+                            OpenworldRpgMod.MOD_ID,
+                            "recovery_belt_setup"
+                    ),
+                    builder -> builder
+                            .initializer(RecoveryBeltSetupState::empty)
+                            .persistent(RecoveryBeltSetupState.CODEC)
+                            .copyOnDeath()
+            );
+
     private RecoveryBeltAttachments() {
     }
 

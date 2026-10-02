@@ -64,6 +64,7 @@ import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionS
 import dev.moonseungjun.openworldrpg.recovery.R01NourishmentAttachments;
 import dev.moonseungjun.openworldrpg.recovery.R01NourishmentService;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltAttachments;
+import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltService;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryEffectRuntime;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryUseRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ClericRootPassiveRuntime;
@@ -189,6 +190,9 @@ public final class OpenworldRpgMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             if (!M0PlayerVerificationBootstrap.enabled()) {
                 R01OpeningBootstrapService.ensureOpeningLoadout(handler.getPlayer());
+                RecoveryBeltService.reconcileSetupFromLoadedBeltIfEmpty(
+                        handler.getPlayer()
+                );
                 R01ClassStarterService.reconcileInterruptedGrant(handler.getPlayer());
                 PlayerDeathPenaltyService.reconcilePending(handler.getPlayer());
             }

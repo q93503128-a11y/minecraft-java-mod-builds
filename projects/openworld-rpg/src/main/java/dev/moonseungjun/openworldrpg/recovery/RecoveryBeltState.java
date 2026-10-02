@@ -124,6 +124,31 @@ public record RecoveryBeltState(
      * <p>Inventory/merchant/alchemy code must first commit the real reserve-item transaction. The
      * stable ID makes reconnect retries safe and prevents loading the same reserved item twice.</p>
      */
+    public RecoveryBeltState loadReservedDoseIntoSlot(
+            int slot,
+            RecoveryConsumable consumable
+    ) {
+        Objects.requireNonNull(consumable, "consumable");
+        if (slot < 0 || slot >= RecoveryActionRules.BELT_CAPACITY) {
+            throw new IllegalArgumentException("slot must be inside [0, 3].");
+        }
+        if (slots.get(slot) != RecoveryBeltSlot.EMPTY) {
+            throw new IllegalStateException(
+                    "Recovery Belt reload target slot is already occupied."
+            );
+        }
+
+        ArrayList<RecoveryBeltSlot> nextSlots = new ArrayList<>(slots);
+        nextSlots.set(slot, RecoveryBeltSlot.loaded(consumable));
+        return new RecoveryBeltState(
+                schemaVersion,
+                nextSlots,
+                selectedSlot,
+                sharedLockoutUntilTick,
+                appliedLoadTransactionIds
+        );
+    }
+
     public RecoveryBeltState loadCommittedReserveDoseOnce(
             String transactionId,
             RecoveryConsumable consumable
