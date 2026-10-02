@@ -187,6 +187,12 @@ public final class DrehmalFirstRouteRuntime {
                     }
                 }
             }
+            if (DrabyelLocalArcProgress.complete(flags)
+                    && flags.contains(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED)
+                    && !DrabyelLocalArcProgress.regionalGateReady(clears, flags)) {
+                FieldUiSnapshot.Navigation regional = regionalGoalNavigation(player, clears);
+                if (regional.active()) return regional;
+            }
             return FieldUiSnapshot.Navigation.none();
         }
 
@@ -197,6 +203,37 @@ public final class DrehmalFirstRouteRuntime {
         }
         return DrehmalRouteNavigationRules.target(
                 DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ(), flags, clears);
+    }
+
+    private static FieldUiSnapshot.Navigation regionalGoalNavigation(
+            ServerPlayer player,
+            java.util.Set<String> clears
+    ) {
+        java.util.Set<String> choices = java.util.Set.of(
+                "CV_DRABYEL_NORTH",
+                DrehmalContentUnlocks.WARNING_CAVE_ELITE,
+                DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
+        DrehmalFirstRouteCatalog.Site best = null;
+        String bestLabel = "";
+        double bestDistanceSq = Double.MAX_VALUE;
+        for (var encounter : DrehmalAdaptiveRoutePlacement.productionEncounters(player)) {
+            String combatId = encounter.combatEncounterId();
+            if (!choices.contains(combatId) || clears.contains(combatId)) continue;
+            var site = DrehmalAdaptiveRoutePlacement.site(player, encounter.siteLocator());
+            if (site == null || site.runtimePosition() == null) continue;
+            var pos = site.runtimePosition();
+            double dx = player.getX() - (pos.x() + 0.5D);
+            double dz = player.getZ() - (pos.z() + 0.5D);
+            double distanceSq = dx * dx + dz * dz;
+            if (distanceSq < bestDistanceSq) {
+                bestDistanceSq = distanceSq;
+                best = site;
+                bestLabel = encounter.playerLabel();
+            }
+        }
+        return best == null
+                ? FieldUiSnapshot.Navigation.none()
+                : navigationTo(best.locator(), bestLabel.isBlank() ? best.playerLabel() : bestLabel, best.runtimePosition());
     }
 
     private static FieldUiSnapshot.Navigation openingPatrolNavigation(ServerPlayer player) {

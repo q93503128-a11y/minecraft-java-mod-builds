@@ -180,7 +180,7 @@ final class DrehmalContextualOnboarding {
         }
         return new Guidance(
                 "캐피털 밸리에서 지역 목표를 하나 더 해결하고 뉴 드라비엘로 돌아오십시오.",
-                "북부 도로, 경고 동굴의 강적, 들이받는 왕 그라울 중 원하는 방향을 선택할 수 있습니다.");
+                "별도 수락은 필요 없습니다. M 지도에 표시된 북부 도로, 경고 동굴의 강적, 들이받는 왕 그라울 중 하나를 선택하십시오.");
     }
 
     static String nextHubServiceRole(Set<String> clears, Set<String> flags, Set<String> roles) {

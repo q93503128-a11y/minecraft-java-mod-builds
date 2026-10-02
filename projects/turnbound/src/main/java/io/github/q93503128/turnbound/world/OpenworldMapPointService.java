@@ -44,6 +44,12 @@ final class OpenworldMapPointService {
         DrehmalAdaptiveRoutePlacement.productionEncounters(player).stream().map(DrehmalFirstRouteCatalog.EncounterSlot::combatEncounterId).filter(id->id!=null&&!id.isBlank()).forEach(production::add);
         AvsalExpansionRuntime.productionEncounters(player).stream().map(DrehmalFirstRouteCatalog.EncounterSlot::combatEncounterId).filter(id->id!=null&&!id.isBlank()).forEach(production::add);
 
+        if (DrabyelLocalArcProgress.complete(flags)
+                && flags.contains(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED)
+                && !DrabyelLocalArcProgress.regionalGateReady(clears, flags)) {
+            addCapitalValleyChoices(out, player, clears);
+        }
+
         for (var quest : DrehmalQuestCatalog.all()) {
             if (!DrehmalQuestCatalog.visible(quest, flags, production) || DrehmalQuestCatalog.completed(quest, flags, clears)) continue;
             var target=drehmalQuestTarget(player,quest); if(target==null||target.runtimePosition()==null)continue; var pos=target.runtimePosition();
@@ -75,6 +81,31 @@ final class OpenworldMapPointService {
             out.add(new FieldUiSnapshot.MapPoint("quest:"+quest.id(),quest.title(),"QUEST",pos.x()+0.5D,pos.z()+0.5D,true));
         }
         return List.copyOf(out);
+    }
+
+    private static void addCapitalValleyChoices(
+            List<FieldUiSnapshot.MapPoint> out,
+            ServerPlayer player,
+            Set<String> clears
+    ) {
+        Set<String> choices = Set.of(
+                "CV_DRABYEL_NORTH",
+                DrehmalContentUnlocks.WARNING_CAVE_ELITE,
+                DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
+        for (var encounter : DrehmalAdaptiveRoutePlacement.productionEncounters(player)) {
+            String combatId = encounter.combatEncounterId();
+            if (!choices.contains(combatId) || clears.contains(combatId)) continue;
+            var site = DrehmalAdaptiveRoutePlacement.site(player, encounter.siteLocator());
+            if (site == null || site.runtimePosition() == null) continue;
+            var pos = site.runtimePosition();
+            out.add(new FieldUiSnapshot.MapPoint(
+                    "regional:" + combatId,
+                    encounter.playerLabel(),
+                    "QUEST",
+                    pos.x() + 0.5D,
+                    pos.z() + 0.5D,
+                    true));
+        }
     }
 
     private static void addAvsalQuestPoint(List<FieldUiSnapshot.MapPoint> out, ServerPlayer player,
