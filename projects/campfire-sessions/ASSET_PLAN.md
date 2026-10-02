@@ -1858,3 +1858,31 @@ Role mapping for the second integrated slice:
 - player + four resident houses → small/medium/big/fisher cottage variants.
 
 This is still a **client-review candidate**, not final visual acceptance. The main difference from the rejected pass is structural: the village terrain is shaped as three coherent levels before prefab placement instead of creating isolated pads under each building.
+
+
+## Third village layout rule — parcel-first distribution
+
+The v4 client review establishes that a valid prefab does not imply a valid village.
+
+For the next physical slice:
+- canonical starting housing target: **10 houses in the review slice**, with room to grow to the 10–12 design range without rebuilding the civic center.
+- residential parcel baseline: approximately **25×25 blocks** per home.
+- the starter structure occupies only part of that parcel.
+- the remainder is reserved for front/side yard, mailbox/signage, fencing/flowers/furniture and future exterior-swap/upgrade clearance.
+- neighboring housing parcels must not overlap.
+- public paths may touch a parcel at its entrance, but cannot consume the whole yard.
+- public facilities use separate civic/satellite parcels instead of sharing one dense building pad.
+
+Canonical-world probe work now searches the dominant main island for real 24×24-ish parcel candidates with:
+- high land coverage,
+- compact natural height spread,
+- distance from the civic core,
+- and spacing from already selected home parcels.
+
+The intended spatial pattern is:
+- compact civic hub: resident services + basic plaza + general store;
+- nearby but separate satellites: café / clothing / clinic / museum;
+- local residential pockets south and north of the hub;
+- several scenic outlier homes on other usable parts of the main island.
+
+This is intentionally closer to a lived-in island settlement than a single generated-village block.

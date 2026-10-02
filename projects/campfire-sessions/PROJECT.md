@@ -446,3 +446,37 @@ Validation labels:
 - MULTIPLAYER TESTED: NO
 
 Because the baked review world changed materially, the next client review requires a **fresh v4 Modrinth review-pack import**, not a JAR-only replacement. Continue to provide both the JAR and `.mrpack` to the user as requested.
+
+
+## Second village client review — v4 visual rejection
+
+The user completed a real Minecraft client inspection of the Build #68 / Probe #35 Chek's Mint village slice.
+
+Observed result:
+- the Chek's Mint exterior family is materially stronger than the rejected Kogtyv tower set and remains a candidate.
+- the **layout itself failed**:
+  - homes and facilities are packed too tightly around one compact center;
+  - the five-house review count is below the canonical starting-village target of roughly 10–12 houses;
+  - there is insufficient parcel reserve for yards, exterior customization and believable housing upgrades;
+  - paths do not consistently meet the actual building entrances and read as an imposed road grid;
+  - residential life does not spread across the island as intended;
+  - black/path-like cutouts are visible around structures.
+- source inspection shows the selected Chek structure NBTs contain large explicit `minecraft:air` volumes. Because v4 placed those templates after terrain authoring, those AIR states could carve the prepared ground. Review placement now filters AIR as well as jigsaw/structure markers; the next client slice must verify that this removes the black cutouts.
+
+Validation labels:
+- SECOND VILLAGE SLICE CLIENT VISUAL TESTED: **YES**
+- SECOND VILLAGE VISUAL ACCEPTANCE: **FAILED**
+- CHEK'S MINT EXTERIOR FAMILY: **RETAINED AS CANDIDATE**
+- V4 DENSE TERRACE / ROAD LAYOUT: **REJECTED**
+
+Third-slice requirements:
+1. use **real parcels/lots**, not only building footprints;
+2. starting housing review must contain **10 houses minimum**, matching the lower bound of the canonical 10–12 target;
+3. each housing parcel reserves yard and upgrade room around the current starter shell;
+4. keep civic services around a readable center, but move café/clothing/clinic/museum to nearby satellite parcels;
+5. distribute homes across several island areas, with only a few homes per local cluster;
+6. long-distance homes use natural approaches / short front trails rather than a paved road across the entire island;
+7. paths must terminate at the actual entrance side of each prefab;
+8. preserve the outer mountain/coastline and avoid another giant rectangular village platform.
+
+The third client review is not requested until this parcel-based world is integrated and server-runtime verified.
