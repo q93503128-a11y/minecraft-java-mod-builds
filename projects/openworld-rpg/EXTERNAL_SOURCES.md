@@ -168,7 +168,8 @@ Rules:
 - The current Fabric build keeps the full roster rather than a reduced port.
 - Strong biome-specific pool includes examples such as grizzly bear, gazelle, crocodile, orca, gorilla, rattlesnake, hammerhead shark, komodo dragon, cave centipede, moose, seal, elephant, snow leopard, snapping turtle, catfish, rhinoceros, caiman and numerous fantastical creatures.
 - R01 shortlist: gazelle and bison for large open-meadow wildlife/resource roles; raccoon/crow for ambient life; grizzly for rare territorial danger; rattlesnake and cave centipede for readable low-level threats.
-- Project status: strong **dependency** for wildlife/secondary monsters. Do not turn all ~116 creatures on by default; curate by region.
+- Current pinned-JAR binding check (2026-10-02): exact registry IDs are startup-verified for `alexsmobs:gazelle`, `alexsmobs:bison`, `alexsmobs:raccoon`, `alexsmobs:crow` and `alexsmobs:grizzly_bear`. Bison and Grizzly have project-owned canonical R01 combat-stat profiles. Gazelle/Raccoon/Crow remain ecology-only identities and are not given invented hostile profiles. Cave Centipede is deliberately still unbound because the pinned donor exposes a multipart surface that needs a dedicated adapter review before production use.
+- Project status: strong **dependency** for wildlife/secondary monsters. Registry verification is not production-spawn acceptance; non-Earthloong actors remain fail-closed until their authored behavior/reward/presentation paths are bound. Do not turn all ~116 creatures on by default; curate by region.
 
 ## Nemo's Creatures
 
@@ -183,6 +184,7 @@ Rules:
 - Source: https://modrinth.com/mod/threateningly-mobs-continued
 - Current listing observed 2026-09-15: Fabric 26.2, client+server, MIT.
 - Useful published heavy-creature placements include Nature Spirit in forests, Earthloong in forests/jungles, Desert Beetle and Armor of Desert in deserts/badlands, Beast Horseshoe Crab in oceans/beaches, Hydra in oceans/rivers/swamps, Steelboar in savannas/meadows/dark forests/badlands, Regalhart in meadows/taigas/forests, Riptooth in oceans at night and Flamehorn in savannas.
+- Current pinned-JAR binding check (2026-10-02): exact registry IDs are startup-verified for `threateningly_mobs:louxia`, `threateningly_mobs:steelboar`, `threateningly_mobs:the_regalhart` and `threateningly_mobs:the_earthloong`. Steelboar, Regalhart and Earthloong have project-owned canonical R01 combat-stat profiles; Louxia remains passive ecology without an invented hostile kit. Earthloong is the only currently production-spawn-ready member of this set. Nature Spirit remains fail-closed because the pinned build exposes legacy `NATURE_HAMONY` naming that must be resolved from the registry initializer rather than guessed.
 - Summonable larger bosses include Titan Rabbit, Inferno, Terradragon and Abyss Fang.
 - The companion wiki documents breedable/passive creatures that can replace vanilla resource animals. **Louxia** naturally fits plains/sunflower-plains-like environments, is passive/breedable and drops Louxia meat plus a luminous material; it is the current strongest R01 food-ecology candidate.
 - Other documented non-vanilla resource creatures such as Copas, Hippofish, Red Triplefish, Giant Sea Cucumber and Diplocaulus can support later hot/coastal/swamp regions instead of vanilla livestock/fish.
