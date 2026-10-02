@@ -251,6 +251,45 @@ This pass narrows the real acquisition queue. It does not upgrade any fish model
 
 ---
 
+## 3.5 Nature Spirit external presentation candidate
+
+The pinned Threateningly Mobs donor does not expose accepted attack-specific animation states for
+Rooted Swipe / Earthen Ram / Bloom Quake, so project combat authority must not be made player-facing
+through invisible hitboxes or generic particle substitutions.
+
+A current external-first replacement candidate is:
+
+```text
+source: Tennessippi — Free Treant Pack
+page: https://tennessippistudios.itch.io/treant-pack
+published archive: Treant Package.7z
+published size: 44 MB
+license on source page: CC0 / no attribution required
+published characters: 2 rigged stylized tree creatures, light/dark variants
+published clips: Attack01 / Attack02 / Attack03 / Death01 / Death02 / Death03 /
+                 Idle / Dance / Run / Taunt
+formats stated: FBX + OBJ
+status: ARCHIVE_INSPECTION_REQUIRED
+```
+
+This candidate is unusually relevant because the published pack already exposes three dedicated attack
+clips rather than requiring code-only motion. It is **not production-admitted yet**. Before binding it:
+
+1. acquire the exact `Treant Package.7z` from the creator page;
+2. record project-local SHA-256 and preserve acquisition-time CC0 evidence;
+3. inspect both rigs and Attack01/02/03 in Blender/Blockbench or equivalent;
+4. test whether those clips can honestly express Rooted Swipe / Earthen Ram / Bloom Quake and whether
+   a readable Living Shell brace/close state can be authored from the rig without replacing the
+   external silhouette;
+5. convert/retarget at Minecraft scale and verify visible contact/radius against server hit areas;
+6. reject the candidate if the attack silhouettes, ground contact or Living Shell readability fail.
+
+Until that exact binary/clip review passes, Nature Spirit remains presentation-blocked and the current
+dependency model is not treated as a final production visual merely because its registry/stat backend is
+already bound.
+
+---
+
 # 4. Exact public-safe KayKit file bindings
 
 Repository:
