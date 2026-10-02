@@ -293,21 +293,42 @@ Ceiling Drop production presentation = REAL-CLIENT REVIEW REQUIRED
 replacement-model search = CLOSED unless canon is explicitly revised
 ```
 
+Build Openworld RPG run `37013373528` is **SUCCESS** for code state
+`58b95f9fcb9960d64749aab45ced4f9e462788c6`. Tests/build, pinned creature inspection,
+core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs, mrpack packaging
+and artifact upload passed. Artifact:
+`openworld-rpg-m0-58b95f9fcb9960d64749aab45ced4f9e462788c6`
+(`11229185745`, SHA-256
+`d2e785e2872c55c7dda2e41f82a3b838e5e3c3fc87c497cbd1b8df762eecc519`).
+This verifies fixture availability/startup only; the two creature models have **not** yet been
+visually accepted in a joined world.
+
 ---
 
-## 3.5 Nature Spirit external presentation candidate
+## 3.5 Nature Spirit fixed dependency presentation
 
-The canonical R01 external identity remains the pinned Threateningly Mobs Nature Spirit
-(`threateningly_mobs:nature_hamony`). The Treant package below is an **exception candidate for a
-future explicit presentation-canon revision**, not evidence that the original model choice was
-silently discarded. The dedicated verification artifact now exposes `/owr_preview_nature_spirit`
-so the fixed donor can be reviewed directly before that decision.
+The R01 encounter canon already fixes the Threateningly Mobs Continued Nature Spirit as the external
+identity, using exact pinned registry `threateningly_mobs:nature_hamony`. Model selection is therefore
+closed by default. The current technical problem is animation/presentation binding: the pinned donor
+exposes `naturehamony_spawn`, `naturehamony_idle` and `naturehamony_end`, with no accepted
+attack-specific clip for Rooted Swipe / Earthen Ram / Bloom Quake.
 
-The pinned Threateningly Mobs donor does not expose accepted attack-specific animation states for
-Rooted Swipe / Earthen Ram / Bloom Quake, so project combat authority must not be made player-facing
-through invisible hitboxes or generic particle substitutions.
+The dedicated M0/R01 verification artifacts expose:
 
-A current external-first replacement candidate is:
+```text
+/owr_preview_nature_spirit
+```
+
+The command spawns the fixed raw donor model as a verification-only fixture, does not mark it as
+`authored_spawn`, and therefore does not open production spawning or reward eligibility. The correct
+next step is real-client review of this fixed model before any presentation-canon revision.
+
+The previously researched Tennessippi Treant pack is retained only as a **REFERENCE_ONLY fallback**.
+It is not the current production model direction and is not acquired merely because the donor lacks
+named attack clips. Replacing the Nature Spirit model requires an explicit canon revision after the
+fixed donor is rejected in real-client review.
+
+Fallback reference:
 
 ```text
 source: Tennessippi — Free Treant Pack
@@ -322,8 +343,9 @@ formats stated: FBX + OBJ
 status: ARCHIVE_INSPECTION_REQUIRED
 ```
 
-This candidate is unusually relevant because the published pack already exposes three dedicated attack
-clips rather than requiring code-only motion. It is **not production-admitted yet**. Before binding it:
+Its published three-attack surface is useful evidence for what a fallback would need, but it is
+**not production-admitted and is not the next implementation step**. If an explicit future canon
+revision promotes this fallback, only then:
 
 1. acquire the exact `Treant Package.7z` from the creator page;
 2. record project-local SHA-256 and preserve acquisition-time CC0 evidence;
@@ -334,9 +356,9 @@ clips rather than requiring code-only motion. It is **not production-admitted ye
 5. convert/retarget at Minecraft scale and verify visible contact/radius against server hit areas;
 6. reject the candidate if the attack silhouettes, ground contact or Living Shell readability fail.
 
-Until that exact binary/clip review passes, Nature Spirit remains presentation-blocked and the current
-dependency model is not treated as a final production visual merely because its registry/stat backend is
-already bound.
+Nature Spirit remains presentation-blocked until the **fixed Threateningly donor** is reviewed in the
+real client and its authored attacks are either honestly bound to that model or the encounter canon is
+explicitly revised. The donor is not silently demoted because it lacks named attack clips.
 
 Source metadata was rechecked on **2026-10-02** and still advertises the same creator-controlled
 `Treant Package.7z`, 44 MB package size, two rigged stylized tree creatures, Attack01/02/03 clip set

@@ -425,6 +425,16 @@ honestly does the existing canon permit revising the move to one the accepted mo
 Dedicated verification artifacts now expose raw fixed-model preview commands for Cave Centipede and
 Nature Spirit without adding the project `authored_spawn` tag or opening production spawn/reward
 eligibility.
+
+Build Openworld RPG run `37013373528` is **SUCCESS** for this correction/inspection harness at code
+state `58b95f9fcb9960d64749aab45ced4f9e462788c6`: tests/build, pinned creature inspection,
+core/gameplay server smoke, gameplay client startup, both verification JARs, mrpack packaging and
+artifact upload all passed. Artifact:
+`openworld-rpg-m0-58b95f9fcb9960d64749aab45ced4f9e462788c6`
+(`11229185745`, SHA-256
+`d2e785e2872c55c7dda2e41f82a3b838e5e3c3fc87c497cbd1b8df762eecc519`).
+This does not claim joined-world visual acceptance. The raw fixed-model preview commands are
+`/owr_preview_cave_centipede` and `/owr_preview_nature_spirit`.
 The same pinned Threateningly Mobs Nature Spirit inspection exposes only
 `naturehamony_spawn`, `naturehamony_idle` and `naturehamony_end` animation states, with no
 attack-specific animation surface for Rooted Swipe / Earthen Ram / Bloom Quake. Per the external-first
