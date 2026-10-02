@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg;
 
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01CaveCentipedeDonorContactBridge;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildPublisher;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatSessionAttachments;
@@ -150,6 +151,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01AlderfordRuntimeBindingRegistry.initialize(LOGGER);
         R01PlayerVerificationBootstrap.verifyStaticContracts(LOGGER);
         IntegrationBootstrap.bootstrap(profile, LOGGER);
+        R01CaveCentipedeDonorContactBridge.initialize(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.START_SERVER_TICK.register(server -> {
             ProjectPlayerActionRuntime.tick(server);
@@ -176,6 +178,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             SanctuaryRuntime.tick(server);
             WarriorSkillRuntime.tick(server);
             ProjectHostileStatusRuntime.tick(server);
+            R01CaveCentipedeDonorContactBridge.tick(server);
             GuardianProvokedRuntime.tick(server);
             ProjectBurningRuntime.tick(server);
             R01RoadsideTroubleController.tickActiveWorld(server);

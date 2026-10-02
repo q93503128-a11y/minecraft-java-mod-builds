@@ -213,6 +213,18 @@ public final class ExternalActorBindingRuntime {
                 || entity.entityTags().contains(NO_CAPTURE_TAG);
     }
 
+    /**
+     * True only for actors created through the project's accepted authored-spawn path.
+     *
+     * <p>Registry/stat binding alone is intentionally insufficient: donor natural spawns and
+     * verification fixtures must not inherit production attack bridges merely because their entity
+     * type is known.</p>
+     */
+    public static boolean isAuthoredSpawn(Entity entity) {
+        return entity != null
+                && entity.entityTags().contains(AUTHORED_SPAWN_TAG);
+    }
+
     public static boolean isAuthoredWeakPointHit(
             LivingEntity target,
             Vec3 hitPosition

@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.mixin;
 
 import dev.moonseungjun.openworldrpg.combat.authority.CombatDamageAuthority;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01CaveCentipedeDonorContactBridge;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.HunterSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectDamageApplicationContext;
@@ -177,6 +178,18 @@ public abstract class ExternalActorDamageAuthorityMixin {
                 && source.getEntity() instanceof LivingEntity attacker
                 && ExternalActorBindingRuntime.ownsDamageAuthority(attacker)
                 && !ProjectDamageApplicationContext.consumeIfAuthorized(self)) {
+            if (self instanceof ServerPlayer target) {
+                R01CaveCentipedeDonorContactBridge.interceptDonorMeleeContact(
+                        attacker,
+                        target
+                );
+            }
+            /*
+             * Always report donor-origin damage as rejected. Project-owned contacts, including the
+             * Cave Centipede bridge above, cross this boundary later through the one-shot project
+             * authorization token. Returning false here also prevents the donor centipede from
+             * applying its vanilla instant Poison effect after Monster#doHurtTarget.
+             */
             cir.setReturnValue(false);
         }
     }
