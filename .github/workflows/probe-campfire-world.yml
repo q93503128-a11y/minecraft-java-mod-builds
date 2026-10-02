@@ -208,7 +208,7 @@ jobs:
           fi
 
           test -f "$REVIEW/world/.campfiresessions-village-review-v5"
-          grep -Fq 'Campfire village review terraces applied:' build/world-probe/village-review-server.log
+          grep -Fq 'Campfire village review parcels applied:' build/world-probe/village-review-server.log
           grep -Fq 'Campfire village review paths applied:' build/world-probe/village-review-server.log
           grep -Fq 'Campfire village review placed harbor_dock' build/world-probe/village-review-server.log
           {
