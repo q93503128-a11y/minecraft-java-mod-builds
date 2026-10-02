@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.combat.runtime;
 import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01NatureSpiritCombatRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
@@ -149,6 +150,14 @@ public final class ProjectMinecraftDamageApplicator {
                 return false;
             }
             var applied = application.orElseThrow();
+            if (attacker instanceof ServerPlayer) {
+                R01NatureSpiritCombatRuntime
+                        .recordPostMitigationHostileDamage(
+                                damageTarget,
+                                applied.appliedDamage(),
+                                serverLevel.getGameTime()
+                        );
+            }
             if (attacker instanceof ServerPlayer player) {
                 R01EarthloongEncounterService.recordDamageContribution(
                         damageTarget,

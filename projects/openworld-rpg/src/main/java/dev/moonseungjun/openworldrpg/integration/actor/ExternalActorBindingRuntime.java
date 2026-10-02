@@ -5,6 +5,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHostileStatusRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectHealthRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectPoiseRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterDataLoader;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01NatureSpiritCombatRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlay;
 import dev.moonseungjun.openworldrpg.integration.overlay.ActorIntegrationOverlayLoader;
@@ -288,8 +289,15 @@ public final class ExternalActorBindingRuntime {
                 combatProfile(owner).map(profile -> {
                     ProjectPoiseRuntimeState.Snapshot poise =
                             ensurePoiseState(owner, profile, gameTick).snapshot(gameTick);
-                    return profile.projectTargetSnapshot(
+                    double authoredDamageTakenMultiplier =
                             poise.damageTakenMultiplier()
+                                    * R01NatureSpiritCombatRuntime
+                                            .directDamageTakenMultiplier(
+                                                    owner,
+                                                    gameTick
+                                            );
+                    return profile.projectTargetSnapshot(
+                            authoredDamageTakenMultiplier
                     );
                 })
         );
@@ -312,12 +320,27 @@ public final class ExternalActorBindingRuntime {
             long gameTick
     ) {
         return damageAuthorityTarget(living).flatMap(owner ->
-                combatProfile(owner).map(profile ->
-                        ensurePoiseState(owner, profile, gameTick).apply(
-                                rawPoiseDamage,
+                combatProfile(owner).map(profile -> {
+                    double adjustedPoiseDamage =
+                            rawPoiseDamage
+                                    * R01NatureSpiritCombatRuntime
+                                            .poiseDamageTakenMultiplier(
+                                                    owner,
+                                                    gameTick
+                                            );
+                    ProjectPoiseRuntimeState.Application application =
+                            ensurePoiseState(owner, profile, gameTick).apply(
+                                    adjustedPoiseDamage,
+                                    gameTick
+                            );
+                    if (application.breakTriggered()) {
+                        R01NatureSpiritCombatRuntime.onPoiseBroken(
+                                owner,
                                 gameTick
-                        )
-                )
+                        );
+                    }
+                    return application;
+                })
         );
     }
 
