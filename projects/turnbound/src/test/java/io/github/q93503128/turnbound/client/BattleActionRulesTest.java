@@ -14,6 +14,8 @@ class BattleActionRulesTest {
             new ClientBattleState.Unit("ally_2", "P03", "ALLY", "Bram", 1000, 1000, 0, 0, false);
     private static final ClientBattleState.Unit ENEMY =
             new ClientBattleState.Unit("enemy_1", "E01", "ENEMY", "Enemy", 600, 600, 0, 0, false);
+    private static final ClientBattleState.Unit ENEMY_TWO =
+            new ClientBattleState.Unit("enemy_2", "E02", "ENEMY", "Enemy 2", 600, 600, 0, 0, false);
 
     @Test
     void selfAndAllActionsCanConfirmWithoutExternalTargetIds() {
@@ -31,6 +33,19 @@ class BattleActionRulesTest {
         assertNull(BattleActionRules.confirmedTarget(units, "ENEMY_SINGLE", "ally_1", 0));
         assertEquals(2, BattleActionRules.defaultTarget(units, "ENEMY_SINGLE", "ally_1"));
         assertEquals("enemy_1", BattleActionRules.confirmedTarget(units, "ENEMY_SINGLE", "ally_1", 2));
+    }
+
+    @Test
+    void dualEnemyTargetRequiresTwoDistinctSelectionsWhenTwoEnemiesLive() {
+        List<ClientBattleState.Unit> units = List.of(ALLY, ENEMY, ENEMY_TWO);
+        assertEquals(2, BattleActionRules.requiredTargetCount(units, "ENEMY_TWO", "ally_1"));
+        assertNull(BattleActionRules.confirmedTargets(units, "ENEMY_TWO", "ally_1", 1, -1));
+        assertNull(BattleActionRules.confirmedTargets(units, "ENEMY_TWO", "ally_1", 1, 1));
+        assertEquals("enemy_1,enemy_2",
+                BattleActionRules.confirmedTargets(units, "ENEMY_TWO", "ally_1", 1, 2));
+        assertEquals(1, BattleActionRules.requiredTargetCount(List.of(ALLY, ENEMY), "ENEMY_TWO", "ally_1"));
+        assertEquals("enemy_1",
+                BattleActionRules.confirmedTargets(List.of(ALLY, ENEMY), "ENEMY_TWO", "ally_1", 1, -1));
     }
 
     @Test

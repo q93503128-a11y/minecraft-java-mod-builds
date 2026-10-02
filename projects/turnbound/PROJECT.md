@@ -2005,3 +2005,13 @@ Current Chapter 1 production direction:
 - rebuilt P01~P08 Signature progression around low-stat, high-mechanic base/+5/+10 effects and removed the unreachable +20 milestone
 - Signature mechanics now use the existing server-authoritative resource/status/Gauge/reaction/summon systems
 - auxiliary quest HUD ordering keeps one-shot side goals ahead of repeatable regional contracts while the main objective remains pinned separately
+
+
+## Target diversity / Gauge tempo correction — 2026-10-02
+
+Latest user direction before the next client playtest:
+- player attacks must not collapse into single-target-only kits; selected-two and all-target actions are legitimate first-class patterns;
+- P01/P05 remain intentional single-target specialists rather than forcing every hero toward the same ratio;
+- selected-two targeting is explicit player choice, not an arbitrary server-selected secondary victim;
+- Gauge +100 remains a meaningful small tempo nudge, but dedicated tempo-support skills may use materially larger 18~45% threshold movement;
+- no absolute SPD ceiling is introduced. High-SPD investment is a valid build and metagame axis; balance is judged by action count/TTK and opportunity cost rather than hard-capping the result.

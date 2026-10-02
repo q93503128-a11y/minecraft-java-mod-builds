@@ -104,20 +104,21 @@ Signature: **Tempo Window**
 
 ### Kit
 **Basic · 가속**
-- 다른 아군 Gauge +120
-- 대상 SPD < 루메아 SPD이면 +40 추가
+- 다른 아군 Gauge +180
+- 대상 SPD < 루메아 SPD이면 +60 추가
 - 다른 일반 아군이 모두 쓰러진 경우만 self-target 허용
 
 **Active A · 시간 도약**
 - CD4
-- 다른 아군 Gauge +300
-- 대상이 루메아보다 느리면 +60 추가
+- 다른 아군 Gauge +360
+- 대상이 루메아보다 느리면 +90 추가
 - 즉시 1000은 사용하지 않음
 
 **Active B · 시차 봉쇄**
 - CD3
-- 적 1명 85%
-- Gauge -180
+- 적을 최대 2명 직접 선택
+- 각 대상 65%
+- 각 대상 Gauge -140
 
 **Passive · Tempo Window**
 - 느린 아군을 당길 때 추가 효율
@@ -175,11 +176,12 @@ Signature: **Guard 0~100**
 
 **Active B · 진동 방패**
 - CD2
-- 적 1명 90%
-- Gauge -100
+- 적을 최대 2명 직접 선택
+- 각 대상 65%
+- 각 대상 Gauge -80
 - Guard 50 이상이면 Guard 50 소비:
-  - 피해 130%
-  - Gauge -180
+  - 각 대상 피해 95%
+  - 각 대상 Gauge 총 -140
   - 자신 MaxHP 8% Barrier
 
 **Passive · 되받는 방벽**
@@ -358,8 +360,9 @@ Signature: **Records 0~5**
 
 ### Kit
 **Basic · 잔향**
-- 단일 90%
-- Record 1당 피해 +5%
+- 적을 최대 2명 직접 선택
+- 각 대상 62%
+- Record 1당 각 대상 피해 +4%p
 - Record 소비 없음
 
 **Active A · 조문**
@@ -502,7 +505,7 @@ Signature: **Fury 0~100**
 **Active A · 피의 돌진**
 - CD2
 - 현재 HP 10% 소모, 최소 1
-- 단일 180%
+- 적 전체 90%
 - Fury +30
 
 **Active B · 과열**
@@ -540,6 +543,7 @@ F01~F04는 제거된 filler가 아니라 TURNBOUND의 저희귀도 플레이어�
 
 ### F01 민병 견습생 — ★1
 - Standard Archive ★1 pool
+- 기본 목검 치기는 적을 최대 2명 직접 선택해 각각 60% 피해
 - 천 모자 + 목검 계열 실루엣
 - 필드 NPC 모델 일부 공유 가능
 - 플레이어블 variant는 식별 가능한 차이를 둔다

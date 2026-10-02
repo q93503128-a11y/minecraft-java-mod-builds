@@ -19,6 +19,8 @@ class BattleTargetingTest {
             new ClientBattleState.Unit("enemy_1", "e001", "ENEMY", "Enemy", 500, 500, 0, 0, false);
     private static final ClientBattleState.Unit ENEMY_DOWN =
             new ClientBattleState.Unit("enemy_2", "e002", "ENEMY", "Down", 0, 500, 0, 0, true);
+    private static final ClientBattleState.Unit ENEMY_OTHER =
+            new ClientBattleState.Unit("enemy_3", "e003", "ENEMY", "Other", 500, 500, 0, 0, false);
 
     @Test
     void validatesSingleTargetRulesWithoutAllowingDownedUnitsByAccident() {
@@ -46,6 +48,13 @@ class BattleTargetingTest {
         assertEquals(3, BattleTargeting.cycle(units, "ENEMY_SINGLE", "ally_1", -1, 1));
         assertEquals(3, BattleTargeting.cycle(units, "ENEMY_SINGLE", "ally_1", 3, 1));
         assertEquals(3, BattleTargeting.cycle(units, "ENEMY_SINGLE", "ally_1", -1, -1));
+    }
+
+    @Test
+    void dualEnemyCycleCanExcludeTheAlreadyChosenTarget() {
+        List<ClientBattleState.Unit> units = List.of(ALLY_ALIVE, ENEMY_ALIVE, ENEMY_OTHER);
+        assertTrue(BattleTargeting.validTarget("ENEMY_TWO", ENEMY_ALIVE, "ally_1"));
+        assertEquals(2, BattleTargeting.cycle(units, "ENEMY_TWO", "ally_1", 1, 1, 1));
     }
 
     @Test

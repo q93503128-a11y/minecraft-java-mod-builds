@@ -90,19 +90,24 @@ Signature 장비의 과거 v0.4 전용 rule 문자열은 현재 v1 Signature 상
 
 ## 4. Gauge 조작 budget
 
-초기 범위:
-- 소형 단일 advance: +100~160
-- 큰 단일 advance: +250~360
-- 소형 단일 delay: -80~-140
-- 공격+강한 단일 delay: 약 -160~-200
-- 광역 delay: 단일보다 낮게
-- 즉시 Ready: 특별한 mechanic 외 기본적으로 사용하지 않음
+Gauge 1000 기준에서 +100은 단순 장식이 아니라 첫 행동까지 남은 시간을 약 10% 줄이는 소형 tempo 보정이다. 다만 행동경제를 정체성으로 쓰는 전담 support의 대표 기술까지 10%대에 머물게 하지는 않는다.
+
+현재 production 범위:
+- 소형 보정/장비/부가효과: 약 +40~160
+- 전담 단일 advance: 약 +180~450
+- 소형 단일/다중 delay: 약 -80~-160
+- 강한 조건부 delay: 약 -160~-220
+- 즉시 Ready/100% advance: 특별한 mechanic 또는 매우 큰 power budget에서만 사용
+- SPD에는 절대 상한을 두지 않는다. 높은 SPD 투자는 행동 횟수를 늘리는 정식 build/metagame 축이다.
+- 전투 중 percent SPD modifier의 안전 범위와 flat equipment SPD는 서로 다른 축이며, 높은 최종 SPD 자체를 잘라내는 cap으로 사용하지 않는다.
 
 루메아 기준:
-- Basic +120, 느린 아군이면 총 +160
-- Time Leap +300, 느린 아군이면 총 +360
-- 단일 공격 + delay -180
+- 가속 +180, 루메아보다 느린 아군이면 총 +240
+- 시간 도약 +360, 루메아보다 느린 아군이면 총 +450
+- 시차 봉쇄: 선택한 적 최대 2명에게 각각 Gauge -140
 - 정확한 미래 순서 편집 각성 보상: 자기 Gauge +60
+
+외부 턴제 RPG의 CR/ATB/action advance는 시스템 구조가 서로 달라 숫자를 그대로 복사하지 않는다. 다만 대표적인 tempo 기술이 20~30%대, 강한 단일 action advance가 50% 이상까지 올라가는 사례를 참고해 TURNBOUND의 10%를 소형 보정으로 재분류했다.
 
 ## 5. 캐릭터 power budget
 
@@ -311,15 +316,13 @@ random substat 4줄 구조는 사용하지 않는다.
 - 실패 없음
 - 파괴 없음
 - 강화 이전 가능성을 우선 검토
-- +10까지 단순한 main stat 증가
+- +10까지 main stat이 확실하게 증가
 - 강화 UI는 누르기 전에 **현재 수치 → 다음 수치 + 정확한 Gold 비용**을 같은 화면에서 보여준다.
 - 성장 깊이는 재료 종류를 늘려 만들지 않고, 장비 선택/캐릭터 조합/각성 mechanic으로 만든다.
-
-초기 main stat 강화:
-- +1마다 base main stat의 약 4%
-- +10 총 약 +40%
-
-trait는 강화로 반복 상승하지 않거나 특정 milestone에서 1회만 강화한다.
+- 현재 production 기준 percentage main stat은 +1마다 +0 기본 주옵의 10%씩 상승해 +10에서 200%가 된다.
+- SPD main은 +1마다 flat SPD +1.
+- trait/고정 부옵은 강화로 반복 상승하지 않는다.
+- 이전 티어 +10은 다음 티어 +0보다 명확히 강하며, 다음 티어도 수 회 강화한 뒤 교체 가치가 생기게 한다.
 
 ### 11.4 장비 Gold cost baseline
 아이템 등급별 +0→+10 총비용 초기 target:
@@ -783,3 +786,28 @@ Signature equipment is deliberately low-stat and high-mechanic:
 - no unreachable +20 milestone
 
 P01~P08 Signature effects alter the owner's actual Focus/Gauge/Guard/Sanctuary/follow-up/Record/summon/Fury loops and are consumed by the server-authoritative combat runtime.
+
+
+## 26. Player target-pattern diversity — 2026-10-02
+
+Chapter 1의 일반 조우가 2~4체 pack을 적극적으로 사용하므로 플레이어 kit도 단일 대상만으로 구성하지 않는다.
+
+원칙:
+- Single / selected-two / all-target를 역할에 맞게 섞는다.
+- 모든 캐릭터가 광역기를 가질 필요는 없다. 카이렌·리네트처럼 단일 집중이 약점과 강점인 캐릭터는 그 정체성을 유지한다.
+- selected-two는 서버가 임의의 두 번째 적을 고르지 않고 플레이어가 두 대상을 직접 지정한다.
+- 적이 1명만 남으면 selected-two 스킬은 그 1명에게 정상 사용 가능하다.
+- 다중 대상기는 같은 계수의 단일기보다 개별 대상 potency를 낮추되, pack전에서 총 action value가 확실히 높아야 한다.
+- AoE/2-target가 존재한다는 이유로 일반 적 HP를 일괄 상향하지 않는다. 실제 regular action 수와 TTK로 조정한다.
+
+현재 P01~P08 방향:
+- P01 카이렌: 단일 결투 특화 유지
+- P02 루메아: 시차 봉쇄를 selected-two tempo attack으로 변경
+- P03 브람: Guard 소비 진동 방패를 selected-two pressure로 변경
+- P04 엘리시아: 아군 전체 회복 유지
+- P05 리네트: 단일 Sightline/follow-up 특화 유지
+- P06 모르웬: 잔향을 selected-two 기록 공격으로 변경
+- P07 마리온: 계약수와 단일 지휘/보호 정체성 유지
+- P08 라제: 피의 돌진을 전 적 대상 pack-clear burst로 변경
+
+저희귀도 F01은 단순 selected-two 기본기로 초반 다수전 niche를 가진다.

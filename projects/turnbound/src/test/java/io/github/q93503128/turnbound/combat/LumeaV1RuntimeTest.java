@@ -40,7 +40,7 @@ final class LumeaV1RuntimeTest {
                 () -> engine.useSkill("lumea", "p02_accelerate", "lumea"));
         engine.useSkill("lumea", "p02_accelerate", "slow");
 
-        assertEquals(160L, slow.gauge());
+        assertEquals(240L, slow.gauge());
         assertEquals(114, lumea.speed());
     }
 
@@ -56,12 +56,12 @@ final class LumeaV1RuntimeTest {
         engine.nextReady();
         engine.useSkill("lumea", "p02_time_leap", "slow");
 
-        assertEquals(460L, slow.gauge());
+        assertEquals(550L, slow.gauge());
         assertTrue(slow.gauge() < BattleEngine.TURN_THRESHOLD);
     }
 
     @Test
-    void delayFieldIsNowSingleTargetDamageAndDelay() {
+    void delayFieldHitsTwoChosenEnemiesAndDelaysBoth() {
         CombatantState lumea = lumea(false);
         CombatantState ally = ally("ally", 100, 1);
         CombatantState first = enemy("first", 100, 2);
@@ -70,14 +70,16 @@ final class LumeaV1RuntimeTest {
         lumea.setGauge(1000);
         first.setGauge(500);
         second.setGauge(500);
-        int hpBefore = first.hp();
+        int firstHpBefore = first.hp();
+        int secondHpBefore = second.hp();
 
         engine.nextReady();
-        engine.useSkill("lumea", "p02_delay_field", "first");
+        engine.useSkill("lumea", "p02_delay_field", "first", "second");
 
-        assertEquals(320L, first.gauge());
-        assertEquals(500L, second.gauge());
-        assertTrue(first.hp() < hpBefore);
+        assertEquals(360L, first.gauge());
+        assertEquals(360L, second.gauge());
+        assertTrue(first.hp() < firstHpBefore);
+        assertTrue(second.hp() < secondHpBefore);
     }
 
     @Test
@@ -97,7 +99,7 @@ final class LumeaV1RuntimeTest {
         engine.nextReady();
         engine.useSkill("lumea", "p02_time_leap", "slow");
 
-        assertEquals(760L, slow.gauge());
+        assertEquals(850L, slow.gauge());
         assertEquals(60L, lumea.gauge());
         assertTrue(state.events().stream().anyMatch(event ->
                 "PASSIVE_GAUGE".equals(event.type()) && "P02_TEMPO_WINDOW".equals(event.detail())));
@@ -113,6 +115,6 @@ final class LumeaV1RuntimeTest {
         engine.nextReady();
         engine.useSkill("lumea", "p02_accelerate", "lumea");
 
-        assertEquals(120L, lumea.gauge());
+        assertEquals(180L, lumea.gauge());
     }
 }

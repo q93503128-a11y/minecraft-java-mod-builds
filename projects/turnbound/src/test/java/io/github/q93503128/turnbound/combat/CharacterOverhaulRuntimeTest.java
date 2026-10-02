@@ -33,8 +33,8 @@ final class CharacterOverhaulRuntimeTest {
         int before = foe.hp();
         engine.useSkill("bram", "p03_shield_pressure", "foe");
         assertEquals(0, bram.counter("guard"));
-        assertEquals(320L, foe.gauge());
-        assertTrue(before - foe.hp() >= BattleEngine.calculateDamage(bram.attack(), foe.defense(), 1.30));
+        assertEquals(360L, foe.gauge());
+        assertTrue(before - foe.hp() >= BattleEngine.calculateDamage(bram.attack(), foe.defense(), 0.95));
     }
 
     @Test
@@ -168,6 +168,26 @@ final class CharacterOverhaulRuntimeTest {
         assertTrue(reviver.flag("auto_revive_used"));
         assertTrue(state.events().stream().anyMatch(e -> "SELF_REVIVE".equals(e.type())
                 && "reviver".equals(e.targetId())));
+    }
+
+    @Test
+    void razeBloodChargeTradesHpOnceForRealAllEnemyPressure() {
+        CombatantState raze = new CombatantState("raze", CanonicalData.definition("P08", 1, 3, false), CombatantSide.ALLY, 0);
+        CombatantState first = enemy("first", 99999, 1, 0, 80, 1);
+        CombatantState second = enemy("second", 99999, 1, 0, 80, 2);
+        BattleEngine engine = new BattleEngine(new BattleState(List.of(raze, first, second)));
+        raze.setGauge(1000);
+        int hpBefore = raze.hp();
+        int firstBefore = first.hp();
+        int secondBefore = second.hp();
+
+        engine.nextReady();
+        engine.useSkill("raze", "p08_blood_charge");
+
+        assertEquals(hpBefore - Math.max(1, (int)Math.floor(hpBefore * 0.10)), raze.hp());
+        assertTrue(first.hp() < firstBefore);
+        assertTrue(second.hp() < secondBefore);
+        assertEquals(30, raze.counter("fury"));
     }
 
     @Test
