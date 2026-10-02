@@ -10,14 +10,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AvsalExpansionProgressTest {
     @Test
-    void mqAv01OnlyBriefsAfterOpeningPatrolAndMapReview() {
+    void mqAv01OnlyBriefsAfterAcceptedRegionalQuestCompletes() {
         Set<String> openingOnly = Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID);
         assertFalse(AvsalExpansionProgress.briefingReady(openingOnly, Set.of(
-                DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED,
-                DrabyelLocalArcProgress.COMPLETE)));
+                DrabyelLocalArcProgress.COMPLETE,
+                DrabyelLocalArcProgress.REGIONAL_ACCEPTED)));
         Set<String> regional = Set.of(DrabyelOpeningTutorial.ENCOUNTER_ID,"CV_DRABYEL_NORTH");
         assertTrue(AvsalExpansionProgress.briefingReady(
-                regional, Set.of(DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED,DrabyelLocalArcProgress.COMPLETE)));
+                regional, Set.of(
+                        DrabyelLocalArcProgress.COMPLETE,
+                        DrabyelLocalArcProgress.REGIONAL_ACCEPTED,
+                        DrabyelLocalArcProgress.REGIONAL_COMPLETE)));
     }
 
     @Test

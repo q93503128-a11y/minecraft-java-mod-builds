@@ -36,14 +36,24 @@ class DrehmalContextualOnboardingTest {
                         DrehmalContextualOnboarding.serviceFlag("TRAVEL"), DrehmalContextualOnboarding.serviceFlag("SUMMON")), roles);
         assertTrue(localOffer.objective().contains("아렌"));
 
-        var map = DrehmalContextualOnboarding.resolve(
+        var regionalOffer = DrehmalContextualOnboarding.resolve(
                 "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
                 Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED,
                         DrehmalContextualOnboarding.serviceFlag("BLACKSMITH"), DrehmalContextualOnboarding.serviceFlag("MARKET"),
                         DrehmalContextualOnboarding.serviceFlag("TRAVEL"), DrehmalContextualOnboarding.serviceFlag("SUMMON"),
                         DrabyelLocalArcProgress.ACCEPTED,DrabyelLocalArcProgress.CRATE,DrabyelLocalArcProgress.RECORD,
                         DrabyelLocalArcProgress.COMPLETE), roles);
-        assertTrue(map.objective().contains("M 지도"));
+        assertTrue(regionalOffer.objective().contains("아렌"));
+        assertTrue(regionalOffer.objective().contains("정찰 의뢰"));
+
+        var regionalActive = DrehmalContextualOnboarding.resolve(
+                "HUB_SAFE", Set.of(DrehmalContentUnlocks.DRABYEL_ROAD),
+                Set.of(DrehmalContextualOnboarding.serviceFlag("GREETER"), DrehmalContextualOnboarding.HUB_MENU_VIEWED,
+                        DrehmalContextualOnboarding.serviceFlag("BLACKSMITH"), DrehmalContextualOnboarding.serviceFlag("MARKET"),
+                        DrehmalContextualOnboarding.serviceFlag("TRAVEL"), DrehmalContextualOnboarding.serviceFlag("SUMMON"),
+                        DrabyelLocalArcProgress.ACCEPTED,DrabyelLocalArcProgress.CRATE,DrabyelLocalArcProgress.RECORD,
+                        DrabyelLocalArcProgress.COMPLETE,DrabyelLocalArcProgress.REGIONAL_ACCEPTED), roles);
+        assertTrue(regionalActive.objective().contains("캐피털 밸리 정찰 의뢰"));
     }
 
     @Test

@@ -13,7 +13,7 @@ class DrehmalQuestCatalogTest {
 
     @Test
     void routeUsesSequentialMainQuestsAndSupportsCombatAndNonCombatSideQuests() {
-        assertEquals(3, DrehmalQuestCatalog.all().stream()
+        assertEquals(4, DrehmalQuestCatalog.all().stream()
                 .filter(quest -> quest.kind() == DrehmalQuestCatalog.Kind.MAIN)
                 .count());
 
@@ -43,6 +43,13 @@ class DrehmalQuestCatalogTest {
         assertEquals(DrabyelLocalArcProgress.ACCEPTED, local.activationFlag());
         assertEquals(DrabyelLocalArcProgress.COMPLETE, local.completionFlag());
         assertTrue(local.objective().contains("아렌이"));
+
+        var regional = DrehmalQuestCatalog.all().stream()
+                .filter(quest -> quest.id().equals("turnbound:quest/drehmal/capital_valley_scouting"))
+                .findFirst().orElseThrow();
+        assertEquals(DrehmalQuestCatalog.Kind.MAIN, regional.kind());
+        assertEquals(DrabyelLocalArcProgress.REGIONAL_ACCEPTED, regional.activationFlag());
+        assertEquals(DrabyelLocalArcProgress.REGIONAL_COMPLETE, regional.completionFlag());
 
         assertTrue(DrehmalQuestCatalog.all().stream()
                 .allMatch(quest -> quest.rewardCrystal() > 0 && quest.rewardGold() > 0));
