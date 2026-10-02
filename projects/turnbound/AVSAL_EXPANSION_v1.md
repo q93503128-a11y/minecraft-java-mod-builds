@@ -514,3 +514,19 @@ First production mount:
 Waystation Roadhorn rentals are player-owned runtime objects.
 Only the renting player may remount a dismounted Roadhorn; another player interaction never transfers ownership.
 The mount remains transient and is recalled by battle entry, fast travel, logout or runtime teardown.
+
+
+## Chapter 1 density expansion — 2026-10-02
+
+Av'Sal is the endpoint of Chapter 1, not a tutorial destination.
+
+Production content target for New Drabyel → Av'Sal:
+- the long west road is divided into short readable micro-stretches rather than one empty 1.4k walk;
+- ordinary field threats recur roughly every 70–120 blocks where live terrain permits;
+- human patrols, wildlife, ash hounds, corrupted plant/monster groups, undead remnants and aqueduct machines are mixed by stretch;
+- ordinary encounters present as 2–3 visible field actors when their combat roster supports it;
+- optional elites remain off the critical path;
+- physical roadside NPCs carry side-quest offers so combat density is paired with story/activity density;
+- the existing Av'Sal investigation, relay choices, Karnon boss and Sael report remain the Chapter 1 climax rather than being replaced by filler.
+
+This density layer reuses existing production enemy models/animations and battle rules. It does not add placeholder vanilla mobs as final content.

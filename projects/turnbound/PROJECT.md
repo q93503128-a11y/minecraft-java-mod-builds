@@ -1971,3 +1971,14 @@ The first client playtest exposed a presentation/flow mismatch rather than a mis
 - Regional repeatable contracts are chosen from multiple offers at the physical contract NPC; recommended level is advisory, not a hard gate.
 - Summoning uses the physical summoner's fixed ritual stage. The reveal camera frames that stage rather than selecting arbitrary ground in front of the player.
 - Existing side quests remain physical-NPC/discovery driven and are not replaced by the regional main quest.
+
+
+## Chapter 1 scope — Av'Sal endpoint
+
+Latest explicit direction (2026-10-02):
+
+- New Drabyel → Capital Valley → the long western road → Av'Sal outskirts → relay line → Karnon → Sael report is **Chapter 1**, not a tutorial slice.
+- The roughly 1.4k-block westward route must carry open-world density: multiple simultaneous roaming packs, wildlife/human/monster/mechanical variety, physical NPC stops, discoveries, side quests and repeatable contracts.
+- Chapter 1 should not feel like empty travel between scripted markers. Ordinary field encounters are deliberately frequent; elites and bosses remain rarer.
+- Field presentation may show 2–3 members of an ordinary pack before contact. Turn battle composition remains server-authoritative and can expand independently.
+- The first Karnon clear and Sael report are the Chapter 1 climax/closure checkpoint. Do not describe this route in player-facing copy as tutorial, prototype, first-slice testing, or onboarding-only content.
