@@ -1982,3 +1982,15 @@ Latest explicit direction (2026-10-02):
 - Chapter 1 should not feel like empty travel between scripted markers. Ordinary field encounters are deliberately frequent; elites and bosses remain rarer.
 - Field presentation may show 2–3 members of an ordinary pack before contact. Turn battle composition remains server-authoritative and can expand independently.
 - The first Karnon clear and Sael report are the Chapter 1 climax/closure checkpoint. Do not describe this route in player-facing copy as tutorial, prototype, first-slice testing, or onboarding-only content.
+
+
+## 2026-10-02 Chapter 1 density / quest HUD / equipment pass
+
+Current Chapter 1 production direction:
+- ordinary field encounters may present 2–4 physical enemies; bosses remain one authored boss actor;
+- homogeneous wildlife/monster packs are allowed and should not be forced into mixed compositions every time;
+- the main field HUD always pins the current main objective and can additionally show up to two active auxiliary objectives;
+- if more auxiliary objectives are active, the HUD shows the remainder count and the E-menu quest journal remains the full list;
+- the quest journal orders unfinished goals before completed ones and keeps main / regional contract / side / hidden categories readable;
+- all new west-road Chapter 1 encounters participate in the equipment drop loop;
+- deterministic equipment stats follow the v1 ladder documented in 02_BALANCE_RULES_v1.md.

@@ -389,15 +389,34 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildQuests(){
-        var s=ClientMetaState.snapshot();
+        var snapshot=ClientMetaState.snapshot();
+        List<ClientMetaState.RegionQuestRow> quests=questRows();
         int y=contentTop()+4;
-        boolean detailed=s.regionQuests().stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
+        boolean detailed=quests.stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
         int questStep=detailed?32:19;
         int questRows=UiPaging.rowsThatFit(y+20,contentBottom(),questStep,3);
         int challengeRows=UiPaging.rowsThatFit(y+20,contentBottom(),19,4);
         int rows=Math.max(1,Math.min(questRows,challengeRows));
-        setPaging(Math.max(s.regionQuests().size(),s.challenges().size()),rows);
+        setPaging(Math.max(quests.size(),snapshot.challenges().size()),rows);
         buildPager();
+    }
+
+
+    private static List<ClientMetaState.RegionQuestRow> questRows(){
+        return ClientMetaState.snapshot().regionQuests().stream()
+                .sorted(Comparator.comparing(ClientMetaState.RegionQuestRow::completed)
+                        .thenComparingInt(row->questCategoryPriority(row.region()))
+                        .thenComparing(ClientMetaState.RegionQuestRow::id))
+                .toList();
+    }
+
+    private static int questCategoryPriority(String category){
+        if(category==null)return 9;
+        if(category.startsWith("메인"))return 0;
+        if(category.startsWith("지역 의뢰")||category.startsWith("반복"))return 1;
+        if(category.startsWith("서브")||category.startsWith("지역"))return 2;
+        if(category.startsWith("숨은"))return 3;
+        return 4;
     }
 
     private void buildCodex(){
@@ -951,15 +970,19 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawQuests(GuiGraphicsExtractor g){
-        var s=ClientMetaState.snapshot();
+        var snapshot=ClientMetaState.snapshot();
+        List<ClientMetaState.RegionQuestRow> quests=questRows();
+        long activeCount=quests.stream().filter(q->!q.completed()).count();
+        long completedCount=quests.size()-activeCount;
         int y=contentTop()+4,paneGap=12,paneW=(panelWidth-44-paneGap)/2,leftX=left+16,rightX=leftX+paneW+paneGap;
-        g.text(font,Component.literal("퀘스트"),leftX,y,TEXT,true);
+        String questHeader="퀘스트 · 진행 "+activeCount+" / 완료 "+completedCount;
+        g.text(font,Component.literal(UiTextLayout.fit(questHeader,paneW)),leftX,y,TEXT,true);
         g.text(font,Component.literal("업적"),rightX,y,TEXT,true);
-        boolean detailed=s.regionQuests().stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
+        boolean detailed=quests.stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
         int questStep=detailed?32:19;
         int start=page*currentPerPage,yy=y+20;
-        for(int i=start;i<Math.min(s.regionQuests().size(),start+currentPerPage);i++){
-            var q=s.regionQuests().get(i);
+        for(int i=start;i<Math.min(quests.size(),start+currentPerPage);i++){
+            var q=quests.get(i);
             String text=(q.completed()?"✓ ":"○ ")+q.region()+" · "+q.id();
             g.text(font,Component.literal(UiTextLayout.fit(text,paneW)),leftX,yy,q.completed()?GREEN:TEXT,false);
             if(detailed&&q.objectiveSpecified()&&!q.chestRule().isBlank()){
@@ -969,8 +992,8 @@ public final class MetaMenuScreen extends Screen {
             yy+=questStep;
         }
         yy=y+20;
-        for(int i=start;i<Math.min(s.challenges().size(),start+currentPerPage);i++){
-            var c=s.challenges().get(i);
+        for(int i=start;i<Math.min(snapshot.challenges().size(),start+currentPerPage);i++){
+            var c=snapshot.challenges().get(i);
             String text=(c.completed()?"✓ ":"○ ")+c.ordinal()+". "+c.label();
             g.text(font,Component.literal(UiTextLayout.fit(text,paneW)),rightX,yy,c.completed()?GREEN:c.autoEvaluable()?TEXT:GOLD,false);
             yy+=19;
