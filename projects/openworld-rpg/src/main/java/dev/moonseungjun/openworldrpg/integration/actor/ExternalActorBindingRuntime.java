@@ -133,8 +133,9 @@ public final class ExternalActorBindingRuntime {
         initialized = true;
         logger.info(
                 "Openworld RPG R01 external actor registry gate armed for {} exact pinned targets; "
-                        + "{} currently have project combat-stat authority. Cave Centipede and "
-                        + "Nature Spirit remain fail-closed pending their dedicated donor-surface review.",
+                        + "{} have project combat-stat authority. Cave Centipede multipart registry "
+                        + "and Nature Spirit legacy registry are closed; non-Earthloong production "
+                        + "spawns remain gated by attack/reward/presentation acceptance.",
                 R01ExternalActorCatalog.requiredRegistryTargets().size(),
                 COMBAT_PROFILES.size()
         );
@@ -339,6 +340,10 @@ public final class ExternalActorBindingRuntime {
                                 || lower.contains("regal")
                                 || lower.contains("steelboar")
                                 || lower.contains("nature_spirit")
+                                || lower.contains("nature_hamony")
+                                || lower.contains("centipede_head")
+                                || lower.contains("centipede_body")
+                                || lower.contains("centipede_tail")
                                 || lower.contains("ferox")
                                 || lower.contains("deathworm")
                                 || lower.contains("hydra")

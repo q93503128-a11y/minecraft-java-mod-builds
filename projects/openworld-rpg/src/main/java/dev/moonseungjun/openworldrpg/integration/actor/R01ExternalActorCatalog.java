@@ -6,10 +6,11 @@ import java.util.Set;
 /**
  * Exact R01 dependency registry surface proven against the pinned 26.2 creature JARs.
  *
- * <p>Cave Centipede is deliberately excluded because the pinned Alex's Mobs implementation uses a
- * multipart entity surface that still needs a dedicated binding review. Nature Spirit is also
- * excluded because the pinned Threateningly build exposes legacy NATURE_HAMONY naming that must be
- * resolved from its registry initializer before production binding. Neither is guessed here.</p>
+ * <p>The pinned Alex's Mobs Cave Centipede is a multipart surface. Its authored R01 combat authority
+ * belongs to the head only; body and tail registry targets are verified so donor multipart forwarding
+ * can remain intact without creating duplicate project HP/poise owners. Nature Spirit keeps the
+ * pinned donor's legacy {@code nature_hamony} registry spelling while the project-facing role remains
+ * Nature Spirit. Registry/stat closure does not imply production-spawn acceptance.</p>
  */
 public final class R01ExternalActorCatalog {
     public static final String GAZELLE = "alexsmobs:gazelle";
@@ -17,9 +18,13 @@ public final class R01ExternalActorCatalog {
     public static final String RACCOON = "alexsmobs:raccoon";
     public static final String CROW = "alexsmobs:crow";
     public static final String GRIZZLY = "alexsmobs:grizzly_bear";
+    public static final String CAVE_CENTIPEDE_HEAD = "alexsmobs:centipede_head";
+    public static final String CAVE_CENTIPEDE_BODY = "alexsmobs:centipede_body";
+    public static final String CAVE_CENTIPEDE_TAIL = "alexsmobs:centipede_tail";
 
     public static final String LOUXIA = "threateningly_mobs:louxia";
     public static final String STEELBOAR = "threateningly_mobs:steelboar";
+    public static final String NATURE_SPIRIT = "threateningly_mobs:nature_hamony";
     public static final String REGALHART = "threateningly_mobs:the_regalhart";
     public static final String EARTHLOONG = "threateningly_mobs:the_earthloong";
 
@@ -29,8 +34,12 @@ public final class R01ExternalActorCatalog {
             RACCOON,
             CROW,
             GRIZZLY,
+            CAVE_CENTIPEDE_HEAD,
+            CAVE_CENTIPEDE_BODY,
+            CAVE_CENTIPEDE_TAIL,
             LOUXIA,
             STEELBOAR,
+            NATURE_SPIRIT,
             REGALHART,
             EARTHLOONG
     );
@@ -61,12 +70,32 @@ public final class R01ExternalActorCatalog {
                             ExternalActorReactionCapabilities.none()
                     ),
                     new ExternalActorCombatProfile(
+                            CAVE_CENTIPEDE_HEAD,
+                            4,
+                            165.0F,
+                            19.0,
+                            10.0,
+                            42.0,
+                            ExternalActorCombatProfile.CombatRank.STURDY_COMMON,
+                            ExternalActorReactionCapabilities.none()
+                    ),
+                    new ExternalActorCombatProfile(
                             STEELBOAR,
                             6,
                             680.0F,
                             37.0,
                             11.0,
                             82.0,
+                            ExternalActorCombatProfile.CombatRank.NORMAL_ELITE,
+                            ExternalActorReactionCapabilities.none()
+                    ),
+                    new ExternalActorCombatProfile(
+                            NATURE_SPIRIT,
+                            7,
+                            790.0F,
+                            25.0,
+                            39.0,
+                            78.0,
                             ExternalActorCombatProfile.CombatRank.NORMAL_ELITE,
                             ExternalActorReactionCapabilities.none()
                     ),

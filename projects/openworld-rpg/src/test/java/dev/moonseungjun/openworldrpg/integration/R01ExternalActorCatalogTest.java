@@ -14,17 +14,20 @@ import org.junit.jupiter.api.Test;
 class R01ExternalActorCatalogTest {
     @Test
     void pinnedRegistrySurfaceContainsOnlyClosedR01Targets() {
-        assertEquals(9, R01ExternalActorCatalog.requiredRegistryTargets().size());
+        assertEquals(13, R01ExternalActorCatalog.requiredRegistryTargets().size());
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("alexsmobs:bison"));
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("alexsmobs:grizzly_bear"));
+        assertTrue(R01ExternalActorCatalog.registryTargetClosed("alexsmobs:centipede_head"));
+        assertTrue(R01ExternalActorCatalog.registryTargetClosed("alexsmobs:centipede_body"));
+        assertTrue(R01ExternalActorCatalog.registryTargetClosed("alexsmobs:centipede_tail"));
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:louxia"));
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:steelboar"));
+        assertTrue(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:nature_hamony"));
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:the_regalhart"));
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:the_earthloong"));
 
         assertFalse(R01ExternalActorCatalog.registryTargetClosed("alexsmobs:cave_centipede"));
         assertFalse(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:nature_spirit"));
-        assertFalse(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:nature_hamony"));
     }
 
     @Test
@@ -59,6 +62,16 @@ class R01ExternalActorCatalogTest {
                         R01ExternalActorCatalog.LOUXIA
                 )
         );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD
+                )
+        );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.NATURE_SPIRIT
+                )
+        );
     }
 
     @Test
@@ -70,7 +83,7 @@ class R01ExternalActorCatalogTest {
                                 Function.identity()
                         ));
 
-        assertEquals(5, profiles.size());
+        assertEquals(7, profiles.size());
         assertProfile(
                 profiles.get(R01ExternalActorCatalog.BISON),
                 3, 155.0, 23.0, 7.0, 50.0,
@@ -82,8 +95,18 @@ class R01ExternalActorCatalogTest {
                 ExternalActorCombatProfile.CombatRank.STURDY_COMMON
         );
         assertProfile(
+                profiles.get(R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD),
+                4, 165.0, 19.0, 10.0, 42.0,
+                ExternalActorCombatProfile.CombatRank.STURDY_COMMON
+        );
+        assertProfile(
                 profiles.get(R01ExternalActorCatalog.STEELBOAR),
                 6, 680.0, 37.0, 11.0, 82.0,
+                ExternalActorCombatProfile.CombatRank.NORMAL_ELITE
+        );
+        assertProfile(
+                profiles.get(R01ExternalActorCatalog.NATURE_SPIRIT),
+                7, 790.0, 25.0, 39.0, 78.0,
                 ExternalActorCombatProfile.CombatRank.NORMAL_ELITE
         );
         assertProfile(
