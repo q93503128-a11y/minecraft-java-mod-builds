@@ -96,6 +96,26 @@ public final class ProjectPlayerActionRuntime {
                 || state.commitDodgeCancel(nowTick);
     }
 
+    public static boolean cancelAction(
+            ServerPlayer player,
+            String actionId
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(actionId, "actionId");
+        var state = STATES.get(player.getUUID());
+        if (state == null) {
+            return false;
+        }
+        boolean canceled = state.cancelAction(
+                actionId,
+                player.level().getGameTime()
+        );
+        if (canceled) {
+            synchronizeMovement(player, 1.0);
+        }
+        return canceled;
+    }
+
     public static boolean basicAttackAllowed(
             UUID playerId,
             long nowTick

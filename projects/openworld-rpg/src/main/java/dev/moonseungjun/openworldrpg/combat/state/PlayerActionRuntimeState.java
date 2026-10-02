@@ -108,6 +108,21 @@ public final class PlayerActionRuntimeState {
         return true;
     }
 
+    public boolean cancelAction(String actionId, long nowTick) {
+        Objects.requireNonNull(actionId, "actionId");
+        if (actionId.isBlank()) {
+            throw new IllegalArgumentException("Action id must not be blank.");
+        }
+        refresh(nowTick);
+        if (active == null
+                || active.kind() != WindowKind.ACTION
+                || !active.actionId().equals(actionId)) {
+            return false;
+        }
+        active = null;
+        return true;
+    }
+
     public boolean basicAttackAllowed(long nowTick) {
         refresh(nowTick);
         return active == null;

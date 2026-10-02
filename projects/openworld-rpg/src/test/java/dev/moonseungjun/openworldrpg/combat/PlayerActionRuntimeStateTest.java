@@ -58,6 +58,24 @@ class PlayerActionRuntimeStateTest {
     }
 
     @Test
+    void namedActionCancellationOnlyClearsTheMatchingCommitment() {
+        var state = new PlayerActionRuntimeState();
+        assertTrue(state.beginAction(
+                "openworld_rpg:recovery_belt",
+                50L,
+                19,
+                19,
+                0.65
+        ).accepted());
+
+        assertFalse(state.cancelAction("openworld_rpg:other_action", 55L));
+        assertEquals(0.65, state.movementMultiplier(55L), 0.0001);
+        assertTrue(state.cancelAction("openworld_rpg:recovery_belt", 55L));
+        assertTrue(state.canStartAction(55L));
+        assertEquals(1.0, state.movementMultiplier(55L), 0.0001);
+    }
+
+    @Test
     void actionExpiresAtExactEndTick() {
         var state = new PlayerActionRuntimeState();
         assertTrue(state.beginAction(

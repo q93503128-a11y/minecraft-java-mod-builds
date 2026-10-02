@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.recovery;
 
+import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,10 +16,43 @@ import net.minecraft.server.level.ServerPlayer;
  * through a placeholder player-facing key path.</p>
  */
 public final class RecoveryUseRuntime {
+    public static final String RECOVERY_ACTION_ID =
+            "openworld_rpg:recovery_belt";
+
     private static final ConcurrentHashMap<UUID, RecoveryUseActionState> ACTIVE =
+            new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, Long> LAST_SEQUENCE =
             new ConcurrentHashMap<>();
 
     private RecoveryUseRuntime() {
+    }
+
+    /**
+     * Accepts client intent only. The server derives every eligibility flag and owns the action
+     * duration, movement penalty, selected dose and effect resolution.
+     */
+    public static StartResult request(ServerPlayer player, long sequence) {
+        Objects.requireNonNull(player, "player");
+        if (sequence < 0L || !player.isAlive() || player.isSpectator()) {
+            return new StartResult(StartStatus.INVALID_STATE, Optional.empty());
+        }
+
+        UUID playerId = player.getUUID();
+        long previous = LAST_SEQUENCE.getOrDefault(playerId, -1L);
+        if (sequence <= previous) {
+            return new StartResult(StartStatus.DUPLICATE, Optional.empty());
+        }
+        LAST_SEQUENCE.put(playerId, sequence);
+
+        return tryStart(
+                player,
+                new UseContext(
+                        false,
+                        player.getVehicle() != null,
+                        player.onClimbable(),
+                        !ProjectPlayerActionRuntime.canStartAction(player)
+                )
+        );
     }
 
     public static StartResult tryStart(ServerPlayer player, UseContext context) {
@@ -46,6 +80,19 @@ public final class RecoveryUseRuntime {
         Optional<RecoveryConsumable> selected = belt.selectedConsumable();
         if (selected.isEmpty()) {
             return new StartResult(StartStatus.EMPTY_SLOT, Optional.empty());
+        }
+
+        var actionCommit = ProjectPlayerActionRuntime.beginAction(
+                player,
+                new ProjectPlayerActionRuntime.ActionSpec(
+                        RECOVERY_ACTION_ID,
+                        RecoveryActionRules.USE_DURATION_TICKS,
+                        RecoveryActionRules.USE_DURATION_TICKS,
+                        RecoveryActionRules.ACTION_MOVEMENT_MULTIPLIER
+                )
+        );
+        if (!actionCommit.accepted()) {
+            return new StartResult(StartStatus.INVALID_STATE, Optional.empty());
         }
 
         RecoveryUseActionState action = new RecoveryUseActionState(
@@ -92,6 +139,10 @@ public final class RecoveryUseRuntime {
                     action = resolved;
                 } catch (IllegalStateException exception) {
                     ACTIVE.remove(playerId, action);
+                    ProjectPlayerActionRuntime.cancelAction(
+                            player,
+                            RECOVERY_ACTION_ID
+                    );
                     continue;
                 }
             }
@@ -111,7 +162,14 @@ public final class RecoveryUseRuntime {
         if (action == null || !action.isPreResolution(nowTick)) {
             return false;
         }
-        return ACTIVE.remove(player.getUUID(), action);
+        boolean canceled = ACTIVE.remove(player.getUUID(), action);
+        if (canceled) {
+            ProjectPlayerActionRuntime.cancelAction(
+                    player,
+                    RECOVERY_ACTION_ID
+            );
+        }
+        return canceled;
     }
 
     public static boolean blocksDefense(UUID playerId, long nowTick) {
@@ -136,6 +194,7 @@ public final class RecoveryUseRuntime {
 
     public static void disconnect(UUID playerId) {
         ACTIVE.remove(playerId);
+        LAST_SEQUENCE.remove(playerId);
     }
 
     public enum StartStatus {
@@ -143,7 +202,8 @@ public final class RecoveryUseRuntime {
         ALREADY_ACTIVE,
         INVALID_STATE,
         LOCKED_OUT,
-        EMPTY_SLOT
+        EMPTY_SLOT,
+        DUPLICATE
     }
 
     public record StartResult(
