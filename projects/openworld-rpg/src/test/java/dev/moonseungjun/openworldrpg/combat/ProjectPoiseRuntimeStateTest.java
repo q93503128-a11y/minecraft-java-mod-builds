@@ -9,6 +9,39 @@ import org.junit.jupiter.api.Test;
 
 class ProjectPoiseRuntimeStateTest {
     @Test
+    void commonPoiseRapidlyResetsAfterTwoSecondsAndUsesShortStagger() {
+        var state = ProjectPoiseRuntimeState.common(42.0, 0);
+
+        state.apply(12.0, 0);
+        assertEquals(30.0, state.snapshot(39).currentPoise(), 0.0001);
+        assertEquals(42.0, state.snapshot(40).currentPoise(), 0.0001);
+
+        var broken = state.apply(42.0, 50);
+        assertTrue(broken.breakTriggered());
+        assertTrue(state.snapshot(63).broken());
+        assertEquals(1.0, state.snapshot(63).damageTakenMultiplier(), 0.0001);
+        assertFalse(state.snapshot(64).broken());
+        assertEquals(42.0, state.snapshot(64).currentPoise(), 0.0001);
+        assertEquals(1.0, state.snapshot(64).poiseTakenMultiplier(), 0.0001);
+    }
+
+    @Test
+    void elitePoiseUsesFourSecondDelayAndOnePointFiveSecondBreak() {
+        var state = ProjectPoiseRuntimeState.elite(80.0, 0);
+
+        state.apply(20.0, 0);
+        assertEquals(60.0, state.snapshot(80).currentPoise(), 0.0001);
+        assertEquals(80.0, state.snapshot(100).currentPoise(), 0.0001);
+
+        var broken = state.apply(80.0, 120);
+        assertTrue(broken.breakTriggered());
+        assertTrue(state.snapshot(149).broken());
+        assertEquals(1.15, state.snapshot(149).damageTakenMultiplier(), 0.0001);
+        assertFalse(state.snapshot(150).broken());
+        assertEquals(0.50, state.snapshot(150).poiseTakenMultiplier(), 0.0001);
+    }
+
+    @Test
     void bossPoiseRecoversAfterSixSecondDelayAtCanonicalRate() {
         var state = ProjectPoiseRuntimeState.boss(190.0, 0);
 

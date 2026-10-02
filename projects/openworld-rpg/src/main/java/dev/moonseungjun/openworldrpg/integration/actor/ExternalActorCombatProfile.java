@@ -134,10 +134,13 @@ public record ExternalActorCombatProfile(
     private static boolean defaultMeaningfulControlRewardEligible(
             CombatRank combatRank
     ) {
-        return combatRank != CombatRank.NORMAL_ELITE;
+        return combatRank == CombatRank.MINIBOSS
+                || combatRank == CombatRank.BOSS;
     }
 
     public enum CombatRank {
+        COMMON,
+        STURDY_COMMON,
         NORMAL_ELITE,
         MINIBOSS,
         BOSS

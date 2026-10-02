@@ -272,7 +272,28 @@ public final class ExternalActorBindingRuntime {
     ) {
         return POISE_STATES.computeIfAbsent(
                 living.getUUID(),
-                ignored -> ProjectPoiseRuntimeState.boss(profile.poiseMax(), gameTick)
+                ignored -> switch (profile.combatRank()) {
+                    case COMMON, STURDY_COMMON ->
+                            ProjectPoiseRuntimeState.common(
+                                    profile.poiseMax(),
+                                    gameTick
+                            );
+                    case NORMAL_ELITE ->
+                            ProjectPoiseRuntimeState.elite(
+                                    profile.poiseMax(),
+                                    gameTick
+                            );
+                    case MINIBOSS ->
+                            ProjectPoiseRuntimeState.miniboss(
+                                    profile.poiseMax(),
+                                    gameTick
+                            );
+                    case BOSS ->
+                            ProjectPoiseRuntimeState.boss(
+                                    profile.poiseMax(),
+                                    gameTick
+                            );
+                }
         );
     }
 
