@@ -1041,6 +1041,38 @@ Rules:
 
 If poise-broken during Living Shell, the stance ends immediately.
 
+### Runtime Living Shell authority
+
+Code state `ed91f8ff3af99db5a6d2372ed2bc6a175d2c8e17` binds the canon-closed Living Shell
+mechanics into the shared external-actor damage/poise authority without opening Nature Spirit
+production spawning:
+
+- the server stores only **post-mitigation canonical HP actually lost** from hostile player damage;
+- the trigger window is exactly the prior **80 ticks / 4.0 s**;
+- the shell may be selected at the next explicit Nature Spirit decision when that rolling damage is
+  at least **20% MaxHP** or current poise is at or below **40%**;
+- while active, the shared project target snapshot applies **0.65x direct damage taken** and the
+  shared project poise application applies **1.25x poise damage taken**;
+- the ordinary elite poise-break damage window still composes through the same central snapshot
+  rather than being replaced by a donor rule;
+- an actual project poise break immediately calls the Nature Spirit controller and terminates the
+  shell without granting the natural-exit forced Bloom Quake;
+- natural expiry preserves the existing controller contract: on the next legal decision, an eligible
+  target within **4.0 blocks** forces Bloom Quake;
+- donor natural spawns and raw verification fixtures do not receive this authority because the
+  runtime requires the exact `threateningly_mobs:nature_hamony` registry plus project
+  `authored_spawn` tag.
+
+Build Openworld RPG run `37016332713` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-ed91f8ff3af99db5a6d2372ed2bc6a175d2c8e17`
+(`11230471423`, SHA-256
+`a7c5d216631be9ef74eba8a245ec68c677b4d93a1dd28ff2c2991797b9ffda47`).
+
+This is **backend authority closure**, not an in-world Nature Spirit encounter playtest. Rooted Swipe,
+Earthen Ram and Bloom Quake movement/telegraph/contact presentation remain production-gated.
+
 ## Attack 3 — Bloom Quake
 
 Used mainly after leaving Living Shell or when surrounded.

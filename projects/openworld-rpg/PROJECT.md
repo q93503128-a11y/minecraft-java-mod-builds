@@ -501,6 +501,22 @@ both verification JARs, mrpack packaging and artifact upload all passed. Artifac
 (`11226493360`). This is automated runtime/build evidence, not an in-world Nature Spirit playtest;
 production spawning remains closed by presentation/asset acceptance.
 
+The following Living Shell authority pass is closed at code state
+`ed91f8ff3af99db5a6d2372ed2bc6a175d2c8e17`. It moves the already-locked Nature Spirit
+defensive rules out of design-only state and into the central server damage/poise pipeline: actual
+post-mitigation canonical HP loss is retained for the rolling 80-tick trigger window; the next explicit
+Nature Spirit decision may enter Living Shell at >=20% recent MaxHP damage or <=40% current poise;
+while active direct damage taken is 0.65x and poise damage taken is 1.25x; project poise break ends the
+shell immediately; only natural expiry preserves the controller's <=4.0-block forced Bloom Quake
+handoff. The runtime remains exact-registry + `authored_spawn` gated, so donor natural spawns and raw
+preview fixtures cannot accidentally gain production combat authority. Run `37016332713` is
+**SUCCESS** across tests/build, pinned dependency inspection, core/gameplay server smoke, gameplay
+client startup, both verification JARs, mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-ed91f8ff3af99db5a6d2372ed2bc6a175d2c8e17`
+(`11230471423`, SHA-256
+`a7c5d216631be9ef74eba8a245ec68c677b4d93a1dd28ff2c2991797b9ffda47`).
+This closes Living Shell backend authority only; attack presentation and production spawn remain gated.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
