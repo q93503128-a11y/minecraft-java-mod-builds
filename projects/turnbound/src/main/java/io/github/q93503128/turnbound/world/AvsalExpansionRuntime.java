@@ -407,9 +407,10 @@ final class AvsalExpansionRuntime {
 
             List<DrehmalFirstRouteCatalog.ArenaCandidate> arenas = resolveArenas(player, level, position);
             List<DrehmalFirstRouteCatalog.Position> patrolPoints = resolvePatrol(level, plan.patrolSeeds());
-            if (arenas.size() < 2 || patrolPoints.size() < 2) {
-                Turnbound.LOGGER.warn("TURNBOUND left Av'Sal encounter {} dormant: arenas={}, patrolPoints={}",
-                        plan.encounterLocator(), arenas.size(), patrolPoints.size());
+            int requiredArenas = "COMMON".equals(plan.tier()) ? 1 : 2;
+            if (arenas.size() < requiredArenas || patrolPoints.size() < 2) {
+                Turnbound.LOGGER.warn("TURNBOUND left Av'Sal encounter {} dormant: arenas={}, requiredArenas={}, patrolPoints={}",
+                        plan.encounterLocator(), arenas.size(), requiredArenas, patrolPoints.size());
                 continue;
             }
 
@@ -423,13 +424,14 @@ final class AvsalExpansionRuntime {
             footprints.put(footprintId, footprint);
             patrols.put(patrolId, patrol);
 
+            int visibleCount = "COMMON".equals(plan.tier()) ? Math.min(3, Math.max(1, enemySlots)) : 1;
             var encounter = new DrehmalFirstRouteCatalog.EncounterSlot(
                     plan.encounterLocator(), plan.locator(), plan.tier(), footprintId, patrolId,
-                    plan.combatEncounterId(), plan.playerLabel(), 1, true, true);
+                    plan.combatEncounterId(), plan.playerLabel(), visibleCount, true, true);
             if (DrehmalEncounterActivationRules.ready(encounter, sites.get(plan.locator()), footprint, patrol)) encounters.add(encounter);
         }
 
-        Turnbound.LOGGER.info("TURNBOUND resolved Av'Sal first slice: {} sites, {} encounters", sites.size(), encounters.size());
+        Turnbound.LOGGER.info("TURNBOUND resolved Av'Sal Chapter 1 route: {} sites, {} encounters", sites.size(), encounters.size());
         return new Snapshot(sites, footprints, patrols, encounters);
     }
 

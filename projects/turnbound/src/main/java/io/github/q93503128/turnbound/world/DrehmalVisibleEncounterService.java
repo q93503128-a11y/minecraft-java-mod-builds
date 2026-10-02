@@ -419,7 +419,8 @@ final class DrehmalVisibleEncounterService {
 
             for (int i = 0; i < fieldIds.size(); i++) {
                 String defId = fieldIds.get(i);
-                BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, pivot, yawFor(facing));
+                Vec3 presentationPosition = representativePosition(pivot, facing, i, fieldIds.size());
+                BattleActorEntity actor = TurnboundBattleActors.spawn(level, defId, presentationPosition, yawFor(facing));
                 if (actor == null) {
                     if (!blockedMaterializationWarned) {
                         Turnbound.LOGGER.error(
@@ -585,28 +586,39 @@ final class DrehmalVisibleEncounterService {
         }
 
         private List<String> fieldRepresentativeIds() {
-            // Production validation pins fieldVisibleCount to one; battle composition expands independently on contact.
-            return spec.enemies().isEmpty() ? List.of() : List.of(spec.enemies().getFirst());
+            if (spec.enemies().isEmpty()) return List.of();
+            int count = Math.max(1, Math.min(Math.min(3, slot.fieldVisibleCount()), spec.enemies().size()));
+            return List.copyOf(spec.enemies().subList(0, count));
         }
 
         private void updateActors(ServerLevel level, boolean walking) {
-            Entity raw = lead(level);
-            if (!(raw instanceof BattleActorEntity actor)) return;
+            Entity leadRaw = lead(level);
+            if (!(leadRaw instanceof BattleActorEntity leadActor)) return;
             float yaw = yawFor(facing);
-            if (walking) {
+            List<String> representativeIds = fieldRepresentativeIds();
+            Vec3 leadPosition = leadActor.position();
+
+            for (int i = 0; i < actors.size() && i < representativeIds.size(); i++) {
+                Entity raw = level.getEntity(actors.get(i));
+                if (!(raw instanceof BattleActorEntity actor)) continue;
+                if (i > 0) {
+                    Vec3 target = representativePosition(leadPosition, facing, i, representativeIds.size());
+                    actor.setPos(target.x, target.y, target.z);
+                }
                 actor.setYRot(yaw);
                 actor.setYHeadRot(yaw);
                 actor.setYBodyRot(yaw);
-            }
-            actor.setFieldWalking(walking);
-            if (phase == FieldEncounterRules.Phase.ALERT && alertPreludeTicks > 0) {
-                actor.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-                actor.setCustomNameVisible(true);
-            } else {
-                String representativeId = fieldRepresentativeIds().getFirst();
-                actor.setCustomName(Component.literal(CanonicalData.definition(
-                        representativeId, spec.level(), 0, false).name()));
-                if (TurnboundBattleActors.fieldThreatTier(actor.getType()) < 2) actor.setCustomNameVisible(false);
+                actor.setFieldWalking(walking);
+
+                if (i == 0 && phase == FieldEncounterRules.Phase.ALERT && alertPreludeTicks > 0) {
+                    actor.setCustomName(Component.literal("!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
+                    actor.setCustomNameVisible(true);
+                } else {
+                    String representativeId = representativeIds.get(i);
+                    actor.setCustomName(Component.literal(CanonicalData.definition(
+                            representativeId, spec.level(), 0, false).name()));
+                    actor.setCustomNameVisible(false);
+                }
             }
         }
 
@@ -682,6 +694,17 @@ final class DrehmalVisibleEncounterService {
             if (actors.size() != fieldRepresentativeIds().size()) return false;
             for (UUID id : actors) if (!(level.getEntity(id) instanceof BattleActorEntity)) return false;
             return true;
+        }
+
+        private static Vec3 representativePosition(Vec3 center, Vec3 forward, int index, int count) {
+            if (index <= 0 || count <= 1) return center;
+            Vec3 flat = new Vec3(forward.x, 0.0D, forward.z);
+            if (flat.lengthSqr() < 0.000001D) flat = new Vec3(0.0D, 0.0D, -1.0D);
+            flat = flat.normalize();
+            Vec3 right = new Vec3(-flat.z, 0.0D, flat.x);
+            double back = count >= 3 ? 1.45D : 1.05D;
+            double side = index == 1 ? -1.15D : 1.15D;
+            return center.subtract(flat.scale(back)).add(right.scale(side));
         }
 
         private Entity lead(ServerLevel level) {
