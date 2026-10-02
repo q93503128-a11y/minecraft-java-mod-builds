@@ -1886,3 +1886,33 @@ The intended spatial pattern is:
 - several scenic outlier homes on other usable parts of the main island.
 
 This is intentionally closer to a lived-in island settlement than a single generated-village block.
+
+
+## Third village physical slice — v5 parcel/distribution pass
+
+The second client review retained Chek's Mint as an exterior candidate but rejected the dense layout. V5 expands the same pinned MIT source intake instead of changing visual families mid-review.
+
+Pinned source remains:
+- `Chekmate90/Chek-s-Mint-Structures`
+- commit `6ffadba091c4a07bcdac9f1c89d3d1202f0015b9`
+- MIT
+
+Additional selected residential structures:
+- `plains_small_house_3`
+- `plains_small_house_4`
+- `plains_small_house_5`
+- `plains_small_house_6`
+- `plains_small_house_7`
+- `plains_small_house_8`
+
+The active candidate package therefore contains **18 Chek NBTs + 1 Currents dock = 19 external structures**.
+
+V5 housing review:
+- 11 physical homes total: one player starter + ten resident homes.
+- this satisfies the 10–12 starting-house design range without creating obvious empty player-only suburbs.
+- homes occupy distributed island parcels instead of one residential block.
+- parcel planning reserves about 25×25 blocks per home, while only the inner 17×17 area is initially terrain-authored.
+- this reserve is for yard decoration, mailbox/signage, fencing, exterior variants and believable future house upgrades.
+- explicit source AIR is filtered during review placement to prevent prefab voids from cutting roads/yards.
+
+This is still an **integrated client-review candidate**, not final accepted village art. V5 must pass actual Minecraft visual review before house anchors or this exterior family become final.

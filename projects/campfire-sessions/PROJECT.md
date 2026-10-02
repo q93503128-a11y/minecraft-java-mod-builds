@@ -480,3 +480,52 @@ Third-slice requirements:
 8. preserve the outer mountain/coastline and avoid another giant rectangular village platform.
 
 The third client review is not requested until this parcel-based world is integrated and server-runtime verified.
+
+
+## Third village physical slice — v5 distributed housing verification
+
+The v4 client rejection is now addressed by a parcel-first third slice rather than another dense village block.
+
+Integrated v5 layout:
+- total real external structures placed: **19**
+  - 7 civic/service exteriors
+  - 1 Currents of Trade harbor dock
+  - 11 houses: 1 player starter house + 10 resident houses
+- the housing count now sits inside the canonical starting-village target of roughly 10–12 houses.
+- homes are distributed across multiple parts of the main island rather than packed around one civic rectangle.
+- each housing location reserves an approximately **25×25 parcel** for yard/upgrade use.
+- only the central **17×17 inner pad** is initially graded, preserving natural parcel edges while reserving outer expansion room.
+- the public center remains compact; clinic and museum are satellite facilities rather than members of the dense plaza block.
+- island-wide formal roads were rejected. V5 only authors short civic/harbor paths; outlying homes retain natural approaches.
+- Chek prefab placement ignores explicit AIR as well as jigsaw/barrier/structure markers so source template voids do not carve the authored ground.
+- the large mountain/coastline outside authored parcels remains preserved.
+
+Canonical-runtime evidence:
+- Build Campfire Sessions #76 / run `36952798401`: **SUCCESS**
+- build artifact `campfire-sessions-alpha6`: ID `11204623299`
+- build artifact digest: `sha256:fcb7a0fbe6b5322c94f5b0367a97ed18b8a73f91d98b58bffc4ee20ba7333162`
+- Probe Campfire Canonical World Runtime #40 / run `36953200394`: **SUCCESS**
+- review-pack artifact ID `11204629263`
+- review-pack artifact digest: `sha256:c9e54524a56da76f6d7301f6ae5b47c1ae37c6e121a06a09697a72b67ba93763`
+- staged review-world artifact ID `11204634086`
+- canonical-world probe artifact ID `11204996418`
+- v5 marker: VERIFIED
+- 19 external structures: SERVER PLACEMENT VERIFIED
+- 16 authored public/residential terrain areas: SERVER PLACEMENT VERIFIED
+- short civic/harbor paths: SERVER PLACEMENT VERIFIED
+- harbor dock shoreline/water preflight: VERIFIED
+
+Observed maximum runtime grading deltas stayed within the existing 12-block area safety cap. The cap was not relaxed to make the layout pass.
+
+Validation labels:
+- CODE REVIEWED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- CANONICAL WORLD SERVER TESTED: YES
+- V5 DISTRIBUTED VILLAGE SLICE SERVER TESTED: YES
+- V5 CLIENT VISUAL TESTED: NO
+- V5 VISUAL ACCEPTANCE: PENDING
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+Because the baked village world changed materially from v4, client review requires a **fresh v5 Modrinth review-pack import**. A JAR-only replacement cannot update the already-baked v4 review save.

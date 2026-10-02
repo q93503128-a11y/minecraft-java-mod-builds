@@ -140,3 +140,22 @@ Campfire second-village-review intake uses 12 selected Plains Village NBTs as ed
 The source files and license are downloaded from the pinned commit during the generated-resource build, and their SHA-256 values are recorded in `external_structure_manifest.json`.
 
 Status: **INTEGRATED REVIEW CANDIDATE — not final accepted visual art until actual Minecraft client inspection**.
+
+
+### Chek's Mint Structures — v5 intake expansion
+Pinned source and license remain unchanged:
+- repository: `Chekmate90/Chek-s-Mint-Structures`
+- commit: `6ffadba091c4a07bcdac9f1c89d3d1202f0015b9`
+- license: MIT
+
+V5 adds six residential NBTs from the same pinned source:
+- `plains_small_house_3.nbt`
+- `plains_small_house_4.nbt`
+- `plains_small_house_5.nbt`
+- `plains_small_house_6.nbt`
+- `plains_small_house_7.nbt`
+- `plains_small_house_8.nbt`
+
+Current Campfire candidate intake is **18 Chek structures**. Together with the separately licensed Currents of Trade dock, the active external village review package contains 19 structures.
+
+The source remains a review candidate rather than final accepted art until the v5 distributed-layout client review is completed.
