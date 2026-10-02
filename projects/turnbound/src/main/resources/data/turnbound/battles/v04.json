@@ -593,6 +593,7 @@
       "enemies": [
         "CV_A",
         "CV_A",
+        "CV_A",
         "CV_A"
       ],
       "respawnSeconds": 24,
@@ -604,6 +605,7 @@
       "region": "AVSAL",
       "level": 6,
       "enemies": [
+        "E012",
         "E012",
         "E012",
         "E012"
@@ -694,6 +696,7 @@
       "enemies": [
         "E010",
         "E009",
+        "E010",
         "E010"
       ],
       "respawnSeconds": 32,
@@ -718,6 +721,7 @@
       "region": "AVSAL",
       "level": 11,
       "enemies": [
+        "E009",
         "E009",
         "E009",
         "E011"

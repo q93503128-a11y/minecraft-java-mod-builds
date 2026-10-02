@@ -68,8 +68,15 @@ public final class EquipmentDropService {
                     new DropRule("T2", firstClear ? 0.20D : 0.20D);
             case "CV_BRIAR_STAG" ->
                     new DropRule("T2", firstClear ? 0.35D : 0.25D);
-            case "AV_ROAD_HOUNDS", "AV_ROAD_PATROL", "AV_RELAY_SENTRIES", "AV_RELAY_GUARD" ->
-                    new DropRule("T2", firstClear ? 0.55D : 0.22D);
+            case "AV_CH1_GATE_SKIRMISH", "AV_CH1_BOAR_TRAIL", "AV_CH1_HOUND_PACK" ->
+                    new DropRule("T1", firstClear ? 0.35D : 0.15D);
+            case "AV_CH1_CROSSROAD_RAIDERS", "AV_CH1_BROKEN_ESCORT", "AV_CH1_SPORE_EDGE",
+                    "AV_CH1_WAYMARK_WALKERS", "AV_CH1_RUST_SCOUTS", "AV_CH1_WATERLINE_SWARM",
+                    "AV_CH1_OUTSKIRT_HOUNDS", "AV_CH1_RUSTED_COLUMN",
+                    "AV_ROAD_HOUNDS", "AV_ROAD_PATROL", "AV_RELAY_SENTRIES", "AV_RELAY_GUARD" ->
+                    new DropRule("T2", firstClear ? 0.50D : 0.22D);
+            case "AV_CH1_GORGE_BREAKER" ->
+                    new DropRule("T2", firstClear ? 0.45D : 0.30D);
             case "AV_FIRST_BOSS" ->
                     new DropRule("T2", firstClear ? 0.0D : 0.35D);
             case "AV_ROAD_ELITE" ->

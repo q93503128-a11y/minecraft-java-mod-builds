@@ -25,8 +25,8 @@ class EquipmentInventoryTest {
 
         assertEquals(10, weapon.enhancementLevel());
         assertEquals(before - 4_000, profile.currency(PlayerProfile.Currency.GOLD));
-        assertEquals(0.05 * 1.40, EquipmentInventory.scaledMain(0.05, 10), 0.000001);
-        assertEquals(0.03, EquipmentInventory.scaledSub(0.03, 10), 0.000001);
+        assertEquals(0.08 * 1.40, EquipmentInventory.scaledMain(0.08, 10), 0.000001);
+        assertEquals(0.04, EquipmentInventory.scaledSub(0.04, 10), 0.000001);
         assertThrows(IllegalStateException.class, () -> inventory.enhance(weaponId, profile));
     }
 

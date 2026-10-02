@@ -1056,7 +1056,7 @@ public final class MetaMenuScreen extends Screen {
     private static int tierRank(String t){return switch(t){case"SIGNATURE"->5;case"T4"->4;case"T3"->3;case"T2"->2;case"T1"->1;default->0;};}
     private static int tierColor(String t){return switch(t){case"SIGNATURE"->0xFFC794FF;case"T4"->0xFFFFC857;case"T3"->0xFFB68CFF;case"T2"->0xFF6DC6FF;default->0xFFAEB7C6;};}
     private static String stat(double v){return Math.abs(v)<=1.0?String.format(Locale.ROOT,"%.1f%%",v*100):String.format(Locale.ROOT,"%.1f",v);}
-    private static String statTypeLabel(String t){return switch(t){case"HP_FLAT"->"HP";case"HP_PERCENT"->"HP%";case"ATK_FLAT"->"ATK";case"ATK_PERCENT"->"ATK%";case"DEF_FLAT"->"DEF";case"DEF_PERCENT"->"DEF%";case"SPD_FLAT"->"SPD";case"SPD_PERCENT"->"SPD%";default->t;};}
+    private static String statTypeLabel(String t){return switch(t){case"HP_FLAT"->"HP";case"HP_PERCENT","HP_PCT"->"HP%";case"ATK_FLAT"->"ATK";case"ATK_PERCENT","ATK_PCT"->"ATK%";case"DEF_FLAT"->"DEF";case"DEF_PERCENT","DEF_PCT"->"DEF%";case"SPD_FLAT"->"SPD";case"SPD_PERCENT","SPD_PCT"->"SPD%";default->t;};}
     private static String characterName(String id){return ClientMetaState.snapshot().characters().stream().filter(r->r.id().equals(id)).map(ClientMetaState.CharacterRow::name).findFirst().orElse(id);}
 
     @Override public boolean isPauseScreen(){return false;}
