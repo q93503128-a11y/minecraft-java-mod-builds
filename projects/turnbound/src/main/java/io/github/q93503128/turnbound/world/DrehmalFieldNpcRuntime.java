@@ -15,7 +15,7 @@ import java.util.*;
 final class DrehmalFieldNpcRuntime {
     private static final String TAG="turnbound_drehmal_field_npc";
     private static final String PREFIX=TAG+":";
-    private static final double MATERIALIZE_RADIUS=80.0D;
+    private static final double MATERIALIZE_RADIUS=120.0D;
     private static final Map<String,UUID> ACTORS=new LinkedHashMap<>();
     private static ServerLevel boundLevel;
     private static long lastTick=Long.MIN_VALUE;
@@ -35,8 +35,8 @@ final class DrehmalFieldNpcRuntime {
             active.add(npc.locator());
             Vec3 pos=vec(site.runtimePosition());
             if(!demanded(level,npc,pos)){discard(level,npc.locator());continue;}
-            if(!DrehmalAdaptiveRoutePlacement.sourceContentClear(
-                    level,site.runtimePosition().x(),site.runtimePosition().y(),site.runtimePosition().z(),2.75D)){
+            if(!DrehmalAdaptiveRoutePlacement.fieldProxyContentClear(
+                    level,site.runtimePosition().x(),site.runtimePosition().y(),site.runtimePosition().z())){
                 discard(level,npc.locator());
                 continue;
             }
@@ -102,6 +102,16 @@ final class DrehmalFieldNpcRuntime {
     }
 
     static boolean isNpc(Entity target){return locator(target)!=null;}
+
+    static boolean nearNpc(ServerPlayer player,String npcLocator){
+        if(player==null||npcLocator==null||npcLocator.isBlank())return false;
+        var npc=DrehmalFieldNpcCatalog.npc(npcLocator);
+        if(npc==null)return false;
+        var site=site(player,npc.siteLocator());
+        if(site==null||site.runtimePosition()==null)return false;
+        double radius=npc.interactionRadius()+2.0D;
+        return player.position().distanceToSqr(vec(site.runtimePosition()))<=radius*radius;
+    }
 
     static void clear(){
         if(boundLevel!=null)for(String locator:List.copyOf(ACTORS.keySet()))discard(boundLevel,locator);

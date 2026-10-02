@@ -463,7 +463,7 @@ final class AvsalExpansionRuntime {
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
             BlockPos feet = new BlockPos(x, y, z);
             if (!standing(level, feet)) continue;
-            if (!DrehmalAdaptiveRoutePlacement.sourceContentClear(level, x, y, z, 2.25D)) continue;
+            if (!DrehmalAdaptiveRoutePlacement.fieldProxyContentClear(level, x, y, z)) continue;
             return new DrehmalFirstRouteCatalog.Position(x, y, z);
         }
         return null;

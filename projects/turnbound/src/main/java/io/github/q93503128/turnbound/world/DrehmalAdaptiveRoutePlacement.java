@@ -230,7 +230,10 @@ final class DrehmalAdaptiveRoutePlacement {
                 boolean presentationSite="ENCOUNTER_ZONE".equals(authored.kind())
                         ||"ELITE_ZONE".equals(authored.kind())
                         ||"PATROL_ZONE".equals(authored.kind())
-                        ||"WORLD_BOSS_ZONE".equals(authored.kind());
+                        ||"WORLD_BOSS_ZONE".equals(authored.kind())
+                        ||"NPC_ZONE".equals(authored.kind())
+                        ||"GUIDE_CANDIDATE".equals(authored.kind())
+                        ||"REST_ZONE".equals(authored.kind());
                 if(presentationSite?!fieldProxyContentClear(level,x,y,z):!sourceContentClear(level,x,y,z,2.75D))continue;
 
                 double roadDistance=DrehmalRoutePlacementRules.corridorDistance(zone,x+0.5D,z+0.5D);

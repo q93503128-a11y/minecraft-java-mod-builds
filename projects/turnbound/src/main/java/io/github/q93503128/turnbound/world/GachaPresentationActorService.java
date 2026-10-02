@@ -57,9 +57,10 @@ public final class GachaPresentationActorService {
         finish(player);
         List<GachaPresentationPlan.Reveal> reveals = GachaPresentationPlan.reveals(result);
         if (reveals.isEmpty()) return null;
-        Vec3 stage = safeStagePosition(level, player);
+        DrabyelHubServiceRuntime.SummonStage fixedStage = DrabyelHubServiceRuntime.summonStage(player);
+        Vec3 stage = fixedStage == null ? safeStagePosition(level, player) : fixedStage.position();
         if (stage == null) return null;
-        float actorYaw = faceYaw(stage, player.position());
+        float actorYaw = fixedStage == null ? faceYaw(stage, player.position()) : fixedStage.actorYaw();
         ACTIVE.put(player.getUUID(), new Active(level, reveals, result.pulls().size(), stage, actorYaw));
         float cameraYaw = wrapDegrees(actorYaw + 180.0F);
         return new Stage(stage.x, stage.y, stage.z, cameraYaw);

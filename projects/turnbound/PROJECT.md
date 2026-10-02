@@ -1960,3 +1960,14 @@ Validation:
 - CLIENT RUNTIME TESTED: PARTIAL — join reached; resource-pack model errors observed
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+## First-playtest correction slice — 2026-10-02
+
+The first client playtest exposed a presentation/flow mismatch rather than a missing content catalog. Before resuming the Av'Sal slice:
+
+- Capital Valley field NPCs and Av'Sal NPC/clue sites materialize beside authored content rather than fail closed under battle-arena clearance.
+- The post-New-Drabyel Capital Valley step is an explicit Aren main-quest offer. The player accepts it before the three regional choices appear on HUD/map.
+- Regional repeatable contracts are chosen from multiple offers at the physical contract NPC; recommended level is advisory, not a hard gate.
+- Summoning uses the physical summoner's fixed ritual stage. The reveal camera frames that stage rather than selecting arbitrary ground in front of the player.
+- Existing side quests remain physical-NPC/discovery driven and are not replaced by the regional main quest.
