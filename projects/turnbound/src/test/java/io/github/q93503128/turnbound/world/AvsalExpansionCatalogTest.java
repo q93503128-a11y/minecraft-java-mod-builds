@@ -52,6 +52,17 @@ class AvsalExpansionCatalogTest {
         assertEquals("AV_FIRST_BOSS", firstBoss.combatEncounterId());
         assertEquals("BOSS", firstBoss.tier());
         assertTrue(CampaignEncounterCatalog.contains("AV_FIRST_BOSS"));
+        long commonCount=AvsalExpansionCatalog.plan().sites().stream()
+                .filter(AvsalExpansionCatalog.SitePlan::encounter)
+                .filter(site->"COMMON".equals(site.tier())).count();
+        long eliteCount=AvsalExpansionCatalog.plan().sites().stream()
+                .filter(AvsalExpansionCatalog.SitePlan::encounter)
+                .filter(site->"ELITE".equals(site.tier())).count();
+        assertTrue(commonCount>=15,"Chapter 1 road should be populated throughout the 1.4k corridor");
+        assertTrue(eliteCount>=2,"Chapter 1 road needs optional high-risk detours");
+        assertTrue(DrehmalFieldNpcCatalog.all().stream()
+                .filter(npc->npc.siteLocator().startsWith("turnbound:site/avsal/")).count()>=8,
+                "Av'Sal route should contain multiple physical NPC stops");
         assertTrue(firstBoss.patrolSeeds().size() >= 2);
         assertEquals(List.of("AV_B01","E009","E011"), CampaignEncounterCatalog.spec("AV_FIRST_BOSS").enemies(),
                 "boss support units are an authored fixed roster, never random adds");

@@ -41,5 +41,8 @@ class AvsalQuestCatalogTest {
         assertFalse(AvsalQuestCatalog.completed(mq7,Set.of(AvsalExpansionProgress.FIRST_BOSS_CLEARED),Set.of("AV_FIRST_BOSS")));
         assertTrue(AvsalQuestCatalog.completed(mq7,Set.of(AvsalExpansionProgress.FIRST_BOSS_REPORTED),Set.of("AV_FIRST_BOSS")));
         assertTrue(AvsalQuestCatalog.all().stream().allMatch(q -> q.rewardCrystal()>0 && q.rewardGold()>0));
+        assertTrue(AvsalQuestCatalog.all().size()>=18,
+                "Av'Sal is the Chapter 1 endpoint and needs a full chapter-sized quest slate");
+        assertTrue(AvsalQuestCatalog.all().stream().filter(q->q.kind()==AvsalQuestCatalog.Kind.SIDE).count()>=11);
     }
 }

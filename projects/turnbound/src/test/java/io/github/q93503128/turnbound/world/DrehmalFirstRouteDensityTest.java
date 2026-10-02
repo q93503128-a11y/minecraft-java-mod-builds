@@ -14,6 +14,8 @@ class DrehmalFirstRouteDensityTest {
         assertEquals(1,worldBoss);
         assertEquals(3,DrehmalFieldNpcCatalog.all().stream()
                 .filter(npc -> npc.siteLocator().startsWith("turnbound:site/capital_valley/")).count());
+        assertTrue(route.encounters().stream().mapToInt(DrehmalFirstRouteCatalog.EncounterSlot::fieldVisibleCount).sum() >= 18,
+                "Capital Valley should visibly contain packs, not isolated single representatives");
         assertTrue(route.encounters().stream().noneMatch(e->e.siteLocator().endsWith("/new_drabyel")));
         assertTrue(route.encounters().stream().noneMatch(e->e.siteLocator().endsWith("/explorer_camp")));
     }
