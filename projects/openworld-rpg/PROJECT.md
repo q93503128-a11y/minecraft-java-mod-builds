@@ -358,8 +358,22 @@ Gazelle/Raccoon/Crow remain ecology identities without invented hostile combat p
 remains passive food ecology rather than a fabricated combat kit. Build Openworld RPG run
 `36967514764` at code/workflow state `24de568d84f6c81d80cfe6651b37272d652bc0a4` verifies the
 13-target startup gate, tests/build, core/gameplay server smoke, gameplay client startup,
-verification JARs and pack packaging. Registry/stat closure is therefore distinct from
-spawn/attack/loot/presentation closure.
+verification JARs and pack packaging. The donor attack-surface follow-up at
+`bf237ab9b0c88d7564f4574287364ad8026139ca` then inspected the exact pinned Cave Centipede
+and Nature Spirit behavior surfaces without copying donor code/assets. Cave Centipede's multipart
+damage authority is now concretely bridged at
+`cb690604d2a03150e2c6d989c17222bc533b7034`: body/tail hit proxies walk the donor's public
+`getParent()` chain and resolve to the single `alexsmobs:centipede_head` project HP/poise owner;
+missing/broken parent chains fail closed instead of creating independent segment health. Project
+melee, ranged and generic project-damage application now consume that same canonical owner.
+Build Openworld RPG run `36969022278` is **SUCCESS** at that code state, including clean
+tests/build, pinned creature inspection, core/gameplay dedicated-server smoke, gameplay client
+startup, both verification JARs, mrpack packaging and artifact upload
+(`openworld-rpg-m0-cb690604d2a03150e2c6d989c17222bc533b7034`, artifact
+`11211146368`). This does **not** open Cave Centipede or Nature Spirit production spawning:
+their authored attack/reward/presentation acceptance is still outstanding, and Earthloong remains
+the only production-spawn-ready R01 external actor. Registry/stat + multipart damage closure is
+therefore distinct from spawn/attack/loot/presentation closure.
 
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
