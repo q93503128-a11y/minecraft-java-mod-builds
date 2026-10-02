@@ -5,6 +5,7 @@ import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -153,6 +154,10 @@ public final class ProjectMinecraftDamageApplicator {
                         damageTarget,
                         player
                 );
+                R01NatureSpiritRewardService.recordDamageContribution(
+                        damageTarget,
+                        player
+                );
                 R01EarthloongPhysicalEncounterRuntime.recordProjectDamageThreat(
                         damageTarget,
                         player,
@@ -162,6 +167,7 @@ public final class ProjectMinecraftDamageApplicator {
             }
             if (applied.killed()) {
                 R01EarthloongEncounterService.resolveDefeat(damageTarget);
+                R01NatureSpiritRewardService.resolveDefeat(damageTarget);
             }
             return true;
         }

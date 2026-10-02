@@ -5,6 +5,10 @@ public final class R01RewardRules {
     public static final RewardRule DUST_ON_QUARRY_ROAD =
             new RewardRule(0.70, 0.50, 90L);
 
+    /** Nature Spirit eligible personal elite-combat reward. */
+    public static final RewardRule NATURE_SPIRIT =
+            new RewardRule(0.06, 0.05, 20L);
+
     /** Earthloong first-eligible boss-kill layer. */
     public static final RewardRule EARTHLOONG_FIRST_BOSS_LAYER =
             new RewardRule(0.40, 0.20, 0L);

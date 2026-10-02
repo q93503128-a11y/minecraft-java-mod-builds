@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.progression.r01;
 
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongEncounterDataLoader;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01SecondaryCreatureEncounterDataLoader;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.progression.reward.PlayerRewardTransactionService;
 import java.util.Objects;
@@ -33,6 +34,30 @@ public final class R01RewardService {
                 DUST_ON_QUARRY_ROAD_TRANSACTION,
                 rewardClass,
                 R01RewardRules.DUST_ON_QUARRY_ROAD
+        );
+    }
+
+    public static PlayerRewardTransactionService.RewardResult grantNatureSpiritCombatReward(
+            ServerPlayer player,
+            String rewardId,
+            RootClass rewardClass
+    ) {
+        Objects.requireNonNull(player, "player");
+        if (rewardId == null || rewardId.isBlank() || rewardId.indexOf(':') <= 0) {
+            throw new IllegalArgumentException("Nature Spirit rewardId must be namespaced.");
+        }
+        Objects.requireNonNull(rewardClass, "rewardClass");
+        R01RewardRules.RewardRule rule = R01RewardRules.NATURE_SPIRIT;
+        return PlayerRewardTransactionService.grantCombatPercentageRewardOnce(
+                player,
+                rewardId + "/progression",
+                rewardClass,
+                R01SecondaryCreatureEncounterDataLoader
+                        .loadNatureSpirit()
+                        .contentLevel(),
+                rule.combatRequirementFraction(),
+                rule.classRequirementFraction(),
+                rule.gold()
         );
     }
 
