@@ -86,7 +86,7 @@ public final class NpcDialogueScreen extends Screen {
 
         addRenderableWidget(new BattleHudButton(
                 panelLeft + panelWidth - 68, panelTop + panelHeight - 23, 54, 16,
-                Component.literal("닫기"), TurnboundUiTokens.MUTED, ignored -> onClose()));
+                Component.literal("닫기"), TurnboundUiTokens.TEXT_MUTED, ignored -> onClose()));
     }
 
     private void select(Choice choice) {
