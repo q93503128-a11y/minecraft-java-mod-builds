@@ -65,20 +65,36 @@ public final class ExternalActorBindingRuntime {
             );
         }
 
-        ExternalActorCombatProfile profileData = ExternalActorCombatProfile.r01Earthloong();
-        if (!profileData.entityId().equals(earthloong.target())) {
+        for (ExternalActorCombatProfile profileData
+                : R01ExternalActorCatalog.combatProfiles()) {
+            ExternalActorCombatProfile previous = COMBAT_PROFILES.put(
+                    profileData.entityId(),
+                    profileData
+            );
+            if (previous != null) {
+                throw new IllegalStateException(
+                        "Duplicate R01 external-actor combat profile: "
+                                + profileData.entityId()
+                );
+            }
+        }
+
+        ExternalActorCombatProfile earthloongProfile =
+                COMBAT_PROFILES.get(R01ExternalActorCatalog.EARTHLOONG);
+        if (earthloongProfile == null
+                || !earthloongProfile.entityId().equals(earthloong.target())) {
             throw new IllegalStateException(
                     "Earthloong combat profile target does not match actor overlay: "
-                            + profileData.entityId() + " != " + earthloong.target()
+                            + earthloong.target()
             );
         }
-        COMBAT_PROFILES.put(profileData.entityId(), profileData);
 
         var encounterData = R01EarthloongEncounterDataLoader.loadBundled();
-        if (encounterData.contentLevel() != profileData.contentLevel()) {
+        if (encounterData.contentLevel() != earthloongProfile.contentLevel()) {
             throw new IllegalStateException(
                     "Earthloong encounter-data level does not match actor profile: "
-                            + encounterData.contentLevel() + " != " + profileData.contentLevel()
+                            + encounterData.contentLevel() + " != "
+                            + earthloongProfile.contentLevel()
             );
         }
 
@@ -87,9 +103,12 @@ public final class ExternalActorBindingRuntime {
          * dependency is present. Validate the concrete registry target at SERVER_STARTING, after all
          * common entrypoints have completed, while keeping profile/ownership hooks registered early.
          */
-        ServerLifecycleEvents.SERVER_STARTING.register(server ->
-                validateRequiredRegistryTarget(profileData.entityId(), logger)
-        );
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            for (String entityId
+                    : R01ExternalActorCatalog.requiredRegistryTargets()) {
+                validateRequiredRegistryTarget(entityId, logger);
+            }
+        });
 
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
             Optional<ExternalActorCombatProfile> actorProfile = combatProfile(entity);
@@ -113,10 +132,11 @@ public final class ExternalActorBindingRuntime {
 
         initialized = true;
         logger.info(
-                "Openworld RPG external actor binding armed for {}: project HP/DEF/MR/Poise profile, "
-                        + "authored spawn path, canonical encounter/impact data and donor progression "
-                        + "suppression hooks ready; exact registry validation scheduled for server start.",
-                profileData.entityId()
+                "Openworld RPG R01 external actor registry gate armed for {} exact pinned targets; "
+                        + "{} currently have project combat-stat authority. Cave Centipede and "
+                        + "Nature Spirit remain fail-closed pending their dedicated donor-surface review.",
+                R01ExternalActorCatalog.requiredRegistryTargets().size(),
+                COMBAT_PROFILES.size()
         );
     }
 
@@ -320,7 +340,7 @@ public final class ExternalActorBindingRuntime {
                     .sorted()
                     .toList();
             throw new IllegalStateException(
-                    "Openworld RPG required R01 Earthloong registry target is missing at server start: "
+                    "Openworld RPG required R01 external-actor registry target is missing at server start: "
                             + requiredId + "; installed actor-name candidates=" + externalActorCandidates
             );
         }
