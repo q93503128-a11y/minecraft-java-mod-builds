@@ -572,6 +572,158 @@
       ],
       "respawnSeconds": 0,
       "boss": true
+    },
+    {
+      "id": "AV_CH1_GATE_SKIRMISH",
+      "label": "서쪽 문밖의 소규모 교전",
+      "region": "AVSAL",
+      "level": 4,
+      "enemies": [
+        "CV_B",
+        "CV_C"
+      ],
+      "respawnSeconds": 24,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_BOAR_TRAIL",
+      "label": "구릉길의 이끼등 멧돼지",
+      "region": "AVSAL",
+      "level": 5,
+      "enemies": [
+        "CV_A",
+        "CV_A",
+        "CV_A"
+      ],
+      "respawnSeconds": 24,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_HOUND_PACK",
+      "label": "긴 풀숲의 잿빛 사냥개",
+      "region": "AVSAL",
+      "level": 6,
+      "enemies": [
+        "E012",
+        "E012",
+        "E012"
+      ],
+      "respawnSeconds": 24,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_CROSSROAD_RAIDERS",
+      "label": "갈림길 약탈대",
+      "region": "AVSAL",
+      "level": 6,
+      "enemies": [
+        "CV_B",
+        "CV_C",
+        "E005"
+      ],
+      "respawnSeconds": 28,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_GORGE_BREAKER",
+      "label": "바위목의 동굴뿔 파괴자",
+      "region": "AVSAL",
+      "level": 8,
+      "enemies": [
+        "EL_CV01"
+      ],
+      "respawnSeconds": 210,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_BROKEN_ESCORT",
+      "label": "무너진 호송대 매복",
+      "region": "AVSAL",
+      "level": 8,
+      "enemies": [
+        "CV_B",
+        "CV_C",
+        "E005",
+        "CV_B"
+      ],
+      "respawnSeconds": 30,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_SPORE_EDGE",
+      "label": "포자 번진 길가",
+      "region": "AVSAL",
+      "level": 7,
+      "enemies": [
+        "E007",
+        "E008"
+      ],
+      "respawnSeconds": 26,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_WAYMARK_WALKERS",
+      "label": "낡은 길표식의 망자",
+      "region": "AVSAL",
+      "level": 8,
+      "enemies": [
+        "E001",
+        "E002",
+        "E003"
+      ],
+      "respawnSeconds": 28,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_RUST_SCOUTS",
+      "label": "초입 수로의 녹슨 정찰기",
+      "region": "AVSAL",
+      "level": 9,
+      "enemies": [
+        "E009",
+        "E011"
+      ],
+      "respawnSeconds": 30,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_WATERLINE_SWARM",
+      "label": "낮은 수로의 범람 무리",
+      "region": "AVSAL",
+      "level": 10,
+      "enemies": [
+        "E010",
+        "E009",
+        "E010"
+      ],
+      "respawnSeconds": 32,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_OUTSKIRT_HOUNDS",
+      "label": "아브살 외곽의 추적견",
+      "region": "AVSAL",
+      "level": 9,
+      "enemies": [
+        "E012",
+        "E012",
+        "CV_C"
+      ],
+      "respawnSeconds": 28,
+      "boss": false
+    },
+    {
+      "id": "AV_CH1_RUSTED_COLUMN",
+      "label": "폐허 앞의 녹슨 대열",
+      "region": "AVSAL",
+      "level": 11,
+      "enemies": [
+        "E009",
+        "E009",
+        "E011"
+      ],
+      "respawnSeconds": 34,
+      "boss": false
     }
   ]
 }

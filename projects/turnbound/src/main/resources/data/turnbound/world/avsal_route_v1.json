@@ -432,6 +432,434 @@
           "z": 1676
         }
       ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_gate_skirmish",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "뉴 드라비엘 서쪽 문밖",
+      "seed": {
+        "x": 514,
+        "z": 1760
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 24,
+      "detectionRadius": 38,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_gate_skirmish",
+      "combatEncounterId": "AV_CH1_GATE_SKIRMISH",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 528,
+          "z": 1774
+        },
+        {
+          "x": 514,
+          "z": 1760
+        },
+        {
+          "x": 505,
+          "z": 1738
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_boar_trail",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "구릉길 풀밭",
+      "seed": {
+        "x": 530,
+        "z": 1685
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 25,
+      "detectionRadius": 38,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_boar_trail",
+      "combatEncounterId": "AV_CH1_BOAR_TRAIL",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 520,
+          "z": 1705
+        },
+        {
+          "x": 530,
+          "z": 1685
+        },
+        {
+          "x": 538,
+          "z": 1662
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_hound_pack",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "긴 풀숲",
+      "seed": {
+        "x": 505,
+        "z": 1610
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "detectionRadius": 40,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_hound_pack",
+      "combatEncounterId": "AV_CH1_HOUND_PACK",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 520,
+          "z": 1628
+        },
+        {
+          "x": 505,
+          "z": 1610
+        },
+        {
+          "x": 480,
+          "z": 1588
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_crossroad_raiders",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "서쪽 갈림길",
+      "seed": {
+        "x": 415,
+        "z": 1570
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 27,
+      "detectionRadius": 40,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_crossroad_raiders",
+      "combatEncounterId": "AV_CH1_CROSSROAD_RAIDERS",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 438,
+          "z": 1567
+        },
+        {
+          "x": 415,
+          "z": 1570
+        },
+        {
+          "x": 394,
+          "z": 1580
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_gorge_breaker",
+      "kind": "ELITE_ZONE",
+      "playerLabel": "바위목 샛길",
+      "seed": {
+        "x": 345,
+        "z": 1548
+      },
+      "searchRadius": 18,
+      "safetyRadius": 0,
+      "encounterRadius": 30,
+      "detectionRadius": 36,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_gorge_breaker",
+      "combatEncounterId": "AV_CH1_GORGE_BREAKER",
+      "tier": "ELITE",
+      "patrolSeeds": [
+        {
+          "x": 358,
+          "z": 1560
+        },
+        {
+          "x": 345,
+          "z": 1548
+        },
+        {
+          "x": 328,
+          "z": 1537
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_broken_escort",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "무너진 호송로",
+      "seed": {
+        "x": 300,
+        "z": 1525
+      },
+      "searchRadius": 15,
+      "safetyRadius": 0,
+      "encounterRadius": 28,
+      "detectionRadius": 40,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_broken_escort",
+      "combatEncounterId": "AV_CH1_BROKEN_ESCORT",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 320,
+          "z": 1527
+        },
+        {
+          "x": 300,
+          "z": 1525
+        },
+        {
+          "x": 275,
+          "z": 1521
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_spore_edge",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "포자 번진 길가",
+      "seed": {
+        "x": 205,
+        "z": 1518
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "detectionRadius": 38,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_spore_edge",
+      "combatEncounterId": "AV_CH1_SPORE_EDGE",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 225,
+          "z": 1521
+        },
+        {
+          "x": 205,
+          "z": 1518
+        },
+        {
+          "x": 182,
+          "z": 1517
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_waymark_walkers",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "낡은 길표식",
+      "seed": {
+        "x": 125,
+        "z": 1530
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "detectionRadius": 38,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_waymark_walkers",
+      "combatEncounterId": "AV_CH1_WAYMARK_WALKERS",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 143,
+          "z": 1519
+        },
+        {
+          "x": 125,
+          "z": 1530
+        },
+        {
+          "x": 105,
+          "z": 1544
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_rust_scouts",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "수로 잔해 초입",
+      "seed": {
+        "x": 65,
+        "z": 1505
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 26,
+      "detectionRadius": 38,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_rust_scouts",
+      "combatEncounterId": "AV_CH1_RUST_SCOUTS",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 82,
+          "z": 1518
+        },
+        {
+          "x": 65,
+          "z": 1505
+        },
+        {
+          "x": 43,
+          "z": 1500
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_waterline_swarm",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "낮은 수로",
+      "seed": {
+        "x": 10,
+        "z": 1545
+      },
+      "searchRadius": 15,
+      "safetyRadius": 0,
+      "encounterRadius": 28,
+      "detectionRadius": 40,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_waterline_swarm",
+      "combatEncounterId": "AV_CH1_WATERLINE_SWARM",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": 28,
+          "z": 1535
+        },
+        {
+          "x": 10,
+          "z": 1545
+        },
+        {
+          "x": -8,
+          "z": 1558
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_outskirt_hounds",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "아브살 외곽 풀숲",
+      "seed": {
+        "x": -75,
+        "z": 1470
+      },
+      "searchRadius": 14,
+      "safetyRadius": 0,
+      "encounterRadius": 27,
+      "detectionRadius": 40,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_outskirt_hounds",
+      "combatEncounterId": "AV_CH1_OUTSKIRT_HOUNDS",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": -55,
+          "z": 1480
+        },
+        {
+          "x": -75,
+          "z": 1470
+        },
+        {
+          "x": -94,
+          "z": 1458
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/ch1_rusted_column",
+      "kind": "PATROL_ZONE",
+      "playerLabel": "폐허 앞 녹슨 대열",
+      "seed": {
+        "x": -112,
+        "z": 1450
+      },
+      "searchRadius": 16,
+      "safetyRadius": 0,
+      "encounterRadius": 28,
+      "detectionRadius": 42,
+      "encounterLocator": "turnbound:encounter/avsal/ch1_rusted_column",
+      "combatEncounterId": "AV_CH1_RUSTED_COLUMN",
+      "tier": "COMMON",
+      "patrolSeeds": [
+        {
+          "x": -94,
+          "z": 1458
+        },
+        {
+          "x": -112,
+          "z": 1450
+        },
+        {
+          "x": -130,
+          "z": 1440
+        }
+      ]
+    },
+    {
+      "locator": "turnbound:site/avsal/road_guard",
+      "kind": "NPC_ZONE",
+      "playerLabel": "갈림길 경비 초소",
+      "seed": {
+        "x": 424,
+        "z": 1586
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 20,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/escort_survivor",
+      "kind": "NPC_ZONE",
+      "playerLabel": "멈춰 선 운송대",
+      "seed": {
+        "x": 282,
+        "z": 1510
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 20,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/waymark_keeper",
+      "kind": "NPC_ZONE",
+      "playerLabel": "길표식 야영지",
+      "seed": {
+        "x": 112,
+        "z": 1560
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 20,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
+    },
+    {
+      "locator": "turnbound:site/avsal/outskirts_hunter",
+      "kind": "NPC_ZONE",
+      "playerLabel": "외곽 사냥꾼의 자리",
+      "seed": {
+        "x": -96,
+        "z": 1435
+      },
+      "searchRadius": 12,
+      "safetyRadius": 0,
+      "encounterRadius": 0,
+      "detectionRadius": 20,
+      "encounterLocator": "",
+      "combatEncounterId": "",
+      "tier": "",
+      "patrolSeeds": []
     }
   ]
 }

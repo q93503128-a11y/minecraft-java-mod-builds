@@ -318,7 +318,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_FIRST_COMMON",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/warning_cave_elite",
@@ -351,7 +351,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_DRABYEL_ROAD",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/temple_wildlife",
@@ -362,7 +362,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_TEMPLE_WILDLIFE",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/tower_road",
@@ -373,7 +373,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_TOWER_ROAD",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/camp_road",
@@ -384,7 +384,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_CAMP_WILDLIFE",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 3
     },
     {
       "locator": "turnbound:encounter/capital_valley/drabyel_north_watch",
@@ -395,7 +395,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_DRABYEL_NORTH",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/hound_roam",
@@ -406,7 +406,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_HOUND_ROAM",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/spore_grove",
@@ -417,7 +417,7 @@
       "verifiedIn26_2": false,
       "productionEnabled": false,
       "combatEncounterId": "CV_SPORE_GROVE",
-      "fieldVisibleCount": 1
+      "fieldVisibleCount": 2
     },
     {
       "locator": "turnbound:encounter/capital_valley/briar_stag",
