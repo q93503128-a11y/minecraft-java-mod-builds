@@ -31,7 +31,7 @@ import java.util.UUID;
  * Shared visible-enemy runtime for the surveyed Drehmal route.
  *
  * <p>This service is deliberately dormant while route entries remain unverified. Once survey data is promoted,
- * one physical representative actor is shared by all players; the server owns encounter claims and starts either the normal
+ * a small physical pack is shared by all players; the server owns encounter claims and starts either the normal
  * solo session or one authoritative nearby-party shared battle through an authored camera-safe arena candidate.</p>
  */
 final class DrehmalVisibleEncounterService {
@@ -587,7 +587,7 @@ final class DrehmalVisibleEncounterService {
 
         private List<String> fieldRepresentativeIds() {
             if (spec.enemies().isEmpty()) return List.of();
-            int count = Math.max(1, Math.min(Math.min(3, slot.fieldVisibleCount()), spec.enemies().size()));
+            int count = Math.max(1, Math.min(Math.min(4, slot.fieldVisibleCount()), spec.enemies().size()));
             return List.copyOf(spec.enemies().subList(0, count));
         }
 
@@ -702,6 +702,11 @@ final class DrehmalVisibleEncounterService {
             if (flat.lengthSqr() < 0.000001D) flat = new Vec3(0.0D, 0.0D, -1.0D);
             flat = flat.normalize();
             Vec3 right = new Vec3(-flat.z, 0.0D, flat.x);
+            if (count >= 4) {
+                if (index == 1) return center.subtract(flat.scale(1.35D)).add(right.scale(-1.30D));
+                if (index == 2) return center.subtract(flat.scale(1.35D)).add(right.scale(1.30D));
+                return center.subtract(flat.scale(2.70D));
+            }
             double back = count >= 3 ? 1.45D : 1.05D;
             double side = index == 1 ? -1.15D : 1.15D;
             return center.subtract(flat.scale(back)).add(right.scale(side));

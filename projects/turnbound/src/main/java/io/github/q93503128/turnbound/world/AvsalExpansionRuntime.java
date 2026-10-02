@@ -424,7 +424,7 @@ final class AvsalExpansionRuntime {
             footprints.put(footprintId, footprint);
             patrols.put(patrolId, patrol);
 
-            int visibleCount = "COMMON".equals(plan.tier()) ? Math.min(3, Math.max(1, enemySlots)) : 1;
+            int visibleCount = "COMMON".equals(plan.tier()) ? Math.min(4, Math.max(1, enemySlots)) : 1;
             var encounter = new DrehmalFirstRouteCatalog.EncounterSlot(
                     plan.encounterLocator(), plan.locator(), plan.tier(), footprintId, patrolId,
                     plan.combatEncounterId(), plan.playerLabel(), visibleCount, true, true);

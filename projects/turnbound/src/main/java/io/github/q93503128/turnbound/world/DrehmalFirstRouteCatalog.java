@@ -81,7 +81,7 @@ public final class DrehmalFirstRouteCatalog {
 
     /**
      * Encounter binding. {@code fieldVisibleCount} is retained in schema v1 for compatibility, but the production
-     * field contract supports one to three authoritative representative entities per encounter. Battle composition
+     * field contract supports one to four authoritative representative entities per encounter. Battle composition
      * remains entirely owned by the combat encounter and may expand further after contact.
      */
     public record EncounterSlot(
@@ -263,8 +263,8 @@ public final class DrehmalFirstRouteCatalog {
                 errors.add("encounter references unknown patrol " + encounter.locator());
             }
             if (encounter.playerLabel().isBlank()) errors.add("blank encounter label " + encounter.locator());
-            if (encounter.fieldVisibleCount() < 1 || encounter.fieldVisibleCount() > 3) {
-                errors.add("field encounter must use 1..3 representatives " + encounter.locator());
+            if (encounter.fieldVisibleCount() < 1 || encounter.fieldVisibleCount() > 4) {
+                errors.add("field encounter must use 1..4 representatives " + encounter.locator());
             }
             if (encounter.productionEnabled() && encounter.combatEncounterId().isBlank()) {
                 errors.add("production encounter has no combat binding " + encounter.locator());

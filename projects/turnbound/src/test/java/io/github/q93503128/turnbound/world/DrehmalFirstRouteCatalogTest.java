@@ -55,7 +55,7 @@ class DrehmalFirstRouteCatalogTest {
                 assertTrue(CampaignEncounterCatalog.contains(encounter.combatEncounterId()),
                         encounter.locator() + " -> " + encounter.combatEncounterId());
                 int combatSize = CampaignEncounterCatalog.spec(encounter.combatEncounterId()).enemies().size();
-                assertTrue(encounter.fieldVisibleCount() >= 1 && encounter.fieldVisibleCount() <= Math.min(3, combatSize),
+                assertTrue(encounter.fieldVisibleCount() >= 1 && encounter.fieldVisibleCount() <= Math.min(4, combatSize),
                         encounter.locator() + " field representative count must fit combat=" + combatSize);
                 assertTrue(combatSize >= 1,
                         encounter.locator() + " combat encounter must still contain at least one real enemy");
