@@ -14,7 +14,7 @@ class DrehmalFieldNpcCatalogTest {
                 .filter(npc -> !npc.questOfferFlag().isBlank()).count();
         long hiddenOffers = DrehmalFieldNpcCatalog.all().stream()
                 .filter(npc -> npc.questOfferFlag().startsWith("HIDDEN_")).count();
-        assertEquals(3, allOffers);
+        assertEquals(8, allOffers);
         assertEquals(2, hiddenOffers);
 
         assertEquals(3, DrehmalFieldNpcCatalog.all().stream()
@@ -29,6 +29,11 @@ class DrehmalFieldNpcCatalogTest {
             assertTrue(npc.questOfferId().startsWith("turnbound:quest/drehmal/hidden_"));
             assertFalse(npc.questOfferDialogue().isBlank());
         }
+
+        assertEquals(5, DrehmalFieldNpcCatalog.all().stream()
+                .filter(npc -> !npc.questOfferFlag().isBlank())
+                .filter(npc -> !npc.questOfferFlag().startsWith("HIDDEN_"))
+                .count());
 
         var deren = DrehmalFieldNpcCatalog.npc("turnbound:npc/avsal/road_courier");
         assertNotNull(deren);

@@ -14,7 +14,7 @@ class RegionalContractCatalogTest {
         var avsal = RegionalContractCatalog.all().stream()
                 .filter(contract -> "Av'Sal".equals(contract.regionLabel()))
                 .toList();
-        assertEquals(3, avsal.size());
+        assertEquals(6, avsal.size());
         assertTrue(avsal.stream().allMatch(contract -> contract.tier() == 4));
         assertTrue(avsal.stream().allMatch(contract -> contract.minPartyLevel() >= 1),
                 "minPartyLevel is retained only as a recommended-level display value");

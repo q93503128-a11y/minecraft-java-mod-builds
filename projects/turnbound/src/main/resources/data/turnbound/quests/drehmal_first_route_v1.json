@@ -105,7 +105,7 @@
       "title": "탑 아래 길 비우기",
       "regionLabel": "Capital Valley",
       "objective": "순찰대원 로엔의 부탁대로 캐피털 밸리 탑 남쪽 길목의 약탈자를 정리하십시오.",
-      "activationFlag": "HIDDEN_CV_ROEN_OFFERED",
+      "activationFlag": "SIDE_CV_ROEN_OFFERED",
       "completionFlag": "",
       "encounterId": "CV_TOWER_ROAD",
       "requiresProductionEncounter": true,

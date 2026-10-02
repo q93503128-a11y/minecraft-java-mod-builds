@@ -226,7 +226,7 @@
       "objective": "뉴 드라비엘에서 아브살 외곽까지 이어지는 일반 필드 조우를 합계 6회 해결하십시오.",
       "tier": 4,
       "minPartyLevel": 12,
-      "requiredFlag": "AVSAL_MQ_AV01_BRIEFED",
+      "requiredFlag": "AVSAL_REGION_DISCOVERED",
       "encounterIds": [
         "AV_CH1_GATE_SKIRMISH",
         "AV_CH1_BOAR_TRAIL",
@@ -268,7 +268,7 @@
       "objective": "인간형, 야생형, 기계형 조우를 섞어 합계 5회 해결하십시오.",
       "tier": 4,
       "minPartyLevel": 14,
-      "requiredFlag": "AVSAL_MQ_AV01_BRIEFED",
+      "requiredFlag": "AVSAL_REGION_DISCOVERED",
       "encounterIds": [
         "AV_CH1_CROSSROAD_RAIDERS",
         "AV_CH1_BOAR_TRAIL",
