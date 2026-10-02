@@ -94,7 +94,7 @@ final class BattleEngineTest {
         CombatantState e=new CombatantState("e",unit("E",9999,10,10,80),CombatantSide.ENEMY,2);
         l.setGauge(1000);
         BattleEngine engine=new BattleEngine(new BattleState(List.of(l,a,e)));
-        engine.nextReady();engine.useSkill("l","grant","a");
+        engine.nextReady();engine.useSkill("l","p02_accelerate","a");
         assertEquals(60,l.gauge());
 
         CombatantDefinition raze = new CombatantDefinition("P08","Raze",new BattleStats(1000,100,50,100),
