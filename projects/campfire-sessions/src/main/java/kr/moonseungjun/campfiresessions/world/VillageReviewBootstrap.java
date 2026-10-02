@@ -39,6 +39,7 @@ public final class VillageReviewBootstrap {
     private static final int MAX_GRADE_DELTA = 8;
 
     private static final BlockIgnoreProcessor REVIEW_MARKER_PROCESSOR = new BlockIgnoreProcessor(List.of(
+            Blocks.AIR,
             Blocks.JIGSAW,
             Blocks.BARRIER,
             Blocks.STRUCTURE_BLOCK,
