@@ -43,6 +43,18 @@ CHEKS_STRUCTURES = {
         "data/campfiresessions/structure/external/cheks_mint/plains_small_house_1.nbt",
     "data/minecraft/structure/village/plains/houses/plains_small_house_2.nbt":
         "data/campfiresessions/structure/external/cheks_mint/plains_small_house_2.nbt",
+    "data/minecraft/structure/village/plains/houses/plains_small_house_3.nbt":
+        "data/campfiresessions/structure/external/cheks_mint/plains_small_house_3.nbt",
+    "data/minecraft/structure/village/plains/houses/plains_small_house_4.nbt":
+        "data/campfiresessions/structure/external/cheks_mint/plains_small_house_4.nbt",
+    "data/minecraft/structure/village/plains/houses/plains_small_house_5.nbt":
+        "data/campfiresessions/structure/external/cheks_mint/plains_small_house_5.nbt",
+    "data/minecraft/structure/village/plains/houses/plains_small_house_6.nbt":
+        "data/campfiresessions/structure/external/cheks_mint/plains_small_house_6.nbt",
+    "data/minecraft/structure/village/plains/houses/plains_small_house_7.nbt":
+        "data/campfiresessions/structure/external/cheks_mint/plains_small_house_7.nbt",
+    "data/minecraft/structure/village/plains/houses/plains_small_house_8.nbt":
+        "data/campfiresessions/structure/external/cheks_mint/plains_small_house_8.nbt",
     "data/minecraft/structure/village/plains/houses/plains_medium_house_2.nbt":
         "data/campfiresessions/structure/external/cheks_mint/plains_medium_house_2.nbt",
     "data/minecraft/structure/village/plains/houses/plains_big_house_1.nbt":
@@ -122,7 +134,7 @@ def add_cheks_mint(out_root: pathlib.Path, manifest: dict) -> None:
             "sha256": hashlib.sha256(raw).hexdigest(),
             "bytes": len(raw),
             "modifications": [
-                "runtime placement filters jigsaw/structure markers",
+                "runtime placement filters air/jigsaw/barrier/structure markers",
             ],
         })
 

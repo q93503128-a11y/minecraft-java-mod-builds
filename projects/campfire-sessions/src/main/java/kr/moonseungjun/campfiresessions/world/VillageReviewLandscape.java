@@ -15,75 +15,81 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /**
- * Review-only authored terrain pass for the second Campfire village slice.
+ * Review-only authored terrain pass for the third Campfire village slice.
  *
- * <p>The first client review rejected isolated per-building pads. This pass
- * shapes the broad civic and upper terraces first, then links them to the
- * natural waterfront/dock level with a connected soft path network. The outer
- * mountain, beach and pier water remain outside the broad grading zones.</p>
+ * <p>The second client review rejected the dense civic block and oversized
+ * continuous terrace. V5 keeps one compact public hub, gives later facilities
+ * their own satellite parcels, and distributes the shared housing pool across
+ * actual 25x25 lots selected from the canonical-world terrain probe.</p>
  */
 public final class VillageReviewLandscape {
-    private static final int TERRACE_FEATHER = 3;
-    private static final int MAX_TERRACE_DELTA = 12;
+    private static final int AREA_FEATHER = 4;
+    private static final int MAX_AREA_DELTA = 12;
     private static final int MAX_PATH_DELTA = 6;
 
-    private static final List<TerraceSpec> TERRACES = List.of(
-            terrace("civic_west", -323, -292, -63, -21, 72),
-            terrace("civic_southeast", -293, -270, -63, -29, 72),
-            terrace("upper", -317, -282, -21, 18, 75)
+    private static final List<AreaSpec> AREAS = List.of(
+            area("civic_core", -330, -270, -62, -17, 72),
+
+            area("clothing_garden", -310, -290, -15, 7, 74),
+            area("clinic_green", -192, -168, -144, -120, 65),
+            area("museum_green", -248, -224, 48, 72, 64),
+
+            home("home_01", -308, -76, 65),
+            home("home_02", -164, -164, 63),
+            home("home_03", -156, 76, 67),
+            home("home_04", -12, 76, 65),
+            home("home_05", 20, 68, 65),
+            home("home_06", 44, 44, 67),
+            home("home_07", 76, 36, 65),
+            home("home_08", 116, -108, 65),
+            home("home_09", 164, -100, 64),
+            home("home_10", 100, -44, 91),
+            home("home_11", 172, -28, 72)
     );
 
     private static final List<PathSpec> PATHS = List.of(
             path("harbor_arrival",
                     node(-326, 64, -49),
-                    node(-321, 67, -46),
-                    node(-318, 72, -42),
-                    node(-307, 72, -36)),
-            path("civic_spine",
-                    node(-307, 72, -36),
-                    node(-299, 72, -35),
-                    node(-289, 72, -35),
-                    node(-278, 72, -35)),
-            path("south_shops",
-                    node(-307, 72, -44),
-                    node(-296, 72, -47),
-                    node(-285, 72, -47)),
-            path("resident_services",
-                    node(-307, 72, -36),
-                    node(-306, 72, -31)),
-            path("upper_steps",
-                    node(-299, 72, -27),
-                    node(-299, 73, -23),
-                    node(-299, 74, -20),
-                    node(-299, 75, -17)),
-            path("upper_lane",
-                    node(-311, 75, -5),
-                    node(-302, 75, -5),
-                    node(-293, 75, -5),
-                    node(-287, 75, -5)),
-            path("upper_south",
-                    node(-308, 75, 2),
-                    node(-300, 75, 8),
-                    node(-290, 75, 8))
+                    node(-322, 67, -47),
+                    node(-316, 70, -44),
+                    node(-306, 72, -39)),
+            path("plaza_to_services",
+                    node(-306, 72, -36),
+                    node(-312, 72, -31),
+                    node(-317, 72, -26)),
+            path("plaza_to_store",
+                    node(-301, 72, -42),
+                    node(-295, 72, -47),
+                    node(-287, 72, -51)),
+            path("plaza_to_cafe",
+                    node(-299, 72, -32),
+                    node(-294, 72, -27),
+                    node(-289, 72, -23)),
+            path("plaza_to_clothing",
+                    node(-300, 72, -27),
+                    node(-300, 73, -20),
+                    node(-300, 74, -13),
+                    node(-300, 74, -8))
     );
 
     private VillageReviewLandscape() {}
 
     public static void preflightTerraces(ServerLevel level) {
         List<String> failures = new ArrayList<>();
-        for (TerraceSpec terrace : TERRACES) {
+        for (AreaSpec area : AREAS) {
             int worstDelta = 0;
-            int worstX = terrace.minX();
-            int worstZ = terrace.minZ();
-            int worstSurface = terrace.surfaceY();
-            for (int x = terrace.minX(); x <= terrace.maxX(); x++) {
-                for (int z = terrace.minZ(); z <= terrace.maxZ(); z++) {
+            int worstX = area.minX();
+            int worstZ = area.minZ();
+            int worstSurface = area.surfaceY();
+
+            for (int x = area.minX(); x <= area.maxX(); x++) {
+                for (int z = area.minZ(); z <= area.maxZ(); z++) {
                     if (isOceanColumn(level, x, z)) {
                         continue;
                     }
                     int surface = surfaceY(level, x, z);
-                    int distance = edgeDistance(terrace, x, z);
-                    int target = blendedTarget(surface, terrace.surfaceY(), distance);
+                    int distance = edgeDistance(area, x, z);
+                    int target = blendedTarget(surface, area.surfaceY(), distance);
                     int delta = Math.abs(surface - target);
                     if (delta > worstDelta) {
                         worstDelta = delta;
@@ -93,52 +99,61 @@ public final class VillageReviewLandscape {
                     }
                 }
             }
+
             CampfireSessions.LOGGER.info(
-                    "Campfire village terrace preflight {}: targetY={} worstDelta={} worst=({},{} surface={})",
-                    terrace.name(),
-                    terrace.surfaceY(),
+                    "Campfire village area preflight {}: targetY={} worstDelta={} worst=({},{} surface={})",
+                    area.name(),
+                    area.surfaceY(),
                     worstDelta,
                     worstX,
                     worstZ,
                     worstSurface
             );
-            if (worstDelta > MAX_TERRACE_DELTA) {
+            if (worstDelta > MAX_AREA_DELTA) {
                 failures.add(
-                        terrace.name()
+                        area.name()
                                 + " worst=(" + worstX + "," + worstZ + ")"
                                 + " surface=" + worstSurface
-                                + " target=" + terrace.surfaceY()
+                                + " target=" + area.surfaceY()
                                 + " blendedDelta=" + worstDelta
                 );
             }
         }
         if (!failures.isEmpty()) {
             throw new IllegalStateException(
-                    "Campfire village terrace grading failed: " + String.join("; ", failures)
+                    "Campfire village parcel grading failed: " + String.join("; ", failures)
             );
         }
     }
 
     public static void placeTerraces(ServerLevel level) {
         int cells = 0;
-        for (TerraceSpec terrace : TERRACES) {
-            for (int x = terrace.minX(); x <= terrace.maxX(); x++) {
-                for (int z = terrace.minZ(); z <= terrace.maxZ(); z++) {
+        for (AreaSpec area : AREAS) {
+            for (int x = area.minX(); x <= area.maxX(); x++) {
+                for (int z = area.minZ(); z <= area.maxZ(); z++) {
                     if (isOceanColumn(level, x, z)) {
                         continue;
                     }
                     int surface = surfaceY(level, x, z);
-                    int distance = edgeDistance(terrace, x, z);
-                    int target = blendedTarget(surface, terrace.surfaceY(), distance);
-                    gradeSurface(level, x, z, target, Blocks.GRASS_BLOCK.defaultBlockState(), true);
+                    int distance = edgeDistance(area, x, z);
+                    int target = blendedTarget(surface, area.surfaceY(), distance);
+                    boolean clearVegetation = distance >= 2;
+                    gradeSurface(
+                            level,
+                            x,
+                            z,
+                            target,
+                            Blocks.GRASS_BLOCK.defaultBlockState(),
+                            clearVegetation
+                    );
                     cells++;
                 }
             }
         }
         CampfireSessions.LOGGER.info(
-                "Campfire village review terraces applied: {} cells across {} levels",
+                "Campfire village review parcels applied: {} cells across {} areas",
                 cells,
-                TERRACES.size()
+                AREAS.size()
         );
     }
 
@@ -179,18 +194,18 @@ public final class VillageReviewLandscape {
         CampfireSessions.LOGGER.info("Campfire village review paths applied: {} cells", cells);
     }
 
-    private static int edgeDistance(TerraceSpec terrace, int x, int z) {
+    private static int edgeDistance(AreaSpec area, int x, int z) {
         return Math.min(
-                Math.min(x - terrace.minX(), terrace.maxX() - x),
-                Math.min(z - terrace.minZ(), terrace.maxZ() - z)
+                Math.min(x - area.minX(), area.maxX() - x),
+                Math.min(z - area.minZ(), area.maxZ() - z)
         );
     }
 
     private static int blendedTarget(int current, int target, int edgeDistance) {
-        if (edgeDistance >= TERRACE_FEATHER) {
+        if (edgeDistance >= AREA_FEATHER) {
             return target;
         }
-        double t = (edgeDistance + 1.0) / (TERRACE_FEATHER + 1.0);
+        double t = (edgeDistance + 1.0) / (AREA_FEATHER + 1.0);
         return (int) Math.round(current + (target - current) * t);
     }
 
@@ -226,12 +241,9 @@ public final class VillageReviewLandscape {
     }
 
     private static BlockState roadMaterial(int x, int z) {
-        int pattern = Math.floorMod(x * 31 + z * 17, 13);
-        if (pattern == 0) {
+        int pattern = Math.floorMod(x * 31 + z * 17, 19);
+        if (pattern == 0 || pattern == 7) {
             return Blocks.COARSE_DIRT.defaultBlockState();
-        }
-        if (pattern <= 2) {
-            return Blocks.GRAVEL.defaultBlockState();
         }
         return Blocks.DIRT_PATH.defaultBlockState();
     }
@@ -283,11 +295,9 @@ public final class VillageReviewLandscape {
     }
 
     private static void stampRoad(Map<BlockPos, Integer> cells, String pathName, int x, int z, int y) {
-        for (int ox = -1; ox <= 1; ox++) {
-            for (int oz = -1; oz <= 1; oz++) {
-                putRoadCell(cells, pathName, x + ox, z + oz, y);
-            }
-        }
+        putRoadCell(cells, pathName, x, z, y);
+        putRoadCell(cells, pathName, x + 1, z, y);
+        putRoadCell(cells, pathName, x, z + 1, y);
     }
 
     private static void putRoadCell(
@@ -340,8 +350,12 @@ public final class VillageReviewLandscape {
         return y;
     }
 
-    private static TerraceSpec terrace(String name, int minX, int maxX, int minZ, int maxZ, int y) {
-        return new TerraceSpec(name, minX, maxX, minZ, maxZ, y);
+    private static AreaSpec area(String name, int minX, int maxX, int minZ, int maxZ, int y) {
+        return new AreaSpec(name, minX, maxX, minZ, maxZ, y);
+    }
+
+    private static AreaSpec home(String name, int centerX, int centerZ, int y) {
+        return area(name, centerX - 12, centerX + 12, centerZ - 12, centerZ + 12, y);
     }
 
     private static PathNode node(int x, int y, int z) {
@@ -352,7 +366,7 @@ public final class VillageReviewLandscape {
         return new PathSpec(name, List.of(nodes));
     }
 
-    private record TerraceSpec(String name, int minX, int maxX, int minZ, int maxZ, int surfaceY) {}
+    private record AreaSpec(String name, int minX, int maxX, int minZ, int maxZ, int surfaceY) {}
     private record PathNode(int x, int y, int z) {}
     private record PathSpec(String name, List<PathNode> nodes) {}
 }
