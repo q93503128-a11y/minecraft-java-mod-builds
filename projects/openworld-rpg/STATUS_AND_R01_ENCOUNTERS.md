@@ -1075,6 +1075,32 @@ The server hit area must match the visible external ground decal/ring. This is a
 
 No new `Nature Shell` currency is admitted in R01.
 
+### Runtime reward-authority state
+
+The server-owned personal reward bridge is implemented at
+`199d82437a854603a7443ea9ad7d9a00fc10b09f`.
+
+- one accepted contribution fixes the player's reward class for that exact Nature Spirit instance;
+- each eligible player receives an independent persisted reward plan;
+- equipment/material RNG is committed before delivery, so reconnect cannot reroll it;
+- the equipment base family is equal-weight across Initiate Staff / Initiate Wand /
+  Apprentice Focus / River Scholar Garb / Greenwater Pendant;
+- River Scholar Garb resolves Head / Chest / Legs / Gloves / Boots at equal 1/5;
+- ordinary grade and source-Lv ±2 Item-Lv rules remain the global `LOOT_ECONOMY.md` rules;
+- EXP/Class XP/Gold use the existing idempotent personal reward transaction;
+- Healing Herb / Verdant Crystal delivery is reconnect-safe through Material Pouch receipts;
+- a successful equipment roll remains pending instead of inventing a sell/materialization value while
+  the ordinary Exalted equipment economy contract is still unclosed.
+
+This does **not** make Nature Spirit production-ready. Reward recording/finalization is accepted only
+for an authored project spawn, and no Nature Spirit authored production spawn has been promoted yet.
+Its attack-specific presentation also remains blocked because the pinned donor exposes no accepted
+Rooted Swipe / Earthen Ram / Bloom Quake animation surface.
+
+Build Openworld RPG run `36975176112` is SUCCESS for this backend state and produced artifact
+`openworld-rpg-m0-199d82437a854603a7443ea9ad7d9a00fc10b09f`
+(`11213159221`). This is not an in-world Nature Spirit playtest.
+
 ---
 
 # 19. Regalhart — optional R01 field boss
