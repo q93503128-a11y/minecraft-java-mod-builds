@@ -251,6 +251,87 @@ This pass narrows the real acquisition queue. It does not upgrade any fish model
 
 ---
 
+## 3.4.1 Cave Centipede attack-presentation follow-up
+
+The exact pinned Alex's Mobs Continued 2.1.13 dependency was re-inspected from the verified M0
+artifact on **2026-10-02** rather than inferred from old wiki/gallery material. The current
+`EntityCentipedeHead` surface provides donor melee contact, the existing
+`alexsmobs:centipede_attack` sound and procedural locomotion/segment following, but it does not
+expose accepted attack-specific animation states for the authored **Body Rake** or **Ceiling Drop**.
+The model's procedural leg/body movement is not treated as a dedicated attack clip merely because the
+creature is visibly animated.
+
+Therefore:
+
+- Scuttle Bite keeps its existing narrow donor-contact bridge; that bridge is still technical runtime
+  evidence rather than full presentation acceptance;
+- Body Rake remains `NEEDS_EXTERNAL_CLIP`;
+- Ceiling Drop remains `NEEDS_EXTERNAL_CLIP`;
+- neither action may be promoted through invisible hit geometry, generic dust/particle substitution or
+  ordinary walk/climb motion posed as an attack;
+- the current Alex multipart model may remain the gameplay/collision host only if a replacement
+  presentation rig can be aligned honestly with the head/body/tail authority and wall-climbing
+  identity. Otherwise the visible creature itself must be replaced.
+
+### Current external-first replacement queue
+
+**Primary acquisition candidate — Assets Animated / Centipede Monster V1,2,3**
+
+```text
+source: Superhive (formerly Blender Market) / Assets_Animated
+page: https://superhivemarket.com/products/centipede-monster_v123
+alternate storefront evidence: Fab listings for Centipede Monster V1/V2 and creator V3 post
+license shown by Superhive: Royalty Free
+published full-set price observed 2026-10-02: US$9.99
+published per-variant price: US$4.99
+formats stated: Blend + FBX for Blender / Unity / UE5
+frame rate: 60 fps
+published geometry: 17,382 vertices / 33,539 faces
+textures: 4K PBR set
+published motions: 23
+  Atk / Atk2 / Atk3
+  Dead / Dead2 / Dead3
+  Eat / Eat2 / Eat3
+  GetDown / GetUp
+  Hit / Hit2
+  Idle / Idle2
+  JumpBack / Painful / Run / Sleep / Wakeup / Walk / Walk2 / WalkEat
+status: PAID_LOCAL_ONLY_ACQUISITION_REQUIRED
+```
+
+This is the first current candidate whose published motion surface plausibly covers three separate
+attacks without inventing code-only body motion. **Clip names are not acceptance.** Before purchase or
+binding, review the public motion showcase for silhouette/contact suitability. After lawful acquisition,
+record the exact purchased variant/archive, purchase-time license evidence and SHA-256, then inspect
+Atk/Atk2/Atk3, GetDown/GetUp and locomotion in Blender at Minecraft scale. In particular, Ceiling Drop
+still requires a believable high-position release/landing read; `GetDown` is not automatically
+relabelled as Ceiling Drop.
+
+The 33k-face published mesh is also materially heavier than the current R01 common-enemy role needs.
+Retopology/LOD or a lighter variant may be required after visual inspection; performance is measured,
+not guessed.
+
+**Secondary candidate — Blender Master Pro / Centipede Rigged And Animated 3D Model**
+
+```text
+Superhive page: https://superhivemarket.com/products/centipede-rigged-and-animated-3d-model
+published price observed 2026-10-02: US$10
+Superhive license display: Royalty Free
+published motion set: Attack / Attack 2 / Attack 3 / Rearing / Run / Walk /
+                      Idle 1 / Idle 2 / Idle 3 / Die / Rest Position
+status: LICENSE_TERMS_RECONCILIATION_REQUIRED
+```
+
+The motion set is relevant, especially `Rearing`, but the Fab listing for the same titled asset
+currently displays **Allows usage with AI: No**. Because this project uses an AI-assisted development
+workflow, the candidate is not acquired or adapted until the applicable storefront/license terms are
+reconciled. Do not treat the generic Royalty Free label alone as permission to ignore that restriction.
+
+No paid asset is purchased automatically. Until one candidate is lawfully acquired and passes direct
+clip/scale/contact review, the current Cave Centipede production-spawn gate stays closed.
+
+---
+
 ## 3.5 Nature Spirit external presentation candidate
 
 The pinned Threateningly Mobs donor does not expose accepted attack-specific animation states for

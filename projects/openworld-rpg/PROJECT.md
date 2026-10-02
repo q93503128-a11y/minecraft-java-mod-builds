@@ -415,6 +415,15 @@ This remains a **technical contact binder, not presentation acceptance**. Cave C
 buildup stays fail-closed because the project does not yet have the complete player Poison buildup/proc
 runtime and the R01 canon does not specify Cave Centipede's fixed source-Lv Poison proc damage budget;
 no value is invented. Body Rake / Ceiling Drop also remain unbound to accepted donor presentation.
+A 2026-10-02 byte-level reinspection of the exact pinned Alex dependency confirms this is a real donor
+surface limit, not merely a missing adapter: the head exposes ordinary donor melee contact plus
+procedural locomotion/segment following, but no dedicated Body Rake/Ceiling Drop animation state.
+`R01_ASSET_INTAKE.md` now records the first serious replacement queue instead of leaving that
+blocker abstract. The primary acquisition candidate is Assets_Animated's royalty-free
+`Centipede Monster V1,2,3` family, whose published surface contains three attacks plus GetDown/GetUp
+and locomotion; it remains `PAID_LOCAL_ONLY_ACQUISITION_REQUIRED` until lawful acquisition,
+purchase-time license evidence, exact archive hash, clip playback, Minecraft-scale/contact and
+performance review. No purchase or production promotion is implied by the shortlist.
 The same pinned Threateningly Mobs Nature Spirit inspection exposes only
 `naturehamony_spawn`, `naturehamony_idle` and `naturehamony_end` animation states, with no
 attack-specific animation surface for Rooted Swipe / Earthen Ram / Bloom Quake. Per the external-first
