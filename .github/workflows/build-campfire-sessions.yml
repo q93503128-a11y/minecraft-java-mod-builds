@@ -118,6 +118,12 @@ jobs:
               'data/campfiresessions/structure/external/cheks_mint/plains_library_1.nbt',
               'data/campfiresessions/structure/external/cheks_mint/plains_small_house_1.nbt',
               'data/campfiresessions/structure/external/cheks_mint/plains_small_house_2.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_3.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_4.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_5.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_6.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_7.nbt',
+              'data/campfiresessions/structure/external/cheks_mint/plains_small_house_8.nbt',
               'data/campfiresessions/structure/external/cheks_mint/plains_medium_house_2.nbt',
               'data/campfiresessions/structure/external/cheks_mint/plains_big_house_1.nbt',
               'data/campfiresessions/structure/external/cheks_mint/plains_fisher_cottage_1.nbt',
@@ -150,12 +156,12 @@ jobs:
               assert 'META-INF/campfiresessions/external_structure_manifest.json' in names
               external_manifest = json.loads(z.read('META-INF/campfiresessions/external_structure_manifest.json'))
               assert set(external_manifest['sources']) == {'cheks_mint', 'currents_of_trade'}
-              assert len(external_manifest['assets']) == 13, len(external_manifest['assets'])
+              assert len(external_manifest['assets']) == 19, len(external_manifest['assets'])
               source_counts = {
                   source: sum(asset['source'] == source for asset in external_manifest['assets'])
                   for source in external_manifest['sources']
               }
-              assert source_counts == {'cheks_mint': 12, 'currents_of_trade': 1}, source_counts
+              assert source_counts == {'cheks_mint': 18, 'currents_of_trade': 1}, source_counts
               assert not any('kaisyn' in asset['source_entry'].lower() for asset in external_manifest['assets'])
               assert not any('villageroles' in asset['source_entry'].lower() for asset in external_manifest['assets'])
               assert b'MIT License' in z.read('META-INF/campfiresessions/licenses/cheks_mint_LICENSE.txt')
