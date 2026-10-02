@@ -1,32 +1,61 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.network.FieldCommandPayload;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** Small world-preserving dialogue panel for physical NPC conversations. */
 public final class NpcDialogueScreen extends Screen {
+    private static final String CHOICE_PREFIX = "@@TURNBOUND_CHOICE@@";
     private final String speaker;
     private final String dialogue;
+    private final List<Choice> choices;
     private int panelLeft, panelTop, panelWidth, panelHeight;
     private int scrollLine;
 
+    private record Choice(String label, String command) {}
+
     public NpcDialogueScreen(String speaker, String dialogue) {
+        this(speaker, dialogue, List.of());
+    }
+
+    private NpcDialogueScreen(String speaker, String dialogue, List<Choice> choices) {
         super(Component.literal(speaker == null || speaker.isBlank() ? "대화" : speaker));
         this.speaker = speaker == null ? "" : speaker.trim();
         this.dialogue = dialogue == null ? "" : dialogue.trim();
+        this.choices = choices == null ? List.of() : List.copyOf(choices);
     }
 
     static NpcDialogueScreen decode(String encoded) {
         if (encoded == null) return new NpcDialogueScreen("", "");
-        int split = encoded.indexOf('\n');
-        if (split < 0) return new NpcDialogueScreen("", encoded);
-        return new NpcDialogueScreen(encoded.substring(0, split), encoded.substring(split + 1));
+        String[] lines = encoded.split("\n", -1);
+        String speaker = lines.length == 0 ? "" : lines[0];
+        StringBuilder body = new StringBuilder();
+        List<Choice> choices = new ArrayList<>();
+        for (int i = 1; i < lines.length; i++) {
+            String line = lines[i];
+            if (line.startsWith(CHOICE_PREFIX)) {
+                String raw = line.substring(CHOICE_PREFIX.length());
+                int tab = raw.indexOf('\t');
+                if (tab > 0 && choices.size() < 3) {
+                    String label = raw.substring(0, tab).trim();
+                    String command = raw.substring(tab + 1).trim();
+                    if (!label.isBlank()) choices.add(new Choice(label, command));
+                }
+                continue;
+            }
+            if (!body.isEmpty()) body.append('\n');
+            body.append(line);
+        }
+        return new NpcDialogueScreen(speaker, body.toString(), choices);
     }
 
     @Override
@@ -34,13 +63,37 @@ public final class NpcDialogueScreen extends Screen {
         super.init();
         panelWidth = Math.min(620, Math.max(300, width - 28));
         List<String> lines = wrappedLines();
-        panelHeight = Math.min(200, Math.max(104, 58 + Math.min(lines.size(), 9) * 12));
+        int choiceSpace = choices.isEmpty() ? 0 : 24;
+        panelHeight = Math.min(224, Math.max(104 + choiceSpace, 58 + choiceSpace + Math.min(lines.size(), 9) * 12));
         panelLeft = (width - panelWidth) / 2;
         panelTop = height - panelHeight - 24;
         scrollLine = Math.max(0, Math.min(scrollLine, maxScroll(lines)));
+
+        if (!choices.isEmpty()) {
+            int gap = 4;
+            int x = panelLeft + 14;
+            int available = panelWidth - 96;
+            int buttonW = Math.max(72, (available - gap * (choices.size() - 1)) / choices.size());
+            int y = panelTop + panelHeight - 45;
+            for (int i = 0; i < choices.size(); i++) {
+                Choice choice = choices.get(i);
+                int xx = x + i * (buttonW + gap);
+                addRenderableWidget(new BattleHudButton(
+                        xx, y, buttonW, 17, Component.literal(choice.label()),
+                        TurnboundUiTokens.PRIMARY, ignored -> select(choice)));
+            }
+        }
+
         addRenderableWidget(new BattleHudButton(
                 panelLeft + panelWidth - 68, panelTop + panelHeight - 23, 54, 16,
-                Component.literal("닫기"), TurnboundUiTokens.PRIMARY, ignored -> onClose()));
+                Component.literal("닫기"), TurnboundUiTokens.MUTED, ignored -> onClose()));
+    }
+
+    private void select(Choice choice) {
+        if (choice != null && !choice.command().isBlank() && !"CLOSE".equals(choice.command())) {
+            ClientPacketDistributor.sendToServer(new FieldCommandPayload(choice.command()));
+        }
+        onClose();
     }
 
     @Override public void extractBackground(@NotNull GuiGraphicsExtractor graphics,int mouseX,int mouseY,float partialTick){}
@@ -63,7 +116,7 @@ public final class NpcDialogueScreen extends Screen {
         if (max > 0) {
             int trackX = panelLeft + panelWidth - 11;
             int trackTop = panelTop + 30;
-            int trackBottom = panelTop + panelHeight - 30;
+            int trackBottom = panelTop + panelHeight - (choices.isEmpty() ? 30 : 54);
             graphics.fill(trackX, trackTop, trackX + 2, trackBottom, 0x553A3A3A);
             int trackH = Math.max(1, trackBottom - trackTop);
             int thumbH = Math.max(10, trackH * visible / Math.max(visible, lines.size()));
@@ -89,7 +142,7 @@ public final class NpcDialogueScreen extends Screen {
     }
 
     private int visibleLines() {
-        return Math.max(2, (panelHeight - 62) / 12);
+        return Math.max(2, (panelHeight - (choices.isEmpty() ? 62 : 86)) / 12);
     }
 
     private int maxScroll(List<String> lines) {

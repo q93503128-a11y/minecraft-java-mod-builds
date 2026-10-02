@@ -12,6 +12,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class FieldNetwork {
     public static final String PROTOCOL = "turnbound-field-alpha12";
+    public record DialogueChoice(String label, String command) {}
 
     private FieldNetwork() {}
 
@@ -57,10 +58,24 @@ public final class FieldNetwork {
     }
 
     public static void showDialogue(ServerPlayer player, String speaker, String dialogue) {
+        showDialogueChoices(player, speaker, dialogue, java.util.List.of());
+    }
+
+    public static void showDialogueChoices(ServerPlayer player, String speaker, String dialogue, java.util.List<DialogueChoice> choices) {
         if (player == null) return;
         String cleanSpeaker = speaker == null ? "" : speaker.replace('\n', ' ').replace('\r', ' ');
         String cleanDialogue = dialogue == null ? "" : dialogue.replace('\r', ' ');
-        PacketDistributor.sendToPlayer(player, new NpcDialoguePayload(cleanSpeaker + "\n" + cleanDialogue));
+        StringBuilder encoded = new StringBuilder(cleanSpeaker).append('\n').append(cleanDialogue);
+        if (choices != null) {
+            int count = 0;
+            for (DialogueChoice choice : choices) {
+                if (choice == null || choice.label() == null || choice.label().isBlank() || count++ >= 3) continue;
+                String label = choice.label().replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').trim();
+                String command = choice.command() == null ? "" : choice.command().replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').trim();
+                encoded.append("\n@@TURNBOUND_CHOICE@@").append(label).append('\t').append(command);
+            }
+        }
+        PacketDistributor.sendToPlayer(player, new NpcDialoguePayload(encoded.toString()));
     }
 
     public static void close(ServerPlayer player) {

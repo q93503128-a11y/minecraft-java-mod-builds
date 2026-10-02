@@ -10,6 +10,8 @@ final class DrabyelLocalArcProgress {
     static final String SCOUT="DRABYEL_LOCAL_SCOUT";
     static final String RECORD="DRABYEL_LOCAL_RECORD";
     static final String COMPLETE="DRABYEL_LOCAL_COMPLETE";
+    static final String REGIONAL_ACCEPTED="CAPITAL_VALLEY_REGIONAL_ACCEPTED";
+    static final String REGIONAL_COMPLETE="CAPITAL_VALLEY_REGIONAL_COMPLETE";
     private static final Set<String> CLUES=Set.of(CRATE,SCOUT,RECORD);
 
     private DrabyelLocalArcProgress(){}
@@ -31,11 +33,36 @@ final class DrabyelLocalArcProgress {
     static int count(Set<String> flags){int n=0;if(flags!=null)for(String clue:CLUES)if(flags.contains(clue))n++;return n;}
     static boolean complete(Set<String> flags){return flags!=null&&(flags.contains(COMPLETE)||count(flags)>=2);}
 
+    static boolean regionalAccepted(Set<String> flags){return flags!=null&&flags.contains(REGIONAL_ACCEPTED);}
+    static boolean regionalComplete(Set<String> flags){return flags!=null&&flags.contains(REGIONAL_COMPLETE);}
+
     static boolean regionalGateReady(Set<String> clears,Set<String> flags){
         if(!complete(flags)||clears==null)return false;
         return clears.contains("CV_DRABYEL_NORTH")
                 ||clears.contains(DrehmalContentUnlocks.WARNING_CAVE_ELITE)
                 ||clears.contains(DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
+    }
+
+    static boolean acceptRegional(ServerPlayer player){
+        if(player==null||player.level().getServer()==null)return false;
+        ExternalWorldSavedData data=ExternalWorldSavedData.get(player.level().getServer());
+        Set<String> flags=data.onboardingFlags(player.getUUID());
+        if(!complete(flags)||regionalAccepted(flags))return false;
+        data.markOnboardingFlag(player.getUUID(),REGIONAL_ACCEPTED);
+        data.markOnboardingFlag(player.getUUID(),DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED);
+        reconcileRegional(player);
+        return true;
+    }
+
+    static boolean reconcileRegional(ServerPlayer player){
+        if(player==null||player.level().getServer()==null)return false;
+        ExternalWorldSavedData data=ExternalWorldSavedData.get(player.level().getServer());
+        Set<String> flags=data.onboardingFlags(player.getUUID());
+        if(!regionalAccepted(flags)||regionalComplete(flags))return false;
+        Set<String> clears=CampaignProgressStore.snapshot(player.getUUID()).clearedEncounters();
+        if(!regionalGateReady(clears,flags))return false;
+        data.markOnboardingFlag(player.getUUID(),REGIONAL_COMPLETE);
+        return true;
     }
 
     static boolean mark(ServerPlayer player,String flag){

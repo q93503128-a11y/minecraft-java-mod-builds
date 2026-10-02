@@ -145,6 +145,20 @@ public final class ExternalWorldBootstrap {
                 && DrehmalMountService.handle(player, parts[1])) {
             return;
         }
+        if (parts.length == 2 && "QUEST_ACCEPT".equals(parts[0]) && "CAPITAL_VALLEY".equals(parts[1])
+                && DrabyelHubServiceRuntime.nearRole(player, "GREETER")) {
+            if (DrabyelLocalArcProgress.acceptRegional(player)) {
+                FieldNetwork.showDialogue(player, "문지기 아렌",
+                        "캐피털 밸리 정찰 의뢰를 맡겼습니다. M 지도에 표시한 세 지역 목표 중 하나를 해결하고 돌아오세요.");
+            }
+            refreshFieldContext(player);
+            return;
+        }
+        if (parts.length == 2 && "CONTRACT_ACCEPT".equals(parts[0])
+                && RegionalContractService.accept(player, parts[1])) {
+            refreshFieldContext(player);
+            return;
+        }
         refreshFieldContext(player);
     }
 
