@@ -2015,3 +2015,52 @@ Latest user direction before the next client playtest:
 - selected-two targeting is explicit player choice, not an arbitrary server-selected secondary victim;
 - Gauge +100 remains a meaningful small tempo nudge, but dedicated tempo-support skills may use materially larger 18~45% threshold movement;
 - no absolute SPD ceiling is introduced. High-SPD investment is a valid build and metagame axis; balance is judged by action count/TTK and opportunity cost rather than hard-capping the result.
+
+
+## Chapter 1 combat pacing telemetry — Build #998
+
+Verified code commit:
+`db0f01818ec45cae2c1a0995a93bb010c717534f`
+
+The Chapter 1 pre-playtest combat pass now has a deterministic same-level/no-equipment starter-party regression suite covering:
+- Capital Valley opening/repeatable/Elite/world-boss encounters;
+- west-road 2/3/4-unit packs and optional Elite encounters;
+- Av'Sal outskirts/relay packs;
+- fixed Karnon boss roster.
+
+The probe checks ally regular-action budget, enemy-action overrun, victory and minimum surviving regular allies. AUTO remains a regression probe rather than an optimal-play target.
+
+Measured correction trigger:
+- Karnon previously resolved at 61 ally regular actions / 22 enemy actions while all four regular allies survived.
+- This was classified as HP-only drag, not healthy difficulty.
+- Chapter 1 encounter HP pacing was reduced selectively while canonical enemy attacks, skills and boss mechanics were preserved.
+- Graul remains on a deliberately longer world-boss budget instead of being compressed to common-fight pacing.
+
+Build TURNBOUND #998:
+- run 37006038509
+- Gradle tests/build: PASS
+- ChapterOneCombatPacingTest: PASS
+- NeoForge dedicated-server smoke: PASS — Done (4.765s)
+- JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+- artifact: turnbound-v04-workbranch / ID 11226140422
+
+Hashes:
+- JAR `turnbound-0.1.0-alpha.17.jar`
+  - SHA-256 `2cd80abe10abd3e236cea17eef4f1d7f89ca31d2f37384396945a08aad93a8a2`
+- one-click `TURNBOUND-oneclick-0.1.0-alpha.17.mrpack`
+  - SHA-256 `1f25e69ddc30f990da1b2493b220b375efe18bd7d41af0b382124bf023f2d2eb`
+- uploaded artifact ZIP
+  - SHA-256 `ba410dd736f486cc4e1ed0ce4e6409341c83b0b5b20c14a0f66eb8374a714319`
+
+Validation:
+- CODE REVIEWED: YES
+- AUTOMATED TESTS: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO for this pacing revision
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO

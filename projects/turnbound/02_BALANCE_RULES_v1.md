@@ -695,11 +695,29 @@ TURNBOUND는 외부 게임의 수치표를 복사하지 않고 **플레이 감�
 ### TURNBOUND first-route 계측 계약
 AUTO는 최적 플레이가 아니라 회귀 감지용 deterministic probe로만 사용한다.
 
-초기 4인 파티 기준:
+두 종류의 probe를 구분한다.
+
+1. 새 게임 Lv1 스타터 파티의 초반 진행 회귀:
 - `CV_FIRST_COMMON`: 아군 regular action 3~6
 - `CV_DRABYEL_ROAD`: 6~12
 - `CV_WARNING_CAVE_ELITE`: 10~18
-- 실제 client playtest가 이 범위보다 체감상 길거나 짧으면 client feel을 우선한다.
+
+2. 조우 권장 레벨과 같은 레벨의 **무장비 스타터 파티** Chapter 1 회귀:
+- 일반 2~4체 pack: 조우 구성에 따라 대체로 2~15 아군 regular action
+- 단일/선택 Elite: 8~20
+- `CV_WORLD_BOSS_GRAUL`: 24~42
+- `AV_FIRST_BOSS`: 24~42
+- 각 테스트는 승리뿐 아니라 적 행동 수 과다와 baseline AUTO에서 2명 미만 생존까지 함께 실패 처리한다.
+- 이 범위는 자동 수치 회귀 방지선이지 실제 플레이의 목표 시간을 대신하지 않는다.
+- 실제 client playtest가 체감상 길거나 짧으면 client feel을 우선한다.
+
+2026-10-02 telemetry에서 확인한 대표 문제:
+- 조정 전 `CV_HOUND_ROAM`: 17 ally actions
+- 조정 전 `CV_WORLD_BOSS_GRAUL`: 45 ally actions
+- 조정 전 `AV_CH1_GORGE_BREAKER`: 21 ally actions
+- 조정 전 `AV_FIRST_BOSS`: 61 ally actions / enemy 22 actions / regular ally 4명 전원 생존
+- 특히 Karnon은 위험도보다 HP 체류시간이 길어진 상태였으므로 canonical kit/attack을 약화하지 않고 encounter HP pacing만 낮췄다.
+- 이후 Chapter 1 전체 telemetry contract가 자동 테스트에서 통과한다.
 
 Capital Valley Gold:
 - 첫 visible common: 120
@@ -748,13 +766,19 @@ This replaces the earlier Lv8/Lv16 hard-gate interpretation.
 
 TURNBOUND는 일반 장비 슬롯이 무기/방어구/장신구 3개이고 전용 장비는 별도 슬롯이다. 무작위 부옵 리롤이나 세트 파밍을 주 성장 노동으로 두지 않으므로, 일반 장비 한 부위의 수치가 너무 작아 선택 체감이 사라지는 것도 실패로 본다.
 
-현재 생산 목표:
-- T1 주 능력치는 공격 7~8%, 생명력 10%, 방어력 9%, 속도 +3 수준부터 시작한다.
-- T2는 공격 10~11%, 생명력 14%, 방어력 13%, 속도 +5 수준으로 올라간다.
-- +10 강화는 주 능력치만 기본값 대비 40% 상승한다.
-- 핵심 원칙은 **이전 티어 +10 주 능력치가 다음 티어 +0 부근에 닿는 것**이다. 좋은 T1을 강화한 투자가 T2 한 개를 얻는 순간 완전히 폐기되지 않게 한다.
-- 보조 능력치는 강화로 반복 상승하지 않는다.
-- 속도는 행동 경제에 직접 영향을 주므로 % 공격/생명/방어보다 작은 flat 수치로 유지한다.
+현재 production 데이터:
+- T1 weapon main: ATK +16~18%
+- T1 armor main: HP +24% 또는 DEF +100%
+- T1 accessory main: SPD +5 또는 ATK +12%
+- T2 weapon main: ATK +25~27%
+- T2 armor main: HP +36% 또는 DEF +150%
+- T2 accessory main: SPD +10 또는 HP +20%
+- secondary stat은 고정이며 강화로 반복 상승하지 않는다.
+- percentage main stat은 +1마다 **+0 주옵의 10%**가 추가되어 +10에서 +0 주옵의 200%가 된다.
+- SPD main stat은 +1마다 flat SPD +1이 추가된다.
+- 따라서 이전의 “T1 7~8% / +10 총 +40% / 이전 티어 +10 ~= 다음 티어 +0” 기준은 폐기되었다.
+- 현재는 장비 슬롯이 적고 랜덤 부옵 노동이 없기 때문에 강화된 이전 티어가 다음 티어 +0보다 명확히 강하며, 새 티어도 몇 단계 강화한 뒤 교체 가치가 생기게 한다.
+- SPD에는 최종 상한을 두지 않는다. 높은 SPD는 다른 주옵/trait를 포기하고 얻는 정식 행동경제 build다.
 - T2 이후에는 raw stat보다 고유 효과가 장비 선택을 가르는 비중을 점차 높인다.
 
 제1장 장비 루프:
