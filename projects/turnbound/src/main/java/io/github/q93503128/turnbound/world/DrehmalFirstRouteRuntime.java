@@ -189,10 +189,20 @@ public final class DrehmalFirstRouteRuntime {
                 }
             }
             if (DrabyelLocalArcProgress.complete(flags)
+                    && !DrabyelLocalArcProgress.regionalAccepted(flags)) {
+                FieldUiSnapshot.Navigation greeter = greeterNavigation(player);
+                if (greeter.active()) return greeter;
+            }
+            if (DrabyelLocalArcProgress.complete(flags)
                     && DrabyelLocalArcProgress.regionalAccepted(flags)
                     && !DrabyelLocalArcProgress.regionalGateReady(clears, flags)) {
                 FieldUiSnapshot.Navigation regional = regionalGoalNavigation(player, clears);
                 if (regional.active()) return regional;
+            }
+            if (DrabyelLocalArcProgress.regionalComplete(flags)
+                    && !AvsalExpansionProgress.briefed(flags)) {
+                FieldUiSnapshot.Navigation greeter = greeterNavigation(player);
+                if (greeter.active()) return greeter;
             }
             return FieldUiSnapshot.Navigation.none();
         }
@@ -204,6 +214,19 @@ public final class DrehmalFirstRouteRuntime {
         }
         return DrehmalRouteNavigationRules.target(
                 DrehmalAdaptiveRoutePlacement.productionSites(player), player.getX(), player.getZ(), flags, clears);
+    }
+
+    private static FieldUiSnapshot.Navigation greeterNavigation(ServerPlayer player) {
+        var greeter=DrabyelHubServiceRuntime.serviceByRole(player,"GREETER");
+        if(greeter!=null&&greeter.runtimePosition()!=null){
+            var pos=greeter.runtimePosition();
+            return new FieldUiSnapshot.Navigation(
+                    greeter.locator(),greeter.playerLabel(),pos.x()+0.5D,pos.z()+0.5D);
+        }
+        var hub=DrehmalWorldProfile.enabled(DrehmalWorldProfile.HUB_LOCATOR);
+        return hub==null
+                ?FieldUiSnapshot.Navigation.none()
+                :new FieldUiSnapshot.Navigation(hub.locator(),"문지기 아렌",hub.x()+0.5D,hub.z()+0.5D);
     }
 
     private static FieldUiSnapshot.Navigation regionalGoalNavigation(
