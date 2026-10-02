@@ -377,6 +377,145 @@ tasks.register('inspectCreatureFoundationDependencies') {
 }
 
 
+tasks.register('inspectR01CreatureDependencySurface') {
+    group = 'verification'
+    description = 'Records exact pinned dependency class/resource surfaces for the R01 creature roster without copying donor assets.'
+
+    doLast {
+        def resolved = configurations.creatureFoundation.resolve().toList()
+        def alex = resolved.find { it.name == 'alexs-mobs-continued-1635121-8856579.jar' }
+        def threateningly = resolved.find { it.name == 'threateninglly-mobs-continued-1637799-8804647.jar' }
+        if (alex == null || threateningly == null) {
+            throw new GradleException("Pinned R01 creature dependency JARs were not resolved: ${resolved*.name}")
+        }
+
+        [alex, threateningly].each { file ->
+            def expected = expectedCreatureFoundationSha256[file.name]
+            def actual = sha256Of(file)
+            if (expected == null || !actual.equalsIgnoreCase(expected)) {
+                throw new GradleException(
+                        "R01 creature dependency byte mismatch for ${file.name}: expected ${expected}, got ${actual}"
+                )
+            }
+        }
+
+        def output = layout.buildDirectory.file('reports/m0/r01-creature-dependency-surface.txt').get().asFile
+        output.parentFile.mkdirs()
+        output.text = ''
+
+        def targets = [
+                [file: alex, label: 'ALEXS_MOBS', tokens: [
+                        'gazelle', 'bison', 'raccoon', 'crow',
+                        'grizzly', 'rattlesnake', 'cave_centipede', 'cavecentipede'
+                ]],
+                [file: threateningly, label: 'THREATENINGLY', tokens: [
+                        'louxia', 'steelboar', 'steel_boar',
+                        'nature_spirit', 'naturespirit', 'regalhart', 'earthloong'
+                ]]
+        ]
+
+        def javap = new File(System.getProperty('java.home'), 'bin/javap')
+        if (!javap.isFile()) {
+            throw new GradleException("javap not found in active Java toolchain: ${javap}")
+        }
+
+        targets.each { target ->
+            def file = target.file as File
+            def zip = new java.util.zip.ZipFile(file)
+            try {
+                def allEntries = java.util.Collections.list(zip.entries())
+                        .collect { it.name }
+                        .sort()
+
+                output << "\n[${target.label}]\n"
+                target.tokens.each { token ->
+                    def normalized = token.toLowerCase(java.util.Locale.ROOT)
+                    def matches = allEntries.findAll {
+                        it.toLowerCase(java.util.Locale.ROOT).contains(normalized)
+                    }
+                    def prefix = "R01_CREATURE_ENTRY source=${target.label} token=${token}"
+                    if (matches.isEmpty()) {
+                        println "${prefix} entry=(none)"
+                        output << "${prefix} entry=(none)" << System.lineSeparator()
+                    } else {
+                        matches.each { entry ->
+                            println "${prefix} entry=${entry}"
+                            output << "${prefix} entry=${entry}" << System.lineSeparator()
+                        }
+                    }
+                }
+
+                def classEntries = allEntries.findAll { entry ->
+                    if (!entry.endsWith('.class')) return false
+                    def lower = entry.toLowerCase(java.util.Locale.ROOT)
+                    target.tokens.any { token ->
+                        lower.contains(token.toLowerCase(java.util.Locale.ROOT).replace('_', ''))
+                                || lower.contains(token.toLowerCase(java.util.Locale.ROOT))
+                    }
+                }.unique().sort()
+
+                classEntries.each { entry ->
+                    def className = entry.substring(0, entry.length() - '.class'.length()).replace('/', '.')
+                    def process = new ProcessBuilder(
+                            javap.absolutePath,
+                            '-classpath',
+                            file.absolutePath,
+                            '-p',
+                            '-c',
+                            '-constants',
+                            className
+                    ).redirectErrorStream(true).start()
+                    def disassembly = process.inputStream.getText('UTF-8')
+                    def exitCode = process.waitFor()
+                    if (exitCode != 0) {
+                        throw new GradleException(
+                                "javap failed for ${className} with exit ${exitCode}: ${disassembly}"
+                        )
+                    }
+                    output << "\n===== ${target.label} ${className} =====\n"
+                    output << disassembly
+                    if (!disassembly.endsWith(System.lineSeparator())) {
+                        output << System.lineSeparator()
+                    }
+                    disassembly.readLines()
+                            .findAll { line ->
+                                def lower = line.toLowerCase(java.util.Locale.ROOT)
+                                target.tokens.any { token ->
+                                    lower.contains(token.toLowerCase(java.util.Locale.ROOT))
+                                }
+                            }
+                            .each { line ->
+                                println "R01_CREATURE_JAVAP source=${target.label} class=${className} line=${line.trim()}"
+                            }
+                }
+
+                def candidateJson = allEntries.findAll { entry ->
+                    def lower = entry.toLowerCase(java.util.Locale.ROOT)
+                    lower.endsWith('.json') && target.tokens.any { token ->
+                        lower.contains(token.toLowerCase(java.util.Locale.ROOT))
+                    }
+                }.sort()
+                candidateJson.each { entryName ->
+                    def entry = zip.getEntry(entryName)
+                    if (entry == null || entry.isDirectory()) return
+                    def text = zip.getInputStream(entry).getText('UTF-8')
+                    def compact = text.replaceAll('\\s+', ' ')
+                    target.tokens.each { token ->
+                        if (compact.toLowerCase(java.util.Locale.ROOT)
+                                .contains(token.toLowerCase(java.util.Locale.ROOT))) {
+                            println "R01_CREATURE_JSON source=${target.label} entry=${entryName} token=${token}"
+                        }
+                    }
+                }
+            } finally {
+                zip.close()
+            }
+        }
+
+        println "R01_CREATURE_DEPENDENCY_SURFACE_PASS report=${output}"
+    }
+}
+
 tasks.register('inspectEarthloongDependencySurface') {
     group = 'verification'
     description = 'Records the exact Earthloong class/resource surface and summarizes pinned donor animation motion without copying raw asset data.'

@@ -53,6 +53,9 @@ jobs:
       - name: Test and build M0 core
         run: ./gradlew --no-daemon clean test build --stacktrace
 
+      - name: Inspect pinned R01 creature registry surface
+        run: ./gradlew --no-daemon inspectR01CreatureDependencySurface --stacktrace
+
       - name: Inspect pinned Earthloong dependency surface
         shell: bash
         run: |
