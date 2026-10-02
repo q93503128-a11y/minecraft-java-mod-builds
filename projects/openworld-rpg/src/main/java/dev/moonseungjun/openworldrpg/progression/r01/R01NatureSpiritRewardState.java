@@ -283,7 +283,12 @@ public record R01NatureSpiritRewardState(
             requireUuid(playerUuid);
             Objects.requireNonNull(rewardClass, "rewardClass");
             Objects.requireNonNull(plan, "plan");
-            if (!rewardId.equals(rewardId(encounterId, playerUuid))) {
+            if (!rewardId.equals(
+                    R01NatureSpiritRewardState.rewardId(
+                            encounterId,
+                            playerUuid
+                    )
+            )) {
                 throw new IllegalArgumentException(
                         "Nature Spirit pending rewardId does not match encounter/player."
                 );
