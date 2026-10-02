@@ -143,6 +143,97 @@
       "rewardCrystal": 500,
       "rewardGold": 4500,
       "rewardXp": 1400
+    },
+    {
+      "id": "SQ_AV05_ROADBLOCK",
+      "kind": "SIDE",
+      "title": "갈림길을 막은 자들",
+      "regionLabel": "Av'Sal",
+      "objective": "가도 경비병 유라의 부탁대로 서쪽 갈림길의 약탈대를 정리하십시오.",
+      "activationFlag": "AVSAL_SQ_ROADBLOCK_OFFERED",
+      "completionFlag": "",
+      "encounterId": "AV_CH1_CROSSROAD_RAIDERS",
+      "rewardCrystal": 220,
+      "rewardGold": 2800,
+      "rewardXp": 800
+    },
+    {
+      "id": "SQ_AV06_BROKEN_ESCORT",
+      "kind": "SIDE",
+      "title": "멈춰 선 호송대",
+      "regionLabel": "Av'Sal",
+      "objective": "운송대원 비엔이 가리킨 무너진 호송로의 매복대를 격파하십시오.",
+      "activationFlag": "AVSAL_SQ_ESCORT_OFFERED",
+      "completionFlag": "",
+      "encounterId": "AV_CH1_BROKEN_ESCORT",
+      "rewardCrystal": 280,
+      "rewardGold": 3600,
+      "rewardXp": 1000
+    },
+    {
+      "id": "SQ_AV07_WAYMARK",
+      "kind": "SIDE",
+      "title": "길표식의 망자",
+      "regionLabel": "Av'Sal",
+      "objective": "길표식지기 토렌의 부탁대로 낡은 길표식 주변의 망자 무리를 정리하십시오.",
+      "activationFlag": "AVSAL_SQ_WAYMARK_OFFERED",
+      "completionFlag": "",
+      "encounterId": "AV_CH1_WAYMARK_WALKERS",
+      "rewardCrystal": 260,
+      "rewardGold": 3400,
+      "rewardXp": 950
+    },
+    {
+      "id": "SQ_AV08_OUTSKIRT_HUNT",
+      "kind": "SIDE",
+      "title": "폐허 냄새를 좇는 것들",
+      "regionLabel": "Av'Sal",
+      "objective": "사냥꾼 메르가 지목한 아브살 외곽 풀숲의 추적견 무리를 정리하십시오.",
+      "activationFlag": "AVSAL_SQ_OUTSKIRT_HUNT_OFFERED",
+      "completionFlag": "",
+      "encounterId": "AV_CH1_OUTSKIRT_HOUNDS",
+      "rewardCrystal": 300,
+      "rewardGold": 4200,
+      "rewardXp": 1150
+    },
+    {
+      "id": "SQ_AV09_SPORE_EDGE",
+      "kind": "SIDE",
+      "title": "길가에 번진 포자",
+      "regionLabel": "Av'Sal",
+      "objective": "운송인 데른과 접촉한 뒤 가도 가장자리의 포자등불과 뿌리수호병을 정리하십시오.",
+      "activationFlag": "AVSAL_ROAD_COURIER_OFFERED",
+      "completionFlag": "",
+      "encounterId": "AV_CH1_SPORE_EDGE",
+      "rewardCrystal": 220,
+      "rewardGold": 3000,
+      "rewardXp": 850
+    },
+    {
+      "id": "SQ_AV10_WATERLINE",
+      "kind": "SIDE",
+      "title": "낮은 수로의 울림",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살 외곽에 도착한 뒤 낮은 수로에 몰려든 범람 무리를 제거하십시오.",
+      "activationFlag": "AVSAL_MQ_AV01_COMPLETE",
+      "completionFlag": "",
+      "encounterId": "AV_CH1_WATERLINE_SWARM",
+      "rewardCrystal": 340,
+      "rewardGold": 4800,
+      "rewardXp": 1300
+    },
+    {
+      "id": "SQ_AV11_RUSTED_COLUMN",
+      "kind": "SIDE",
+      "title": "폐허 앞의 녹슨 대열",
+      "regionLabel": "Av'Sal",
+      "objective": "아브살 외곽에 도착한 뒤 폐허 앞 길을 막는 녹슨 파수기 대열을 정리하십시오.",
+      "activationFlag": "AVSAL_MQ_AV01_COMPLETE",
+      "completionFlag": "",
+      "encounterId": "AV_CH1_RUSTED_COLUMN",
+      "rewardCrystal": 380,
+      "rewardGold": 5200,
+      "rewardXp": 1450
     }
   ]
 }
