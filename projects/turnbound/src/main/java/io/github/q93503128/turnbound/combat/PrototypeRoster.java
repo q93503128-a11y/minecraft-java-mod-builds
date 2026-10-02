@@ -24,15 +24,15 @@ public final class PrototypeRoster {
 
     public static CombatantDefinition lumea() {
         return new CombatantDefinition("P02", "루메아", new BattleStats(780, 90, 75, 114), "p02_accelerate", List.of(
-                new SkillDefinition("p02_accelerate", "가속", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.gaugeAdd(120)),
-                        "다른 아군의 Gauge +120. 자신보다 느린 아군은 +40 추가.", List.of("OTHER_ALLY_IF_AVAILABLE"), Map.of()),
-                new SkillDefinition("p02_time_leap", "시간 도약", TargetRule.ALLY_SINGLE, 4, List.of(SkillEffect.gaugeAdd(300)),
-                        "다른 아군의 Gauge +300. 자신보다 느린 아군은 +60 추가.", List.of("SELF_FORBIDDEN"), Map.of()),
-                new SkillDefinition("p02_delay_field", "시차 봉쇄", TargetRule.ENEMY_SINGLE, 3,
-                        List.of(SkillEffect.damage(0.85), SkillEffect.gaugeAdd(-180)))),
+                new SkillDefinition("p02_accelerate", "가속", TargetRule.ALLY_SINGLE, 0, List.of(SkillEffect.gaugeAdd(180)),
+                        "다른 아군의 Gauge +180. 자신보다 느린 아군은 +60 추가.", List.of("OTHER_ALLY_IF_AVAILABLE"), Map.of()),
+                new SkillDefinition("p02_time_leap", "시간 도약", TargetRule.ALLY_SINGLE, 4, List.of(SkillEffect.gaugeAdd(360)),
+                        "다른 아군의 Gauge +360. 자신보다 느린 아군은 +90 추가.", List.of("SELF_FORBIDDEN"), Map.of()),
+                new SkillDefinition("p02_delay_field", "시차 봉쇄", TargetRule.ENEMY_TWO, 3,
+                        List.of(SkillEffect.damage(0.65), SkillEffect.gaugeAdd(-140)))),
                 5, List.of("P02_TEMPO_WINDOW"), Map.of(
-                        "slowBasicBonus", 40.0,
-                        "slowLeapBonus", 60.0,
+                        "slowBasicBonus", 60.0,
+                        "slowLeapBonus", 90.0,
                         "awakenPreciseGauge", 60.0));
     }
 
@@ -41,11 +41,11 @@ public final class PrototypeRoster {
                 new SkillDefinition("p03_guard_stance", "방패 강타", TargetRule.ENEMY_SINGLE, 0, List.of(SkillEffect.damage(0.80))),
                 new SkillDefinition("p03_guard_transfer", "보호 전환", TargetRule.ALLY_SINGLE, 3, List.of(SkillEffect.guardRedirect(0.65, 2)),
                         "다른 아군의 단일 직접 피해 65%를 대신 받습니다.", List.of("SELF_FORBIDDEN"), Map.of()),
-                new SkillDefinition("p03_shield_pressure", "진동 방패", TargetRule.ENEMY_SINGLE, 2,
-                        List.of(SkillEffect.damage(0.90), SkillEffect.gaugeAdd(-100)))),
+                new SkillDefinition("p03_shield_pressure", "진동 방패", TargetRule.ENEMY_TWO, 2,
+                        List.of(SkillEffect.damage(0.65), SkillEffect.gaugeAdd(-80)))),
                 4, List.of("P03_GUARD"), Map.of(
                         "guardMax", 100.0, "basicBarrier", 0.04, "counterPotency", 0.45,
-                        "guardPressurePotency", 1.30, "guardPressureExtraDelay", -80.0,
+                        "guardPressurePotency", 0.95, "guardPressureExtraDelay", -60.0,
                         "guardPressureBarrier", 0.08, "awakenRedirectReduction", 0.30,
                         "awakenPartyBarrier", 0.06));
     }
