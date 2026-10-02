@@ -86,9 +86,9 @@ final class BattleEngineTest {
 
     @Test
     void signatureRulesChangeTempoAndLowHpBehavior() {
-        SkillDefinition grant = new SkillDefinition("grant","Grant",TargetRule.ALLY_SINGLE,0,List.of(SkillEffect.gaugeAdd(100)));
+        SkillDefinition grant = new SkillDefinition("p02_accelerate","Grant",TargetRule.ALLY_SINGLE,0,List.of(SkillEffect.gaugeAdd(100)));
         CombatantDefinition lumea = new CombatantDefinition("P02","Lumea",new BattleStats(800,90,70,114),
-                "grant",List.of(grant),5,List.of("SIG_P02_BASIC_SELF_GAUGE_60"),java.util.Map.of());
+                "p02_accelerate",List.of(grant),5,List.of("SIG_P02_BASIC_SELF_GAUGE_60"),java.util.Map.of());
         CombatantState l=new CombatantState("l",lumea,CombatantSide.ALLY,0);
         CombatantState a=new CombatantState("a",unit("A",9999,10,10,90),CombatantSide.ALLY,1);
         CombatantState e=new CombatantState("e",unit("E",9999,10,10,80),CombatantSide.ENEMY,2);
