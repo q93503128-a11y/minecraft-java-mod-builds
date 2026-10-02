@@ -412,7 +412,8 @@ tasks.register('inspectR01CreatureDependencySurface') {
                 ]],
                 [file: threateningly, label: 'THREATENINGLY', tokens: [
                         'louxia', 'steelboar', 'steel_boar',
-                        'nature_spirit', 'naturespirit', 'regalhart', 'earthloong'
+                        'nature_spirit', 'naturespirit', 'nature_hamony', 'naturehamony',
+                        'regalhart', 'earthloong'
                 ], binaryNeedles: [
                         'nature_hamony', 'nature_spirit', 'naturespirit'
                 ]]
@@ -512,7 +513,8 @@ tasks.register('inspectR01CreatureDependencySurface') {
                     }
                     def inspectionNeedles =
                             (target.tokens + target.binaryNeedles).unique()
-                    disassembly.readLines()
+                    def disassemblyLines = disassembly.readLines()
+                    disassemblyLines
                             .findAll { line ->
                                 def lower = line.toLowerCase(java.util.Locale.ROOT)
                                 inspectionNeedles.any { token ->
@@ -522,6 +524,28 @@ tasks.register('inspectR01CreatureDependencySurface') {
                             .each { line ->
                                 println "R01_CREATURE_JAVAP source=${target.label} class=${className} line=${line.trim()}"
                             }
+
+                    def deepSurfaceClass = className.endsWith('.NatureHamonyEntity')
+                            || className.endsWith('.EntityCentipedeHead')
+                    if (deepSurfaceClass) {
+                        def deepNeedles = [
+                                'attack', 'hurt', 'tick', 'aist', 'goal', 'animation',
+                                'data_', 'target', 'poison', 'effect', 'damage',
+                                'speed', 'move', 'navigation', 'look', 'sound'
+                        ]
+                        disassemblyLines
+                                .findAll { line ->
+                                    def trimmed = line.trim()
+                                    def lower = trimmed.toLowerCase(java.util.Locale.ROOT)
+                                    trimmed.startsWith('public ')
+                                            || trimmed.startsWith('protected ')
+                                            || trimmed.startsWith('private ')
+                                            || deepNeedles.any { needle -> lower.contains(needle) }
+                                }
+                                .each { line ->
+                                    println "R01_CREATURE_DEEP_SURFACE source=${target.label} class=${className} line=${line.trim()}"
+                                }
+                    }
                 }
 
                 def candidateJson = allEntries.findAll { entry ->
