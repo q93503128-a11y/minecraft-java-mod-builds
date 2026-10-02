@@ -340,7 +340,7 @@ public final class MagePhaseStepRuntime {
                     target,
                     nowTick
             );
-            if (!control.strongerControlActive()
+            if (!control.suppressedByStrongerControl()
                     && field.markControlContributionPublished(
                             target.getUUID()
                     )) {
