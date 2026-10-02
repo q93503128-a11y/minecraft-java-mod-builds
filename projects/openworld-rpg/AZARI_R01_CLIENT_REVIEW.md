@@ -337,3 +337,74 @@ R01 IMPLEMENTED: NO
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
+
+
+## 10. Production-source promotion contract — 2026-10-02
+
+The runtime promotion path is now mechanically reachable without weakening the current candidate
+gate.
+
+Spatial authority uses two independent conditions:
+
+```text
+dataset source status
++ individual binding status
+```
+
+Current bundled review data remains:
+
+```text
+source_status = actual_r01_slice_candidate
+```
+
+Under that source status, an accidentally edited individual `production` entry is rejected by
+validation and production accessors remain closed.
+
+After actual client/world acceptance, the dataset may be deliberately promoted to:
+
+```text
+source_status = actual_r01_slice_production
+```
+
+Only entries explicitly marked `production` then become visible to runtime gameplay. Historical
+review volumes may remain `candidate` provenance in the same file. They do not need to be
+misrepresented as final room geometry.
+
+Final production volumes use:
+
+```text
+review_mode = runtime_authored
+```
+
+A review probe (`natural_seam`, `transition_probe`, `solid_carve_probe`) cannot itself be
+flagged as a production runtime volume.
+
+Alderford structure binding follows the same source-level rule. Exact accepted compositions may
+only become live after the structure dataset is explicitly promoted from
+`family_bound_composition_gated` to `production_composition_bound`; the promoted source requires
+all 15 shells, 9 services and 5 properties to be production-ready with accepted exact composition
+IDs.
+
+This work removes an implementation dead-end. It does **not** promote any current coordinate,
+structure, service, property, Quarry room or Earthloong arena.
+
+Verification:
+
+- code state: `02c73c66f656bfee4aa8c77565bdeafe50c02c82`;
+- Build Openworld RPG run `36961511251`: **SUCCESS**;
+- unit tests / build: PASS;
+- pinned R01 creature surface inspection: PASS;
+- core server smoke: PASS;
+- gameplay dependency server smoke: PASS;
+- gameplay client startup smoke: PASS;
+- verification JARs / mrpack / artifact upload: PASS;
+- artifact ID: `11208028054`.
+
+The state therefore remains:
+
+```text
+R01 SPATIAL_BINDING COMPLETE: NO
+R01 IMPLEMENTED: NO
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
