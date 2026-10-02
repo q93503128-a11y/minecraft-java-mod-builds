@@ -64,6 +64,7 @@ final class DrehmalWaystationRuntime {
                 discard(level, node.id());
                 continue;
             }
+            ensureStructure(level, node, pos);
             BattleActorEntity actor = ensure(level, node, pos);
             if (actor != null) present(level, node, actor);
         }
@@ -211,6 +212,43 @@ final class DrehmalWaystationRuntime {
         configure(actor, node, pos);
         ACTORS.put(node.id(), actor.getUUID());
         return actor;
+    }
+
+    private static void ensureStructure(ServerLevel level, DrehmalFastTravelCatalog.Node node, Vec3 pos) {
+        int x = (int)Math.floor(pos.x);
+        int y = (int)Math.floor(pos.y);
+        int z = (int)Math.floor(pos.z);
+        BlockPos origin = new BlockPos(x, y, z);
+        int quarter = Math.floorMod(Math.round(node.yaw() / 90.0F), 4);
+
+        for (int[] raw : new int[][]{{-2,1},{2,1},{-2,3},{2,3}}) {
+            int[] o = rotate(raw[0], raw[1], quarter);
+            for (int dy = 0; dy <= 2; dy++) {
+                placeIfAir(level, origin.offset(o[0], dy, o[1]), Blocks.SPRUCE_FENCE);
+            }
+        }
+        for (int dx = -2; dx <= 2; dx++) for (int dz = 1; dz <= 3; dz++) {
+            int[] o = rotate(dx, dz, quarter);
+            placeIfAir(level, origin.offset(o[0], 3, o[1]), Blocks.SPRUCE_SLAB);
+        }
+        int[] hay = rotate(1, 2, quarter);
+        placeIfAir(level, origin.offset(hay[0], 0, hay[1]), Blocks.HAY_BLOCK);
+        int[] hitch = rotate(-1, 2, quarter);
+        placeIfAir(level, origin.offset(hitch[0], 0, hitch[1]), Blocks.OAK_FENCE);
+        placeIfAir(level, origin.offset(hitch[0], 1, hitch[1]), Blocks.OAK_FENCE);
+    }
+
+    private static int[] rotate(int dx, int dz, int quarter) {
+        return switch (quarter) {
+            case 1 -> new int[]{-dz, dx};
+            case 2 -> new int[]{-dx, -dz};
+            case 3 -> new int[]{dz, -dx};
+            default -> new int[]{dx, dz};
+        };
+    }
+
+    private static void placeIfAir(ServerLevel level, BlockPos pos, net.minecraft.world.level.block.Block block) {
+        if (level.getBlockState(pos).isAir()) level.setBlockAndUpdate(pos, block.defaultBlockState());
     }
 
     private static void configure(BattleActorEntity actor, DrehmalFastTravelCatalog.Node node, Vec3 pos) {

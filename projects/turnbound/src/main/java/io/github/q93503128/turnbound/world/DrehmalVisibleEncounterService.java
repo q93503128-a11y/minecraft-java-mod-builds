@@ -38,7 +38,7 @@ final class DrehmalVisibleEncounterService {
     private static final String COMMON_TAG = "turnbound_drehmal_field_enemy";
     private static final String ENCOUNTER_TAG_PREFIX = "turnbound_drehmal_encounter:";
     private static final String SLOT_TAG_PREFIX = "turnbound_drehmal_slot:";
-    private static final double MATERIALIZE_RADIUS = 72.0D;
+    private static final double MATERIALIZE_RADIUS = 108.0D;
     private static final double PATROL_SPEED_MODIFIER = 0.72D;
     private static final double RETURN_SPEED_MODIFIER = 0.90D;
     private static final double ALERT_SPEED_MODIFIER = 1.05D;
@@ -503,7 +503,7 @@ final class DrehmalVisibleEncounterService {
                 if(!DrehmalAdaptiveRoutePlacement.sourceContentClear(
                         level,arenaPosition.x(),arenaPosition.y(),arenaPosition.z(),5.5D))continue;
                 Vec3 center = vec(arenaPosition);
-                for (ServerPlayer participant : participants) DrehmalMountService.release(participant);
+                for (ServerPlayer participant : participants) DrehmalMountService.suspendForBattle(participant);
                 boolean started = participants.size() > 1
                         ? BattleSessionManager.startSharedEncounterAt(
                                 participants, player.getUUID(), slot.combatEncounterId(), false, false,

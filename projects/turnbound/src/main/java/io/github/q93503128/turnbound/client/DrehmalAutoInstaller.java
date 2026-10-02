@@ -74,6 +74,7 @@ public final class DrehmalAutoInstaller {
 
     private static final AtomicBoolean STARTED = new AtomicBoolean(false);
     private static volatile Snapshot snapshot = new Snapshot(Phase.IDLE, "", "", 0, "");
+    private static volatile boolean titleCompatibilityChecked;
 
     private DrehmalAutoInstaller() {}
 
@@ -101,13 +102,39 @@ public final class DrehmalAutoInstaller {
 
     public static void onTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level != null) return;
-        if (snapshot.phase() == Phase.COMPLETE) return;
+        if (minecraft.level != null) {
+            titleCompatibilityChecked = false;
+            return;
+        }
         if (STARTED.get()) return;
 
         Path gameDir = minecraft.gameDirectory.toPath();
-        List<Path> installedWorlds = findInstalledWorlds(gameDir);
         boolean optedIn = optedIn(gameDir);
+
+        if (!titleCompatibilityChecked) {
+            titleCompatibilityChecked = true;
+            Optional<Path> compatibilityPending = DrehmalResourceRepairDiscovery.find(gameDir).stream()
+                    .filter(world -> !resourcePackReady(world) || !Drehmal26_2CompatMigrator.isCurrent(world))
+                    .findFirst();
+            if (compatibilityPending.isPresent()) {
+                if (snapshot.phase() == Phase.FAILED) return;
+                if (!STARTED.compareAndSet(false, true)) return;
+                if (!(minecraft.gui.screen() instanceof TitleScreen parent)) {
+                    STARTED.set(false);
+                    titleCompatibilityChecked = false;
+                    return;
+                }
+                Path world = compatibilityPending.get();
+                Turnbound.LOGGER.info("TURNBOUND title compatibility repair requested for {}", world.getFileName());
+                minecraft.gui.setScreen(new DrehmalInstallScreen(parent));
+                Thread.ofVirtual().name("turnbound-drehmal-title-repair")
+                        .start(() -> repairExistingWorld(gameDir, world, optedIn));
+                return;
+            }
+        }
+
+        if (snapshot.phase() == Phase.COMPLETE) return;
+        List<Path> installedWorlds = findInstalledWorlds(gameDir);
 
         if (!installedWorlds.isEmpty()) {
             Optional<Path> pending = installedWorlds.stream()

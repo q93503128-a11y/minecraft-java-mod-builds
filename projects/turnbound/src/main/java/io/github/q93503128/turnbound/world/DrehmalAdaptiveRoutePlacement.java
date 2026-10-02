@@ -71,7 +71,7 @@ final class DrehmalAdaptiveRoutePlacement {
             if(footprints.containsKey(authored.locator())) continue;
             var p=DrehmalMapPlacementCatalog.placement(authored.siteLocator());
             if(p==null||!sites.containsKey(authored.siteLocator())) continue;
-            var candidates=resolveArenas(player,level,p);
+            var candidates=resolveArenas(player,level,p,sites.get(authored.siteLocator()));
             if(candidates.size()<2) continue;
             footprints.put(authored.locator(),new DrehmalFirstRouteCatalog.Footprint(authored.locator(),authored.siteLocator(),
                     authored.radius(),authored.allySlots(),authored.enemySlots(),candidates,true,true));
@@ -226,7 +226,12 @@ final class DrehmalAdaptiveRoutePlacement {
                 int x=seed.x()+offset[0],z=seed.z()+offset[1];
                 int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
                 BlockPos feet=new BlockPos(x,y,z);
-                if(!standing(level,feet)||!sourceContentClear(level,x,y,z,2.75D))continue;
+                if(!standing(level,feet))continue;
+                boolean presentationSite="ENCOUNTER_ZONE".equals(authored.kind())
+                        ||"ELITE_ZONE".equals(authored.kind())
+                        ||"PATROL_ZONE".equals(authored.kind())
+                        ||"WORLD_BOSS_ZONE".equals(authored.kind());
+                if(presentationSite?!fieldProxyContentClear(level,x,y,z):!sourceContentClear(level,x,y,z,2.75D))continue;
 
                 double roadDistance=DrehmalRoutePlacementRules.corridorDistance(zone,x+0.5D,z+0.5D);
                 if(!DrehmalRoutePlacementRules.acceptableRoadDistance(authored.kind(),roadDistance))continue;
@@ -243,14 +248,28 @@ final class DrehmalAdaptiveRoutePlacement {
         return best==null?null:best.position();
     }
 
-    private static List<DrehmalFirstRouteCatalog.ArenaCandidate> resolveArenas(ServerPlayer player,ServerLevel level,DrehmalMapPlacementCatalog.Placement p){
+    private static List<DrehmalFirstRouteCatalog.ArenaCandidate> resolveArenas(
+            ServerPlayer player,ServerLevel level,DrehmalMapPlacementCatalog.Placement p,DrehmalFirstRouteCatalog.Site site){
         List<DrehmalFirstRouteCatalog.ArenaCandidate> out=new ArrayList<>();
-        for(var s:p.arenaSeeds()){
-            var c=nearestArena(player,level,s,Math.min(6,p.searchRadius()));
+        for(var seed:p.arenaSeeds()){
+            var c=nearestArena(player,level,seed,Math.min(8,Math.max(4,p.searchRadius())));
             if(c==null) continue;
             boolean dup=out.stream().anyMatch(e->e.center().x()==c.center().x()&&e.center().z()==c.center().z()&&Math.abs(e.yaw()-c.yaw())<0.1F);
             if(!dup) out.add(c);
             if(out.size()>=4) break;
+        }
+        if(out.size()<2&&site!=null&&site.runtimePosition()!=null){
+            var home=site.runtimePosition();
+            int[][] probes={{18,0},{-18,0},{0,18},{0,-18},{14,14},{-14,14},{14,-14},{-14,-14},{24,0},{0,24}};
+            float[] yaws={0.0F,90.0F,180.0F,270.0F};
+            for(int i=0;i<probes.length&&out.size()<4;i++){
+                var seed=new DrehmalMapPlacementCatalog.ArenaSeed(
+                        home.x()+probes[i][0],home.z()+probes[i][1],yaws[i%yaws.length]);
+                var c=nearestArena(player,level,seed,8);
+                if(c==null)continue;
+                boolean dup=out.stream().anyMatch(e->e.center().x()==c.center().x()&&e.center().z()==c.center().z());
+                if(!dup)out.add(c);
+            }
         }
         return List.copyOf(out);
     }
@@ -333,7 +352,7 @@ final class DrehmalAdaptiveRoutePlacement {
         int limit = Math.min(DrehmalWorldBossPlacementRules.MAX_SHORTLIST, shortlist.size());
         for (int i = 0; i < limit; i++) {
             var position = shortlist.get(i).position();
-            if (!sourceContentClear(level, position.x(), position.y(), position.z(), 8.5D)) continue;
+            if (!sourceContentClear(level, position.x(), position.y(), position.z(), 7.0D)) continue;
             List<DrehmalFirstRouteCatalog.ArenaCandidate> arenas = worldBossArenas(player, level, position);
             if (arenas.size() < 2) continue;
 

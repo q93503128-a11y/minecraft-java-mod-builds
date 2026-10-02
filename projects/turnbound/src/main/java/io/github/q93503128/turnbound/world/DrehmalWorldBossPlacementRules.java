@@ -7,15 +7,15 @@ final class DrehmalWorldBossPlacementRules {
     static final String FOOTPRINT_LOCATOR = "turnbound:footprint/capital_valley/graul_meadow";
     static final String SITE_KIND = "WORLD_BOSS_ZONE";
 
-    static final int LOCAL_SEARCH_RADIUS = 24;
+    static final int LOCAL_SEARCH_RADIUS = 36;
     static final int LOCAL_SEARCH_STEP = 6;
-    static final int MAX_SHORTLIST = 48;
-    static final double MIN_TOWER_DISTANCE = 120.0D;
-    static final double MAX_TOWER_DISTANCE = 300.0D;
-    static final double MIN_ROUTE_DISTANCE = 48.0D;
-    static final double MAX_ROUTE_DISTANCE = 120.0D;
-    static final double MIN_HUB_DISTANCE = 300.0D;
-    static final int MAX_HEIGHT_SPREAD = 3;
+    static final int MAX_SHORTLIST = 64;
+    static final double MIN_TOWER_DISTANCE = 100.0D;
+    static final double MAX_TOWER_DISTANCE = 340.0D;
+    static final double MIN_ROUTE_DISTANCE = 32.0D;
+    static final double MAX_ROUTE_DISTANCE = 160.0D;
+    static final double MIN_HUB_DISTANCE = 260.0D;
+    static final int MAX_HEIGHT_SPREAD = 4;
 
     private DrehmalWorldBossPlacementRules() {}
 

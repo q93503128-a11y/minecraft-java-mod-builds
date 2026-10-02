@@ -26,7 +26,7 @@ final class DrehmalMountService {
     private static final double ABANDON_DISTANCE_SQR = 64.0D * 64.0D;
     private static final Map<UUID, Rental> RENTALS = new HashMap<>();
 
-    private record Rental(ServerLevel level, UUID entityId, long dismountedAt) {}
+    private record Rental(ServerLevel level, UUID entityId, long dismountedAt, boolean suspended, boolean resumeMounted) {}
 
     private DrehmalMountService() {}
 
@@ -53,7 +53,7 @@ final class DrehmalMountService {
         mount.assignRentalOwner(player.getUUID());
         mount.setCustomName(Component.literal("길뿔 산양").withStyle(ChatFormatting.GOLD));
         mount.setCustomNameVisible(false);
-        RENTALS.put(player.getUUID(), new Rental(level, mount.getUUID(), 0L));
+        RENTALS.put(player.getUUID(), new Rental(level, mount.getUUID(), 0L, false, false));
         mount.ride(player);
         player.sendSystemMessage(Component.literal("역참에서 길뿔 산양을 빌렸습니다.").withStyle(ChatFormatting.GOLD));
         return true;
@@ -67,19 +67,30 @@ final class DrehmalMountService {
             release(player);
             return;
         }
-        Entity raw = rental.level().getEntity(rental.entityId());
+
+        if (!ExternalWorldBootstrap.active(player)) {
+            release(player);
+            return;
+        }
+        if (BattleSessionManager.exists(player)) {
+            suspendForBattle(player);
+            return;
+        }
+        if (rental.suspended()) {
+            restoreAfterBattle(player, rental);
+            return;
+        }
+
+        Entity raw = rental.entityId() == null ? null : rental.level().getEntity(rental.entityId());
         if (!(raw instanceof RoadhornMountEntity mount) || mount.isRemoved()) {
             RENTALS.remove(player.getUUID());
             return;
         }
 
-        if (!ExternalWorldBootstrap.active(player) || BattleSessionManager.exists(player)) {
-            release(player);
-            return;
-        }
-
         if (player.getVehicle() == mount) {
-            if (rental.dismountedAt() != 0L) RENTALS.put(player.getUUID(), new Rental(rental.level(), rental.entityId(), 0L));
+            if (rental.dismountedAt() != 0L) {
+                RENTALS.put(player.getUUID(), new Rental(rental.level(), rental.entityId(), 0L, false, false));
+            }
             return;
         }
 
@@ -90,24 +101,53 @@ final class DrehmalMountService {
 
         long now = level.getGameTime();
         if (rental.dismountedAt() == 0L) {
-            RENTALS.put(player.getUUID(), new Rental(rental.level(), rental.entityId(), now));
+            RENTALS.put(player.getUUID(), new Rental(rental.level(), rental.entityId(), now, false, false));
         } else if (now - rental.dismountedAt() >= DISMOUNT_GRACE_TICKS) {
             release(player);
         }
+    }
+
+    static void suspendForBattle(ServerPlayer player) {
+        if (player == null) return;
+        Rental rental = RENTALS.get(player.getUUID());
+        if (rental == null || rental.suspended()) return;
+        Entity entity = rental.entityId() == null ? null : rental.level().getEntity(rental.entityId());
+        boolean resumeMounted = entity != null && player.getVehicle() == entity;
+        if (resumeMounted) player.stopRiding();
+        if (entity != null) entity.discard();
+        RENTALS.put(player.getUUID(), new Rental(rental.level(), null, 0L, true, resumeMounted));
+    }
+
+    private static void restoreAfterBattle(ServerPlayer player, Rental rental) {
+        if (!(player.level() instanceof ServerLevel level) || rental.level() != level) {
+            release(player);
+            return;
+        }
+        RoadhornMountEntity mount = spawnMount(level, player);
+        if (mount == null) return;
+        mount.assignRentalOwner(player.getUUID());
+        mount.setCustomName(Component.literal("길뿔 산양").withStyle(ChatFormatting.GOLD));
+        mount.setCustomNameVisible(false);
+        RENTALS.put(player.getUUID(), new Rental(level, mount.getUUID(), 0L, false, false));
+        if (rental.resumeMounted()) mount.ride(player);
+        player.sendSystemMessage(Component.literal("대여한 길뿔 산양이 전투 뒤 다시 합류했습니다.").withStyle(ChatFormatting.GOLD));
     }
 
     static void release(ServerPlayer player) {
         if (player == null) return;
         Rental rental = RENTALS.remove(player.getUUID());
         if (rental == null) return;
-        if (player.getVehicle() != null && player.getVehicle().getUUID().equals(rental.entityId())) player.stopRiding();
-        Entity entity = rental.level().getEntity(rental.entityId());
+        if (rental.entityId() != null && player.getVehicle() != null
+                && player.getVehicle().getUUID().equals(rental.entityId())) {
+            player.stopRiding();
+        }
+        Entity entity = rental.entityId() == null ? null : rental.level().getEntity(rental.entityId());
         if (entity != null) entity.discard();
     }
 
     static void clearAll() {
         for (Rental rental : List.copyOf(RENTALS.values())) {
-            Entity entity = rental.level().getEntity(rental.entityId());
+            Entity entity = rental.entityId() == null ? null : rental.level().getEntity(rental.entityId());
             if (entity != null) entity.discard();
         }
         RENTALS.clear();
