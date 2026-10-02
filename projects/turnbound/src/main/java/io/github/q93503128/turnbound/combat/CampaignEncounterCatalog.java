@@ -59,15 +59,24 @@ public final class CampaignEncounterCatalog {
             case "CV_DRABYEL_NORTH" -> 0.30;
             case "CV_DRABYEL_ROAD" -> 0.38;
             case "CV_WARNING_CAVE_ELITE" -> 0.42;
-            case "AV_ROAD_HOUNDS" -> 0.42;
+            // Later-added Capital Valley repeatables previously fell through to the legacy 0.80/0.86 defaults,
+            // making optional route fights much longer than the opening patrol without adding extra decisions.
+            case "CV_HOUND_ROAM" -> 0.42;
+            case "CV_SPORE_GROVE" -> 0.40;
+            case "CV_BRIAR_STAG" -> 0.48;
+            case "CV_WORLD_BOSS_GRAUL" -> 0.70;
+            case "AV_ROAD_HOUNDS" -> 0.40;
             case "AV_ROAD_PATROL" -> 0.40;
-            case "AV_RELAY_SENTRIES" -> 0.48;
-            case "AV_RELAY_GUARD" -> 0.50;
-            case "AV_ROAD_ELITE" -> 0.52;
-            case "AV_FIRST_BOSS" -> 0.76;
+            case "AV_RELAY_SENTRIES" -> 0.44;
+            case "AV_RELAY_GUARD" -> 0.40;
+            case "AV_ROAD_ELITE" -> 0.48;
+            // Karnon must spend its budget on Barrier/counter/lock/breach decisions, not on a 60+ ally-action HP wall.
+            case "AV_FIRST_BOSS" -> 0.52;
             default -> {
                 if (encounter.id().startsWith("TUTORIAL_")) yield 0.68;
-                if (encounter.id().startsWith("AV_CH1_")) yield base.elite() ? 0.56 : 0.44;
+                // Dense west-road packs are repeated travel beats. Four-enemy packs should gain tactical density from
+                // target priority and AoE/dual-target choices instead of multiplying HP time.
+                if (encounter.id().startsWith("AV_CH1_")) yield base.elite() ? 0.40 : 0.30;
                 if (encounter.boss()) yield 0.88;
                 if (base.elite()) yield 0.86;
                 yield 0.80;

@@ -38,33 +38,35 @@ final class ChapterOneCombatPacingTest {
         assertAll(
                 pacing("CV_FIRST_COMMON", 2, 6),
                 pacing("CV_DRABYEL_ROAD", 3, 8),
-                pacing("CV_HOUND_ROAM", 3, 8),
-                pacing("CV_WARNING_CAVE_ELITE", 6, 14),
-                pacing("CV_WORLD_BOSS_GRAUL", 8, 20),
+                pacing("CV_HOUND_ROAM", 3, 10),
+                pacing("CV_SPORE_GROVE", 3, 10),
+                pacing("CV_WARNING_CAVE_ELITE", 8, 18),
+                pacing("CV_BRIAR_STAG", 8, 18),
+                pacing("CV_WORLD_BOSS_GRAUL", 24, 42),
                 pacing("AV_CH1_GATE_SKIRMISH", 3, 8),
-                pacing("AV_CH1_BOAR_TRAIL", 4, 11),
-                pacing("AV_CH1_HOUND_PACK", 5, 12),
-                pacing("AV_ROAD_HOUNDS", 3, 8),
-                pacing("AV_CH1_CROSSROAD_RAIDERS", 4, 11),
-                pacing("AV_ROAD_PATROL", 4, 11),
-                pacing("AV_CH1_GORGE_BREAKER", 6, 14),
-                pacing("AV_CH1_BROKEN_ESCORT", 5, 12),
-                pacing("AV_ROAD_ELITE", 6, 14)
+                pacing("AV_CH1_BOAR_TRAIL", 4, 13),
+                pacing("AV_CH1_HOUND_PACK", 5, 14),
+                pacing("AV_ROAD_HOUNDS", 3, 10),
+                pacing("AV_CH1_CROSSROAD_RAIDERS", 4, 12),
+                pacing("AV_ROAD_PATROL", 4, 12),
+                pacing("AV_CH1_GORGE_BREAKER", 8, 18),
+                pacing("AV_CH1_BROKEN_ESCORT", 5, 14),
+                pacing("AV_ROAD_ELITE", 10, 20)
         );
     }
 
     @Test
     void avsalOutskirtsRelayAndFirstBossStayTacticalWithoutDragging() {
         assertAll(
-                pacing("AV_CH1_SPORE_EDGE", 3, 9),
-                pacing("AV_CH1_WAYMARK_WALKERS", 4, 11),
-                pacing("AV_CH1_RUST_SCOUTS", 3, 9),
-                pacing("AV_RELAY_SENTRIES", 3, 9),
-                pacing("AV_CH1_OUTSKIRT_HOUNDS", 4, 11),
-                pacing("AV_CH1_WATERLINE_SWARM", 5, 13),
-                pacing("AV_CH1_RUSTED_COLUMN", 5, 13),
-                pacing("AV_RELAY_GUARD", 4, 12),
-                pacing("AV_FIRST_BOSS", 12, 28)
+                pacing("AV_CH1_SPORE_EDGE", 3, 10),
+                pacing("AV_CH1_WAYMARK_WALKERS", 4, 12),
+                pacing("AV_CH1_RUST_SCOUTS", 3, 10),
+                pacing("AV_RELAY_SENTRIES", 3, 10),
+                pacing("AV_CH1_OUTSKIRT_HOUNDS", 4, 12),
+                pacing("AV_CH1_WATERLINE_SWARM", 5, 14),
+                pacing("AV_CH1_RUSTED_COLUMN", 5, 14),
+                pacing("AV_RELAY_GUARD", 4, 13),
+                pacing("AV_FIRST_BOSS", 24, 42)
         );
     }
 
