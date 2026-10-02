@@ -67,6 +67,7 @@ public final class CampaignEncounterCatalog {
             case "AV_FIRST_BOSS" -> 0.76;
             default -> {
                 if (encounter.id().startsWith("TUTORIAL_")) yield 0.68;
+                if (encounter.id().startsWith("AV_CH1_")) yield base.elite() ? 0.56 : 0.44;
                 if (encounter.boss()) yield 0.88;
                 if (base.elite()) yield 0.86;
                 yield 0.80;

@@ -93,6 +93,10 @@ public final class V04Catalogs {
             default -> -1;
         };
         if (firstRoute >= 0) return firstRoute;
+        if (encounter.id().startsWith("AV_CH1_")) {
+            boolean elite = encounter.enemies().stream().anyMatch(id -> id.startsWith("EL"));
+            return elite ? 700 : Math.min(430, 160 + encounter.level() * 22 + Math.max(0, encounter.enemies().size() - 2) * 35);
+        }
         if (encounter.boss()) return switch (encounter.enemies().getFirst()) {
             case "AV_B01" -> 9_000; case "B01" -> 12_000; case "B02" -> 18_000; case "B03" -> 24_000; case "B04" -> 32_000; case "B05" -> 50_000; default -> 0;
         };
@@ -129,6 +133,10 @@ public final class V04Catalogs {
             default -> -1;
         };
         if (authoredRoute >= 0) return authoredRoute;
+        if (encounter.id().startsWith("AV_CH1_")) {
+            boolean elite = encounter.enemies().stream().anyMatch(id -> id.startsWith("EL"));
+            return elite ? 1_300 : Math.min(1_350, 260 + encounter.level() * 70 + encounter.enemies().size() * 80);
+        }
         if (encounter.boss()) return switch (encounter.enemies().getFirst()) {
             case "AV_B01" -> 3_800; case "B01" -> 5_000; case "B02" -> 8_000; case "B03" -> 12_000; case "B04" -> 18_000; case "B05" -> 28_000; default -> 0;
         };
