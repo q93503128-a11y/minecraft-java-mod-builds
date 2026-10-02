@@ -692,6 +692,44 @@ Validation state:
 - MULTIPLAYER TESTED: NO
 
 
+## 10.6 Recovery Belt action/setup/refill authority — 2026-10-02
+
+The Recovery Belt backend now closes the non-visual parts that were still split across separate state machines.
+
+- `RecoveryUseRuntime` commits the full 19-tick / 0.95 s use through the shared server-owned player-action runtime.
+- The canonical effect still resolves at tick 14 / 0.72 s, movement is projected at 65% during the commitment, and conflicting dodge/guard/basic/action starts cannot bypass that commitment.
+- A legal pre-resolution cancel clears both the Recovery action and the shared movement commitment; death before resolution also clears the shared commitment rather than leaving a stale movement penalty.
+- The four-slot desired belt setup is a separate persistent attachment. Existing saves migrate only from doses that are already loaded, so the migration never invents a universal potion ratio.
+- Refill planning consumes only matching real Recovery consumables from the ordinary Backpack, fills only empty configured slots, supports partial refill when reserves are insufficient, and cannot consume another reserve for a slot that is already loaded.
+- `reloadAtRest` is a semantic server hook for future accepted shrine/inn/camp interactions. It does not make those world interactions production-ready by itself.
+
+The player-facing quick-use key is **not exposed yet**. This is intentional: current canon requires an accepted external drink/consume motion and bottle presentation before the action becomes a normal player-facing input. Likewise, manual belt setup/reload UI and actual shrine/inn/camp calls remain behind their existing UI/spatial/presentation gates. No vanilla or improvised placeholder motion was added merely to claim the key as playable.
+
+Verification for code state `d7608cdec6e8bebf7fc90195727b74df37c68ac2`:
+
+- Build Openworld RPG run `36958023082`: **SUCCESS**;
+- unit tests + clean build: PASS;
+- bootstrap JAR verification: PASS;
+- core-profile dedicated server smoke: PASS;
+- gameplay dependency server smoke: PASS;
+- gameplay client startup smoke: PASS;
+- M0 and R01 verification JAR build/marker isolation: PASS;
+- Modrinth playtest pack packaging: PASS;
+- artifact upload: PASS;
+- artifact: `openworld-rpg-m0-d7608cdec6e8bebf7fc90195727b74df37c68ac2`;
+- artifact ID: `11207375839`.
+
+Validation state for this Recovery work unit:
+
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- PLAYER-FACING RECOVERY INPUT: GATED BY ACCEPTED PRESENTATION
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+
 ---
 
 # 11. Armor / apparel visual canon
