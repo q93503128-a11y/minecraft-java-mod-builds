@@ -30,7 +30,7 @@ class DrehmalFieldNpcCatalogTest {
             assertFalse(npc.questOfferDialogue().isBlank());
         }
 
-        assertEquals(5, DrehmalFieldNpcCatalog.all().stream()
+        assertEquals(6, DrehmalFieldNpcCatalog.all().stream()
                 .filter(npc -> !npc.questOfferFlag().isBlank())
                 .filter(npc -> !npc.questOfferFlag().startsWith("HIDDEN_"))
                 .count());
