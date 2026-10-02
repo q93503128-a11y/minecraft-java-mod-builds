@@ -58,6 +58,7 @@ final class OpenworldQuestTrackerService {
             out.add(new FieldUiSnapshot.QuestTracker(
                     quest.id(), quest.title(), quest.kind().label(), quest.objective(), false));
         }
+        out.sort(java.util.Comparator.comparing(FieldUiSnapshot.QuestTracker::repeatable));
         return List.copyOf(out);
     }
 }

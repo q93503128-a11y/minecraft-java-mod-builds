@@ -243,7 +243,7 @@ public final class EquipmentInventory {
             if (instanceId.isBlank()) continue;
             Item item = item(instanceId);
             ItemSpec spec = spec(item.itemId());
-            merge(values, spec.main.type(), scaledMain(spec.main.value(), item.enhancementLevel()));
+            merge(values, spec.main.type(), scaledMain(spec.main.type(), spec.main.value(), item.enhancementLevel()));
             merge(values, spec.sub.type(), scaledSub(spec.sub.value(), item.enhancementLevel()));
         }
         return new StatTotals(values);
@@ -258,16 +258,20 @@ public final class EquipmentInventory {
             Item item = item(instanceId);
             ItemSpec spec = spec(item.itemId());
             if (!spec.fixedRule.isBlank()) out.add(spec.fixedRule);
-            if (spec.signature && item.enhancementLevel() >= GrowthRulesV1.maxEnhancement() && !spec.m10.isBlank()) {
-                out.add(spec.m10);
-            }
+            if (spec.signature && item.enhancementLevel() >= 5 && !spec.m5.isBlank()) out.add(spec.m5);
+            if (spec.signature && item.enhancementLevel() >= GrowthRulesV1.maxEnhancement() && !spec.m10.isBlank()) out.add(spec.m10);
         }
         return List.copyOf(out);
     }
 
-    public static double scaledMain(double base, int enhancementLevel) {
+    public static double scaledMain(String type, double base, int enhancementLevel) {
         int safe = Math.max(0, Math.min(GrowthRulesV1.maxEnhancement(), enhancementLevel));
-        return base * (1.0 + 0.04 * safe);
+        if ("SPD_FLAT".equals(type)) return base + safe;
+        return base * (1.0 + 0.10 * safe);
+    }
+
+    public static double scaledMain(double base, int enhancementLevel) {
+        return scaledMain("", base, enhancementLevel);
     }
 
     /** v1 enhancement grows the main stat only; the secondary line is no longer a repeated enhancement axis. */
@@ -340,12 +344,12 @@ public final class EquipmentInventory {
             return new ItemSpec(Slot.valueOf(normal.slot()), normal.tier(), false, "", normal.main(), normal.sub(), normal.fixedEffect(), "", "");
         } catch (RuntimeException ignored) {
             V04Catalogs.SignatureSpec signature = V04Catalogs.signature(itemId);
-            return new ItemSpec(Slot.SIGNATURE, "SIGNATURE", true, signature.owner(), signature.main(), signature.sub(), signature.baseRule(), signature.milestone10(), signature.milestone20());
+            return new ItemSpec(Slot.SIGNATURE, "SIGNATURE", true, signature.owner(), signature.main(), signature.sub(), signature.baseRule(), signature.milestone5(), signature.milestone10());
         }
     }
 
     private record ItemSpec(
             Slot slot, String tier, boolean signature, String owner,
             V04Catalogs.Stat main, V04Catalogs.Stat sub,
-            String fixedRule, String m10, String m20) {}
+            String fixedRule, String m5, String m10) {}
 }

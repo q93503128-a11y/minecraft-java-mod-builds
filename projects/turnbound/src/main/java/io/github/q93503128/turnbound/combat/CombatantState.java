@@ -50,12 +50,19 @@ public final class CombatantState {
 
     public int speed() {
         double statusMod = cappedStatMod("speed_multiplier", 0.50);
-        return Math.max(30, (int)Math.floor(definition.stats().speed() * Math.max(0.50, 1.0 + statusMod)));
+        double signatureMultiplier = definition.hasRule("SIG_P08_LOW_HP_SPEED_15") && hp * 2 <= maxHp() ? 1.15 : 1.0;
+        return Math.max(30, (int)Math.floor(definition.stats().speed() * Math.max(0.50, 1.0 + statusMod) * signatureMultiplier));
     }
 
-    public double damageReduction() { return Math.max(0.0, Math.min(0.60, statusMagnitude("damage_reduction"))); }
+    public double damageReduction() {
+        double value = Math.max(0.0, Math.min(0.60, statusMagnitude("damage_reduction")));
+        if (hp * 100 >= maxHp() * 80) value += rulePercent("HIGH_HP_DR_");
+        return Math.max(0.0, Math.min(0.75, value));
+    }
     public double damageTakenModifier() { return clamp(statusMagnitude("damage_taken_multiplier"), -0.60, 0.60); }
-    public double healingReceivedModifier() { return clamp(statusMagnitude("healing_received_multiplier"), -0.60, 0.60); }
+    public double healingReceivedModifier() {
+        return clamp(statusMagnitude("healing_received_multiplier"), -0.60, 0.60) + rulePercent("HEAL_RECEIVED_");
+    }
     public int barrier() { return barrier; }
     /** Player/data-facing Gauge units. Internal scheduling retains sub-unit fixed-point precision. */
     public long gauge() { return TurnScheduler.displayGauge(gaugeMicro); }
@@ -147,8 +154,9 @@ public final class CombatantState {
 
     public int addBarrier(int amount) {
         int cap = (int)Math.floor(maxHp() * 0.60);
+        int adjusted = Math.max(0, (int)Math.floor(amount * (1.0 + rulePercent("BARRIER_RECEIVED_"))));
         int before = barrier;
-        barrier = Math.min(cap, Math.max(0, barrier + amount));
+        barrier = Math.min(cap, Math.max(0, barrier + adjusted));
         return barrier - before;
     }
 
@@ -201,7 +209,8 @@ public final class CombatantState {
 
     public int revive(double ratio) {
         if (!downed) return 0;
-        hp = Math.max(1, (int)Math.floor(maxHp() * ratio));
+        double adjustedRatio = Math.min(1.0, Math.max(0.0, ratio) + rulePercent("REVIVE_HP_PLUS_"));
+        hp = Math.max(1, (int)Math.floor(maxHp() * adjustedRatio));
         barrier = 0;
         gaugeMicro = 0;
         downed = false;
@@ -219,6 +228,15 @@ public final class CombatantState {
     }
 
     private double cappedStatMod(String id, double cap) { return clamp(statusMagnitude(id), -cap, cap); }
+    private double rulePercent(String prefix) {
+        double total = 0.0;
+        for (String rule : definition.rules()) {
+            if (rule == null || !rule.startsWith(prefix) || rule.length() <= prefix.length()) continue;
+            try { total += Double.parseDouble(rule.substring(prefix.length())) / 100.0; }
+            catch (NumberFormatException ignored) { }
+        }
+        return total;
+    }
     private static double clamp(double value, double min, double max) { return Math.max(min, Math.min(max, value)); }
     private static String statusKey(String id, String sourceId) { return id + "\u0000" + (sourceId == null ? "" : sourceId); }
     private static String safeSource(String sourceId) { return sourceId == null || sourceId.isBlank() ? "unknown" : sourceId.replace('|', '/'); }

@@ -1994,3 +1994,14 @@ Current Chapter 1 production direction:
 - the quest journal orders unfinished goals before completed ones and keeps main / regional contract / side / hidden categories readable;
 - all new west-road Chapter 1 encounters participate in the equipment drop loop;
 - deterministic equipment stats follow the v1 ladder documented in 02_BALANCE_RULES_v1.md.
+
+
+### 2026-10-02 equipment dependency / Signature pass
+
+- raised normal-equipment base stats and enhancement impact so the three normal slots are a major growth axis
+- percentage main stats reach 200% of their +0 value at +10; SPD mains gain +1 flat SPD per enhancement
+- redistributed fixed substats so ATK/HP/DEF/SPD all appear meaningfully and SPD is not artificially rare
+- completed runtime consumers for normal-equipment trait families instead of leaving effect strings inert
+- rebuilt P01~P08 Signature progression around low-stat, high-mechanic base/+5/+10 effects and removed the unreachable +20 milestone
+- Signature mechanics now use the existing server-authoritative resource/status/Gauge/reaction/summon systems
+- auxiliary quest HUD ordering keeps one-shot side goals ahead of repeatable regional contracts while the main objective remains pinned separately

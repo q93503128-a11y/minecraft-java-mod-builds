@@ -67,6 +67,44 @@ final class BattleEngineTest {
         assertEquals(20, target.gauge(), "direct enemy hit grants the equipped +20 Gauge once");
     }
 
+
+    @Test
+    void defensiveEquipmentTraitsAffectAuthoritativeState() {
+        SkillDefinition strike = new SkillDefinition("strike","Strike",TargetRule.ENEMY_SINGLE,0,List.of(SkillEffect.damage(1.0)));
+        CombatantDefinition def = new CombatantDefinition("GEAR","Gear",new BattleStats(1000,100,100,100),
+                "strike",List.of(strike),4,List.of("HEAL_RECEIVED_15","BARRIER_RECEIVED_25","HIGH_HP_DR_12","REVIVE_HP_PLUS_20"),java.util.Map.of());
+        CombatantState unit = new CombatantState("gear",def,CombatantSide.ALLY,0);
+        assertEquals(125, unit.addBarrier(100));
+        unit.takeDamage(300);
+        int before=unit.hp();
+        assertEquals(115, unit.heal(100));
+        assertEquals(before+115,unit.hp());
+        assertEquals(0.12,unit.damageReduction(),0.000001);
+        unit.forceDown();
+        assertEquals(500,unit.revive(0.30));
+    }
+
+    @Test
+    void signatureRulesChangeTempoAndLowHpBehavior() {
+        SkillDefinition grant = new SkillDefinition("grant","Grant",TargetRule.ALLY_SINGLE,0,List.of(SkillEffect.gaugeAdd(100)));
+        CombatantDefinition lumea = new CombatantDefinition("P02","Lumea",new BattleStats(800,90,70,114),
+                "grant",List.of(grant),5,List.of("SIG_P02_BASIC_SELF_GAUGE_60"),java.util.Map.of());
+        CombatantState l=new CombatantState("l",lumea,CombatantSide.ALLY,0);
+        CombatantState a=new CombatantState("a",unit("A",9999,10,10,90),CombatantSide.ALLY,1);
+        CombatantState e=new CombatantState("e",unit("E",9999,10,10,80),CombatantSide.ENEMY,2);
+        l.setGauge(1000);
+        BattleEngine engine=new BattleEngine(new BattleState(List.of(l,a,e)));
+        engine.nextReady();engine.useSkill("l","grant","a");
+        assertEquals(60,l.gauge());
+
+        CombatantDefinition raze = new CombatantDefinition("P08","Raze",new BattleStats(1000,100,50,100),
+                "strike",List.of(new SkillDefinition("strike","Strike",TargetRule.ENEMY_SINGLE,0,List.of(SkillEffect.damage(1.0)))),3,
+                List.of("SIG_P08_LOW_HP_SPEED_15"),java.util.Map.of());
+        CombatantState r=new CombatantState("r",raze,CombatantSide.ALLY,0);
+        r.takeDamage(600);
+        assertEquals(115,r.speed());
+    }
+
     @Test void timelinePreviewDoesNotMutate(){BattleState s=TrainingBattleFactory.create();long[] before=s.combatants().stream().mapToLong(CombatantState::gauge).toArray();assertEquals(8,s.timelinePreview(8).size());assertArrayEquals(before,s.combatants().stream().mapToLong(CombatantState::gauge).toArray());}
     @Test void deterministicAutoControllerTerminatesTrainingBattle(){
         BattleState state=TrainingBattleFactory.create();

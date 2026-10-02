@@ -25,27 +25,28 @@ class EquipmentInventoryTest {
 
         assertEquals(10, weapon.enhancementLevel());
         assertEquals(before - 4_000, profile.currency(PlayerProfile.Currency.GOLD));
-        assertEquals(0.08 * 1.40, EquipmentInventory.scaledMain(0.08, 10), 0.000001);
-        assertEquals(0.04, EquipmentInventory.scaledSub(0.04, 10), 0.000001);
+        assertEquals(0.18 * 2.00, EquipmentInventory.scaledMain("ATK_PCT", 0.18, 10), 0.000001);
+        assertEquals(15.0, EquipmentInventory.scaledMain("SPD_FLAT", 5.0, 10), 0.000001);
+        assertEquals(0.10, EquipmentInventory.scaledSub(0.10, 10), 0.000001);
         assertThrows(IllegalStateException.class, () -> inventory.enhance(weaponId, profile));
     }
 
     @Test
-    void signatureRequiresCorrectOwnerButNotLegacyStarPromotionAndHasOneTenMilestone() {
+    void signatureRequiresCorrectOwnerAndActivatesFiveAndTenMilestones() {
         EquipmentInventory inventory = EquipmentInventory.empty();
         EquipmentInventory.Item signature = inventory.grant("sig_p01_unending_vow");
         String signatureId = signature.instanceId();
         assertThrows(IllegalArgumentException.class, () -> inventory.equip("P03", signatureId));
         inventory.equip("P01", signatureId);
-        assertTrue(inventory.fixedRules("P01").contains("FOCUS3_ACTIVE1_GAUGE_60"));
+        assertTrue(inventory.fixedRules("P01").contains("SIG_P01_FOCUS3_ACTIVE_GAUGE_100"));
 
         PlayerProfile profile = PlayerProfile.restore(new PlayerProfile.Snapshot(
                 1_000_000, 0, 0, 0, Set.of("P01"), 0, false, false));
-        for (int i = 0; i < GrowthRulesV1.maxEnhancement(); i++) {
-            signature = inventory.enhance(signatureId, profile);
-        }
-        assertTrue(inventory.fixedRules("P01").contains("FOCUS3_KILL_NEXT_FOCUS_PLUS_1"));
-        assertFalse(inventory.fixedRules("P01").contains("ACTIVE1_FOCUS_KILL_CD_MINUS_1"));
+        for (int i = 0; i < 5; i++) signature = inventory.enhance(signatureId, profile);
+        assertTrue(inventory.fixedRules("P01").contains("SIG_P01_FOCUS_KILL_CARRY_2"));
+        assertFalse(inventory.fixedRules("P01").contains("SIG_P01_BREAKER_FOLLOWUP_PLUS_25"));
+        for (int i = 5; i < GrowthRulesV1.maxEnhancement(); i++) signature = inventory.enhance(signatureId, profile);
+        assertTrue(inventory.fixedRules("P01").contains("SIG_P01_BREAKER_FOLLOWUP_PLUS_25"));
     }
 
     @Test

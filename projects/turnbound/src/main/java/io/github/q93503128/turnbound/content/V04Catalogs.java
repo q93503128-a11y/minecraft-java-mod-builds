@@ -34,7 +34,7 @@ public final class V04Catalogs {
     public record Encounter(String id, String label, String region, int level, List<String> enemies, int respawnSeconds, boolean boss) {}
     public record Stat(String type, double value) {}
     public record EquipmentSpec(String id, String tier, String slot, String name, Stat main, Stat sub, String fixedEffect) {}
-    public record SignatureSpec(String id, String owner, String name, Stat main, Stat sub, String baseRule, String milestone10, String milestone20) {}
+    public record SignatureSpec(String id, String owner, String name, Stat main, Stat sub, String baseRule, String milestone5, String milestone10) {}
     public record RiftFloor(int floor, int level, List<String> enemies, boolean hardBossPattern) {}
     public record Anchor(String id, double x, double y, double z, float yaw) {}
     public record Region(String id, String name, int minX, int maxX, int minZ, int maxZ, int levelMin, int levelMax, Anchor fastTravel, Anchor bossGate, List<String> facilities) {}
@@ -183,7 +183,7 @@ public final class V04Catalogs {
         Map<String, SignatureSpec> out = new LinkedHashMap<>();
         for (JsonElement e : load("/data/turnbound/signatures/v04.json").getAsJsonArray("signatures")) {
             JsonObject o = e.getAsJsonObject();
-            SignatureSpec value = new SignatureSpec(o.get("id").getAsString(), o.get("owner").getAsString(), o.get("name").getAsString(), stat(o.getAsJsonObject("main")), stat(o.getAsJsonObject("sub")), o.get("baseRule").getAsString(), o.get("m10").getAsString(), o.get("m20").getAsString());
+            SignatureSpec value = new SignatureSpec(o.get("id").getAsString(), o.get("owner").getAsString(), o.get("name").getAsString(), stat(o.getAsJsonObject("main")), stat(o.getAsJsonObject("sub")), o.get("baseRule").getAsString(), o.get("m5").getAsString(), o.get("m10").getAsString());
             out.put(value.id(), value);
         }
         return Map.copyOf(out);

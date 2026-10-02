@@ -760,3 +760,26 @@ TURNBOUND는 일반 장비 슬롯이 무기/방어구/장신구 3개이고 전�
 - 서쪽 갈림길 이후 일반 무리와 Av'Sal 수로권은 T2 드랍이 본격화된다.
 - 선택 정예는 반복 T2 파밍의 상위 효율 지점이다.
 - 새로 추가되는 제1장 조우는 반드시 장비 드랍 루프에 연결한다.
+
+
+## 11.5 Equipment dependency rebalance — 2026-10-02
+
+The previous `+10 ~= next-tier +0` target is retired. TURNBOUND has only three normal equipment slots, fast field progression, deterministic fixed substats and no random multi-line reroll grind, so each equipped piece must produce a visible combat change.
+
+Current production target:
+- normal percentage main stats gain **+10% of their base main value per enhancement level**; +10 therefore doubles the +0 main value
+- SPD main stats gain **+1 flat SPD per enhancement level**
+- secondary stats remain fixed; item choice, not reroll labor, determines the secondary line
+- tier baselines are spaced so a previous-tier +10 item is clearly stronger than the next tier +0, while the next tier normally needs several enhancement levels to overtake
+- defensive percentage values are intentionally numerically much larger than HP/ATK values because the runtime DEF formula has diminishing mitigation
+- SPD is not treated as a rare lottery stat: every tier retains an SPD-main accessory and SPD secondary lines are spread across several slots
+
+Normal equipment traits are authoritative combat mechanics rather than flavor strings. Supported families include start/direct-hit/ally-grant Gauge, single-target damage, execute damage, healing done/received, Barrier received, revive HP, reaction damage and high-HP damage reduction.
+
+Signature equipment is deliberately low-stat and high-mechanic:
+- base unique passive at +0
+- first mechanic expansion at +5
+- second mechanic expansion at +10
+- no unreachable +20 milestone
+
+P01~P08 Signature effects alter the owner's actual Focus/Gauge/Guard/Sanctuary/follow-up/Record/summon/Fury loops and are consumed by the server-authoritative combat runtime.

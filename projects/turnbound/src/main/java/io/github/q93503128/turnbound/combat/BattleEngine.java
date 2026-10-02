@@ -146,9 +146,8 @@ public final class BattleEngine {
             }
             case HEAL -> {
                 for (CombatantState target : targets) {
-                    double potency = effect.magnitude();
-                    int value = target.heal((int)Math.floor(actor.attack() * potency));
-                    state.addEvent(new BattleEvent("HEAL", actor.instanceId(), target.instanceId(), value, skill.id()));
+                    int raw = (int)Math.floor(actor.attack() * effect.magnitude());
+                    applyHeal(actor, target, raw, skill.id());
                 }
             }
             case BARRIER_MAX_HP -> {
@@ -222,6 +221,10 @@ public final class BattleEngine {
                     int gauge = actor.definition().intParam("reviveGauge", 150);
                     target.addGauge(gauge);
                     target.putStatus(new StatusInstance("sanctuary", actor.instanceId(), 2, 0.0));
+                    if (actor.definition().hasRule("SIG_P04_REVIVE_AEGIS")) {
+                        putTimedStatus(target, "damage_reduction", actor.instanceId(), 2, 0.25, actor);
+                        state.addEvent(new BattleEvent("STATUS", actor.instanceId(), target.instanceId(), 2, "SIG_P04_REVIVE_AEGIS"));
+                    }
                     if (actor.definition().hasRule("AWAKENED")) {
                         int barrier = target.addBarrier((int)Math.floor(target.maxHp()
                                 * actor.definition().param("awakenReviveBarrier", 0.15)));
@@ -248,6 +251,22 @@ public final class BattleEngine {
                                 double magnitude, CombatantState currentActor) {
         int storedTurns = Math.max(1, declaredTurns + (target == currentActor ? 1 : 0));
         target.putStatus(new StatusInstance(id, sourceId, storedTurns, magnitude));
+    }
+
+    private int applyHeal(CombatantState source, CombatantState target, int raw, String detail) {
+        int sourceAdjusted = Math.max(0, (int)Math.floor(raw * (1.0 + rulePercent(source, "HEAL_DONE_"))));
+        int missingBefore = Math.max(0, target.maxHp() - target.hp());
+        int receivedAdjusted = Math.max(0, (int)Math.floor(sourceAdjusted * Math.max(0.0, 1.0 + target.healingReceivedModifier())));
+        int healed = target.heal(sourceAdjusted);
+        state.addEvent(new BattleEvent("HEAL", source.instanceId(), target.instanceId(), healed, detail));
+        if (source.definition().id().equals("P04") && source.definition().hasRule("SIG_P04_OVERHEAL_BARRIER_60")) {
+            int overheal = Math.max(0, receivedAdjusted - missingBefore);
+            if (overheal > 0) {
+                int barrier = target.addBarrier((int)Math.floor(overheal * 0.60));
+                if (barrier > 0) state.addEvent(new BattleEvent("BARRIER", source.instanceId(), target.instanceId(), barrier, "SIG_P04_OVERHEAL"));
+            }
+        }
+        return healed;
     }
 
     private void applyGauge(CombatantState source, CombatantState target, int requested, String detail) {
@@ -300,6 +319,14 @@ public final class BattleEngine {
         } else if (id.equals("B05") && target.status("serak_mark", actor.instanceId()) != null) {
             potency *= 1.30;
         }
+
+        if (skill.targetRule() == TargetRule.ENEMY_SINGLE) {
+            potency *= 1.0 + rulePercent(actor, "SINGLE_DIRECT_DAMAGE_");
+            if (target.hp() * 100 <= target.maxHp() * 40) potency *= 1.0 + rulePercent(actor, "EXECUTE_DIRECT_DAMAGE_");
+        }
+        if (id.equals("P06") && actor.counter("records") >= 5 && actor.definition().hasRule("SIG_P06_RECORD5_DAMAGE_20")) potency *= 1.20;
+        if (id.equals("P08") && skill.isBasic() && actor.hp() * 2 <= actor.maxHp()
+                && actor.definition().hasRule("SIG_P08_LOW_HP_BASIC_PLUS_30")) potency += 0.30;
         return potency;
     }
 
@@ -347,18 +374,24 @@ public final class BattleEngine {
                     int guardianDamage = awakenedWall
                             ? (int)Math.floor(intercepted * (1.0 - guardian.definition().param("awakenRedirectReduction", 0.30)))
                             : intercepted;
+                    if (guardian.definition().hasRule("SIG_P03_REDIRECT_DR_20")) guardianDamage = (int)Math.floor(guardianDamage * 0.80);
                     DamageApplied redirectedResult = applyNoTriggers(guardian, guardianDamage);
                     resolveApplied(actor, redirectedResult, depth, true, "redirect:" + target.instanceId());
                     state.addEvent(new BattleEvent("DAMAGE_REDIRECT", actor.instanceId(), guardian.instanceId(),
                             redirectedResult.hpLost(), target.instanceId()));
+                    if (guardian.definition().hasRule("SIG_P03_REDIRECT_TARGET_GAUGE_100") && !target.downed()) {
+                        applyGauge(guardian, target, 100, "SIG_P03_REDIRECT_TARGET_GAUGE");
+                    }
 
                     if (guardian.definition().id().equals("P03") && !guardian.downed()) {
                         if (counteredThisAction.add("P03_REDIRECT_GUARD:" + guardian.instanceId())) {
                             gainBramGuard(guardian, 20, "P03_REDIRECT_GUARD");
                         }
                         if (counteredThisAction.add("P03_REDIRECT_COUNTER:" + guardian.instanceId())) {
+                            double counterPotency = guardian.definition().param("counterPotency", 0.45)
+                                    + (guardian.definition().hasRule("SIG_P03_COUNTER_PLUS_20") ? 0.20 : 0.0);
                             reactions.addLast(new Reaction(guardian.instanceId(), actor.instanceId(),
-                                    guardian.definition().param("counterPotency", 0.45), "P03_REDIRECT_COUNTER", 1));
+                                    counterPotency, "P03_REDIRECT_COUNTER", 1));
                         }
                         if (awakenedWall) {
                             guardian.setCounter("guard", 0);
@@ -493,6 +526,14 @@ public final class BattleEngine {
         }
         if (target.definition().summon()) {
             CombatantState owner = state.find(target.ref("ownerId"));
+            if (owner != null && owner.definition().hasRule("SIG_P07_SUMMON_DEATH_WARD") && !owner.downed()) {
+                int ward = (int)Math.floor(owner.maxHp() * 0.12);
+                for (CombatantState ally : state.living(owner.side())) {
+                    int barrier = ally.addBarrier(ward);
+                    if (barrier > 0) state.addEvent(new BattleEvent("BARRIER", owner.instanceId(), ally.instanceId(), barrier, "SIG_P07_SUMMON_DEATH_WARD"));
+                }
+                owner.setCooldown("p07_summon_toto", Math.max(0, owner.cooldown("p07_summon_toto") - 1));
+            }
             if (owner != null && owner.definition().hasRule("AWAKENED") && !owner.flag("p07_awaken_resummon_used")) {
                 owner.setFlag("p07_awaken_resummon_used");
                 owner.setFlag("p07_awaken_resummon_pending");
@@ -550,7 +591,12 @@ public final class BattleEngine {
             int before = morwen.counter("records");
             morwen.incrementCounter("records", amount, morwen.definition().intParam("recordMax", 5));
             int gained = morwen.counter("records") - before;
-            if (gained > 0) state.addEvent(new BattleEvent("RECORD", morwen.instanceId(), targetId, gained, detail));
+            if (gained > 0) {
+                state.addEvent(new BattleEvent("RECORD", morwen.instanceId(), targetId, gained, detail));
+                if (morwen.definition().hasRule("SIG_P06_RECORD_HEAL_4") && !morwen.downed()) {
+                    applyHeal(morwen, morwen, (int)Math.floor(morwen.maxHp() * 0.04 * gained), "SIG_P06_RECORD_HEAL");
+                }
+            }
         }
     }
 
@@ -569,7 +615,8 @@ public final class BattleEngine {
         for (CombatantState lynette : state.living(attacker.side())) {
             if (!lynette.definition().id().equals("P05") || lynette == attacker
                     || !target.instanceId().equals(lynette.ref("sightline"))) continue;
-            if (lynette.counter("p05_followups") >= 1) continue;
+            int followupLimit = lynette.definition().hasRule("SIG_P05_FOLLOWUP_LIMIT_2") ? 2 : 1;
+            if (lynette.counter("p05_followups") >= followupLimit) continue;
 
             lynette.incrementCounter("shot", 1, 2);
             state.addEvent(new BattleEvent("RESOURCE", lynette.instanceId(), target.instanceId(),
@@ -577,9 +624,14 @@ public final class BattleEngine {
             if (lynette.counter("shot") < 2) continue;
 
             lynette.setCounter("shot", 0);
-            lynette.setCounter("p05_followups", 1);
-            reactions.addLast(new Reaction(lynette.instanceId(), target.instanceId(),
-                    lynette.definition().param("followUpPotency", 0.50), "P05_CROSS_SHOT", 1));
+            int followupIndex = lynette.counter("p05_followups") + 1;
+            lynette.setCounter("p05_followups", followupIndex);
+            double potency = lynette.definition().param("followUpPotency", 0.50);
+            if (followupIndex == 1 && lynette.definition().hasRule("SIG_P05_FIRST_FOLLOWUP_PLUS_25")) potency += 0.25;
+            reactions.addLast(new Reaction(lynette.instanceId(), target.instanceId(), potency, "P05_CROSS_SHOT", 1));
+            if (followupIndex == 2 && lynette.definition().hasRule("SIG_P05_SECOND_FOLLOWUP_GAUGE_160")) {
+                applyGauge(lynette, lynette, 160, "SIG_P05_SECOND_FOLLOWUP_GAUGE");
+            }
             if (lynette.definition().hasRule("AWAKENED")) {
                 applyGauge(lynette, target, lynette.definition().intParam("awakenFollowupDelay", -60),
                         "P05_AWAKEN_FOLLOWUP");
@@ -596,7 +648,8 @@ public final class BattleEngine {
             CombatantState target = state.find(reaction.targetId());
             if (source == null || target == null || source.downed() || target.downed()) continue;
             reactionExecutionsThisAction++;
-            int raw = calculateDamage(source.attack(), target.defense(), reaction.potency());
+            double reactionPotency = reaction.potency() * (1.0 + rulePercent(source, "REACTION_DAMAGE_"));
+            int raw = calculateDamage(source.attack(), target.defense(), reactionPotency);
             DamageApplied result = applyNoTriggers(target, adjustedIncoming(target, raw));
             state.addEvent(new BattleEvent("REACTION_DAMAGE", source.instanceId(), target.instanceId(), result.hpLost(), reaction.type()));
             resolveApplied(source, result, reaction.depth(), false, reaction.type());
@@ -623,8 +676,7 @@ public final class BattleEngine {
             reactions.addLast(new Reaction(actor.instanceId(), targets.getFirst().instanceId(), actor.definition().param("awakenExtraHit", 0.15), "F01_AWAKEN", 1));
         } else if (id.equals("F02") && actor.definition().hasRule("AWAKENED") && skill.id().equals("f02_first_aid") && !targets.isEmpty()) {
             CombatantState target = targets.getFirst();
-            int healed = target.heal((int)Math.floor(target.maxHp() * actor.definition().param("awakenMaxHpHeal", 0.03)));
-            state.addEvent(new BattleEvent("HEAL", actor.instanceId(), target.instanceId(), healed, "F02_AWAKEN"));
+            applyHeal(actor, target, (int)Math.floor(target.maxHp() * actor.definition().param("awakenMaxHpHeal", 0.03)), "F02_AWAKEN");
         } else if (id.equals("F03") && actor.definition().hasRule("AWAKENED") && skill.id().equals("f03_focus_shot")) {
             int gauge = actor.definition().intParam("awakenFocusGauge", 80);
             actor.addGauge(gauge);
@@ -663,7 +715,12 @@ public final class BattleEngine {
             double followup = duelFocusBefore >= 3
                     ? actor.definition().param("breakerFocus3Followup", 0.50)
                     : actor.definition().param("breakerFocus2Followup", 0.30);
+            if (duelFocusBefore >= 3 && actor.definition().hasRule("SIG_P01_BREAKER_FOLLOWUP_PLUS_25")) followup += 0.25;
             reactions.addLast(new Reaction(actor.instanceId(), target.instanceId(), followup, "P01_BREAKER_FOLLOWUP", 1));
+        }
+
+        if (duelFocusBefore >= 3 && !skill.isBasic() && actor.definition().hasRule("SIG_P01_FOCUS3_ACTIVE_GAUGE_100")) {
+            applyGauge(actor, actor, 100, "SIG_P01_FOCUS3_ACTIVE_GAUGE");
         }
 
         if (!target.downed() && skill.id().equals("p01_chase_slash") && duelFocusBefore >= 3) {
@@ -680,10 +737,8 @@ public final class BattleEngine {
         if (!actor.definition().id().equals("P01")) return;
         CombatantState focusTarget = state.find(actor.ref("focusTarget"));
         if (focusTarget == null || !focusTarget.downed()) return;
-        if (actor.definition().hasRule("AWAKENED")
-                && actor.counter("focus") >= actor.definition().intParam("focusMax", 3)) {
-            actor.setFlag("p01_carry_focus");
-        }
+        if ((actor.definition().hasRule("AWAKENED") || actor.definition().hasRule("SIG_P01_FOCUS_KILL_CARRY_2"))
+                && actor.counter("focus") >= actor.definition().intParam("focusMax", 3)) actor.setFlag("p01_carry_focus");
         actor.setRef("focusTarget", null);
         actor.setCounter("focus", 0);
     }
@@ -700,6 +755,19 @@ public final class BattleEngine {
                     ? actor.definition().intParam("slowBasicBonus", 40)
                     : 0;
             if (bonus > 0) applyGauge(actor, target, bonus, "P02_SLOW_ALLY_BONUS");
+        }
+        if (skill.id().equals("p02_accelerate") && actor.definition().hasRule("SIG_P02_BASIC_SELF_GAUGE_60")) {
+            applyGauge(actor, actor, 60, "SIG_P02_BASIC_SELF_GAUGE");
+        }
+        if (skill.id().equals("p02_time_leap") && actor.definition().hasRule("SIG_P02_TIME_LEAP_SPEED_20")) {
+            putTimedStatus(target, "speed_multiplier", actor.instanceId(), 1, 0.20, actor);
+            state.addEvent(new BattleEvent("STATUS", actor.instanceId(), target.instanceId(), 1, "SIG_P02_TIME_LEAP_SPEED"));
+        }
+        if (skill.id().equals("p02_time_leap") && actor.definition().hasRule("SIG_P02_TIME_LEAP_ECHO_120")) {
+            state.living(actor.side()).stream()
+                    .filter(unit -> unit != actor && unit != target && !unit.definition().summon())
+                    .min(Comparator.comparingLong(CombatantState::gauge))
+                    .ifPresent(unit -> applyGauge(actor, unit, 120, "SIG_P02_TIME_LEAP_ECHO"));
         }
 
         if (!actor.definition().hasRule("AWAKENED")
@@ -759,8 +827,7 @@ public final class BattleEngine {
         } else if (skill.id().equals("p04_resting_light")) {
             for (CombatantState target : targets) {
                 if (target.status("sanctuary", actor.instanceId()) == null) continue;
-                int extra = target.heal((int)Math.floor(actor.attack() * actor.definition().param("markedAoeBonusHeal", 0.20)));
-                state.addEvent(new BattleEvent("HEAL", actor.instanceId(), target.instanceId(), extra, "P04_SANCTUARY_AOE"));
+                applyHeal(actor, target, (int)Math.floor(actor.attack() * actor.definition().param("markedAoeBonusHeal", 0.20)), "P04_SANCTUARY_AOE");
             }
         }
     }
@@ -808,10 +875,14 @@ public final class BattleEngine {
     private void postMarion(CombatantState actor, SkillDefinition skill, List<CombatantState> targets) {
         CombatantState partner = livingP07Summon(actor);
         if (skill.id().equals("p07_command")) {
-            gainBond(actor, actor.definition().intParam("basicBond", 15), "P07_BASIC_BOND");
+            int bondGain = actor.definition().intParam("basicBond", 15)
+                    + (actor.definition().hasRule("SIG_P07_COMMAND_EMPOWER") ? 10 : 0);
+            gainBond(actor, bondGain, "P07_BASIC_BOND");
             if (partner != null && !targets.isEmpty()) {
+                double partnerPotency = skill.param("partnerPotency", 0.55)
+                        + (actor.definition().hasRule("SIG_P07_COMMAND_EMPOWER") ? 0.20 : 0.0);
                 reactions.addLast(new Reaction(partner.instanceId(), targets.getFirst().instanceId(),
-                        skill.param("partnerPotency", 0.55), "P07_PARTNER_BASIC", 1));
+                        partnerPotency, "P07_PARTNER_BASIC", 1));
             }
         } else if (skill.id().equals("p07_summon_toto") && partner != null && !targets.isEmpty()) {
             CombatantState protectedAlly = targets.getFirst();
@@ -847,6 +918,11 @@ public final class BattleEngine {
             }
         } else if (skill.id().equals("p08_blood_charge")) {
             gainRazeFury(actor, actor.hp() * 2 <= actor.maxHp() ? 35 : 30, "P08_BLOOD_FURY");
+            if (actor.hp() * 100 <= actor.maxHp() * 35 && actor.definition().hasRule("SIG_P08_BLOOD_RUSH")) {
+                applyGauge(actor, actor, 180, "SIG_P08_BLOOD_RUSH");
+                putTimedStatus(actor, "damage_reduction", actor.instanceId(), 1, 0.20, actor);
+                state.addEvent(new BattleEvent("STATUS", actor.instanceId(), actor.instanceId(), 1, "SIG_P08_BLOOD_RUSH"));
+            }
         } else if (skill.id().equals("p08_battle_mania")) {
             actor.incrementCounter("fury", -60, actor.definition().intParam("furyMax", 100));
             state.addEvent(new BattleEvent("RESOURCE", actor.instanceId(), actor.instanceId(), -60, "P08_OVERHEAT"));
@@ -942,6 +1018,11 @@ public final class BattleEngine {
             if (morwen.counter("p06_return_wait") > 0) continue;
             int hp = morwen.revive(morwen.definition().param("returnHp", 0.35));
             morwen.setGauge(ReviveTempoPolicy.selfReviveStartGauge(morwen));
+            if (morwen.definition().hasRule("SIG_P06_RETURN_CONDOLENCE_RESET")) {
+                morwen.setCooldown("p06_condolence", 0);
+                int barrier = morwen.addBarrier((int)Math.floor(morwen.maxHp() * 0.20));
+                state.addEvent(new BattleEvent("BARRIER", morwen.instanceId(), morwen.instanceId(), barrier, "SIG_P06_RETURN"));
+            }
             if (morwen.definition().hasRule("AWAKENED")) {
                 morwen.incrementCounter("records", morwen.definition().intParam("awakenReturnRecords", 2),
                         morwen.definition().intParam("recordMax", 5));
@@ -959,8 +1040,9 @@ public final class BattleEngine {
             StatusInstance sanctuary = hurt.status("sanctuary", elysia.instanceId());
             if (sanctuary == null || !emergencyHealingInProgress.add(hurt.instanceId())) continue;
             hurt.removeStatus("sanctuary", elysia.instanceId());
-            int healed = hurt.heal((int)Math.floor(elysia.attack() * elysia.definition().param("sanctuaryHeal", 0.45)));
+            int healed = applyHeal(elysia, hurt, (int)Math.floor(elysia.attack() * elysia.definition().param("sanctuaryHeal", 0.45)), "P04_SANCTUARY");
             state.addEvent(new BattleEvent("REACTION_HEAL", elysia.instanceId(), hurt.instanceId(), healed, "P04_SANCTUARY"));
+            if (elysia.definition().hasRule("SIG_P04_SANCTUARY_GAUGE_120")) applyGauge(elysia, hurt, 120, "SIG_P04_SANCTUARY_GAUGE");
             emergencyHealingInProgress.remove(hurt.instanceId());
         }
     }
@@ -1126,6 +1208,17 @@ public final class BattleEngine {
         return Math.max(0, total);
     }
 
+    private static double rulePercent(CombatantState unit, String prefix) {
+        if (unit == null || prefix == null || prefix.isBlank()) return 0.0;
+        double total = 0.0;
+        for (String rule : unit.definition().rules()) {
+            if (rule == null || !rule.startsWith(prefix) || rule.length() <= prefix.length()) continue;
+            try { total += Double.parseDouble(rule.substring(prefix.length())) / 100.0; }
+            catch (NumberFormatException ignored) { }
+        }
+        return Math.max(0.0, total);
+    }
+
     private void initializeP07Partners() {
         for (CombatantState owner : state.combatants().stream()
                 .filter(unit -> unit.definition().id().equals("P07") && !unit.downed()).toList()) {
@@ -1135,9 +1228,15 @@ public final class BattleEngine {
 
     private void spawnP07Summon(CombatantState owner, double healthRatio) {
         if (livingP07Summon(owner) != null) return;
-        int hp = Math.max(1, (int)Math.floor(owner.maxHp() * owner.definition().param("summonHpRatio", 0.45)));
-        int atk = Math.max(1, (int)Math.floor(owner.attack() * owner.definition().param("summonAtkRatio", 0.70)));
-        int def = Math.max(0, (int)Math.floor(owner.defense() * owner.definition().param("summonDefRatio", 0.80)));
+        double hpRatio = owner.definition().param("summonHpRatio", 0.45);
+        double atkRatio = owner.definition().param("summonAtkRatio", 0.70);
+        double defRatio = owner.definition().param("summonDefRatio", 0.80);
+        if (owner.definition().hasRule("SIG_P07_PARTNER_VITALITY")) {
+            hpRatio *= 1.25; atkRatio *= 1.20; defRatio *= 1.15;
+        }
+        int hp = Math.max(1, (int)Math.floor(owner.maxHp() * hpRatio));
+        int atk = Math.max(1, (int)Math.floor(owner.attack() * atkRatio));
+        int def = Math.max(0, (int)Math.floor(owner.defense() * defRatio));
         int spd = owner.definition().intParam("summonSpeed", 100);
         SkillDefinition wait = new SkillDefinition("p07_contract_wait", "동반", TargetRule.SELF, 0,
                 List.of(SkillEffect.noop("P07_PARTNER_NO_REGULAR_TURN")), "마리온의 명령에 반응하는 계약수입니다.");

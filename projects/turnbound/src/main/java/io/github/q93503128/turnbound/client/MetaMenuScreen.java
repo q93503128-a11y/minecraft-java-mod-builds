@@ -2,10 +2,12 @@ package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.CharacterPassiveCatalog;
+import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.PartyCommandPayload;
 import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.progression.GrowthRulesV1;
+import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -373,7 +375,7 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildEquipmentActions(ClientMetaState.EquipmentRow selected,int rx,int y,int rw){
         rw=Math.max(120,rw);
-        int actionY=Math.min(contentBottom()-19,y+98);
+        int actionY=Math.min(contentBottom()-19,y+116);
         var equip=new BattleHudButton(rx,actionY,rw,17,
                 Component.literal(equipmentTargetCharacterId.isBlank()?"장착할 캐릭터 선택":"이 캐릭터에게 장착"),GREEN,ignored->equipSelected());
         equip.active=!equipmentTargetCharacterId.isBlank();
@@ -413,9 +415,9 @@ public final class MetaMenuScreen extends Screen {
     private static int questCategoryPriority(String category){
         if(category==null)return 9;
         if(category.startsWith("메인"))return 0;
-        if(category.startsWith("지역 의뢰")||category.startsWith("반복"))return 1;
-        if(category.startsWith("서브")||category.startsWith("지역"))return 2;
-        if(category.startsWith("숨은"))return 3;
+        if(category.startsWith("서브")||category.startsWith("지역 목표"))return 1;
+        if(category.startsWith("숨은"))return 2;
+        if(category.startsWith("지역 의뢰")||category.startsWith("반복"))return 3;
         return 4;
     }
 
@@ -891,7 +893,7 @@ public final class MetaMenuScreen extends Screen {
         String current=statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())+" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
         g.text(font,Component.literal(UiTextLayout.fit("현재 · "+current,w)),x,y+16,TEXT,false);
         if(selected.enhancement()<GrowthRulesV1.maxEnhancement()){
-            double nextMain=selected.mainValue()/Math.max(0.0001,1.0+0.04*selected.enhancement())*(1.0+0.04*(selected.enhancement()+1));
+            double nextMain=equipmentMainAt(selected.itemId(),selected.enhancement()+1);
             String next="+"+(selected.enhancement()+1)+" · "+statTypeLabel(selected.mainType())+" "+stat(nextMain)
                     +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
             g.text(font,Component.literal(UiTextLayout.fit(next,w)),x,y+32,GREEN,false);
@@ -900,9 +902,11 @@ public final class MetaMenuScreen extends Screen {
         }
         g.text(font,Component.literal(UiTextLayout.fit("+10 최대 · "+statTypeLabel(selected.mainType())+" "+stat(selected.mainAt20())
                 +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+48,GOLD,false);
+        String effect=equipmentEffect(selected);
+        if(!effect.isBlank())g.text(font,Component.literal(UiTextLayout.fit("특성 · "+effect,w)),x,y+64,PURPLE,false);
         String owner=selected.equippedCharacterId().isBlank()?"미장착":characterName(selected.equippedCharacterId());
-        g.text(font,Component.literal(UiTextLayout.fit("현재 장착 · "+owner,w)),x,y+66,SECONDARY,false);
-        g.text(font,Component.literal(UiTextLayout.fit("장착 대상 · "+equipmentTargetName(),w)),x,y+80,GREEN,false);
+        g.text(font,Component.literal(UiTextLayout.fit("현재 장착 · "+owner,w)),x,y+80,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit("장착 대상 · "+equipmentTargetName(),w)),x,y+94,GREEN,false);
     }
 
     private void drawArchive(GuiGraphicsExtractor g){
@@ -1080,6 +1084,62 @@ public final class MetaMenuScreen extends Screen {
     private static int tierColor(String t){return switch(t){case"SIGNATURE"->0xFFC794FF;case"T4"->0xFFFFC857;case"T3"->0xFFB68CFF;case"T2"->0xFF6DC6FF;default->0xFFAEB7C6;};}
     private static String stat(double v){return Math.abs(v)<=1.0?String.format(Locale.ROOT,"%.1f%%",v*100):String.format(Locale.ROOT,"%.1f",v);}
     private static String statTypeLabel(String t){return switch(t){case"HP_FLAT"->"HP";case"HP_PERCENT","HP_PCT"->"HP%";case"ATK_FLAT"->"ATK";case"ATK_PERCENT","ATK_PCT"->"ATK%";case"DEF_FLAT"->"DEF";case"DEF_PERCENT","DEF_PCT"->"DEF%";case"SPD_FLAT"->"SPD";case"SPD_PERCENT","SPD_PCT"->"SPD%";default->t;};}
+
+    private static double equipmentMainAt(String itemId,int level){
+        try{var s=V04Catalogs.equipment(itemId);return EquipmentInventory.scaledMain(s.main().type(),s.main().value(),level);}
+        catch(RuntimeException ignored){var s=V04Catalogs.signature(itemId);return EquipmentInventory.scaledMain(s.main().type(),s.main().value(),level);}
+    }
+    private static String equipmentEffect(ClientMetaState.EquipmentRow row){
+        try{return ruleLabel(V04Catalogs.equipment(row.itemId()).fixedEffect());}
+        catch(RuntimeException ignored){
+            var s=V04Catalogs.signature(row.itemId());
+            String base=ruleLabel(s.baseRule());
+            if(row.enhancement()>=10)return base+" / +10 "+ruleLabel(s.milestone10());
+            if(row.enhancement()>=5)return base+" / +5 "+ruleLabel(s.milestone5());
+            return base+" / 다음 +5 "+ruleLabel(s.milestone5());
+        }
+    }
+    private static String ruleLabel(String rule){
+        if(rule==null||rule.isBlank())return"";
+        if(rule.startsWith("START_GAUGE_"))return"전투 시작 Gauge +"+rule.substring("START_GAUGE_".length());
+        if(rule.startsWith("DIRECT_HIT_GAUGE_"))return"직접 피격 시 Gauge +"+rule.substring("DIRECT_HIT_GAUGE_".length());
+        if(rule.startsWith("ALLY_GAUGE_GRANT_PLUS_"))return"아군 Gauge 부여량 +"+rule.substring("ALLY_GAUGE_GRANT_PLUS_".length());
+        if(rule.startsWith("SINGLE_DIRECT_DAMAGE_"))return"단일 직접 피해 +"+rule.substring("SINGLE_DIRECT_DAMAGE_".length())+"%";
+        if(rule.startsWith("EXECUTE_DIRECT_DAMAGE_"))return"HP 40% 이하 대상 직접 피해 +"+rule.substring("EXECUTE_DIRECT_DAMAGE_".length())+"%";
+        if(rule.startsWith("HEAL_DONE_"))return"주는 회복량 +"+rule.substring("HEAL_DONE_".length())+"%";
+        if(rule.startsWith("HEAL_RECEIVED_"))return"받는 회복량 +"+rule.substring("HEAL_RECEIVED_".length())+"%";
+        if(rule.startsWith("BARRIER_RECEIVED_"))return"받는 Barrier +"+rule.substring("BARRIER_RECEIVED_".length())+"%";
+        if(rule.startsWith("REVIVE_HP_PLUS_"))return"부활 HP +"+rule.substring("REVIVE_HP_PLUS_".length())+"%p";
+        if(rule.startsWith("REACTION_DAMAGE_"))return"반응 공격 피해 +"+rule.substring("REACTION_DAMAGE_".length())+"%";
+        if(rule.startsWith("HIGH_HP_DR_"))return"HP 80% 이상 피해 감소 "+rule.substring("HIGH_HP_DR_".length())+"%";
+        return switch(rule){
+            case"SIG_P01_FOCUS3_ACTIVE_GAUGE_100"->"집중 3 액티브 사용 시 Gauge +100";
+            case"SIG_P01_FOCUS_KILL_CARRY_2"->"집중 3 대상 처치 후 다음 대상에 집중 2 계승";
+            case"SIG_P01_BREAKER_FOLLOWUP_PLUS_25"->"집중 3 파쇄 추가타 위력 +25%p";
+            case"SIG_P02_BASIC_SELF_GAUGE_60"->"가속 사용 시 자신 Gauge +60";
+            case"SIG_P02_TIME_LEAP_SPEED_20"->"시간 도약 대상 SPD +20%";
+            case"SIG_P02_TIME_LEAP_ECHO_120"->"시간 도약 시 다른 아군 Gauge +120";
+            case"SIG_P03_REDIRECT_DR_20"->"대신 받는 피해 20% 감소";
+            case"SIG_P03_COUNTER_PLUS_20"->"보호 전환 반격 위력 +20%p";
+            case"SIG_P03_REDIRECT_TARGET_GAUGE_100"->"보호받은 아군 피격 시 Gauge +100";
+            case"SIG_P04_OVERHEAL_BARRIER_60"->"초과 회복 60%를 Barrier로 전환";
+            case"SIG_P04_REVIVE_AEGIS"->"부활 대상 2행동간 피해 감소 25%";
+            case"SIG_P04_SANCTUARY_GAUGE_120"->"Sanctuary 긴급 회복 시 Gauge +120";
+            case"SIG_P05_FIRST_FOLLOWUP_PLUS_25"->"첫 추격 사격 위력 +25%p";
+            case"SIG_P05_FOLLOWUP_LIMIT_2"->"자신 턴 사이 추격 사격 최대 2회";
+            case"SIG_P05_SECOND_FOLLOWUP_GAUGE_160"->"두 번째 추격 후 Gauge +160";
+            case"SIG_P06_RECORD_HEAL_4"->"Record 획득당 MaxHP 4% 회복";
+            case"SIG_P06_RECORD5_DAMAGE_20"->"Record 5에서 직접 피해 +20%";
+            case"SIG_P06_RETURN_CONDOLENCE_RESET"->"복귀 시 조문 초기화 + Barrier 20%";
+            case"SIG_P07_PARTNER_VITALITY"->"계약수 HP/ATK/DEF 강화";
+            case"SIG_P07_COMMAND_EMPOWER"->"공명 명령 Bond·계약수 추가타 강화";
+            case"SIG_P07_SUMMON_DEATH_WARD"->"계약수 전투불능 시 파티 Barrier";
+            case"SIG_P08_LOW_HP_SPEED_15"->"HP 50% 이하 SPD +15%";
+            case"SIG_P08_LOW_HP_BASIC_PLUS_30"->"HP 50% 이하 난격 위력 +30%p";
+            case"SIG_P08_BLOOD_RUSH"->"저HP 피의 돌진 후 Gauge +180·피해 감소";
+            default->"";
+        };
+    }
     private static String characterName(String id){return ClientMetaState.snapshot().characters().stream().filter(r->r.id().equals(id)).map(ClientMetaState.CharacterRow::name).findFirst().orElse(id);}
 
     @Override public boolean isPauseScreen(){return false;}
