@@ -20,7 +20,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
  * <p>The second client review rejected the dense civic block and oversized
  * continuous terrace. V5 keeps one compact public hub, gives later facilities
  * their own satellite parcels, and distributes the shared housing pool across
- * actual 25x25 lots selected from the canonical-world terrain probe.</p>
+ * actual 25x25 reserved lots selected from the canonical-world terrain probe. The initial pass only grades a 17x17 inner pad so yards keep natural edges and future upgrades still have reserved space.</p>
  */
 public final class VillageReviewLandscape {
     private static final int AREA_FEATHER = 4;
@@ -28,13 +28,14 @@ public final class VillageReviewLandscape {
     private static final int MAX_PATH_DELTA = 6;
 
     private static final List<AreaSpec> AREAS = List.of(
-            area("civic_core", -330, -270, -62, -17, 72),
+            area("civic_west", -323, -292, -63, -21, 72),
+            area("civic_southeast", -293, -270, -63, -29, 72),
+            area("upper_civic", -317, -282, -21, 18, 75),
 
-            area("clothing_garden", -310, -290, -15, 7, 74),
             area("clinic_green", -192, -168, -144, -120, 65),
             area("museum_green", -248, -224, 48, 72, 64),
 
-            home("home_01", -308, -76, 65),
+            home("home_01", -308, -76, 68),
             home("home_02", -164, -164, 63),
             home("home_03", -156, 76, 67),
             home("home_04", -12, 76, 65),
@@ -55,21 +56,22 @@ public final class VillageReviewLandscape {
                     node(-306, 72, -39)),
             path("plaza_to_services",
                     node(-306, 72, -36),
-                    node(-312, 72, -31),
-                    node(-317, 72, -26)),
+                    node(-312, 72, -33),
+                    node(-316, 72, -31)),
             path("plaza_to_store",
                     node(-301, 72, -42),
                     node(-295, 72, -47),
                     node(-287, 72, -51)),
-            path("plaza_to_cafe",
-                    node(-299, 72, -32),
-                    node(-294, 72, -27),
-                    node(-289, 72, -23)),
-            path("plaza_to_clothing",
+            path("upper_walk",
                     node(-300, 72, -27),
-                    node(-300, 73, -20),
-                    node(-300, 74, -13),
-                    node(-300, 74, -8))
+                    node(-300, 73, -23),
+                    node(-299, 75, -19),
+                    node(-295, 75, -17)),
+            path("upper_clothing_branch",
+                    node(-299, 75, -16),
+                    node(-302, 75, -8),
+                    node(-306, 75, 0),
+                    node(-307, 75, 5))
     );
 
     private VillageReviewLandscape() {}
@@ -355,7 +357,7 @@ public final class VillageReviewLandscape {
     }
 
     private static AreaSpec home(String name, int centerX, int centerZ, int y) {
-        return area(name, centerX - 12, centerX + 12, centerZ - 12, centerZ + 12, y);
+        return area(name, centerX - 8, centerX + 8, centerZ - 8, centerZ + 8, y);
     }
 
     private static PathNode node(int x, int y, int z) {

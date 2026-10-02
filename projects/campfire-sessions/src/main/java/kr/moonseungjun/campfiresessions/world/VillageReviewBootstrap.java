@@ -48,10 +48,10 @@ public final class VillageReviewBootstrap {
 
     private static final List<BuildingSpec> BUILDINGS = List.of(
             cheks("plaza_pavilion", "plains_meeting_point_4", -305, 73, -42, 10, 7, 16),
-            cheks("resident_services", "plains_medium_house_1", -324, 73, -28, 13, 9, 11),
+            cheks("resident_services", "plains_medium_house_1", -322, 73, -32, 13, 9, 11),
             cheks("general_store", "plains_butcher_shop_1", -286, 73, -56, 11, 8, 12),
-            cheks("cafe", "plains_butcher_shop_2", -290, 73, -24, 15, 13, 7),
-            cheks("clothing_shop", "plains_shepherds_house_1", -304, 75, -10, 9, 7, 13),
+            cheks("cafe", "plains_butcher_shop_2", -296, 76, -18, 15, 13, 7),
+            cheks("clothing_shop", "plains_shepherds_house_1", -310, 76, 2, 9, 7, 13),
 
             cheks("clinic", "plains_temple_3", -185, 66, -135, 11, 11, 7),
             cheks("museum", "plains_library_1", -241, 65, 52, 11, 11, 17),
@@ -65,7 +65,7 @@ public final class VillageReviewBootstrap {
                     false
             ),
 
-            cheks("player_house_stage_1", "plains_small_house_1", -311, 66, -79, 7, 9, 7),
+            cheks("player_house_stage_1", "plains_small_house_1", -311, 69, -79, 7, 9, 7),
             cheks("resident_house_1", "plains_small_house_2", -167, 64, -167, 7, 9, 7),
             cheks("resident_house_2", "plains_small_house_3", -159, 68, 73, 7, 9, 7),
             cheks("resident_house_3", "plains_small_house_4", -15, 66, 73, 7, 8, 7),
