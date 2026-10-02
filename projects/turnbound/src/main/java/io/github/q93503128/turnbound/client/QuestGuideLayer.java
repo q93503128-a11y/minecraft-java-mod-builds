@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Current-objective guide with a full-detail J view and a screen-space navigation cue. */
+/** Main objective guide with up to two auxiliary goals and a full-detail J view. */
 public final class QuestGuideLayer implements GuiLayer {
     private static final int TEXT = 0xFFF6F0E4;
     private static final int MUTED = 0xFFC9BDAA;
@@ -43,7 +43,9 @@ public final class QuestGuideLayer implements GuiLayer {
         if (!expanded) {
             int h = 22;
             TurnboundUiSkin.panel(graphics, x, y, width, h);
-            String compact = UiTextLayout.fit("목표 · " + objective, width - 64);
+            int auxiliary = snapshot.questTrackers().size();
+            String suffix = auxiliary > 0 ? "  +" + auxiliary : "";
+            String compact = UiTextLayout.fit("메인 · " + objective + suffix, width - 64);
             graphics.text(minecraft.font, Component.literal(compact), x + 8, y + 6, TEXT, true);
             graphics.text(minecraft.font, Component.literal("J 상세"), x + width - 8 - minecraft.font.width("J 상세"), y + 6, GOLD, false);
             return;
@@ -60,7 +62,10 @@ public final class QuestGuideLayer implements GuiLayer {
         List<String> objectiveLines = wrap(minecraft, objective, width - 20, maxTextLines);
         int remainingLines = Math.max(1, maxTextLines - objectiveLines.size());
         List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 20, remainingLines);
-        int height = 30 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 9);
+        List<FieldUiSnapshot.QuestTracker> auxiliary = snapshot.questTrackers().stream().limit(2).toList();
+        int hiddenAuxiliary = Math.max(0, snapshot.questTrackers().size() - auxiliary.size());
+        int auxiliaryHeight = auxiliary.size() * 22 + (hiddenAuxiliary > 0 ? 11 : 0);
+        int height = 30 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 9) + auxiliaryHeight;
         height = Math.min(maxPanelHeight, Math.max(44, height));
 
         TurnboundUiSkin.panel(graphics, x, y, width, height);
@@ -82,6 +87,23 @@ public final class QuestGuideLayer implements GuiLayer {
         if (snapshot.patrolGoal() > 0 && snapshot.patrolsCleared() < snapshot.patrolGoal()) {
             String progress = snapshot.patrolsCleared() + "/" + snapshot.patrolGoal();
             graphics.text(minecraft.font, Component.literal(progress), x + width - minecraft.font.width(progress) - 10, y + 22, GREEN, true);
+        }
+
+        for (FieldUiSnapshot.QuestTracker tracker : auxiliary) {
+            if (ty + 19 >= y + height) break;
+            ty += 4;
+            String category = tracker.repeatable() ? "지역 의뢰" : tracker.category();
+            String head = category + " · " + tracker.title();
+            graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(head, width - 20)),
+                    x + 10, ty, tracker.repeatable() ? GREEN : GOLD, true);
+            ty += 10;
+            graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(tracker.objective(), width - 20)),
+                    x + 10, ty, SECONDARY, false);
+            ty += 8;
+        }
+        if (hiddenAuxiliary > 0 && ty + 8 < y + height) {
+            String more = "외 " + hiddenAuxiliary + "개 · E 메뉴 → 퀘스트";
+            graphics.text(minecraft.font, Component.literal(more), x + 10, ty + 3, MUTED, false);
         }
     }
 

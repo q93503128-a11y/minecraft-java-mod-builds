@@ -33,7 +33,8 @@ public record FieldUiSnapshot(
         String interactionLabel,
         String interactionAction,
         Navigation navigation,
-        List<MapPoint> mapPoints
+        List<MapPoint> mapPoints,
+        List<QuestTracker> questTrackers
 ) {
     public enum Mode { NONE, LOADING, BATTLE_TRANSITION, QUEST, RESULT, TRAVEL }
 
@@ -99,6 +100,22 @@ public record FieldUiSnapshot(
 
     public record Travel(String id, String label, boolean unlocked, boolean current) {}
 
+    public record QuestTracker(String id, String title, String category, String objective, boolean repeatable) {
+        public QuestTracker {
+            id = id == null ? "" : id.trim();
+            title = playerFacingText(title == null ? "" : title);
+            category = playerFacingText(category == null ? "" : category);
+            objective = playerFacingText(objective == null ? "" : objective);
+            if (id.isBlank() || title.isBlank() || objective.isBlank()) {
+                id = "";
+                title = "";
+                category = "";
+                objective = "";
+            }
+        }
+        public boolean active() { return !id.isBlank() && !title.isBlank() && !objective.isBlank(); }
+    }
+
     public record MapPoint(String id, String label, String kind, double x, double z, boolean objective) {
         public MapPoint {
             id = id == null ? "" : id.trim();
@@ -147,6 +164,38 @@ public record FieldUiSnapshot(
         interactionAction = playerFacingText(interactionAction == null ? "" : interactionAction);
         navigation = navigation == null ? Navigation.none() : navigation;
         mapPoints = List.copyOf(mapPoints == null ? List.of() : mapPoints.stream().filter(MapPoint::active).toList());
+        questTrackers = List.copyOf(questTrackers == null ? List.of() : questTrackers.stream().filter(QuestTracker::active).toList());
+    }
+
+    /** Compatibility constructor matching the pre-quest-tracker full snapshot shape. */
+    public FieldUiSnapshot(
+            boolean active,
+            Mode mode,
+            int patrolsCleared,
+            int patrolGoal,
+            boolean bossUnlocked,
+            boolean chapterCleared,
+            int earnedXp,
+            int earnedGold,
+            String objective,
+            String dialogue,
+            Reward reward,
+            List<Encounter> encounters,
+            List<Travel> travels,
+            String loadingStage,
+            int loadingPercent,
+            String locationId,
+            String locationTitle,
+            String interactionId,
+            String interactionLabel,
+            String interactionAction,
+            Navigation navigation,
+            List<MapPoint> mapPoints
+    ) {
+        this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
+                objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
+                locationId, locationTitle, interactionId, interactionLabel, interactionAction,
+                navigation, mapPoints, List.of());
     }
 
     /** Compatibility constructor matching the pre-map-point full snapshot shape. */
@@ -175,7 +224,7 @@ public record FieldUiSnapshot(
     ) {
         this(active, mode, patrolsCleared, patrolGoal, bossUnlocked, chapterCleared, earnedXp, earnedGold,
                 objective, dialogue, reward, encounters, travels, loadingStage, loadingPercent,
-                locationId, locationTitle, interactionId, interactionLabel, interactionAction, navigation, List.of());
+                locationId, locationTitle, interactionId, interactionLabel, interactionAction, navigation, List.of(), List.of());
     }
 
     /** Final UI-boundary defense. Internal identifiers remain valid in logic/save data but not in authored copy. */

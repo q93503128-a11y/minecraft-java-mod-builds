@@ -92,7 +92,8 @@ public final class DrehmalFirstRouteRuntime {
                 interaction.label(),
                 interaction.action(),
                 navigation,
-                OpenworldMapPointService.points(player));
+                OpenworldMapPointService.points(player),
+                OpenworldQuestTrackerService.active(player));
     }
 
     static String locationId(ServerPlayer player) {

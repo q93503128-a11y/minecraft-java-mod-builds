@@ -138,6 +138,22 @@ class FieldUiCodecTest {
     }
 
     @Test
+    void roundTripsAuxiliaryQuestTrackers() {
+        FieldUiSnapshot source = new FieldUiSnapshot(
+                true, FieldUiSnapshot.Mode.NONE, 0, 0, false, false, 0, 0,
+                "아브살로 향하십시오.", "", FieldUiSnapshot.Reward.none(), List.of(), List.of(),
+                "", 0, "", "", "", "", "", FieldUiSnapshot.Navigation.none(), List.of(),
+                List.of(
+                        new FieldUiSnapshot.QuestTracker("SQ_AV05", "갈림길을 막은 자들", "서브 목표",
+                                "서쪽 갈림길의 약탈대를 정리하십시오.", false),
+                        new FieldUiSnapshot.QuestTracker("regional:avsal", "긴 가도 전면 순찰", "지역 의뢰",
+                                "가도 전투 2/6", true)));
+        FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(source));
+        assertEquals(source.questTrackers(), decoded.questTrackers());
+        assertEquals(2, decoded.questTrackers().size());
+    }
+
+    @Test
     void roundTripsBattleTransitionOwnershipState() {
         FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(FieldUiSnapshot.battleTransition()));
         assertTrue(decoded.active());
