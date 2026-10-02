@@ -68,7 +68,7 @@ public final class CampaignEncounterCatalog {
             case "AV_ROAD_HOUNDS" -> 0.40;
             case "AV_ROAD_PATROL" -> 0.40;
             case "AV_RELAY_SENTRIES" -> 0.44;
-            case "AV_RELAY_GUARD" -> 0.40;
+            case "AV_RELAY_GUARD" -> 0.34;
             case "AV_ROAD_ELITE" -> 0.48;
             // Karnon must spend its budget on Barrier/counter/lock/breach decisions, not on a 60+ ally-action HP wall.
             case "AV_FIRST_BOSS" -> 0.52;

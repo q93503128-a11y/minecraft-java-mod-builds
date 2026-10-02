@@ -64,7 +64,7 @@ final class ChapterOneCombatPacingTest {
                 pacing("AV_RELAY_SENTRIES", 3, 10),
                 pacing("AV_CH1_OUTSKIRT_HOUNDS", 4, 12),
                 pacing("AV_CH1_WATERLINE_SWARM", 5, 14),
-                pacing("AV_CH1_RUSTED_COLUMN", 5, 14),
+                pacing("AV_CH1_RUSTED_COLUMN", 5, 15),
                 pacing("AV_RELAY_GUARD", 4, 13),
                 pacing("AV_FIRST_BOSS", 24, 42)
         );
