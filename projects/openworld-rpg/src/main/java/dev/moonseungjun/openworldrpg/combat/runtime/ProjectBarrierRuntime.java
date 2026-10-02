@@ -7,6 +7,8 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerBarrierRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
+import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -75,6 +77,101 @@ public final class ProjectBarrierRuntime {
                 clericGraceSource,
                 activeClass == RootClass.GUARDIAN
         );
+    }
+
+    /**
+     * Encounter-linked Earthloong barrier application. The caller must pass the active Earthloong
+     * whose engaged ally is receiving the barrier.
+     */
+    public static GrantApplication applyEarthloongSkillBarrier(
+            ServerPlayer caster,
+            ServerPlayer target,
+            LivingEntity earthloong,
+            String sourceId,
+            double barrierCoefficient,
+            double applicableOutputBonus,
+            int durationTicks,
+            boolean clericGraceSource
+    ) {
+        Objects.requireNonNull(earthloong, "earthloong");
+        return applyEncounterSkillBarrier(
+                caster,
+                target,
+                earthloong,
+                sourceId,
+                barrierCoefficient,
+                applicableOutputBonus,
+                durationTicks,
+                clericGraceSource
+        );
+    }
+
+    /**
+     * Encounter-linked Nature Spirit barrier application. A positive effective grant to another
+     * actively engaged player is one valid support contribution; proximity and self-barriers do not
+     * qualify.
+     */
+    public static GrantApplication applyNatureSpiritSkillBarrier(
+            ServerPlayer caster,
+            ServerPlayer target,
+            LivingEntity natureSpirit,
+            String sourceId,
+            double barrierCoefficient,
+            double applicableOutputBonus,
+            int durationTicks,
+            boolean clericGraceSource
+    ) {
+        Objects.requireNonNull(natureSpirit, "natureSpirit");
+        return applyEncounterSkillBarrier(
+                caster,
+                target,
+                natureSpirit,
+                sourceId,
+                barrierCoefficient,
+                applicableOutputBonus,
+                durationTicks,
+                clericGraceSource
+        );
+    }
+
+    private static GrantApplication applyEncounterSkillBarrier(
+            ServerPlayer caster,
+            ServerPlayer target,
+            LivingEntity encounterActor,
+            String sourceId,
+            double barrierCoefficient,
+            double applicableOutputBonus,
+            int durationTicks,
+            boolean clericGraceSource
+    ) {
+        GrantApplication application = applySkillBarrier(
+                caster,
+                target,
+                sourceId,
+                barrierCoefficient,
+                applicableOutputBonus,
+                durationTicks,
+                clericGraceSource
+        );
+        if (!application.accepted()
+                || application.effectiveGranted() <= 0.0
+                || caster == target) {
+            return application;
+        }
+
+        R01EarthloongEncounterService.recordValidatedSupportContribution(
+                encounterActor,
+                caster
+        );
+        R01NatureSpiritRewardService.recordValidatedSupportContribution(
+                encounterActor,
+                caster
+        );
+        CombatStateServices.markCombatActivity(
+                caster.getUUID(),
+                caster.level().getGameTime()
+        );
+        return application;
     }
 
     public static GrantApplication applyFixedBarrier(

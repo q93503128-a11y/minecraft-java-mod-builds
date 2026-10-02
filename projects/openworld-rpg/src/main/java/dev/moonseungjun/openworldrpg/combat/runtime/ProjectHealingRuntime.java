@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -68,12 +69,29 @@ public final class ProjectHealingRuntime {
         return apply(caster, target, healCoefficient, 1.0, earthloong);
     }
 
+    /**
+     * Applies a real skill heal and, when it restores HP to another player, records one validated
+     * Nature Spirit support contribution through the encounter reward authority.
+     *
+     * <p>The caller must pass the actual authored Nature Spirit whose encounter the healed ally is
+     * actively engaged in. Merely being nearby never qualifies.</p>
+     */
+    public static Application applyNatureSpiritSkillHeal(
+            ServerPlayer caster,
+            ServerPlayer target,
+            LivingEntity natureSpirit,
+            double healCoefficient
+    ) {
+        Objects.requireNonNull(natureSpirit, "natureSpirit");
+        return apply(caster, target, healCoefficient, 1.0, natureSpirit);
+    }
+
     private static Application apply(
             ServerPlayer caster,
             ServerPlayer target,
             double healCoefficient,
             double outputMultiplier,
-            LivingEntity earthloong
+            LivingEntity encounterActor
     ) {
         Objects.requireNonNull(caster, "caster");
         Objects.requireNonNull(target, "target");
@@ -136,12 +154,18 @@ public final class ProjectHealingRuntime {
         );
 
         boolean newEarthloongParticipation = false;
-        if (earthloong != null
+        boolean newNatureSpiritParticipation = false;
+        if (encounterActor != null
                 && caster != target
                 && effectiveHealing > 0.0) {
             newEarthloongParticipation =
                     R01EarthloongEncounterService.recordValidatedSupportContribution(
-                            earthloong,
+                            encounterActor,
+                            caster
+                    );
+            newNatureSpiritParticipation =
+                    R01NatureSpiritRewardService.recordValidatedSupportContribution(
+                            encounterActor,
                             caster
                     );
             CombatStateServices.markCombatActivity(
@@ -154,7 +178,8 @@ public final class ProjectHealingRuntime {
                 true,
                 requestedHealing,
                 effectiveHealing,
-                newEarthloongParticipation
+                newEarthloongParticipation,
+                newNatureSpiritParticipation
         );
     }
 
@@ -162,7 +187,8 @@ public final class ProjectHealingRuntime {
             boolean accepted,
             double requestedHealing,
             double effectiveHealing,
-            boolean newEarthloongParticipation
+            boolean newEarthloongParticipation,
+            boolean newNatureSpiritParticipation
     ) {
         public Application {
             if (!Double.isFinite(requestedHealing)
@@ -177,20 +203,29 @@ public final class ProjectHealingRuntime {
             if (!accepted
                     && (requestedHealing != 0.0
                     || effectiveHealing != 0.0
-                    || newEarthloongParticipation)) {
+                    || newEarthloongParticipation
+                    || newNatureSpiritParticipation)) {
                 throw new IllegalArgumentException(
                         "Rejected healing cannot carry applied state."
                 );
             }
-            if (newEarthloongParticipation && effectiveHealing <= 0.0) {
+            if ((newEarthloongParticipation
+                    || newNatureSpiritParticipation)
+                    && effectiveHealing <= 0.0) {
                 throw new IllegalArgumentException(
                         "Support participation requires effective healing."
+                );
+            }
+            if (newEarthloongParticipation
+                    && newNatureSpiritParticipation) {
+                throw new IllegalArgumentException(
+                        "One heal cannot qualify for two encounter actors."
                 );
             }
         }
 
         public static Application rejected() {
-            return new Application(false, 0.0, 0.0, false);
+            return new Application(false, 0.0, 0.0, false, false);
         }
     }
 }
