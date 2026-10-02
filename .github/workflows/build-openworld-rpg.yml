@@ -121,7 +121,16 @@ jobs:
 
           grep -q 'Openworld RPG M0 integration bootstrap loaded with profile gameplay' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external runtime containment verified before gameplay server start' build/logs/server-gameplay.log
-          grep -q 'Openworld RPG external actor binding armed for threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG R01 external actor registry gate armed for 9 exact pinned targets; 5 currently have project combat-stat authority.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_earthloong.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_regalhart.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:steelboar.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:louxia.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: alexsmobs:bison.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: alexsmobs:grizzly_bear.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: alexsmobs:gazelle.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: alexsmobs:raccoon.' build/logs/server-gameplay.log
+          grep -q 'Openworld RPG external actor registry target verified at server start: alexsmobs:crow.' build/logs/server-gameplay.log
           grep -q 'Openworld RPG R01 Earthloong physical encounter runtime armed' build/logs/server-gameplay.log
           grep -q 'Openworld RPG external actor registry target verified at server start: threateningly_mobs:the_earthloong' build/logs/server-gameplay.log
           grep -q 'Openworld RPG Better Combat authority adapter armed for profile gameplay' build/logs/server-gameplay.log
