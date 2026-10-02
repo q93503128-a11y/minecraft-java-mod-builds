@@ -99,51 +99,27 @@ def download(path: str) -> bytes:
 def inspect(name: str):
     path = PREFIX + name + ".nbt"
     raw = download(path)
-    root = NbtReader(raw).root()
-    size = root.get("size")
-    palette = root.get("palette") or []
-    blocks = root.get("blocks") or []
+    payload = gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw
 
-    palette_names = [
-        entry.get("Name", "minecraft:air") if isinstance(entry, dict) else "minecraft:air"
-        for entry in palette
-    ]
-    counts = collections.Counter()
-    entrances = []
-    foreign = collections.Counter()
-
-    for block in blocks:
-        if not isinstance(block, dict):
-            continue
-        state = block.get("state")
-        if not isinstance(state, int) or not (0 <= state < len(palette_names)):
-            continue
-        block_name = palette_names[state]
-        counts[block_name] += 1
-        if not block_name.startswith("minecraft:"):
-            foreign[block_name] += 1
-        nbt = block.get("nbt")
-        if block_name == "minecraft:jigsaw" and isinstance(nbt, dict):
-            name_field = str(nbt.get("name", ""))
-            target = str(nbt.get("target", ""))
-            if "entrance" in name_field.lower() or "entrance" in target.lower():
-                entrances.append(block.get("pos"))
+    # Structure NBT writes size as TAG_List("size") of three TAG_Int values.
+    # We only need exact dimensions for lot planning, so avoid decoding unrelated
+    # legacy/custom text payloads elsewhere in the source structure.
+    token = b"\x09\x00\x04size\x03\x00\x00\x00\x03"
+    pos = payload.find(token)
+    if pos < 0:
+        raise RuntimeError(f"{name}: exact NBT size tag not found")
+    start = pos + len(token)
+    if start + 12 > len(payload):
+        raise RuntimeError(f"{name}: truncated NBT size payload")
+    size = list(struct.unpack(">iii", payload[start:start + 12]))
 
     return {
         "name": name,
         "source": path,
         "bytes": len(raw),
         "size": size,
-        "footprint": [size[0], size[2]] if isinstance(size, list) and len(size) == 3 else None,
-        "blocks": len(blocks),
-        "air": counts.get("minecraft:air", 0),
-        "dirt_path": counts.get("minecraft:dirt_path", 0),
-        "jigsaw": counts.get("minecraft:jigsaw", 0),
-        "entrances": entrances,
-        "foreign_palette": dict(foreign),
-        "top_blocks": counts.most_common(12),
+        "footprint": [size[0], size[2]],
     }
-
 
 def main() -> int:
     rows = [inspect(name) for name in NAMES]
@@ -155,11 +131,7 @@ def main() -> int:
     print("CHEKS_PINNED_COMMIT=" + COMMIT)
     for row in rows:
         size = row["size"]
-        print(
-            f"{row['name']}: size={size} footprint={row['footprint']} "
-            f"air={row['air']} path={row['dirt_path']} jigsaw={row['jigsaw']} "
-            f"entrances={row['entrances']} foreign={row['foreign_palette']}"
-        )
+        print(f"{row['name']}: size={size} footprint={row['footprint']}")
     print(f"CHEKS_STRUCTURES_INSPECTED={len(rows)}")
     print(f"REPORT={out}")
     return 0
