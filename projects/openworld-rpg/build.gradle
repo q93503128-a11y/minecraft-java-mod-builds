@@ -407,10 +407,14 @@ tasks.register('inspectR01CreatureDependencySurface') {
                 [file: alex, label: 'ALEXS_MOBS', tokens: [
                         'gazelle', 'bison', 'raccoon', 'crow',
                         'grizzly', 'rattlesnake', 'cave_centipede', 'cavecentipede'
+                ], binaryNeedles: [
+                        'centipede_head', 'centipede_body', 'centipede_tail'
                 ]],
                 [file: threateningly, label: 'THREATENINGLY', tokens: [
                         'louxia', 'steelboar', 'steel_boar',
                         'nature_spirit', 'naturespirit', 'regalhart', 'earthloong'
+                ], binaryNeedles: [
+                        'nature_hamony', 'nature_spirit', 'naturespirit'
                 ]]
         ]
 
@@ -445,14 +449,43 @@ tasks.register('inspectR01CreatureDependencySurface') {
                     }
                 }
 
-                def classEntries = allEntries.findAll { entry ->
+                def namedClassEntries = allEntries.findAll { entry ->
                     if (!entry.endsWith('.class')) return false
                     def lower = entry.toLowerCase(java.util.Locale.ROOT)
                     target.tokens.any { token ->
                         lower.contains(token.toLowerCase(java.util.Locale.ROOT).replace('_', ''))
                                 || lower.contains(token.toLowerCase(java.util.Locale.ROOT))
                     }
-                }.unique().sort()
+                }
+
+                /*
+                 * Some dependency registries use legacy/generated symbol names that do not match
+                 * the player-facing creature name. Search raw class bytes for the exact unresolved
+                 * registry strings first, then javap only the matching owners. This keeps the
+                 * inspection narrow while making naming mismatches mechanically discoverable.
+                 */
+                def binaryClassEntries = []
+                allEntries.findAll { it.endsWith('.class') }.each { entryName ->
+                    def entry = zip.getEntry(entryName)
+                    if (entry == null || entry.isDirectory()) return
+                    def rawText
+                    zip.getInputStream(entry).withCloseable { input ->
+                        rawText = new String(
+                                input.readAllBytes(),
+                                java.nio.charset.StandardCharsets.ISO_8859_1
+                        ).toLowerCase(java.util.Locale.ROOT)
+                    }
+                    def matchedNeedles = target.binaryNeedles.findAll { needle ->
+                        rawText.contains(needle.toLowerCase(java.util.Locale.ROOT))
+                    }
+                    if (!matchedNeedles.isEmpty()) {
+                        binaryClassEntries << entryName
+                        println "R01_CREATURE_BINARY_CLASS source=${target.label} entry=${entryName} needles=${matchedNeedles.join(',')}"
+                        output << "R01_CREATURE_BINARY_CLASS source=${target.label} entry=${entryName} needles=${matchedNeedles.join(',')}" << System.lineSeparator()
+                    }
+                }
+
+                def classEntries = (namedClassEntries + binaryClassEntries).unique().sort()
 
                 classEntries.each { entry ->
                     def className = entry.substring(0, entry.length() - '.class'.length()).replace('/', '.')
@@ -477,10 +510,12 @@ tasks.register('inspectR01CreatureDependencySurface') {
                     if (!disassembly.endsWith(System.lineSeparator())) {
                         output << System.lineSeparator()
                     }
+                    def inspectionNeedles =
+                            (target.tokens + target.binaryNeedles).unique()
                     disassembly.readLines()
                             .findAll { line ->
                                 def lower = line.toLowerCase(java.util.Locale.ROOT)
-                                target.tokens.any { token ->
+                                inspectionNeedles.any { token ->
                                     lower.contains(token.toLowerCase(java.util.Locale.ROOT))
                                 }
                             }
