@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Main objective guide with up to two auxiliary goals and a full-detail J view. */
+/** Main objective guide with up to two auxiliary goals and a full-detail K view. */
 public final class QuestGuideLayer implements GuiLayer {
     private static final int TEXT = 0xFFF6F0E4;
     private static final int MUTED = 0xFFC9BDAA;
@@ -36,7 +36,7 @@ public final class QuestGuideLayer implements GuiLayer {
         int width = expanded
                 ? Math.min(256, Math.max(190, graphics.guiWidth() / 4))
                 : Math.min(176, Math.max(148, graphics.guiWidth() / 6));
-        int x = graphics.guiWidth() - width - 7;
+        int x = 7;
         int y = 7;
         String objective = playerFacingObjective(snapshot.objective());
 
@@ -47,7 +47,7 @@ public final class QuestGuideLayer implements GuiLayer {
             String suffix = auxiliary > 0 ? "  +" + auxiliary : "";
             String compact = UiTextLayout.fit("메인 · " + objective + suffix, width - 64);
             graphics.text(minecraft.font, Component.literal(compact), x + 8, y + 6, TEXT, true);
-            graphics.text(minecraft.font, Component.literal("J 상세"), x + width - 8 - minecraft.font.width("J 상세"), y + 6, GOLD, false);
+            graphics.text(minecraft.font, Component.literal("K 상세"), x + width - 8 - minecraft.font.width("K 상세"), y + 6, GOLD, false);
             return;
         }
 
@@ -70,7 +70,7 @@ public final class QuestGuideLayer implements GuiLayer {
 
         TurnboundUiSkin.panel(graphics, x, y, width, height);
         graphics.text(minecraft.font, Component.literal("목표"), x + 10, y + 8, GOLD, true);
-        graphics.text(minecraft.font, Component.literal("J 접기"), x + width - 10 - minecraft.font.width("J 접기"), y + 8, MUTED, false);
+        graphics.text(minecraft.font, Component.literal("K 접기"), x + width - 10 - minecraft.font.width("K 접기"), y + 8, MUTED, false);
         int ty = y + 22;
         for (String line : objectiveLines) {
             graphics.text(minecraft.font, Component.literal(line), x + 10, ty, TEXT, true);

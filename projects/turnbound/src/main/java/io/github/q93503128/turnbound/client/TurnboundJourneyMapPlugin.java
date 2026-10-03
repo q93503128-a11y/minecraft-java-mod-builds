@@ -46,10 +46,11 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
             int y = minecraft.player.blockPosition().getY();
             for (FieldUiSnapshot.MapPoint point : snapshot.mapPoints()) {
                 if (!point.active()) continue;
+                String label = point.objective() ? "★ " + point.label() : point.label();
                 Waypoint waypoint = WaypointFactory.createWaypoint(
                         Turnbound.MOD_ID,
                         new BlockPos((int)Math.floor(point.x()), y, (int)Math.floor(point.z())),
-                        point.label(),
+                        label,
                         Level.OVERWORLD,
                         false);
                 int color = waypointColor(point);
@@ -112,11 +113,12 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
     }
 
     private static int waypointColor(FieldUiSnapshot.MapPoint point) {
-        if (point.objective() || "QUEST".equals(point.kind())) return 0xFFD35A;
+        if (point.objective() || "QUEST".equals(point.kind())) return 0xFFE07A;
         return switch (point.kind()) {
-            case "SERVICE" -> 0x62D39A;
-            case "SECRET" -> 0xC794FF;
-            default -> 0x6DC6FF;
+            case "SERVICE" -> 0xFFF2D5;
+            case "NPC" -> 0xFFEFFB;
+            case "SECRET" -> 0xFFD4B4FF;
+            default -> 0xFFBFE8FF;
         };
     }
 }

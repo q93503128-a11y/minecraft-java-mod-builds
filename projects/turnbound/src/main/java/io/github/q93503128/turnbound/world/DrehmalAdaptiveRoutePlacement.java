@@ -16,6 +16,11 @@ import java.util.*;
 
 final class DrehmalAdaptiveRoutePlacement {
     private static final Map<ServerLevel, Snapshot> CACHE = new IdentityHashMap<>();
+    private static final Map<ServerLevel, Long> OPENING_RECOVERY_AT = new IdentityHashMap<>();
+    private static final Map<ServerLevel, Integer> OPENING_RECOVERY_ATTEMPTS = new IdentityHashMap<>();
+    static final long OPENING_RECOVERY_INTERVAL_TICKS = 80L;
+    static final int OPENING_RECOVERY_MAX_ATTEMPTS = 12;
+
     private record ScoredPosition(DrehmalFirstRouteCatalog.Position position, double score) {}
     private record WorldBossResolution(
             DrehmalFirstRouteCatalog.Site site,
@@ -34,9 +39,66 @@ final class DrehmalAdaptiveRoutePlacement {
     private DrehmalAdaptiveRoutePlacement() {}
 
     static synchronized Snapshot snapshot(ServerPlayer player) {
-        if (player == null || !(player.level() instanceof ServerLevel level)) return new Snapshot(Map.of(),Map.of(),Map.of(),List.of());
-        return CACHE.computeIfAbsent(level, ignored -> resolve(player, level));
+        if (player == null || !(player.level() instanceof ServerLevel level)) {
+            return new Snapshot(Map.of(),Map.of(),Map.of(),List.of());
+        }
+
+        Snapshot current = CACHE.get(level);
+        if (current == null) {
+            current = resolve(player, level);
+            CACHE.put(level, current);
+            armOpeningRecovery(level, current);
+            return current;
+        }
+
+        long now = level.getGameTime();
+        int attempts = OPENING_RECOVERY_ATTEMPTS.getOrDefault(level, 0);
+        long retryAt = OPENING_RECOVERY_AT.getOrDefault(level, Long.MAX_VALUE);
+        if (openingRecoveryDue(current, attempts, now, retryAt)) {
+            int attempt = attempts + 1;
+            Snapshot refreshed = recoverOpeningTutorial(player, level, current);
+            CACHE.put(level, refreshed);
+            if (openingEncounterReady(refreshed)) {
+                OPENING_RECOVERY_AT.remove(level);
+                OPENING_RECOVERY_ATTEMPTS.remove(level);
+                Turnbound.LOGGER.info("TURNBOUND recovered opening field encounter after {} delayed live-world check(s)", attempt);
+            } else {
+                OPENING_RECOVERY_ATTEMPTS.put(level, attempt);
+                if (attempt >= OPENING_RECOVERY_MAX_ATTEMPTS) {
+                    OPENING_RECOVERY_AT.remove(level);
+                    Turnbound.LOGGER.warn(
+                            "TURNBOUND opening field encounter remained dormant after {} delayed live-world checks",
+                            attempt);
+                } else {
+                    OPENING_RECOVERY_AT.put(level, now + OPENING_RECOVERY_INTERVAL_TICKS);
+                }
+            }
+            return refreshed;
+        }
+        return current;
     }
+
+    static boolean openingEncounterReady(Snapshot snapshot) {
+        return snapshot != null && snapshot.encounters().stream()
+                .anyMatch(encounter -> DrabyelOpeningTutorial.ENCOUNTER_SLOT.equals(encounter.locator()));
+    }
+
+    static boolean openingRecoveryDue(Snapshot snapshot, int attempts, long gameTime, long retryAt) {
+        return !openingEncounterReady(snapshot)
+                && attempts < OPENING_RECOVERY_MAX_ATTEMPTS
+                && gameTime >= retryAt;
+    }
+
+    private static void armOpeningRecovery(ServerLevel level, Snapshot snapshot) {
+        if (openingEncounterReady(snapshot)) {
+            OPENING_RECOVERY_AT.remove(level);
+            OPENING_RECOVERY_ATTEMPTS.remove(level);
+            return;
+        }
+        OPENING_RECOVERY_ATTEMPTS.put(level, 0);
+        OPENING_RECOVERY_AT.put(level, level.getGameTime() + OPENING_RECOVERY_INTERVAL_TICKS);
+    }
+
     static List<DrehmalFirstRouteCatalog.Site> productionSites(ServerPlayer p){ return List.copyOf(snapshot(p).sites().values()); }
     static synchronized List<DrehmalFirstRouteCatalog.Site> productionSites(ServerLevel level){
         Snapshot snapshot=CACHE.get(level);
@@ -46,7 +108,11 @@ final class DrehmalAdaptiveRoutePlacement {
     static DrehmalFirstRouteCatalog.Site site(ServerPlayer p,String id){ return snapshot(p).sites().get(id); }
     static DrehmalFirstRouteCatalog.Footprint footprint(ServerPlayer p,String id){ return snapshot(p).footprints().get(id); }
     static DrehmalFirstRouteCatalog.Patrol patrol(ServerPlayer p,String id){ return snapshot(p).patrols().get(id); }
-    static synchronized void clear(){ CACHE.clear(); }
+    static synchronized void clear(){
+        CACHE.clear();
+        OPENING_RECOVERY_AT.clear();
+        OPENING_RECOVERY_ATTEMPTS.clear();
+    }
 
     private static Snapshot resolve(ServerPlayer player, ServerLevel level) {
         Map<String,DrehmalFirstRouteCatalog.Site> sites=new LinkedHashMap<>();
@@ -109,6 +175,83 @@ final class DrehmalAdaptiveRoutePlacement {
         Turnbound.LOGGER.info("TURNBOUND resolved Capital Valley map zones: {} sites, {} footprints, {} patrols, {} encounters",
                 sites.size(),footprints.size(),patrols.size(),encounters.size());
         return new Snapshot(sites,footprints,patrols,encounters);
+    }
+
+    private static Snapshot recoverOpeningTutorial(
+            ServerPlayer player,
+            ServerLevel level,
+            Snapshot current
+    ) {
+        if (openingEncounterReady(current)) return current;
+
+        Map<String,DrehmalFirstRouteCatalog.Site> sites = new LinkedHashMap<>(current.sites());
+        Map<String,DrehmalFirstRouteCatalog.Footprint> footprints = new LinkedHashMap<>(current.footprints());
+        Map<String,DrehmalFirstRouteCatalog.Patrol> patrols = new LinkedHashMap<>(current.patrols());
+        List<DrehmalFirstRouteCatalog.EncounterSlot> encounters = new ArrayList<>(current.encounters());
+
+        ensureOpeningTutorialSite(level, sites);
+        ensureOpeningTutorialFootprint(player, level, sites, footprints);
+
+        DrehmalFirstRouteCatalog.EncounterSlot authoredEncounter = null;
+        for (var authored : DrehmalFirstRouteCatalog.route().encounters()) {
+            if (DrabyelOpeningTutorial.ENCOUNTER_SLOT.equals(authored.locator())) {
+                authoredEncounter = authored;
+                break;
+            }
+        }
+        if (authoredEncounter == null) {
+            return new Snapshot(sites, footprints, patrols, encounters);
+        }
+
+        if (!authoredEncounter.patrolLocator().isBlank()
+                && !patrols.containsKey(authoredEncounter.patrolLocator())) {
+            var authoredPatrol = DrehmalFirstRouteCatalog.patrol(authoredEncounter.patrolLocator());
+            var placement = authoredPatrol == null
+                    ? null
+                    : DrehmalMapPlacementCatalog.placement(authoredPatrol.surveySeedSite());
+            if (authoredPatrol != null && placement != null && sites.containsKey(authoredPatrol.surveySeedSite())) {
+                var points = resolvePatrol(level, placement, List.copyOf(sites.values()));
+                if (points.size() >= 2) {
+                    patrols.put(authoredPatrol.locator(), new DrehmalFirstRouteCatalog.Patrol(
+                            authoredPatrol.locator(),
+                            authoredPatrol.surveySeedSite(),
+                            authoredPatrol.mode(),
+                            authoredPatrol.dwellMinTicks(),
+                            authoredPatrol.dwellMaxTicks(),
+                            points,
+                            true,
+                            true));
+                }
+            }
+        }
+
+        boolean alreadyRegistered = encounters.stream()
+                .anyMatch(encounter -> DrabyelOpeningTutorial.ENCOUNTER_SLOT.equals(encounter.locator()));
+        if (!alreadyRegistered) {
+            var site = sites.get(authoredEncounter.siteLocator());
+            var footprint = footprints.get(authoredEncounter.footprintLocator());
+            var patrol = authoredEncounter.patrolLocator().isBlank()
+                    ? null
+                    : patrols.get(authoredEncounter.patrolLocator());
+            if (site != null && footprint != null
+                    && (authoredEncounter.patrolLocator().isBlank() || patrol != null)) {
+                var runtime = new DrehmalFirstRouteCatalog.EncounterSlot(
+                        authoredEncounter.locator(),
+                        authoredEncounter.siteLocator(),
+                        authoredEncounter.tier(),
+                        authoredEncounter.footprintLocator(),
+                        authoredEncounter.patrolLocator(),
+                        authoredEncounter.combatEncounterId(),
+                        authoredEncounter.playerLabel(),
+                        authoredEncounter.fieldVisibleCount(),
+                        true,
+                        true);
+                if (DrehmalEncounterActivationRules.ready(runtime, site, footprint, patrol)) {
+                    encounters.add(runtime);
+                }
+            }
+        }
+        return new Snapshot(sites, footprints, patrols, encounters);
     }
 
     private static void ensureOpeningTutorialSite(
