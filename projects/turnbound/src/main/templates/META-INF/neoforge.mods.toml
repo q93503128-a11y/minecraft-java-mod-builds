@@ -38,3 +38,11 @@ type="optional"
 versionRange="[21.1.1,)"
 ordering="AFTER"
 side="CLIENT"
+
+
+[[dependencies.${mod_id}]]
+modId="journeymap"
+type="required"
+versionRange="[6.0.8,6.1)"
+ordering="AFTER"
+side="CLIENT"

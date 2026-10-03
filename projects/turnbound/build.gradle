@@ -22,9 +22,15 @@ repositories {
     }
 }
 
+configurations {
+    journeyMapPack
+}
+
 dependencies {
     // UI Lib is client-only. Server/common classes must never import it.
     compileOnly "maven.modrinth:AOEDs9Al:${uilib_version_id}"
+    compileOnly "maven.modrinth:lfHFW1mp:${journeymap_version_id}"
+    journeyMapPack "maven.modrinth:lfHFW1mp:${journeymap_version_id}"
     implementation "maven.modrinth:8BmcQJ2H:${geckolib_version_id}"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
@@ -121,6 +127,7 @@ tasks.register('prepareOneClickPack') {
     dependsOn tasks.named('jar')
     inputs.file(tasks.named('jar').flatMap { it.archiveFile })
     inputs.files(configurations.runtimeClasspath)
+    inputs.files(configurations.journeyMapPack)
     inputs.file(file('THIRD_PARTY/geckolib_neoforge/LICENSE'))
     outputs.dir(layout.buildDirectory.dir('oneclick-pack'))
 
@@ -188,13 +195,30 @@ GeckoLib 5.5.3 NeoForge 런타임은 MIT 라이선스로 모드팩에 포함됩�
 '''
         new File(root, 'overrides/README-TURNBOUND.txt').setText(readme, 'UTF-8')
 
+        File journeyMapJar = configurations.journeyMapPack.singleFile
+        def digest = { String algorithm ->
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance(algorithm)
+            journeyMapJar.withInputStream { input ->
+                byte[] buffer = new byte[8192]
+                int read
+                while ((read = input.read(buffer)) > 0) md.update(buffer, 0, read)
+            }
+            md.digest().collect { String.format('%02x', it & 0xff) }.join()
+        }
+        def journeyMapFile = [
+                path: 'mods/journeymap-neoforge-26.2-6.0.8.jar',
+                hashes: [sha1: digest('SHA-1'), sha512: digest('SHA-512')],
+                env: [client: 'required', server: 'unsupported'],
+                downloads: ["https://cdn.modrinth.com/data/lfHFW1mp/versions/${journeymap_version_id}/journeymap-neoforge-26.2-6.0.8.jar"],
+                fileSize: journeyMapJar.length()
+        ]
         def index = [
                 formatVersion: 1,
                 game: 'minecraft',
                 versionId: mod_version,
                 name: "TURNBOUND ${mod_version} One-click Test",
-                summary: 'TURNBOUND 26.2 NeoForge test pack with first-run official Drehmal bootstrap',
-                files: [],
+                summary: 'TURNBOUND 26.2 NeoForge test pack with JourneyMap and first-run official Drehmal bootstrap',
+                files: [journeyMapFile],
                 dependencies: [
                         minecraft: minecraft_version,
                         neoforge: neo_version
