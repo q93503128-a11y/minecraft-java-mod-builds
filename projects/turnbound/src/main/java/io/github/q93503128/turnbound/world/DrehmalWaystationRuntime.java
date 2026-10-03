@@ -170,15 +170,19 @@ final class DrehmalWaystationRuntime {
         if (byNode.containsKey(node.id())) return byNode.get(node.id());
 
         Candidate best = null;
-        for (int[] offset : offsets(10)) {
+        // preferredY came from the authored map survey and is a hint, not a hard validity gate.
+        // Compatibility terrain can move the walkable road vertically while keeping the same X/Z landmark.
+        for (int[] offset : offsets(18)) {
             int x = node.mapX() + offset[0];
             int z = node.mapZ() + offset[1];
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            if (Math.abs(y - node.preferredY()) > 18) continue;
             if (!safeStanding(level, x, y, z) || !sourceClear(level, x, y, z)) continue;
             int distanceSq = offset[0] * offset[0] + offset[1] * offset[1];
             int roadBias = surfaceBias(level, new BlockPos(x, y - 1, z));
-            Candidate candidate = new Candidate(new Vec3(x + 0.5D, y, z + 0.5D), roadBias * 10_000 + distanceSq);
+            int verticalPenalty = Math.min(80, Math.abs(y - node.preferredY()));
+            Candidate candidate = new Candidate(
+                    new Vec3(x + 0.5D, y, z + 0.5D),
+                    roadBias * 10_000 + verticalPenalty * 40 + distanceSq);
             if (best == null || candidate.score() < best.score()) best = candidate;
         }
         if (best == null) return null;

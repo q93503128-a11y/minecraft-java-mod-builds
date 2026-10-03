@@ -177,8 +177,8 @@ public final class GachaPresentationActorService {
         double radians = Math.toRadians(player.getYRot());
         Vec3 forward = new Vec3(-Math.sin(radians), 0.0, Math.cos(radians));
         Vec3 right = new Vec3(-forward.z, 0.0, forward.x);
-        double[] distances = {7.0, 8.0, 6.0, 9.0, 5.2};
-        double[] lateral = {0.0, 1.5, -1.5, 2.7, -2.7};
+        double[] distances = {9.0, 10.5, 8.0, 12.0, 13.5};
+        double[] lateral = {0.0, 2.0, -2.0, 3.5, -3.5};
 
         for (double distance : distances) {
             for (double side : lateral) {
@@ -187,7 +187,9 @@ public final class GachaPresentationActorService {
                 int z = (int)Math.floor(raw.z);
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 Vec3 candidate = new Vec3(x + 0.5, y, z + 0.5);
-                if (Math.abs(candidate.y - player.getY()) <= 3.0 && open(level, candidate)) return candidate;
+                if (Math.abs(candidate.y - player.getY()) > 4.0 || !open(level, candidate)) continue;
+                if (!DrehmalAdaptiveRoutePlacement.sourceContentClear(level, x, y, z, 4.5D)) continue;
+                return candidate;
             }
         }
         return null;

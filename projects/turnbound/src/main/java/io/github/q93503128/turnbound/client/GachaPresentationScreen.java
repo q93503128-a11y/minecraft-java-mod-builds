@@ -58,6 +58,7 @@ public final class GachaPresentationScreen extends Screen {
     private GachaPresentationTimeline.Phase lastAudioPhase;
     private boolean finishing;
     private boolean summaryOnly;
+    private boolean presentationDone;
     private BattleHudButton skipButton;
 
     public GachaPresentationScreen(Batch batch) {
@@ -139,11 +140,7 @@ public final class GachaPresentationScreen extends Screen {
             SummonCameraController.exit();
         }
         queuePhaseAudio();
-        if (ticks >= totalDurationTicks()) finish();
-    }
-
-    private int totalDurationTicks() {
-        return revealDurationTicks() + GachaPresentationTimeline.summaryTicks(batch.pulls().size());
+        if (ticks >= revealDurationTicks()) showSummary();
     }
 
     private int revealDurationTicks() {
@@ -153,21 +150,32 @@ public final class GachaPresentationScreen extends Screen {
     }
 
     private void skipOrFinish() {
-        if (batch.pulls().size() >= 10 && !summaryOnly) {
-            summaryOnly = true;
-            SummonCameraController.exit();
-            ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
-            if (skipButton != null) skipButton.setMessage(Component.literal("닫기"));
+        if (!summaryOnly) {
+            showSummary();
             return;
         }
         finish();
+    }
+
+    private void showSummary() {
+        if (summaryOnly) return;
+        summaryOnly = true;
+        SummonCameraController.exit();
+        if (!presentationDone) {
+            presentationDone = true;
+            ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
+        }
+        if (skipButton != null) skipButton.setMessage(Component.literal("닫기"));
     }
 
     private void finish() {
         if (finishing) return;
         finishing = true;
         SummonCameraController.exit();
-        ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
+        if (!presentationDone) {
+            presentationDone = true;
+            ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
+        }
         if (minecraft != null) minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.ARCHIVE));
     }
 
@@ -393,7 +401,7 @@ public final class GachaPresentationScreen extends Screen {
     public boolean keyPressed(KeyEvent event) {
         if (event.key() == GLFW.GLFW_KEY_ESCAPE || event.key() == GLFW.GLFW_KEY_ENTER
                 || event.key() == GLFW.GLFW_KEY_KP_ENTER || event.key() == GLFW.GLFW_KEY_SPACE) {
-            if (batch.pulls().size() >= 10 && !summaryOnly && event.key() != GLFW.GLFW_KEY_ESCAPE) skipOrFinish();
+            if (!summaryOnly) showSummary();
             else finish();
             return true;
         }

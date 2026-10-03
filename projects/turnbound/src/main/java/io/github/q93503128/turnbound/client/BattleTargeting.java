@@ -12,7 +12,7 @@ final class BattleTargeting {
         return switch (rule) {
             case "ALLY_SINGLE" -> ally && !unit.downed();
             case "ALLY_SINGLE_EXCEPT_SELF" -> ally && !unit.downed() && !unit.id().equals(actorId);
-            case "ENEMY_SINGLE", "ENEMY_TWO" -> !ally && !unit.downed();
+            case "ENEMY_SINGLE", "ENEMY_TWO", "ENEMY_ALL" -> !ally && !unit.downed();
             case "DEAD_ALLY_SINGLE" -> ally && unit.downed();
             default -> false;
         };

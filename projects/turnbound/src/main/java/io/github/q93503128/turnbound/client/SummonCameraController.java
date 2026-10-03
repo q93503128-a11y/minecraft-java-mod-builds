@@ -11,8 +11,8 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /** Client-only camera rig for the private in-world summon stage. */
 public final class SummonCameraController {
-    private static final float MIN_DISTANCE = 4.0F;
-    private static final float MAX_DISTANCE = 9.0F;
+    private static final float MIN_DISTANCE = 2.8F;
+    private static final float MAX_DISTANCE = 6.5F;
     private static final float VIEW_LERP = 0.34F;
     private static final float DISTANCE_LERP = 0.30F;
     private static final float FOV_LERP = 0.28F;
@@ -57,9 +57,9 @@ public final class SummonCameraController {
         pivotZ = z;
         baseYaw = Mth.wrapDegrees(cameraYaw);
         currentYaw = targetYaw = Mth.wrapDegrees(baseYaw + 12.0F);
-        currentPitch = targetPitch = 14.0F;
-        currentDistance = targetDistance = 7.6F;
-        currentFov = targetFov = 50.0F;
+        currentPitch = targetPitch = 8.0F;
+        currentDistance = targetDistance = 5.1F;
+        currentFov = targetFov = 43.0F;
 
         anchor = new ArmorStand(minecraft.level, pivotX, pivotY, pivotZ);
         anchor.setInvisible(true);
@@ -78,27 +78,27 @@ public final class SummonCameraController {
         switch (phase) {
             case SIGNAL -> {
                 targetYaw = Mth.wrapDegrees(baseYaw + 13.0F + intensity * 0.8F + drift);
-                targetPitch = 14.0F - rarity;
-                targetDistance = 8.0F + rarity * 0.35F;
-                targetFov = 51.0F + rarity;
+                targetPitch = 11.0F - rarity * 0.8F;
+                targetDistance = 5.4F + rarity * 0.18F;
+                targetFov = 44.0F + rarity * 0.5F;
             }
             case SILHOUETTE -> {
                 targetYaw = Mth.wrapDegrees(baseYaw + 8.0F + drift * 0.65F);
-                targetPitch = 12.0F - rarity * 1.2F;
-                targetDistance = 6.8F - intensity * 0.13F;
-                targetFov = 48.0F - intensity * 0.35F;
+                targetPitch = 9.5F - rarity * 0.9F;
+                targetDistance = 4.5F - intensity * 0.10F;
+                targetFov = 41.0F - intensity * 0.30F;
             }
             case REVEAL -> {
                 targetYaw = Mth.wrapDegrees(baseYaw - 1.5F - intensity * 1.25F + drift * 0.30F);
-                targetPitch = 9.5F - rarity * 1.4F;
-                targetDistance = 5.2F - intensity * 0.20F;
-                targetFov = 45.0F - intensity * 0.80F;
+                targetPitch = 7.5F - rarity * 1.0F;
+                targetDistance = 3.6F - intensity * 0.12F;
+                targetFov = 38.0F - intensity * 0.55F;
             }
             case NAME -> {
                 targetYaw = Mth.wrapDegrees(baseYaw - 4.0F - intensity * 0.55F + drift * 0.20F);
                 targetPitch = 10.5F;
-                targetDistance = 5.6F - intensity * 0.10F;
-                targetFov = 46.0F - intensity * 0.25F;
+                targetDistance = 3.9F - intensity * 0.08F;
+                targetFov = 39.0F - intensity * 0.20F;
             }
             case COMPLETE -> { }
         }

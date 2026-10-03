@@ -92,30 +92,24 @@ final class OpenworldMapPointService {
                 "CV_DRABYEL_NORTH",
                 DrehmalContentUnlocks.WARNING_CAVE_ELITE,
                 DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
-        for (var authored : DrehmalFirstRouteCatalog.route().encounters()) {
-            String combatId = authored.combatEncounterId();
-            if (!choices.contains(combatId) || clears.contains(combatId)) continue;
-            double x;
-            double z;
-            var runtime = DrehmalAdaptiveRoutePlacement.site(player, authored.siteLocator());
-            if (runtime != null && runtime.runtimePosition() != null) {
-                x = runtime.runtimePosition().x() + 0.5D;
-                z = runtime.runtimePosition().z() + 0.5D;
-            } else {
-                var placement = DrehmalMapPlacementCatalog.placement(authored.siteLocator());
-                if (placement != null && !placement.siteSeeds().isEmpty()) {
-                    var seed = placement.siteSeeds().getFirst();
-                    x = seed.x() + 0.5D;
-                    z = seed.z() + 0.5D;
-                } else if (DrehmalWorldBossPlacementRules.ENCOUNTER_ID.equals(combatId)) {
-                    var hint = DrehmalAdaptiveRoutePlacement.worldBossMapHint();
-                    if (hint == null) continue;
-                    x = hint.x() + 0.5D;
-                    z = hint.z() + 0.5D;
-                } else continue;
-            }
+
+        // Never publish an authored seed as if it were a live objective. A quest marker must point at an encounter
+        // that actually passed the current world's site + arena checks and can materialize a TURNBOUND field actor.
+        Map<String, DrehmalFirstRouteCatalog.EncounterSlot> live = new LinkedHashMap<>();
+        for (var encounter : DrehmalAdaptiveRoutePlacement.productionEncounters(player)) {
+            if (choices.contains(encounter.combatEncounterId())) live.put(encounter.combatEncounterId(), encounter);
+        }
+
+        for (String combatId : choices) {
+            if (clears.contains(combatId)) continue;
+            var encounter = live.get(combatId);
+            if (encounter == null) continue;
+            var site = DrehmalAdaptiveRoutePlacement.site(player, encounter.siteLocator());
+            if (site == null || site.runtimePosition() == null) continue;
+            var pos = site.runtimePosition();
             out.add(new FieldUiSnapshot.MapPoint(
-                    "regional:" + combatId, authored.playerLabel(), "QUEST", x, z, true));
+                    "regional:" + combatId, encounter.playerLabel(), "QUEST",
+                    pos.x() + 0.5D, pos.z() + 0.5D, true));
         }
     }
 

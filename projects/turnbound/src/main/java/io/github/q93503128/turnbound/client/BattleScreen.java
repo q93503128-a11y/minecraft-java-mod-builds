@@ -133,6 +133,13 @@ public final class BattleScreen extends Screen {
                         || !BattleTargeting.validTarget(rule, snapshot.units().get(selectedTarget2), snapshot.actorId()))) selectedTarget2 = -1;
                 if (!"ENEMY_TWO".equals(rule)) selectedTarget2 = -1;
                 syncSelectedTarget(snapshot);
+            } else if ("ENEMY_ALL".equals(rule)) {
+                if (selectedTarget >= 0 && (selectedTarget >= snapshot.units().size()
+                        || !BattleTargeting.validTarget(rule, snapshot.units().get(selectedTarget), snapshot.actorId()))) {
+                    selectedTarget = -1;
+                }
+                selectedTarget2 = -1;
+                syncSelectedTarget(snapshot);
             } else if ("SELF".equals(rule)) {
                 selectedTarget = BattleActionRules.defaultTarget(snapshot.units(), rule, snapshot.actorId());
                 selectedTarget2 = -1;
@@ -176,6 +183,10 @@ public final class BattleScreen extends Screen {
         };
     }
 
+    private static boolean supportsTargetClick(String rule) {
+        return BattleActionRules.needsManualTarget(rule) || "ENEMY_ALL".equals(rule);
+    }
+
     /** First click selects. Clicking the same skill again commits, choosing the first valid target only at commit time. */
     private void skill(int index) {
         if (settingsOpen) return;
@@ -202,6 +213,12 @@ public final class BattleScreen extends Screen {
                     && selectedTarget >= 0 && selectedTarget2 < 0) {
                 selectedTarget2 = BattleTargeting.cycle(snapshot.units(), rule, snapshot.actorId(), selectedTarget, 1, selectedTarget);
             }
+        } else if ("ENEMY_ALL".equals(rule)) {
+            if (selectedTarget >= 0 && (selectedTarget >= snapshot.units().size()
+                    || !BattleTargeting.validTarget(rule, snapshot.units().get(selectedTarget), snapshot.actorId()))) {
+                selectedTarget = -1;
+            }
+            selectedTarget2 = -1;
         } else {
             selectedTarget = -1;
             selectedTarget2 = -1;
@@ -219,11 +236,24 @@ public final class BattleScreen extends Screen {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
-        if (selected == null || !BattleActionRules.needsManualTarget(rule)) return;
+        if (selected == null || !supportsTargetClick(rule)) return;
         if (index < 0 || index >= snapshot.units().size()) return;
         if (!BattleTargeting.validTarget(rule, snapshot.units().get(index), snapshot.actorId())) return;
         long now = System.currentTimeMillis();
-        if ("ENEMY_TWO".equals(rule)) {
+        if ("ENEMY_ALL".equals(rule)) {
+            boolean repeated = selectedTarget == index
+                    && (platformDoubleClick || (lastTargetClick == index && now - lastTargetClickAt <= DOUBLE_COMMIT_MS));
+            selectedTarget = index;
+            selectedTarget2 = -1;
+            if (repeated) {
+                lastTargetClick = index;
+                lastTargetClickAt = now;
+                syncSelectedTarget(snapshot);
+                refresh();
+                confirmAction();
+                return;
+            }
+        } else if ("ENEMY_TWO".equals(rule)) {
             int required = BattleActionRules.requiredTargetCount(snapshot.units(), rule, snapshot.actorId());
             if (selectedTarget < 0) {
                 selectedTarget = index;
@@ -430,7 +460,7 @@ public final class BattleScreen extends Screen {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
-        if (selected == null || !BattleActionRules.needsManualTarget(rule)) return -1;
+        if (selected == null || !supportsTargetClick(rule)) return -1;
         return BattleLiveProjection.pick(snapshot.units(), rule, snapshot.actorId(), width, height, x, y);
     }
 
@@ -438,7 +468,7 @@ public final class BattleScreen extends Screen {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
-        if (selected == null || !BattleActionRules.needsManualTarget(rule)) return -1;
+        if (selected == null || !supportsTargetClick(rule)) return -1;
 
         var current = currentLayout();
         List<SharedOwnerGroup> shared = sharedOwnerGroups(snapshot, current);
@@ -727,12 +757,16 @@ public final class BattleScreen extends Screen {
 
     /** Enemy name/HP and target selection stay attached to the actual 3D actor. */
     private void drawWorldStatus(GuiGraphicsExtractor graphics, ClientBattleState.Snapshot snapshot) {
+        ClientBattleState.Skill armedSkill = selectedSkill(snapshot);
+        String armedRule = clientTargetRule(armedSkill);
+        boolean allEnemiesSelected = "ENEMY_ALL".equals(armedRule) && selectedTarget >= 0;
         for (int i = 0; i < snapshot.units().size(); i++) {
             var unit = snapshot.units().get(i);
             var point = BattleLiveProjection.project(unit.x(), unit.y() + 2.05, unit.z(), width, height);
             if (point == null) continue;
             boolean enemy = "ENEMY".equals(unit.side());
-            boolean selected = i == selectedTarget || i == selectedTarget2;
+            boolean selected = i == selectedTarget || i == selectedTarget2
+                    || (allEnemiesSelected && enemy && !unit.downed());
             boolean actor = unit.id().equals(snapshot.actorId());
             if (!enemy && !selected && !actor) continue;
 
@@ -740,7 +774,7 @@ public final class BattleScreen extends Screen {
             int y = (int)Math.round(point.y());
             if (selected) {
                 drawTargetArrow(graphics, cx, y - 11, enemy ? DANGER : GAUGE);
-                if (selectedTarget2 >= 0) {
+                if (selectedTarget2 >= 0 && !"ENEMY_ALL".equals(armedRule)) {
                     String order = i == selectedTarget ? "1" : "2";
                     graphics.text(font, Component.literal(order), cx + 7, y - 20, GOLD, true);
                 }
@@ -796,6 +830,8 @@ public final class BattleScreen extends Screen {
                 : BattleActionRules.requiredTargetCount(snapshot.units(), rule, snapshot.actorId());
         String hint = teaching ? contextual
                 : selected == null ? "스킬을 선택하세요"
+                : "ENEMY_ALL".equals(rule) && selectedTarget < 0 ? "적을 선택하면 전체 적이 지정됩니다"
+                : "ENEMY_ALL".equals(rule) ? "같은 적을 한 번 더 클릭해 전체 공격 사용"
                 : "ENEMY_TWO".equals(rule) && selectedTarget < 0 ? "첫 번째 대상을 선택하세요"
                 : "ENEMY_TWO".equals(rule) && requiredTargets > 1 && selectedTarget2 < 0 ? "두 번째 대상을 선택하세요"
                 : BattleActionRules.needsSingleTarget(rule) && selectedTarget < 0 ? "대상을 선택하세요"

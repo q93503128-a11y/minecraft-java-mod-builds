@@ -180,7 +180,7 @@ final class DrehmalContextualOnboarding {
         }
         return new Guidance(
                 "캐피털 밸리 정찰 의뢰의 지역 목표 하나를 해결하고 뉴 드라비엘로 돌아오십시오.",
-                "M 지도에 표시된 북부 도로, 경고 동굴의 강적, 들이받는 왕 그라울 중 하나를 선택하십시오.");
+                "M 지도에는 실제로 출현 가능한 목표만 표시됩니다. 표시된 전투 목표 중 하나를 선택하십시오.");
     }
 
     static String nextHubServiceRole(Set<String> clears, Set<String> flags, Set<String> roles) {

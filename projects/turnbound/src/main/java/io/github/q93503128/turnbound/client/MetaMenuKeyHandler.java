@@ -20,11 +20,6 @@ public final class MetaMenuKeyHandler {
             QuestGuideLayer.toggle();
             return;
         }
-        if (event.getKey() == GLFW.GLFW_KEY_N) {
-            if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
-            TurnboundJourneyMapPlugin.toggleMinimap();
-            return;
-        }
         if (event.getKey() == GLFW.GLFW_KEY_M) {
             if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
             ClientPacketDistributor.sendToServer(new MetaCommandPayload("HUB_ROUTE_REVIEW"));

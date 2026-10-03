@@ -118,7 +118,7 @@ final class DrabyelHubServiceRuntime {
                 if(DrabyelLocalArcProgress.complete(flags)&&!DrabyelLocalArcProgress.regionalAccepted(flags)){
                     FieldNetwork.showDialogueChoices(player,service.playerLabel(),
                             "마을 주변은 정리됐어요. 이제 캐피털 밸리의 상황을 직접 확인할 사람이 필요합니다.\n\n"
-                                    +"북부 도로의 순찰, 경고 동굴의 강적, 들판의 그라울 중 하나를 해결하고 돌아와 주세요. 어느 쪽을 택할지는 맡기겠습니다.",
+                                    +"지도에 표시되는 캐피털 밸리 전투 목표 중 하나를 해결하고 돌아와 주세요. 북부 도로와 경고 동굴이 주 목표이며, 그라울은 안전한 서식지가 확인된 경우에만 표시됩니다.",
                             java.util.List.of(
                                     new FieldNetwork.DialogueChoice("정찰 의뢰 수락","QUEST_ACCEPT|CAPITAL_VALLEY"),
                                     new FieldNetwork.DialogueChoice("나중에","CLOSE")));
@@ -128,7 +128,7 @@ final class DrabyelHubServiceRuntime {
                         &&DrabyelLocalArcProgress.regionalAccepted(flags)
                         &&!DrabyelLocalArcProgress.regionalGateReady(clears,flags)){
                     FieldNetwork.showDialogue(player,service.playerLabel(),
-                            "정찰 의뢰는 진행 중이에요. M 지도에 표시한 세 목표 중 하나만 해결하면 충분합니다. 돌아오면 서쪽 길 이야기를 이어가죠.");
+                            "정찰 의뢰는 진행 중이에요. M 지도에 실제로 표시된 전투 목표 중 하나만 해결하면 충분합니다. 돌아오면 서쪽 길 이야기를 이어가죠.");
                     return true;
                 }
                 if(DrabyelLocalArcProgress.complete(flags)&&AvsalExpansionProgress.briefingReady(clears,flags)){
@@ -253,15 +253,18 @@ final class DrabyelHubServiceRuntime {
         Vec3 forward=new Vec3(-Math.sin(radians),0.0D,Math.cos(radians));
         Vec3 right=new Vec3(-forward.z,0.0D,forward.x);
         Vec3 origin=vec(service.runtimePosition());
-        double[] distances={3.8D,3.0D,4.6D,2.4D};
-        double[] lateral={0.0D,1.2D,-1.2D,2.0D,-2.0D};
+        // The reveal must read as its own stage, not as an actor dropped into the summoner's stall.
+        // Search farther out and require a genuinely clear pocket so town NPCs/decor do not fill the camera.
+        double[] distances={8.0D,9.5D,7.0D,11.0D,12.5D};
+        double[] lateral={0.0D,2.5D,-2.5D,4.5D,-4.5D};
         for(double distance:distances)for(double side:lateral){
             Vec3 raw=origin.add(forward.scale(distance)).add(right.scale(side));
             int x=(int)Math.floor(raw.x),z=(int)Math.floor(raw.z);
             int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
-            if(Math.abs(y-origin.y)>3.0D)continue;
+            if(Math.abs(y-origin.y)>4.0D)continue;
             BlockPos feet=new BlockPos(x,y,z);
-            if(!stageOpen(level,feet)||!DrehmalAdaptiveRoutePlacement.fieldProxyContentClear(level,x,y,z))continue;
+            if(!stageOpen(level,feet))continue;
+            if(!DrehmalAdaptiveRoutePlacement.sourceContentClear(level,x,y,z,4.5D))continue;
             return new SummonStage(new Vec3(x+0.5D,y,z+0.5D),wrapYaw(yaw+180.0F));
         }
         return null;

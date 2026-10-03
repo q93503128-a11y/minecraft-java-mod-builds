@@ -51,6 +51,14 @@ class BattleTargetingTest {
     }
 
     @Test
+    void enemyAllUsesLivingEnemiesForPreviewTargeting() {
+        assertTrue(BattleTargeting.validTarget("ENEMY_ALL", ENEMY_ALIVE, "ally_1"));
+        assertTrue(BattleTargeting.validTarget("ENEMY_ALL", ENEMY_OTHER, "ally_1"));
+        assertFalse(BattleTargeting.validTarget("ENEMY_ALL", ENEMY_DOWN, "ally_1"));
+        assertFalse(BattleTargeting.validTarget("ENEMY_ALL", ALLY_ALIVE, "ally_1"));
+    }
+
+    @Test
     void dualEnemyCycleCanExcludeTheAlreadyChosenTarget() {
         List<ClientBattleState.Unit> units = List.of(ALLY_ALIVE, ENEMY_ALIVE, ENEMY_OTHER);
         assertTrue(BattleTargeting.validTarget("ENEMY_TWO", ENEMY_ALIVE, "ally_1"));

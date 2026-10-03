@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +30,8 @@ public final class MetaMenuScreen extends Screen {
     private enum OwnershipFilter { ALL, OWNED, UNOWNED }
     private enum RoleFilter { ALL, DPS, SUPPORT, TANK, SUMMON }
     private enum EquipSort { TIER, LEVEL, STAT }
+    private enum QuestSection { QUESTS, ACHIEVEMENTS }
+    private enum QuestFilter { ALL, ACTIVE, COMPLETED }
     private record DetailLine(String text, int color) {}
 
     private static final int TEXT=0xFFF4F0E6, SECONDARY=0xFFAEB7C6, MUTED=0xFF707987;
@@ -54,6 +57,9 @@ public final class MetaMenuScreen extends Screen {
     private int skillDescriptionScroll;
     private boolean archiveLogOpen;
     private int archiveLogScroll;
+    private QuestSection questSection=QuestSection.QUESTS;
+    private QuestFilter questFilter=QuestFilter.ALL;
+    private String selectedQuestId="";
     private long seenPartyRevision=-1L;
 
     public MetaMenuScreen(Tab tab){
@@ -424,18 +430,57 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildQuests(){
-        var snapshot=ClientMetaState.snapshot();
-        List<ClientMetaState.RegionQuestRow> quests=questRows();
-        int y=contentTop()+4;
-        boolean detailed=quests.stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
-        int questStep=detailed?32:19;
-        int questRows=UiPaging.rowsThatFit(y+20,contentBottom(),questStep,3);
-        int challengeRows=UiPaging.rowsThatFit(y+20,contentBottom(),19,4);
-        int rows=Math.max(1,Math.min(questRows,challengeRows));
-        setPaging(Math.max(quests.size(),snapshot.challenges().size()),rows);
+        int x=left+16,y=contentTop()+2,w=panelWidth-32,gap=4;
+        if(!selectedQuestId.isBlank()&&questSection==QuestSection.QUESTS){
+            addRenderableWidget(new BattleHudButton(
+                    x,y,104,CONTROL_H,Component.literal("← 퀘스트 목록"),MUTED,
+                    ignored->{selectedQuestId="";page=0;rebuild();}));
+            setPaging(0,1);
+            return;
+        }
+
+        int sectionW=Math.max(70,(w-104-gap*2)/2);
+        addRenderableWidget(new BattleHudButton(
+                x,y,sectionW,CONTROL_H,Component.literal("퀘스트"),
+                questSection==QuestSection.QUESTS?BLUE:MUTED,
+                ignored->switchQuestSection(QuestSection.QUESTS)));
+        addRenderableWidget(new BattleHudButton(
+                x+sectionW+gap,y,sectionW,CONTROL_H,Component.literal("업적"),
+                questSection==QuestSection.ACHIEVEMENTS?GOLD:MUTED,
+                ignored->switchQuestSection(QuestSection.ACHIEVEMENTS)));
+        int filterX=x+sectionW*2+gap*2;
+        int filterW=Math.max(84,left+panelWidth-16-filterX);
+        addRenderableWidget(new BattleHudButton(
+                filterX,y,filterW,CONTROL_H,Component.literal("필터 · "+questFilterLabel()),
+                questFilter==QuestFilter.ACTIVE?BLUE:questFilter==QuestFilter.COMPLETED?GREEN:MUTED,
+                ignored->cycleQuestFilter()));
+
+        int rows=UiPaging.rowsThatFit(questListTop(),contentBottom()-2,questRowHeight(),4);
+        int total=questSection==QuestSection.QUESTS?filteredQuestRows().size():filteredAchievementRows().size();
+        setPaging(total,Math.max(1,rows));
         buildPager();
     }
 
+
+    private List<ClientMetaState.RegionQuestRow> filteredQuestRows(){
+        return questRows().stream().filter(row->switch(questFilter){
+            case ALL->true;
+            case ACTIVE->!row.completed();
+            case COMPLETED->row.completed();
+        }).toList();
+    }
+
+    private List<ClientMetaState.ChallengeRow> filteredAchievementRows(){
+        return ClientMetaState.snapshot().challenges().stream()
+                .filter(row->switch(questFilter){
+                    case ALL->true;
+                    case ACTIVE->!row.completed();
+                    case COMPLETED->row.completed();
+                })
+                .sorted(Comparator.comparing(ClientMetaState.ChallengeRow::completed)
+                        .thenComparingInt(ClientMetaState.ChallengeRow::ordinal))
+                .toList();
+    }
 
     private static List<ClientMetaState.RegionQuestRow> questRows(){
         return ClientMetaState.snapshot().regionQuests().stream()
@@ -444,6 +489,9 @@ public final class MetaMenuScreen extends Screen {
                         .thenComparing(ClientMetaState.RegionQuestRow::id))
                 .toList();
     }
+
+    private int questListTop(){return contentTop()+25;}
+    private int questRowHeight(){return compactLayout?30:34;}
 
     private static int questCategoryPriority(String category){
         if(category==null)return 9;
@@ -597,10 +645,13 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void movePage(int delta){page=UiPaging.clampPage(page+delta,currentTotal,currentPerPage);rebuild();}
+    private void switchQuestSection(QuestSection value){if(value==questSection)return;questSection=value;selectedQuestId="";page=0;rebuild();}
+    private void cycleQuestFilter(){questFilter=QuestFilter.values()[(questFilter.ordinal()+1)%QuestFilter.values().length];selectedQuestId="";page=0;rebuild();}
+    private String questFilterLabel(){return switch(questFilter){case ALL->"전체";case ACTIVE->"미완료";case COMPLETED->"완료";};}
     private void openArchiveLog(){archiveLogOpen=true;archiveLogScroll=0;rebuild();}
     private void closeArchiveLog(){archiveLogOpen=false;archiveLogScroll=0;rebuild();}
     private void rebuild(){clearWidgets();init();}
-    private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";characterEquipmentSlot="";archiveLogOpen=false;rebuild();}
+    private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";characterEquipmentSlot="";archiveLogOpen=false;selectedQuestId="";rebuild();}
     private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;characterEquipmentSlot="";selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
     private void openMap(){TurnboundJourneyMapPlugin.openFullscreenMap();}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
@@ -651,9 +702,30 @@ public final class MetaMenuScreen extends Screen {
     private static void partyCommand(String command){ClientPacketDistributor.sendToServer(new PartyCommandPayload(command));}
 
     @Override
+    public boolean mouseClicked(MouseButtonEvent event,boolean doubleClick){
+        if(super.mouseClicked(event,doubleClick))return true;
+        if(tab!=Tab.QUESTS||event.button()!=GLFW.GLFW_MOUSE_BUTTON_LEFT||!selectedQuestId.isBlank())return false;
+        int rowH=questRowHeight(),topY=questListTop();
+        if(event.x()<left+16||event.x()>left+panelWidth-16||event.y()<topY||event.y()>=contentBottom())return false;
+        int local=(int)((event.y()-topY)/rowH);
+        if(local<0||local>=currentPerPage)return false;
+        if(questSection==QuestSection.QUESTS){
+            List<ClientMetaState.RegionQuestRow> rows=filteredQuestRows();
+            int index=page*currentPerPage+local;
+            if(index<rows.size()){
+                selectedQuestId=rows.get(index).id();
+                rebuild();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean keyPressed(KeyEvent event){
         if(event.key()==GLFW.GLFW_KEY_E){onClose();return true;}
         if(event.key()==GLFW.GLFW_KEY_ESCAPE){
+            if(tab==Tab.QUESTS&&!selectedQuestId.isBlank()){selectedQuestId="";page=0;rebuild();return true;}
             if(!selectedCharacterId.isBlank()){selectedCharacterId="";tab=Tab.HOME;page=0;rebuild();return true;}
             if(tab!=Tab.HOME){switchTab(Tab.HOME);return true;}
             onClose();return true;
@@ -983,34 +1055,97 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawQuests(GuiGraphicsExtractor g){
-        var snapshot=ClientMetaState.snapshot();
-        List<ClientMetaState.RegionQuestRow> quests=questRows();
-        long activeCount=quests.stream().filter(q->!q.completed()).count();
-        long completedCount=quests.size()-activeCount;
-        int y=contentTop()+4,paneGap=12,paneW=(panelWidth-44-paneGap)/2,leftX=left+16,rightX=leftX+paneW+paneGap;
-        String questHeader="퀘스트 · 진행 "+activeCount+" / 완료 "+completedCount;
-        g.text(font,Component.literal(UiTextLayout.fit(questHeader,paneW)),leftX,y,TEXT,true);
-        g.text(font,Component.literal("업적"),rightX,y,TEXT,true);
-        boolean detailed=quests.stream().anyMatch(q->q.objectiveSpecified()&&!q.chestRule().isBlank());
-        int questStep=detailed?32:19;
-        int start=page*currentPerPage,yy=y+20;
-        for(int i=start;i<Math.min(quests.size(),start+currentPerPage);i++){
-            var q=quests.get(i);
-            String text=(q.completed()?"✓ ":"○ ")+q.region()+" · "+q.id();
-            g.text(font,Component.literal(UiTextLayout.fit(text,paneW)),leftX,yy,q.completed()?GREEN:TEXT,false);
-            if(detailed&&q.objectiveSpecified()&&!q.chestRule().isBlank()){
-                String detail=UiTextLayout.fit(q.chestRule(),Math.max(40,paneW-10));
-                g.text(font,Component.literal(detail),leftX+10,yy+13,q.completed()?MUTED:SECONDARY,false);
+        if(!selectedQuestId.isBlank()&&questSection==QuestSection.QUESTS){
+            drawQuestDetail(g);
+            return;
+        }
+
+        int x=left+16,w=panelWidth-32,rowH=questRowHeight(),yy=questListTop();
+        if(questSection==QuestSection.QUESTS){
+            List<ClientMetaState.RegionQuestRow> rows=filteredQuestRows();
+            int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage);
+            if(start>=end){
+                g.text(font,Component.literal(questFilter==QuestFilter.COMPLETED?"완료된 퀘스트가 없습니다.":"표시할 퀘스트가 없습니다."),
+                        x+6,yy+10,MUTED,false);
+                return;
             }
-            yy+=questStep;
+            for(int i=start;i<end;i++){
+                var q=rows.get(i);
+                TurnboundUiSkin.inset(g,x,yy,w,rowH-3);
+                g.fill(x,yy,x+2,yy+rowH-3,q.completed()?GREEN:questCategoryColor(q.region()));
+                String title=(q.completed()?"✓ ":"○ ")+q.region()+" · "+q.id();
+                g.text(font,Component.literal(UiTextLayout.fit(title,w-18)),x+8,yy+5,q.completed()?GREEN:TEXT,true);
+                if(q.objectiveSpecified()&&!q.chestRule().isBlank()){
+                    String preview=UiTextLayout.fit(q.chestRule(),Math.max(60,(int)((w-18)/0.86F)));
+                    drawQuestScaledText(g,preview,x+8,yy+17,0.86F,q.completed()?MUTED:SECONDARY,false);
+                }else{
+                    drawQuestScaledText(g,"클릭해 세부 정보 보기",x+8,yy+17,0.86F,MUTED,false);
+                }
+                yy+=rowH;
+            }
+            return;
         }
-        yy=y+20;
-        for(int i=start;i<Math.min(snapshot.challenges().size(),start+currentPerPage);i++){
-            var c=snapshot.challenges().get(i);
-            String text=(c.completed()?"✓ ":"○ ")+c.ordinal()+". "+c.label();
-            g.text(font,Component.literal(UiTextLayout.fit(text,paneW)),rightX,yy,c.completed()?GREEN:c.autoEvaluable()?TEXT:GOLD,false);
-            yy+=19;
+
+        List<ClientMetaState.ChallengeRow> rows=filteredAchievementRows();
+        int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage);
+        if(start>=end){
+            g.text(font,Component.literal(questFilter==QuestFilter.COMPLETED?"완료된 업적이 없습니다.":"표시할 업적이 없습니다."),
+                    x+6,yy+10,MUTED,false);
+            return;
         }
+        for(int i=start;i<end;i++){
+            var a=rows.get(i);
+            TurnboundUiSkin.inset(g,x,yy,w,rowH-3);
+            g.fill(x,yy,x+2,yy+rowH-3,a.completed()?GREEN:GOLD);
+            String title=(a.completed()?"✓ ":"○ ")+a.ordinal()+". "+a.label();
+            g.text(font,Component.literal(UiTextLayout.fit(title,w-18)),x+8,yy+5,a.completed()?GREEN:TEXT,true);
+            String detail=a.completed()?"달성 완료":a.autoEvaluable()?"플레이 중 자동으로 판정됩니다."
+                    :a.unresolvedReason().isBlank()?"조건을 충족하면 달성됩니다.":a.unresolvedReason();
+            drawQuestScaledText(g,UiTextLayout.fit(detail,Math.max(60,(int)((w-18)/0.86F))),
+                    x+8,yy+17,0.86F,a.completed()?MUTED:SECONDARY,false);
+            yy+=rowH;
+        }
+    }
+
+    private void drawQuestDetail(GuiGraphicsExtractor g){
+        ClientMetaState.RegionQuestRow q=questRows().stream()
+                .filter(row->row.id().equals(selectedQuestId)).findFirst().orElse(null);
+        if(q==null){
+            selectedQuestId="";
+            return;
+        }
+        int x=left+16,y=contentTop()+27,w=panelWidth-32,h=Math.max(80,contentBottom()-y);
+        TurnboundUiSkin.inset(g,x,y,w,h);
+        g.fill(x,y,x+3,y+h,q.completed()?GREEN:questCategoryColor(q.region()));
+        g.text(font,Component.literal(UiTextLayout.fit(q.id(),w-24)),x+12,y+10,TEXT,true);
+        String status=q.completed()?"완료":"진행 중";
+        g.text(font,Component.literal(UiTextLayout.fit(q.region()+" · "+status,w-24)),x+12,y+27,q.completed()?GREEN:GOLD,false);
+        g.text(font,Component.literal("목표 / 보상"),x+12,y+49,MUTED,true);
+        List<String> lines=UiTextLayout.wrap(
+                q.chestRule().isBlank()?"상세 목표가 기록되지 않았습니다.":q.chestRule(),
+                Math.max(80,w-28),180);
+        int cursor=y+65;
+        for(String line:lines){
+            if(cursor>y+h-14)break;
+            g.text(font,Component.literal(line),x+12,cursor,SECONDARY,false);
+            cursor+=13;
+        }
+    }
+
+    private void drawQuestScaledText(GuiGraphicsExtractor g,String text,int x,int y,float scale,int color,boolean shadow){
+        g.pose().pushMatrix();
+        g.pose().translate(x,y);
+        g.pose().scale(scale,scale);
+        g.text(font,Component.literal(text),0,0,color,shadow);
+        g.pose().popMatrix();
+    }
+
+    private static int questCategoryColor(String category){
+        if(category==null)return SECONDARY;
+        if(category.startsWith("메인"))return GOLD;
+        if(category.startsWith("숨은"))return PURPLE;
+        if(category.startsWith("지역 의뢰")||category.startsWith("반복"))return BLUE;
+        return SECONDARY;
     }
 
     private void drawCodex(GuiGraphicsExtractor g){

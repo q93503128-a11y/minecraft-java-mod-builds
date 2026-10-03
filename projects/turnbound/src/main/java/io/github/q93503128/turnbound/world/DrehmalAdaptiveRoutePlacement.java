@@ -18,6 +18,8 @@ final class DrehmalAdaptiveRoutePlacement {
     private static final Map<ServerLevel, Snapshot> CACHE = new IdentityHashMap<>();
     private static final Map<ServerLevel, Long> OPENING_RECOVERY_AT = new IdentityHashMap<>();
     private static final Map<ServerLevel, Integer> OPENING_RECOVERY_ATTEMPTS = new IdentityHashMap<>();
+    private static final Set<String> REQUIRED_REGIONAL_OBJECTIVES = Set.of(
+            "CV_DRABYEL_NORTH", DrehmalContentUnlocks.WARNING_CAVE_ELITE);
     private record ScoredPosition(DrehmalFirstRouteCatalog.Position position, double score) {}
     private record WorldBossResolution(
             DrehmalFirstRouteCatalog.Site site,
@@ -134,6 +136,7 @@ final class DrehmalAdaptiveRoutePlacement {
                     authored.radius(),authored.allySlots(),authored.enemySlots(),candidates,true,true));
         }
         ensureOpeningTutorialFootprint(player,level,sites,footprints);
+        ensureRegionalObjectiveRuntime(player,level,sites,footprints);
 
         WorldBossResolution worldBoss = resolveOptionalWorldBoss(player, level, List.copyOf(sites.values()));
         if (worldBoss != null) {
@@ -383,6 +386,133 @@ final class DrehmalAdaptiveRoutePlacement {
             }
         }
         return best==null?null:best.position();
+    }
+
+    /**
+     * Regional contracts must never point at dead authored seeds. The two core Capital Valley choices are therefore
+     * recovered against the live world with a broader, still source-bounded search. Graul remains optional and keeps
+     * its stricter meadow rules.
+     */
+    private static void ensureRegionalObjectiveRuntime(
+            ServerPlayer player,
+            ServerLevel level,
+            Map<String,DrehmalFirstRouteCatalog.Site> sites,
+            Map<String,DrehmalFirstRouteCatalog.Footprint> footprints
+    ) {
+        for (var encounter : DrehmalFirstRouteCatalog.route().encounters()) {
+            if (!REQUIRED_REGIONAL_OBJECTIVES.contains(encounter.combatEncounterId())) continue;
+            var authoredSite = DrehmalFirstRouteCatalog.site(encounter.siteLocator());
+            var placement = DrehmalMapPlacementCatalog.placement(encounter.siteLocator());
+            if (authoredSite == null || placement == null) continue;
+
+            if (!sites.containsKey(authoredSite.locator())) {
+                var recovered = resolveRegionalSite(level, placement, authoredSite, List.copyOf(sites.values()));
+                if (recovered != null) {
+                    sites.put(authoredSite.locator(), new DrehmalFirstRouteCatalog.Site(
+                            authoredSite.locator(), authoredSite.kind(), authoredSite.surveySeedAnchor(),
+                            authoredSite.playerLabel(), recovered, authoredSite.safetyRadius(),
+                            authoredSite.encounterRadius(), true, true));
+                    Turnbound.LOGGER.info("TURNBOUND recovered regional objective {} at {}, {}, {}",
+                            encounter.combatEncounterId(), recovered.x(), recovered.y(), recovered.z());
+                }
+            }
+
+            var site = sites.get(authoredSite.locator());
+            var authoredFootprint = DrehmalFirstRouteCatalog.footprint(encounter.footprintLocator());
+            if (site == null || authoredFootprint == null || footprints.containsKey(authoredFootprint.locator())) continue;
+
+            List<DrehmalFirstRouteCatalog.ArenaCandidate> candidates =
+                    resolveArenas(player, level, placement, site);
+            if (candidates.size() < 2) candidates = resolveRegionalArenas(player, level, placement, site);
+            if (candidates.size() < 2) {
+                Turnbound.LOGGER.warn("TURNBOUND regional objective {} has a live site but no safe battle footprint",
+                        encounter.combatEncounterId());
+                continue;
+            }
+            footprints.put(authoredFootprint.locator(), new DrehmalFirstRouteCatalog.Footprint(
+                    authoredFootprint.locator(), authoredFootprint.siteLocator(), authoredFootprint.radius(),
+                    authoredFootprint.allySlots(), authoredFootprint.enemySlots(),
+                    candidates, true, true));
+        }
+    }
+
+    private static DrehmalFirstRouteCatalog.Position resolveRegionalSite(
+            ServerLevel level,
+            DrehmalMapPlacementCatalog.Placement placement,
+            DrehmalFirstRouteCatalog.Site authored,
+            List<DrehmalFirstRouteCatalog.Site> existingSites
+    ) {
+        var zone = DrehmalMapPlacementCatalog.zone(placement.zoneId());
+        ScoredPosition best = null;
+        int radius = Math.max(22, placement.searchRadius() + 14);
+        for (var seed : placement.siteSeeds()) {
+            for (int[] offset : offsets(radius)) {
+                int x = seed.x() + offset[0];
+                int z = seed.z() + offset[1];
+                int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos feet = new BlockPos(x, y, z);
+                if (!standing(level, feet) || !fieldProxyContentClear(level, x, y, z)) continue;
+                if (DrehmalRouteZoneRules.insideSafetyZone(existingSites, x + 0.5D, z + 0.5D)) continue;
+
+                double roadDistance = DrehmalRoutePlacementRules.corridorDistance(zone, x + 0.5D, z + 0.5D);
+                if (!Double.isFinite(roadDistance) || roadDistance > 36.0D) continue;
+                double seedDistanceSq = offset[0] * offset[0] + offset[1] * offset[1];
+                double score = DrehmalRoutePlacementRules.score(authored.kind(), seedDistanceSq, roadDistance);
+                if (!DrehmalRoutePlacementRules.acceptableRoadDistance(authored.kind(), roadDistance)) {
+                    score += 600.0D + roadDistance * roadDistance;
+                }
+                ScoredPosition candidate = new ScoredPosition(
+                        new DrehmalFirstRouteCatalog.Position(x, y, z), score);
+                if (best == null || candidate.score() < best.score()
+                        || (candidate.score() == best.score()
+                        && positionTieBreak(candidate.position(), best.position()) < 0)) {
+                    best = candidate;
+                }
+            }
+        }
+        return best == null ? null : best.position();
+    }
+
+    private static List<DrehmalFirstRouteCatalog.ArenaCandidate> resolveRegionalArenas(
+            ServerPlayer player,
+            ServerLevel level,
+            DrehmalMapPlacementCatalog.Placement placement,
+            DrehmalFirstRouteCatalog.Site site
+    ) {
+        List<DrehmalFirstRouteCatalog.ArenaCandidate> out = new ArrayList<>();
+        for (var seed : placement.arenaSeeds()) {
+            var candidate = nearestArena(player, level, seed, 16);
+            addDistinctArena(out, candidate);
+            if (out.size() >= 4) return List.copyOf(out);
+        }
+
+        var home = site.runtimePosition();
+        if (home == null) return List.copyOf(out);
+        int[][] probes = {
+                {12,0},{-12,0},{0,12},{0,-12},
+                {18,0},{-18,0},{0,18},{0,-18},
+                {14,14},{-14,14},{14,-14},{-14,-14},
+                {26,0},{-26,0},{0,26},{0,-26},
+                {22,16},{-22,16},{22,-16},{-22,-16}
+        };
+        float[] yaws = {0.0F,90.0F,180.0F,270.0F};
+        for (int i = 0; i < probes.length && out.size() < 4; i++) {
+            var seed = new DrehmalMapPlacementCatalog.ArenaSeed(
+                    home.x() + probes[i][0], home.z() + probes[i][1], yaws[i % yaws.length]);
+            addDistinctArena(out, nearestArena(player, level, seed, 10));
+        }
+        return List.copyOf(out);
+    }
+
+    private static void addDistinctArena(
+            List<DrehmalFirstRouteCatalog.ArenaCandidate> out,
+            DrehmalFirstRouteCatalog.ArenaCandidate candidate
+    ) {
+        if (candidate == null) return;
+        boolean duplicate = out.stream().anyMatch(existing ->
+                existing.center().x() == candidate.center().x()
+                        && existing.center().z() == candidate.center().z());
+        if (!duplicate) out.add(candidate);
     }
 
     private static List<DrehmalFirstRouteCatalog.ArenaCandidate> resolveArenas(
