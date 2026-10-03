@@ -7,7 +7,6 @@ import dev.moonseungjun.openworldrpg.camp.R01CampRules;
 import dev.moonseungjun.openworldrpg.combat.state.ProjectEquipmentSlot;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringRules;
 import dev.moonseungjun.openworldrpg.inventory.ProjectItemGrade;
-import dev.moonseungjun.openworldrpg.profession.R01CraftingRecipe;
 import org.junit.jupiter.api.Test;
 
 class R01OrdinaryEnemyRewardRulesTest {
@@ -32,14 +31,11 @@ class R01OrdinaryEnemyRewardRulesTest {
 
     @Test
     void creatureMaterialsAndGoldMatchR01CanonAtBoundaries() {
-        var louxia = R01OrdinaryEnemyRewardRules.createPlan(
-                R01OrdinaryEnemyRewardRules.EnemySource.LOUXIA,
-                rolls(99, 99, 34, 1, 99, 0, 0, 0, 0)
+        assertTrue(
+                R01OrdinaryEnemyRewardRules.sourceForEntityId(
+                        "threateningly_mobs:louxia"
+                ).isEmpty()
         );
-        assertEquals(2, louxia.materials().get(R01CraftingRecipe.LOUXIA_MEAT));
-        assertEquals(1, louxia.materials().get(R01CraftingRecipe.LOUXIA_GLOW));
-        assertEquals(0L, louxia.gold());
-
         var centipede = R01OrdinaryEnemyRewardRules.createPlan(
                 R01OrdinaryEnemyRewardRules.EnemySource.CAVE_CENTIPEDE,
                 rolls(69, 99, 99, 0, 99, 0, 0, 0, 0)

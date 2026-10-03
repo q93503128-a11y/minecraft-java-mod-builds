@@ -8,7 +8,6 @@ import dev.moonseungjun.openworldrpg.combat.state.ProjectEquipmentSlot;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringRules;
 import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
 import dev.moonseungjun.openworldrpg.inventory.ProjectItemGrade;
-import dev.moonseungjun.openworldrpg.profession.R01CraftingRecipe;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -51,19 +50,13 @@ public final class R01OrdinaryEnemyRewardRules {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(rolls, "rolls");
         long gold = switch (source) {
-            case LOUXIA, BISON, GRIZZLY -> 0L;
+            case BISON, GRIZZLY -> 0L;
             case CAVE_CENTIPEDE -> rolls.goldRollPercent() < 70 ? 3L : 0L;
             case STEELBOAR -> 18L;
         };
 
         Map<String, Integer> materials = new HashMap<>();
         switch (source) {
-            case LOUXIA -> {
-                materials.put(R01CraftingRecipe.LOUXIA_MEAT, 1 + Math.floorMod(rolls.quantityRoll(), 2));
-                if (rolls.secondaryMaterialRollPercent() < 35) {
-                    materials.put(R01CraftingRecipe.LOUXIA_GLOW, 1);
-                }
-            }
             case CAVE_CENTIPEDE -> {
                 // Donor Cave Centipede Leg remains excluded from project-normalized loot.
             }
@@ -129,7 +122,6 @@ public final class R01OrdinaryEnemyRewardRules {
     }
 
     public enum EnemySource {
-        LOUXIA(R01ExternalActorCatalog.LOUXIA, 1, 0.01, 0.008),
         CAVE_CENTIPEDE(R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD, 4, 0.01, 0.008),
         BISON(R01ExternalActorCatalog.BISON, 3, 0.01, 0.008),
         GRIZZLY(R01ExternalActorCatalog.GRIZZLY, 6, 0.01, 0.008),

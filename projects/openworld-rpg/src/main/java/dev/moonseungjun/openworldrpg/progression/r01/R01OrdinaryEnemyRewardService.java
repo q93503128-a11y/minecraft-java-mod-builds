@@ -93,15 +93,24 @@ public final class R01OrdinaryEnemyRewardService {
             processed++;
             var source = pending.source();
             var plan = pending.plan();
-            PlayerRewardTransactionService.grantCombatPercentageRewardOnce(
-                    player,
-                    pending.rewardId() + "/progression",
-                    pending.rewardClass(),
-                    source.contentLevel(),
-                    source.combatXpFraction(),
-                    source.classXpFraction(),
-                    plan.gold()
-            );
+            var progression = PlayerProgressionService.state(player);
+            boolean progressionOrGoldDue =
+                    progression.combatLevel()
+                            < dev.moonseungjun.openworldrpg.progression.ProjectProgressionRules.MAX_COMBAT_LEVEL
+                    || progression.classProgress(pending.rewardClass()).rank()
+                            < dev.moonseungjun.openworldrpg.progression.ProjectProgressionRules.MAX_CLASS_RANK
+                    || plan.gold() > 0L;
+            if (progressionOrGoldDue) {
+                PlayerRewardTransactionService.grantCombatPercentageRewardOnce(
+                        player,
+                        pending.rewardId() + "/progression",
+                        pending.rewardClass(),
+                        source.contentLevel(),
+                        source.combatXpFraction(),
+                        source.classXpFraction(),
+                        plan.gold()
+                );
+            }
 
             boolean materialsReady = true;
             for (Map.Entry<String, Integer> material : plan.materials().entrySet()) {
