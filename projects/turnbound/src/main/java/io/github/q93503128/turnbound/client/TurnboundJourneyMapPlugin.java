@@ -56,6 +56,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
                 int color = waypointColor(point);
                 waypoint.setColor(color);
                 waypoint.setIconColor(color);
+                waypoint.setLabelColor(point.objective() ? 0xFFE7A3 : 0xFFFFFF);
                 waypoint.setShowBeacon(false);
                 waypoint.setShowInWorld(false);
                 waypoint.setShowOnMap(true);
