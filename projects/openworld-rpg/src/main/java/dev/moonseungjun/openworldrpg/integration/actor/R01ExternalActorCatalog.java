@@ -38,7 +38,6 @@ public final class R01ExternalActorCatalog {
             CAVE_CENTIPEDE_HEAD,
             CAVE_CENTIPEDE_BODY,
             CAVE_CENTIPEDE_TAIL,
-            LOUXIA,
             STEELBOAR,
             NATURE_SPIRIT,
             REGALHART,
