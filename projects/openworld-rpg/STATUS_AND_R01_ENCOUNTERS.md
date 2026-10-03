@@ -971,6 +971,51 @@ Below 35% HP, `Furious Route` is deterministic rather than an implementation-cho
 - after the second charge, recovery is 1.40 s;
 - no permanent attack-speed/damage steroid.
 
+### Runtime action-selection authority
+
+Code state `23c7fec95ed14c4f6ed6c80f774fa17ecac3b739` adds the server-owned, data-backed
+Steelboar selection controller without fabricating unresolved impact semantics:
+
+- the bundled identity is exact `threateningly_mobs:steelboar`, content Lv6, with the global
+  **2-tick / 0.10 s** post-recovery decision delay recorded in encounter data;
+- close range `<=3.0` uses deterministic server RNG over **Iron Tusk 60 / Shoulder Hook 40**,
+  with Shoulder Hook removed while its exact **60-tick / 3.0 s** cooldown is active;
+- the general R01 anti-repeat contract is enforced: if the same ordinary close attack has committed
+  twice in a row and the other close attack is legal, the repeated attack is removed from the next
+  candidate set;
+- a clear committed line at **5.5–12.0 blocks** gives ready Iron Rush priority over ordinary melee;
+- **3.0–5.5 blocks** with no legal Rush returns reposition rather than inventing extra reach or a
+  hidden lunge;
+- Iron Rush records its exact **140-tick / 7.0 s** cooldown, 17-tick tell, 24-tick recovery,
+  12-block commitment, 28% benchmark damage, heavy guard-pressure band, player-poise pressure 70,
+  perfect-guardability, `1.40x` perfect-guard poise multiplier and one-time heavy-obstacle self-poise
+  value 18 as canonical data;
+- below, not at, **35% HP**, a ready Furious Route deterministically replaces the next otherwise
+  legal Iron Rush only in its exact **6.0–12.0 block** window;
+- committing Furious Route consumes its exact **280-tick / 14 s** override cooldown immediately,
+  preserves the normal Iron Rush cooldown, records the second-charge pivot tell as a **minimum
+  12 ticks / >=0.60 s**, and records **28 ticks / 1.40 s** recovery after charge two;
+- if the target is only 5.5–<6.0 blocks away, low HP does not steal the ordinary Iron Rush with a
+  Furious Route;
+- deterministic selection is seeded from encounter/spawn instance + actor UUID + action counter.
+
+One source gap is intentionally preserved instead of guessed: current Steelboar canon states
+`perfect_guardable: true` for Iron Rush but does **not** state its ordinary `guardable` tag.
+The data model therefore stores Iron Rush `guardable = null` and explicitly reports its impact
+contract as not yet closed. Iron Tusk and Shoulder Hook retain their explicit
+`guardable/perfect_guardable: true` values.
+
+Build Openworld RPG run `37094461580` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-23c7fec95ed14c4f6ed6c80f774fa17ecac3b739`
+(`11262949211`, SHA-256
+`f8645f5e15519b1b27ec594584a3efd5142afb61471e421eaad9d509c526d227`).
+
+This closes Steelboar **selection/cooldown/Furious Route decision authority** only. Charge steering,
+second-charge execution, exact impact geometry, obstacle collision and production presentation/spawn
+remain separate gates.
+
 ## Status relations
 
 - Bleeding buildup: resistant;

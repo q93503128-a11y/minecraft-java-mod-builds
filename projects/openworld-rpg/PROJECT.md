@@ -567,6 +567,25 @@ JARs, mrpack packaging and artifact upload. Artifact
 The remaining Bloom Quake gate is player-facing presentation: its visible ring/VFX must match this
 already-authoritative 4.0-block server area.
 
+Steelboar selection is now bound at code state
+`23c7fec95ed14c4f6ed6c80f774fa17ecac3b739`. A dedicated bundled controller owns the
+exact R01 decision language instead of leaving donor AI to choose attacks: <=3.0-block melee uses
+deterministic 60/40 Iron Tusk/Shoulder Hook weights with the 3.0 s Hook cooldown and two-repeat cap;
+5.5–12.0 blocks with a clear committed line gives a ready 7.0 s-cooldown Iron Rush priority; the
+3.0–5.5 gap repositions. Below 35% HP, a ready 14 s Furious Route deterministically replaces the next
+legal Rush only at 6.0–12.0 blocks, records its >=0.60 s second pivot/tell and 1.40 s second-charge
+recovery, and consumes the override cooldown at commitment even if a later second line cannot be
+established. The data preserves one real canon gap rather than inventing it: Iron Rush explicitly has
+`perfect_guardable: true`, heavy guard pressure and 1.40x perfect-guard poise reward, but the current
+design text does not state ordinary `guardable`; that field remains unresolved/null and no Iron Rush
+impact authority is fabricated yet. Run `37094461580` is **SUCCESS** across tests/build, pinned
+dependency inspection, core/gameplay server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-23c7fec95ed14c4f6ed6c80f774fa17ecac3b739`
+(`11262949211`, SHA-256
+`f8645f5e15519b1b27ec594584a3efd5142afb61471e421eaad9d509c526d227`).
+Steelboar production spawn/presentation and charge execution remain closed.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
