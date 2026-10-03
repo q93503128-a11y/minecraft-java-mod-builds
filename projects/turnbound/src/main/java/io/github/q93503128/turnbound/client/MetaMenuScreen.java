@@ -47,7 +47,8 @@ public final class MetaMenuScreen extends Screen {
     private String selectedCharacterId="";
     private DetailTab detailTab=DetailTab.OVERVIEW;
     private EquipSort equipSort=EquipSort.TIER;
-    private String equipSlotFilter="ALL",selectedEquipmentId="",equipmentTargetCharacterId="";
+    private String equipSlotFilter="ALL",selectedEquipmentId="";
+    private String characterEquipmentSlot="";
     private String codexCategory="CHARACTERS",selectedEndgameId="";
     private int selectedSkillIndex;
     private int skillDescriptionScroll;
@@ -321,6 +322,10 @@ public final class MetaMenuScreen extends Screen {
             }
         }
 
+        if(detailTab==DetailTab.EQUIPMENT&&row.owned()){
+            buildCharacterEquipment(row);
+        }
+
         if(detailTab==DetailTab.GROWTH&&row.owned()){
             int by=top+panelHeight-34;
             var trial=ClientSignatureTrialState.forCharacter(row.id());
@@ -334,19 +339,9 @@ public final class MetaMenuScreen extends Screen {
 
     private void buildEquipment(){
         int y=contentTop(),x=left+16;
-        ensureEquipmentTarget();
         int listW=equipmentListWidth();
         addRenderableWidget(new BattleHudButton(x,y,96,CONTROL_H,Component.literal("부위 · "+slotLabel(equipSlotFilter)),MUTED,ignored->cycleEquipSlot()));
         addRenderableWidget(new BattleHudButton(x+102,y,96,CONTROL_H,Component.literal("정렬 · "+sortLabel(equipSort)),MUTED,ignored->cycleEquipSort()));
-
-        int targetX=x+204,targetW=Math.max(116,left+panelWidth-16-targetX);
-        if(!ownedEquipmentTargets().isEmpty()){
-            int arrowW=24,centerW=Math.max(64,targetW-arrowW*2-6);
-            addRenderableWidget(new BattleHudButton(targetX,y,arrowW,CONTROL_H,Component.literal("‹"),MUTED,ignored->cycleEquipmentTarget(-1)));
-            addRenderableWidget(new BattleHudButton(targetX+arrowW+3,y,centerW,CONTROL_H,
-                    Component.literal("장착 대상 · "+equipmentTargetName()),GREEN,ignored->cycleEquipmentTarget(1)));
-            addRenderableWidget(new BattleHudButton(targetX+arrowW+3+centerW+3,y,arrowW,CONTROL_H,Component.literal("›"),MUTED,ignored->cycleEquipmentTarget(1)));
-        }
 
         List<ClientMetaState.EquipmentRow> rows=filteredEquipment();
         int listTop=y+21,rowH=19;
@@ -357,11 +352,58 @@ public final class MetaMenuScreen extends Screen {
             var row=rows.get(i);
             int yy=listTop+(i-start)*(rowH+3);
             String owner=row.equippedCharacterId().isBlank()?"":" · "+characterName(row.equippedCharacterId());
-            addRenderableWidget(new BattleHudButton(left+16,yy,listW,rowH,Component.literal(row.tier()+" · "+row.name()+" +"+row.enhancement()+owner),row.instanceId().equals(selectedEquipmentId)?BLUE:tierColor(row.tier()),ignored->selectEquipment(row.instanceId())));
+            addRenderableWidget(new BattleHudButton(left+16,yy,listW,rowH,
+                    Component.literal(row.tier()+" · "+row.name()+" +"+row.enhancement()+owner),
+                    row.instanceId().equals(selectedEquipmentId)?BLUE:tierColor(row.tier()),
+                    ignored->selectEquipment(row.instanceId())));
         }
         var selected=equipment(selectedEquipmentId);
         int rx=left+26+listW,rw=panelWidth-listW-58;
-        if(selected!=null)buildEquipmentActions(selected,rx,listTop,rw);else drawPendingButtons(rx,listTop,rw);
+        if(selected==null)drawPendingButtons(rx,listTop,rw);
+        buildPager();
+    }
+
+    private void buildCharacterEquipment(ClientMetaState.CharacterRow character){
+        int y=contentTop()+25,x=left+16,w=panelWidth-32;
+        if(characterEquipmentSlot.isBlank()){
+            int buttonH=28,gap=5;
+            for(int i=0;i<4;i++){
+                String slot=List.of("WEAPON","ARMOR","ACCESSORY","SIGNATURE").get(i);
+                var equipped=equippedBy(character.id(),slot);
+                String label=slotLabel(slot)+" · "+(equipped==null?"비어 있음":equipped.name()+" +"+equipped.enhancement());
+                final String chosen=slot;
+                addRenderableWidget(new BattleHudButton(x,y+i*(buttonH+gap),w,buttonH,Component.literal(label),
+                        equipped==null?MUTED:tierColor(equipped.tier()),ignored->openCharacterEquipmentSlot(chosen)));
+            }
+            return;
+        }
+
+        addRenderableWidget(new BattleHudButton(x,y,w,18,Component.literal("← "+slotLabel(characterEquipmentSlot)+" 장비 선택"),MUTED,
+                ignored->closeCharacterEquipmentSlot()));
+        List<ClientMetaState.EquipmentRow> choices=characterEquipmentChoices(character.id(),characterEquipmentSlot);
+        int listTop=y+23,rowH=23;
+        int per=Math.max(1,UiPaging.rowsThatFit(listTop,contentBottom()-32,rowH+2,3));
+        setPaging(choices.size(),per);
+        int start=page*per,end=Math.min(choices.size(),start+per);
+        for(int i=start;i<end;i++){
+            var gear=choices.get(i);
+            int yy=listTop+(i-start)*(rowH+2);
+            String owner=gear.equippedCharacterId().isBlank()?"":" · "+characterName(gear.equippedCharacterId())+" 장착";
+            String stats=statTypeLabel(gear.mainType())+" "+stat(gear.mainValue())+" · "+statTypeLabel(gear.subType())+" "+stat(gear.subValue());
+            String label=gear.tier()+" · "+gear.name()+" +"+gear.enhancement()+" · "+stats+owner;
+            final String instance=gear.instanceId();
+            addRenderableWidget(new BattleHudButton(x,yy,w,rowH,Component.literal(label),
+                    instance.equals(selectedEquipmentId)?BLUE:tierColor(gear.tier()),ignored->{selectedEquipmentId=instance;rebuild();}));
+        }
+        var selected=equipment(selectedEquipmentId);
+        if(selected!=null&&selected.slot().equals(characterEquipmentSlot)&&eligibleForCharacter(selected,character.id())){
+            boolean already=character.id().equals(selected.equippedCharacterId());
+            var equip=new BattleHudButton(x,contentBottom()-22,w,18,
+                    Component.literal(already?"현재 장착 중":"선택 장비 장착"),already?MUTED:GREEN,
+                    ignored->send("EQUIP|"+character.id()+"|"+selected.instanceId()));
+            equip.active=!already;
+            addRenderableWidget(equip);
+        }
         buildPager();
     }
 
@@ -371,15 +413,6 @@ public final class MetaMenuScreen extends Screen {
         var p=pending.getFirst();
         if(p.claimable())addRenderableWidget(new BattleHudButton(rx,y,Math.max(80,rw),20,Component.literal("대기 보상 수령 · "+p.name()),GREEN,ignored->send("REWARD_CLAIM|"+p.instanceId())));
         if(p.immediateSellable())addRenderableWidget(new BattleHudButton(rx,y+24,Math.max(80,rw),20,Component.literal("대기 보상 판매 · "+p.salePrice()+"G"),GOLD,ignored->send("REWARD_SELL|"+p.instanceId())));
-    }
-
-    private void buildEquipmentActions(ClientMetaState.EquipmentRow selected,int rx,int y,int rw){
-        rw=Math.max(120,rw);
-        int actionY=Math.min(contentBottom()-19,y+116);
-        var equip=new BattleHudButton(rx,actionY,rw,17,
-                Component.literal(equipmentTargetCharacterId.isBlank()?"장착할 캐릭터 선택":"이 캐릭터에게 장착"),GREEN,ignored->equipSelected());
-        equip.active=!equipmentTargetCharacterId.isBlank();
-        addRenderableWidget(equip);
     }
 
     private void buildArchive(){
@@ -567,58 +600,50 @@ public final class MetaMenuScreen extends Screen {
     private void openArchiveLog(){archiveLogOpen=true;archiveLogScroll=0;rebuild();}
     private void closeArchiveLog(){archiveLogOpen=false;archiveLogScroll=0;rebuild();}
     private void rebuild(){clearWidgets();init();}
-    private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";archiveLogOpen=false;rebuild();}
-    private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
+    private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";characterEquipmentSlot="";archiveLogOpen=false;rebuild();}
+    private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;characterEquipmentSlot="";selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
     private void openMap(){Minecraft.getInstance().gui.setScreen(new DrehmalWorldMapScreen());}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
     private void saveParty(){send("PARTY|"+String.join(",",draftParty));}
-    private void openCharacter(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
-    private void closeCharacter(){tab=Tab.CODEX;codexCategory="CHARACTERS";selectedCharacterId="";skillDescriptionScroll=0;page=0;rebuild();}
-    private void switchDetail(DetailTab d){detailTab=d;skillDescriptionScroll=0;if(d==DetailTab.SKILLS)selectedSkillIndex=0;rebuild();}
+    private void openCharacter(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;characterEquipmentSlot="";selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
+    private void closeCharacter(){tab=Tab.CODEX;codexCategory="CHARACTERS";selectedCharacterId="";characterEquipmentSlot="";skillDescriptionScroll=0;page=0;rebuild();}
+    private void switchDetail(DetailTab d){detailTab=d;characterEquipmentSlot="";selectedEquipmentId="";page=0;skillDescriptionScroll=0;if(d==DetailTab.SKILLS)selectedSkillIndex=0;rebuild();}
     private void cycleOwnership(){ownershipFilter=OwnershipFilter.values()[(ownershipFilter.ordinal()+1)%OwnershipFilter.values().length];page=0;rebuild();}
     private void cycleStar(){starFilter=switch(starFilter){case 0->1;case 1->2;case 2->3;case 3->4;case 4->5;default->0;};page=0;rebuild();}
     private void cycleLevel(){minimumLevel=minimumLevel==0?10:minimumLevel>=60?0:minimumLevel+10;page=0;rebuild();}
     private void cycleRole(){roleFilter=RoleFilter.values()[(roleFilter.ordinal()+1)%RoleFilter.values().length];page=0;rebuild();}
     private void cycleEquipSlot(){List<String>v=List.of("ALL","WEAPON","ARMOR","ACCESSORY","SIGNATURE");equipSlotFilter=v.get((v.indexOf(equipSlotFilter)+1)%v.size());page=0;rebuild();}
     private void cycleEquipSort(){equipSort=EquipSort.values()[(equipSort.ordinal()+1)%EquipSort.values().length];page=0;rebuild();}
-    private void selectEquipment(String id){selectedEquipmentId=id;if(equipmentTargetCharacterId.isBlank())equipmentTargetCharacterId=ClientMetaState.snapshot().activeParty().stream().findFirst().orElse("");rebuild();}
-    private void selectEquipmentTarget(String id){equipmentTargetCharacterId=id;rebuild();}
-
-    private List<ClientMetaState.CharacterRow> ownedEquipmentTargets(){
-        return ClientMetaState.snapshot().characters().stream()
-                .filter(ClientMetaState.CharacterRow::owned)
-                .sorted(Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar).reversed()
-                        .thenComparing(ClientMetaState.CharacterRow::name))
-                .toList();
-    }
-
-    private void ensureEquipmentTarget(){
-        var owned=ownedEquipmentTargets();
-        if(owned.isEmpty()){equipmentTargetCharacterId="";return;}
-        boolean valid=owned.stream().anyMatch(row->row.id().equals(equipmentTargetCharacterId));
-        if(valid)return;
-        equipmentTargetCharacterId=ClientMetaState.snapshot().activeParty().stream()
-                .filter(id->owned.stream().anyMatch(row->row.id().equals(id)))
-                .findFirst().orElse(owned.getFirst().id());
-    }
-
-    private void cycleEquipmentTarget(int delta){
-        var owned=ownedEquipmentTargets();
-        if(owned.isEmpty()){equipmentTargetCharacterId="";rebuild();return;}
-        int index=0;
-        for(int i=0;i<owned.size();i++)if(owned.get(i).id().equals(equipmentTargetCharacterId)){index=i;break;}
-        index=Math.floorMod(index+delta,owned.size());
-        equipmentTargetCharacterId=owned.get(index).id();
-        rebuild();
-    }
-
-    private String equipmentTargetName(){
-        return equipmentTargetCharacterId.isBlank()?"선택 없음":characterName(equipmentTargetCharacterId);
-    }
-
+    private void selectEquipment(String id){selectedEquipmentId=id;rebuild();}
     private int equipmentListWidth(){return Math.min(310,Math.max(210,panelWidth/2-12));}
 
-    private void equipSelected(){if(!selectedEquipmentId.isBlank()&&!equipmentTargetCharacterId.isBlank())send("EQUIP|"+equipmentTargetCharacterId+"|"+selectedEquipmentId);}
+    private void openCharacterEquipmentSlot(String slot){
+        characterEquipmentSlot=slot;
+        selectedEquipmentId="";
+        var equipped=equippedBy(selectedCharacterId,slot);
+        if(equipped!=null)selectedEquipmentId=equipped.instanceId();
+        page=0;
+        rebuild();
+    }
+    private void closeCharacterEquipmentSlot(){characterEquipmentSlot="";selectedEquipmentId="";page=0;rebuild();}
+    private ClientMetaState.EquipmentRow equippedBy(String characterId,String slot){
+        return ClientMetaState.snapshot().equipment().stream()
+                .filter(e->characterId.equals(e.equippedCharacterId())&&slot.equals(e.slot())).findFirst().orElse(null);
+    }
+    private List<ClientMetaState.EquipmentRow> characterEquipmentChoices(String characterId,String slot){
+        return ClientMetaState.snapshot().equipment().stream()
+                .filter(e->slot.equals(e.slot())&&eligibleForCharacter(e,characterId))
+                .sorted(Comparator.comparingInt((ClientMetaState.EquipmentRow e)->characterId.equals(e.equippedCharacterId())?0:e.equippedCharacterId().isBlank()?1:2)
+                        .thenComparing(Comparator.comparingInt((ClientMetaState.EquipmentRow e)->tierRank(e.tier())).reversed())
+                        .thenComparing(Comparator.comparingInt(ClientMetaState.EquipmentRow::enhancement).reversed())
+                        .thenComparing(ClientMetaState.EquipmentRow::name))
+                .toList();
+    }
+    private static boolean eligibleForCharacter(ClientMetaState.EquipmentRow gear,String characterId){
+        if(!"SIGNATURE".equals(gear.slot()))return true;
+        try{return V04Catalogs.signature(gear.itemId()).owner().equals(characterId);}
+        catch(RuntimeException ignored){return false;}
+    }
     private void sellSelected(){var e=equipment(selectedEquipmentId);if(e!=null&&e.sellable())send("SELL|"+e.instanceId());}
     private void selectCodex(String c){codexCategory=c;page=0;rebuild();}
     private void selectEndgame(String id){selectedEndgameId=id;rebuild();}
@@ -863,12 +888,19 @@ public final class MetaMenuScreen extends Screen {
                 }
             }
             case EQUIPMENT->{
-                int yy=y+34;
-                for(String slot:List.of("WEAPON","ARMOR","ACCESSORY","SIGNATURE")){
-                    var item=ClientMetaState.snapshot().equipment().stream().filter(e->e.equippedCharacterId().equals(r.id())&&e.slot().equals(slot)).findFirst().orElse(null);
-                    String text=slotLabel(slot)+" · "+(item==null?"비어 있음":item.name()+" +"+item.enhancement());
-                    g.text(font,Component.literal(UiTextLayout.fit(text,w)),x,yy,item==null?MUTED:tierColor(item.tier()),false);
-                    yy+=18;
+                if(characterEquipmentSlot.isBlank()){
+                    g.text(font,Component.literal("부위를 선택하면 보유 장비와 능력치를 비교해 바로 장착할 수 있습니다."),x,y+34,SECONDARY,false);
+                }else{
+                    var selected=equipment(selectedEquipmentId);
+                    g.text(font,Component.literal(slotLabel(characterEquipmentSlot)+" 장비 목록"),x,y+34,GOLD,true);
+                    if(selected!=null){
+                        String current=statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())
+                                +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
+                        g.text(font,Component.literal(UiTextLayout.fit("선택 · "+selected.name()+" +"+selected.enhancement(),w)),x,y+50,tierColor(selected.tier()),true);
+                        g.text(font,Component.literal(UiTextLayout.fit(current,w)),x,y+64,TEXT,false);
+                        String effect=equipmentEffect(selected);
+                        if(!effect.isBlank())g.text(font,Component.literal(UiTextLayout.fit("특성 · "+effect,w)),x,y+78,PURPLE,false);
+                    }
                 }
             }
             case GROWTH->{
@@ -891,22 +923,13 @@ public final class MetaMenuScreen extends Screen {
         int listW=equipmentListWidth(),x=left+26+listW,y=contentTop()+23,w=panelWidth-listW-58;
         g.text(font,Component.literal(UiTextLayout.fit(selected.tier()+" · "+selected.name()+" +"+selected.enhancement(),w)),x,y,tierColor(selected.tier()),true);
         String current=statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())+" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
-        g.text(font,Component.literal(UiTextLayout.fit("현재 · "+current,w)),x,y+16,TEXT,false);
-        if(selected.enhancement()<GrowthRulesV1.maxEnhancement()){
-            double nextMain=equipmentMainAt(selected.itemId(),selected.enhancement()+1);
-            String next="+"+(selected.enhancement()+1)+" · "+statTypeLabel(selected.mainType())+" "+stat(nextMain)
-                    +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
-            g.text(font,Component.literal(UiTextLayout.fit(next,w)),x,y+32,GREEN,false);
-        }else{
-            g.text(font,Component.literal("강화 최대치"),x,y+32,GREEN,false);
-        }
-        g.text(font,Component.literal(UiTextLayout.fit("+10 최대 · "+statTypeLabel(selected.mainType())+" "+stat(selected.mainAt20())
-                +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subAt20()),w)),x,y+48,GOLD,false);
+        g.text(font,Component.literal(UiTextLayout.fit("능력치 · "+current,w)),x,y+18,TEXT,false);
         String effect=equipmentEffect(selected);
-        if(!effect.isBlank())g.text(font,Component.literal(UiTextLayout.fit("특성 · "+effect,w)),x,y+64,PURPLE,false);
+        if(!effect.isBlank())g.text(font,Component.literal(UiTextLayout.fit("특성 · "+effect,w)),x,y+36,PURPLE,false);
         String owner=selected.equippedCharacterId().isBlank()?"미장착":characterName(selected.equippedCharacterId());
-        g.text(font,Component.literal(UiTextLayout.fit("현재 장착 · "+owner,w)),x,y+80,SECONDARY,false);
-        g.text(font,Component.literal(UiTextLayout.fit("장착 대상 · "+equipmentTargetName(),w)),x,y+94,GREEN,false);
+        g.text(font,Component.literal(UiTextLayout.fit("현재 장착 · "+owner,w)),x,y+54,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit("장착 변경은 캐릭터 > 장비에서 합니다.",w)),x,y+78,MUTED,false);
+        g.text(font,Component.literal(UiTextLayout.fit("강화 상승치는 대장장이에게서 확인할 수 있습니다.",w)),x,y+94,MUTED,false);
     }
 
     private void drawArchive(GuiGraphicsExtractor g){
@@ -922,9 +945,10 @@ public final class MetaMenuScreen extends Screen {
                 int index=s.archiveHistory().size()-1-(archiveLogScroll+row);
                 if(index<0)break;
                 var r=s.archiveHistory().get(index);
-                String text="★"+r.nativeStars()+" · "+r.name()+(r.newlyOwned()?" · 신규"
-                        :" · 별의 정수 +"+r.essenceGranted()
-                        +(r.bonusLevelGranted()>0?" · +레벨 +1 (+"+r.bonusLevelAfter()+")":" · +레벨 MAX"));
+                String duplicate=r.bonusLevelGranted()>0
+                        ? " · +레벨 +1 (+"+r.bonusLevelAfter()+")"
+                        : " · +레벨 MAX · 별의 정수 +"+r.essenceGranted();
+                String text="★"+r.nativeStars()+" · "+r.name()+(r.newlyOwned()?" · 신규":duplicate);
                 g.text(font,Component.literal(UiTextLayout.fit(text,panelWidth-32)),left+16,yy,r.newlyOwned()?GREEN:SECONDARY,false);
                 yy+=18;
             }
@@ -968,7 +992,7 @@ public final class MetaMenuScreen extends Screen {
             TurnboundUiSkin.inset(g,infoX,boxY,infoW,boxH);
             g.text(font,Component.literal("소환 규칙"),infoX+10,boxY+8,TEXT,true);
             g.text(font,Component.literal("1회 300 · 10회 3000 크리스탈"),infoX+10,boxY+27,SECONDARY,false);
-            g.text(font,Component.literal("중복 → 별의 정수 + +레벨(최대 +10)"),infoX+10,boxY+45,SECONDARY,false);
+            g.text(font,Component.literal("중복 → +레벨 우선 · +10 이후 별의 정수"),infoX+10,boxY+45,SECONDARY,false);
             g.text(font,Component.literal("기간 한정 배너 없음"),infoX+10,boxY+63,MUTED,false);
         }
     }
@@ -1085,10 +1109,6 @@ public final class MetaMenuScreen extends Screen {
     private static String stat(double v){return Math.abs(v)<=1.0?String.format(Locale.ROOT,"%.1f%%",v*100):String.format(Locale.ROOT,"%.1f",v);}
     private static String statTypeLabel(String t){return switch(t){case"HP_FLAT"->"HP";case"HP_PERCENT","HP_PCT"->"HP%";case"ATK_FLAT"->"ATK";case"ATK_PERCENT","ATK_PCT"->"ATK%";case"DEF_FLAT"->"DEF";case"DEF_PERCENT","DEF_PCT"->"DEF%";case"SPD_FLAT"->"SPD";case"SPD_PERCENT","SPD_PCT"->"SPD%";default->t;};}
 
-    private static double equipmentMainAt(String itemId,int level){
-        try{var s=V04Catalogs.equipment(itemId);return EquipmentInventory.scaledMain(s.main().type(),s.main().value(),level);}
-        catch(RuntimeException ignored){var s=V04Catalogs.signature(itemId);return EquipmentInventory.scaledMain(s.main().type(),s.main().value(),level);}
-    }
     private static String equipmentEffect(ClientMetaState.EquipmentRow row){
         try{return ruleLabel(V04Catalogs.equipment(row.itemId()).fixedEffect());}
         catch(RuntimeException ignored){

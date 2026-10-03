@@ -1,6 +1,8 @@
 package io.github.q93503128.turnbound.client;
 
+import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
+import io.github.q93503128.turnbound.progression.EquipmentInventory;
 import io.github.q93503128.turnbound.progression.GrowthRulesV1;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
@@ -59,7 +61,7 @@ final class FacilityForgeScreen extends FacilityScreen {
             boolean maxed = row.enhancement() >= GrowthRulesV1.maxEnhancement();
             int cost = maxed ? 0 : GrowthRulesV1.enhancementCost(row.tier(), row.enhancement());
             var enhance = new BattleHudButton(
-                    rx, bodyTop() + 66, rw, 19,
+                    rx, bodyTop() + 91, rw, 19,
                     Component.literal(maxed ? "강화 완료" : "+ " + (row.enhancement() + 1) + " 강화 · " + cost + "G"),
                     maxed ? 0xFF707987 : 0xFFFFC857,
                     ignored -> ClientPacketDistributor.sendToServer(
@@ -90,15 +92,28 @@ final class FacilityForgeScreen extends FacilityScreen {
         int rw = panelWidth - listW - 18;
         int y = bodyTop() + 5;
         inset(g, left + 8, bodyTop() + 1, listW - 8, panelHeight - 62);
-        inset(g, rx - 4, bodyTop() + 1, rw + 4, 91);
+        inset(g, rx - 4, bodyTop() + 1, rw + 4, 116);
         if (row == null) {
             g.text(font, Component.literal("강화할 장비가 없습니다."), rx + 5, y + 8, TurnboundUiTokens.TEXT_SECONDARY, false);
             return;
         }
         g.text(font, Component.literal(UiTextLayout.fit(row.name(), rw - 12)), rx + 5, y + 7, TurnboundUiTokens.TEXT_PRIMARY, true);
         g.text(font, Component.literal(row.tier() + " · +" + row.enhancement()), rx + 5, y + 23, 0xFFAEB7C6, false);
-        g.text(font, Component.literal(UiTextLayout.fit(row.mainType() + " " + row.mainValue(), rw - 12)),
-                rx + 5, y + 39, 0xFF62D39A, false);
+        String current = statType(row.mainType())+" "+stat(row.mainValue())
+                +" · "+statType(row.subType())+" "+stat(row.subValue());
+        g.text(font, Component.literal(UiTextLayout.fit("현재 · "+current, rw - 12)),
+                rx + 5, y + 39, TurnboundUiTokens.TEXT_PRIMARY, false);
+        if(row.enhancement()<GrowthRulesV1.maxEnhancement()){
+            double nextMain=mainAt(row,row.enhancement()+1);
+            String next=statType(row.mainType())+" "+stat(nextMain)
+                    +" · "+statType(row.subType())+" "+stat(row.subValue());
+            g.text(font, Component.literal(UiTextLayout.fit("강화 후 · "+next, rw - 12)),
+                    rx + 5, y + 55, 0xFF62D39A, false);
+            g.text(font, Component.literal(UiTextLayout.fit("상승 · "+statType(row.mainType())+" +"+stat(nextMain-row.mainValue()), rw - 12)),
+                    rx + 5, y + 71, 0xFFFFC857, false);
+        }else{
+            g.text(font, Component.literal("최대 강화"), rx + 5, y + 55, 0xFF62D39A, false);
+        }
     }
 
     private static List<ClientMetaState.EquipmentRow> rows() {
@@ -110,5 +125,21 @@ final class FacilityForgeScreen extends FacilityScreen {
 
     private ClientMetaState.EquipmentRow selectedRow(List<ClientMetaState.EquipmentRow> rows) {
         return rows.stream().filter(row -> row.instanceId().equals(selected)).findFirst().orElse(null);
+    }
+
+    private static double mainAt(ClientMetaState.EquipmentRow row,int level){
+        try{
+            var spec=V04Catalogs.equipment(row.itemId());
+            return EquipmentInventory.scaledMain(spec.main().type(),spec.main().value(),level);
+        }catch(RuntimeException ignored){
+            var spec=V04Catalogs.signature(row.itemId());
+            return EquipmentInventory.scaledMain(spec.main().type(),spec.main().value(),level);
+        }
+    }
+    private static String statType(String type){
+        return switch(type){case"HP_PCT","HP_PERCENT"->"HP%";case"ATK_PCT","ATK_PERCENT"->"ATK%";case"DEF_PCT","DEF_PERCENT"->"DEF%";case"SPD_FLAT"->"SPD";default->type;};
+    }
+    private static String stat(double value){
+        return Math.abs(value)<=1.0?String.format(java.util.Locale.ROOT,"%.1f%%",value*100.0):String.format(java.util.Locale.ROOT,"%.1f",value);
     }
 }
