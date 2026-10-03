@@ -2192,3 +2192,52 @@ Validation:
 - CLIENT RUNTIME TESTED: NO for Build #1013
 - PLAYTESTED: NO for Build #1013
 - MULTIPLAYER TESTED: NO
+
+
+## 2026-10-03 live-playtest objective / battle input / summon-sanctum correction — Build #1015
+
+Implementation commits:
+- `bb4af2e0b554b4898c0fc502da82b8ac298076a9` — quest flow, battle input/AUTO, summon sanctum, UI copy/layout, Graul texture
+- `fa4a3096a3060a853a9be51a3ca2f821780f4f08` — reserve M for the JourneyMap minimap toggle
+
+Corrections from the latest client feedback:
+- M now toggles JourneyMap minimap visibility. The temporary Build #1013 fullscreen-map binding is migrated away from M; JourneyMap full map remains on its normal J binding when that exact collision is detected.
+- K still expands/collapses the objective guide; Shift+K cycles the single objective currently shown. The HUD no longer rotates several quest objectives automatically.
+- pressing the same armed battle skill a second time commits it even after the normal double-click window. Manual-target skills choose a default valid target on that second press; ENEMY_TWO fills a second enemy when two are required, and ENEMY_ALL commits without requiring an enemy click.
+- AUTO support targeting now sorts living allies by HP ratio with missing absolute HP as a tie-break. Elysia prioritizes a critically injured ally with her single-target heal before choosing the group heal; F02/basic ally heals use the same injured-target rule.
+- the New Drabyel investigation arc now has a wider non-destructive live placement fallback instead of silently losing a required clue when strict source-content clearance fails. All unresolved investigation sites can be emitted as map objectives; clue items and local-arc NPC targets receive visible quest outlining while active.
+- local investigation NPCs no longer pass through a second unrelated field-proxy clearance gate after their dedicated quest site has already resolved.
+- quest/achievement list rows are taller and support two description lines. Achievement details are fully player-facing Korean instead of exposing internal `v0.4 does not state...` authoring notes.
+- New Drabyel now resolves a dedicated summon sanctum outside the service stall. It searches for a flat open 13-block-diameter patch, never replaces existing source-map blocks, then builds a deepslate/blackstone/amethyst ritual platform and reuses it on later summons.
+- summon reveal actors remain as actual 3D BattleActorEntity models through the result summary and are removed only when the player closes the presentation; the camera remains framed on the stage until then.
+- the Graul boss texture was replaced with the corrected 256×256 texture supplied during this playtest pass.
+
+Build TURNBOUND #1015:
+- verified code commit: `fa4a3096a3060a853a9be51a3ca2f821780f4f08`
+- run: 37123445538
+- Gradle tests/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+- artifact: turnbound-v04-workbranch / ID 11274072997
+- JAR SHA-256: `abd4432f2431a58c51e92cc87fd5915e288ac5793fe53958635a01fa59d69cb4`
+- MRPACK SHA-256: `8abf26169f92111397c7315cb8b2eee981d767f49dc7f34150229e6f110fe620`
+- downloaded artifact ZIP SHA-256: `27ba3c22687937f4fe9be841f6ae7d3b4a98bdb81ed7c746361226b9704501ad`
+
+Validation:
+- CODE REVIEWED: YES for the reported regression paths
+- AUTOMATED TESTS: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO for Build #1015
+- PLAYTESTED: NO for Build #1015
+- MULTIPLAYER TESTED: NO
+
+Runtime follow-up that still requires the real client:
+- verify the newly built summon sanctum chooses a visually acceptable location on the shipped Drehmal world and that the 3D result actor/camera framing is readable there;
+- verify the investigation markers/outline lead to at least two resolvable local targets on the user's existing save;
+- verify M/J/Shift+K input behavior against the installed JourneyMap key configuration;
+- verify AUTO healing choices under one-critical and multi-injured party states.
