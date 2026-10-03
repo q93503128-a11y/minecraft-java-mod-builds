@@ -603,6 +603,25 @@ Artifact `openworld-rpg-m0-7a4a06781ac9ceaecc21cff748a79464e5dbcf73`
 Final melee arc presentation, Iron Rush/Furious Route execution and Steelboar production spawn remain
 closed.
 
+Regalhart selection/phase authority is now data-backed at code state
+`1291553781db71966e14858ac84c8ac1d4ff4c4c`. The server controller owns rear-protection
+priority, <=4.5-block Antler Sweep selection, exact Rear Kick/Crown Charge/Royal Bound cooldowns,
+distance-band Crown Charge/Royal Bound weighting, deterministic RNG, signature-movement anti-repeat,
+the one-time <=40% Sovereign transition and its full 30-tick action lock, Antler Sweep 3rd/2nd
+follow-up counters and every-second Sovereign Crown Charge second-charge due marker. The controller
+requires geometry legality from later binders instead of inventing rear cones, clear charge paths or
+Royal Bound landing volumes. Two overlapped table endpoints—exactly 7.0 and 12.0 blocks—are explicitly
+fail-closed until canon assigns them, rather than silently changing probability. The pass also removes
+an invalid inferred Antler Sweep player-poise value and keeps the real impact gaps visible: Crown
+Charge ordinary `guardable` and Rear Kick guard-pressure/player-poise are not currently stated.
+Run `37096585105` is **SUCCESS** across tests/build, pinned dependency inspection, core/gameplay
+server smoke, gameplay client startup, both verification JARs, mrpack packaging and artifact upload.
+Artifact `openworld-rpg-m0-1291553781db71966e14858ac84c8ac1d4ff4c4c`
+(`11264443479`, SHA-256
+`90be1d6a68845b60a53c3de47d6868a91ea15b5f79f26a64153b33d469511890`).
+Regalhart production spawn, weak-point geometry, Sovereign damage/movement application, attack
+execution and final presentation remain closed.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

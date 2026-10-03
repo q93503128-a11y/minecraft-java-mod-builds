@@ -1985,6 +1985,54 @@ Royal Bound requires a legal landing volume within its authored movement envelop
 
 Sovereign-state internal second-charge and Antler-Sweep follow-up counters remain the deterministic rules already defined above; they are combo internals and do not roll a second action choice.
 
+#### Runtime Regalhart selection / Sovereign authority
+
+Code state `1291553781db71966e14858ac84c8ac1d4ff4c4c` binds the canon-closed server
+selection rules without opening Regalhart production spawning:
+
+- exact dependency identity remains `threateningly_mobs:the_regalhart`, content Lv8;
+- rear protection owns the decision first: legal rear arc + <=3.5 blocks + Rear Kick ready selects
+  Rear Kick before close-front logic;
+- front/side <=4.5 blocks selects Antler Sweep when rear protection does not own the action;
+- Crown Charge uses the exact **140-tick / 7.0 s** cooldown and requires the caller to confirm a clear
+  committed path;
+- Royal Bound uses the exact **180-tick / 9.0 s** cooldown and requires the caller to confirm a legal
+  landing volume;
+- mid/far weights remain exactly **45/55**, **60/40**, **75/25** in the authored distance bands;
+  cooling/illegal actions are removed before deterministic server RNG;
+- exact 7.0 and 12.0 blocks remain intentionally fail-closed/reposition because the current table
+  overlaps those two endpoints and does not yet assign them to one adjacent row;
+- Crown Charge and Royal Bound are signature movement/space-control actions and cannot repeat
+  immediately when the other signature action is also legal; if only one is legal, the general
+  single-legal-action exception still permits repetition;
+- ordinary anti-repeat remains max two consecutive committed actions when another legal ordinary
+  action exists;
+- the <=40% HP Sovereign transition begins exactly once and locks attack selection for the full
+  **30 ticks / 1.50 s**;
+- the transition data preserves **0.50x ordinary damage taken** and post-transition
+  **1.10x movement speed** for later runtime binding; this selection pass does not pretend those
+  combat/movement multipliers are already applied;
+- Antler Sweep sequence cadence is deterministic: every third above 40% HP and every second in
+  Sovereign state. A due follow-up with no legal mirrored arc is skipped but the sweep counter still
+  advances;
+- every second Sovereign-state Crown Charge marks its internal second-charge opportunity due. The
+  later charge executor must still establish the authored >=6-block legal line after its
+  >=13-tick / 0.65 s pivot tell;
+- weak-point multiplier **1.25x** is stored as canon data only; head/antler hit geometry is not
+  fabricated in this pass.
+
+This pass also preserves real impact gaps rather than guessing them. Antler Sweep does **not** invent
+player-poise pressure merely from its medium guard band; Crown Charge ordinary `guardable` is still
+unstated; Rear Kick's guard-pressure/player-poise values are unstated. Therefore this is selection /
+phase authority, not a claim that all Regalhart impacts are source-ready.
+
+Build Openworld RPG run `37096585105` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-1291553781db71966e14858ac84c8ac1d4ff4c4c`
+(`11264443479`, SHA-256
+`90be1d6a68845b60a53c3de47d6868a91ea15b5f79f26a64153b33d469511890`).
+
 ### Earthloong — shared cooldowns
 
 ```text
