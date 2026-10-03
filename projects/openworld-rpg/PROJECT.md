@@ -684,6 +684,35 @@ The 3 authored Regalhart start anchors, deterministic anchor selection transacti
 territory/core-arena volumes, production spawn and reset executor therefore remain spatial/runtime
 gates rather than being fabricated here.
 
+The next Regalhart spatial pass at corrected code state
+`7e800c41c9563bb17298ef3ceab824af90c7e1d4` closes the first of those gates using the existing
+creator-acquired **AzariNEW4252026** R01 Anvil evidence rather than inventing a new map. A dedicated
+Regalhart binding accepts the already-reviewed Rootshade Grove pocket as territory
+(`x -2760..-2600 / z 4160..4340`) and an inset core arena
+(`x -2744..-2600 / z 4176..4320`). Exactly three authored start centers are recorded from existing
+direct-world probes: `(-2696,65,4192)`, `(-2680,68,4240)` and
+`(-2600,76,4296)`. The world attachment now persists `cycle_index`; each valid defeat advances it
+once, and world seed + persisted cycle deterministically chooses the same start center across
+reconnect/reload. The spatial authority also enforces the canonical **<24 block player exclusion** and
+requires an explicit real-camera visibility result before materialization; it does not invent an FOV
+angle. Loaded-player Rootshade/core membership can now feed the existing 20 min + 60 s repeat timing
+and 25 s disengage timing.
+
+This is deliberately isolated from the broader candidate-only R01 spatial dataset, so Regalhart
+acceptance does not promote Alderford/Quarry candidates. The three positions are controller start
+centers, not permission to materialize through a tree/resource/occupied block. A clear-footprint
+materializer, real camera/occlusion adapter, authored Regalhart production-spawn admission and the
+physical HP/poise/status reset + return executor remain separate. The first CI attempt
+`37110825529` exposed only a generated-source newline formatting error; it was corrected without
+changing gameplay data. Corrected Build Openworld RPG run `37110933916` / #319 is **SUCCESS**
+across tests/build, dependency inspection, core/gameplay server smoke, gameplay client startup,
+verification JARs, mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-7e800c41c9563bb17298ef3ceab824af90c7e1d4`
+(`11269947593`, normal JAR SHA-256
+`efb8e8153444ff9f1e1493cb4634cf20570b77ef02b712e5b200a42e451122b1`).
+This closes **Regalhart terrain/start-center spatial authority**, not all R01 spatial binding and not
+a production/playtested Regalhart encounter.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

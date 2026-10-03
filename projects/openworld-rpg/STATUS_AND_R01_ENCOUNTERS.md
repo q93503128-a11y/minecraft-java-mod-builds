@@ -2118,6 +2118,48 @@ verification JARs, mrpack packaging and artifact upload all passed. Artifact:
 (`11267273716`, normal JAR SHA-256
 `6838de45ac53581c3e8b9c6f494c68f4ef721e3fe32d1b4f558746389cbec5cd`).
 
+#### Runtime Regalhart Azari spatial authority
+
+Corrected code state `7e800c41c9563bb17298ef3ceab824af90c7e1d4` binds the authored Regalhart
+territory to the actual-Anvil-derived Rootshade evidence already captured from
+`AzariNEW4252026`:
+
+- territory: `x -2760..-2600 / z 4160..4340`;
+- repeat-controller core arena: `x -2744..-2600 / z 4176..4320`;
+- exactly three controller start centers:
+  - southwest `(-2696,65,4192)`, direct grass-surface evidence;
+  - center `(-2680,68,4240)`, the established Rootshade direct-Anvil reference probe;
+  - east ridge `(-2600,76,4296)`, Root-Split Cairn terrain probe;
+- the dedicated Regalhart binding is separate from the general candidate-only R01 spatial dataset,
+  so this acceptance cannot silently promote unrelated Alderford/Quarry coordinates;
+- persistent `cycle_index` advances exactly once per valid defeat and composes with world seed for a
+  deterministic three-anchor choice that cannot be rerolled by reconnect/reload;
+- actual loaded-player coordinates can now drive core-arena presence and eligible-engaged territory
+  presence for the already-closed 60-second and 25-second timers;
+- materialization rejects a start center when any active player is **closer than 24 blocks**;
+  exactly 24 blocks passes the distance rule;
+- materialization also rejects an anchor when the later real camera adapter reports direct player
+  visibility. No synthetic FOV angle was invented merely to make this pass compile.
+
+These coordinates are controller start centers. The physical materializer must still resolve a clear
+Regalhart footprint around the chosen center rather than spawning through a tree, gathering-resource
+presentation or occupied block. Project production-spawn admission still excludes Regalhart, and the
+real camera/occlusion caller plus HP/poise/status reset/return executor are not wired here. Existing
+Crown Charge, Rear Kick, mirrored-Sweep, exact 7.0/12.0 and weak-point/presentation gaps remain
+fail-closed.
+
+The first CI attempt, run `37110825529`, failed at compile because the generated
+`R01RegalhartSpatialAuthority.java` contained literal `\\n` source characters. The correction
+changed source formatting only. Build Openworld RPG run `37110933916` / #319 is **SUCCESS**:
+tests/build, pinned creature/dependency inspection, core/gameplay dedicated-server smoke, gameplay
+client startup, both verification JARs, mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-7e800c41c9563bb17298ef3ceab824af90c7e1d4`
+(`11269947593`, normal JAR SHA-256
+`efb8e8153444ff9f1e1493cb4634cf20570b77ef02b712e5b200a42e451122b1`).
+
+Detailed spatial evidence and boundary status are indexed in
+`AZARI_R01_REGALHART_SPATIAL_PASS8.md`.
+
 ### Earthloong — shared cooldowns
 
 ```text
