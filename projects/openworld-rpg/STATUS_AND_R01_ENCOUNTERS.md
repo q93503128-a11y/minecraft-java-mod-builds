@@ -2063,6 +2063,33 @@ mrpack packaging and artifact upload all passed. Artifact:
 (`11265038798`, SHA-256
 `74ee7d355b09b148f305a494905df29a6a2f9fc360348641a93740d740868576`).
 
+#### Runtime Regalhart Sovereign modifier authority
+
+Code state `10be32fb5692d913f1f694fae2eb43b5d7f11de7` closes the two Sovereign modifiers
+whose numbers and timing are already canonical:
+
+- the one-time state begins only from the exact server-owned
+  `SOVEREIGN_TRANSITION_START` decision and requires its end tick to equal start + **30 ticks**;
+- during exactly `[transition_start, transition_end)`, the central external-actor project-damage
+  applicator multiplies resolved incoming damage by **0.50**;
+- the reduction ends exactly at the transition end tick; no post-transition defense steroid is added;
+- at/after that end tick, the server applies one transient `MOVEMENT_SPEED`
+  `ADD_MULTIPLIED_TOTAL +0.10` modifier, giving the authored **1.10x** movement speed;
+- reset/unload removes the Sovereign state and modifier so stale phase state cannot survive encounter
+  teardown;
+- exact `threateningly_mobs:the_regalhart` plus project `authored_spawn` is still required;
+- Crown Charge ordinary `guardable`, Rear Kick guard-pressure/player-poise, mirrored Sweep second-hit
+  timing, exact 7.0/12.0 selection boundaries and weak-point geometry remain untouched and fail closed;
+- this runtime seam is ready for the later accepted Regalhart selector/executor caller, but current
+  production spawn/presentation remains gated, so this is not a claim of a playable completed phase.
+
+Build Openworld RPG run `37101994445` / #316 is **SUCCESS**: tests/build, pinned
+creature/dependency inspection, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs, mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-10be32fb5692d913f1f694fae2eb43b5d7f11de7`
+(`11266468249`, normal JAR SHA-256
+`e44574552efacd21728e8251b966551dcd4aad0efee125fda17a9c4ee2ac5da9`).
+
 ### Earthloong — shared cooldowns
 
 ```text

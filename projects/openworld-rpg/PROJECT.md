@@ -637,8 +637,29 @@ mrpack packaging and artifact upload. Artifact
 `openworld-rpg-m0-2a182a9708f968e13751d0fe72927c2b19c27323`
 (`11265038798`, SHA-256
 `74ee7d355b09b148f305a494905df29a6a2f9fc360348641a93740d740868576`).
-This is backend impact closure only; accepted movement/animation geometry, Sovereign runtime modifiers,
+This is backend impact closure only; accepted movement/animation geometry, Sovereign production caller,
 weak-point geometry and production spawn are still separate gates.
+
+The next Regalhart backend pass at code state
+`10be32fb5692d913f1f694fae2eb43b5d7f11de7` binds the canon-closed Sovereign modifiers without
+opening any missing attack semantics. A server-owned transition state accepts only the exact
+`SOVEREIGN_TRANSITION_START` decision and exact 30-tick end tick; while that interval is active, the
+central external-actor project-damage applicator applies the authored **0.50x ordinary damage taken**
+multiplier. At the first server tick after the transition completes, Regalhart becomes eligible for
+one transient `MOVEMENT_SPEED` modifier using the authored **1.10x** total multiplier; encounter reset
+or unload removes that modifier and state. Natural donor spawns are still excluded by the exact
+`threateningly_mobs:the_regalhart` + project `authored_spawn` gate. This does not fabricate Crown
+Charge guardability, Rear Kick guard pressure, mirrored Antler Sweep timing, the 7.0/12.0 distance
+boundary, weak-point geometry or production presentation.
+
+Build Openworld RPG run `37101994445` / #316 is **SUCCESS** across tests/build, pinned
+dependency/creature inspection, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs, mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-10be32fb5692d913f1f694fae2eb43b5d7f11de7`
+(`11266468249`, normal JAR SHA-256
+`e44574552efacd21728e8251b966551dcd4aad0efee125fda17a9c4ee2ac5da9`).
+This is **BUILD VERIFIED**, not a claim that a production Regalhart phase has been playtested: the
+accepted selector/executor/presentation caller and production spawn remain gated.
 
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
