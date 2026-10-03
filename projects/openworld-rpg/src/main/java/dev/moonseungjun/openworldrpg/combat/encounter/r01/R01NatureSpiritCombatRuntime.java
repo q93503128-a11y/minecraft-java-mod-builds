@@ -70,6 +70,22 @@ public final class R01NatureSpiritCombatRuntime {
         );
     }
 
+    /**
+     * Presentation binders call this only after the authored visible contact/area test succeeds.
+     * Donor natural spawns and raw verification fixtures remain rejected by the impact authority.
+     */
+    public static R01NatureSpiritImpactAuthority.ImpactApplication applyConfirmedImpact(
+            LivingEntity natureSpirit,
+            net.minecraft.server.level.ServerPlayer target,
+            R01SecondaryCreatureEncounterData.ActionId action
+    ) {
+        return R01NatureSpiritImpactAuthority.applyConfirmedContact(
+                natureSpirit,
+                target,
+                action
+        );
+    }
+
     public static Optional<R01NatureSpiritActionController.Decision> selectAtDecision(
             LivingEntity natureSpirit,
             boolean rootedSwipeLegal,
