@@ -40,6 +40,7 @@ public final class ClientFieldNetwork {
     private static void handle(FieldSnapshotPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientFieldState.update(payload.snapshot());
+            TurnboundJourneyMapPlugin.sync(ClientFieldState.snapshot());
             ClientPresentationTransition.onFieldSnapshot(ClientFieldState.snapshot());
             Minecraft minecraft = Minecraft.getInstance();
             FieldUiSnapshot snapshot = ClientFieldState.snapshot();
