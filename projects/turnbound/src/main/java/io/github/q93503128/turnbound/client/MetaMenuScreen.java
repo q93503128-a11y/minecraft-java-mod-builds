@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.content.CharacterPassiveCatalog;
+import io.github.q93503128.turnbound.content.ChallengePresentationText;
 import io.github.q93503128.turnbound.content.V04Catalogs;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.network.PartyCommandPayload;
@@ -491,7 +492,7 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private int questListTop(){return contentTop()+25;}
-    private int questRowHeight(){return compactLayout?30:34;}
+    private int questRowHeight(){return compactLayout?44:48;}
 
     private static int questCategoryPriority(String category){
         if(category==null)return 9;
@@ -1075,11 +1076,14 @@ public final class MetaMenuScreen extends Screen {
                 g.fill(x,yy,x+2,yy+rowH-3,q.completed()?GREEN:questCategoryColor(q.region()));
                 String title=(q.completed()?"✓ ":"○ ")+q.region()+" · "+q.id();
                 g.text(font,Component.literal(UiTextLayout.fit(title,w-18)),x+8,yy+5,q.completed()?GREEN:TEXT,true);
-                if(q.objectiveSpecified()&&!q.chestRule().isBlank()){
-                    String preview=UiTextLayout.fit(q.chestRule(),Math.max(60,(int)((w-18)/0.86F)));
-                    drawQuestScaledText(g,preview,x+8,yy+17,0.86F,q.completed()?MUTED:SECONDARY,false);
-                }else{
-                    drawQuestScaledText(g,"클릭해 세부 정보 보기",x+8,yy+17,0.86F,MUTED,false);
+                String detail=q.objectiveSpecified()&&!q.chestRule().isBlank()
+                        ?q.chestRule():"클릭해 세부 정보 보기";
+                List<String> detailLines=UiTextLayout.wrap(detail,Math.max(80,(int)((w-18)/0.86F)),180);
+                int lineY=yy+17;
+                for(int line=0;line<Math.min(2,detailLines.size());line++){
+                    drawQuestScaledText(g,detailLines.get(line),x+8,lineY,0.86F,
+                            q.objectiveSpecified()?(q.completed()?MUTED:SECONDARY):MUTED,false);
+                    lineY+=11;
                 }
                 yy+=rowH;
             }
@@ -1099,10 +1103,14 @@ public final class MetaMenuScreen extends Screen {
             g.fill(x,yy,x+2,yy+rowH-3,a.completed()?GREEN:GOLD);
             String title=(a.completed()?"✓ ":"○ ")+a.ordinal()+". "+a.label();
             g.text(font,Component.literal(UiTextLayout.fit(title,w-18)),x+8,yy+5,a.completed()?GREEN:TEXT,true);
-            String detail=a.completed()?"달성 완료":a.autoEvaluable()?"플레이 중 자동으로 판정됩니다."
-                    :a.unresolvedReason().isBlank()?"조건을 충족하면 달성됩니다.":a.unresolvedReason();
-            drawQuestScaledText(g,UiTextLayout.fit(detail,Math.max(60,(int)((w-18)/0.86F))),
-                    x+8,yy+17,0.86F,a.completed()?MUTED:SECONDARY,false);
+            String detail=ChallengePresentationText.detail(a.ordinal(),a.completed());
+            List<String> detailLines=UiTextLayout.wrap(detail,Math.max(80,(int)((w-18)/0.86F)),180);
+            int lineY=yy+17;
+            for(int line=0;line<Math.min(2,detailLines.size());line++){
+                drawQuestScaledText(g,detailLines.get(line),x+8,lineY,0.86F,
+                        a.completed()?MUTED:SECONDARY,false);
+                lineY+=11;
+            }
             yy+=rowH;
         }
     }

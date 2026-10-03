@@ -191,7 +191,15 @@ final class DrehmalFieldNpcRuntime {
             double d=actor.distanceToSqr(player);if(d<best){best=d;nearest=player;}
         }
         actor.setCustomNameVisible(nearest!=null&&best<=36.0D);
-        actor.setGlowingTag(false);
+        boolean localQuestTarget=false;
+        if(DrabyelLocalArcRuntime.ownsSite(npc.siteLocator())){
+            for(ServerPlayer player:level.players()){
+                if(!ExternalWorldBootstrap.active(player)||player.level().getServer()==null)continue;
+                Set<String> flags=ExternalWorldSavedData.get(player.level().getServer()).onboardingFlags(player.getUUID());
+                if(DrabyelLocalArcProgress.active(flags)&&!flags.contains(npc.progressFlag())){localQuestTarget=true;break;}
+            }
+        }
+        actor.setGlowingTag(localQuestTarget);
         if(nearest!=null&&best<=64.0D)face(actor,nearest);
     }
 

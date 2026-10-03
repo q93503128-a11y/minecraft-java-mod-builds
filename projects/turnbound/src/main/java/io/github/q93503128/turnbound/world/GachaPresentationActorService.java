@@ -42,7 +42,7 @@ public final class GachaPresentationActorService {
             this.reveals = reveals;
             this.stage = stage;
             this.actorYaw = actorYaw;
-            this.ttl = GachaPresentationTimeline.totalTicks(reveals, pullCount) + 80;
+            this.ttl = GachaPresentationTimeline.totalTicks(reveals, pullCount) + 20 * 60 * 10;
         }
 
         GachaPresentationPlan.Reveal current() {
@@ -89,7 +89,8 @@ public final class GachaPresentationActorService {
             playRevealPose(player, active);
         }
         if (active.slotTick >= timing.slotTicks()) {
-            removeActor(active);
+            boolean lastReveal = active.index + 1 >= active.reveals.size();
+            if (!lastReveal) removeActor(active);
             active.index++;
             active.slotTick = 0;
         }

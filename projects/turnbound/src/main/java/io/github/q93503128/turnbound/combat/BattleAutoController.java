@@ -26,7 +26,7 @@ public final class BattleAutoController {
                             Comparator.comparingInt((CombatantState unit) -> enemyPriority(unit.definition().id()))
                                     .thenComparingDouble(unit -> unit.hp() / (double)unit.maxHp()),
                             2));
-            case "F02" -> engine.useSkill(actor.instanceId(), "f02_first_aid", weakest(allies).instanceId());
+            case "F02" -> engine.useSkill(actor.instanceId(), "f02_first_aid", mostInjured(allies).instanceId());
             case "F03" -> {
                 CombatantState target = priorityEnemy(enemies);
                 engine.useSkill(actor.instanceId(), actor.cooldown("f03_focus_shot") == 0 ? "f03_focus_shot" : "f03_shot", target.instanceId());
@@ -108,7 +108,7 @@ public final class BattleAutoController {
 
     private static void chooseBram(BattleEngine engine, CombatantState actor, List<CombatantState> allies, List<CombatantState> enemies) {
         CombatantState endangered = allies.stream().filter(unit -> unit != actor)
-                .min(Comparator.comparingDouble(unit -> unit.hp() / (double)unit.maxHp())).orElse(null);
+                .min(injuryComparator()).orElse(null);
         if (endangered != null && endangered.hp() * 100 <= endangered.maxHp() * 60
                 && actor.cooldown("p03_guard_transfer") == 0) {
             engine.useSkill(actor.instanceId(), "p03_guard_transfer", endangered.instanceId());
@@ -126,11 +126,13 @@ public final class BattleAutoController {
             engine.useSkill(actor.instanceId(), "p04_returned_breath", downed.getFirst().instanceId());
             return;
         }
-        long low = allies.stream().filter(unit -> unit.hp() * 100 <= unit.maxHp() * 60).count();
-        if (low >= 2 && actor.cooldown("p04_resting_light") == 0) {
+        CombatantState injured = mostInjured(allies);
+        boolean critical = injured.hp() * 100 <= injured.maxHp() * 35;
+        long low = allies.stream().filter(unit -> unit.hp() * 100 <= unit.maxHp() * 65).count();
+        if (!critical && low >= 2 && actor.cooldown("p04_resting_light") == 0) {
             engine.useSkill(actor.instanceId(), "p04_resting_light");
         } else {
-            engine.useSkill(actor.instanceId(), "p04_heal", weakest(allies).instanceId());
+            engine.useSkill(actor.instanceId(), "p04_heal", injured.instanceId());
         }
     }
     private static void chooseLynette(BattleEngine engine, CombatantState actor, List<CombatantState> enemies) {
@@ -332,7 +334,7 @@ public final class BattleAutoController {
             case ENEMY_TWO -> engine.useSkill(actor.instanceId(), basic.id(),
                     targetIds(state.living(actor.side().opposite()), Comparator.comparingInt(CombatantState::initiativeSeed), 2));
             case ENEMY_SINGLE -> engine.useSkill(actor.instanceId(), basic.id(), distributedTarget(state.living(actor.side().opposite()), actor).instanceId());
-            case ALLY_SINGLE -> engine.useSkill(actor.instanceId(), basic.id(), weakest(state.living(actor.side())).instanceId());
+            case ALLY_SINGLE -> engine.useSkill(actor.instanceId(), basic.id(), mostInjured(state.living(actor.side())).instanceId());
             case DEAD_ALLY_SINGLE -> { List<CombatantState> downed = state.downed(actor.side()); if (!downed.isEmpty()) engine.useSkill(actor.instanceId(), basic.id(), downed.getFirst().instanceId()); else throw new IllegalStateException("No dead ally for basic revive"); }
         }
     }
@@ -342,7 +344,13 @@ public final class BattleAutoController {
                 .limit(Math.max(1, max)).map(CombatantState::instanceId).toArray(String[]::new);
     }
 
-    private static CombatantState weakest(List<CombatantState> units) { return units.stream().min(Comparator.comparingDouble((CombatantState unit) -> unit.hp() / (double)unit.maxHp()).thenComparingInt(CombatantState::initiativeSeed)).orElseThrow(); }
+    private static Comparator<CombatantState> injuryComparator() {
+        return Comparator.comparingDouble((CombatantState unit) -> unit.hp() / (double)unit.maxHp())
+                .thenComparingInt(unit -> -(unit.maxHp() - unit.hp()))
+                .thenComparingInt(CombatantState::initiativeSeed);
+    }
+    private static CombatantState mostInjured(List<CombatantState> units) { return units.stream().min(injuryComparator()).orElseThrow(); }
+    private static CombatantState weakest(List<CombatantState> units) { return mostInjured(units); }
     private static CombatantState strongest(List<CombatantState> units) { return units.stream().max(Comparator.comparingInt(CombatantState::attack).thenComparingInt(unit -> -unit.initiativeSeed())).orElseThrow(); }
     private static CombatantState highestGauge(List<CombatantState> units) { return units.stream().max(Comparator.comparingLong(CombatantState::gauge).thenComparingInt(unit -> -unit.initiativeSeed())).orElseThrow(); }
     private static CombatantState priorityEnemy(List<CombatantState> enemies) { return enemies.stream().min(Comparator.comparingInt((CombatantState unit) -> enemyPriority(unit.definition().id())).thenComparingDouble(unit -> unit.hp() / (double)unit.maxHp()).thenComparingInt(CombatantState::initiativeSeed)).orElseThrow(); }

@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.world;
 
+import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -17,7 +18,7 @@ import java.util.*;
 
 /** 64-110 block New Drabyel main-quest ring. It adds no terrain and resolves every target against the live world. */
 final class DrabyelLocalArcRuntime {
-    private static final double OBJECT_MATERIALIZE_RADIUS=96.0D;
+    private static final double OBJECT_MATERIALIZE_RADIUS=144.0D;
     private static final String OBJECT_TAG="turnbound_drabyel_local_clue";
     private static final Map<ServerLevel,Map<String,DrehmalFirstRouteCatalog.Site>> SITE_CACHE=new IdentityHashMap<>();
     private static final Map<ServerLevel,Map<String,UUID>> OBJECTS=new IdentityHashMap<>();
@@ -75,7 +76,7 @@ final class DrabyelLocalArcRuntime {
         if(!DrabyelLocalArcProgress.active(flags))return List.of();
         List<FieldUiSnapshot.MapPoint> out=new ArrayList<>();
         for(var plan:DrabyelLocalArcCatalog.sites()){
-            if(!"CLUE_ZONE".equals(plan.kind())||flags.contains(plan.progressFlag()))continue;
+            if(flags.contains(plan.progressFlag()))continue;
             var site=site(player,plan.locator());if(site==null||site.runtimePosition()==null)continue;
             var p=site.runtimePosition();
             out.add(new FieldUiSnapshot.MapPoint(site.locator(),site.playerLabel(),"QUEST",p.x()+0.5D,p.z()+0.5D,true));
@@ -143,19 +144,38 @@ final class DrabyelLocalArcRuntime {
     private static Map<String,DrehmalFirstRouteCatalog.Site> resolve(ServerLevel level){
         Map<String,DrehmalFirstRouteCatalog.Site> out=new LinkedHashMap<>();
         for(var plan:DrabyelLocalArcCatalog.sites()){
-            DrehmalFirstRouteCatalog.Position p=resolveSite(level,plan);if(p==null)continue;
+            DrehmalFirstRouteCatalog.Position p=resolveSite(level,plan);
+            if(p==null){
+                Turnbound.LOGGER.warn("TURNBOUND could not place required New Drabyel investigation target {} near {}, {}",
+                        plan.locator(), plan.seed().x(), plan.seed().z());
+                continue;
+            }
             out.put(plan.locator(),new DrehmalFirstRouteCatalog.Site(plan.locator(),plan.kind(),DrehmalWorldProfile.HUB_LOCATOR,
                     plan.playerLabel(),p,10,0,true,true));
         }
+        Turnbound.LOGGER.info("TURNBOUND resolved New Drabyel investigation targets: {}/{}",
+                out.size(),DrabyelLocalArcCatalog.sites().size());
         return Map.copyOf(out);
     }
 
     private static DrehmalFirstRouteCatalog.Position resolveSite(ServerLevel level,DrabyelLocalArcCatalog.SitePlan plan){
-        for(int[] offset:offsets(plan.searchRadius())){
+        // Prefer a source-clear point, but a required quest clue must not silently disappear merely because
+        // the converted 26.2 map has nearby authored blocks. These actors/items do not edit terrain.
+        DrehmalFirstRouteCatalog.Position strict=resolveSite(level,plan,Math.max(8,plan.searchRadius()),true);
+        if(strict!=null)return strict;
+        DrehmalFirstRouteCatalog.Position nearby=resolveSite(level,plan,Math.max(32,plan.searchRadius()*3),false);
+        if(nearby!=null)return nearby;
+        return resolveSite(level,plan,56,false);
+    }
+
+    private static DrehmalFirstRouteCatalog.Position resolveSite(
+            ServerLevel level,DrabyelLocalArcCatalog.SitePlan plan,int radius,boolean requireSourceClear){
+        for(int[] offset:offsets(radius)){
             int x=plan.seed().x()+offset[0],z=plan.seed().z()+offset[1];
             int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,x,z);
             BlockPos feet=new BlockPos(x,y,z);
-            if(!standing(level,feet)||!DrehmalAdaptiveRoutePlacement.sourceContentClear(level,x,y,z,2.0D))continue;
+            if(!standing(level,feet))continue;
+            if(requireSourceClear&&!DrehmalAdaptiveRoutePlacement.sourceContentClear(level,x,y,z,2.0D))continue;
             return new DrehmalFirstRouteCatalog.Position(x,y,z);
         }
         return null;
@@ -189,7 +209,7 @@ final class DrabyelLocalArcRuntime {
         item.setPos(p.x()+0.5D,p.y()+0.35D,p.z()+0.5D);item.setDeltaMovement(Vec3.ZERO);item.setNoGravity(true);item.setInvulnerable(true);
         item.setPickUpDelay(32767);item.setCustomName(Component.literal(plan.playerLabel()).withStyle(ChatFormatting.GOLD));
         boolean near=false;for(ServerPlayer player:level.players())if(ExternalWorldBootstrap.active(player)&&item.distanceToSqr(player)<=64.0D){near=true;break;}
-        item.setCustomNameVisible(near);item.setGlowingTag(false);
+        item.setCustomNameVisible(near);item.setGlowingTag(true);
     }
 
     private static void discard(ServerLevel level,Map<String,UUID> objects,String locator){

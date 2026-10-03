@@ -243,7 +243,10 @@ final class DrabyelHubServiceRuntime {
     static SummonStage summonStage(ServerPlayer player){
         if(player==null||!(player.level() instanceof ServerLevel level))return null;
         var service=serviceByRole(player,"SUMMON");
-        return service==null?null:resolveSummonStage(level,service);
+        if(service==null)return null;
+        var sanctum=DrabyelSummonSanctum.resolve(level,service);
+        if(sanctum!=null)return new SummonStage(sanctum.position(),sanctum.actorYaw());
+        return resolveSummonStage(level,service);
     }
 
     private static SummonStage resolveSummonStage(ServerLevel level,DrabyelHubServiceCatalog.Service service){
@@ -294,6 +297,7 @@ final class DrabyelHubServiceRuntime {
         }
         ACTORS.clear();
         DrabyelHubAutoPlacement.clear();
+        DrabyelSummonSanctum.clear();
         boundLevel=null;
         lastTick=Long.MIN_VALUE;
     }

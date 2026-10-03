@@ -1,8 +1,8 @@
 package io.github.q93503128.turnbound.client;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
+import io.github.q93503128.turnbound.network.MetaCommandPayload;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
 import journeymap.api.v2.client.IClientAPI;
 import journeymap.api.v2.client.IClientPlugin;
@@ -24,7 +24,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import org.lwjgl.glfw.GLFW;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,13 +39,14 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
     private static IClientAPI api;
     private static int fingerprint;
     private static KeyMapping fullscreenKey;
+    private static boolean fullscreenActive;
 
     @Override
     public void initialize(IClientAPI jmClientApi) {
         api = jmClientApi;
         ClientEventRegistry.DISPLAY_UPDATE_EVENT.subscribe(Turnbound.MOD_ID, TurnboundJourneyMapPlugin::onDisplayUpdate);
         ClientEventRegistry.ENTITY_RADAR_UPDATE_EVENT.subscribe(Turnbound.MOD_ID, TurnboundJourneyMapPlugin::onRadarUpdate);
-        rebindFullscreenToM();
+        findFullscreenKey();
         sync(ClientFieldState.snapshot());
     }
 
@@ -112,7 +113,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
 
     public static boolean openFullscreenMap() {
         if (api == null) return false;
-        rebindFullscreenToM();
+        findFullscreenKey();
         if (fullscreenKey == null) return false;
         KeyMapping.click(fullscreenKey.getKey());
         return true;
@@ -152,6 +153,11 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
 
     private static void onDisplayUpdate(DisplayUpdateEvent event) {
         if (event == null || event.uiState == null || event.uiState.ui != Context.UI.Fullscreen) return;
+        boolean activeNow = event.uiState.active;
+        if (activeNow && !fullscreenActive) {
+            ClientPacketDistributor.sendToServer(new MetaCommandPayload("HUB_ROUTE_REVIEW"));
+        }
+        fullscreenActive = activeNow;
         float scale = labelScale(event.uiState);
         for (MarkerOverlay marker : List.copyOf(LABEL_OVERLAYS)) {
             if (Math.abs(marker.getTextProperties().getScale() - scale) < 0.01F) continue;
@@ -177,20 +183,15 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
         event.cancel();
     }
 
-    private static void rebindFullscreenToM() {
+    private static void findFullscreenKey() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.options == null) return;
+        fullscreenKey = null;
         for (KeyMapping mapping : minecraft.options.keyMappings) {
             String name = mapping.getName().toLowerCase(Locale.ROOT);
             if (!name.contains("journeymap")) continue;
             if (!name.contains("fullscreen") && !name.contains("full_map") && !name.contains("map.full")) continue;
             fullscreenKey = mapping;
-            InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_M);
-            if (!mapping.getKey().equals(key)) {
-                mapping.setKey(key);
-                KeyMapping.resetMapping();
-                minecraft.options.save();
-            }
             return;
         }
     }

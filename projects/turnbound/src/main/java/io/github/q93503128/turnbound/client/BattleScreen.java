@@ -195,7 +195,7 @@ public final class BattleScreen extends Screen {
         var skill = snapshot.skills().get(index);
         if (skill.remaining() > 0) return;
         long now = System.currentTimeMillis();
-        boolean repeated = selectedSkill.equals(skill.id()) && lastSkillClick.equals(skill.id()) && now - lastSkillClickAt <= DOUBLE_COMMIT_MS;
+        boolean repeated = selectedSkill.equals(skill.id()) && lastSkillClick.equals(skill.id());
         selectedSkill = skill.id();
         String rule = clientTargetRule(skill);
         if ("SELF".equals(rule)) {

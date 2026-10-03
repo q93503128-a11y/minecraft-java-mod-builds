@@ -18,9 +18,27 @@ public final class QuestGuideLayer implements GuiLayer {
     private static final int GOLD = 0xFFFFC857;
     private static final int GREEN = 0xFF80D49A;
     private static boolean expanded = false;
+    private static String selectedObjectiveId = "MAIN";
 
     public static void toggle() { expanded = !expanded; }
     public static boolean expanded() { return expanded; }
+
+    public static void cycleObjective() {
+        FieldUiSnapshot snapshot = ClientFieldState.snapshot();
+        if (snapshot == null || !snapshot.active()) return;
+        List<String> ids = new ArrayList<>();
+        ids.add("MAIN");
+        for (FieldUiSnapshot.QuestTracker quest : snapshot.questTrackers()) ids.add(quest.id());
+        if (ids.size() <= 1) {
+            selectedObjectiveId = "MAIN";
+            ClientUiFeedbackLayer.show("표시할 다른 목표가 없습니다.");
+            return;
+        }
+        int index = ids.indexOf(selectedObjectiveId);
+        selectedObjectiveId = ids.get((index < 0 ? 0 : index + 1) % ids.size());
+        DisplayObjective selected = displayObjective(snapshot);
+        ClientUiFeedbackLayer.show("목표 표시 · " + selected.heading());
+    }
 
     @Override
     public void render(@NotNull GuiGraphicsExtractor graphics, DeltaTracker tracker) {
@@ -30,81 +48,85 @@ public final class QuestGuideLayer implements GuiLayer {
         FieldUiSnapshot snapshot = ClientFieldState.snapshot();
         if (!snapshot.active() || snapshot.mode() == FieldUiSnapshot.Mode.LOADING || snapshot.objective().isBlank()) return;
 
-        Target target = target(snapshot);
+        DisplayObjective selected = displayObjective(snapshot);
+        Target target = selected.main() ? target(snapshot) : null;
         if (target != null) drawDirectionCue(graphics, minecraft, target);
 
         int width = expanded
-                ? Math.min(256, Math.max(190, graphics.guiWidth() / 4))
-                : Math.min(176, Math.max(148, graphics.guiWidth() / 6));
+                ? Math.min(286, Math.max(210, graphics.guiWidth() / 4))
+                : Math.min(194, Math.max(158, graphics.guiWidth() / 6));
         int x = 7;
         int y = 7;
-        String objective = playerFacingObjective(snapshot.objective());
+        int choiceCount = 1 + snapshot.questTrackers().size();
+        int choiceIndex = objectiveIndex(snapshot, selected.id());
 
         if (!expanded) {
             int h = 22;
             TurnboundUiSkin.panel(graphics, x, y, width, h);
-            int auxiliary = snapshot.questTrackers().size();
-            String suffix = auxiliary > 0 ? "  +" + auxiliary : "";
-            String compact = UiTextLayout.fit("메인 · " + objective + suffix, width - 64);
+            String compact = UiTextLayout.fit(selected.heading() + " · " + selected.objective(), width - 66);
             graphics.text(minecraft.font, Component.literal(compact), x + 8, y + 6, TEXT, true);
-            graphics.text(minecraft.font, Component.literal("K 상세"), x + width - 8 - minecraft.font.width("K 상세"), y + 6, GOLD, false);
+            String right = choiceCount > 1 ? (choiceIndex + 1) + "/" + choiceCount + " · K" : "K 상세";
+            graphics.text(minecraft.font, Component.literal(right), x + width - 8 - minecraft.font.width(right), y + 6, GOLD, false);
             return;
         }
 
-        String hint = playerFacingHint(snapshot.dialogue());
-        if (isPartyObjective(snapshot.objective())) hint = "E 메뉴 → 파티에서 편성 후 ‘편성 적용’을 누르세요.";
-        if (target != null) {
-            String location = targetLine(minecraft, target);
-            hint = hint.isBlank() ? location : location + " · " + hint;
+        String hint = selected.main() ? playerFacingHint(snapshot.dialogue()) : "Shift+K로 표시할 목표를 전환할 수 있습니다.";
+        if (selected.main() && isPartyObjective(snapshot.objective())) {
+            hint = "E 메뉴 → 파티에서 편성 후 ‘편성 적용’을 누르세요.";
         }
+
         int maxPanelHeight = Math.max(54, graphics.guiHeight() - 14);
-        int maxTextLines = Math.max(4, (maxPanelHeight - 34) / 9);
-        List<String> objectiveLines = wrap(minecraft, objective, width - 20, maxTextLines);
+        int maxTextLines = Math.max(4, (maxPanelHeight - 38) / 9);
+        List<String> objectiveLines = wrap(minecraft, selected.objective(), width - 20, Math.min(5, maxTextLines));
         int remainingLines = Math.max(1, maxTextLines - objectiveLines.size());
-        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 20, remainingLines);
-        List<FieldUiSnapshot.QuestTracker> auxiliary = snapshot.questTrackers().stream().limit(2).toList();
-        int hiddenAuxiliary = Math.max(0, snapshot.questTrackers().size() - auxiliary.size());
-        int auxiliaryHeight = auxiliary.size() * 22 + (hiddenAuxiliary > 0 ? 11 : 0);
-        int height = 30 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 9) + auxiliaryHeight;
-        height = Math.min(maxPanelHeight, Math.max(44, height));
+        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 20, Math.min(4, remainingLines));
+        int height = 32 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 7 + hintLines.size() * 9);
+        height = Math.min(maxPanelHeight, Math.max(48, height));
 
         TurnboundUiSkin.panel(graphics, x, y, width, height);
-        graphics.text(minecraft.font, Component.literal("목표"), x + 10, y + 8, GOLD, true);
-        graphics.text(minecraft.font, Component.literal("K 접기"), x + width - 10 - minecraft.font.width("K 접기"), y + 8, MUTED, false);
+        String heading = selected.heading() + (choiceCount > 1 ? "  " + (choiceIndex + 1) + "/" + choiceCount : "");
+        graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(heading, width - 92)), x + 10, y + 8, GOLD, true);
+        String action = choiceCount > 1 ? "⇧K 전환" : "K 접기";
+        graphics.text(minecraft.font, Component.literal(action), x + width - 10 - minecraft.font.width(action), y + 8, MUTED, false);
+
         int ty = y + 22;
         for (String line : objectiveLines) {
             graphics.text(minecraft.font, Component.literal(line), x + 10, ty, TEXT, true);
             ty += 10;
         }
         if (!hintLines.isEmpty()) {
-            ty += 1;
+            ty += 2;
             for (String line : hintLines) {
                 if (ty + 8 >= y + height) break;
-                graphics.text(minecraft.font, Component.literal(line), x + 10, ty, target == null ? MUTED : GOLD, false);
+                graphics.text(minecraft.font, Component.literal(line), x + 10, ty, MUTED, false);
                 ty += 9;
             }
         }
-        if (snapshot.patrolGoal() > 0 && snapshot.patrolsCleared() < snapshot.patrolGoal()) {
+        if (selected.main() && snapshot.patrolGoal() > 0 && snapshot.patrolsCleared() < snapshot.patrolGoal()) {
             String progress = snapshot.patrolsCleared() + "/" + snapshot.patrolGoal();
             graphics.text(minecraft.font, Component.literal(progress), x + width - minecraft.font.width(progress) - 10, y + 22, GREEN, true);
         }
+    }
 
-        for (FieldUiSnapshot.QuestTracker quest : auxiliary) {
-            if (ty + 19 >= y + height) break;
-            ty += 4;
-            String category = quest.repeatable() ? "지역 의뢰" : quest.category();
-            String head = category + " · " + quest.title();
-            graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(head, width - 20)),
-                    x + 10, ty, quest.repeatable() ? GREEN : GOLD, true);
-            ty += 10;
-            graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(quest.objective(), width - 20)),
-                    x + 10, ty, MUTED, false);
-            ty += 8;
+    private static DisplayObjective displayObjective(FieldUiSnapshot snapshot) {
+        if (!"MAIN".equals(selectedObjectiveId)) {
+            for (FieldUiSnapshot.QuestTracker quest : snapshot.questTrackers()) {
+                if (!quest.id().equals(selectedObjectiveId)) continue;
+                String category = quest.repeatable() ? "지역 의뢰" : quest.category();
+                return new DisplayObjective(quest.id(), category + " · " + quest.title(),
+                        playerFacingObjective(quest.objective()), false);
+            }
+            selectedObjectiveId = "MAIN";
         }
-        if (hiddenAuxiliary > 0 && ty + 8 < y + height) {
-            String more = "외 " + hiddenAuxiliary + "개 · E 메뉴 → 퀘스트";
-            graphics.text(minecraft.font, Component.literal(more), x + 10, ty + 3, MUTED, false);
+        return new DisplayObjective("MAIN", "메인 목표", playerFacingObjective(snapshot.objective()), true);
+    }
+
+    private static int objectiveIndex(FieldUiSnapshot snapshot, String id) {
+        if ("MAIN".equals(id)) return 0;
+        for (int i = 0; i < snapshot.questTrackers().size(); i++) {
+            if (snapshot.questTrackers().get(i).id().equals(id)) return i + 1;
         }
+        return 0;
     }
 
     private static void drawDirectionCue(GuiGraphicsExtractor graphics, Minecraft minecraft, Target target) {
@@ -216,4 +238,5 @@ public final class QuestGuideLayer implements GuiLayer {
     }
 
     private record Target(String label, double x, double z) {}
+    private record DisplayObjective(String id, String heading, String objective, boolean main) {}
 }

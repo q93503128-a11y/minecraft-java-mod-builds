@@ -160,10 +160,12 @@ public final class GachaPresentationScreen extends Screen {
     private void showSummary() {
         if (summaryOnly) return;
         summaryOnly = true;
-        SummonCameraController.exit();
-        if (!presentationDone) {
-            presentationDone = true;
-            ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
+        if (batch.hasStage() && !batch.pulls().isEmpty()) {
+            Pull best = batch.pulls().stream()
+                    .max(Comparator.comparingInt(Pull::stars))
+                    .orElse(batch.pulls().getFirst());
+            int holdTick = Math.max(0, GachaPresentationTimeline.slotTicks(best.stars(), best.newlyOwned()) - 1);
+            SummonCameraController.update(holdTick, GachaPresentationTimeline.Phase.NAME, best.stars());
         }
         if (skipButton != null) skipButton.setMessage(Component.literal("닫기"));
     }
@@ -414,6 +416,10 @@ public final class GachaPresentationScreen extends Screen {
     @Override
     public void removed() {
         SummonCameraController.exit();
+        if (!presentationDone) {
+            presentationDone = true;
+            ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
+        }
         super.removed();
     }
 }
