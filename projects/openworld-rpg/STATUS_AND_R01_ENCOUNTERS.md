@@ -1073,6 +1073,39 @@ mrpack packaging and artifact upload all passed. Artifact:
 This is **backend authority closure**, not an in-world Nature Spirit encounter playtest. Rooted Swipe,
 Earthen Ram and Bloom Quake movement/telegraph/contact presentation remain production-gated.
 
+### Runtime attack-impact authority
+
+Code state `beed315775ae3589086d4a57ea49f22ef3cf817e` binds all three canon-closed Nature
+Spirit impact contracts behind one presentation-confirmed server authority:
+
+- only exact `threateningly_mobs:nature_hamony` with the project `authored_spawn` tag can use it;
+- donor natural spawns and raw verification fixtures are rejected even though their registry/stat
+  profile is known;
+- `Rooted Swipe` resolves the locked 13% same-Lv benchmark physical hit with medium guard pressure
+  and normal guard/perfect-guard handling;
+- `Earthen Ram` resolves the locked 22% physical hit with heavy guard pressure plus authored player
+  poise pressure **45**;
+- `Bloom Quake` resolves the locked 25% physical hit as unguardable/un-perfect-guardable plus
+  authored player poise pressure **45**;
+- Cave Centipede action ids are rejected by this authority rather than being accepted by enum shape
+  alone;
+- presentation code still owns whether the visible frontal arc / 3-block committed ram / 4-block
+  quake ring actually contacted a player. Donor damage magnitude never crosses the project boundary.
+
+The authority intentionally reuses the same player incoming-damage and player-poise runtimes already
+used by the rest of project combat. No separate Nature Spirit armor, dodge or poise interpretation is
+invented.
+
+Build Openworld RPG run `37085239391` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload passed. Artifact:
+`openworld-rpg-m0-beed315775ae3589086d4a57ea49f22ef3cf817e`
+(`11260552298`, SHA-256
+`fad3605f152aaf85654196d79362d08fe97eee851a5b0c67758acbe31f03fbee`).
+
+This closes the three attacks' **impact authority**, not their visible geometry/movement/presentation
+binding and not Nature Spirit production spawning.
+
 ## Attack 3 — Bloom Quake
 
 Used mainly after leaving Living Shell or when surrounded.
