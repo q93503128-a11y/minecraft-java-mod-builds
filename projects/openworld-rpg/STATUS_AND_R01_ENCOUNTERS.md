@@ -1106,6 +1106,41 @@ mrpack packaging and artifact upload passed. Artifact:
 This closes the three attacks' **impact authority**, not their visible geometry/movement/presentation
 binding and not Nature Spirit production spawning.
 
+### Runtime action-execution authority
+
+Code state `c935da82645ed9b0d007ecb66ffd850b21ca5263` adds the server-owned execution gate
+between action selection and impact authority:
+
+- selecting a Nature Spirit attack now commits one server action-counter instance; another decision
+  cannot be selected while that action is in wind-up / impact / authored recovery;
+- Rooted Swipe opens its one contact frame exactly **9 ticks** after selection;
+- Earthen Ram opens its contact frame exactly **15 ticks** after selection, preserves the canon-locked
+  **3.0-block committed movement requirement** as presentation metadata, and holds its **17-tick**
+  authored recovery before another decision;
+- Bloom Quake opens its area-contact frame exactly **20 ticks** after selection, preserves the
+  canon-locked **4.0-block radius** as presentation metadata, and holds its **18-tick** authored
+  recovery;
+- Rooted Swipe has no additional authored recovery in the data; its impact frame is still a distinct
+  server tick, preventing pre-tell contact from resolving;
+- presentation binders can consume a target only on the exact committed impact tick and only once for
+  that target/action-counter pair;
+- area attacks may confirm multiple different players on the same impact tick, so Bloom Quake does
+  not collapse into a single-target shortcut;
+- the old direct impact entry point is no longer the production seam: runtime callers must pass
+  through the scheduled action instance before `R01NatureSpiritImpactAuthority` can resolve damage;
+- no ram interpolation, frontal-arc shape, ring VFX or donor animation is fabricated by this backend.
+  Those visible pieces must later match the already-locked timing/space metadata.
+
+Build Openworld RPG run `37092771895` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-c935da82645ed9b0d007ecb66ffd850b21ca5263`
+(`11263037838`, SHA-256
+`849d014d0a410dd618da52a012f8a933f3a24a07abd2cda46ac03b864f519572`).
+
+This closes **selection -> wind-up -> scheduled impact -> recovery** backend authority. Actual
+player-facing movement/telegraph/contact geometry and Nature Spirit production spawning remain gated.
+
 ## Attack 3 — Bloom Quake
 
 Used mainly after leaving Living Shell or when surrounded.
