@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import org.slf4j.Logger;
 
@@ -102,6 +104,131 @@ public final class R01NatureSpiritCombatRuntime {
                 target,
                 action.orElseThrow()
         );
+    }
+
+    /**
+     * Resolves the canon-locked Bloom Quake ground area for an already-committed impact frame.
+     *
+     * <p>The caller owns encounter membership and therefore supplies candidate players. This method
+     * owns only the exact 4-block horizontal ground radius and the scheduled-impact gate, preventing
+     * an unrelated nearby player from being admitted merely because they exist in the level.</p>
+     */
+    public static BloomQuakeAreaResolution resolveBloomQuakeAreaAtImpact(
+            LivingEntity natureSpirit,
+            Collection<? extends ServerPlayer> candidatePlayers,
+            long actionCounter,
+            long gameTick
+    ) {
+        Objects.requireNonNull(candidatePlayers, "candidatePlayers");
+        R01NatureSpiritCombatRuntimeState state = stateFor(natureSpirit);
+        if (state == null) {
+            return BloomQuakeAreaResolution.rejected();
+        }
+
+        var snapshot = state.executionSnapshot(gameTick).orElse(null);
+        if (snapshot == null
+                || snapshot.action()
+                        != R01SecondaryCreatureEncounterData.ActionId.BLOOM_QUAKE
+                || snapshot.actionCounter() != actionCounter
+                || snapshot.phase()
+                        != R01NatureSpiritActionExecutionState.Phase.IMPACT_FRAME
+                || snapshot.areaRadius() <= 0.0) {
+            return BloomQuakeAreaResolution.rejected();
+        }
+
+        int insideArea = 0;
+        int acceptedImpacts = 0;
+        for (ServerPlayer player : candidatePlayers) {
+            if (player == null
+                    || !player.isAlive()
+                    || player.isSpectator()
+                    || player.level() != natureSpirit.level()
+                    || !insideHorizontalRadius(
+                            natureSpirit.getX(),
+                            natureSpirit.getZ(),
+                            player.getX(),
+                            player.getZ(),
+                            snapshot.areaRadius()
+                    )) {
+                continue;
+            }
+
+            insideArea++;
+            var application = confirmScheduledImpact(
+                    natureSpirit,
+                    player,
+                    actionCounter,
+                    gameTick
+            );
+            if (application.incoming().accepted()) {
+                acceptedImpacts++;
+            }
+        }
+
+        return new BloomQuakeAreaResolution(
+                true,
+                snapshot.areaRadius(),
+                insideArea,
+                acceptedImpacts
+        );
+    }
+
+    static boolean insideHorizontalRadius(
+            double centerX,
+            double centerZ,
+            double targetX,
+            double targetZ,
+            double radius
+    ) {
+        if (!Double.isFinite(centerX)
+                || !Double.isFinite(centerZ)
+                || !Double.isFinite(targetX)
+                || !Double.isFinite(targetZ)
+                || !Double.isFinite(radius)
+                || radius < 0.0) {
+            throw new IllegalArgumentException(
+                    "Bloom Quake radius inputs must be finite and radius non-negative."
+            );
+        }
+        double dx = targetX - centerX;
+        double dz = targetZ - centerZ;
+        return dx * dx + dz * dz <= radius * radius;
+    }
+
+    public record BloomQuakeAreaResolution(
+            boolean scheduledImpactAccepted,
+            double radius,
+            int playersInsideArea,
+            int acceptedImpacts
+    ) {
+        public BloomQuakeAreaResolution {
+            if (!Double.isFinite(radius)
+                    || radius < 0.0
+                    || playersInsideArea < 0
+                    || acceptedImpacts < 0
+                    || acceptedImpacts > playersInsideArea) {
+                throw new IllegalArgumentException(
+                        "Invalid Bloom Quake area resolution."
+                );
+            }
+            if (!scheduledImpactAccepted
+                    && (radius != 0.0
+                            || playersInsideArea != 0
+                            || acceptedImpacts != 0)) {
+                throw new IllegalArgumentException(
+                        "Rejected Bloom Quake area cannot carry resolved state."
+                );
+            }
+        }
+
+        public static BloomQuakeAreaResolution rejected() {
+            return new BloomQuakeAreaResolution(
+                    false,
+                    0.0,
+                    0,
+                    0
+            );
+        }
     }
 
     public static Optional<R01NatureSpiritActionExecutionState.Snapshot> executionSnapshot(
