@@ -105,10 +105,10 @@ This pass does not label the whole game backend complete.
 Known backend/runtime gaps that remain separate include:
 
 - accepted production spatial binding and invocation transport for Fast Travel;
-- Camp runtime/placement/rest ownership;
-- mount runtime/ownership/summon/traversal authority;
-- generic ordinary R01 enemy personal reward transactions where encounter-specific reward services
-  do not yet exist;
+- final Camp spatial sampling / physical interaction / player-facing presentation bindings;
+- mount pre-code asset/donor/multiplayer/traversal verification, then runtime/ownership/summon authority;
+- Louxia combat-reward progression budget and Meadow Viper project actor/entity binding before their
+  ordinary personal reward paths can be admitted;
 - remaining class-Insight success detectors whose encounter/action evidence is not yet bound;
 - remaining signature/reward materialization gates already documented for bosses/equipment;
 - gameplay systems that are intentionally blocked by unresolved presentation/spatial canon.
@@ -123,6 +123,80 @@ CODE REVIEWED: YES
 TESTED: YES
 BUILD VERIFIED: YES
 JAR PRODUCED: YES
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```
+
+
+## 4. R01 ordinary-enemy personal reward authority follow-up
+
+Final code state `8ea0eb99dbbc8a96436ea2a7a52fa524fb4a5bae` closes the currently canon-bindable ordinary/elite personal reward
+transaction layer for authored **Cave Centipede, Bison, Grizzly and Steelboar** without promoting any
+of those actors to production spawning.
+
+Server authority now provides:
+
+- one accepted project-damage contribution or one already-successful project control/debuff action
+  grants personal eligibility; party membership, proximity, last hit and damage share do not;
+- the class active on the first qualifying contribution is persisted as that player's Class-XP owner;
+- Cave Centipede / Bison / Grizzly use the global appropriate-level common/sturdy targets
+  (**~1% Combat EXP / ~0.8% Class XP**) with their exact R01 Gold/material rules;
+- Steelboar uses the exact elite package (**~6% Combat EXP / ~5% Class XP / 18 Gold**, 60% Iron Ore
+  1-3, 35% Tough Hide x1 and 30% one ordinary equipment roll);
+- each online eligible player receives an independent server RNG plan at canonical project-HP death;
+- ordinary rewards are not queued indefinitely for a qualified player who is offline at kill
+  resolution, matching the multiplayer canon; once an online plan is committed, interrupted
+  progression/material delivery remains reconnect-safe and idempotent;
+- the Cave Centipede donor Leg remains excluded;
+- project-owned external-actor vanilla/donor EXP and admitted project-loot-source death loot are
+  suppressed so project rewards do not duplicate donor rewards;
+- Steelboar equipment base / grade / Item Lv / armor slot / affix seed are committed before delivery,
+  but physical ordinary drop materialization/presentation stays pending instead of inventing a
+  missing player-facing contract;
+- max Combat Lv + max qualifying Class Rank + zero-Gold sources do not attempt to create an illegal
+  empty progression transaction; material resolution can still complete;
+- Louxia is intentionally **not** admitted into this combat reward runtime because its exact
+  Combat/Class XP budget is not closed in current canon; its registry target remains verified and its
+  donor loot is not suppressed by this new ordinary-reward gate;
+- Meadow Viper remains outside this runtime because its project-owned entity/project-HP binding is
+  still not implemented.
+
+The first implementation CI (#334) compiled successfully but exposed one stale test that still
+classified authored Grizzly as unrelated to control participation. After the test contract was
+updated, #336 reached server startup and exposed a Minecraft 26.2 mixin target rename; the death-loot
+hook was corrected to `LivingEntity.dropAllDeathLoot(ServerLevel, DamageSource)`. A later one-line
+Louxia loot-boundary correction initially removed Louxia from the wrong adjacent registry set; that
+patch-location error was repaired before this final state.
+
+Build Openworld RPG **#339**, run `37162201830`, is **SUCCESS** for `8ea0eb99dbbc8a96436ea2a7a52fa524fb4a5bae` across clean
+tests/build, pinned gameplay/creature metadata inspection, R01 creature registry inspection,
+Earthloong dependency inspection, core-profile dedicated-server smoke, gameplay-profile dependency
+server smoke, gameplay client startup smoke, both verification JAR builds, Modrinth playtest-pack
+packaging and artifact upload.
+
+Normal JAR SHA-256:
+`fea40cddb334a92b06ce8fdb87e4c0d0a1532e9f2995366579bcdc6d6b5c2935`
+
+M0 mrpack SHA-256:
+`33ddeaefd532c874b376187398fe92e33070fbaee5a4a9b9716242e0c7393474`
+
+Workflow artifact:
+`openworld-rpg-m0-8ea0eb99dbbc8a96436ea2a7a52fa524fb4a5bae` / ID `11288072772`
+
+Workflow-artifact digest:
+`sha256:85bf7609abc358b86394816acd7abc324324541b50323f3af3990314b36b158c`
+
+Validation state for this pass:
+
+```text
+CODE REVIEWED: YES
+TESTED: YES
+BUILD VERIFIED: YES
+JAR PRODUCED: YES
+PRODUCTION SPAWN PROMOTION: NO
+STEELBOAR EQUIPMENT PHYSICAL DELIVERY: GATED
+LOUXIA ORDINARY COMBAT REWARD: NOT IMPLEMENTED
+MEADOW VIPER ORDINARY COMBAT REWARD: NOT IMPLEMENTED
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```

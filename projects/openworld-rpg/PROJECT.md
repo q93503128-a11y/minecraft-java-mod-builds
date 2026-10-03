@@ -1060,3 +1060,39 @@ Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR P
 production Camp spatial binding **NO**; player-facing Camp presentation **GATED**; PLAYTESTED **NO**;
 MULTIPLAYER TESTED **NO**.
 
+
+
+### 2026-10-04 R01 ordinary personal reward authority
+
+R01 authored Cave Centipede / Bison / Grizzly / Steelboar now have a shared server-owned personal
+combat reward path at code state `8ea0eb99dbbc8a96436ea2a7a52fa524fb4a5bae`. One accepted damage or successful project-control
+contribution fixes personal eligibility and the contribution-time root class; last hit, party roster,
+proximity and damage share do not own rewards. Ordinary kill resolution creates independent plans
+only for qualified players online at that kill, while already-committed online plans remain
+reconnect-safe.
+
+The runtime uses the closed common/sturdy **~1% Combat EXP / ~0.8% Class XP** targets, Steelboar's
+**~6% / ~5% / 18 Gold** elite progression package, and the exact R01 material probabilities.
+Steelboar's 30% ordinary equipment result persists base/grade/Item Lv/slot/affix seed but remains
+physically undelivered until the remaining dropped-equipment materialization/presentation contract is
+accepted. Donor EXP and admitted project-loot-source death loot are suppressed to prevent duplicate
+reward paths.
+
+Lou Xia is deliberately excluded from the combat-reward runtime because current canon does not assign
+it an exact Combat/Class XP budget; its donor loot is therefore not suppressed by this new gate.
+Meadow Viper also remains outside this pass until its project-owned entity/project-HP binding exists.
+No actor was promoted to production spawning.
+
+Build Openworld RPG #339 / run `37162201830` is **SUCCESS** for `8ea0eb99dbbc8a96436ea2a7a52fa524fb4a5bae` across tests/build,
+pinned dependency/registry checks, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs and Modrinth playtest-pack packaging. Artifact
+`openworld-rpg-m0-8ea0eb99dbbc8a96436ea2a7a52fa524fb4a5bae` (ID `11288072772`, artifact digest
+`sha256:85bf7609abc358b86394816acd7abc324324541b50323f3af3990314b36b158c`).
+Normal JAR SHA-256 is
+`fea40cddb334a92b06ce8fdb87e4c0d0a1532e9f2995366579bcdc6d6b5c2935`.
+
+Mount implementation remains gated by the explicit pre-code verification checkpoint in
+`MOUNTS.md`; this pass does not bypass it.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
