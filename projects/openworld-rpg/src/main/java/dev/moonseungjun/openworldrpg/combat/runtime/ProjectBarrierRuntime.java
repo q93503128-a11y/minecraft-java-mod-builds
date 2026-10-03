@@ -134,6 +134,33 @@ public final class ProjectBarrierRuntime {
         );
     }
 
+    /**
+     * Encounter-linked Regalhart barrier participation. A positive effective grant to another
+     * actively engaged player may establish that caster's personal boss-reward eligibility.
+     */
+    public static GrantApplication applyRegalhartSkillBarrier(
+            ServerPlayer caster,
+            ServerPlayer target,
+            LivingEntity regalhart,
+            String sourceId,
+            double barrierCoefficient,
+            double applicableOutputBonus,
+            int durationTicks,
+            boolean clericGraceSource
+    ) {
+        Objects.requireNonNull(regalhart, "regalhart");
+        return applyEncounterSkillBarrier(
+                caster,
+                target,
+                regalhart,
+                sourceId,
+                barrierCoefficient,
+                applicableOutputBonus,
+                durationTicks,
+                clericGraceSource
+        );
+    }
+
     private static GrantApplication applyEncounterSkillBarrier(
             ServerPlayer caster,
             ServerPlayer target,

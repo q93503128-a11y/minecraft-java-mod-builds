@@ -86,6 +86,20 @@ public final class ProjectHealingRuntime {
         return apply(caster, target, healCoefficient, 1.0, natureSpirit);
     }
 
+    /**
+     * Encounter-linked Regalhart heal participation. The caller must pass the actual authored
+     * Regalhart whose engaged ally is being healed.
+     */
+    public static Application applyRegalhartSkillHeal(
+            ServerPlayer caster,
+            ServerPlayer target,
+            LivingEntity regalhart,
+            double healCoefficient
+    ) {
+        Objects.requireNonNull(regalhart, "regalhart");
+        return apply(caster, target, healCoefficient, 1.0, regalhart);
+    }
+
     private static Application apply(
             ServerPlayer caster,
             ServerPlayer target,

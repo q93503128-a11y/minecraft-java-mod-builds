@@ -42,6 +42,24 @@ class R01EnemyControlContributionBridgeTest {
     }
 
     @Test
+    void regalhartRequiresExactRegistryAndAuthoredSpawn() {
+        assertEquals(
+                R01EnemyControlContributionBridge.ActorKind.REGALHART,
+                R01EnemyControlContributionBridge.actorKind(
+                        "threateningly_mobs:the_regalhart",
+                        true
+                )
+        );
+        assertEquals(
+                R01EnemyControlContributionBridge.ActorKind.NONE,
+                R01EnemyControlContributionBridge.actorKind(
+                        "threateningly_mobs:the_regalhart",
+                        false
+                )
+        );
+    }
+
+    @Test
     void unrelatedProjectHostileNeverQualifiesThroughThisBridge() {
         assertEquals(
                 R01EnemyControlContributionBridge.ActorKind.NONE,

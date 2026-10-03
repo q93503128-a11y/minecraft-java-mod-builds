@@ -4,6 +4,7 @@ import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRunti
 import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RegalhartRewardService;
 import java.util.Objects;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -60,6 +61,14 @@ public final class R01EnemyControlContributionBridge {
                                     sourcePlayer
                             )
             );
+            case REGALHART -> new Contribution(
+                    actorKind,
+                    R01RegalhartRewardService
+                            .recordValidatedSupportContribution(
+                                    target,
+                                    sourcePlayer
+                            )
+            );
             case NONE -> Contribution.none();
         };
     }
@@ -79,13 +88,20 @@ public final class R01EnemyControlContributionBridge {
                 )) {
             return ActorKind.NATURE_SPIRIT;
         }
+        if (authoredSpawn
+                && R01ExternalActorCatalog.REGALHART.equals(
+                        entityTypeId
+                )) {
+            return ActorKind.REGALHART;
+        }
         return ActorKind.NONE;
     }
 
     enum ActorKind {
         NONE,
         EARTHLOONG,
-        NATURE_SPIRIT
+        NATURE_SPIRIT,
+        REGALHART
     }
 
     public record Contribution(
