@@ -29,7 +29,7 @@ public abstract class ExternalActorProgressionMixin {
     }
 
     @Inject(
-            method = "drop(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V",
+            method = "dropAllDeathLoot(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V",
             at = @At("HEAD"),
             cancellable = true
     )
