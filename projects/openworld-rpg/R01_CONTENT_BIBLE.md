@@ -1,6 +1,6 @@
 # Open-World RPG — R01 Heartland Content Bible
 
-> Status: **R01 GAMEPLAY / CONTENT DESIGN CLOSED — implementation-time gameplay choices are locked; exact ASSET_BINDING + SPATIAL_BINDING remain pre-code production gates**  
+> Status: **R01 BROAD CONTENT STRUCTURE CLOSED — narrow Regalhart gameplay-contract gaps remain; exact gameplay-canon + ASSET_BINDING + SPATIAL_BINDING gates must close before full R01 source-ready status**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Project contract: `PROJECT.md`  
 > Opening/first-session package: `R01_VERTICAL_SLICE.md`  
@@ -1938,7 +1938,7 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 | Which minor discoveries exist? | exact six in §4.2 |
 | How many R01 resource nodes exist? | exact counts in §4.3 |
 | Which ordinary items can each elite/boss/treasure source roll? | exact source pools in §4.4 |
-| How are R01 enemy/boss attacks selected? | exact cooldown / legality / weight / anti-repeat controller in `STATUS_AND_R01_ENCOUNTERS.md` |
+| How are R01 enemy/boss attacks selected? | closed for current R01 actors except the explicitly fail-closed Regalhart 7.0/12.0 distance endpoints and incomplete impact/timing contracts listed in §27 / `STATUS_AND_R01_ENCOUNTERS.md` |
 | How does Guardian threat actually affect AI targets? | exact server-side threat + 1.25x switch hysteresis in `COMBAT_BALANCE.md` |
 | How many rotating Nessa slots? | exactly 5, one personal item each |
 | When does Nessa refresh? | every 10 active-world min from personal Alderford shrine epoch |
@@ -1994,6 +1994,19 @@ Regalhart/Earthloong farming must remain attractive for their known drops withou
 
 After this content-bible pass, the remaining R01 blockers are deliberately narrow.
 
+## GAMEPLAY_CANON
+
+The broad R01 structure is fixed, but these Regalhart combat values are still genuinely unresolved and may not be invented in source:
+
+- exact owner of the **7.0-block** weighted-selection endpoint;
+- exact owner of the **12.0-block** weighted-selection endpoint;
+- ordinary Crown Charge `guardable` value;
+- Rear Kick guard-pressure value;
+- Rear Kick player-poise pressure;
+- mirrored Antler Sweep second-hit exact timing.
+
+These are gameplay contracts, not presentation-only details. Runtime must continue to fail closed where they matter until this section is emptied by an explicit canon decision.
+
 ## ASSET_BINDING
 
 Must still select/validate:
@@ -2030,13 +2043,14 @@ If either gate exposes a hard conflict, update canon **before** coding the affec
 
 # 28. R01 content-closure acceptance
 
-The R01 **gameplay/content design** is closed. This does **not** mean source-ready or play-proven.
+The R01 **broad content structure** is closed, but the full gameplay/content design is **not yet completely closed** because §27 still contains narrow Regalhart combat contracts. This does **not** mean source-ready or play-proven.
 
 Use the following status split:
 
 ```text
-R01 GAMEPLAY / CONTENT DESIGN CLOSED: YES
-R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: NO
+R01 BROAD CONTENT STRUCTURE CLOSED: YES
+R01 GAMEPLAY / CONTENT DESIGN FULLY CLOSED: NO
+R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: YES — NARROW REGALHART COMBAT CONTRACTS ONLY
 R01 ASSET_BINDING COMPLETE: NO
 R01 SPATIAL_BINDING COMPLETE: NO
 R01 SOURCE READY: NO
@@ -2045,10 +2059,11 @@ R01 PLAYTESTED: NO
 R01 MULTIPLAYER TESTED: NO
 ```
 
-R01 becomes source-ready only when the external presentation and actual-world spatial gates below are also true:
+R01 becomes source-ready only when the remaining gameplay-canon gaps plus the external presentation and actual-world spatial gates below are all closed:
 
 ## Content
 
+- §27 GAMEPLAY_CANON has no unresolved player-affecting value;
 - no unnamed required quest/event remains;
 - no required objective has an undefined count;
 - no merchant/service leaves stock/price behavior to implementation;

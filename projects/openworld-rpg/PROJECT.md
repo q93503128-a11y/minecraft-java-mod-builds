@@ -2,7 +2,7 @@
 
 > Working project slug: `openworld-rpg`  
 > Player-facing title: **WORKING / CANDIDATE ONLY — not yet locked, and NOT a gameplay-source-bootstrap gate; `Anchorwake` is an evaluated candidate only**  
-> Current phase: **M0 GAMEPLAY DEPENDENCY RUNTIME BOOT VERIFIED / R01 GAMEPLAY + CONTENT DESIGN CLOSED / PLAYER-FACING R01 IMPLEMENTATION STILL BLOCKED BY ASSET + AZARI SPATIAL BINDING; LATER-REGION FINAL-ENCOUNTER GATES REMAIN**
+> Current phase: **M0 GAMEPLAY DEPENDENCY RUNTIME BOOT VERIFIED / R01 BROAD CONTENT STRUCTURE CLOSED BUT NARROW REGALHART GAMEPLAY-CANON GAPS REMAIN / PLAYER-FACING R01 IMPLEMENTATION STILL BLOCKED BY GAMEPLAY-CANON + ASSET + AZARI SPATIAL BINDING; LATER-REGION FINAL-ENCOUNTER GATES REMAIN**
 
 ## 1. Repository / authority contract
 
@@ -264,8 +264,9 @@ Code does not silently become design authority.
 R01 now has a dedicated closure split:
 
 ```text
-R01 GAMEPLAY / CONTENT DESIGN CLOSED: YES
-R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: NO
+R01 BROAD CONTENT STRUCTURE CLOSED: YES
+R01 GAMEPLAY / CONTENT DESIGN FULLY CLOSED: NO
+R01 IMPLEMENTATION-TIME GAMEPLAY CHOICES REMAIN: YES — NARROW REGALHART COMBAT CONTRACTS ONLY
 R01 ASSET_BINDING COMPLETE: NO
 R01 SPATIAL_BINDING COMPLETE: NO
 R01 SOURCE READY: NO
@@ -276,7 +277,7 @@ R01 MULTIPLAYER TESTED: NO
 
 The current authoritative closure table is `R01_CONTENT_BIBLE.md` §26–§28.
 
-This means **do not reopen R01 systems, rewards, quest text, merchant logic, fish mechanics, mount behavior, Camp/furniture rules, fast travel or UI flow during coding.** If real asset/spatial/play evidence invalidates a value, revise canon first.
+This means **do not reopen already-closed R01 systems, rewards, quest text, merchant logic, fish mechanics, mount behavior, Camp/furniture rules, fast travel or UI flow during coding.** The remaining gameplay-design work is deliberately narrow and currently Regalhart-specific: exact 7.0/12.0 weighted-selector endpoint ownership, Crown Charge ordinary guardability, Rear Kick guard-pressure/player-poise pressure, and mirrored Antler Sweep second-hit timing. These values must be closed in canon before their affected production runtime opens. If real asset/spatial/play evidence invalidates any closed value, revise canon first.
 
 ---
 

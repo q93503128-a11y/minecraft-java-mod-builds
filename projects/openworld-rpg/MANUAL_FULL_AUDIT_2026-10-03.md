@@ -365,3 +365,24 @@ CLIENT WORLD JOIN: NOT RUN
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
+
+
+---
+
+## 11. Resolution update — 2026-10-03
+
+Code commit `66df0af2b2837bf7473159abde169b0035ca4c56` resolves the two BLOCKER findings from §2:
+
+- Regalhart effective-heal support participation now reaches `R01RegalhartRewardService`;
+- Regalhart effective-barrier support participation now reaches `R01RegalhartRewardService`;
+- the heal application result explicitly carries Regalhart participation and rejects impossible cross-encounter double qualification;
+- successful Regalhart disengage/reset now aborts only the uncommitted active encounter snapshot;
+- committed first-defeat history and pending durable rewards remain intact.
+
+Regression coverage was added for abandoned-fight cleanup and Regalhart healing-result invariants.
+
+Build Openworld RPG #323 / run `37119716754`: **SUCCESS** across tests/clean build, dependency inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs, Modrinth pack packaging and artifact upload.
+
+The former BLOCKER findings are therefore **RESOLVED IN SOURCE + BUILD VERIFIED**. They remain **NOT PLAYTESTED / NOT MULTIPLAYER TESTED**.
+
+The stale 40%/30% Regalhart first-defeat wording and overstated R01 full-design-closure claims were corrected in the following canon-hygiene documentation pass. Remaining Hartcrown, texture/resource, spawn-containment and unresolved Regalhart gameplay-contract findings from this audit remain open.

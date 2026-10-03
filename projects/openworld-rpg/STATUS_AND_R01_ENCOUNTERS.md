@@ -1,6 +1,6 @@
 # Open-World RPG — Status / Element / R01 Encounter Combat Canon
 
-> Status: **DESIGN CANON — status/element rules and R01 encounter kits locked before implementation**  
+> Status: **DESIGN CANON — status/element rules and most R01 encounter kits locked; explicitly listed Regalhart combat-contract gaps remain fail-closed**  
 > Master gameplay canon: `GAME_DESIGN.md`  
 > Combat math/timing: `COMBAT_BALANCE.md`  
 > Class kits: `CLASS_COMBAT_KITS.md`  
@@ -1471,7 +1471,7 @@ This is the project adaptation of the donor's low-HP special behavior: more patt
 
 ## Rewards
 
-R01 first-defeat boss EXP/Class-XP is intentionally elevated above the later-region baseline as part of the one-time opening progression ramp. Repeat rewards stay on the normal global band.
+Regalhart first-defeat progression uses the current field/world-boss opening-region reward contract. Repeat rewards stay on the normal global band.
 
 First eligible defeat:
 
@@ -1479,8 +1479,8 @@ First eligible defeat:
 - guaranteed Superior+ normal gear;
 - 15% direct Mythic roll from the exact one-item R01 launch signature pool: `Hartcrown Spear`;
 - Gold: **70**;
-- EXP **40%** current next-Lv requirement;
-- Class XP **30%** current Class Rank requirement.
+- EXP **20%** current next-Lv requirement;
+- Class XP **15%** current Class Rank requirement.
 
 Repeat:
 
@@ -2538,11 +2538,11 @@ Closed for implementation:
 - R01 surface snake selection and removal of Alex's desert Rattlesnake from R01;
 - R01 Louxia / Meadow Viper / Cave Centipede / Bison / Grizzly / Steelboar / Nature Spirit / Regalhart / Earthloong combat roles;
 - exact R01 enemy Lv/HP/Defense/MR/poise starting stats;
-- full signature attack/tell/guard/status behavior for R01 combat threats;
-- Regalhart field-boss phase/reward baseline;
+- signature attack/tell/guard/status behavior for R01 combat threats **except the explicitly listed Regalhart unresolved impact/timing values**;
+- Regalhart field-boss phase/reward baseline, with unresolved impact/timing values kept fail-closed;
 - Earthloong first-dungeon boss phases/weak point/reward baseline;
 - R01 external dependency/license boundaries;
-- exact R01 server-side action-selection weights/cooldowns/anti-repeat rules;
+- R01 server-side action-selection weights/cooldowns/anti-repeat rules except Regalhart's exact 7.0/12.0 endpoint ownership, which remains intentionally fail-closed;
 - first implementation acceptance checks.
 
 Still intentionally requires later design/asset work:
