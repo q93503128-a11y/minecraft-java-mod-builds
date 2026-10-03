@@ -379,6 +379,38 @@ public final class ExternalActorBindingRuntime {
         return entity;
     }
 
+    /**
+     * Restores project-owned combat state for an existing bound actor without touching donor-owned
+     * presentation/passive effects. Intended for authored encounter reset, not ordinary healing.
+     */
+    public static boolean resetProjectCombatState(
+            LivingEntity living,
+            long gameTick
+    ) {
+        if (living == null || living.level().isClientSide() || gameTick < 0L) {
+            return false;
+        }
+        ExternalActorCombatProfile profile = combatProfile(living).orElse(null);
+        if (profile == null) {
+            return false;
+        }
+
+        HEALTH_STATES.put(
+                living.getUUID(),
+                ProjectHealthRuntimeState.atFraction(
+                        profile.maxHealth(),
+                        1.0
+                )
+        );
+        POISE_STATES.put(
+                living.getUUID(),
+                newPoiseState(profile, gameTick)
+        );
+        living.setHealth(living.getMaxHealth());
+        ProjectHostileStatusRuntime.clear(living.getUUID());
+        return true;
+    }
+
     private static ProjectHealthRuntimeState ensureHealthStateFromProxy(
             LivingEntity living,
             ExternalActorCombatProfile profile
@@ -407,29 +439,36 @@ public final class ExternalActorBindingRuntime {
     ) {
         return POISE_STATES.computeIfAbsent(
                 living.getUUID(),
-                ignored -> switch (profile.combatRank()) {
-                    case COMMON, STURDY_COMMON ->
-                            ProjectPoiseRuntimeState.common(
-                                    profile.poiseMax(),
-                                    gameTick
-                            );
-                    case NORMAL_ELITE ->
-                            ProjectPoiseRuntimeState.elite(
-                                    profile.poiseMax(),
-                                    gameTick
-                            );
-                    case MINIBOSS ->
-                            ProjectPoiseRuntimeState.miniboss(
-                                    profile.poiseMax(),
-                                    gameTick
-                            );
-                    case BOSS ->
-                            ProjectPoiseRuntimeState.boss(
-                                    profile.poiseMax(),
-                                    gameTick
-                            );
-                }
+                ignored -> newPoiseState(profile, gameTick)
         );
+    }
+
+    private static ProjectPoiseRuntimeState newPoiseState(
+            ExternalActorCombatProfile profile,
+            long gameTick
+    ) {
+        return switch (profile.combatRank()) {
+            case COMMON, STURDY_COMMON ->
+                    ProjectPoiseRuntimeState.common(
+                            profile.poiseMax(),
+                            gameTick
+                    );
+            case NORMAL_ELITE ->
+                    ProjectPoiseRuntimeState.elite(
+                            profile.poiseMax(),
+                            gameTick
+                    );
+            case MINIBOSS ->
+                    ProjectPoiseRuntimeState.miniboss(
+                            profile.poiseMax(),
+                            gameTick
+                    );
+            case BOSS ->
+                    ProjectPoiseRuntimeState.boss(
+                            profile.poiseMax(),
+                            gameTick
+                    );
+        };
     }
 
     private static String registryId(Entity entity) {

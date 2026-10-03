@@ -276,6 +276,17 @@ public final class R01RegalhartCombatRuntime {
         }
     }
 
+    /**
+     * Clears all transient Regalhart encounter execution state owned by this runtime.
+     */
+    public static void resetEncounterState(LivingEntity regalhart) {
+        if (regalhart == null) {
+            return;
+        }
+        SWEEPS.remove(regalhart.getUUID());
+        clearSovereignState(regalhart);
+    }
+
     private static boolean applySovereignMovementModifier(
             LivingEntity regalhart
     ) {
