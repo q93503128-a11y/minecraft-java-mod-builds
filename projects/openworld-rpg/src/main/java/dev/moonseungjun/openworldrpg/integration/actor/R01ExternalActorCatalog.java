@@ -53,6 +53,19 @@ public final class R01ExternalActorCatalog {
     private static final Set<String> PRODUCTION_SPAWN_READY =
             Set.of(EARTHLOONG);
 
+    private static final Set<String> PROJECT_LOOT_AUTHORITY_TARGETS = Set.of(
+            BISON,
+            GRIZZLY,
+            CAVE_CENTIPEDE_HEAD,
+            CAVE_CENTIPEDE_BODY,
+            CAVE_CENTIPEDE_TAIL,
+            LOUXIA,
+            STEELBOAR,
+            NATURE_SPIRIT,
+            REGALHART,
+            EARTHLOONG
+    );
+
     private static final List<ExternalActorCombatProfile> COMBAT_PROFILES =
             List.of(
                     new ExternalActorCombatProfile(
@@ -152,5 +165,9 @@ public final class R01ExternalActorCatalog {
 
     public static boolean productionSpawnReady(String entityId) {
         return PRODUCTION_SPAWN_READY.contains(entityId);
+    }
+
+    public static boolean projectOwnsLoot(String entityId) {
+        return entityId != null && PROJECT_LOOT_AUTHORITY_TARGETS.contains(entityId);
     }
 }

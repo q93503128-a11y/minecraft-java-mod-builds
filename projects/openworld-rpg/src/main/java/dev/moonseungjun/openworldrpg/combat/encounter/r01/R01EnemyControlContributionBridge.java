@@ -4,6 +4,8 @@ import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRunti
 import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01OrdinaryEnemyRewardRules;
+import dev.moonseungjun.openworldrpg.progression.r01.R01OrdinaryEnemyRewardService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RegalhartRewardService;
 import java.util.Objects;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -69,6 +71,14 @@ public final class R01EnemyControlContributionBridge {
                                     sourcePlayer
                             )
             );
+            case ORDINARY_ENEMY -> new Contribution(
+                    actorKind,
+                    R01OrdinaryEnemyRewardService
+                            .recordValidatedSupportContribution(
+                                    target,
+                                    sourcePlayer
+                            )
+            );
             case NONE -> Contribution.none();
         };
     }
@@ -94,6 +104,10 @@ public final class R01EnemyControlContributionBridge {
                 )) {
             return ActorKind.REGALHART;
         }
+        if (authoredSpawn
+                && R01OrdinaryEnemyRewardRules.sourceForEntityId(entityTypeId).isPresent()) {
+            return ActorKind.ORDINARY_ENEMY;
+        }
         return ActorKind.NONE;
     }
 
@@ -101,7 +115,8 @@ public final class R01EnemyControlContributionBridge {
         NONE,
         EARTHLOONG,
         NATURE_SPIRIT,
-        REGALHART
+        REGALHART,
+        ORDINARY_ENEMY
     }
 
     public record Contribution(

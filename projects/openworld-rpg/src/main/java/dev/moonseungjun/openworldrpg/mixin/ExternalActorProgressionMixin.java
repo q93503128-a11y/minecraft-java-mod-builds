@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.mixin;
 
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,6 +24,22 @@ public abstract class ExternalActorProgressionMixin {
     ) {
         LivingEntity self = (LivingEntity) (Object) this;
         if (ExternalActorBindingRuntime.ownsProgression(self)) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(
+            method = "drop(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void openworldRpg$suppressDonorDeathLoot(
+            ServerLevel level,
+            DamageSource source,
+            CallbackInfo ci
+    ) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (ExternalActorBindingRuntime.ownsLootAuthority(self)) {
             ci.cancel();
         }
     }

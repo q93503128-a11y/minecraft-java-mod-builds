@@ -203,6 +203,10 @@ public final class ExternalActorBindingRuntime {
                 || R01ExternalActorCatalog.multipartCombatProxy(id);
     }
 
+    public static boolean ownsLootAuthority(Entity entity) {
+        return R01ExternalActorCatalog.projectOwnsLoot(registryId(entity));
+    }
+
     public static boolean ownsDamageAuthority(Entity entity) {
         String id = registryId(entity);
         return combatProfile(entity).isPresent()
