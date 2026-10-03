@@ -355,6 +355,10 @@ public final class CampaignProgressStore {
                 || GachaCatalog.nativeStars(characterId) != nativeStars) {
             throw new IllegalStateException("Character is not eligible for this Essence selector");
         }
+        CharacterProgression.State duplicateState = requireCharacter(progress, characterId);
+        if (duplicateState.bonusLevel() >= GrowthRulesV1.duplicateBonusMax()) {
+            throw new IllegalStateException("Character duplicate level is already +10");
+        }
         int cost = StarEssenceExchangeRules.choiceCost(nativeStars);
         if (!progress.profile.spend(PlayerProfile.Currency.STAR_ESSENCE, cost)) {
             throw new IllegalStateException("Not enough Star Essence");
@@ -371,7 +375,13 @@ public final class CampaignProgressStore {
     }
 
     public static List<String> essenceChoiceCharacters(UUID playerId, int nativeStars) {
-        return StarEssenceExchangeRules.eligibleOwnedChoices(player(playerId).profile, nativeStars);
+        PlayerProgress progress = player(playerId);
+        return StarEssenceExchangeRules.eligibleOwnedChoices(progress.profile, nativeStars).stream()
+                .filter(id -> {
+                    CharacterProgression.State state = progress.characters.get(id);
+                    return state != null && state.bonusLevel() < GrowthRulesV1.duplicateBonusMax();
+                })
+                .toList();
     }
 
     public static void trackQuest(UUID playerId, String questId) {
@@ -665,8 +675,13 @@ public final class CampaignProgressStore {
 
             initializeCharacter(progress, pull.characterId());
             DuplicateBonus bonus = grantDuplicateBonus(progress, pull.characterId());
+            int essence = 0;
+            if (bonus.granted() == 0) {
+                essence = GachaCatalog.duplicateEssence(pull.nativeStars());
+                progress.profile.grant(PlayerProfile.Currency.STAR_ESSENCE, essence);
+            }
             resolved.add(new GachaService.PullResult(
-                    pull.characterId(), pull.nativeStars(), false, pull.starEssenceGranted(), pull.pityAfter(),
+                    pull.characterId(), pull.nativeStars(), false, essence, pull.pityAfter(),
                     bonus.granted(), bonus.after()));
         }
         GachaService.BatchResult enriched = new GachaService.BatchResult(resolved, result.crystalSpent());

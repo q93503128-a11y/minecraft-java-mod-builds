@@ -86,8 +86,9 @@ public final class PlayerProfile {
 
     public boolean owns(String characterId){return ownedCharacters.contains(characterId);} public Set<String> ownedCharacters(){return Set.copyOf(ownedCharacters);}
     public Acquisition acquireCharacter(String characterId) {
-        int stars=GachaCatalog.nativeStars(characterId); if(ownedCharacters.add(characterId)) return new Acquisition(characterId,stars,true,0);
-        int essence=GachaCatalog.duplicateEssence(stars); grant(Currency.STAR_ESSENCE,essence); return new Acquisition(characterId,stars,false,essence);
+        int stars=GachaCatalog.nativeStars(characterId);
+        if(ownedCharacters.add(characterId)) return new Acquisition(characterId,stars,true,0);
+        return new Acquisition(characterId,stars,false,0);
     }
     public int fiveStarPity(){return fiveStarPity;} public List<SummonHistory> summonHistory(){return List.copyOf(summonHistory);}
     void recordSummonRarity(int nativeStars){if(nativeStars==5) fiveStarPity=0; else fiveStarPity=Math.min(GachaCatalog.HARD_PITY-1,fiveStarPity+1);}
@@ -107,7 +108,7 @@ public final class PlayerProfile {
                 throw new IllegalStateException("Summon history/result order mismatch");
             }
             summonHistory.set(start + i, new SummonHistory(
-                    old.characterId(), old.nativeStars(), old.newlyOwned(), old.starEssenceGranted(), old.pityAfter(),
+                    old.characterId(), old.nativeStars(), old.newlyOwned(), pull.starEssenceGranted(), old.pityAfter(),
                     pull.bonusLevelGranted(), pull.bonusLevelAfter()));
         }
     }

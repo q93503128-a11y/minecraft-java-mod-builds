@@ -430,7 +430,7 @@ public final class BattleScreen extends Screen {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
-        if (selected == null || !BattleActionRules.needsSingleTarget(rule)) return -1;
+        if (selected == null || !BattleActionRules.needsManualTarget(rule)) return -1;
         return BattleLiveProjection.pick(snapshot.units(), rule, snapshot.actorId(), width, height, x, y);
     }
 
@@ -438,7 +438,7 @@ public final class BattleScreen extends Screen {
         var snapshot = ClientBattleState.snapshot();
         ClientBattleState.Skill selected = selectedSkill(snapshot);
         String rule = clientTargetRule(selected);
-        if (selected == null || !BattleActionRules.needsSingleTarget(rule)) return -1;
+        if (selected == null || !BattleActionRules.needsManualTarget(rule)) return -1;
 
         var current = currentLayout();
         List<SharedOwnerGroup> shared = sharedOwnerGroups(snapshot, current);

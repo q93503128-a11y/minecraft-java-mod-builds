@@ -350,15 +350,13 @@ public final class GachaPresentationScreen extends Screen {
     }
 
     private static String duplicateResult(Pull pull) {
-        String level = pull.bonusLevelGranted() > 0
-                ? " · +레벨 +1 (+" + pull.bonusLevelAfter() + ")"
-                : " · +레벨 MAX";
-        return "별의 정수 +" + pull.essence() + level;
+        if (pull.bonusLevelGranted() > 0) return "+레벨 +1 (+" + pull.bonusLevelAfter() + ")";
+        return "중복 성장 MAX · 별의 정수 +" + pull.essence();
     }
 
     private static String compactDuplicateResult(Pull pull) {
-        if (pull.bonusLevelGranted() > 0) return "정수 +" + pull.essence() + " · +" + pull.bonusLevelAfter();
-        return "정수 +" + pull.essence() + " · MAX";
+        if (pull.bonusLevelGranted() > 0) return "+레벨 +" + pull.bonusLevelAfter();
+        return "MAX · 정수 +" + pull.essence();
     }
 
     private static String name(String id) {

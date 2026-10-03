@@ -81,6 +81,7 @@ public final class MetaMenuService {
             case"PARTY"->{if(BattleSessionManager.exists(player))return;List<String> party=parts.length<2||parts[1].isBlank()?List.of():Arrays.stream(parts[1].split(",")).filter(value->!value.isBlank()).toList();try{CampaignProgressStore.setActiveParty(player.getUUID(),party);CampaignPersistence.saveIfDirty(player);MetaNetwork.feedback(player,"파티 편성 저장 완료");}catch(RuntimeException ex){error(player,"파티 변경 실패",ex);}MetaNetwork.sync(player);}
             case"PRESET_SAVE"->{if(parts.length<2||BattleSessionManager.exists(player))return;mutate(player,"프리셋 저장 실패",()->savePreset(player,Integer.parseInt(parts[1])));}
             case"PRESET_LOAD"->{if(parts.length<2||BattleSessionManager.exists(player))return;mutate(player,"프리셋 불러오기 실패",()->loadPreset(player,Integer.parseInt(parts[1])));}
+            case"GACHA_DONE"->{GachaPresentationActorService.finish(player);MetaNetwork.sync(player);}
             case"SUMMON1"->mutate(player,"1회 소환 실패",()->CampaignProgressStore.summonStandard(player.getUUID(),1));
             case"SUMMON10"->mutate(player,"10회 소환 실패",()->CampaignProgressStore.summonStandard(player.getUUID(),10));
             case"STARTER"->mutate(player,"초기 소환 실패",()->CampaignProgressStore.summonStarter(player.getUUID()));

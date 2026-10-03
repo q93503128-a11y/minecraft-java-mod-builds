@@ -69,13 +69,13 @@ class GachaServiceTest {
     }
 
     @Test
-    void duplicateCharacterImmediatelyBecomesStarEssence() {
+    void duplicateCharacterDefersEssenceUntilDuplicateLevelCap() {
         PlayerProfile profile = PlayerProfile.newGame();
         assertTrue(profile.acquireCharacter("P08").newlyOwned());
         PlayerProfile.Acquisition duplicate = profile.acquireCharacter("P08");
         assertFalse(duplicate.newlyOwned());
-        assertEquals(40, duplicate.starEssenceGranted());
-        assertEquals(40, profile.currency(PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(0, duplicate.starEssenceGranted());
+        assertEquals(0, profile.currency(PlayerProfile.Currency.STAR_ESSENCE));
     }
 
     @Test
