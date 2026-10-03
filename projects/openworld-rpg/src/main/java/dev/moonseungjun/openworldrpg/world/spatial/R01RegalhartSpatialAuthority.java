@@ -1,1 +1,62 @@
-package dev.moonseungjun.openworldrpg.world.spatial;\n\nimport java.util.List;\nimport java.util.Objects;\nimport net.minecraft.world.phys.Vec3;\n\npublic final class R01RegalhartSpatialAuthority {\n    public static final double MINIMUM_PLAYER_MATERIALIZATION_DISTANCE = 24.0;\n    private static final double MINIMUM_PLAYER_DISTANCE_SQUARED = 24.0 * 24.0;\n\n    private R01RegalhartSpatialAuthority() {\n    }\n\n    public static boolean insideTerritory(double x, double z) {\n        return binding().territory().contains(x, z);\n    }\n\n    public static boolean insideCoreArena(double x, double z) {\n        return binding().coreArena().contains(x, z);\n    }\n\n    public static R01RegalhartSpatialBindingData.StartAnchor selectStartAnchor(\n            long worldSeed,\n            long cycleIndex\n    ) {\n        if (cycleIndex < 0L) {\n            throw new IllegalArgumentException(\n                    "Regalhart cycle index must be non-negative."\n            );\n        }\n        List<R01RegalhartSpatialBindingData.StartAnchor> anchors =\n                binding().startAnchors();\n        long value = worldSeed ^ (cycleIndex * 31L + 17L);\n        int index = Math.floorMod(Long.hashCode(value), anchors.size());\n        return anchors.get(index);\n    }\n\n    public static boolean materializationAllowed(\n            R01RegalhartSpatialBindingData.StartAnchor anchor,\n            Iterable<Vec3> activePlayerPositions,\n            boolean directlyVisibleToAnyPlayerCamera\n    ) {\n        Objects.requireNonNull(anchor, "anchor");\n        Objects.requireNonNull(activePlayerPositions, "activePlayerPositions");\n        if (directlyVisibleToAnyPlayerCamera) {\n            return false;\n        }\n        Vec3 spawnCenter = anchor.spawnCenter();\n        for (Vec3 playerPosition : activePlayerPositions) {\n            Objects.requireNonNull(playerPosition, "playerPosition");\n            if (playerPosition.distanceToSqr(spawnCenter)\n                    < MINIMUM_PLAYER_DISTANCE_SQUARED) {\n                return false;\n            }\n        }\n        return true;\n    }\n\n    private static R01RegalhartSpatialBindingData binding() {\n        return R01RegalhartSpatialBindingRegistry.data();\n    }\n}\n
+package dev.moonseungjun.openworldrpg.world.spatial;
+
+import java.util.List;
+import java.util.Objects;
+import net.minecraft.world.phys.Vec3;
+
+public final class R01RegalhartSpatialAuthority {
+    public static final double MINIMUM_PLAYER_MATERIALIZATION_DISTANCE = 24.0;
+    private static final double MINIMUM_PLAYER_DISTANCE_SQUARED = 24.0 * 24.0;
+
+    private R01RegalhartSpatialAuthority() {
+    }
+
+    public static boolean insideTerritory(double x, double z) {
+        return binding().territory().contains(x, z);
+    }
+
+    public static boolean insideCoreArena(double x, double z) {
+        return binding().coreArena().contains(x, z);
+    }
+
+    public static R01RegalhartSpatialBindingData.StartAnchor selectStartAnchor(
+            long worldSeed,
+            long cycleIndex
+    ) {
+        if (cycleIndex < 0L) {
+            throw new IllegalArgumentException(
+                    "Regalhart cycle index must be non-negative."
+            );
+        }
+        List<R01RegalhartSpatialBindingData.StartAnchor> anchors =
+                binding().startAnchors();
+        long value = worldSeed ^ (cycleIndex * 31L + 17L);
+        int index = Math.floorMod(Long.hashCode(value), anchors.size());
+        return anchors.get(index);
+    }
+
+    public static boolean materializationAllowed(
+            R01RegalhartSpatialBindingData.StartAnchor anchor,
+            Iterable<Vec3> activePlayerPositions,
+            boolean directlyVisibleToAnyPlayerCamera
+    ) {
+        Objects.requireNonNull(anchor, "anchor");
+        Objects.requireNonNull(activePlayerPositions, "activePlayerPositions");
+        if (directlyVisibleToAnyPlayerCamera) {
+            return false;
+        }
+        Vec3 spawnCenter = anchor.spawnCenter();
+        for (Vec3 playerPosition : activePlayerPositions) {
+            Objects.requireNonNull(playerPosition, "playerPosition");
+            if (playerPosition.distanceToSqr(spawnCenter)
+                    < MINIMUM_PLAYER_DISTANCE_SQUARED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static R01RegalhartSpatialBindingData binding() {
+        return R01RegalhartSpatialBindingRegistry.data();
+    }
+}
