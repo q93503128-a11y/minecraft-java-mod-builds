@@ -713,6 +713,34 @@ verification JARs, mrpack packaging and artifact upload. Artifact
 This closes **Regalhart terrain/start-center spatial authority**, not all R01 spatial binding and not
 a production/playtested Regalhart encounter.
 
+The following materialization/reset pass at code state
+`137d3c3e65bfbcd0e5a4619f166cf70fb5095cd1` closes the physical placement gate without inventing a
+fallback search radius. The exact deterministic Rootshade start center must itself pass: loaded/sturdy
+support, the registered Regalhart EntityType's real `getSpawnAABB(...)`, collision-free space, no
+liquid, the canonical **<24-block** player exclusion and an explicit real-camera visibility result.
+If the center is blocked, the runtime fails closed rather than silently moving the boss to a guessed
+nearby coordinate. The same plan is reused for disengage return; an existing exact project-authored
+Regalhart stops target/navigation, returns to its current-cycle center, drops residual velocity,
+clears Sweep/Sovereign execution state, restores full canonical HP and fresh boss poise, clears
+project-owned hostile control/debuff state and only then acknowledges the 25-second disengage. It
+does not grant a reward.
+
+Live Regalhart spawning deliberately remains closed:
+`R01ExternalActorCatalog.productionSpawnReady(REGALHART)` is still false. The materializer's future
+repeat-spawn seam therefore returns empty today rather than creating a boss whose personal
+Regalhart reward transaction and final in-client presentation have not been accepted. The pinned
+dependency byte audit does prove the exact donor entity plus Regalhart renderer/model,
+idle/walk/run + four attack animation definitions, textures and sounds exist; that is not called a
+playtest or final presentation acceptance.
+
+Build Openworld RPG run `37112353400` / #320 is **SUCCESS** across tests/build, dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-137d3c3e65bfbcd0e5a4619f166cf70fb5095cd1`
+(`11270975370`, normal JAR SHA-256
+`b2d010d833f7c6998b3a62b63701f3fbc2b85bbcbd89a0912e731bca942d2a4c`).
+Detailed boundary/state is indexed in `AZARI_R01_REGALHART_MATERIALIZATION_PASS9.md`.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

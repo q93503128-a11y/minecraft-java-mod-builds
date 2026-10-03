@@ -2160,6 +2160,48 @@ client startup, both verification JARs, mrpack packaging and artifact upload all
 Detailed spatial evidence and boundary status are indexed in
 `AZARI_R01_REGALHART_SPATIAL_PASS8.md`.
 
+#### Runtime Regalhart materialization / disengage-reset authority
+
+Code state `137d3c3e65bfbcd0e5a4619f166cf70fb5095cd1` closes the next backend seam without
+opening an incomplete live boss:
+
+- the deterministic current-cycle start center is checked exactly where authored; no unspecified
+  horizontal search radius or fallback offsets are invented;
+- the runtime requires the stored Anvil-derived support block to be loaded and sturdy upward;
+- footprint legality uses the exact registered `threateningly_mobs:the_regalhart` EntityType's real
+  `getSpawnAABB(...)`, not a guessed deer width/height;
+- that AABB must be collision-free and contain no liquid;
+- all active same-level living non-spectator players still enforce the canonical **<24 block**
+  exclusion;
+- direct player-camera visibility remains an explicit result from the later real camera/occlusion
+  adapter; no artificial server FOV was authored here;
+- an already-existing exact project-authored Regalhart may use the same current-cycle plan for
+  disengage return. On accepted reset, target/navigation stop, velocity clears, Regalhart
+  Sweep/Sovereign transient execution is removed, full canonical project HP and a fresh boss-poise
+  state are restored, project-owned hostile control/debuff state is cleared, and only then is the
+  25-second disengage acknowledged;
+- reset intentionally does not blanket-delete unrelated donor passive/presentation effects and grants
+  no reward.
+
+The future repeat materialization method remains fail-closed because
+`R01ExternalActorCatalog.productionSpawnReady(REGALHART)` is still **false**. This is intentional:
+the complete Regalhart personal/repeat reward transaction is not yet implemented and dependency-byte
+validation is not the same thing as final in-client visual/play acceptance. The pinned donor does
+expose the exact Regalhart entity, renderer/model, textures/sounds and idle/walk/run plus four attack
+animation definitions, so the dependency surface exists; live admission waits for the remaining
+encounter/reward/presentation closure rather than spawning a rewardless boss.
+
+Build Openworld RPG run `37112353400` / #320 is **SUCCESS**: tests/build, pinned
+gameplay/creature dependency inspection, R01 creature registry inspection, Earthloong dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-137d3c3e65bfbcd0e5a4619f166cf70fb5095cd1`
+(`11270975370`, normal JAR SHA-256
+`b2d010d833f7c6998b3a62b63701f3fbc2b85bbcbd89a0912e731bca942d2a4c`).
+
+Detailed implementation boundary is indexed in
+`AZARI_R01_REGALHART_MATERIALIZATION_PASS9.md`.
+
 ### Earthloong — shared cooldowns
 
 ```text
