@@ -981,3 +981,20 @@ Use these states literally:
 - `MULTIPLAYER TESTED`
 
 A build does not prove combat feel, UI quality, traversal quality or multiplayer correctness.
+
+
+### 2026-10-03 backend-integrity follow-up
+
+Manual-audit follow-up confirms random donor ecology containment was already enforced by the
+required gameplay/essential `mobfilter` dependency plus project-managed
+`ExternalRuntimeContainment`; no second spawn-suppression implementation is added.
+
+Hartcrown's backend is also corrected so its weapon-owned lunge is no longer restricted to
+project-owned hostile actors. For compatibility LivingEntity targets, the existing Better Combat
+damage invocation is the accepted target/reach seam. For project-owned actors, the lunge still waits
+until target/damage/cadence authority has accepted the melee basic. In the project-owned path,
+movement now resolves **before** HP damage, preserving the authored “lunge into the hit” ordering
+while retaining the previously validated Better Combat target rather than extending attack reach.
+
+The separate Hart's Momentum sprint-window re-arm interpretation remains an explicit gameplay-canon
+question and is not silently changed by this backend correction.

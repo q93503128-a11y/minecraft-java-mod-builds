@@ -386,3 +386,21 @@ Build Openworld RPG #323 / run `37119716754`: **SUCCESS** across tests/clean bui
 The former BLOCKER findings are therefore **RESOLVED IN SOURCE + BUILD VERIFIED**. They remain **NOT PLAYTESTED / NOT MULTIPLAYER TESTED**.
 
 The stale 40%/30% Regalhart first-defeat wording and overstated R01 full-design-closure claims were corrected in the following canon-hygiene documentation pass. Remaining Hartcrown, texture/resource, spawn-containment and unresolved Regalhart gameplay-contract findings from this audit remain open.
+
+
+### Audit correction — external random-spawn containment is already enforced
+
+The §4 “spawn override metadata is not visibly enforced” finding was a false positive caused by
+looking at the actor-overlay layer without following the earlier integration bootstrap into
+`ExternalRuntimeContainment`.
+
+Current gameplay/essential dependency manifest requires `mobfilter 0.28.0+26.2`.
+`ExternalRuntimeContainment.initialize(...)` writes the project-managed
+`config/mobfilter.json5` rule that disallows donor/random ecology for
+`NATURAL`, `CHUNK_GENERATION`, `SPAWNER`, `STRUCTURE`, `BREEDING`,
+`MOB_SUMMONED`, `JOCKEY`, `EVENT`, `CONVERSION`, `REINFORCEMENT`,
+`TRIGGERED`, `PATROL` and `TRIAL_SPAWNER` across Minecraft mob categories.
+
+Therefore the earlier “project-level spawn-override enforcement is not proven by current source”
+statement is **RETRACTED**. Runtime profile/dependency startup verification still remains the correct
+proof boundary; a real joined-world ecology playtest is separate evidence.

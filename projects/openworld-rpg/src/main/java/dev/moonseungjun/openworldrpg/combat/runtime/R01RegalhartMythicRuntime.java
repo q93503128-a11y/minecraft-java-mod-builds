@@ -16,10 +16,12 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Server-authoritative Hartcrown Spear unique-effect runtime.
  *
- * <p>Better Combat still owns visible melee animation and candidate reach. Hart's Momentum is
- * consumed only after that melee basic has already passed project cadence, damage and target
- * authority, so the lunge cannot manufacture an otherwise-invalid hit. Movement uses Minecraft's
- * collision-resolved SELF movement instead of teleporting through authored terrain.</p>
+ * <p>Better Combat still owns visible melee animation and candidate reach. For project-owned
+ * targets, Hart's Momentum is consumed only after project target/damage/cadence authority has
+ * accepted the melee basic; for compatibility targets, the existing Better Combat/vanilla damage
+ * invocation is the accepted melee candidate. The lunge therefore does not manufacture a new
+ * target or extend Better Combat reach. Movement uses Minecraft's collision-resolved SELF movement
+ * instead of teleporting through authored terrain.</p>
  */
 public final class R01RegalhartMythicRuntime {
     public static final double HARTS_MOMENTUM_LUNGE_BLOCKS = 1.5;

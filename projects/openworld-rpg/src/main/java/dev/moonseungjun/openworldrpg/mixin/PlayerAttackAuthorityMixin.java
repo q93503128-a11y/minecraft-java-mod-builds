@@ -60,10 +60,22 @@ public abstract class PlayerAttackAuthorityMixin {
 
         /*
          * Until a creature has a project combat binding, Better Combat/vanilla remains the
-         * compatibility fallback. A project-owned actor may never fall back to donor damage.
+         * compatibility fallback. Hartcrown's movement effect is weapon-owned rather than
+         * project-actor-owned, so an already-selected Better Combat LivingEntity can still consume
+         * Hart's Momentum before the compatibility damage call. A project-owned actor may never
+         * fall back to donor damage.
          */
-        if (!(target instanceof LivingEntity livingTarget)
-                || !ExternalActorBindingRuntime.ownsDamageAuthority(livingTarget)) {
+        if (!(target instanceof LivingEntity livingTarget)) {
+            return original.call(target, source, proposedDamage);
+        }
+        if (!ExternalActorBindingRuntime.ownsDamageAuthority(livingTarget)) {
+            if (attacker instanceof ServerPlayer serverPlayer) {
+                R01RegalhartMythicRuntime.onAcceptedMeleeBasic(
+                        serverPlayer,
+                        livingTarget,
+                        gameTick
+                );
+            }
             return original.call(target, source, proposedDamage);
         }
         LivingEntity authorityTarget =
@@ -127,15 +139,12 @@ public abstract class PlayerAttackAuthorityMixin {
             return false;
         }
 
-        boolean applied = ProjectMinecraftDamageApplicator.applyDirectPhysical(
-                attacker,
-                authorityTarget,
-                decision.finalDamage()
-        );
-        if (!applied) {
-            return false;
-        }
-
+        /*
+         * At this point project target, damage and cadence authority have all accepted the melee
+         * basic. Apply Hartcrown movement before HP contact so the authored effect reads as a lunge
+         * into the accepted hit rather than damage followed by a pull-forward. Better Combat reach
+         * was already resolved before this point, so movement cannot create a new hit candidate.
+         */
         double hartMomentumPoiseMultiplier = 1.0;
         if (attacker instanceof ServerPlayer serverPlayer) {
             hartMomentumPoiseMultiplier =
@@ -146,6 +155,15 @@ public abstract class PlayerAttackAuthorityMixin {
                                     gameTick
                             )
                             .poiseMultiplier();
+        }
+
+        boolean applied = ProjectMinecraftDamageApplicator.applyDirectPhysical(
+                attacker,
+                authorityTarget,
+                decision.finalDamage()
+        );
+        if (!applied) {
+            return false;
         }
 
         boolean poiseBreakTriggered = false;
