@@ -1,0 +1,81 @@
+{
+  "id": "openworld_rpg:r01/regalhart",
+  "entityId": "threateningly_mobs:the_regalhart",
+  "contentLevel": 8,
+  "decisionDelayTicks": 2,
+  "weakPointMultiplier": 1.25,
+  "actions": [
+    {
+      "id": "ANTLER_SWEEP",
+      "cooldownTicks": 0,
+      "tellTicks": 9,
+      "recoveryTicks": 8,
+      "maximumRange": 4.5,
+      "movementEnvelopeBlocks": 0.0,
+      "areaRadius": 0.0,
+      "benchmarkDamageShare": 0.11,
+      "guardPressure": "MEDIUM",
+      "guardable": true,
+      "perfectGuardable": true,
+      "playerPoisePressure": 28.0,
+      "perfectGuardPoiseMultiplier": null
+    },
+    {
+      "id": "CROWN_CHARGE",
+      "cooldownTicks": 140,
+      "tellTicks": 18,
+      "recoveryTicks": 24,
+      "maximumRange": 16.0,
+      "movementEnvelopeBlocks": 16.0,
+      "areaRadius": 0.0,
+      "benchmarkDamageShare": 0.28,
+      "guardPressure": "HEAVY",
+      "guardable": null,
+      "perfectGuardable": true,
+      "playerPoisePressure": 70.0,
+      "perfectGuardPoiseMultiplier": 1.25
+    },
+    {
+      "id": "REAR_KICK",
+      "cooldownTicks": 60,
+      "tellTicks": 8,
+      "recoveryTicks": 7,
+      "maximumRange": 3.5,
+      "movementEnvelopeBlocks": 0.0,
+      "areaRadius": 0.0,
+      "benchmarkDamageShare": 0.12,
+      "guardPressure": null,
+      "guardable": true,
+      "perfectGuardable": true,
+      "playerPoisePressure": null,
+      "perfectGuardPoiseMultiplier": null
+    },
+    {
+      "id": "ROYAL_BOUND",
+      "cooldownTicks": 180,
+      "tellTicks": 22,
+      "recoveryTicks": 22,
+      "maximumRange": 16.0,
+      "movementEnvelopeBlocks": 0.0,
+      "areaRadius": 4.5,
+      "benchmarkDamageShare": 0.30,
+      "guardPressure": null,
+      "guardable": false,
+      "perfectGuardable": false,
+      "playerPoisePressure": null,
+      "perfectGuardPoiseMultiplier": null
+    }
+  ],
+  "sovereign": {
+    "healthFractionInclusive": 0.40,
+    "transitionTicks": 30,
+    "transitionDamageTakenMultiplier": 0.50,
+    "movementSpeedMultiplier": 1.10,
+    "crownChargeComboEvery": 2,
+    "secondChargeMinimumLineBlocks": 6.0,
+    "secondChargeMinimumPivotTellTicks": 13,
+    "chainedChargeRecoveryTicks": 28,
+    "normalSweepComboEvery": 3,
+    "sovereignSweepComboEvery": 2
+  }
+}
