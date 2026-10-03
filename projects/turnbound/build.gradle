@@ -11,6 +11,11 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 repositories {
     mavenCentral()
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+        content { includeGroup 'info.journeymap' }
+    }
     exclusiveContent {
         forRepository {
             maven {
@@ -29,7 +34,7 @@ configurations {
 dependencies {
     // UI Lib is client-only. Server/common classes must never import it.
     compileOnly "maven.modrinth:AOEDs9Al:${uilib_version_id}"
-    compileOnly "maven.modrinth:lfHFW1mp:${journeymap_version_id}"
+    compileOnly "info.journeymap:journeymap-api-neoforge:26.2-2.0.0"
     journeyMapPack "maven.modrinth:lfHFW1mp:${journeymap_version_id}"
     implementation "maven.modrinth:8BmcQJ2H:${geckolib_version_id}"
 

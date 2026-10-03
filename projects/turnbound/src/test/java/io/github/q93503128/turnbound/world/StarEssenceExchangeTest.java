@@ -40,16 +40,15 @@ class StarEssenceExchangeTest {
 
         var first = CampaignProgressStore.exchangeEssenceCharacter(playerId, 4, "P01");
         assertEquals(450, first.essenceSpent());
-        assertEquals(100, first.essenceRefunded());
+        assertEquals(0, first.essenceRefunded());
         assertEquals(1, first.bonusLevelGranted());
         assertEquals(10, first.bonusLevelAfter());
-        assertEquals(650, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(550, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.STAR_ESSENCE));
         assertEquals(10, CampaignProgressStore.character(playerId, "P01").bonusLevel());
 
-        var capped = CampaignProgressStore.exchangeEssenceCharacter(playerId, 4, "P01");
-        assertEquals(0, capped.bonusLevelGranted());
-        assertEquals(10, capped.bonusLevelAfter());
-        assertEquals(300, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.STAR_ESSENCE));
+        assertThrows(IllegalStateException.class,
+                () -> CampaignProgressStore.exchangeEssenceCharacter(playerId, 4, "P01"));
+        assertEquals(550, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.STAR_ESSENCE));
     }
 
     @Test
