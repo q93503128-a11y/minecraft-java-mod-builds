@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRunti
 import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryState;
+import dev.moonseungjun.openworldrpg.profession.R01SmithingService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -208,9 +209,14 @@ public final class R01NatureSpiritRewardService {
                     R01NatureSpiritRewardRules.VERDANT_CRYSTAL_ID,
                     crystals
             );
-            ready &= result.status()
-                    != PlayerInventoryState.MaterialDeliveryStatus
-                            .CAPACITY_BLOCKED;
+            boolean crystalDelivered =
+                    result.status()
+                            != PlayerInventoryState.MaterialDeliveryStatus
+                                    .CAPACITY_BLOCKED;
+            ready &= crystalDelivered;
+            if (crystalDelivered) {
+                R01SmithingService.recordVerdantCrystalEncounter(player);
+            }
         }
         return ready;
     }

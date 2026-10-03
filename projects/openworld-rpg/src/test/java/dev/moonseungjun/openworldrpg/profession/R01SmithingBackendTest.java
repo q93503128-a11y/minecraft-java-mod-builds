@@ -117,6 +117,46 @@ class R01SmithingBackendTest {
     }
 
     @Test
+    void allCanonicalForgeRecipesMaterializeWithTheirGradeAndAffixCount() {
+        long seed = 1000L;
+        for (R01SmithingRecipe recipe : R01SmithingRecipe.values()) {
+            var item = R01SmithingService.materialize(
+                    recipe,
+                    seed++
+            );
+            assertEquals(
+                    recipe.grade(),
+                    item.resolvedEquipmentGrade().orElseThrow()
+            );
+            assertEquals(
+                    recipe.grade() == ProjectItemGrade.REFINED ? 2 : 3,
+                    item.equipmentProjection()
+                            .orElseThrow()
+                            .affixes()
+                            .size()
+            );
+        }
+    }
+
+    @Test
+    void superiorRecipeUnlockIsPermanentInSmithingState() {
+        var state = R01SmithingState.initial();
+        assertFalse(state.superiorRecipesUnlocked());
+
+        var unlocked = state.unlockSuperiorRecipes();
+        assertTrue(unlocked.superiorRecipesUnlocked());
+        assertEquals(unlocked, unlocked.unlockSuperiorRecipes());
+
+        var encoded = R01SmithingState.CODEC
+                .encodeStart(JsonOps.INSTANCE, unlocked)
+                .getOrThrow();
+        var decoded = R01SmithingState.CODEC
+                .parse(JsonOps.INSTANCE, encoded)
+                .getOrThrow();
+        assertTrue(decoded.superiorRecipesUnlocked());
+    }
+
+    @Test
     void pendingSmithPersistsResolvedOutputAndDistinctRefinedEvidence() {
         String playerId = UUID.randomUUID().toString();
         var output = R01SmithingService.materialize(

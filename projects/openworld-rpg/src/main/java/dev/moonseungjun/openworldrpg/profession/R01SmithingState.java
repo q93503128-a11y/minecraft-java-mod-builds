@@ -12,7 +12,8 @@ public record R01SmithingState(
         int schemaVersion,
         long nextCraftSerial,
         Optional<PendingSmith> pending,
-        Set<String> refinedBaseCrafts
+        Set<String> refinedBaseCrafts,
+        boolean superiorRecipesUnlocked
 ) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
     private static final Codec<Set<String>> STRING_SET_CODEC =
@@ -33,8 +34,27 @@ public record R01SmithingState(
                     STRING_SET_CODEC.optionalFieldOf(
                             "refined_base_crafts",
                             Set.of()
-                    ).forGetter(R01SmithingState::refinedBaseCrafts)
+                    ).forGetter(R01SmithingState::refinedBaseCrafts),
+                    Codec.BOOL.optionalFieldOf(
+                            "superior_recipes_unlocked",
+                            false
+                    ).forGetter(R01SmithingState::superiorRecipesUnlocked)
             ).apply(instance, R01SmithingState::new));
+
+    public R01SmithingState(
+            int schemaVersion,
+            long nextCraftSerial,
+            Optional<PendingSmith> pending,
+            Set<String> refinedBaseCrafts
+    ) {
+        this(
+                schemaVersion,
+                nextCraftSerial,
+                pending,
+                refinedBaseCrafts,
+                false
+        );
+    }
 
     public R01SmithingState {
         if (schemaVersion != CURRENT_SCHEMA_VERSION) {
@@ -62,7 +82,8 @@ public record R01SmithingState(
                 CURRENT_SCHEMA_VERSION,
                 0L,
                 Optional.empty(),
-                Set.of()
+                Set.of(),
+                false
         );
     }
 
@@ -95,7 +116,8 @@ public record R01SmithingState(
                         schemaVersion,
                         Math.addExact(nextCraftSerial, 1L),
                         Optional.of(craft),
-                        refinedBaseCrafts
+                        refinedBaseCrafts,
+                        superiorRecipesUnlocked
                 ),
                 craft,
                 true
@@ -115,7 +137,21 @@ public record R01SmithingState(
                 schemaVersion,
                 nextCraftSerial,
                 pending,
-                Set.copyOf(next)
+                Set.copyOf(next),
+                superiorRecipesUnlocked
+        );
+    }
+
+    public R01SmithingState unlockSuperiorRecipes() {
+        if (superiorRecipesUnlocked) {
+            return this;
+        }
+        return new R01SmithingState(
+                schemaVersion,
+                nextCraftSerial,
+                pending,
+                refinedBaseCrafts,
+                true
         );
     }
 
@@ -133,7 +169,8 @@ public record R01SmithingState(
                 schemaVersion,
                 nextCraftSerial,
                 Optional.empty(),
-                refinedBaseCrafts
+                refinedBaseCrafts,
+                superiorRecipesUnlocked
         );
     }
 

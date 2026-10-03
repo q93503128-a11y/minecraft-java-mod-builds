@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RiverbankRemediesService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerState;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
+import dev.moonseungjun.openworldrpg.profession.R01SmithingService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01WorldActionService;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
 import java.util.ArrayList;
@@ -163,6 +164,12 @@ public final class R01GatheringService {
         if (delivery.status()
                 == PlayerInventoryState.MaterialDeliveryStatus.CAPACITY_BLOCKED) {
             return false;
+        }
+
+        if (R01GatheringRules.VERDANT_CRYSTAL.equals(
+                pending.resourceId()
+        )) {
+            R01SmithingService.recordVerdantCrystalEncounter(player);
         }
 
         if (R01GatheringRules.HEALING_HERB.equals(

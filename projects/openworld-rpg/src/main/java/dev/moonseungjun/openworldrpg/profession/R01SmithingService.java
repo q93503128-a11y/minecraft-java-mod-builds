@@ -52,6 +52,7 @@ public final class R01SmithingService {
         Objects.requireNonNull(recipe, "recipe");
 
         reconcilePending(player);
+        reconcileSuperiorRecipeUnlock(player);
         if (state(player).pending().isPresent()) {
             return new CraftResult(
                     CraftStatus.RECOVERY_WAITING,
@@ -71,13 +72,7 @@ public final class R01SmithingService {
         }
 
         if (recipe.requiresVerdantDiscovery()
-                && !R01GatheringService.state(player)
-                        .discoveryFlags()
-                        .contains(
-                                R01GatheringRules.discoveryFlag(
-                                        R01GatheringRules.VERDANT_CRYSTAL
-                                )
-                        )) {
+                && !state(player).superiorRecipesUnlocked()) {
             return new CraftResult(
                     CraftStatus.RECIPE_LOCKED,
                     null
@@ -131,8 +126,54 @@ public final class R01SmithingService {
         return executePending(player, begin.craft(), false);
     }
 
+    public static void recordVerdantCrystalEncounter(
+            ServerPlayer player
+    ) {
+        Objects.requireNonNull(player, "player");
+        replaceState(
+                player,
+                state(player).unlockSuperiorRecipes()
+        );
+    }
+
+    public static void reconcileSuperiorRecipeUnlock(
+            ServerPlayer player
+    ) {
+        Objects.requireNonNull(player, "player");
+        if (state(player).superiorRecipesUnlocked()) {
+            return;
+        }
+
+        boolean gatheringDiscovery =
+                R01GatheringService.state(player)
+                        .discoveryFlags()
+                        .contains(
+                                R01GatheringRules.discoveryFlag(
+                                        R01GatheringRules.VERDANT_CRYSTAL
+                                )
+                        );
+        PlayerInventoryState inventory =
+                PlayerInventoryService.state(player);
+        boolean currentlyOwned =
+                inventory.materialPouch()
+                                .getOrDefault(
+                                        R01GatheringRules.VERDANT_CRYSTAL,
+                                        0
+                                )
+                        + inventory.materialVault()
+                                .getOrDefault(
+                                        R01GatheringRules.VERDANT_CRYSTAL,
+                                        0
+                                )
+                        > 0;
+        if (gatheringDiscovery || currentlyOwned) {
+            recordVerdantCrystalEncounter(player);
+        }
+    }
+
     public static void reconcilePending(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
+        reconcileSuperiorRecipeUnlock(player);
         R01SmithingState.PendingSmith pending =
                 state(player).pending().orElse(null);
         if (pending == null) {
