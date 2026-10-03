@@ -4,6 +4,7 @@ import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01NatureSpiritCombatRuntime;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01RegalhartCombatRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
@@ -131,9 +132,15 @@ public final class ProjectMinecraftDamageApplicator {
         DamageSource source = new DamageSource(damageType, attacker);
 
         if (externalTarget) {
+            long gameTick = serverLevel.getGameTime();
             double encounterAdjustedDamage = finalDamage
                     * R01EarthloongPhysicalEncounterRuntime
-                            .incomingDamageMultiplier(damageTarget);
+                            .incomingDamageMultiplier(damageTarget)
+                    * R01RegalhartCombatRuntime
+                            .incomingDamageMultiplier(
+                                    damageTarget,
+                                    gameTick
+                            );
             var application = ExternalActorBindingRuntime.applyProjectHealthDamage(
                     damageTarget,
                     encounterAdjustedDamage,
@@ -155,7 +162,7 @@ public final class ProjectMinecraftDamageApplicator {
                         .recordPostMitigationHostileDamage(
                                 damageTarget,
                                 applied.appliedDamage(),
-                                serverLevel.getGameTime()
+                                gameTick
                         );
             }
             if (attacker instanceof ServerPlayer player) {
@@ -171,7 +178,7 @@ public final class ProjectMinecraftDamageApplicator {
                         damageTarget,
                         player,
                         applied.appliedDamage(),
-                        serverLevel.getGameTime()
+                        gameTick
                 );
             }
             if (applied.killed()) {

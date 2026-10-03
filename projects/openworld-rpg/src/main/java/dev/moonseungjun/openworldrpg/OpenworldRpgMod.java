@@ -163,6 +163,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01SteelboarCombatRuntime.initialize(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.START_SERVER_TICK.register(server -> {
+            R01RegalhartCombatRuntime.tick(server);
             ProjectPlayerActionRuntime.tick(server);
             ProjectGuardRuntime.tick(server);
             ProjectDodgeRuntime.tick(server);

@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
+import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
@@ -13,8 +14,11 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.slf4j.Logger;
 
 /**
@@ -29,6 +33,13 @@ public final class R01RegalhartCombatRuntime {
             R01RegalhartEncounterDataLoader.load();
     private static final Map<UUID, R01RegalhartSweepExecutionState> SWEEPS =
             new ConcurrentHashMap<>();
+    private static final Map<UUID, SovereignBinding> SOVEREIGN =
+            new ConcurrentHashMap<>();
+    private static final Identifier SOVEREIGN_MOVEMENT_MODIFIER_ID =
+            Identifier.fromNamespaceAndPath(
+                    OpenworldRpgMod.MOD_ID,
+                    "regalhart_sovereign_movement"
+            );
     private static volatile boolean initialized;
 
     private R01RegalhartCombatRuntime() {
@@ -50,15 +61,23 @@ public final class R01RegalhartCombatRuntime {
             );
             return;
         }
-        ServerEntityEvents.ENTITY_UNLOAD.register(
-                (entity, level) -> SWEEPS.remove(entity.getUUID())
-        );
-        ServerLifecycleEvents.SERVER_STOPPED.register(
-                server -> SWEEPS.clear()
-        );
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
+            SWEEPS.remove(entity.getUUID());
+            if (entity instanceof LivingEntity living) {
+                clearSovereignState(living);
+            }
+        });
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            for (SovereignBinding binding : SOVEREIGN.values()) {
+                removeSovereignMovementModifier(binding.regalhart);
+            }
+            SOVEREIGN.clear();
+            SWEEPS.clear();
+        });
         logger.info(
-                "Openworld RPG Regalhart authority armed for non-combo Antler Sweep and "
-                        + "presentation-confirmed Royal Bound landing impact."
+                "Openworld RPG Regalhart authority armed for non-combo Antler Sweep, "
+                        + "presentation-confirmed Royal Bound landing impact, and fail-closed "
+                        + "Sovereign transition modifiers."
         );
     }
 
@@ -165,6 +184,125 @@ public final class R01RegalhartCombatRuntime {
         );
     }
 
+
+    /**
+     * Starts the one-time Sovereign transition only from the exact server-owned selection decision.
+     * The transition state is shared with the central incoming-damage path; movement is applied only
+     * after the authored 30-tick transition completes.
+     */
+    public static boolean beginSovereignTransition(
+            LivingEntity regalhart,
+            R01RegalhartActionController.Decision decision,
+            long gameTick
+    ) {
+        if (!isAcceptedAuthoredRegalhart(regalhart)
+                || decision == null
+                || regalhart.getAttribute(Attributes.MOVEMENT_SPEED) == null) {
+            return false;
+        }
+
+        R01RegalhartSovereignExecutionState state =
+                new R01RegalhartSovereignExecutionState(DATA.sovereign());
+        if (!state.begin(decision, gameTick)) {
+            return false;
+        }
+
+        SovereignBinding binding = new SovereignBinding(regalhart, state);
+        if (SOVEREIGN.putIfAbsent(regalhart.getUUID(), binding) != null) {
+            return false;
+        }
+
+        removeSovereignMovementModifier(regalhart);
+        return true;
+    }
+
+    /**
+     * Central project-damage multiplier for the authored Sovereign transition. Outside the exact
+     * transition window, including after the transition completes, damage remains unmodified.
+     */
+    public static double incomingDamageMultiplier(
+            LivingEntity regalhart,
+            long gameTick
+    ) {
+        if (!isAcceptedAuthoredRegalhart(regalhart)) {
+            return 1.0;
+        }
+
+        SovereignBinding binding = SOVEREIGN.get(regalhart.getUUID());
+        return binding == null
+                ? 1.0
+                : binding.state.incomingDamageMultiplier(gameTick);
+    }
+
+    /**
+     * Applies the authored +10% Sovereign movement modifier exactly once after transition completion.
+     */
+    public static void tick(MinecraftServer server) {
+        Objects.requireNonNull(server, "server");
+        for (Map.Entry<UUID, SovereignBinding> entry : SOVEREIGN.entrySet()) {
+            SovereignBinding binding = entry.getValue();
+            LivingEntity regalhart = binding.regalhart;
+            if (regalhart.isRemoved() || regalhart.level().isClientSide()) {
+                SOVEREIGN.remove(entry.getKey(), binding);
+                continue;
+            }
+
+            long gameTick = regalhart.level().getGameTime();
+            if (!binding.movementApplied
+                    && binding.state.movementSpeedMultiplier(gameTick) > 1.0) {
+                if (!applySovereignMovementModifier(regalhart)) {
+                    clearSovereignState(regalhart);
+                    continue;
+                }
+                binding.movementApplied = true;
+            }
+        }
+    }
+
+    /**
+     * Encounter-reset seam for the later Regalhart territory controller. Reset removes both the
+     * transient modifier and the one-time transition state rather than leaving a stale phase behind.
+     */
+    public static void clearSovereignState(LivingEntity regalhart) {
+        if (regalhart == null) {
+            return;
+        }
+
+        SovereignBinding removed = SOVEREIGN.remove(regalhart.getUUID());
+        if (removed != null) {
+            removeSovereignMovementModifier(removed.regalhart);
+        } else {
+            removeSovereignMovementModifier(regalhart);
+        }
+    }
+
+    private static boolean applySovereignMovementModifier(
+            LivingEntity regalhart
+    ) {
+        var movement = regalhart.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement == null) {
+            return false;
+        }
+
+        movement.addOrUpdateTransientModifier(
+                new AttributeModifier(
+                        SOVEREIGN_MOVEMENT_MODIFIER_ID,
+                        DATA.sovereign().movementSpeedMultiplier() - 1.0,
+                        AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                )
+        );
+        return true;
+    }
+
+    private static void removeSovereignMovementModifier(
+            LivingEntity regalhart
+    ) {
+        var movement = regalhart.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movement != null) {
+            movement.removeModifier(SOVEREIGN_MOVEMENT_MODIFIER_ID);
+        }
+    }
+
     static boolean insideHorizontalRadius(
             double centerX,
             double centerZ,
@@ -214,6 +352,20 @@ public final class R01RegalhartCombatRuntime {
         return id != null
                 && R01ExternalActorCatalog.REGALHART
                         .equals(id.toString());
+    }
+
+    private static final class SovereignBinding {
+        private final LivingEntity regalhart;
+        private final R01RegalhartSovereignExecutionState state;
+        private boolean movementApplied;
+
+        private SovereignBinding(
+                LivingEntity regalhart,
+                R01RegalhartSovereignExecutionState state
+        ) {
+            this.regalhart = Objects.requireNonNull(regalhart, "regalhart");
+            this.state = Objects.requireNonNull(state, "state");
+        }
     }
 
     public record AreaResolution(
