@@ -8,6 +8,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBasicAttackCadenceRun
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectMinecraftDamageApplicator;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.R01RegalhartMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
@@ -135,6 +136,18 @@ public abstract class PlayerAttackAuthorityMixin {
             return false;
         }
 
+        double hartMomentumPoiseMultiplier = 1.0;
+        if (attacker instanceof ServerPlayer serverPlayer) {
+            hartMomentumPoiseMultiplier =
+                    R01RegalhartMythicRuntime
+                            .onAcceptedMeleeBasic(
+                                    serverPlayer,
+                                    authorityTarget,
+                                    gameTick
+                            )
+                            .poiseMultiplier();
+        }
+
         boolean poiseBreakTriggered = false;
         if (decision.poiseDamage() > 0.0) {
             double warriorPoiseMultiplier =
@@ -149,7 +162,8 @@ public abstract class PlayerAttackAuthorityMixin {
                     ExternalActorBindingRuntime.applyProjectPoiseDamage(
                             authorityTarget,
                             decision.poiseDamage()
-                                    * warriorPoiseMultiplier,
+                                    * warriorPoiseMultiplier
+                                    * hartMomentumPoiseMultiplier,
                             gameTick
                     );
             poiseBreakTriggered = poiseApplication.isPresent()

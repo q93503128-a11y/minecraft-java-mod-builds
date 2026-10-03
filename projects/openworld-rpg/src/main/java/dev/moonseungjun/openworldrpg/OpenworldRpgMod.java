@@ -100,6 +100,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectBurningRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectGuardRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectHostileStatusRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.R01EarthloongMythicRuntime;
+import dev.moonseungjun.openworldrpg.combat.runtime.R01RegalhartMythicRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
@@ -194,6 +195,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ConsecratedGroundRuntime.tick(server);
             SanctuaryRuntime.tick(server);
             WarriorSkillRuntime.tick(server);
+            R01RegalhartMythicRuntime.tick(server);
             ProjectHostileStatusRuntime.tick(server);
             R01CaveCentipedeDonorContactBridge.tick(server);
             GuardianProvokedRuntime.tick(server);
@@ -292,6 +294,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             GuardianResolveRuntime.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
+            R01RegalhartMythicRuntime.reset(newPlayer.getUUID());
             PlayerCombatBuildPublisher.refresh(newPlayer);
             SpellEngineProjectSkillAccess.refreshPublishedSkills(newPlayer);
         });
@@ -302,6 +305,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             RecoveryEffectRuntime.disconnect(playerId);
             R01NourishmentService.disconnect(playerId);
             R01EarthloongMythicRuntime.disconnect(playerId);
+            R01RegalhartMythicRuntime.disconnect(playerId);
             ConsecratedGroundRuntime.disconnect(playerId);
             SanctuaryRuntime.disconnect(playerId);
             WarriorSkillRuntime.disconnect(playerId);
