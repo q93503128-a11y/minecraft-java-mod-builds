@@ -2264,6 +2264,38 @@ mrpack packaging and artifact upload all passed. Artifact:
 Detailed reward boundary is indexed in
 `AZARI_R01_REGALHART_REWARD_PASS10.md`.
 
+#### Runtime Hartcrown Spear — Hart's Momentum
+
+Code state `f7c1b69622bd062140841fc47d60458caa87f1e3` binds the canon-locked Hartcrown
+unique-effect backend while leaving physical reward materialization/presentation closed.
+
+Server authority now enforces:
+
+- exact sprint qualification: **25 ticks / 1.25 s** of continuous server-observed sprint movement;
+- exact opportunity window: **40 ticks / 2.0 s**;
+- exact lunge cap: **1.5 blocks** horizontally toward the already-valid melee target;
+- collision-resolved movement through `MoverType.SELF`, never a wall-passing teleport;
+- exact poise/stagger modifier: **1.35x** on the consuming melee basic;
+- exact internal cooldown: **100 ticks / 5.0 s**;
+- the effect is evaluated only after Better Combat candidate reach, project target/damage authority
+  and authoritative melee cadence have accepted the hit, so the lunge cannot extend hit reach;
+- respawn/disconnect clears transient runtime state;
+- an expired opportunity does not auto-refresh during one uninterrupted sprint segment.
+
+This pass does **not** materialize a Hartcrown item, select/accept its external weapon model, add
+placeholder VFX, or open Regalhart production spawning. Ordinary reward-equipment sell/materialization
+value remains unresolved, and the Regalhart attack/camera/weak-point/presentation gates remain
+independent blockers.
+
+Build Openworld RPG run `37117434623` / #322: **SUCCESS**. Artifact
+`openworld-rpg-m0-f7c1b69622bd062140841fc47d60458caa87f1e3`
+(`11272461506`), normal JAR SHA-256
+`9f297de96dd6a541b27392bca4a479392600f6fc6c899df6c0dd27763a26d849`.
+
+Detailed runtime boundary is indexed in
+`AZARI_R01_REGALHART_HARTCROWN_PASS11.md`.
+
+
 ### Earthloong — shared cooldowns
 
 ```text

@@ -773,6 +773,32 @@ startup, both verification JARs, mrpack packaging and artifact upload. Artifact
 `05afbeff79729bd02270e9a67476a8476c189f86bb2ccb2d5e3de5887561582e`).
 Detailed reward state is indexed in `AZARI_R01_REGALHART_REWARD_PASS10.md`.
 
+The Hartcrown runtime pass at code state
+`f7c1b69622bd062140841fc47d60458caa87f1e3` now binds the already-authored
+`Hart's Momentum` unique effect without materializing the still-gated Mythic item itself. With
+Hartcrown Spear equipped as the project main weapon, continuous server-observed sprint movement
+qualifies after 25 ticks / 1.25 s. A qualifying accepted melee basic may then consume the 40-tick /
+2.0 s window, move the player up to 1.5 blocks horizontally toward that already-valid target through
+Minecraft collision-resolved `MoverType.SELF` movement, and multiply that hit's project poise
+damage by 1.35. Consumption starts the exact 100-tick / 5.0 s internal cooldown. The lunge is bound
+only after Better Combat candidate reach, project damage authority and server cadence have already
+accepted the hit, so it cannot create a new out-of-range hit or extend the validated attack reach.
+
+The runtime is transient and server-owned, resets on respawn/disconnect, and does not add placeholder
+VFX/model delivery. An expired 2.0 s opportunity does not continuously refresh inside the same
+uninterrupted sprint segment; movement must break before a fresh sprint qualification can begin.
+This keeps the unresolved presentation/materialization boundary fail-closed rather than turning
+continuous sprint into a permanently armed state.
+
+Build Openworld RPG run `37117434623` / #322 is **SUCCESS** across unit tests/clean build,
+pinned dependency and creature-surface inspection, core/gameplay dedicated-server smoke, gameplay
+client startup, both verification JARs, Modrinth playtest-pack packaging and artifact upload.
+Artifact `openworld-rpg-m0-f7c1b69622bd062140841fc47d60458caa87f1e3`
+(`11272461506`); normal JAR SHA-256:
+`9f297de96dd6a541b27392bca4a479392600f6fc6c899df6c0dd27763a26d849`.
+Detailed boundary is indexed in `AZARI_R01_REGALHART_HARTCROWN_PASS11.md`.
+
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
