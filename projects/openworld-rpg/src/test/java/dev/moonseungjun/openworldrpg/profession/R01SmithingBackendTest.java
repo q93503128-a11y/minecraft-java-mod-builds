@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.mojang.serialization.JsonOps;
+import dev.moonseungjun.openworldrpg.combat.state.EquipmentCombatAffixKind;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringRules;
 import dev.moonseungjun.openworldrpg.inventory.ProjectItemGrade;
 import java.util.Map;
@@ -102,9 +103,8 @@ class R01SmithingBackendTest {
                         .affixes()
                         .stream()
                         .anyMatch(affix ->
-                                affix.id().equals(
-                                        "openworld_rpg:affix/str"
-                                )
+                                affix.kind()
+                                        == EquipmentCombatAffixKind.STR
                         )
         );
         assertEquals(
