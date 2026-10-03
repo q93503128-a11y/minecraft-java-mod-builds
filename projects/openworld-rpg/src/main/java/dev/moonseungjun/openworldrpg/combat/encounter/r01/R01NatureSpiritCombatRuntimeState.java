@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -15,6 +16,7 @@ import java.util.UUID;
 public final class R01NatureSpiritCombatRuntimeState {
     private final R01SecondaryCreatureEncounterData data;
     private final R01NatureSpiritActionController controller;
+    private final R01NatureSpiritActionExecutionState execution;
     private final Deque<DamageSample> recentHostileDamage = new ArrayDeque<>();
 
     public R01NatureSpiritCombatRuntimeState(
@@ -43,6 +45,7 @@ public final class R01NatureSpiritCombatRuntimeState {
                 encounterInstanceId,
                 Objects.requireNonNull(actorId, "actorId")
         );
+        this.execution = new R01NatureSpiritActionExecutionState(data);
     }
 
     public void recordPostMitigationHostileDamage(
@@ -110,6 +113,58 @@ public final class R01NatureSpiritCombatRuntimeState {
                         recentHostileDamageFraction(maxHealth, gameTick),
                         poiseFraction
                 ),
+                gameTick
+        );
+    }
+
+    public Optional<R01NatureSpiritActionController.Decision> trySelectAndBeginAtDecision(
+            boolean rootedSwipeLegal,
+            boolean earthenRamLegal,
+            boolean bloomQuakeLegal,
+            double targetDistance,
+            double currentPoise,
+            double maxPoise,
+            double maxHealth,
+            long gameTick
+    ) {
+        if (execution.busy(gameTick)) {
+            return Optional.empty();
+        }
+
+        R01NatureSpiritActionController.Decision decision =
+                selectAtDecision(
+                        rootedSwipeLegal,
+                        earthenRamLegal,
+                        bloomQuakeLegal,
+                        targetDistance,
+                        currentPoise,
+                        maxPoise,
+                        maxHealth,
+                        gameTick
+                );
+        if (decision.mode()
+                == R01NatureSpiritActionController.Mode.ATTACK) {
+            if (!execution.begin(decision, gameTick)) {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(decision);
+    }
+
+    public Optional<R01NatureSpiritActionExecutionState.Snapshot> executionSnapshot(
+            long gameTick
+    ) {
+        return execution.snapshot(gameTick);
+    }
+
+    public Optional<R01SecondaryCreatureEncounterData.ActionId> confirmScheduledContact(
+            long actionCounter,
+            UUID targetId,
+            long gameTick
+    ) {
+        return execution.confirmContact(
+                actionCounter,
+                targetId,
                 gameTick
         );
     }

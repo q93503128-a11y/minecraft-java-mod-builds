@@ -71,19 +71,47 @@ public final class R01NatureSpiritCombatRuntime {
     }
 
     /**
-     * Presentation binders call this only after the authored visible contact/area test succeeds.
-     * Donor natural spawns and raw verification fixtures remain rejected by the impact authority.
+     * Presentation binders may resolve damage only for a target that they confirm on the exact
+     * server-owned impact frame of the currently committed action.
      */
-    public static R01NatureSpiritImpactAuthority.ImpactApplication applyConfirmedImpact(
+    public static R01NatureSpiritImpactAuthority.ImpactApplication confirmScheduledImpact(
             LivingEntity natureSpirit,
             net.minecraft.server.level.ServerPlayer target,
-            R01SecondaryCreatureEncounterData.ActionId action
+            long actionCounter,
+            long gameTick
     ) {
+        R01NatureSpiritCombatRuntimeState state = stateFor(natureSpirit);
+        if (state == null
+                || target == null
+                || target.level() != natureSpirit.level()) {
+            return R01NatureSpiritImpactAuthority
+                    .ImpactApplication.rejected();
+        }
+
+        var action = state.confirmScheduledContact(
+                actionCounter,
+                target.getUUID(),
+                gameTick
+        );
+        if (action.isEmpty()) {
+            return R01NatureSpiritImpactAuthority
+                    .ImpactApplication.rejected();
+        }
         return R01NatureSpiritImpactAuthority.applyConfirmedContact(
                 natureSpirit,
                 target,
-                action
+                action.orElseThrow()
         );
+    }
+
+    public static Optional<R01NatureSpiritActionExecutionState.Snapshot> executionSnapshot(
+            LivingEntity natureSpirit,
+            long gameTick
+    ) {
+        R01NatureSpiritCombatRuntimeState state = stateFor(natureSpirit);
+        return state == null
+                ? Optional.empty()
+                : state.executionSnapshot(gameTick);
     }
 
     public static Optional<R01NatureSpiritActionController.Decision> selectAtDecision(
@@ -107,17 +135,15 @@ public final class R01NatureSpiritCombatRuntime {
         if (poise == null || health == null) {
             return Optional.empty();
         }
-        return Optional.of(
-                state.selectAtDecision(
-                        rootedSwipeLegal,
-                        earthenRamLegal,
-                        bloomQuakeLegal,
-                        targetDistance,
-                        poise.currentPoise(),
-                        poise.maxPoise(),
-                        health.maxHealth(),
-                        gameTick
-                )
+        return state.trySelectAndBeginAtDecision(
+                rootedSwipeLegal,
+                earthenRamLegal,
+                bloomQuakeLegal,
+                targetDistance,
+                poise.currentPoise(),
+                poise.maxPoise(),
+                health.maxHealth(),
+                gameTick
         );
     }
 
