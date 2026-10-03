@@ -860,3 +860,53 @@ Closed as design:
 - performance and data ownership boundaries.
 
 Remaining work is external asset intake, exact fish identity/model binding, exact property-shell/furniture binding, UI visual acceptance, implementation and evidence-driven playtest tuning — **not permission to reintroduce multi-home ownership or invent a different housing economy during coding**.
+
+---
+
+# 19. R01 Camp backend implementation state — 2026-10-03
+
+Code state `3796496530157dc93262311aaa511d2fac6d48fe` closes the non-visual R01 Camp authority layer without promoting unresolved spatial or presentation data.
+
+Implemented server authority:
+
+- persistent personal Field Camp Kit state with permanent Hardwood/Tough Hide recipe-discovery evidence;
+- reconnect-safe one-time Kit craft transaction at Holt Forge for exactly **4 Hardwood + 2 Tough Hide + 40 Gold**;
+- second Kit craft is impossible after the permanent utility unlock exists;
+- persistent world-owned active-camp state with **one active camp per owner**;
+- exact R01 placement-rule evaluator for 25 support samples, **20/25 stable support minimum**, **0.75-block** maximum stable-height variance, **24-block** shrine/major-service distance, **12-block** other-camp distance, **24-block** boss-arena distance and **1.5-block** clear service approach;
+- no party spacing exception;
+- exact **50-tick / 2.5 s** deployment commitment through the shared player-action runtime;
+- deployment is validated before start and revalidated at commit;
+- redeploy commits the new state before replacing the old owner camp, so failed/stale placement leaves the old camp authoritative;
+- owner/position/rotation/service flags persist server-side;
+- validated Camp rest fully restores HP/Mana/Stamina, resets Ultimate charge and reloads the Recovery Belt only from real carried reserves;
+- nearby validated users may invoke Camp services without receiving ownership;
+- Camp cooking reuses the existing reconnect-safe R01 crafting transaction but persists a `CAMP` craft context so reconnect recovery remains **Material Pouch only** and can never silently fall back to the settlement Material Vault path;
+- existing settlement crafting remains backward-compatible: old saves/pending crafts without a context decode as `SETTLEMENT`.
+
+Still gated / not claimed complete:
+
+- final Kenney/accepted Camp model composition;
+- world ghost placement UI and compact invalid-reason presentation;
+- production spatial adapter that samples the actual 5x5 footprint and authored no-camp/protected volumes;
+- exact physical Camp interaction range/occlusion adapter;
+- final Camp cooking/rest presentation;
+- actual joined-player deployment/rest/cooking playtest;
+- multiplayer validation.
+
+Build Openworld RPG **#333**, run `37125775492`, for the code state above is **SUCCESS** across clean tests/build, bootstrap JAR verification, core-profile dedicated-server smoke, gameplay-profile dependency server smoke, gameplay client startup smoke, both verification JAR builds, Modrinth playtest-pack packaging and artifact upload.
+
+Artifact: `openworld-rpg-m0-3796496530157dc93262311aaa511d2fac6d48fe`  
+Artifact ID: `11274792633`
+
+Validation state:
+
+- CODE REVIEWED: YES
+- TESTED: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- PRODUCTION CAMP SPATIAL BINDING: NO
+- PLAYER-FACING CAMP PRESENTATION: GATED
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+

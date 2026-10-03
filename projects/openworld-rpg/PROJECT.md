@@ -1023,3 +1023,40 @@ tests/build, core/gameplay server smoke and gameplay client startup. Normal JAR 
 
 Detailed scope and remaining backend gaps are indexed in
 `R01_BACKEND_INTEGRITY_PASS14.md`.
+
+### 2026-10-03 R01 Camp authority backend
+
+R01 Camp non-visual authority is now implemented at code state
+`3796496530157dc93262311aaa511d2fac6d48fe`. The player owns one persistent reusable Field Camp
+Kit unlock rather than a consumable stack. Recipe discovery preserves permanent Hardwood/Tough Hide
+encounter evidence, and Holt Forge uses a reconnect-safe one-time **4 Hardwood + 2 Tough Hide +
+40 Gold** transaction. Active camp ownership/position/rotation/service flags are persistent
+server-owned world state with one camp per owner.
+
+Placement authority now encodes the exact R01 rules: 25 support samples with at least 20 stable,
+<=0.75-block support-height variance, >=24 blocks from activated shrine/major service,
+>=12 blocks from every other active player camp with no party exception, >=24 blocks from active
+boss-arena boundary, no forbidden/protected/liquid/blocked footprint and a >=1.5-block clear
+service approach. The 50-tick deployment uses the shared action runtime, revalidates at commit and
+keeps the previous camp authoritative unless the replacement transaction succeeds.
+
+Validated Camp rest restores HP/Mana/Stamina, resets Ultimate charge and reloads the Recovery Belt
+from real carried reserves. Shared Camp service use does not transfer ownership. Camp cooking now
+reuses the existing R01 crafting transaction with a persisted `CAMP` context; that context is
+Pouch-only, including reconnect recovery, while old/context-less pending crafts migrate as
+`SETTLEMENT` and retain the existing Pouch->Material Vault behavior.
+
+This pass deliberately does **not** materialize a temporary camp shell or guessed world geometry.
+The accepted Camp asset, ghost-placement UI, real 5x5 terrain/protected-volume probe, physical
+service-interaction adapter and final presentation remain gated behind accepted asset/spatial
+binding.
+
+Build Openworld RPG #333 / run `37125775492` is **SUCCESS** across clean tests/build,
+bootstrap JAR verification, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs, Modrinth playtest-pack packaging and artifact upload. Artifact
+`openworld-rpg-m0-3796496530157dc93262311aaa511d2fac6d48fe` (ID `11274792633`).
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+production Camp spatial binding **NO**; player-facing Camp presentation **GATED**; PLAYTESTED **NO**;
+MULTIPLAYER TESTED **NO**.
+
