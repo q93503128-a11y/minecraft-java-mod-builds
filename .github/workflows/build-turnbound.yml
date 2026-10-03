@@ -68,6 +68,8 @@ jobs:
           unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
           grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
           grep -Fq "version=\"${expected_version}\"" <(tr -d ' ' < built-neoforge.mods.toml)
+          grep -Fq 'modId="journeymap"' <(tr -d ' ' < built-neoforge.mods.toml)
+          grep -Fq 'versionRange="[26.2-6.0.8,26.2-6.1)"' <(tr -d ' ' < built-neoforge.mods.toml)
           unzip -p "$jar_file" META-INF/MANIFEST.MF > built-manifest.mf
           grep -q '^Implementation-Title: TURNBOUND' built-manifest.mf
           grep -Fq "Implementation-Version: ${expected_version}" built-manifest.mf
