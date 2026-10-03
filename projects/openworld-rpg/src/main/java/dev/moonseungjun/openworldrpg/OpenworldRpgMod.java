@@ -107,6 +107,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.SanctuaryRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeAttachments;
 import dev.moonseungjun.openworldrpg.time.PlayerActiveWorldTimeService;
+import dev.moonseungjun.openworldrpg.travel.R01FastTravelService;
 import dev.moonseungjun.openworldrpg.world.spatial.R01QuarrySpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01RegalhartSpatialBindingRegistry;
 import dev.moonseungjun.openworldrpg.world.spatial.R01SpatialBindingRegistry;
@@ -192,6 +193,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             PlayerActiveWorldTimeService.tickLoadedPlayers(server);
+            R01FastTravelService.tick(server);
             R01NourishmentService.tick(server);
             RecoveryEffectRuntime.tick(server);
             RecoveryUseRuntime.tick(server);
@@ -296,6 +298,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             ProjectBurningRuntime.removeSource(newPlayer.getUUID());
             GuardianSkillRuntime.reset(newPlayer.getUUID());
             GuardianResolveRuntime.reset(newPlayer.getUUID());
+            R01FastTravelService.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
             R01RegalhartMythicRuntime.reset(newPlayer.getUUID());
@@ -308,6 +311,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             RecoveryUseRuntime.disconnect(playerId);
             RecoveryEffectRuntime.disconnect(playerId);
             R01NourishmentService.disconnect(playerId);
+            R01FastTravelService.disconnect(playerId);
             R01EarthloongMythicRuntime.disconnect(playerId);
             R01RegalhartMythicRuntime.disconnect(playerId);
             ConsecratedGroundRuntime.disconnect(playerId);
