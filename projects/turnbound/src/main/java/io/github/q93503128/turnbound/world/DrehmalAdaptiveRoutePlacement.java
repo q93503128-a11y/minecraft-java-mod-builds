@@ -18,9 +18,6 @@ final class DrehmalAdaptiveRoutePlacement {
     private static final Map<ServerLevel, Snapshot> CACHE = new IdentityHashMap<>();
     private static final Map<ServerLevel, Long> OPENING_RECOVERY_AT = new IdentityHashMap<>();
     private static final Map<ServerLevel, Integer> OPENING_RECOVERY_ATTEMPTS = new IdentityHashMap<>();
-    static final long OPENING_RECOVERY_INTERVAL_TICKS = 80L;
-    static final int OPENING_RECOVERY_MAX_ATTEMPTS = 12;
-
     private record ScoredPosition(DrehmalFirstRouteCatalog.Position position, double score) {}
     private record WorldBossResolution(
             DrehmalFirstRouteCatalog.Site site,
@@ -54,7 +51,7 @@ final class DrehmalAdaptiveRoutePlacement {
         long now = level.getGameTime();
         int attempts = OPENING_RECOVERY_ATTEMPTS.getOrDefault(level, 0);
         long retryAt = OPENING_RECOVERY_AT.getOrDefault(level, Long.MAX_VALUE);
-        if (openingRecoveryDue(current, attempts, now, retryAt)) {
+        if (OpeningRouteRecoveryRules.due(openingEncounterReady(current), attempts, now, retryAt)) {
             int attempt = attempts + 1;
             Snapshot refreshed = recoverOpeningTutorial(player, level, current);
             CACHE.put(level, refreshed);
@@ -64,13 +61,13 @@ final class DrehmalAdaptiveRoutePlacement {
                 Turnbound.LOGGER.info("TURNBOUND recovered opening field encounter after {} delayed live-world check(s)", attempt);
             } else {
                 OPENING_RECOVERY_ATTEMPTS.put(level, attempt);
-                if (attempt >= OPENING_RECOVERY_MAX_ATTEMPTS) {
+                if (attempt >= OpeningRouteRecoveryRules.MAX_ATTEMPTS) {
                     OPENING_RECOVERY_AT.remove(level);
                     Turnbound.LOGGER.warn(
                             "TURNBOUND opening field encounter remained dormant after {} delayed live-world checks",
                             attempt);
                 } else {
-                    OPENING_RECOVERY_AT.put(level, now + OPENING_RECOVERY_INTERVAL_TICKS);
+                    OPENING_RECOVERY_AT.put(level, now + OpeningRouteRecoveryRules.INTERVAL_TICKS);
                 }
             }
             return refreshed;
@@ -83,12 +80,6 @@ final class DrehmalAdaptiveRoutePlacement {
                 .anyMatch(encounter -> DrabyelOpeningTutorial.ENCOUNTER_SLOT.equals(encounter.locator()));
     }
 
-    static boolean openingRecoveryDue(Snapshot snapshot, int attempts, long gameTime, long retryAt) {
-        return !openingEncounterReady(snapshot)
-                && attempts < OPENING_RECOVERY_MAX_ATTEMPTS
-                && gameTime >= retryAt;
-    }
-
     private static void armOpeningRecovery(ServerLevel level, Snapshot snapshot) {
         if (openingEncounterReady(snapshot)) {
             OPENING_RECOVERY_AT.remove(level);
@@ -96,7 +87,7 @@ final class DrehmalAdaptiveRoutePlacement {
             return;
         }
         OPENING_RECOVERY_ATTEMPTS.put(level, 0);
-        OPENING_RECOVERY_AT.put(level, level.getGameTime() + OPENING_RECOVERY_INTERVAL_TICKS);
+        OPENING_RECOVERY_AT.put(level, level.getGameTime() + OpeningRouteRecoveryRules.INTERVAL_TICKS);
     }
 
     static List<DrehmalFirstRouteCatalog.Site> productionSites(ServerPlayer p){ return List.copyOf(snapshot(p).sites().values()); }
