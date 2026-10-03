@@ -4,17 +4,18 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 /**
- * Persistent non-spatial Regalhart territory timing state.
+ * Persistent Regalhart territory timing/cycle state.
  *
- * <p>This state intentionally does not contain coordinates, anchor identities, spawn decisions,
- * camera visibility or physical boss transforms. Those remain owned by the later accepted spatial
- * binding. The state only persists canon-closed active-world timing needed across reconnects.</p>
+ * <p>Coordinates remain owned by the dedicated Azari spatial binding. This state only persists the
+ * world-owned repeat timing and deterministic encounter cycle needed to select one of the three
+ * accepted start anchors without reconnect rerolls.</p>
  */
 public record R01RegalhartTerritoryState(
         int schemaVersion,
         long lastDefeatActiveTicks,
         long arenaEmptySinceActiveTicks,
-        long engagementEmptySinceActiveTicks
+        long engagementEmptySinceActiveTicks,
+        long cycleIndex
 ) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
@@ -28,7 +29,9 @@ public record R01RegalhartTerritoryState(
                     Codec.LONG.fieldOf("arena_empty_since_active_ticks")
                             .forGetter(R01RegalhartTerritoryState::arenaEmptySinceActiveTicks),
                     Codec.LONG.fieldOf("engagement_empty_since_active_ticks")
-                            .forGetter(R01RegalhartTerritoryState::engagementEmptySinceActiveTicks)
+                            .forGetter(R01RegalhartTerritoryState::engagementEmptySinceActiveTicks),
+                    Codec.LONG.optionalFieldOf("cycle_index", 0L)
+                            .forGetter(R01RegalhartTerritoryState::cycleIndex)
             ).apply(instance, R01RegalhartTerritoryState::new));
 
     public R01RegalhartTerritoryState {
@@ -43,6 +46,11 @@ public record R01RegalhartTerritoryState(
                 || engagementEmptySinceActiveTicks < -1L) {
             throw new IllegalArgumentException(
                     "Regalhart territory time sentinels must be >= -1."
+            );
+        }
+        if (cycleIndex < 0L) {
+            throw new IllegalArgumentException(
+                    "Regalhart cycle index must be non-negative."
             );
         }
         if (lastDefeatActiveTicks < 0L
@@ -69,7 +77,8 @@ public record R01RegalhartTerritoryState(
                 CURRENT_SCHEMA_VERSION,
                 -1L,
                 -1L,
-                -1L
+                -1L,
+                0L
         );
     }
 
@@ -81,16 +90,11 @@ public record R01RegalhartTerritoryState(
                 schemaVersion,
                 activeWorldTicks,
                 -1L,
-                -1L
+                -1L,
+                Math.addExact(cycleIndex, 1L)
         );
     }
 
-    /**
-     * Called by the later authored core-arena volume adapter.
-     *
-     * <p>Empty time before the 20-minute repeat gate never counts toward the required post-gate
-     * 60-second empty window.</p>
-     */
     public R01RegalhartTerritoryState updatePostEligibilityArenaPresence(
             long activeWorldTicks,
             boolean anyPlayerInsideCoreArena
@@ -146,9 +150,6 @@ public record R01RegalhartTerritoryState(
         );
     }
 
-    /**
-     * Called by the later Regalhart territory adapter while a boss instance exists.
-     */
     public R01RegalhartTerritoryState updateEngagementPresence(
             long activeWorldTicks,
             boolean activeBossInstance,
@@ -206,7 +207,8 @@ public record R01RegalhartTerritoryState(
                 schemaVersion,
                 lastDefeatActiveTicks,
                 nextArenaEmptySince,
-                nextEngagementEmptySince
+                nextEngagementEmptySince,
+                cycleIndex
         );
     }
 

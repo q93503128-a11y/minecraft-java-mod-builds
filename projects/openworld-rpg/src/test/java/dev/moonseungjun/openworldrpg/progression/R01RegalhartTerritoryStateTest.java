@@ -15,6 +15,8 @@ class R01RegalhartTerritoryStateTest {
         var state = R01RegalhartTerritoryState.initial()
                 .recordValidDefeat(1_000L);
 
+        assertEquals(1L, state.cycleIndex());
+
         state = state.updatePostEligibilityArenaPresence(
                 24_999L,
                 false
@@ -78,7 +80,7 @@ class R01RegalhartTerritoryStateTest {
     }
 
     @Test
-    void newValidDefeatResetsBothPendingEmptyWindows() {
+    void newValidDefeatResetsBothPendingEmptyWindowsAndAdvancesCycleOnce() {
         var state = R01RegalhartTerritoryState.initial()
                 .recordValidDefeat(0L)
                 .updatePostEligibilityArenaPresence(
@@ -95,10 +97,11 @@ class R01RegalhartTerritoryStateTest {
         assertEquals(30_000L, state.lastDefeatActiveTicks());
         assertEquals(-1L, state.arenaEmptySinceActiveTicks());
         assertEquals(-1L, state.engagementEmptySinceActiveTicks());
+        assertEquals(2L, state.cycleIndex());
     }
 
     @Test
-    void territoryTimingStateSurvivesCodecRoundTrip() {
+    void territoryTimingAndCycleStateSurviveCodecRoundTrip() {
         var original = R01RegalhartTerritoryState.initial()
                 .recordValidDefeat(2_000L)
                 .updatePostEligibilityArenaPresence(
@@ -119,5 +122,6 @@ class R01RegalhartTerritoryStateTest {
                 .getOrThrow();
 
         assertEquals(original, decoded);
+        assertEquals(1L, decoded.cycleIndex());
     }
 }

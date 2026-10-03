@@ -1,14 +1,19 @@
 package dev.moonseungjun.openworldrpg.progression.r01;
 
+import dev.moonseungjun.openworldrpg.world.spatial.R01RegalhartSpatialAuthority;
+import dev.moonseungjun.openworldrpg.world.spatial.R01RegalhartSpatialBindingData;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Predicate;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Server-owned non-spatial Regalhart territory timing controller.
+ * Server-owned Regalhart repeat/disengage controller.
  *
- * <p>The accepted spatial adapter must supply real core-arena/territory presence and the live boss
- * instance fact. This class does not search for coordinates and cannot spawn Regalhart.</p>
+ * <p>Persistent timing is kept in the world attachment while accepted Azari Rootshade bounds and
+ * the three start anchors come from the dedicated Regalhart spatial binding.</p>
  */
 public final class R01RegalhartTerritoryController {
     private R01RegalhartTerritoryController() {
@@ -34,9 +39,6 @@ public final class R01RegalhartTerritoryController {
         );
     }
 
-    /**
-     * Presence comes only from the accepted authored core-arena volume.
-     */
     public static R01RegalhartTerritoryState updateCoreArenaPresence(
             MinecraftServer server,
             boolean anyPlayerInsideCoreArena
@@ -63,10 +65,74 @@ public final class R01RegalhartTerritoryController {
     }
 
     /**
-     * Returns true only when the exact 25-second no-eligible-engaged-player window has elapsed.
-     * Physical HP/poise/status reset and return-to-start movement remain the later encounter
-     * executor's responsibility.
+     * Uses the accepted Rootshade binding instead of caller-supplied booleans for physical presence.
+     *
+     * <p>The caller still owns the combat eligibility predicate because "eligible engaged" is an
+     * encounter-state fact, not a coordinate fact.</p>
      */
+    public static boolean updateSpatialPresence(
+            MinecraftServer server,
+            boolean activeBossInstance,
+            Predicate<ServerPlayer> eligibleEngagedPlayer
+    ) {
+        Objects.requireNonNull(server, "server");
+        Objects.requireNonNull(
+                eligibleEngagedPlayer,
+                "eligibleEngagedPlayer"
+        );
+        ServerLevel overworld = server.overworld();
+
+        boolean anyPlayerInsideCoreArena =
+                server.getPlayerList().getPlayers().stream()
+                        .filter(player -> player.level() == overworld)
+                        .filter(player -> !player.isSpectator())
+                        .anyMatch(player ->
+                                R01RegalhartSpatialAuthority.insideCoreArena(
+                                        player.getX(),
+                                        player.getZ()
+                                )
+                        );
+        updateCoreArenaPresence(server, anyPlayerInsideCoreArena);
+
+        boolean anyEligibleEngagedPlayerInTerritory =
+                server.getPlayerList().getPlayers().stream()
+                        .filter(player -> player.level() == overworld)
+                        .filter(player -> !player.isSpectator())
+                        .filter(eligibleEngagedPlayer)
+                        .anyMatch(player ->
+                                R01RegalhartSpatialAuthority.insideTerritory(
+                                        player.getX(),
+                                        player.getZ()
+                                )
+                        );
+        return updateEngagementPresence(
+                server,
+                activeBossInstance,
+                anyEligibleEngagedPlayerInTerritory
+        );
+    }
+
+    /**
+     * The same world seed + persisted Regalhart cycle always resolves the same authored start anchor.
+     */
+    public static Optional<R01RegalhartSpatialBindingData.StartAnchor>
+            selectedRepeatStartAnchor(
+                    MinecraftServer server,
+                    boolean activeBossInstance
+            ) {
+        Objects.requireNonNull(server, "server");
+        if (!repeatEligible(server, activeBossInstance)) {
+            return Optional.empty();
+        }
+        R01RegalhartTerritoryState current = state(server);
+        return Optional.of(
+                R01RegalhartSpatialAuthority.selectStartAnchor(
+                        server.overworld().getSeed(),
+                        current.cycleIndex()
+                )
+        );
+    }
+
     public static boolean updateEngagementPresence(
             MinecraftServer server,
             boolean activeBossInstance,

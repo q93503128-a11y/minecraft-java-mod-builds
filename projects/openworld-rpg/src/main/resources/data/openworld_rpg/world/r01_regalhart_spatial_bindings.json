@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "openworld_rpg:r01/regalhart_spatial_binding",
+  "map_build": "AzariNEW4252026",
+  "source_status": "actual_r01_slice_anvil_runtime",
+  "territory": {
+    "id": "openworld_rpg:r01/regalhart/territory",
+    "min_x": -2760,
+    "max_x": -2600,
+    "min_z": 4160,
+    "max_z": 4340,
+    "role": "Regalhart authored Rootshade territory, bounded by the actual Anvil-reviewed Rootshade Grove optional-danger pocket."
+  },
+  "core_arena": {
+    "id": "openworld_rpg:r01/regalhart/core_arena",
+    "min_x": -2744,
+    "max_x": -2600,
+    "min_z": 4176,
+    "max_z": 4320,
+    "role": "Regalhart repeat-controller core arena inside Rootshade. The 60-second post-eligibility empty requirement uses this authored horizontal volume."
+  },
+  "start_anchors": [
+    {
+      "id": "openworld_rpg:r01/regalhart/start_southwest",
+      "x": -2696,
+      "y": 65,
+      "z": 4192,
+      "surface_evidence": "grass_block",
+      "role": "Southwestern Rootshade start center from direct Anvil ground evidence; denser tree-cover side of the optional pocket."
+    },
+    {
+      "id": "openworld_rpg:r01/regalhart/start_center",
+      "x": -2680,
+      "y": 68,
+      "z": 4240,
+      "surface_evidence": "grass_block",
+      "role": "Central Rootshade start center using the established direct-Anvil Rootshade reference probe."
+    },
+    {
+      "id": "openworld_rpg:r01/regalhart/start_east_ridge",
+      "x": -2600,
+      "y": 76,
+      "z": 4296,
+      "surface_evidence": "root_split_cairn_terrain_probe",
+      "role": "Eastern Rootshade boundary start center at the direct-Anvil Root-Split Cairn terrain candidate, before deeper optional danger."
+    }
+  ]
+}
