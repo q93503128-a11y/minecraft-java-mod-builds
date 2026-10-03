@@ -28,6 +28,7 @@ public final class R01RegalhartActionController {
     private int antlerSweepCounter;
     private int sovereignCrownChargeCounter;
     private boolean sovereignEntered;
+    private long sovereignTransitionEndTick = Long.MIN_VALUE;
 
     public R01RegalhartActionController(
             R01RegalhartEncounterData data,
@@ -51,9 +52,22 @@ public final class R01RegalhartActionController {
                 && context.healthFraction()
                         <= data.sovereign().healthFractionInclusive()) {
             sovereignEntered = true;
+            sovereignTransitionEndTick = Math.addExact(
+                    nowTick,
+                    data.sovereign().transitionTicks()
+            );
             consecutiveOrdinaryCount = 0;
             lastCommittedAction = null;
-            return Decision.sovereignTransition(actionCounter);
+            return Decision.sovereignTransitionStart(
+                    actionCounter,
+                    sovereignTransitionEndTick
+            );
+        }
+        if (sovereignEntered && nowTick < sovereignTransitionEndTick) {
+            return Decision.sovereignTransitionHold(
+                    actionCounter,
+                    sovereignTransitionEndTick
+            );
         }
 
         var rearKick = rule(R01RegalhartEncounterData.ActionId.REAR_KICK);
@@ -65,10 +79,16 @@ public final class R01RegalhartActionController {
 
         var sweep = rule(R01RegalhartEncounterData.ActionId.ANTLER_SWEEP);
         if (context.targetDistance() <= sweep.maximumRange()) {
-            return commit(sweep, nowTick, antlerFollowUpDue(), false);
+            return commit(
+                    sweep,
+                    nowTick,
+                    context.mirroredSweepFollowUpArcLegal(),
+                    false
+            );
         }
 
-        if (context.targetDistance() > 16.0) {
+        if (context.targetDistance() > 16.0
+                || exactUnresolvedWeightBoundary(context.targetDistance())) {
             return Decision.reposition(actionCounter);
         }
 
@@ -88,7 +108,15 @@ public final class R01RegalhartActionController {
             return Decision.reposition(actionCounter);
         }
 
+        // Crown Charge / Royal Bound are signature movement/space-control actions. When both are
+        // legal, the immediately repeated signature is removed. If only one is legal, canon permits
+        // repetition.
         if (candidates.size() > 1
+                && isSignature(lastCommittedAction)) {
+            candidates.removeIf(candidate ->
+                    candidate.rule().id() == lastCommittedAction
+            );
+        } else if (candidates.size() > 1
                 && consecutiveOrdinaryCount >= 2
                 && lastCommittedAction != null) {
             candidates.removeIf(candidate ->
@@ -120,18 +148,18 @@ public final class R01RegalhartActionController {
             }
         }
 
-        boolean secondChargeAttempt = false;
+        boolean secondChargeDue = false;
         if (chosen.rule().id()
                 == R01RegalhartEncounterData.ActionId.CROWN_CHARGE
                 && sovereignEntered) {
             sovereignCrownChargeCounter++;
-            secondChargeAttempt =
+            secondChargeDue =
                     sovereignCrownChargeCounter
                             % data.sovereign().crownChargeComboEvery()
                             == 0;
         }
 
-        return commit(chosen.rule(), nowTick, false, secondChargeAttempt);
+        return commit(chosen.rule(), nowTick, false, secondChargeDue);
     }
 
     public long cooldownRemainingTicks(
@@ -146,6 +174,13 @@ public final class R01RegalhartActionController {
                         Long.MIN_VALUE
                 ) - nowTick
         );
+    }
+
+    public long sovereignTransitionRemainingTicks(long nowTick) {
+        requireTick(nowTick);
+        return sovereignEntered
+                ? Math.max(0L, sovereignTransitionEndTick - nowTick)
+                : 0L;
     }
 
     public boolean sovereignEntered() {
@@ -163,8 +198,8 @@ public final class R01RegalhartActionController {
     private Decision commit(
             R01RegalhartEncounterData.AttackRule rule,
             long nowTick,
-            boolean mirroredSweepFollowUp,
-            boolean secondChargeAttempt
+            boolean mirroredSweepFollowUpArcLegal,
+            boolean secondChargeDue
     ) {
         long selectedCounter = actionCounter++;
         if (rule.cooldownTicks() > 0) {
@@ -174,10 +209,13 @@ public final class R01RegalhartActionController {
             );
         }
 
+        boolean mirroredSweepFollowUp = false;
         if (rule.id()
                 == R01RegalhartEncounterData.ActionId.ANTLER_SWEEP) {
             antlerSweepCounter++;
-            mirroredSweepFollowUp = antlerFollowUpDueAfterIncrement();
+            mirroredSweepFollowUp =
+                    antlerFollowUpDueAfterIncrement()
+                            && mirroredSweepFollowUpArcLegal;
         }
 
         if (rule.id() == lastCommittedAction) {
@@ -191,16 +229,8 @@ public final class R01RegalhartActionController {
                 rule.id(),
                 selectedCounter,
                 mirroredSweepFollowUp,
-                secondChargeAttempt
+                secondChargeDue
         );
-    }
-
-    private boolean antlerFollowUpDue() {
-        int next = antlerSweepCounter + 1;
-        int every = sovereignEntered
-                ? data.sovereign().sovereignSweepComboEvery()
-                : data.sovereign().normalSweepComboEvery();
-        return next % every == 0;
     }
 
     private boolean antlerFollowUpDueAfterIncrement() {
@@ -208,6 +238,13 @@ public final class R01RegalhartActionController {
                 ? data.sovereign().sovereignSweepComboEvery()
                 : data.sovereign().normalSweepComboEvery();
         return antlerSweepCounter % every == 0;
+    }
+
+    private static boolean isSignature(
+            R01RegalhartEncounterData.ActionId action
+    ) {
+        return action == R01RegalhartEncounterData.ActionId.CROWN_CHARGE
+                || action == R01RegalhartEncounterData.ActionId.ROYAL_BOUND;
     }
 
     private boolean ready(
@@ -233,15 +270,22 @@ public final class R01RegalhartActionController {
     }
 
     /**
-     * Canon tables overlap at exact 7.0 and 12.0 labels. The farther pressure band owns the shared
-     * endpoint so each exact distance has one deterministic row and no duplicate candidate weight.
+     * The design table currently labels both adjacent rows with the exact 7.0 and 12.0 endpoints.
+     * Until canon explicitly assigns those two shared endpoints, selection fails closed there rather
+     * than silently changing the authored 45/55, 60/40 or 75/25 probability.
      */
+    static boolean exactUnresolvedWeightBoundary(double distance) {
+        return Double.compare(distance, 7.0) == 0
+                || Double.compare(distance, 12.0) == 0;
+    }
+
     static int[] distanceWeights(double distance) {
         if (!Double.isFinite(distance)
                 || distance <= 4.5
-                || distance > 16.0) {
+                || distance > 16.0
+                || exactUnresolvedWeightBoundary(distance)) {
             throw new IllegalArgumentException(
-                    "Regalhart weighted distance must be inside (4.5, 16]."
+                    "Regalhart weighted distance must be in a canon-resolved mid/far interval."
             );
         }
         if (distance < 7.0) {
@@ -292,6 +336,7 @@ public final class R01RegalhartActionController {
     public record Context(
             double targetDistance,
             boolean rearArcLegal,
+            boolean mirroredSweepFollowUpArcLegal,
             boolean crownChargeLegal,
             boolean royalBoundLegal,
             double healthFraction
@@ -309,22 +354,27 @@ public final class R01RegalhartActionController {
         }
     }
 
+    public enum Mode {
+        ATTACK,
+        SOVEREIGN_TRANSITION_START,
+        SOVEREIGN_TRANSITION_HOLD,
+        REPOSITION
+    }
+
     public record Decision(
+            Mode mode,
             Optional<R01RegalhartEncounterData.ActionId> action,
             long actionCounter,
-            boolean sovereignTransition,
             boolean mirroredSweepFollowUp,
-            boolean sovereignSecondChargeAttempt,
-            boolean reposition
+            boolean sovereignSecondChargeDue,
+            long sovereignTransitionEndTick
     ) {
         public Decision {
+            Objects.requireNonNull(mode, "mode");
             Objects.requireNonNull(action, "action");
-            int modes = (action.isPresent() ? 1 : 0)
-                    + (sovereignTransition ? 1 : 0)
-                    + (reposition ? 1 : 0);
-            if (modes != 1) {
+            if ((mode == Mode.ATTACK) != action.isPresent()) {
                 throw new IllegalArgumentException(
-                        "Regalhart decision must have exactly one primary mode."
+                        "Only Regalhart ATTACK decisions carry an action."
                 );
             }
             if (mirroredSweepFollowUp
@@ -334,50 +384,76 @@ public final class R01RegalhartActionController {
                         "Mirrored follow-up must belong to Antler Sweep."
                 );
             }
-            if (sovereignSecondChargeAttempt
+            if (sovereignSecondChargeDue
                     && action.orElse(null)
                             != R01RegalhartEncounterData.ActionId.CROWN_CHARGE) {
                 throw new IllegalArgumentException(
-                        "Second-charge attempt must belong to Crown Charge."
+                        "Second-charge due marker must belong to Crown Charge."
                 );
             }
+        }
+
+        public boolean sovereignTransition() {
+            return mode == Mode.SOVEREIGN_TRANSITION_START
+                    || mode == Mode.SOVEREIGN_TRANSITION_HOLD;
+        }
+
+        public boolean reposition() {
+            return mode == Mode.REPOSITION;
         }
 
         public static Decision attack(
                 R01RegalhartEncounterData.ActionId action,
                 long actionCounter,
                 boolean mirroredSweepFollowUp,
-                boolean sovereignSecondChargeAttempt
+                boolean sovereignSecondChargeDue
         ) {
             return new Decision(
+                    Mode.ATTACK,
                     Optional.of(action),
                     actionCounter,
-                    false,
                     mirroredSweepFollowUp,
-                    sovereignSecondChargeAttempt,
-                    false
+                    sovereignSecondChargeDue,
+                    0L
             );
         }
 
-        public static Decision sovereignTransition(long actionCounter) {
+        public static Decision sovereignTransitionStart(
+                long actionCounter,
+                long transitionEndTick
+        ) {
             return new Decision(
+                    Mode.SOVEREIGN_TRANSITION_START,
                     Optional.empty(),
                     actionCounter,
-                    true,
                     false,
                     false,
-                    false
+                    transitionEndTick
+            );
+        }
+
+        public static Decision sovereignTransitionHold(
+                long actionCounter,
+                long transitionEndTick
+        ) {
+            return new Decision(
+                    Mode.SOVEREIGN_TRANSITION_HOLD,
+                    Optional.empty(),
+                    actionCounter,
+                    false,
+                    false,
+                    transitionEndTick
             );
         }
 
         public static Decision reposition(long actionCounter) {
             return new Decision(
+                    Mode.REPOSITION,
                     Optional.empty(),
                     actionCounter,
                     false,
                     false,
-                    false,
-                    true
+                    0L
             );
         }
     }

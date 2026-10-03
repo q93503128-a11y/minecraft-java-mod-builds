@@ -70,7 +70,7 @@ public final class R01RegalhartEncounterDataLoader {
                 4.5, 0.0, 0.0, 0.11,
                 PlayerDefenseAuthority.GuardPressureBand.MEDIUM,
                 Boolean.TRUE, Boolean.TRUE,
-                28.0, null
+                null, null
         ));
         requireRule(rules, new R01RegalhartEncounterData.AttackRule(
                 R01RegalhartEncounterData.ActionId.CROWN_CHARGE,

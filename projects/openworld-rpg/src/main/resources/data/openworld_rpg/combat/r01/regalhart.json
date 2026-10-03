@@ -17,7 +17,7 @@
       "guardPressure": "MEDIUM",
       "guardable": true,
       "perfectGuardable": true,
-      "playerPoisePressure": 28.0,
+      "playerPoisePressure": null,
       "perfectGuardPoiseMultiplier": null
     },
     {

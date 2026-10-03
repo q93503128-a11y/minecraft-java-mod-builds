@@ -1973,6 +1973,12 @@ Mid/far selection when both are geometrically legal:
 | 7.0–12.0 | 60 | 40 |
 | 12.0–16.0 | 75 | 25 |
 
+**Exact-boundary note:** the current table text overlaps at exactly `7.0` and `12.0` blocks
+without stating which adjacent row owns those two exact values. Until that tiny canon boundary is
+explicitly normalized, the runtime must fail closed/reposition at exactly those two floating-point
+distances rather than silently choosing one probability table. This does not affect the open
+intervals on either side.
+
 An unavailable/cooling action is removed and weights are renormalized.
 
 Royal Bound requires a legal landing volume within its authored movement envelope. Crown Charge requires a clear committed path. If neither is legal, Regalhart closes/repositions instead of teleporting.
