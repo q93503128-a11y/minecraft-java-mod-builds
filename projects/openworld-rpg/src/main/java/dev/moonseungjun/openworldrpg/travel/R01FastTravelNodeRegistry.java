@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -59,14 +57,12 @@ public final class R01FastTravelNodeRegistry {
 
     public record ProductionNode(
             String id,
-            ResourceKey<Level> dimension,
             Vec3 interactionAnchor,
             List<Vec3> arrivalPoints,
             PersonalUnlock personalUnlock
     ) {
         public ProductionNode {
             requireStableId(id);
-            dimension = Objects.requireNonNull(dimension, "dimension");
             interactionAnchor = requireFinite(
                     Objects.requireNonNull(
                             interactionAnchor,

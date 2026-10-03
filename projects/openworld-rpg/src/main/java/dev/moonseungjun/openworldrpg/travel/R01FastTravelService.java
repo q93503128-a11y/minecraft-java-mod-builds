@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -81,11 +82,8 @@ public final class R01FastTravelService {
         if (origin == null || destination == null) {
             return rejected(StartStatus.NODE_NOT_PRODUCTION);
         }
-        if (!origin.dimension().equals(player.level().dimension())) {
-            return rejected(StartStatus.WRONG_ORIGIN_DIMENSION);
-        }
-        if (!destination.dimension().equals(player.level().dimension())) {
-            return rejected(StartStatus.CROSS_DIMENSION_NOT_SUPPORTED);
+        if (!Level.OVERWORLD.equals(player.level().dimension())) {
+            return rejected(StartStatus.WRONG_DIMENSION);
         }
 
         R01PlayerState personalState =
@@ -182,8 +180,7 @@ public final class R01FastTravelService {
                     .node(active.destinationNodeId())
                     .orElse(null);
             if (destination == null
-                    || !destination.dimension()
-                            .equals(player.level().dimension())
+                    || !Level.OVERWORLD.equals(player.level().dimension())
                     || !personallyActivated(
                             R01PlayerStateService.state(player),
                             destination.personalUnlock()
@@ -307,8 +304,7 @@ public final class R01FastTravelService {
         MOUNTED,
         SAME_NODE,
         NODE_NOT_PRODUCTION,
-        WRONG_ORIGIN_DIMENSION,
-        CROSS_DIMENSION_NOT_SUPPORTED,
+        WRONG_DIMENSION,
         ORIGIN_NOT_ACTIVATED,
         DESTINATION_NOT_ACTIVATED,
         TOO_FAR_FROM_ORIGIN,
