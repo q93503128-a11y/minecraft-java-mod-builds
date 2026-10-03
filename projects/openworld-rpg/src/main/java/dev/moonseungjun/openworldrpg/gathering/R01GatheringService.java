@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.gathering;
 
+import dev.moonseungjun.openworldrpg.camp.R01CampService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryState;
 import dev.moonseungjun.openworldrpg.progression.r01.R01MainQuestService;
@@ -164,6 +165,15 @@ public final class R01GatheringService {
         if (delivery.status()
                 == PlayerInventoryState.MaterialDeliveryStatus.CAPACITY_BLOCKED) {
             return false;
+        }
+
+        if (R01GatheringRules.HARDWOOD.equals(
+                pending.resourceId()
+        )) {
+            R01CampService.recordMaterialEncounter(
+                    player,
+                    pending.resourceId()
+            );
         }
 
         if (R01GatheringRules.VERDANT_CRYSTAL.equals(

@@ -1,5 +1,8 @@
 package dev.moonseungjun.openworldrpg;
 
+import dev.moonseungjun.openworldrpg.camp.R01CampPlayerAttachments;
+import dev.moonseungjun.openworldrpg.camp.R01CampService;
+import dev.moonseungjun.openworldrpg.camp.R01CampWorldAttachments;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01CaveCentipedeDonorContactBridge;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01NatureSpiritCombatRuntime;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01RegalhartCombatRuntime;
@@ -126,6 +129,8 @@ public final class OpenworldRpgMod implements ModInitializer {
     @Override
     public void onInitialize() {
         RuntimeProfile profile = RuntimeProfile.current();
+        R01CampPlayerAttachments.initialize();
+        R01CampWorldAttachments.initialize();
         PlayerProgressionAttachments.initialize();
         PlayerCombatSessionAttachments.initialize();
         PlayerEquipmentAttachments.initialize();
@@ -177,6 +182,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         ServerTickEvents.START_SERVER_TICK.register(server -> {
             R01RegalhartCombatRuntime.tick(server);
             ProjectPlayerActionRuntime.tick(server);
+            R01CampService.tick(server);
             ProjectGuardRuntime.tick(server);
             ProjectDodgeRuntime.tick(server);
             HunterQuickstepVolleyRuntime.tick(server);
@@ -234,6 +240,7 @@ public final class OpenworldRpgMod implements ModInitializer {
                 R01RiverbankRemediesService.reconcilePending(handler.getPlayer());
                 R01NourishmentService.reconcile(handler.getPlayer());
                 R01GatheringService.reconcilePending(handler.getPlayer());
+                R01CampService.reconcile(handler.getPlayer());
                 R01FishingService.reconcileInterruptedHooks(handler.getPlayer());
                 R01HousingService.reconcilePending(handler.getPlayer());
                 R01EarthloongEncounterService.reconcilePendingFinalization(handler.getPlayer());
@@ -299,6 +306,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             GuardianSkillRuntime.reset(newPlayer.getUUID());
             GuardianResolveRuntime.reset(newPlayer.getUUID());
             R01FastTravelService.reset(newPlayer.getUUID());
+            R01CampService.reset(newPlayer.getUUID());
             ProjectPlayerActionRuntime.reset(newPlayer);
             ProjectDodgeRuntime.reset(newPlayer);
             R01RegalhartMythicRuntime.reset(newPlayer.getUUID());
@@ -312,6 +320,7 @@ public final class OpenworldRpgMod implements ModInitializer {
             RecoveryEffectRuntime.disconnect(playerId);
             R01NourishmentService.disconnect(playerId);
             R01FastTravelService.disconnect(playerId);
+            R01CampService.disconnect(playerId);
             R01EarthloongMythicRuntime.disconnect(playerId);
             R01RegalhartMythicRuntime.disconnect(playerId);
             ConsecratedGroundRuntime.disconnect(playerId);
