@@ -151,6 +151,45 @@ class OrdinaryEquipmentAffixRollerTest {
     }
 
     @Test
+    void fixedAffixIsKeptAndOnlyRemainingSlotsRollRandomly() {
+        var result = OrdinaryEquipmentAffixRoller.roll(
+                new OrdinaryEquipmentAffixRoller.RollRequest(
+                        ProjectItemGrade.SUPERIOR,
+                        6,
+                        OrdinaryEquipmentAffixRoller.ItemFamily.NORMAL_WEAPON,
+                        FULL_FIXTURE,
+                        444L,
+                        List.of("openworld_rpg:affix/str")
+                )
+        );
+
+        assertEquals(3, result.size());
+        assertEquals("openworld_rpg:affix/str", result.getFirst().id());
+        assertEquals(
+                3,
+                result.stream()
+                        .map(OrdinaryEquipmentAffixRoller.GeneratedAffix::id)
+                        .distinct()
+                        .count()
+        );
+    }
+
+    @Test
+    void fixedAffixMustBelongToEligiblePool() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new OrdinaryEquipmentAffixRoller.RollRequest(
+                        ProjectItemGrade.REFINED,
+                        4,
+                        OrdinaryEquipmentAffixRoller.ItemFamily.NORMAL_WEAPON,
+                        FULL_FIXTURE,
+                        1L,
+                        List.of("openworld_rpg:affix/not_real")
+                )
+        );
+    }
+
+    @Test
     void seedChangesDeterministicResult() {
         var a = OrdinaryEquipmentAffixRoller.roll(
                 new OrdinaryEquipmentAffixRoller.RollRequest(

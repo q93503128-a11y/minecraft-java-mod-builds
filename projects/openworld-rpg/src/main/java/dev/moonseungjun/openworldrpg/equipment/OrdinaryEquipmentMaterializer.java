@@ -67,7 +67,8 @@ public final class OrdinaryEquipmentMaterializer {
                                 request.itemLevel(),
                                 request.base().affixFamily(),
                                 request.eligibleAffixes(),
-                                request.seed()
+                                request.seed(),
+                                request.fixedAffixIds()
                         )
                 );
 
@@ -350,8 +351,29 @@ public final class OrdinaryEquipmentMaterializer {
             List<OrdinaryEquipmentAffixRoller.AffixDefinition>
                     eligibleAffixes,
             long seed,
-            long unitSellValue
+            long unitSellValue,
+            List<String> fixedAffixIds
     ) {
+        public MaterializationRequest(
+                BaseProfile base,
+                ProjectItemGrade grade,
+                int itemLevel,
+                List<OrdinaryEquipmentAffixRoller.AffixDefinition>
+                        eligibleAffixes,
+                long seed,
+                long unitSellValue
+        ) {
+            this(
+                    base,
+                    grade,
+                    itemLevel,
+                    eligibleAffixes,
+                    seed,
+                    unitSellValue,
+                    List.of()
+            );
+        }
+
         public MaterializationRequest {
             Objects.requireNonNull(base, "base");
             Objects.requireNonNull(grade, "grade");
@@ -371,6 +393,12 @@ public final class OrdinaryEquipmentMaterializer {
                         "unitSellValue must be non-negative."
                 );
             }
+            fixedAffixIds = List.copyOf(
+                    Objects.requireNonNull(
+                            fixedAffixIds,
+                            "fixedAffixIds"
+                    )
+            );
         }
     }
 

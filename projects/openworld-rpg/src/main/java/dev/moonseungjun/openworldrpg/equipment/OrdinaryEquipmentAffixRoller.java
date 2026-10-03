@@ -48,7 +48,47 @@ public final class OrdinaryEquipmentAffixRoller {
         Map<AffixCategory, Integer> categoryCounts =
                 new EnumMap<>(AffixCategory.class);
 
-        for (int index = 0; index < count; index++) {
+        int randomStartIndex = 0;
+        for (String fixedAffixId : request.fixedAffixIds()) {
+            AffixDefinition fixed = request.eligibleAffixes().stream()
+                    .filter(value -> value.id().equals(fixedAffixId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Fixed affix is not eligible for item family: "
+                                    + fixedAffixId
+                    ));
+            if (!usedIds.add(fixed.id())) {
+                throw new IllegalArgumentException(
+                        "Duplicate fixed affix id: " + fixed.id()
+                );
+            }
+            int categoryCount = categoryCounts.getOrDefault(
+                    fixed.category(),
+                    0
+            );
+            if (categoryCount >= MAX_SAME_CATEGORY) {
+                throw new IllegalArgumentException(
+                        "Fixed affixes exceed category cap: "
+                                + fixed.category()
+                );
+            }
+            result.add(new GeneratedAffix(
+                    fixed.id(),
+                    fixed.category(),
+                    rollValue(
+                            fixed,
+                            request.itemLevel(),
+                            percentileFloor(request.grade()),
+                            request.seed(),
+                            randomStartIndex
+                    ),
+                    fixed.runtimePayload()
+            ));
+            categoryCounts.merge(fixed.category(), 1, Integer::sum);
+            randomStartIndex++;
+        }
+
+        for (int index = randomStartIndex; index < count; index++) {
             List<AffixDefinition> available =
                     request.eligibleAffixes().stream()
                             .filter(value -> !usedIds.contains(value.id()))
@@ -435,8 +475,26 @@ public final class OrdinaryEquipmentAffixRoller {
             int itemLevel,
             ItemFamily family,
             List<AffixDefinition> eligibleAffixes,
-            long seed
+            long seed,
+            List<String> fixedAffixIds
     ) {
+        public RollRequest(
+                ProjectItemGrade grade,
+                int itemLevel,
+                ItemFamily family,
+                List<AffixDefinition> eligibleAffixes,
+                long seed
+        ) {
+            this(
+                    grade,
+                    itemLevel,
+                    family,
+                    eligibleAffixes,
+                    seed,
+                    List.of()
+            );
+        }
+
         public RollRequest {
             Objects.requireNonNull(grade, "grade");
             requireItemLevel(itemLevel);
@@ -452,6 +510,32 @@ public final class OrdinaryEquipmentAffixRoller {
                 if (!ids.add(definition.id())) {
                     throw new IllegalArgumentException(
                             "Duplicate eligible affix id: " + definition.id()
+                    );
+                }
+            }
+            fixedAffixIds = List.copyOf(
+                    Objects.requireNonNull(
+                            fixedAffixIds,
+                            "fixedAffixIds"
+                    )
+            );
+            if (fixedAffixIds.size() > affixCount(grade)) {
+                throw new IllegalArgumentException(
+                        "Fixed affix count exceeds grade affix count."
+                );
+            }
+            Set<String> fixedIds = new HashSet<>();
+            for (String fixedAffixId : fixedAffixIds) {
+                requireStableId(fixedAffixId);
+                if (!fixedIds.add(fixedAffixId)) {
+                    throw new IllegalArgumentException(
+                            "Duplicate fixed affix id: " + fixedAffixId
+                    );
+                }
+                if (!ids.contains(fixedAffixId)) {
+                    throw new IllegalArgumentException(
+                            "Fixed affix is outside eligible pool: "
+                                    + fixedAffixId
                     );
                 }
             }
