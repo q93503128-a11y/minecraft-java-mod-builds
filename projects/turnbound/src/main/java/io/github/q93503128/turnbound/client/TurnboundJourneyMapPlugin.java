@@ -1,5 +1,6 @@
 package io.github.q93503128.turnbound.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.q93503128.turnbound.Turnbound;
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
@@ -25,6 +26,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -192,6 +194,14 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
             if (!name.contains("journeymap")) continue;
             if (!name.contains("fullscreen") && !name.contains("full_map") && !name.contains("map.full")) continue;
             fullscreenKey = mapping;
+            InputConstants.Key reservedMinimapKey = InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_M);
+            if (mapping.getKey().equals(reservedMinimapKey)) {
+                // Build #1013 temporarily forced fullscreen JourneyMap onto M. M is now TURNBOUND's minimap toggle,
+                // so migrate only that known collision back to JourneyMap's normal full-map key.
+                mapping.setKey(InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_J));
+                KeyMapping.resetMapping();
+                minecraft.options.save();
+            }
             return;
         }
     }
