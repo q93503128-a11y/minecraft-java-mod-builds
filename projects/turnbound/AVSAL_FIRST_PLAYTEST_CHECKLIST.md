@@ -161,3 +161,20 @@
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+## Build #1006 focused regression
+
+Use the new one-click pack or otherwise ensure JourneyMap 26.2-6.0.8 is installed with the Build #1006 TURNBOUND JAR.
+
+Check first:
+- Bram/Lumea/Morwen selected-two skill: first and second enemies can both be clicked in the world; skill executes after two distinct targets; one remaining enemy still works.
+- Character > Equipment: click Weapon/Armor/Accessory/Signature, compare candidate stats in the list, equip without cycling through the whole character roster.
+- E > Equipment: no +1/+10 enhancement projection and no character target carousel.
+- Blacksmith: selected gear shows current -> next and exact main-stat increase before enhancement.
+- Summon duplicate below +10: only +Level increases, no Star Essence.
+- Duplicate already at +10: no more +Level; Star Essence is granted.
+- Closing/skipping summon presentation stops ritual-stage particle emission instead of continuing on the ground.
+- N toggles JourneyMap minimap; M opens JourneyMap fullscreen.
+- At the Capital Valley “choose one regional objective” step, north patrol / Warning Cave / Graul search choice all have map markers before the battle actors themselves are necessarily visible.
+- TURNBOUND's former blocky custom full-map panel and clipped side-description panel should no longer be the production map UI.

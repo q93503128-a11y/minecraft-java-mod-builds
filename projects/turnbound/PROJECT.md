@@ -2064,3 +2064,44 @@ Validation:
 - CLIENT RUNTIME TESTED: NO for this pacing revision
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+
+
+## First live-playtest correction pass — Build #1006
+
+Playtest evidence addressed:
+- selected-two combat actions existed server-side but live mouse target picking still rejected non-single target rules; world/HUD target picking now accepts all manual-target rules;
+- equipment management is character-centric: Character > Equipment > slot > compatible owned gear, with current stats visible in the candidate list; global E > Equipment is inventory/reference rather than a character-cycling equip workflow;
+- enhancement before/after/delta values moved to the physical blacksmith UI instead of the global equipment browser;
+- duplicate characters now feed +Level through +10 first; only additional copies after +10 convert to Star Essence;
+- summon-result completion now sends GACHA_DONE to server actor cleanup, stopping the ritual actor from continuing to emit ground particles after the presentation ends;
+- the legacy low-resolution TURNBOUND minimap/full-map renderer is retired from the production client path;
+- JourneyMap 26.2-6.0.8 NeoForge now owns terrain/minimap/full-map presentation, while TURNBOUND projects server-authored quest/service/NPC positions into JourneyMap as transient waypoints;
+- M is reassigned to JourneyMap fullscreen map and N toggles the JourneyMap minimap;
+- Capital Valley's three-choice regional objective no longer depends on encounter actors already being materialized: authored placement seeds and a world-boss search hint keep unresolved choices visible.
+
+Build TURNBOUND #1006:
+- verified code/workflow commit: `f55c6c69428d9f1a41932f3f0ffbbffd68a4ef50`
+- run: 37103084995
+- Gradle tests/build: PASS
+- NeoForge dedicated-server smoke: PASS — Done (2.830s)
+- built JAR verification: PASS
+- one-click mrpack verification: PASS, including the remote JourneyMap dependency entry
+- artifact upload: PASS
+- artifact: turnbound-v04-workbranch / ID 11266534340
+- JAR SHA-256: `170616e77690a487841efcaa65da7a8777681db3e86eb1d962aa31c11c647570`
+- MRPACK SHA-256: `7ca4295d4c63d12db9c8de98299336d5eb423cccfb161d22d1e02cd7697ea7e0`
+- uploaded artifact ZIP SHA-256: `6e81c6d9f25f7672687dc7f34b63faca1c0eda2a19617b60c86b0bfb14356144`
+
+Deferred by explicit user direction:
+- summon cinematic visual redesign. Current correction only fixes cleanup/state/result semantics; presentation redesign will be handled separately.
+
+Validation:
+- CODE REVIEWED: YES
+- AUTOMATED TESTS: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO for Build #1006
+- PLAYTESTED: previous Build #998 partially; Build #1006 not yet
+- MULTIPLAYER TESTED: NO

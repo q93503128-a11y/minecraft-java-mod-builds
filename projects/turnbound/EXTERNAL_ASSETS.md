@@ -192,3 +192,18 @@ Adoption rule:
 - Runtime speed/jump deliberately exceed ordinary vanilla horse travel performance
 - Status: adopted production base
 - Tracking: `THIRD_PARTY/roadhorn_mount/`
+
+
+## JourneyMap — production cartography dependency (2026-10-03)
+
+- role: client terrain/minimap/full-map renderer for TURNBOUND exploration
+- project: JourneyMap
+- Minecraft / loader target: 26.2 / NeoForge
+- pinned pack version: 6.0.8
+- Modrinth project: lfHFW1mp
+- Modrinth version id: BvreZ8yd
+- API compile dependency: `info.journeymap:journeymap-api-neoforge:26.2-2.0.0`
+- usage type: external runtime dependency + public plugin API
+- license: All Rights Reserved; TURNBOUND does not copy JourneyMap source/classes into its JAR
+- pack handling: MRPACK references the official JourneyMap download remotely with SHA-1/SHA-512 rather than copying the third-party JAR into TURNBOUND overrides
+- integration boundary: JourneyMap owns cartography, zoom/pan and minimap presentation; TURNBOUND owns quest/service/NPC meaning and synchronizes those as transient waypoints
