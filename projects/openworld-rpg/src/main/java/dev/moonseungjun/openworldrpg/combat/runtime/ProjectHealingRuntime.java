@@ -7,6 +7,7 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RegalhartRewardService;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -169,6 +170,7 @@ public final class ProjectHealingRuntime {
 
         boolean newEarthloongParticipation = false;
         boolean newNatureSpiritParticipation = false;
+        boolean newRegalhartParticipation = false;
         if (encounterActor != null
                 && caster != target
                 && effectiveHealing > 0.0) {
@@ -179,6 +181,11 @@ public final class ProjectHealingRuntime {
                     );
             newNatureSpiritParticipation =
                     R01NatureSpiritRewardService.recordValidatedSupportContribution(
+                            encounterActor,
+                            caster
+                    );
+            newRegalhartParticipation =
+                    R01RegalhartRewardService.recordValidatedSupportContribution(
                             encounterActor,
                             caster
                     );
@@ -193,7 +200,8 @@ public final class ProjectHealingRuntime {
                 requestedHealing,
                 effectiveHealing,
                 newEarthloongParticipation,
-                newNatureSpiritParticipation
+                newNatureSpiritParticipation,
+                newRegalhartParticipation
         );
     }
 
@@ -202,8 +210,26 @@ public final class ProjectHealingRuntime {
             double requestedHealing,
             double effectiveHealing,
             boolean newEarthloongParticipation,
-            boolean newNatureSpiritParticipation
+            boolean newNatureSpiritParticipation,
+            boolean newRegalhartParticipation
     ) {
+        public Application(
+                boolean accepted,
+                double requestedHealing,
+                double effectiveHealing,
+                boolean newEarthloongParticipation,
+                boolean newNatureSpiritParticipation
+        ) {
+            this(
+                    accepted,
+                    requestedHealing,
+                    effectiveHealing,
+                    newEarthloongParticipation,
+                    newNatureSpiritParticipation,
+                    false
+            );
+        }
+
         public Application {
             if (!Double.isFinite(requestedHealing)
                     || requestedHealing < 0.0
@@ -218,20 +244,25 @@ public final class ProjectHealingRuntime {
                     && (requestedHealing != 0.0
                     || effectiveHealing != 0.0
                     || newEarthloongParticipation
-                    || newNatureSpiritParticipation)) {
+                    || newNatureSpiritParticipation
+                    || newRegalhartParticipation)) {
                 throw new IllegalArgumentException(
                         "Rejected healing cannot carry applied state."
                 );
             }
             if ((newEarthloongParticipation
-                    || newNatureSpiritParticipation)
+                    || newNatureSpiritParticipation
+                    || newRegalhartParticipation)
                     && effectiveHealing <= 0.0) {
                 throw new IllegalArgumentException(
                         "Support participation requires effective healing."
                 );
             }
-            if (newEarthloongParticipation
-                    && newNatureSpiritParticipation) {
+            int participationCount =
+                    (newEarthloongParticipation ? 1 : 0)
+                            + (newNatureSpiritParticipation ? 1 : 0)
+                            + (newRegalhartParticipation ? 1 : 0);
+            if (participationCount > 1) {
                 throw new IllegalArgumentException(
                         "One heal cannot qualify for two encounter actors."
                 );
@@ -239,7 +270,7 @@ public final class ProjectHealingRuntime {
         }
 
         public static Application rejected() {
-            return new Application(false, 0.0, 0.0, false, false);
+            return new Application(false, 0.0, 0.0, false, false, false);
         }
     }
 }

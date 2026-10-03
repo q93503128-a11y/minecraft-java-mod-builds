@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.world.spatial;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01RegalhartCombatRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.R01ExternalActorCatalog;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RegalhartRewardService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RegalhartTerritoryController;
 import java.util.List;
 import java.util.Objects;
@@ -157,6 +158,7 @@ public final class R01RegalhartMaterializationRuntime {
             return false;
         }
 
+        R01RegalhartRewardService.abortActiveEncounter(regalhart);
         R01RegalhartTerritoryController.acknowledgeDisengage(server);
         return true;
     }

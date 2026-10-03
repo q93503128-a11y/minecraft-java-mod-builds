@@ -109,6 +109,38 @@ class R01RegalhartRewardStateTest {
     }
 
     @Test
+    void abortingEncounterDropsOnlyUncommittedParticipation() {
+        var committed = R01RegalhartRewardState.initial()
+                .recordParticipation(
+                        ENCOUNTER,
+                        0L,
+                        PLAYER,
+                        RootClass.WARRIOR
+                )
+                .completeEncounter(
+                        ENCOUNTER,
+                        Map.of(PLAYER, firstPlan())
+                );
+
+        String abandoned =
+                "openworld_rpg:r01/regalhart/00000000-0000-0000-0000-000000000101";
+        var withAbandoned = committed.recordParticipation(
+                abandoned,
+                1L,
+                PLAYER,
+                RootClass.MAGE
+        );
+        var afterAbort = withAbandoned.abortEncounter(abandoned);
+
+        assertTrue(afterAbort.encounter(abandoned).isEmpty());
+        assertTrue(afterAbort.firstDefeatCommitted(PLAYER));
+        assertEquals(
+                committed.pendingForPlayer(PLAYER),
+                afterAbort.pendingForPlayer(PLAYER)
+        );
+    }
+
+    @Test
     void stateCodecPreservesPendingAndFirstDefeatHistory() {
         var original = R01RegalhartRewardState.initial()
                 .recordParticipation(

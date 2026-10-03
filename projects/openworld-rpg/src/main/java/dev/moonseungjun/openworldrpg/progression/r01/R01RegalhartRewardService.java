@@ -101,6 +101,27 @@ public final class R01RegalhartRewardService {
         return true;
     }
 
+    public static boolean abortActiveEncounter(LivingEntity regalhart) {
+        Objects.requireNonNull(regalhart, "regalhart");
+        if (!isRegalhart(regalhart)
+                || !ExternalActorBindingRuntime.isAuthoredSpawn(regalhart)
+                || !(regalhart.level() instanceof ServerLevel level)) {
+            return false;
+        }
+
+        MinecraftServer server = level.getServer();
+        String encounterId = encounterId(regalhart);
+        R01RegalhartRewardState current = state(server);
+        if (current.encounter(encounterId).isEmpty()) {
+            return false;
+        }
+        replace(
+                server,
+                current.abortEncounter(encounterId)
+        );
+        return true;
+    }
+
     public static FinalizationSummary reconcilePendingFinalizations(
             ServerPlayer player
     ) {

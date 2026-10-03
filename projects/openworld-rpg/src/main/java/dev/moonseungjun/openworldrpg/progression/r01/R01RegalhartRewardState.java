@@ -212,6 +212,22 @@ public record R01RegalhartRewardState(
         );
     }
 
+    public R01RegalhartRewardState abortEncounter(String encounterId) {
+        requireStableId(encounterId, "encounterId");
+        if (!activeEncounters.containsKey(encounterId)) {
+            return this;
+        }
+        Map<String, EncounterSnapshot> nextActive =
+                new HashMap<>(activeEncounters);
+        nextActive.remove(encounterId);
+        return new R01RegalhartRewardState(
+                schemaVersion,
+                Map.copyOf(nextActive),
+                pendingFinalizations,
+                firstDefeatCommittedPlayers
+        );
+    }
+
     public List<PendingFinalization> pendingForPlayer(String playerUuid) {
         requireUuid(playerUuid);
         List<PendingFinalization> result = new ArrayList<>();

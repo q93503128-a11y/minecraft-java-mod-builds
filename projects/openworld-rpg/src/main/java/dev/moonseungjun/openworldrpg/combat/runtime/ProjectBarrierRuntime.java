@@ -9,6 +9,7 @@ import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.progression.r01.R01EarthloongEncounterService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01NatureSpiritRewardService;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RegalhartRewardService;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -191,6 +192,10 @@ public final class ProjectBarrierRuntime {
                 caster
         );
         R01NatureSpiritRewardService.recordValidatedSupportContribution(
+                encounterActor,
+                caster
+        );
+        R01RegalhartRewardService.recordValidatedSupportContribution(
                 encounterActor,
                 caster
         );

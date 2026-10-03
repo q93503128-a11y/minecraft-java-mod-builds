@@ -50,6 +50,35 @@ class ProjectHealingRuntimeApplicationTest {
     }
 
     @Test
+    void oneRegalhartSupportQualificationIsAValidAppliedResult() {
+        assertDoesNotThrow(
+                () -> new ProjectHealingRuntime.Application(
+                        true,
+                        10.0,
+                        5.0,
+                        false,
+                        false,
+                        true
+                )
+        );
+    }
+
+    @Test
+    void crossEncounterHealQualificationIsRejected() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ProjectHealingRuntime.Application(
+                        true,
+                        10.0,
+                        5.0,
+                        false,
+                        true,
+                        true
+                )
+        );
+    }
+
+    @Test
     void oneNatureSpiritSupportQualificationIsAValidAppliedResult() {
         assertDoesNotThrow(
                 () -> new ProjectHealingRuntime.Application(
