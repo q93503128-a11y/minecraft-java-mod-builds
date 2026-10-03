@@ -14,7 +14,6 @@ class R01FastTravelRulesTest {
     void productionNodeAllowsPrimaryPlusFourFallbackArrivals() {
         new R01FastTravelNodeRegistry.ProductionNode(
                 "openworld_rpg:travel/test",
-                Level.OVERWORLD,
                 new Vec3(0.0, 64.0, 0.0),
                 List.of(
                         new Vec3(10.0, 64.0, 10.0),
@@ -31,8 +30,7 @@ class R01FastTravelRulesTest {
                 IllegalArgumentException.class,
                 () -> new R01FastTravelNodeRegistry.ProductionNode(
                         "openworld_rpg:travel/too_many",
-                        Level.OVERWORLD,
-                        new Vec3(0.0, 64.0, 0.0),
+                                new Vec3(0.0, 64.0, 0.0),
                         List.of(
                                 Vec3.ZERO,
                                 Vec3.ZERO,
