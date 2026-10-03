@@ -93,7 +93,15 @@ jobs:
           assert data['formatVersion'] == 1
           assert data['dependencies']['minecraft'] == '26.2'
           assert data['dependencies']['neoforge'] == '26.2.0.62'
-          assert data['files'] == []
+          files=data['files']
+          assert len(files) == 1
+          jm=files[0]
+          assert jm['path'] == 'mods/journeymap-neoforge-26.2-6.0.8.jar'
+          assert len(jm['hashes']['sha1']) == 40
+          assert len(jm['hashes']['sha512']) == 128
+          assert jm['env'] == {'client':'required','server':'unsupported'}
+          assert len(jm['downloads']) == 1 and 'cdn.modrinth.com/data/lfHFW1mp/versions/' in jm['downloads'][0]
+          assert jm['fileSize'] > 1_000_000
           PY
           echo "Verifying $pack_file"
           sha256sum "$pack_file"
