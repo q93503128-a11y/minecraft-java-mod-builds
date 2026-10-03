@@ -552,6 +552,21 @@ mrpack packaging and artifact upload. Artifact
 Nature Spirit backend combat is now closed through action scheduling/impact/recovery; production spawn
 still waits on the accepted visible movement/telegraph/contact binder.
 
+Bloom Quake's canon-closed spatial authority is also bound at code state
+`f920385919b7f7b752fa3e6ffea20b6cfc91e54b`: on the exact scheduled impact frame, eligible
+encounter candidates are filtered against an exact 4.0-block horizontal radius, with the boundary
+included and out-of-radius/dead/spectator/cross-level targets rejected. Candidate membership remains
+owned by the encounter/presentation caller rather than inferred from raw proximity, preventing
+accidental participation expansion. Accepted targets then pass through the existing per-action-counter
+dedupe and Nature Spirit impact authority. Run `37093321135` is **SUCCESS** across tests/build,
+pinned dependency inspection, core/gameplay server smoke, gameplay client startup, both verification
+JARs, mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-f920385919b7f7b752fa3e6ffea20b6cfc91e54b`
+(`11263683026`, SHA-256
+`24de3a4a26d7dd6dbb10a954f2e9952d39457ca30dabfafaf6e0f451a8d566e3`).
+The remaining Bloom Quake gate is player-facing presentation: its visible ring/VFX must match this
+already-authoritative 4.0-block server area.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

@@ -1141,6 +1141,32 @@ mrpack packaging and artifact upload all passed. Artifact:
 This closes **selection -> wind-up -> scheduled impact -> recovery** backend authority. Actual
 player-facing movement/telegraph/contact geometry and Nature Spirit production spawning remain gated.
 
+### Bloom Quake server area authority
+
+Code state `f920385919b7f7b752fa3e6ffea20b6cfc91e54b` additionally closes the part of
+Bloom Quake geometry that is already exact in canon:
+
+- the impact frame still comes only from the committed action-counter execution state;
+- the server area is an exact **4.0-block horizontal radius** centered on the Nature Spirit at impact;
+- points exactly on the 4.0-block boundary are included; points beyond it are rejected;
+- only candidate players supplied by the encounter/presentation binder are examined, so unrelated
+  nearby players are not auto-enrolled into an encounter merely because they stand near the actor;
+- dead, spectator, cross-level or out-of-radius candidates are rejected;
+- each accepted candidate still passes through the scheduled-impact target dedupe and the existing
+  Nature Spirit impact authority before damage/poise resolution;
+- this does not fabricate the visible ground/root ring. Final presentation must render a ring that
+  matches this same 4.0-block server radius.
+
+Build Openworld RPG run `37093321135` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-f920385919b7f7b752fa3e6ffea20b6cfc91e54b`
+(`11263683026`, SHA-256
+`24de3a4a26d7dd6dbb10a954f2e9952d39457ca30dabfafaf6e0f451a8d566e3`).
+
+Bloom Quake's server timing + radius + impact authority are therefore closed. Its visible ring/VFX and
+Nature Spirit production spawning remain gated.
+
 ## Attack 3 — Bloom Quake
 
 Used mainly after leaving Living Shell or when surrounded.
