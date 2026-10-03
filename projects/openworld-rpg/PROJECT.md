@@ -661,6 +661,29 @@ verification JARs, mrpack packaging and artifact upload. Artifact
 This is **BUILD VERIFIED**, not a claim that a production Regalhart phase has been playtested: the
 accepted selector/executor/presentation caller and production spawn remain gated.
 
+The following Regalhart territory-timing pass at code state
+`c44124b34dcb448558f651479658b5d97be4b92c` closes only the non-spatial persistent timing rules
+already fixed by canon. A dedicated server-world attachment records the last valid Regalhart defeat
+against the shared active-world clock. Repeat eligibility cannot begin before **20 active-world
+minutes / 24,000 ticks** have elapsed, and pre-gate emptiness is intentionally discarded: only after
+that gate may the accepted future core-arena adapter accumulate the required continuous **60 s /
+1,200 ticks** with no player inside. Any player returning to the core arena resets that post-gate
+empty window. Separately, while a real boss instance exists, the later territory adapter can feed
+eligible-engaged presence into an exact **25 s / 500 tick** disengage timer; returning engagement
+clears that timer. The controller exposes timing state only and deliberately cannot choose a spatial
+anchor, search coordinates, spawn Regalhart, reset physical HP/poise/status or decide camera/24-block
+materialization legality.
+
+Build Openworld RPG run `37106352754` / #317 is **SUCCESS** across tests/build, pinned
+dependency/creature inspection, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs, mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-c44124b34dcb448558f651479658b5d97be4b92c`
+(`11267273716`, normal JAR SHA-256
+`6838de45ac53581c3e8b9c6f494c68f4ef721e3fe32d1b4f558746389cbec5cd`).
+The 3 authored Regalhart start anchors, deterministic anchor selection transaction, real
+territory/core-arena volumes, production spawn and reset executor therefore remain spatial/runtime
+gates rather than being fabricated here.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

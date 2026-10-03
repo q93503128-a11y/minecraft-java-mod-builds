@@ -2090,6 +2090,34 @@ verification JARs, mrpack packaging and artifact upload all passed. Artifact:
 (`11266468249`, normal JAR SHA-256
 `e44574552efacd21728e8251b966551dcd4aad0efee125fda17a9c4ee2ac5da9`).
 
+#### Runtime Regalhart territory timing authority
+
+Code state `c44124b34dcb448558f651479658b5d97be4b92c` closes only the spatially-independent
+Regalhart territory timers:
+
+- valid defeat time persists on the server world against the existing shared R01 active-world clock;
+- repeat delay is exactly **20 active-world minutes / 24,000 ticks**;
+- arena emptiness before that 20-minute gate does not count;
+- once the gate opens, the future authored core-arena adapter must report a continuous **60 s /
+  1,200 ticks** with no player inside before repeat eligibility can become true;
+- any player returning to the core arena resets only that 60-second post-gate empty window;
+- an existing boss instance always blocks repeat eligibility;
+- while a real boss instance exists, no eligible engaged player in the authored Regalhart territory
+  starts the exact **25 s / 500 tick** disengage window;
+- eligible engagement returning clears the disengage timer immediately;
+- state is persistent and codec-covered so reconnect/restart cannot convert client time into repeat
+  authority;
+- this controller intentionally does **not** choose among the 3 authored start anchors, search world
+  coordinates, spawn a boss, decide camera/24-block spawn legality, or physically reset HP/poise/
+  statuses. Those require the accepted Regalhart spatial/encounter binder.
+
+Build Openworld RPG run `37106352754` / #317 is **SUCCESS**: tests/build, pinned
+creature/dependency inspection, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs, mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-c44124b34dcb448558f651479658b5d97be4b92c`
+(`11267273716`, normal JAR SHA-256
+`6838de45ac53581c3e8b9c6f494c68f4ef721e3fe32d1b4f558746389cbec5cd`).
+
 ### Earthloong — shared cooldowns
 
 ```text
