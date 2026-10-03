@@ -22,17 +22,12 @@ public final class MetaMenuKeyHandler {
         }
         if (event.getKey() == GLFW.GLFW_KEY_N) {
             if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
-            DrehmalMinimapLayer.toggleVisible();
+            TurnboundJourneyMapPlugin.toggleMinimap();
             return;
         }
         if (event.getKey() == GLFW.GLFW_KEY_M) {
-            if (minecraft.gui.screen() instanceof DrehmalWorldMapScreen screen) {
-                screen.onClose();
-                return;
-            }
             if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
             ClientPacketDistributor.sendToServer(new MetaCommandPayload("HUB_ROUTE_REVIEW"));
-            minecraft.gui.setScreen(new DrehmalWorldMapScreen());
             return;
         }
 

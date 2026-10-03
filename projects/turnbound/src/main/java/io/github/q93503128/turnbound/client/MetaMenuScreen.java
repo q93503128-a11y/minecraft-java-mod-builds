@@ -382,7 +382,7 @@ public final class MetaMenuScreen extends Screen {
                 ignored->closeCharacterEquipmentSlot()));
         List<ClientMetaState.EquipmentRow> choices=characterEquipmentChoices(character.id(),characterEquipmentSlot);
         int listTop=y+23,rowH=23;
-        int per=Math.max(1,UiPaging.rowsThatFit(listTop,contentBottom()-32,rowH+2,3));
+        int per=Math.max(1,UiPaging.rowsThatFit(listTop,contentBottom()-52,rowH+2,3));
         setPaging(choices.size(),per);
         int start=page*per,end=Math.min(choices.size(),start+per);
         for(int i=start;i<end;i++){
@@ -404,7 +404,7 @@ public final class MetaMenuScreen extends Screen {
             equip.active=!already;
             addRenderableWidget(equip);
         }
-        buildPager();
+        buildPagerAt(contentBottom()-44);
     }
 
     private void drawPendingButtons(int rx,int y,int rw){
@@ -602,7 +602,7 @@ public final class MetaMenuScreen extends Screen {
     private void rebuild(){clearWidgets();init();}
     private void switchTab(Tab value){if(value==tab)return;tab=value;page=0;selectedCharacterId="";selectedEquipmentId="";characterEquipmentSlot="";archiveLogOpen=false;rebuild();}
     private void openCharacterFromHome(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;characterEquipmentSlot="";selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
-    private void openMap(){Minecraft.getInstance().gui.setScreen(new DrehmalWorldMapScreen());}
+    private void openMap(){TurnboundJourneyMapPlugin.openFullscreenMap();}
     private void toggleParty(String id){if(draftParty.contains(id)){if(draftParty.size()>1)draftParty.remove(id);}else if(draftParty.size()<4)draftParty.add(id);rebuild();}
     private void saveParty(){send("PARTY|"+String.join(",",draftParty));}
     private void openCharacter(String id){tab=Tab.CHARACTERS;selectedCharacterId=id;detailTab=DetailTab.OVERVIEW;characterEquipmentSlot="";selectedSkillIndex=0;skillDescriptionScroll=0;page=0;rebuild();}
@@ -887,22 +887,7 @@ public final class MetaMenuScreen extends Screen {
                     cursor+=12;
                 }
             }
-            case EQUIPMENT->{
-                if(characterEquipmentSlot.isBlank()){
-                    g.text(font,Component.literal("부위를 선택하면 보유 장비와 능력치를 비교해 바로 장착할 수 있습니다."),x,y+34,SECONDARY,false);
-                }else{
-                    var selected=equipment(selectedEquipmentId);
-                    g.text(font,Component.literal(slotLabel(characterEquipmentSlot)+" 장비 목록"),x,y+34,GOLD,true);
-                    if(selected!=null){
-                        String current=statTypeLabel(selected.mainType())+" "+stat(selected.mainValue())
-                                +" · "+statTypeLabel(selected.subType())+" "+stat(selected.subValue());
-                        g.text(font,Component.literal(UiTextLayout.fit("선택 · "+selected.name()+" +"+selected.enhancement(),w)),x,y+50,tierColor(selected.tier()),true);
-                        g.text(font,Component.literal(UiTextLayout.fit(current,w)),x,y+64,TEXT,false);
-                        String effect=equipmentEffect(selected);
-                        if(!effect.isBlank())g.text(font,Component.literal(UiTextLayout.fit("특성 · "+effect,w)),x,y+78,PURPLE,false);
-                    }
-                }
-            }
+            case EQUIPMENT->{ /* Slot/list widgets own this view; avoid text overlapping the clickable rows. */ }
             case GROWTH->{
                 var trial=ClientSignatureTrialState.forCharacter(r.id());
                 String status=r.awakened()?"각성 완료":trial!=null&&trial.awakeningReady()?"각성 가능":"선행 조건 진행 중";
