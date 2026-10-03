@@ -2202,6 +2202,68 @@ mrpack packaging and artifact upload all passed. Artifact:
 Detailed implementation boundary is indexed in
 `AZARI_R01_REGALHART_MATERIALIZATION_PASS9.md`.
 
+#### Runtime Regalhart personal reward authority
+
+Code state `3a7d8af52c1bbf12f1fd97c617829fa1e5c69555` closes the personal first/repeat
+reward transaction backend while keeping incomplete physical loot and live boss admission
+fail-closed.
+
+Participation follows the global one-action rule:
+
+- one accepted project-damage contribution;
+- one real encounter-linked heal that restores missing HP;
+- one positive encounter-linked barrier grant to another engaged player;
+- one successfully applied project control/debuff;
+- no party-membership, proximity, last-hit or damage-share ownership.
+
+The first qualifying contribution persists that player's active root class as the Class-XP owner for
+the encounter. On death, the exact participant set is transformed into durable per-player reward
+plans before the shared Regalhart territory controller records the defeat/cycle advance. The plan
+persists first/repeat status, normal gear base/grade/Item Lv/armor-slot/affix seed, optional repeat
+second-item result, Antler count and the 15% Hartcrown result. Personal first-defeat history is also
+committed before delivery, so reconnect cannot reroll a first package.
+
+First eligible defeat, per player:
+
+- Lv8 combat reward: **20% Combat EXP / 15% Class XP / 70 Gold**;
+- guaranteed one normal item from River Pike / Riverwood Bow / Wayfarer Daggers / Wayfarer
+  Leathers / Greenwater Pendant / Wayfarer's Token;
+- guaranteed item is **Superior+**, 40:15 Superior:Exalted;
+- Regalhart Antler x2;
+- independent 15% Hartcrown Spear result.
+
+Repeat eligible defeat, per player:
+
+- Lv8 combat reward: **7% Combat EXP / 6% Class XP / 35 Gold**;
+- one guaranteed normal item from the same six-family pool;
+- 25% independent second normal item;
+- ordinary field-boss grade table Standard 10% / Refined 35% / Superior 40% / Exalted 15%;
+- Regalhart Antler x1;
+- independent 15% Hartcrown Spear result.
+
+The existing reconnect-safe progression/currency transaction service and Material-Pouch receipt
+service now deliver Combat EXP, Class XP, Gold and Antlers idempotently. Normal equipment results
+remain pending because the shared ordinary-equipment sell/materialization-value contract is still
+unclosed. Hartcrown hit results also remain pending because Hart's Momentum runtime plus accepted
+external item presentation/materialization are not yet bound. No fake zero-value item or silent
+reward omission is used.
+
+`R01ExternalActorCatalog.productionSpawnReady(REGALHART)` remains **false**. Reward authority being
+closed does not waive Crown Charge guardability, Rear Kick pressure, mirrored Sweep timing, exact
+7.0/12.0 endpoint ownership, weak-point geometry, real camera/occlusion, physical attack presentation
+or final loot-item binding.
+
+Build Openworld RPG run `37116118675` / #321 is **SUCCESS**: clean tests/build, pinned
+gameplay/creature dependency inspection, R01 creature registry inspection, Earthloong dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-3a7d8af52c1bbf12f1fd97c617829fa1e5c69555`
+(`11271951185`, normal JAR SHA-256
+`05afbeff79729bd02270e9a67476a8476c189f86bb2ccb2d5e3de5887561582e`).
+
+Detailed reward boundary is indexed in
+`AZARI_R01_REGALHART_REWARD_PASS10.md`.
+
 ### Earthloong — shared cooldowns
 
 ```text

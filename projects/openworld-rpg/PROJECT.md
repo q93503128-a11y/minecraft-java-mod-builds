@@ -741,6 +741,38 @@ mrpack packaging and artifact upload. Artifact
 `b2d010d833f7c6998b3a62b63701f3fbc2b85bbcbd89a0912e731bca942d2a4c`).
 Detailed boundary/state is indexed in `AZARI_R01_REGALHART_MATERIALIZATION_PASS9.md`.
 
+The Regalhart personal-reward pass at code state
+`3a7d8af52c1bbf12f1fd97c617829fa1e5c69555` now owns the boss's first/repeat participant
+transactions without opening live spawn. One accepted damage contribution, real encounter-linked
+heal/barrier, or successful project control/debuff records personal eligibility and freezes the
+first-contribution root class for Class XP. On defeat the exact participant set is converted into
+persistent personal RNG plans **before delivery**, including first-vs-repeat identity, normal
+equipment base/grade/Item Lv/armor slot/affix seed, repeat second-item 25% result, Antler count and
+the independent 15% Hartcrown Spear result. Personal first-defeat history is committed with the
+plan, so disconnect/reconnect cannot reroll a first package.
+
+The live numeric/material portion is now reconnect-safe through existing services. First eligible
+defeat grants Lv8-modified Combat EXP 20%, Class XP 15%, 70 Gold and Regalhart Antler x2; repeat
+grants 7%, 6%, 35 Gold and Antler x1. First normal equipment is guaranteed Superior+ at the authored
+40:15 Superior:Exalted weight. Repeats guarantee one normal item from the six-family Regalhart pool,
+with 25% for a second, using the 10/35/40/15 field-boss grade table. The 15% Hartcrown result is
+persisted independently on both first and repeat clears.
+
+Physical normal-equipment delivery remains pending because the shared ordinary-equipment
+sell/materialization value contract is still unresolved; Hartcrown additionally waits for
+Hart's Momentum runtime and accepted item presentation/materialization. Earned plans stay pending
+rather than being silently dropped or replaced with fake zero-value gear. Regalhart therefore
+remains excluded from `productionSpawnReady`; attack-contract/camera/weak-point/presentation gates
+also remain.
+
+Build Openworld RPG run `37116118675` / #321 is **SUCCESS** across clean tests/build, pinned
+dependency and R01 creature inspection, core/gameplay dedicated-server smoke, gameplay client
+startup, both verification JARs, mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-3a7d8af52c1bbf12f1fd97c617829fa1e5c69555`
+(`11271951185`, normal JAR SHA-256
+`05afbeff79729bd02270e9a67476a8476c189f86bb2ccb2d5e3de5887561582e`).
+Detailed reward state is indexed in `AZARI_R01_REGALHART_REWARD_PASS10.md`.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
