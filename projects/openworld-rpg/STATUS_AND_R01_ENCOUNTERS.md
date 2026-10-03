@@ -1016,6 +1016,44 @@ This closes Steelboar **selection/cooldown/Furious Route decision authority** on
 second-charge execution, exact impact geometry, obstacle collision and production presentation/spawn
 remain separate gates.
 
+### Runtime closed-melee execution and impact authority
+
+Code state `7a4a06781ac9ceaecc21cff748a79464e5dbcf73` binds the two Steelboar melee attacks
+whose impact contracts are fully closed:
+
+- the shared player-poise canon maps incoming `medium` stagger pressure to **28** and `heavy`
+  to **45**; those values are therefore not local Steelboar inventions;
+- Iron Tusk commits an exact **8-tick / 0.40 s** wind-up, one server impact frame, then
+  **7-tick / 0.35 s** recovery;
+- Iron Tusk impact resolves **13% same-Lv benchmark physical damage**, medium guard pressure,
+  `guardable=true`, `perfect_guardable=true`, and player-poise pressure **28** through the
+  central project player-damage/defense/poise runtimes;
+- Shoulder Hook commits an exact **12-tick / 0.60 s** wind-up, one server impact frame, then
+  **14-tick / 0.70 s** recovery;
+- Shoulder Hook impact resolves **20% same-Lv benchmark physical damage**, heavy guard pressure,
+  `guardable=true`, `perfect_guardable=true`, and player-poise pressure **45** through the same
+  central authority;
+- one committed action-counter may consume each target at most once and only on the exact impact
+  tick; early, late and duplicate callbacks fail closed;
+- a second melee execution cannot begin while the current one is in wind-up/impact/recovery;
+- exact authored Steelboar registry + project `authored_spawn` are required before runtime
+  impact authority can apply;
+- donor natural spawns and raw verification entities do not inherit these production combat rules;
+- Iron Rush and Furious Route are explicitly rejected by this execution/impact path. Their unresolved
+  ordinary `guardable` tag therefore cannot be bypassed through the now-working melee authority.
+
+Build Openworld RPG run `37095783113` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-7a4a06781ac9ceaecc21cff748a79464e5dbcf73`
+(`11264875569`, SHA-256
+`22e67a3282418ecfa8af19fed35699a572da2b57ac778f068d43088c907a4eb8`).
+
+This closes Iron Tusk / Shoulder Hook **backend timing + impact authority**. Their final visible
+frontal contact geometry/animation is still a presentation binding, and Steelboar production spawn
+remains closed. Iron Rush/Furious Route remain blocked from impact execution until their remaining
+canon/presentation gates are closed.
+
 ## Status relations
 
 - Bleeding buildup: resistant;

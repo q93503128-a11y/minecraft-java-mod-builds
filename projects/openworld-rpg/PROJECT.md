@@ -586,6 +586,23 @@ mrpack packaging and artifact upload. Artifact
 `f8645f5e15519b1b27ec594584a3efd5142afb61471e421eaad9d509c526d227`).
 Steelboar production spawn/presentation and charge execution remain closed.
 
+Steelboar's two fully specified melee impacts are now bound at code state
+`7a4a06781ac9ceaecc21cff748a79464e5dbcf73`. Iron Tusk owns an exact 8-tick wind-up,
+single impact frame and 7-tick recovery, resolving 13% same-Lv benchmark physical damage with medium
+guard pressure and player-poise pressure 28. Shoulder Hook owns 12/impact/14 ticks and resolves 20%
+physical with heavy guard pressure and player-poise pressure 45. The 28/45 poise values come from the
+canonical shared player incoming stagger-pressure bands in `COMBAT_BALANCE.md`. Both attacks use the
+central player defense/damage/poise runtimes, target-per-action-counter dedupe, exact impact-tick
+validation and exact authored Steelboar gating. The runtime explicitly rejects Iron Rush/Furious Route
+so their unresolved ordinary `guardable` contract cannot leak into damage execution. Run
+`37095783113` is **SUCCESS** across tests/build, pinned dependency inspection, core/gameplay
+server smoke, gameplay client startup, both verification JARs, mrpack packaging and artifact upload.
+Artifact `openworld-rpg-m0-7a4a06781ac9ceaecc21cff748a79464e5dbcf73`
+(`11264875569`, SHA-256
+`22e67a3282418ecfa8af19fed35699a572da2b57ac778f068d43088c907a4eb8`).
+Final melee arc presentation, Iron Rush/Furious Route execution and Steelboar production spawn remain
+closed.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.
