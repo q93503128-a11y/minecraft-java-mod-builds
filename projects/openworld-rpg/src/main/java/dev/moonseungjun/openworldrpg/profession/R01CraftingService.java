@@ -47,7 +47,47 @@ public final class R01CraftingService {
             R01CraftingRecipe recipe,
             int quantity
     ) {
-        Objects.requireNonNull(player, "player");
+        return craft(
+                player,
+                recipe,
+                quantity,
+                R01CraftingState.CraftContext.SETTLEMENT
+        );
+    }
+
+    /**
+     * Camp-authorized cooking. The Camp authority validates the physical interaction before this
+     * call; this context may consume only the carried Material Pouch, never the Material Vault.
+     */
+    public static CraftResult craftCampCooking(
+            ServerPlayer player,
+            R01CraftingRecipe recipe,
+            int quantity
+    ) {
+        Objects.requireNonNull(recipe, "recipe");
+        if (recipe.profession()
+                != ProfessionMasteryState.Profession.COOKING) {
+            return new CraftResult(
+                    CraftStatus.INVALID_CONTEXT,
+                    0,
+                    Optional.empty()
+            );
+        }
+        return craft(
+                player,
+                recipe,
+                quantity,
+                R01CraftingState.CraftContext.CAMP
+        );
+    }
+
+    private static CraftResult craft(
+            ServerPlayer player,
+            R01CraftingRecipe recipe,
+            int quantity,
+            R01CraftingState.CraftContext context
+    ) {
+        Objects.requireNonNull(context, "context");
         Objects.requireNonNull(recipe, "recipe");
         if (quantity <= 0) {
             return new CraftResult(
@@ -68,9 +108,10 @@ public final class R01CraftingService {
             );
         }
 
-        if (R01AlderfordRuntimeBindingRegistry.productionService(
-                recipe.serviceId()
-        ).isEmpty()) {
+        if (context == R01CraftingState.CraftContext.SETTLEMENT
+                && R01AlderfordRuntimeBindingRegistry.productionService(
+                        recipe.serviceId()
+                ).isEmpty()) {
             return new CraftResult(
                     CraftStatus.SERVICE_NOT_PRODUCTION,
                     0,
@@ -94,7 +135,7 @@ public final class R01CraftingService {
         if (!PlayerInventoryService.canConsumeMaterials(
                 player,
                 costs,
-                true,
+                context.mayUseMaterialVault(),
                 R01RiverbankRemediesService.protectedPouchCounts(player)
         )) {
             return new CraftResult(
@@ -123,7 +164,8 @@ public final class R01CraftingService {
                 player.getUUID().toString(),
                 recipe.id(),
                 quantity,
-                goldCost
+                goldCost,
+                context
         );
         if (!begin.created()) {
             throw new IllegalStateException(
@@ -133,6 +175,7 @@ public final class R01CraftingService {
         replaceCraftState(player, begin.state());
         return executePending(player, begin.craft(), false);
     }
+
 
     public static CraftResult craftMaxSettlement(
             ServerPlayer player,
@@ -156,7 +199,37 @@ public final class R01CraftingService {
         ).isEmpty()) {
             return 0;
         }
+        return maxCraftable(
+                player,
+                recipe,
+                R01CraftingState.CraftContext.SETTLEMENT
+        );
+    }
 
+    public static int maxCraftableCampCooking(
+            ServerPlayer player,
+            R01CraftingRecipe recipe
+    ) {
+        Objects.requireNonNull(recipe, "recipe");
+        if (recipe.profession()
+                != ProfessionMasteryState.Profession.COOKING) {
+            return 0;
+        }
+        return maxCraftable(
+                player,
+                recipe,
+                R01CraftingState.CraftContext.CAMP
+        );
+    }
+
+    private static int maxCraftable(
+            ServerPlayer player,
+            R01CraftingRecipe recipe,
+            R01CraftingState.CraftContext context
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(recipe, "recipe");
+        Objects.requireNonNull(context, "context");
         long maximum = Integer.MAX_VALUE;
         PlayerInventoryState inventory = PlayerInventoryService.state(player);
         Map<String, Integer> protectedPouch =
@@ -167,8 +240,10 @@ public final class R01CraftingService {
                     inventory.materialPouch().getOrDefault(cost.getKey(), 0)
                             - protectedPouch.getOrDefault(cost.getKey(), 0)
             );
-            available += inventory.materialVault()
-                    .getOrDefault(cost.getKey(), 0);
+            if (context.mayUseMaterialVault()) {
+                available += inventory.materialVault()
+                        .getOrDefault(cost.getKey(), 0);
+            }
             maximum = Math.min(maximum, available / cost.getValue());
         }
         if (recipe.unitGoldFee() > 0L) {
@@ -184,6 +259,7 @@ public final class R01CraftingService {
         );
         return (int) Math.max(0L, maximum);
     }
+
 
     public static void reconcilePending(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
@@ -242,7 +318,7 @@ public final class R01CraftingService {
             if (!PlayerInventoryService.canConsumeMaterials(
                     player,
                     materialCosts,
-                    true,
+                    pending.context().mayUseMaterialVault(),
                     R01RiverbankRemediesService.protectedPouchCounts(player)
             )) {
                 replaceCraftState(
@@ -291,7 +367,7 @@ public final class R01CraftingService {
                         player,
                         materialTransactionId,
                         materialCosts,
-                        true,
+                        pending.context().mayUseMaterialVault(),
                         R01RiverbankRemediesService.protectedPouchCounts(player)
                 );
         if (!materialResult.consumed()) {
@@ -487,6 +563,7 @@ public final class R01CraftingService {
         CRAFTED_RECOVERED,
         CRAFTED_PENDING_CLAIM,
         SERVICE_NOT_PRODUCTION,
+        INVALID_CONTEXT,
         INVALID_QUANTITY,
         INSUFFICIENT_GOLD,
         INSUFFICIENT_MATERIALS,

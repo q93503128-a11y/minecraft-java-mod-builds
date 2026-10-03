@@ -122,6 +122,33 @@ class R01ProfessionCraftingStateTest {
                 .parse(JsonOps.INSTANCE, encoded)
                 .getOrThrow();
         assertEquals(first.state(), decoded);
+        assertEquals(
+                R01CraftingState.CraftContext.SETTLEMENT,
+                decoded.pending().orElseThrow().context()
+        );
+
+        var camp = R01CraftingState.initial().begin(
+                playerId,
+                R01CraftingRecipe.TRAIL_SKEWERS.id(),
+                2,
+                0L,
+                R01CraftingState.CraftContext.CAMP
+        );
+        var campEncoded = R01CraftingState.CODEC
+                .encodeStart(JsonOps.INSTANCE, camp.state())
+                .getOrThrow();
+        var campDecoded = R01CraftingState.CODEC
+                .parse(JsonOps.INSTANCE, campEncoded)
+                .getOrThrow();
+        assertEquals(
+                R01CraftingState.CraftContext.CAMP,
+                campDecoded.pending().orElseThrow().context()
+        );
+        assertFalse(
+                campDecoded.pending().orElseThrow()
+                        .context()
+                        .mayUseMaterialVault()
+        );
 
         var second = first.state()
                 .clearPending(first.craft().transactionId())

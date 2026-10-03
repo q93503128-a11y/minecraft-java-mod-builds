@@ -47,8 +47,25 @@ public record R01CraftingState(
             int quantity,
             long goldCost
     ) {
+        return begin(
+                playerUuid,
+                recipeId,
+                quantity,
+                goldCost,
+                CraftContext.SETTLEMENT
+        );
+    }
+
+    public BeginResult begin(
+            String playerUuid,
+            String recipeId,
+            int quantity,
+            long goldCost,
+            CraftContext context
+    ) {
         java.util.UUID.fromString(playerUuid);
         requireId(recipeId);
+        context = Objects.requireNonNull(context, "context");
         if (quantity <= 0 || goldCost < 0L) {
             throw new IllegalArgumentException(
                     "Craft quantity must be positive and Gold cost non-negative."
@@ -64,7 +81,8 @@ public record R01CraftingState(
                 transactionId,
                 recipeId,
                 quantity,
-                goldCost
+                goldCost,
+                context
         );
         return new BeginResult(
                 new R01CraftingState(
@@ -107,7 +125,8 @@ public record R01CraftingState(
             String transactionId,
             String recipeId,
             int quantity,
-            long goldCost
+            long goldCost,
+            CraftContext context
     ) {
         public static final Codec<PendingCraft> CODEC =
                 RecordCodecBuilder.create(instance -> instance.group(
@@ -118,8 +137,27 @@ public record R01CraftingState(
                         Codec.INT.fieldOf("quantity")
                                 .forGetter(PendingCraft::quantity),
                         Codec.LONG.fieldOf("gold_cost")
-                                .forGetter(PendingCraft::goldCost)
+                                .forGetter(PendingCraft::goldCost),
+                        CraftContext.CODEC.optionalFieldOf(
+                                "craft_context",
+                                CraftContext.SETTLEMENT
+                        ).forGetter(PendingCraft::context)
                 ).apply(instance, PendingCraft::new));
+
+        public PendingCraft(
+                String transactionId,
+                String recipeId,
+                int quantity,
+                long goldCost
+        ) {
+            this(
+                    transactionId,
+                    recipeId,
+                    quantity,
+                    goldCost,
+                    CraftContext.SETTLEMENT
+            );
+        }
 
         public PendingCraft {
             requireId(transactionId);
@@ -129,6 +167,31 @@ public record R01CraftingState(
                         "Pending craft quantity/cost is invalid."
                 );
             }
+            context = Objects.requireNonNull(context, "context");
+        }
+    }
+
+    public enum CraftContext {
+        SETTLEMENT,
+        CAMP;
+
+        public static final Codec<CraftContext> CODEC =
+                Codec.STRING.xmap(
+                        value -> switch (value) {
+                            case "settlement" -> SETTLEMENT;
+                            case "camp" -> CAMP;
+                            default -> throw new IllegalArgumentException(
+                                    "Unknown R01 craft context: " + value
+                            );
+                        },
+                        value -> switch (value) {
+                            case SETTLEMENT -> "settlement";
+                            case CAMP -> "camp";
+                        }
+                );
+
+        public boolean mayUseMaterialVault() {
+            return this == SETTLEMENT;
         }
     }
 

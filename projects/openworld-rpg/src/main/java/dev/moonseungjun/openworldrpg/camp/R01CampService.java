@@ -9,6 +9,8 @@ import dev.moonseungjun.openworldrpg.gathering.R01GatheringRules;
 import dev.moonseungjun.openworldrpg.gathering.R01GatheringService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryService;
 import dev.moonseungjun.openworldrpg.inventory.PlayerInventoryState;
+import dev.moonseungjun.openworldrpg.profession.R01CraftingRecipe;
+import dev.moonseungjun.openworldrpg.profession.R01CraftingService;
 import dev.moonseungjun.openworldrpg.profession.R01SmithingRecipe;
 import dev.moonseungjun.openworldrpg.recovery.RecoveryBeltReloadService;
 import dev.moonseungjun.openworldrpg.world.structure.R01AlderfordRuntimeBindingRegistry;
@@ -314,6 +316,46 @@ public final class R01CampService {
         var reload = RecoveryBeltReloadService.reloadAtRest(player);
         CombatStateServices.persistRuntime(player);
         return new RestResult(RestStatus.RESTED, reload.loadedCount());
+    }
+
+    /**
+     * Camp-authorized cooking after a physical interaction adapter has proved the player is using
+     * this active camp. Shared camp services do not transfer ownership.
+     */
+    public static R01CraftingService.CraftResult cookAfterValidatedInteraction(
+            ServerPlayer player,
+            UUID campOwnerId,
+            R01CraftingRecipe recipe,
+            int quantity
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(campOwnerId, "campOwnerId");
+        Objects.requireNonNull(recipe, "recipe");
+
+        MinecraftServer server = requireServer(player);
+        if (!Level.OVERWORLD.equals(player.level().dimension())
+                || worldState(server).camp(campOwnerId.toString()).isEmpty()) {
+            return new R01CraftingService.CraftResult(
+                    R01CraftingService.CraftStatus.INVALID_CONTEXT,
+                    0,
+                    Optional.empty()
+            );
+        }
+        long nowTick = player.level().getGameTime();
+        if (CombatStateServices.states()
+                .getOrCreate(player.getUUID(), nowTick)
+                .isCombatActive(nowTick)) {
+            return new R01CraftingService.CraftResult(
+                    R01CraftingService.CraftStatus.INVALID_CONTEXT,
+                    0,
+                    Optional.empty()
+            );
+        }
+        return R01CraftingService.craftCampCooking(
+                player,
+                recipe,
+                quantity
+        );
     }
 
     public static void reset(UUID playerId) {
