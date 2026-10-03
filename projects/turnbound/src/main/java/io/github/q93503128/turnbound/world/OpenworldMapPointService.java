@@ -92,19 +92,30 @@ final class OpenworldMapPointService {
                 "CV_DRABYEL_NORTH",
                 DrehmalContentUnlocks.WARNING_CAVE_ELITE,
                 DrehmalWorldBossPlacementRules.ENCOUNTER_ID);
-        for (var encounter : DrehmalAdaptiveRoutePlacement.productionEncounters(player)) {
-            String combatId = encounter.combatEncounterId();
+        for (var authored : DrehmalFirstRouteCatalog.route().encounters()) {
+            String combatId = authored.combatEncounterId();
             if (!choices.contains(combatId) || clears.contains(combatId)) continue;
-            var site = DrehmalAdaptiveRoutePlacement.site(player, encounter.siteLocator());
-            if (site == null || site.runtimePosition() == null) continue;
-            var pos = site.runtimePosition();
+            double x;
+            double z;
+            var runtime = DrehmalAdaptiveRoutePlacement.site(player, authored.siteLocator());
+            if (runtime != null && runtime.runtimePosition() != null) {
+                x = runtime.runtimePosition().x() + 0.5D;
+                z = runtime.runtimePosition().z() + 0.5D;
+            } else {
+                var placement = DrehmalMapPlacementCatalog.placement(authored.siteLocator());
+                if (placement != null && !placement.siteSeeds().isEmpty()) {
+                    var seed = placement.siteSeeds().getFirst();
+                    x = seed.x() + 0.5D;
+                    z = seed.z() + 0.5D;
+                } else if (DrehmalWorldBossPlacementRules.ENCOUNTER_ID.equals(combatId)) {
+                    var hint = DrehmalAdaptiveRoutePlacement.worldBossMapHint();
+                    if (hint == null) continue;
+                    x = hint.x() + 0.5D;
+                    z = hint.z() + 0.5D;
+                } else continue;
+            }
             out.add(new FieldUiSnapshot.MapPoint(
-                    "regional:" + combatId,
-                    encounter.playerLabel(),
-                    "QUEST",
-                    pos.x() + 0.5D,
-                    pos.z() + 0.5D,
-                    true));
+                    "regional:" + combatId, authored.playerLabel(), "QUEST", x, z, true));
         }
     }
 

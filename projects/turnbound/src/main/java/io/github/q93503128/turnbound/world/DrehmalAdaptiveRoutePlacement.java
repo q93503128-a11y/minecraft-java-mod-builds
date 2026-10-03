@@ -392,6 +392,15 @@ final class DrehmalAdaptiveRoutePlacement {
      * Derives coarse meadow probes from the pinned Capital Valley source-route geometry rather than hard-coding a
      * new boss coordinate. The final location is always selected against the live 26.2 world.
      */
+    static DrehmalMapPlacementCatalog.Seed worldBossMapHint() {
+        List<DrehmalMapPlacementCatalog.Seed> seeds = worldBossSeeds();
+        if (seeds.isEmpty()) return null;
+        return seeds.stream()
+                .min(Comparator.comparingDouble(seed ->
+                        Math.abs(worldBossRouteDistance(seed.x() + 0.5D, seed.z() + 0.5D) - 64.0D)))
+                .orElse(seeds.getFirst());
+    }
+
     private static List<DrehmalMapPlacementCatalog.Seed> worldBossSeeds() {
         Map<Long, DrehmalMapPlacementCatalog.Seed> out = new LinkedHashMap<>();
         Set<String> roles = Set.of("FIRST_COMBAT", "CHOICE_ELITE", "BREATHING");
