@@ -1,0 +1,67 @@
+{
+  "id": "openworld_rpg:r01/steelboar",
+  "entityId": "threateningly_mobs:steelboar",
+  "contentLevel": 6,
+  "decisionDelayTicks": 2,
+  "actions": [
+    {
+      "id": "IRON_TUSK",
+      "weight": 60,
+      "cooldownTicks": 0,
+      "tellTicks": 8,
+      "recoveryTicks": 7,
+      "minimumRange": 0.0,
+      "maximumRange": 3.0,
+      "committedMovementBlocks": 0.0,
+      "benchmarkDamageShare": 0.13,
+      "guardPressure": "MEDIUM",
+      "guardable": true,
+      "perfectGuardable": true,
+      "playerPoisePressure": 28.0,
+      "perfectGuardPoiseMultiplier": null,
+      "obstacleSelfPoiseDamage": null
+    },
+    {
+      "id": "SHOULDER_HOOK",
+      "weight": 40,
+      "cooldownTicks": 60,
+      "tellTicks": 12,
+      "recoveryTicks": 14,
+      "minimumRange": 0.0,
+      "maximumRange": 3.0,
+      "committedMovementBlocks": 0.0,
+      "benchmarkDamageShare": 0.20,
+      "guardPressure": "HEAVY",
+      "guardable": true,
+      "perfectGuardable": true,
+      "playerPoisePressure": 45.0,
+      "perfectGuardPoiseMultiplier": null,
+      "obstacleSelfPoiseDamage": null
+    },
+    {
+      "id": "IRON_RUSH",
+      "weight": 100,
+      "cooldownTicks": 140,
+      "tellTicks": 17,
+      "recoveryTicks": 24,
+      "minimumRange": 5.5,
+      "maximumRange": 12.0,
+      "committedMovementBlocks": 12.0,
+      "benchmarkDamageShare": 0.28,
+      "guardPressure": "HEAVY",
+      "guardable": null,
+      "perfectGuardable": true,
+      "playerPoisePressure": 70.0,
+      "perfectGuardPoiseMultiplier": 1.40,
+      "obstacleSelfPoiseDamage": 18.0
+    }
+  ],
+  "furiousRoute": {
+    "healthFractionExclusive": 0.35,
+    "cooldownTicks": 280,
+    "minimumRange": 6.0,
+    "maximumRange": 12.0,
+    "minimumSecondChargePivotTellTicks": 12,
+    "recoveryAfterSecondChargeTicks": 28
+  }
+}
