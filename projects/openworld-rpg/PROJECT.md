@@ -622,6 +622,24 @@ Artifact `openworld-rpg-m0-1291553781db71966e14858ac84c8ac1d4ff4c4c`
 Regalhart production spawn, weak-point geometry, Sovereign damage/movement application, attack
 execution and final presentation remain closed.
 
+The next Regalhart impact pass at code state
+`2a182a9708f968e13751d0fe72927c2b19c27323` closes only the two attack results already fully
+specified by canon. A non-combo Antler Sweep now owns its exact 9-tick tell / impact frame / 8-tick
+recovery and resolves 11% same-Lv benchmark physical damage with medium guard pressure and normal
+guard/perfect-guard handling; it does not invent any player-poise payload. If the deterministic
+mirrored second sweep is due, execution fails closed until that second hit's exact timing is authored.
+Royal Bound now has a server-owned confirmed-landing result—30% physical, unguardable,
+un-perfect-guardable, exact 4.5-block horizontal radius—but no fake fixed landing time is derived from
+the canon's >=1.10 s minimum leap tell. Crown Charge and Rear Kick remain impact-blocked because their
+missing fields are real canon gaps. Run `37098727691` is **SUCCESS** across tests/build, pinned
+dependency inspection, core/gameplay server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload. Artifact
+`openworld-rpg-m0-2a182a9708f968e13751d0fe72927c2b19c27323`
+(`11265038798`, SHA-256
+`74ee7d355b09b148f305a494905df29a6a2f9fc360348641a93740d740868576`).
+This is backend impact closure only; accepted movement/animation geometry, Sovereign runtime modifiers,
+weak-point geometry and production spawn are still separate gates.
+
 The R01 world-binding runtime now also has a real, fail-closed promotion path. Candidate spatial data and gated Alderford compositions cannot leak live authority merely by flipping one entry: production access requires explicit source-level promotion plus the individual production binding. Once real client/asset review is complete, accepted runtime geometry can coexist with retained candidate review evidence instead of requiring review shells to be falsely relabeled as production. Build Openworld RPG run `36961511251` at code state `02c73c66f656bfee4aa8c77565bdeafe50c02c82` passes tests/build, R01 creature-surface inspection, core/gameplay server smoke, gameplay client startup, verification JARs and pack packaging. This closes the **promotion mechanism only**. No current Azari coordinate, Alderford composition/service/property, Quarry runtime volume/socket or Earthloong arena has been promoted; `R01 SPATIAL_BINDING COMPLETE` therefore remains `NO`.
 
 This does **not** waive the remaining gates above. Broad player-facing R01 implementation still waits for exact asset/spatial closure. Narrow technical work that does not lock unresolved presentation may continue, but it must not create placeholders that later become de facto canon.

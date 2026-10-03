@@ -2033,6 +2033,36 @@ mrpack packaging and artifact upload all passed. Artifact:
 (`11264443479`, SHA-256
 `90be1d6a68845b60a53c3de47d6868a91ea15b5f79f26a64153b33d469511890`).
 
+#### Runtime Regalhart closed-impact authority
+
+Code state `2a182a9708f968e13751d0fe72927c2b19c27323` advances only the Regalhart impacts
+whose current canon is complete:
+
+- non-combo Antler Sweep owns the exact **9-tick / 0.45 s** wind-up, one server impact frame and
+  **8-tick / 0.40 s** recovery;
+- its first hit resolves **11% same-Lv benchmark physical damage**, medium guard pressure and
+  `guardable/perfect_guardable=true` through the central project player-defense pipeline;
+- no player-poise damage is invented for Antler Sweep because current canon does not state one;
+- an Antler Sweep decision whose deterministic mirrored follow-up is due is rejected by this executor
+  until the second hit's exact timing is canon-closed, preventing a half-implemented combo;
+- Royal Bound's impact contract is independently closed as **30% physical**, unguardable and
+  un-perfect-guardable with an exact **4.5-block horizontal landing radius**;
+- Royal Bound does **not** receive a fake fixed landing tick: the authored tell is `>=1.10 s` and the
+  physical leap must supply the actual landing frame later;
+- Royal Bound candidate membership remains caller-owned, while dead/spectator/cross-level/out-of-radius
+  targets are excluded by the server area resolver;
+- Crown Charge and Rear Kick remain rejected from impact authority because their current impact
+  contracts are incomplete;
+- exact `threateningly_mobs:the_regalhart` + project `authored_spawn` are required, so natural
+  donor spawns and raw verification entities cannot accidentally inherit production combat rules.
+
+Build Openworld RPG run `37098727691` is **SUCCESS**: tests/build, pinned creature/dependency
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs,
+mrpack packaging and artifact upload all passed. Artifact:
+`openworld-rpg-m0-2a182a9708f968e13751d0fe72927c2b19c27323`
+(`11265038798`, SHA-256
+`74ee7d355b09b148f305a494905df29a6a2f9fc360348641a93740d740868576`).
+
 ### Earthloong — shared cooldowns
 
 ```text
