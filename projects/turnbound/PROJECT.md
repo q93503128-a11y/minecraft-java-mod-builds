@@ -2105,3 +2105,50 @@ Validation:
 - CLIENT RUNTIME TESTED: NO for Build #1006
 - PLAYTESTED: previous Build #998 partially; Build #1006 not yet
 - MULTIPLAYER TESTED: NO
+
+
+## 2026-10-03 summon reveal / JourneyMap production correction — Build #1007
+
+Verified implementation commit:
+`900a80d04738707cd566d8b6679bce8e854c110a`
+
+Corrections:
+- M now opens JourneyMap directly while still recording the server-side route-review onboarding flag;
+- legacy `O|MAP` navigation no longer reopens `DrehmalWorldMapScreen`;
+- E > 설정 minimap state/toggle now reads and controls JourneyMap instead of the retired local minimap preference;
+- JourneyMap waypoint descriptions use player-facing Korean category text;
+- summon action failure is separated from presentation-only failure so a committed result is never reported as an unsaved summon;
+- single pulls always reveal, while ten-pulls reserve full 3D spotlight ceremonies for ★4/★5 results and otherwise preview only the best low-rarity result before summary;
+- summon timing is rarity-aware: low rarity stays short, high rarity gets additional anticipation and character hold;
+- summon camera framing has a materially stronger rarity curve without adding shake;
+- persistent idle summon-stage particle spam was removed; particles are event accents around the actual model/animation reveal;
+- plan/timeline regression tests were updated for the new reveal contract.
+
+Build TURNBOUND #1007:
+- run: 37112974341
+- Gradle tests/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- JourneyMap dependency entry verification: PASS
+- artifact upload: PASS
+- artifact: turnbound-v04-workbranch / ID 11271185405
+- JAR SHA-256: `34152053b4a8943fca89b0507d23ac00e3decee941c9022015fec26d061966e1`
+- MRPACK SHA-256: `7175d3680f3076f4a8a7049284f37d1769f4a9f36bfecfeff5893086af9e0f6f`
+- uploaded artifact ZIP SHA-256: `a84b8bf526b711e1f846be84292994c5f25418085215d28459b238c343b8be9e`
+
+Audit details:
+- see `CODE_AUDIT_2026-10-03.md`;
+- deprecated API / Gradle / GeckoLib metadata warnings remain classified as non-blocking maintenance debt;
+- real-client JourneyMap and summon-cinematic visual quality still require playtest.
+
+Validation:
+- CODE REVIEWED: YES for the handoff-specified high-risk domains
+- AUTOMATED TESTS: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO
+- PLAYTESTED: NO for Build #1007
+- MULTIPLAYER TESTED: NO
