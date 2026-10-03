@@ -70,11 +70,17 @@ Regalhart production spawn also remains closed by its known attack/weak-point/pr
 
 ## Validation boundary
 
-A full Openworld build is required because the melee mixin changed.
+Build Openworld RPG run `37121418002` / #324 is **SUCCESS** for code state
+`1b99b764c9906e8dba69602227c9f939641d28c7`. Clean tests/build, dependency inspection,
+core/gameplay dedicated-server smoke, gameplay client startup, verification JARs, mrpack packaging
+and artifact upload passed. Artifact `11273234571` has workflow-artifact digest
+`sha256:40ced07ca8739c1fd56202830ced07791e6d6dc2a61fc77321de9d8b01ca07d1`.
 
 ```text
 CODE REVIEWED: YES
-BUILD VERIFIED: PENDING
+TESTED: YES
+BUILD VERIFIED: YES
+JAR PRODUCED: YES
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```

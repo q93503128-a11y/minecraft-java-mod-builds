@@ -998,3 +998,28 @@ while retaining the previously validated Better Combat target rather than extend
 
 The separate Hart's Momentum sprint-window re-arm interpretation remains an explicit gameplay-canon
 question and is not silently changed by this backend correction.
+
+
+### 2026-10-03 backend-integrity pass 14 — ordinary Smithing + Fast Travel
+
+R01 ordinary Smithing is now a real server transaction rather than recipe-only canon. The twelve
+Refined/Superior Holt Forge recipes use the existing inventory/currency/equipment authorities,
+persist the resolved crafted output before consumption/delivery, preserve fixed recipe identity
+affixes while rolling only the remaining affix slots, and award the three canon Smithing Insights.
+Superior forge access is permanently unlocked by actually encountering Verdant Crystal regardless
+of whether that first crystal came from gathering or the Nature Spirit reward path. Build Openworld
+RPG #328 / run `37122629844` is SUCCESS for
+`6b530f5532822702de9f5d32060893cd08cde33b`.
+
+R01 Fast Travel now has a server-authoritative backend at final code state
+`bcd4e41652b1eddc289aa4973bbeef6932f73984`: accepted production node registry, personal
+Alderford/Quarry activation checks, <=6-block origin gate, exact 20-tick channel, combat/action/
+Downed/mount rejection, combat cancellation during channel, server collision validation and primary
++ four-fallback arrival resolution. Client input cannot supply coordinates. The current candidate
+Azari coordinates are deliberately not registered, so final spatial binding remains closed rather
+than silently promoted. Build Openworld RPG #331 / run `37123766645` is SUCCESS across clean
+tests/build, core/gameplay server smoke and gameplay client startup. Normal JAR SHA-256 is
+`ffc39e83dd6e6f9e185b18f8665740cf04fbb1796a666ccbc91a93108d73988b`.
+
+Detailed scope and remaining backend gaps are indexed in
+`R01_BACKEND_INTEGRITY_PASS14.md`.
