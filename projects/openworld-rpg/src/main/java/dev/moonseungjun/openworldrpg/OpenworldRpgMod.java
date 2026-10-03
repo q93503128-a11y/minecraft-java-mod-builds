@@ -62,6 +62,7 @@ import dev.moonseungjun.openworldrpg.progression.r01.R01QuarryRoomEncounterAttac
 import dev.moonseungjun.openworldrpg.progression.r01.R01QuarryRoomEncounterController;
 import dev.moonseungjun.openworldrpg.progression.r01.R01QuarryRunAttributionService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RoadsideTroubleController;
+import dev.moonseungjun.openworldrpg.progression.r01.R01RegalhartTerritoryAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RepeatRewardAttachments;
 import dev.moonseungjun.openworldrpg.progression.r01.R01RiverbankRemediesService;
 import dev.moonseungjun.openworldrpg.progression.r01.R01SharedWorldAttachments;
@@ -123,6 +124,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerEquipmentAttachments.initialize();
         R01PlayerStateAttachments.initialize();
         R01SharedWorldAttachments.initialize();
+        R01RegalhartTerritoryAttachments.initialize();
         R01EarthloongEncounterAttachments.initialize();
         R01NatureSpiritRewardAttachments.initialize();
         R01EarthloongBossLootPlanAttachments.initialize();
