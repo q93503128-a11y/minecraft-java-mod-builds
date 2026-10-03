@@ -6,7 +6,7 @@ import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
 import journeymap.api.v2.client.IClientAPI;
 import journeymap.api.v2.client.IClientPlugin;
-import journeymap.api.v2.client.display.Context;
+import journeymap.api.v2.common.Context;
 import journeymap.api.v2.client.display.DisplayType;
 import journeymap.api.v2.client.display.MarkerOverlay;
 import journeymap.api.v2.client.event.DisplayUpdateEvent;
@@ -21,7 +21,7 @@ import journeymap.api.v2.common.waypoint.WaypointFactory;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import org.lwjgl.glfw.GLFW;
@@ -122,7 +122,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
             BlockPos pos, String label, FieldUiSnapshot.MapPoint point, float scale
     ) {
         MapImage invisible = new MapImage(
-                ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"),
+                Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"),
                 16, 16);
         invisible.setOpacity(0.0F)
                 .setDisplayWidth(1.0D)
