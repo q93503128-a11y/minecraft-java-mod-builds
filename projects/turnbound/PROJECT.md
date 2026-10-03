@@ -2152,3 +2152,43 @@ Validation:
 - CLIENT RUNTIME TESTED: NO
 - PLAYTESTED: NO for Build #1007
 - MULTIPLAYER TESTED: NO
+
+
+## 2026-10-03 live-playtest UX / regional objective correction — Build #1013
+
+Verified implementation commit:
+`3980d6aabbcfe9346080f3cfea6fba9dc4244c56`
+
+Client feedback from the preceding live build was used to correct:
+- JourneyMap TURNBOUND labels now use a dedicated fullscreen overlay with 2x base text and 4x close-zoom text, opaque backing and font shadow; waypoint icons remain separate.
+- TURNBOUND no longer intercepts N, avoiding the double minimap-toggle path with JourneyMap's own key handling.
+- JourneyMap mob radar suppresses vanilla mobs/NPC entities and keeps TURNBOUND physical field enemies visible.
+- E > 퀘스트 now separates quests from achievements, supports all/incomplete/completed filters, keeps incomplete quests first by default, uses full-width compact previews and opens a full detail view on quest click.
+- ENEMY_ALL skills accept an enemy click as a preview anchor, show target arrows over every living enemy, and commit on the second click/double-click while the server action remains all-target authoritative.
+- ten-pull and skipped summon summaries no longer auto-close; the normal reveal also ends on the persistent result grid and closes only on explicit input.
+- summon staging searches farther away from the summoner/player with larger live-world clearance, while the camera uses materially tighter distance/FOV framing so the reveal is not lost among village stalls/NPCs.
+- Capital Valley regional quest markers are now emitted only for encounters that are actually production-ready in the live world. North-road and warning-cave objectives receive a broader source-bounded live placement recovery; optional Graul remains absent if no safe meadow passes checks.
+- Capital Valley waystation placement treats authored Y as a preference rather than a hard gate and broadens the local X/Z search, improving physical keeper/station recovery on compatibility terrain.
+
+Build TURNBOUND #1013:
+- run: 37120815999
+- Gradle tests/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+- artifact: turnbound-v04-workbranch / ID 11273615320
+- JAR SHA-256: `ae4a9398c4f5cc74908399db2ea13190509ba10d6e371a5584ea0a446d8a3965`
+- MRPACK SHA-256: `cd529a37652a210612b754a294b5ecdb8b66bf66daed3ab7611dfa6d59e472dc`
+- uploaded artifact ZIP SHA-256: `d6b5ea536bf3a63eed14b1d89920ec3c535a8e69dbb0d82b886f316bf4b48884`
+
+Validation:
+- CODE REVIEWED: YES for this correction slice
+- AUTOMATED TESTS: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO for Build #1013
+- PLAYTESTED: NO for Build #1013
+- MULTIPLAYER TESTED: NO
