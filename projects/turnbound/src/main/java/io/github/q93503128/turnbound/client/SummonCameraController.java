@@ -72,32 +72,33 @@ public final class SummonCameraController {
 
     public static void update(int slotTick, GachaPresentationTimeline.Phase phase, int stars) {
         if (!active || phase == null) return;
-        float rarityPush = Math.max(0, Math.min(5, stars) - 3) * 0.12F;
-        float drift = (float)Math.sin(Math.max(0, slotTick) * 0.115F) * 2.2F;
+        float intensity = GachaPresentationTimeline.intensity(stars);
+        float rarity = intensity / 4.0F;
+        float drift = (float)Math.sin(Math.max(0, slotTick) * 0.105F) * (1.4F + rarity * 1.6F);
         switch (phase) {
             case SIGNAL -> {
-                targetYaw = Mth.wrapDegrees(baseYaw + 12.0F + drift);
-                targetPitch = 14.0F;
-                targetDistance = 7.6F;
-                targetFov = 50.0F;
+                targetYaw = Mth.wrapDegrees(baseYaw + 13.0F + intensity * 0.8F + drift);
+                targetPitch = 14.0F - rarity;
+                targetDistance = 8.0F + rarity * 0.35F;
+                targetFov = 51.0F + rarity;
             }
             case SILHOUETTE -> {
-                targetYaw = Mth.wrapDegrees(baseYaw + 7.0F + drift * 0.7F);
-                targetPitch = 12.0F;
-                targetDistance = 6.4F - rarityPush;
-                targetFov = 47.0F;
+                targetYaw = Mth.wrapDegrees(baseYaw + 8.0F + drift * 0.65F);
+                targetPitch = 12.0F - rarity * 1.2F;
+                targetDistance = 6.8F - intensity * 0.13F;
+                targetFov = 48.0F - intensity * 0.35F;
             }
             case REVEAL -> {
-                targetYaw = Mth.wrapDegrees(baseYaw - 2.0F + drift * 0.35F);
-                targetPitch = 10.0F;
-                targetDistance = 4.9F - rarityPush;
-                targetFov = 44.0F;
+                targetYaw = Mth.wrapDegrees(baseYaw - 1.5F - intensity * 1.25F + drift * 0.30F);
+                targetPitch = 9.5F - rarity * 1.4F;
+                targetDistance = 5.2F - intensity * 0.20F;
+                targetFov = 45.0F - intensity * 0.80F;
             }
             case NAME -> {
-                targetYaw = Mth.wrapDegrees(baseYaw - 6.0F + drift * 0.25F);
-                targetPitch = 11.0F;
-                targetDistance = 5.4F - rarityPush * 0.5F;
-                targetFov = 46.0F;
+                targetYaw = Mth.wrapDegrees(baseYaw - 4.0F - intensity * 0.55F + drift * 0.20F);
+                targetPitch = 10.5F;
+                targetDistance = 5.6F - intensity * 0.10F;
+                targetFov = 46.0F - intensity * 0.25F;
             }
             case COMPLETE -> { }
         }

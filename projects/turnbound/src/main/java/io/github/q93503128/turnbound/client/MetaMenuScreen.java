@@ -506,7 +506,7 @@ public final class MetaMenuScreen extends Screen {
         boolean music=TurnboundClientSettings.musicEnabled();
         boolean sfx=TurnboundClientSettings.sfxEnabled();
         boolean camera=TurnboundClientSettings.impactCameraEnabled();
-        boolean minimap=TurnboundClientSettings.minimapEnabled();
+        boolean minimap=TurnboundJourneyMapPlugin.minimapEnabled();
 
         addRenderableWidget(new BattleHudButton(
                 x,y,half,22,Component.literal("음악 · "+(music?"켬":"끔")),music?GREEN:MUTED,
@@ -529,7 +529,7 @@ public final class MetaMenuScreen extends Screen {
                 ignored->{TurnboundClientSettings.toggleImpactCamera();rebuild();}));
         addRenderableWidget(new BattleHudButton(
                 x+half+gap,y,half,22,Component.literal("미니맵 · "+(minimap?"켬":"끔")),minimap?BLUE:MUTED,
-                ignored->{TurnboundClientSettings.toggleMinimap();rebuild();}));
+                ignored->{TurnboundJourneyMapPlugin.toggleMinimap();rebuild();}));
         setPaging(0,1);
     }
 

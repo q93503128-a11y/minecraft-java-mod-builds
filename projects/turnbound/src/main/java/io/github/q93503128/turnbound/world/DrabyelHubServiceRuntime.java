@@ -2,11 +2,9 @@ package io.github.q93503128.turnbound.world;
 
 import io.github.q93503128.turnbound.presentation.BattleActorEntity;
 import io.github.q93503128.turnbound.presentation.DrabyelServiceActors;
-import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.session.BattleSessionManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -63,7 +61,6 @@ final class DrabyelHubServiceRuntime {
             }
             BattleActorEntity actor=ensure(level,service);
             if(actor!=null)updatePresentation(level,service,actor,gameTime);
-            if("SUMMON".equals(service.role())&&gameTime%20L==0L)presentSummonStage(level,service);
         }
 
         for(String locator:List.copyOf(ACTORS.keySet())){
@@ -280,24 +277,6 @@ final class DrabyelHubServiceRuntime {
         return true;
     }
 
-    private static void presentSummonStage(ServerLevel level,DrabyelHubServiceCatalog.Service service){
-        SummonStage stage=resolveSummonStage(level,service);
-        if(stage==null)return;
-        for(ServerPlayer player:level.players()){
-            if(!ExternalWorldBootstrap.active(player)||player.isSpectator())continue;
-            if(player.position().distanceToSqr(stage.position())>64.0D*64.0D)continue;
-            for(int i=0;i<18;i++){
-                double angle=Math.PI*2.0D*i/18.0D;
-                double x=stage.position().x+Math.cos(angle)*1.8D;
-                double z=stage.position().z+Math.sin(angle)*1.8D;
-                PersonalPresentationIsolation.particles(level,player,ParticleTypes.ENCHANT,
-                        x,stage.position().y+0.06D,z,1,0.01D,0.01D,0.01D,0.0D);
-            }
-            PersonalPresentationIsolation.particles(level,player,ParticleTypes.END_ROD,
-                    stage.position().x,stage.position().y+0.12D,stage.position().z,
-                    2,0.6D,0.04D,0.6D,0.01D);
-        }
-    }
 
     private static float wrapYaw(float value){
         float wrapped=value%360.0F;

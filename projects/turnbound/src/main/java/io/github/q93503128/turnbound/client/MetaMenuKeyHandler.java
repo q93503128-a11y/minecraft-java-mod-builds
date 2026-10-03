@@ -28,6 +28,9 @@ public final class MetaMenuKeyHandler {
         if (event.getKey() == GLFW.GLFW_KEY_M) {
             if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
             ClientPacketDistributor.sendToServer(new MetaCommandPayload("HUB_ROUTE_REVIEW"));
+            if (!TurnboundJourneyMapPlugin.openFullscreenMap()) {
+                ClientUiFeedbackLayer.show("지도를 열 수 없습니다. JourneyMap 설치 상태를 확인해 주세요.");
+            }
             return;
         }
 

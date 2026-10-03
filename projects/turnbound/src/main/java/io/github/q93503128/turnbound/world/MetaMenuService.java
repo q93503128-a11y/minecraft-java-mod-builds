@@ -76,7 +76,7 @@ public final class MetaMenuService {
                             player.getUUID(),DrehmalContextualOnboarding.HUB_ROUTE_REVIEWED);
                     ExternalWorldBootstrap.refreshFieldContext(player);
                 }
-                MetaNetwork.open(player,"MAP");
+                MetaNetwork.sync(player);
             }
             case"PARTY"->{if(BattleSessionManager.exists(player))return;List<String> party=parts.length<2||parts[1].isBlank()?List.of():Arrays.stream(parts[1].split(",")).filter(value->!value.isBlank()).toList();try{CampaignProgressStore.setActiveParty(player.getUUID(),party);CampaignPersistence.saveIfDirty(player);MetaNetwork.feedback(player,"파티 편성 저장 완료");}catch(RuntimeException ex){error(player,"파티 변경 실패",ex);}MetaNetwork.sync(player);}
             case"PRESET_SAVE"->{if(parts.length<2||BattleSessionManager.exists(player))return;mutate(player,"프리셋 저장 실패",()->savePreset(player,Integer.parseInt(parts[1])));}

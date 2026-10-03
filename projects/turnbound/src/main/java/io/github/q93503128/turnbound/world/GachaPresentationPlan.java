@@ -5,7 +5,12 @@ import io.github.q93503128.turnbound.progression.GachaService;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Pure reveal-order contract shared by the server presentation runtime and unit tests. */
+/**
+ * Reveal-order contract shared by the server presentation runtime and unit tests.
+ *
+ * <p>A single pull always gets its reveal. A multi-pull reserves the longer 3D ceremony for four- and five-star
+ * results; low-rarity/new results remain readable in the final summary instead of forcing ten full ceremonies.</p>
+ */
 public final class GachaPresentationPlan {
     public record Reveal(String characterId, int stars, boolean newlyOwned) {}
 
@@ -13,27 +18,22 @@ public final class GachaPresentationPlan {
 
     public static List<Reveal> reveals(GachaService.BatchResult result) {
         if (result == null || result.pulls().isEmpty()) return List.of();
-        List<Reveal> highlights = new ArrayList<>();
-        for (GachaService.PullResult pull : result.pulls()) {
-            if (pull.newlyOwned() || pull.nativeStars() >= 4) {
-                highlights.add(new Reveal(pull.characterId(), pull.nativeStars(), pull.newlyOwned()));
-            }
+        List<Integer> indices = spotlightIndices(result);
+        List<Reveal> out = new ArrayList<>(indices.size());
+        for (int index : indices) {
+            GachaService.PullResult pull = result.pulls().get(index);
+            out.add(new Reveal(pull.characterId(), pull.nativeStars(), pull.newlyOwned()));
         }
-        if (!highlights.isEmpty()) return List.copyOf(highlights);
-
-        GachaService.PullResult best = null;
-        for (GachaService.PullResult pull : result.pulls()) {
-            if (best == null || pull.nativeStars() > best.nativeStars()) best = pull;
-        }
-        return best == null ? List.of() : List.of(new Reveal(best.characterId(), best.nativeStars(), false));
+        return List.copyOf(out);
     }
 
     public static List<Integer> spotlightIndices(GachaService.BatchResult result) {
         if (result == null || result.pulls().isEmpty()) return List.of();
+        if (result.pulls().size() == 1) return List.of(0);
+
         List<Integer> indices = new ArrayList<>();
         for (int i = 0; i < result.pulls().size(); i++) {
-            GachaService.PullResult pull = result.pulls().get(i);
-            if (pull.newlyOwned() || pull.nativeStars() >= 4) indices.add(i);
+            if (result.pulls().get(i).nativeStars() >= 4) indices.add(i);
         }
         if (!indices.isEmpty()) return List.copyOf(indices);
 

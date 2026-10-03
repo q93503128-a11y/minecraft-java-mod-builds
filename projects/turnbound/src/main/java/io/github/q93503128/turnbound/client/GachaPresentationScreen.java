@@ -143,7 +143,13 @@ public final class GachaPresentationScreen extends Screen {
     }
 
     private int totalDurationTicks() {
-        return GachaPresentationTimeline.totalTicks(revealPulls.size(), batch.pulls().size());
+        return revealDurationTicks() + GachaPresentationTimeline.summaryTicks(batch.pulls().size());
+    }
+
+    private int revealDurationTicks() {
+        int total = 0;
+        for (Pull pull : revealPulls) total += GachaPresentationTimeline.slotTicks(pull.stars(), pull.newlyOwned());
+        return total;
     }
 
     private void skipOrFinish() {
@@ -188,15 +194,30 @@ public final class GachaPresentationScreen extends Screen {
     }
 
     private int revealIndex() {
-        return ticks / GachaPresentationTimeline.SLOT_TICKS;
+        int cursor = Math.max(0, ticks);
+        for (int i = 0; i < revealPulls.size(); i++) {
+            Pull pull = revealPulls.get(i);
+            int duration = GachaPresentationTimeline.slotTicks(pull.stars(), pull.newlyOwned());
+            if (cursor < duration) return i;
+            cursor -= duration;
+        }
+        return revealPulls.size();
     }
 
     private int slotTick() {
-        return ticks % GachaPresentationTimeline.SLOT_TICKS;
+        int cursor = Math.max(0, ticks);
+        for (Pull pull : revealPulls) {
+            int duration = GachaPresentationTimeline.slotTicks(pull.stars(), pull.newlyOwned());
+            if (cursor < duration) return cursor;
+            cursor -= duration;
+        }
+        return 0;
     }
 
     private GachaPresentationTimeline.Phase currentPhase() {
-        return GachaPresentationTimeline.phase(slotTick());
+        Pull pull = currentReveal();
+        if (pull == null) return GachaPresentationTimeline.Phase.COMPLETE;
+        return GachaPresentationTimeline.phase(slotTick(), pull.stars(), pull.newlyOwned());
     }
 
     private void drawWorldRevealOverlay(
@@ -244,21 +265,13 @@ public final class GachaPresentationScreen extends Screen {
 
     private void drawRaritySignal(
             GuiGraphicsExtractor graphics, int accent, int intensity, GachaPresentationTimeline.Phase phase) {
-        int thickness = 2 + Math.max(0, intensity);
-        int alpha = phase == GachaPresentationTimeline.Phase.SIGNAL ? 0xAA : 0x76;
-        int signal = withAlpha(accent, alpha);
-        graphics.fill(0, 0, width, thickness, signal);
-        graphics.fill(0, height - thickness, width, height, signal);
-
-        int inset = 12 + intensity * 7;
-        graphics.fill(inset, 10 + intensity * 2, Math.max(inset + 1, width - inset), 12 + intensity * 2, signal);
-        if (phase == GachaPresentationTimeline.Phase.SIGNAL) {
-            String cue = intensity >= 4 ? "강한 공명이 느껴집니다"
-                    : intensity >= 3 ? "선명한 공명이 이어집니다"
-                    : "정령의 기록이 반응합니다";
-            int tx = (width - font.width(cue)) / 2;
-            graphics.text(font, Component.literal(cue), tx, Math.max(46, height / 2 - 10), accent, true);
-        }
+        if (phase != GachaPresentationTimeline.Phase.SIGNAL) return;
+        String cue = intensity >= 4 ? "★★★★★  강한 공명이 응답합니다"
+                : intensity >= 3 ? "★★★★  선명한 공명이 이어집니다"
+                : intensity >= 2 ? "★★★  형상이 가까워집니다"
+                : "정령의 기록이 응답합니다";
+        int tx = (width - font.width(cue)) / 2;
+        graphics.text(font, Component.literal(cue), tx, Math.max(44, height / 2 - 12), accent, true);
     }
 
     private void queuePhaseAudio() {
@@ -322,7 +335,7 @@ public final class GachaPresentationScreen extends Screen {
         int cardH = Math.min(108, Math.max(74, (height - 116 - gap) / 2));
         int startX = (width - totalW) / 2;
         int startY = Math.max(62, (height - (cardH * 2 + gap)) / 2 + 14);
-        int summaryTicks = Math.max(0, ticks - Math.max(1, revealPulls.size()) * GachaPresentationTimeline.SLOT_TICKS);
+        int summaryTicks = Math.max(0, ticks - revealDurationTicks());
         int visible = summaryOnly ? batch.pulls().size()
                 : Math.min(batch.pulls().size(), Math.max(1, summaryTicks / 4 + 1));
 

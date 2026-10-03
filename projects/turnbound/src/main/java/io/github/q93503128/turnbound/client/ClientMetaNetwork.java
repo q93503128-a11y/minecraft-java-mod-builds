@@ -37,7 +37,9 @@ public final class ClientMetaNetwork {
                 else if ("SUMMON".equals(hint)) minecraft.gui.setScreen(new FacilitySummonScreen());
                 else if ("MAP".equals(hint)) {
                     FacilityUiAccess.clear();
-                    minecraft.gui.setScreen(new DrehmalWorldMapScreen());
+                    if (!TurnboundJourneyMapPlugin.openFullscreenMap()) {
+                        ClientUiFeedbackLayer.show("지도를 열 수 없습니다. JourneyMap 설치 상태를 확인해 주세요.");
+                    }
                 } else {
                     FacilityUiAccess.clear();
                     minecraft.gui.setScreen(new MetaMenuScreen(tab(hint)));

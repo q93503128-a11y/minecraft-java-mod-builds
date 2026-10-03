@@ -60,7 +60,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
                 waypoint.setShowOnMap(true);
                 waypoint.setShowLabel(true);
                 waypoint.setShowDeviation(false);
-                waypoint.setDescription(point.objective() ? "TURNBOUND 목표" : "TURNBOUND " + point.kind());
+                waypoint.setDescription(point.objective() ? "TURNBOUND 목표" : waypointDescription(point));
                 api.addWaypoint(Turnbound.MOD_ID, waypoint);
             }
         } catch (Throwable throwable) {
@@ -72,7 +72,12 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
         if (api != null) api.toggleMinimap(!api.minimapEnabled());
     }
 
+    public static boolean minimapEnabled() {
+        return api != null && api.minimapEnabled();
+    }
+
     public static boolean openFullscreenMap() {
+        if (api == null) return false;
         rebindFullscreenToM();
         if (fullscreenKey == null) return false;
         KeyMapping.click(fullscreenKey.getKey());
@@ -95,6 +100,15 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
             }
             return;
         }
+    }
+
+    private static String waypointDescription(FieldUiSnapshot.MapPoint point) {
+        return switch (point.kind()) {
+            case "SERVICE" -> "TURNBOUND 시설";
+            case "SECRET" -> "TURNBOUND 발견";
+            case "QUEST" -> "TURNBOUND 목표";
+            default -> "TURNBOUND 위치";
+        };
     }
 
     private static int waypointColor(FieldUiSnapshot.MapPoint point) {

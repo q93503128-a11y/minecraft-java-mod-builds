@@ -42,7 +42,7 @@ public final class GachaPresentationActorService {
             this.reveals = reveals;
             this.stage = stage;
             this.actorYaw = actorYaw;
-            this.ttl = GachaPresentationTimeline.totalTicks(reveals.size(), pullCount) + 80;
+            this.ttl = GachaPresentationTimeline.totalTicks(reveals, pullCount) + 80;
         }
 
         GachaPresentationPlan.Reveal current() {
@@ -75,16 +75,20 @@ public final class GachaPresentationActorService {
             return;
         }
 
+        GachaPresentationPlan.Reveal reveal = active.current();
+        if (reveal == null) return;
+        GachaPresentationTimeline.Timing timing = GachaPresentationTimeline.timing(reveal.stars(), reveal.newlyOwned());
+
         active.slotTick++;
-        if (active.slotTick == 1) stageRing(player, active, false);
-        if (active.slotTick == GachaPresentationTimeline.SIGNAL_TICKS) stageRing(player, active, true);
-        if (active.slotTick == GachaPresentationTimeline.REVEAL_TICK) {
+        if (active.slotTick == 1) stageSignal(player, active, reveal, false);
+        if (active.slotTick == timing.signalTicks()) stageSignal(player, active, reveal, true);
+        if (active.slotTick == timing.revealTick()) {
             spawnCurrent(player, active);
         }
-        if (active.slotTick == GachaPresentationTimeline.NAME_TICK) {
+        if (active.slotTick == timing.nameTick()) {
             playRevealPose(player, active);
         }
-        if (active.slotTick >= GachaPresentationTimeline.SLOT_TICKS) {
+        if (active.slotTick >= timing.slotTicks()) {
             removeActor(active);
             active.index++;
             active.slotTick = 0;
@@ -128,35 +132,37 @@ public final class GachaPresentationActorService {
     private static void revealBurst(
             ServerPlayer player, Vec3 position, GachaPresentationPlan.Reveal reveal, boolean payoff) {
         int intensity = GachaPresentationTimeline.intensity(reveal.stars());
-        int enchant = (payoff ? 10 : 6) + intensity * (payoff ? 6 : 4);
+        int enchant = (payoff ? 4 : 3) + intensity * (payoff ? 2 : 1);
         PersonalPresentationIsolation.particles(
                 (ServerLevel)player.level(), player, ParticleTypes.ENCHANT,
                 position.x, position.y + 0.7D, position.z,
-                enchant, 0.6D + intensity * 0.08D, 0.9D, 0.6D + intensity * 0.08D, 0.05D);
-        if (reveal.stars() >= 3 || reveal.newlyOwned()) {
-            int rods = 3 + intensity * (payoff ? 3 : 2) + (reveal.newlyOwned() ? 2 : 0);
+                enchant, 0.48D + intensity * 0.07D, 0.72D, 0.48D + intensity * 0.07D, 0.035D);
+        if (reveal.stars() >= 4) {
+            int rods = 2 + intensity + (payoff ? 2 : 0);
             PersonalPresentationIsolation.particles(
                     (ServerLevel)player.level(), player, ParticleTypes.END_ROD,
                     position.x, position.y + 0.85D, position.z,
-                    rods, 0.45D, 0.7D, 0.45D, 0.035D);
+                    rods, 0.36D, 0.58D, 0.36D, 0.025D);
         }
     }
 
-    private static void stageRing(ServerPlayer player, Active active, boolean charged) {
-        if (player == null || active == null) return;
-        int points = charged ? 22 : 16;
-        double radius = charged ? 2.15D : 1.65D;
+    private static void stageSignal(
+            ServerPlayer player, Active active, GachaPresentationPlan.Reveal reveal, boolean charged) {
+        if (player == null || active == null || reveal == null) return;
+        int intensity = GachaPresentationTimeline.intensity(reveal.stars());
+        int points = (charged ? 7 : 5) + intensity;
+        double radius = charged ? 1.95D : 1.55D;
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2.0D * i / points;
             double x = active.stage.x + Math.cos(angle) * radius;
             double z = active.stage.z + Math.sin(angle) * radius;
             PersonalPresentationIsolation.particles(active.level, player, ParticleTypes.ENCHANT,
-                    x, active.stage.y + 0.08D, z, 1, 0.02D, 0.02D, 0.02D, 0.0D);
+                    x, active.stage.y + 0.08D, z, 1, 0.01D, 0.01D, 0.01D, 0.0D);
         }
-        if (charged) {
+        if (charged && reveal.stars() >= 4) {
             PersonalPresentationIsolation.particles(active.level, player, ParticleTypes.END_ROD,
                     active.stage.x, active.stage.y + 0.18D, active.stage.z,
-                    18, 1.4D, 0.10D, 1.4D, 0.025D);
+                    2 + intensity, 0.62D, 0.08D, 0.62D, 0.018D);
         }
     }
 

@@ -9,17 +9,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GachaPresentationPlanTest {
     @Test
-    void newCharactersAreRevealedInPullOrder() {
+    void singlePullAlwaysGetsARevealEvenAtLowRarity() {
+        var result = new GachaService.BatchResult(List.of(
+                new GachaService.PullResult("F01",1,true,0,3)), 300);
+
+        assertEquals(List.of(new GachaPresentationPlan.Reveal("F01",1,true)),
+                GachaPresentationPlan.reveals(result));
+        assertEquals(List.of(0), GachaPresentationPlan.spotlightIndices(result));
+    }
+
+    @Test
+    void multiPullReservesFullCeremonyForFourAndFiveStarResults() {
         var result = new GachaService.BatchResult(List.of(
                 new GachaService.PullResult("P01",4,false,100,2),
                 new GachaService.PullResult("P08",3,true,0,3),
                 new GachaService.PullResult("P06",5,true,0,0)), 3000);
-        assertEquals(List.of("P01","P08","P06"), GachaPresentationPlan.revealCharacterIds(result));
-        assertEquals(List.of(
-                new GachaPresentationPlan.Reveal("P01",4,false),
-                new GachaPresentationPlan.Reveal("P08",3,true),
-                new GachaPresentationPlan.Reveal("P06",5,true)),
-                GachaPresentationPlan.reveals(result));
+
+        assertEquals(List.of("P01","P06"), GachaPresentationPlan.revealCharacterIds(result));
+        assertEquals(List.of(0,2), GachaPresentationPlan.spotlightIndices(result));
     }
 
     @Test
@@ -30,19 +37,9 @@ class GachaPresentationPlanTest {
                 new GachaService.PullResult("P08",3,false,40,1)), 3000);
 
         assertEquals(List.of(
-                new GachaPresentationPlan.Reveal("F01",1,true),
                 new GachaPresentationPlan.Reveal("P06",5,false)),
                 GachaPresentationPlan.reveals(result));
-    }
-
-    @Test
-    void spotlightIndicesMatchServerRevealOrder() {
-        var result = new GachaService.BatchResult(List.of(
-                new GachaService.PullResult("F01",1,true,0,3),
-                new GachaService.PullResult("P06",5,false,250,0),
-                new GachaService.PullResult("P08",3,false,40,1)), 3000);
-
-        assertEquals(List.of(0,1), GachaPresentationPlan.spotlightIndices(result));
+        assertEquals(List.of(1), GachaPresentationPlan.spotlightIndices(result));
     }
 
     @Test
@@ -53,5 +50,17 @@ class GachaPresentationPlanTest {
                 new GachaService.PullResult("P06",5,false,250,0),
                 new GachaService.PullResult("P02",5,false,250,0)), 3000);
         assertEquals(List.of("P01","P06","P02"), GachaPresentationPlan.revealCharacterIds(result));
+    }
+
+    @Test
+    void lowRarityOnlyMultiPullStillGetsOneBestPreviewBeforeSummary() {
+        var result = new GachaService.BatchResult(List.of(
+                new GachaService.PullResult("F01",1,true,0,1),
+                new GachaService.PullResult("P08",3,false,40,2),
+                new GachaService.PullResult("P03",2,false,20,3)), 3000);
+
+        assertEquals(List.of(new GachaPresentationPlan.Reveal("P08",3,false)),
+                GachaPresentationPlan.reveals(result));
+        assertEquals(List.of(1), GachaPresentationPlan.spotlightIndices(result));
     }
 }
