@@ -1,6 +1,8 @@
 package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +99,38 @@ public record R01RegalhartEncounterData(
             }
             boolean guardInteraction = guardable || perfectGuardable;
             return !guardInteraction || guardPressure != null;
+        }
+
+        public PlayerDefenseAuthority.IncomingHit toIncomingHit(
+                int attackerLevel
+        ) {
+            if (!impactContractClosed()) {
+                throw new IllegalStateException(
+                        "Regalhart impact contract is not closed for " + id
+                );
+            }
+            double rawDamage =
+                    ProjectCombatRules.rawEnemyPhysicalDamageFromBenchmarkShare(
+                            attackerLevel,
+                            benchmarkDamageShare
+                    );
+            if (!guardable && !perfectGuardable) {
+                return PlayerDefenseAuthority.IncomingHit.unguardable(
+                        rawDamage,
+                        ProjectImpactTransaction.DamageSchool.PHYSICAL,
+                        attackerLevel,
+                        true
+                );
+            }
+            return PlayerDefenseAuthority.IncomingHit.baseline(
+                    rawDamage,
+                    ProjectImpactTransaction.DamageSchool.PHYSICAL,
+                    attackerLevel,
+                    guardPressure,
+                    true,
+                    guardable,
+                    perfectGuardable
+            );
         }
     }
 
