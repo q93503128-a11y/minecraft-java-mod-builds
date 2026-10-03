@@ -55,7 +55,7 @@ public enum R01SmithingRecipe {
             4,
             Map.of(
                     R01GatheringRules.HARDWOOD, 4,
-                    TOUGH_HIDE, 2
+                    "openworld_rpg:tough_hide", 2
             ),
             50L,
             "openworld_rpg:affix/dex"
