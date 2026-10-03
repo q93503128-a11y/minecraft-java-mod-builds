@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg;
 
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01CaveCentipedeDonorContactBridge;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01NatureSpiritCombatRuntime;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01SteelboarCombatRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatBuildPublisher;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerCombatSessionAttachments;
@@ -157,6 +158,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         IntegrationBootstrap.bootstrap(profile, LOGGER);
         R01CaveCentipedeDonorContactBridge.initialize(profile, LOGGER);
         R01NatureSpiritCombatRuntime.initialize(profile, LOGGER);
+        R01SteelboarCombatRuntime.initialize(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.START_SERVER_TICK.register(server -> {
             ProjectPlayerActionRuntime.tick(server);

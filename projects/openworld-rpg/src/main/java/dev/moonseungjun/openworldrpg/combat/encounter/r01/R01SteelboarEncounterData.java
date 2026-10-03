@@ -1,6 +1,8 @@
 package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectCombatRules;
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectImpactTransaction;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +105,30 @@ public record R01SteelboarEncounterData(
 
         public boolean impactContractClosed() {
             return guardable != null;
+        }
+
+        public PlayerDefenseAuthority.IncomingHit toIncomingHit(
+                int attackerLevel
+        ) {
+            if (!impactContractClosed()) {
+                throw new IllegalStateException(
+                        "Steelboar impact contract is not closed for " + id
+                );
+            }
+            double rawDamage =
+                    ProjectCombatRules.rawEnemyPhysicalDamageFromBenchmarkShare(
+                            attackerLevel,
+                            benchmarkDamageShare
+                    );
+            return PlayerDefenseAuthority.IncomingHit.baseline(
+                    rawDamage,
+                    ProjectImpactTransaction.DamageSchool.PHYSICAL,
+                    attackerLevel,
+                    guardPressure,
+                    true,
+                    guardable,
+                    perfectGuardable
+            );
         }
     }
 
