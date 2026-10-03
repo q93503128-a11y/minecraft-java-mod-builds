@@ -60,11 +60,46 @@ class R01EnemyControlContributionBridgeTest {
     }
 
     @Test
-    void unrelatedProjectHostileNeverQualifiesThroughThisBridge() {
+    void ordinaryRewardEnemiesRequireAuthoredSpawnForControlParticipation() {
+        assertEquals(
+                R01EnemyControlContributionBridge.ActorKind.ORDINARY_ENEMY,
+                R01EnemyControlContributionBridge.actorKind(
+                        "alexsmobs:grizzly_bear",
+                        true
+                )
+        );
+        assertEquals(
+                R01EnemyControlContributionBridge.ActorKind.ORDINARY_ENEMY,
+                R01EnemyControlContributionBridge.actorKind(
+                        "alexsmobs:bison",
+                        true
+                )
+        );
+        assertEquals(
+                R01EnemyControlContributionBridge.ActorKind.ORDINARY_ENEMY,
+                R01EnemyControlContributionBridge.actorKind(
+                        "alexsmobs:centipede_head",
+                        true
+                )
+        );
+        assertEquals(
+                R01EnemyControlContributionBridge.ActorKind.ORDINARY_ENEMY,
+                R01EnemyControlContributionBridge.actorKind(
+                        "threateningly_mobs:steelboar",
+                        true
+                )
+        );
         assertEquals(
                 R01EnemyControlContributionBridge.ActorKind.NONE,
                 R01EnemyControlContributionBridge.actorKind(
                         "alexsmobs:grizzly_bear",
+                        false
+                )
+        );
+        assertEquals(
+                R01EnemyControlContributionBridge.ActorKind.NONE,
+                R01EnemyControlContributionBridge.actorKind(
+                        "threateningly_mobs:louxia",
                         true
                 )
         );
