@@ -1,0 +1,41 @@
+name: Probe Openworld RPG Meadow Viper
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'projects/openworld-rpg/tools/r01_meadow_viper_asset_intake.py'
+      - '.github/workflows/probe-openworld-rpg-meadow-viper.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Acquire and inspect exact CC0 Snake source
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=projects/openworld-rpg/build/reports/meadow-viper-intake
+          rm -rf "$OUT"
+          python3 projects/openworld-rpg/tools/r01_meadow_viper_asset_intake.py "$OUT" | tee projects/openworld-rpg/build/reports/meadow-viper-intake.log
+          test -s "$OUT/Snake.glb"
+          test -s "$OUT/meadow_viper_asset_intake.json"
+          sha256sum "$OUT/Snake.glb"
+          python3 -m json.tool "$OUT/meadow_viper_asset_intake.json" | sed -n '1,260p'
+
+      - name: Upload Meadow Viper intake evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: openworld-rpg-meadow-viper-intake
+          path: |
+            projects/openworld-rpg/build/reports/meadow-viper-intake
+            projects/openworld-rpg/build/reports/meadow-viper-intake.log
+          if-no-files-found: error
+          retention-days: 14
