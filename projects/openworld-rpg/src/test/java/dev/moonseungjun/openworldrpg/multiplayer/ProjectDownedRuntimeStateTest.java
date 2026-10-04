@@ -51,6 +51,14 @@ class ProjectDownedRuntimeStateTest {
     }
 
     @Test
+    void onlyActiveNonDownedPlayersMayCountAsLivingRescuers() {
+        assertTrue(ProjectDownedRuntime.eligibleLivingRescuerState(true, false, false));
+        assertFalse(ProjectDownedRuntime.eligibleLivingRescuerState(false, false, false));
+        assertFalse(ProjectDownedRuntime.eligibleLivingRescuerState(true, true, false));
+        assertFalse(ProjectDownedRuntime.eligibleLivingRescuerState(true, false, true));
+    }
+
+    @Test
     void channelMustFinishBeforeRescueDeadlineAndOwnerMustMatch() {
         var state = new ProjectDownedRuntimeState();
         state.tryEnter(0L);

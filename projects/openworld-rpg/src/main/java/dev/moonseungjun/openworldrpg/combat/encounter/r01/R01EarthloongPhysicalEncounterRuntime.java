@@ -6,6 +6,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerShockRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.GuardianProvokedRuntime;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bootstrap.RuntimeProfile;
+import dev.moonseungjun.openworldrpg.multiplayer.ProjectDownedRuntime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -533,8 +534,13 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             if (gameTick < nextDecisionTick) return;
 
             List<ServerPlayer> validPlayers = validPlayers(level);
+            List<ServerPlayer> targetCandidates = validPlayers.stream()
+                    .filter(player -> !ProjectDownedRuntime.isDowned(player))
+                    .toList();
             Set<UUID> ids = new HashSet<>();
-            for (ServerPlayer player : validPlayers) ids.add(player.getUUID());
+            for (ServerPlayer player : targetCandidates) {
+                ids.add(player.getUUID());
+            }
             UUID targetId = threat.selectTarget(
                     ids,
                     gameTick,
@@ -545,7 +551,9 @@ public final class R01EarthloongPhysicalEncounterRuntime {
                                     gameTick
                             )
             ).orElse(null);
-            ServerPlayer target = targetId == null ? null : playerById(validPlayers, targetId);
+            ServerPlayer target = targetId == null
+                    ? null
+                    : playerById(targetCandidates, targetId);
             if (target == null) {
                 currentThreatTargetId = null;
                 resetRootBreakerProximity();
@@ -574,6 +582,7 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             if (mob.getTarget() instanceof ServerPlayer player
                     && player.isAlive()
                     && !player.isSpectator()
+                    && !ProjectDownedRuntime.isDowned(player)
                     && player.level() == actor.level()
                     && !threat.contains(player.getUUID())) {
                 threat.engageInitial(player.getUUID(), gameTick);

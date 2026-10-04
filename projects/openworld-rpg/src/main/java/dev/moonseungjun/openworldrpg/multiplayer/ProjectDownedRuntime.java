@@ -46,11 +46,11 @@ public final class ProjectDownedRuntime {
         }
         var encounter = ProjectActiveEncounterRuntime.activeEncounterFor(player).orElse(null);
         if (encounter == null) return EnterResult.rejected(EnterStatus.NO_ACTIVE_ENCOUNTER);
-        if (!ProjectActiveEncounterRuntime.hasOtherLivingParticipant(player, encounter)) {
+        long nowTick = player.level().getGameTime();
+        if (!hasEligibleEncounterRescuer(player, encounter, nowTick)) {
             return EnterResult.rejected(EnterStatus.NO_LIVING_RESCUER);
         }
 
-        long nowTick = player.level().getGameTime();
         Session existing = SESSIONS.get(player.getUUID());
         if (existing != null
                 && existing.state().downed()
@@ -70,6 +70,12 @@ public final class ProjectDownedRuntime {
         }
 
         SESSIONS.put(player.getUUID(), new Session(session.state(), encounter));
+        /*
+         * A player who becomes Downed while reviving someone else can no longer own that revive
+         * channel. Clear the target session before resetting the shared action state so a stale
+         * reviver id cannot complete after the player has become incapacitated.
+         */
+        interruptRevive(player);
         ProjectDodgeRuntime.reset(player);
         ProjectPlayerActionRuntime.reset(player);
         CombatStateServices.defenseStates().getOrCreate(player.getUUID()).releaseGuard();
@@ -86,7 +92,13 @@ public final class ProjectDownedRuntime {
     ) {
         Objects.requireNonNull(reviver, "reviver");
         Objects.requireNonNull(downedPlayer, "downedPlayer");
-        if (reviver == downedPlayer || !reviver.isAlive() || reviver.isSpectator()
+        long nowTick = reviver.level().getGameTime();
+        if (reviver == downedPlayer
+                || !eligibleLivingRescuerState(
+                        reviver.isAlive(),
+                        reviver.isSpectator(),
+                        isDowned(reviver.getUUID(), nowTick)
+                )
                 || reviver.level() != downedPlayer.level()) {
             return BeginReviveResult.rejected(BeginReviveStatus.INVALID_REVIVER);
         }
@@ -101,7 +113,6 @@ public final class ProjectDownedRuntime {
             return BeginReviveResult.rejected(BeginReviveStatus.REVIVER_BUSY);
         }
 
-        long nowTick = reviver.level().getGameTime();
         var start = session.state().tryBeginRevive(reviver.getUUID(), nowTick);
         if (start != ProjectDownedRuntimeState.BeginReviveStatus.STARTED) {
             return BeginReviveResult.rejected(switch (start) {
@@ -141,15 +152,18 @@ public final class ProjectDownedRuntime {
         Objects.requireNonNull(downedPlayer, "downedPlayer");
         Session session = SESSIONS.get(downedPlayer.getUUID());
         if (session == null) return CompleteReviveResult.rejected(CompleteReviveStatus.NOT_DOWNED);
+        long nowTick = reviver.level().getGameTime();
         if (reviver.level() != downedPlayer.level()
-                || !reviver.isAlive()
-                || reviver.isSpectator()
+                || !eligibleLivingRescuerState(
+                        reviver.isAlive(),
+                        reviver.isSpectator(),
+                        isDowned(reviver.getUUID(), nowTick)
+                )
                 || !ProjectActiveEncounterRuntime.isParticipantOf(reviver, session.encounter())) {
             interruptRevive(reviver);
             return CompleteReviveResult.rejected(CompleteReviveStatus.INVALID_CONTEXT);
         }
 
-        long nowTick = reviver.level().getGameTime();
         var status = session.state().tryCompleteRevive(reviver.getUUID(), nowTick);
         if (status != ProjectDownedRuntimeState.CompleteReviveStatus.REVIVED) {
             return CompleteReviveResult.rejected(switch (status) {
@@ -181,6 +195,44 @@ public final class ProjectDownedRuntime {
                 combat.mana(nowTick),
                 session.state().snapshot(nowTick).rescueFatigueTicksRemaining()
         );
+    }
+
+    private static boolean hasEligibleEncounterRescuer(
+            ServerPlayer downedCandidate,
+            ProjectActiveEncounterRuntime.ActiveEncounterRef encounter,
+            long nowTick
+    ) {
+        var server = downedCandidate.level().getServer();
+        if (server == null
+                || !ProjectActiveEncounterRuntime.isParticipantOf(
+                        downedCandidate,
+                        encounter
+                )) {
+            return false;
+        }
+        for (ServerPlayer candidate : server.getPlayerList().getPlayers()) {
+            if (candidate == downedCandidate
+                    || candidate.level() != downedCandidate.level()
+                    || !eligibleLivingRescuerState(
+                            candidate.isAlive(),
+                            candidate.isSpectator(),
+                            isDowned(candidate.getUUID(), nowTick)
+                    )) {
+                continue;
+            }
+            if (ProjectActiveEncounterRuntime.isParticipantOf(candidate, encounter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean eligibleLivingRescuerState(
+            boolean alive,
+            boolean spectator,
+            boolean downed
+    ) {
+        return alive && !spectator && !downed;
     }
 
     public static boolean interruptRevive(ServerPlayer reviver) {
