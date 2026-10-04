@@ -2713,3 +2713,34 @@ Artifact ID `11301011023`, artifact digest
 `sha256:77e98f88fd3d674c52aa19d10c41b165c8d782e7b3c4154cf5b4292346557ea0`.
 Normal JAR SHA-256:
 `64281e02d0213e01e38e2e94391f8fa9a437ef64f9e5ffac6d2de3479c52f128`.
+
+
+### Trusted exact-encounter revive interaction transport
+
+Code state `7d834a5b32cf290bd0c55a41935dba87359de144` closes the next Downed/Revive
+transport gate for the currently admitted Earthloong branch.
+
+- a normal server-accepted Minecraft entity interaction with the Downed player starts the canonical
+  **50-tick / 2.5 s** revive action;
+- no separate project revive-distance number is invented: start and channel continuation reuse
+  Minecraft 26.2's server entity-interaction-range authority;
+- the server automatically resolves the channel at the canonical completion tick rather than trusting
+  a client completion timer;
+- leaving valid interaction range, leaving the exact encounter context, becoming dead/spectator/Downed
+  or disconnecting interrupts the active channel;
+- existing hostile-damage/control interruption remains authoritative;
+- success still applies **35% MaxHP / 50% Stamina / 25% Mana** and **20 s Rescue Fatigue** through
+  the existing revive transaction.
+
+This does not close the non-encounter `nearby play context` branch and does not choose a guessed
+nearby-play radius. Crawl locomotion, durable reconnect/server-restart semantics, Saint Miracle,
+HUD/animation/presentation and actual multiplayer validation remain separate work.
+
+Build Openworld RPG #349 / run `37196960187`: **SUCCESS**.
+Artifact ID `11301433587`, digest
+`sha256:572bda08d2c8f0140e854e8a524681daab2d31d4e42e3341b4c60b438e315aa2`.
+Normal JAR SHA-256:
+`bcef7894e655695dbf46b5a8b22780589d422dbb4b7dec1a2bc7bc44f60376c8`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+client world join **NOT RUN**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
