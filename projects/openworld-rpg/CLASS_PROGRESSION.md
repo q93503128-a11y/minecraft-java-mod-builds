@@ -1311,3 +1311,27 @@ Still separate implementation work:
 - specialization/class/passive screen UI and final icon/animation/VFX bindings.
 
 Do not treat stored milestone/passive state as evidence that the corresponding visible skills, mechanics, challenge detectors or passive effects are already player-facing.
+
+
+## 13.1 2026-10-04 Saint runtime foundation status
+
+The Saint branch is no longer entirely data-only. Code state
+`b9e9e8cbfe6257022723d31b802453e64b61d5c4` binds the branch identity to the existing shared
+Cleric support runtime.
+
+Implemented in this slice:
+- Benediction support-side gain: qualified heal/protection events grant 2 pips; damaging actives stay
+  +1 and all existing caps/ICDs remain authoritative;
+- baseline Overflowing Grace: 20% otherwise-wasted overheal -> same-source shared Barrier, capped at
+  12% recipient MaxHP;
+- Gentle Hands: +3% Saint healing per rank;
+- Overflowing Light: +3 percentage points overheal conversion per rank;
+- Aegis: +3% Saint barrier output per rank.
+
+Still open and therefore **not** implied by selecting Saint:
+- Benediction's 30% Mana refund after a successful three-pip healing/protection spender;
+- Sanctuary Keeper, Purifying Grace, Benediction's ally recovery node, Saving Grace and Shared Light;
+- Greater Mend, Hallowed Ground and Miracle;
+- branch-specific slot/loadout presentation and final visual/audio/player-feel acceptance.
+
+Build Openworld RPG #350 / run `37198818685`: **SUCCESS**.

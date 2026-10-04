@@ -1371,3 +1371,50 @@ R01 integration JAR SHA-256 is
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 client world join **NOT RUN**; physical revive joined-player feel **NOT RUN**; PLAYTESTED **NO**;
 MULTIPLAYER TESTED **NO**.
+
+
+### 2026-10-04 Saint support-specialization foundation
+
+Code state `b9e9e8cbfe6257022723d31b802453e64b61d5c4` binds the first runtime slice of the
+Cleric Saint specialization through the existing shared Cleric/Healing/Barrier authorities rather
+than creating a parallel branch-only combat system.
+
+When Cleric is the active root and `cleric_saint` is the active specialization, qualified effective
+healing and hostile-consumed protection events now grant **2 Benediction/Grace pips instead of 1**.
+The existing three-pip cap, heal/barrier 6%-MaxHP qualification threshold, per-recipient 2.0 s ICD,
+damage-active +1 behavior and out-of-combat expiry remain unchanged.
+
+Saint's baseline **Overflowing Grace** is also live on project-owned skill healing. Otherwise-wasted
+overheal converts **20%** into the shared Barrier authority, uses the ordinary 6.0 s barrier duration,
+refreshes/replaces the same Saint/caster source instead of stacking itself, and is capped at **12% of
+the recipient's MaxHP**. Encounter-linked healing now keeps barrier-only overflow support truthful:
+the effective granted barrier may publish the existing encounter barrier threat/support path even when
+the target restored no HP.
+
+Three already-authored Saint passive nodes now have runtime consumers:
+- **Gentle Hands**: Saint healing +3% per point;
+- **Overflowing Light**: overheal conversion +3 percentage points per point;
+- **Aegis**: Saint barrier output +3% per point, including the Overflowing Grace barrier before its
+  12% MaxHP cap.
+
+This is deliberately **not** a claim that Saint is complete. The Benediction three-pip spender's
+30% post-resolution Mana refund, Sanctuary Keeper, Purifying Grace, the Benediction recovery node,
+Saving Grace, Shared Light, Greater Mend, Hallowed Ground, Miracle, specialization loadout/UI,
+final VFX/animation/audio and joined-player feel remain open.
+
+Build Openworld RPG #350 / run `37198818685` is **SUCCESS** for
+`b9e9e8cbfe6257022723d31b802453e64b61d5c4` across unit tests/build, pinned dependency/creature
+inspection, bootstrap JAR verification, core/gameplay dedicated-server smoke, gameplay client
+startup, both verification JARs and M0 mrpack packaging. Artifact
+`openworld-rpg-m0-b9e9e8cbfe6257022723d31b802453e64b61d5c4` (ID `11302077595`,
+digest `sha256:2b72d3e8ac5ade1892ace61efee85d01649ce1b90322a40fc76a3339e0ff6915`).
+Normal JAR SHA-256 is
+`212a445a2234b04632e1dee3902eb06a7fecb8f1fe803f97f107ce056d53e602`; M0 playtest JAR
+SHA-256 is `9946dca7d06ad4ed948c27f511de0b137d1cfa008496a79858f6603bedf193f6`;
+R01 integration JAR SHA-256 is
+`d0bfa5f894197d252baf88590b0715fa777362afe8e36f8c33ed661c6a0683ae`; M0 mrpack SHA-256 is
+`719c6ca589319407c12bb80a0b63a58962f3ff1ac9053255c755eb0b19ed52d1`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+client world join **NOT RUN**; specialization gameplay feel **NOT RUN**; PLAYTESTED **NO**;
+MULTIPLAYER TESTED **NO**.
