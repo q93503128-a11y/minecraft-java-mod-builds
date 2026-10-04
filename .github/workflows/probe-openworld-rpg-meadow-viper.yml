@@ -9,7 +9,7 @@ on:
       - '.github/workflows/probe-openworld-rpg-meadow-viper.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   probe:
@@ -30,6 +30,72 @@ jobs:
           test -s "$OUT/meadow_viper_asset_intake.json"
           sha256sum "$OUT/Snake.glb"
           python3 -m json.tool "$OUT/meadow_viper_asset_intake.json" | sed -n '1,260p'
+
+      - name: Pin verified CC0 source into the repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=projects/openworld-rpg/build/reports/meadow-viper-intake
+          DEST=projects/openworld-rpg/external-assets/quaternius-easy-enemies
+          mkdir -p "$DEST"
+          cp "$OUT/Snake.glb" "$DEST/Snake.glb"
+
+          cat > "$DEST/SOURCE.md" <<'EOF'
+          # Quaternius Easy Animated Enemies — Meadow Viper source binding
+
+          Creator: Quaternius
+
+          Selected source asset: `Snake.glb`
+
+          Player-facing use: R01 Meadow Viper model / source animation family.
+
+          License: **CC0 1.0 / Public Domain**, using source-specific publication evidence rather
+          than inferring rights from Quaternius' newer central QAL page.
+
+          Official/source evidence:
+          - creator pack page: https://quaternius.itch.io/animated-easy-enemies
+          - exact Poly Pizza model page: https://poly.pizza/m/x9x0viZs8V
+          - Poly Pizza animated-enemies bundle: https://poly.pizza/bundle/Animated-Enemies-a53OJwHrhh
+
+          Pinned transport:
+          - repository: `trebeljahr/quaternius-showcase`
+          - commit: `e90ffea347393537703ae6f9d73e36492820f5a9`
+          - path: `public/glb/easy_enemies_pack/Snake.glb`
+          - Git blob SHA-1: `fdb107f06725f487fed66c7386b31c56c236e8ad`
+          - byte size: `216696`
+          - SHA-256: `70b4af1088dec939e167b07c0a5e69992a4851beac8bd24a9da1189b65ae101c`
+
+          Independent byte-identity cross-check:
+          - repository: `marcoaureliomenezes/tauan-games`
+          - path: `src/web-games/vendor/models/Snake.glb`
+          - Git blob SHA-1: `fdb107f06725f487fed66c7386b31c56c236e8ad`
+          - byte size: `216696`
+
+          Verified GLB contract:
+          - FBX2glTF v0.9.7 source conversion
+          - 1 skin / 23 nodes / 1 mesh / 7 materials
+          - `SnakeArmature|Snake_Attack` — 0.666667 s
+          - `SnakeArmature|Snake_Idle` — 2.083333 s
+          - `SnakeArmature|Snake_Jump` — 0.958333 s
+          - `SnakeArmature|Snake_Walk` — 0.833333 s
+          - materials: DarkGreen, LightGreen, Red, Teeth, Purple, Yellow, DarkRed
+
+          The exact runtime scale, ground-contact transform and attack-visual/reach acceptance remain
+          real Minecraft client review gates. Pinning these bytes does not by itself mark Meadow
+          Viper presentation production-complete.
+          EOF
+
+          test "$(sha256sum "$DEST/Snake.glb" | awk '{print $1}')" =             "70b4af1088dec939e167b07c0a5e69992a4851beac8bd24a9da1189b65ae101c"
+
+          if git diff --quiet -- "$DEST/Snake.glb" "$DEST/SOURCE.md"              && git ls-files --error-unmatch "$DEST/Snake.glb" >/dev/null 2>&1; then
+            echo "Pinned Meadow Viper source already matches; no repository update required."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add "$DEST/Snake.glb" "$DEST/SOURCE.md"
+            git commit -m "assets(openworld-rpg): pin Meadow Viper CC0 source [skip ci]"
+            git push origin HEAD:main
+          fi
 
       - name: Upload Meadow Viper intake evidence
         uses: actions/upload-artifact@v4
