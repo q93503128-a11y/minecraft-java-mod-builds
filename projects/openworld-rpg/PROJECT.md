@@ -1096,3 +1096,35 @@ Mount implementation remains gated by the explicit pre-code verification checkpo
 
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+
+### 2026-10-04 Regalhart remaining combat-contract closure
+
+Regalhart's previously fail-closed narrow combat values are now closed at code state
+`eca570b6e4fa7c5bc7822dd257cb26e1148d866c`. Exact distance endpoints now assign **7.0 blocks to
+60/40** and **12.0 blocks to 75/25**. Crown Charge is ordinary-unguardable but
+perfect-guardable with heavy pressure, **70 player-poise pressure** and an actually consumed
+**1.25x perfect-guard poise multiplier**. Rear Kick uses medium guard pressure and **28 player-poise
+pressure**. Mirrored Antler Sweep owns a second server impact exactly **8 ticks** after hit one above
+40% HP and **6 ticks** after hit one in Sovereign state, with recovery beginning after the final hit
+and per-impact target de-duplication.
+
+The follow-up documentation correction
+`50027f05bb09a47f48480d222db1eaf32afd5312` only repairs the placement of the Crown Charge
+`guardable=false` line; it does not change the verified code.
+
+Build Openworld RPG #342 / run `37165136443` is **SUCCESS** across clean tests/build,
+dependency/registry checks, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs and M0 mrpack packaging. Artifact
+`openworld-rpg-m0-eca570b6e4fa7c5bc7822dd257cb26e1148d866c` (ID `11289222810`,
+digest `sha256:33efa9cb61a3d3a825d710b158b0de64eba541c6ed08adff76f4431488c3abd0`).
+Normal JAR SHA-256 is
+`db3e484a8c74adf6b989350ea04681635f74cff8d9373f4e0343cde1aa4c7073`; M0 mrpack SHA-256 is
+`291a4c75aaeb8387388108fc6e945fc9c6d21845ddde167e18868fb0bcf7e760`.
+
+This is backend contract closure, not production admission. Regalhart head/antler weak-point
+geometry, physical Crown Charge/Rear Kick movement/contact presentation, real camera/occlusion
+binding and final in-client boss acceptance remain gated; production spawn remains disabled.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+

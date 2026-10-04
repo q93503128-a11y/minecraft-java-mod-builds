@@ -2297,6 +2297,52 @@ Detailed runtime boundary is indexed in
 `AZARI_R01_REGALHART_HARTCROWN_PASS11.md`.
 
 
+#### Runtime Regalhart remaining combat-contract closure
+
+Code state `eca570b6e4fa7c5bc7822dd257cb26e1148d866c` closes the remaining narrow
+Regalhart selection/impact/timing values that were previously fail-closed:
+
+- exact mid/far selection boundaries are normalized so **7.0 blocks belongs to the 60/40 band** and
+  **12.0 blocks belongs to the 75/25 band**; Crown Charge pressure therefore increases monotonically
+  with distance instead of producing an exact-endpoint reposition seam;
+- Crown Charge is now explicitly **ordinary-guardable=false / perfect-guardable=true**, keeps heavy
+  guard pressure and **70 player-poise pressure**, and its authored **1.25x perfect-guard poise
+  multiplier** is propagated through the shared perfect-guard authority rather than stored as dead
+  data;
+- Rear Kick is now explicitly **medium guard pressure**, **28 player-poise pressure**, and
+  guardable/perfect-guardable=true;
+- mirrored Antler Sweep now owns two server impact frames: the second hit occurs **8 ticks / 0.40 s**
+  after the first above 40% HP and **6 ticks / 0.30 s** after the first in Sovereign state;
+- Antler Sweep recovery begins after the final authored impact, and each impact frame independently
+  de-duplicates targets so one player can be hit once by each visible sweep but not twice by one
+  frame;
+- the shared Regalhart impact authority now accepts all four data-closed attack results after a
+  future accepted presentation/contact binder confirms the contact.
+
+The documentation-only correction at `50027f05bb09a47f48480d222db1eaf32afd5312` scopes the new
+`guardable=false` line to Regalhart Crown Charge only; the historical Steelboar Iron Rush text is
+not silently re-authored by this pass.
+
+This does **not** promote Regalhart to a playable production boss. Head/antler weak-point hit
+geometry remains unbound, Crown Charge/Rear Kick physical movement and visible contact geometry still
+need accepted animation/presentation binding, the real camera/occlusion spawn caller remains gated,
+and `R01ExternalActorCatalog.productionSpawnReady(REGALHART)` remains false.
+
+Build Openworld RPG #342 / run `37165136443` is **SUCCESS** for the code state above. Clean
+tests/build, pinned dependency/registry inspection, core/gameplay dedicated-server smoke, gameplay
+client startup, both verification JARs, M0 mrpack packaging and artifact upload all passed. Artifact
+`openworld-rpg-m0-eca570b6e4fa7c5bc7822dd257cb26e1148d866c` has ID `11289222810` and
+workflow-artifact digest
+`sha256:33efa9cb61a3d3a825d710b158b0de64eba541c6ed08adff76f4431488c3abd0`.
+Normal JAR SHA-256:
+`db3e484a8c74adf6b989350ea04681635f74cff8d9373f4e0343cde1aa4c7073`.
+M0 mrpack SHA-256:
+`291a4c75aaeb8387388108fc6e945fc9c6d21845ddde167e18868fb0bcf7e760`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+
+
 ### Earthloong — shared cooldowns
 
 ```text
@@ -2539,15 +2585,17 @@ Closed for implementation:
 - R01 surface snake selection and removal of Alex's desert Rattlesnake from R01;
 - R01 Louxia / Meadow Viper / Cave Centipede / Bison / Grizzly / Steelboar / Nature Spirit / Regalhart / Earthloong combat roles;
 - exact R01 enemy Lv/HP/Defense/MR/poise starting stats;
-- signature attack/tell/guard/status behavior for R01 combat threats **except the explicitly listed Regalhart unresolved impact/timing values**;
-- Regalhart field-boss phase/reward baseline, with unresolved impact/timing values kept fail-closed;
+- signature attack/tell/guard/status behavior for R01 combat threats, including the previously open Regalhart Crown Charge/Rear Kick impact fields and mirrored-Sweep timing;
+- Regalhart field-boss phase/reward baseline plus closed server selection/impact timing values; weak-point and player-facing movement/contact presentation remain separate binding work;
 - Earthloong first-dungeon boss phases/weak point/reward baseline;
 - R01 external dependency/license boundaries;
-- R01 server-side action-selection weights/cooldowns/anti-repeat rules except Regalhart's exact 7.0/12.0 endpoint ownership, which remains intentionally fail-closed;
+- R01 server-side action-selection weights/cooldowns/anti-repeat rules, including normalized Regalhart 7.0/12.0 endpoint ownership;
 - first implementation acceptance checks.
 
 Still intentionally requires later design/asset work:
 
+- Regalhart head/antler weak-point hit geometry plus accepted Crown Charge/Rear Kick movement, contact
+  geometry and final in-client presentation before production-spawn admission;
 - exact current dependency model/entity/animation IDs after local asset-intake inspection;
 - exact sound/VFX filenames and hashes;
 - R02+ enemy combat kits;
