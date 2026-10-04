@@ -1165,3 +1165,35 @@ Normal JAR SHA-256 is
 
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 client world join **NOT RUN**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+
+
+### 2026-10-04 exact active-encounter identity authority
+
+The generic active-encounter resolver now preserves the exact live encounter instance instead of
+collapsing engagement to content level alone. Code state
+`885183dd56cce5d93f83aa31508899db423ad4c2` exposes Earthloong actor UUID + content level as an
+exact server-owned encounter reference and fails closed if corrupted/overlapping runtime state claims
+one player for two simultaneous live Earthloong instances.
+
+Support-entry semantics remain intentionally permissive: a caster with no current encounter may
+still join by performing a legitimate support action for a recipient already engaged in one exact
+encounter. If both players are already engaged, however, they must refer to the same actor instance;
+two Lv8 Earthloongs in the same dimension are no longer treated as one support context merely because
+their content levels match. Same-actor/content-level inconsistency also fails closed.
+
+This closes a shared authority prerequisite for later Downed/Revive and encounter-scoped Class
+Insight work. It does **not** claim Downed/Revive itself is implemented: a global final-lethal-damage
+interception seam and the non-encounter `nearby play context` branch still need an accepted
+server-authoritative binding before the full multiplayer rule can be enabled.
+
+Build Openworld RPG #344 / run `37170548040` is **SUCCESS** across unit tests/build, dependency
+and registry inspection, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs and M0 mrpack packaging. Artifact
+`openworld-rpg-m0-885183dd56cce5d93f83aa31508899db423ad4c2` (ID `11291560804`,
+digest `sha256:4caa036d9a4804f9c0651191ab9b228740e0006810f1907223a3c763c9aa5ea5`).
+Normal JAR SHA-256 is
+`820303217c5b938c7ce47d3ba88436a207534bd46e34d023bb995f64e0c79750`; M0 mrpack SHA-256 is
+`8c60e09e6259a07e5b4012b24eb8612ccbd1abf00c94b15ecc50eee87efb3bdc`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+client world join **NOT RUN**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.

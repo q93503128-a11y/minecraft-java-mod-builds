@@ -1549,6 +1549,21 @@ runtime state.
 
 Build Openworld RPG #343 / run `37169389094` is **SUCCESS** for this code state.
 
+### Exact encounter identity authority
+
+Code state `885183dd56cce5d93f83aa31508899db423ad4c2` upgrades the shared active-encounter resolver
+from content-level-only context to an exact live Earthloong actor identity. A support caster with no
+active encounter can still legitimately join by helping an already-engaged recipient, but if both
+players are already engaged they must now share the same Earthloong UUID. Two simultaneous Lv8
+Earthloongs can no longer leak support/encounter authority across each other, and ambiguous overlap
+fails closed.
+
+This exact identity is the required server-side foundation for later same-encounter Downed/Revive and
+Class Insight attempt state. The full Downed system is still not claimed: global final-lethal
+interception and the separate non-encounter nearby-play-context rule remain unbound.
+
+Build Openworld RPG #344 / run `37170548040` is **SUCCESS** for this code state.
+
 ## Arena rule — authored breakables only
 
 Any Earthloong attack with environment-breaking spectacle may break only:
