@@ -59,7 +59,7 @@ public final class DrehmalMinimapLayer implements GuiLayer {
         int x = TurnboundUiTokens.S;
         int y = TurnboundUiTokens.S;
         TurnboundUiSkin.panel(graphics, x, y, panelW, panelH);
-        graphics.text(minecraft.font, Component.literal("M 지도 · N 숨김"), x + 7, y + 7, TEXT, false);
+        graphics.text(minecraft.font, Component.literal("J 전체 지도 · M 숨김"), x + 7, y + 7, TEXT, false);
 
         int mapX = x + (panelW - MAP_SIZE) / 2;
         int mapY = y + 20;
