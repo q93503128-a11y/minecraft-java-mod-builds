@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -18,9 +19,9 @@ import net.minecraft.world.entity.LivingEntity;
 /**
  * Server-owned Downed / revive backend for exact encounter-scoped co-op.
  *
- * <p>Final lethal interception, the non-encounter nearby-play-context branch and physical revive
- * interaction transport remain separate gates. Those callers must prove their own authority before
- * invoking these transitions.</p>
+ * <p>The non-encounter nearby-play-context branch and physical revive interaction transport remain
+ * separate gates. Final lethal interception may invoke the exact encounter branch only after
+ * Minecraft has already resolved the hit as otherwise fatal.</p>
  */
 public final class ProjectDownedRuntime {
     public static final String REVIVE_ACTION_ID = "openworld_rpg:action/revive";
@@ -40,8 +41,31 @@ public final class ProjectDownedRuntime {
     }
 
     public static EnterResult tryEnterEncounterDowned(ServerPlayer player) {
+        return tryEnterEncounterDowned(player, false);
+    }
+
+    /**
+     * Entry seam used only after Minecraft has already reduced the player to final lethal health
+     * and vanilla death protection did not save them.
+     */
+    public static EnterResult tryEnterEncounterDownedAfterFinalLethal(
+            ServerPlayer player
+    ) {
         Objects.requireNonNull(player, "player");
-        if (!player.isAlive() || player.isSpectator()) {
+        if (player.getHealth() > 0.0F || player.isRemoved()) {
+            return EnterResult.rejected(EnterStatus.INVALID_PLAYER);
+        }
+        return tryEnterEncounterDowned(player, true);
+    }
+
+    private static EnterResult tryEnterEncounterDowned(
+            ServerPlayer player,
+            boolean finalLethalPhase
+    ) {
+        Objects.requireNonNull(player, "player");
+        if (player.isSpectator()
+                || player.isRemoved()
+                || (!finalLethalPhase && !player.isAlive())) {
             return EnterResult.rejected(EnterStatus.INVALID_PLAYER);
         }
         var encounter = ProjectActiveEncounterRuntime.activeEncounterFor(player).orElse(null);
@@ -251,6 +275,36 @@ public final class ProjectDownedRuntime {
         Session session = SESSIONS.get(player.getUUID());
         return session == null ? Optional.empty()
                 : Optional.of(session.state().snapshot(player.level().getGameTime()));
+    }
+
+    /**
+     * Resolves expired rescue windows through Minecraft's normal defeat path. Generic-kill damage
+     * deliberately bypasses the Downed death interception, so inventory/death-penalty/respawn
+     * authority remains the existing vanilla/project death flow rather than a second custom path.
+     */
+    public static void tick(MinecraftServer server) {
+        Objects.requireNonNull(server, "server");
+        for (Map.Entry<UUID, Session> entry : SESSIONS.entrySet()) {
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player == null) {
+                continue;
+            }
+            long nowTick = player.level().getGameTime();
+            var current = entry.getValue().state().snapshot(nowTick);
+            if (!current.downed() || !current.rescueExpired()) {
+                continue;
+            }
+
+            ServerLevel level = player.level();
+            player.hurtServer(
+                    level,
+                    player.damageSources().genericKill(),
+                    Float.MAX_VALUE
+            );
+            if (!player.isAlive()) {
+                clearAfterDefeat(player.getUUID());
+            }
+        }
     }
 
     public static void clearAfterDefeat(UUID playerId) {

@@ -8,6 +8,7 @@
     "BowShotAuthorityMixin",
     "CrossbowShotAuthorityMixin",
     "LivingEntityCombatActivityMixin",
+    "PlayerDownedLethalMixin",
     "ExternalActorProgressionMixin",
     "ExternalActorDamageAuthorityMixin",
     "PlayerAttackAuthorityMixin",

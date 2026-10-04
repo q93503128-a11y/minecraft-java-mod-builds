@@ -36,6 +36,7 @@ import dev.moonseungjun.openworldrpg.market.R01NessaMarketService;
 import dev.moonseungjun.openworldrpg.market.R01MaterialMarketAttachments;
 import dev.moonseungjun.openworldrpg.market.R01MaterialMarketService;
 import dev.moonseungjun.openworldrpg.network.ProjectCombatNetworking;
+import dev.moonseungjun.openworldrpg.multiplayer.ProjectDownedRuntime;
 import dev.moonseungjun.openworldrpg.profession.ProfessionMasteryAttachments;
 import dev.moonseungjun.openworldrpg.profession.R01CraftingAttachments;
 import dev.moonseungjun.openworldrpg.profession.R01CraftingService;
@@ -183,6 +184,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01SteelboarCombatRuntime.initialize(profile, LOGGER);
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.START_SERVER_TICK.register(server -> {
+            ProjectDownedRuntime.tick(server);
             R01RegalhartCombatRuntime.tick(server);
             ProjectPlayerActionRuntime.tick(server);
             R01CampService.tick(server);
@@ -284,6 +286,9 @@ public final class OpenworldRpgMod implements ModInitializer {
             );
         });
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (!alive) {
+                ProjectDownedRuntime.clearAfterDefeat(newPlayer.getUUID());
+            }
             if (!alive && !M0PlayerVerificationBootstrap.enabled()) {
                 PlayerDeathPenaltyService.applyAfterDeathRespawn(newPlayer);
             }
