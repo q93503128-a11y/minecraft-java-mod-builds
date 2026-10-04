@@ -7,6 +7,7 @@ import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
+import dev.moonseungjun.openworldrpg.progression.r01.R01ClassInsightService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -228,6 +229,13 @@ public final class HunterQuickstepVolleyRuntime {
                 nowTick
         );
         CombatStateServices.markCombatActivity(hunter.getUUID(), nowTick);
+        R01ClassInsightService.recordHunterCrownedMarkHit(
+                hunter,
+                target,
+                cast.quarryAtCast(),
+                cast.empowered(),
+                weakPointHit
+        );
 
         boolean activeQuarryCharge = false;
         if (!cast.activeQuarryChargePublished()
