@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.travel;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerActionRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerActionRuntimeState;
+import dev.moonseungjun.openworldrpg.multiplayer.ProjectDownedRuntime;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerState;
 import dev.moonseungjun.openworldrpg.progression.r01.R01PlayerStateService;
 import java.util.Map;
@@ -21,9 +22,9 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Server-authoritative R01 node-to-node fast travel.
  *
- * <p>The client never supplies coordinates. The caller supplies only node ids plus authoritative
- * Downed/custom-mount state; coordinates come exclusively from
- * {@link R01FastTravelNodeRegistry}'s accepted production bindings.</p>
+ * <p>The client never supplies coordinates. Downed state is resolved from the project server
+ * runtime; the caller's legacy block-state flag can only over-block, never bypass it. Coordinates
+ * come exclusively from {@link R01FastTravelNodeRegistry}'s accepted production bindings.</p>
  */
 public final class R01FastTravelService {
     public static final double ORIGIN_RADIUS = 6.0;
@@ -62,7 +63,8 @@ public final class R01FastTravelService {
         if (!player.isAlive()) {
             return rejected(StartStatus.INVALID_STATE);
         }
-        if (authoritativeBlockState.downed()) {
+        if (ProjectDownedRuntime.isDowned(player)
+                || authoritativeBlockState.downed()) {
             return rejected(StartStatus.DOWNED);
         }
         if (authoritativeBlockState.projectMounted()
@@ -153,6 +155,7 @@ public final class R01FastTravelService {
 
             long nowTick = player.level().getGameTime();
             if (!player.isAlive()
+                    || ProjectDownedRuntime.isDowned(player)
                     || player.isPassenger()
                     || CombatStateServices.states()
                             .getOrCreate(playerId, nowTick)

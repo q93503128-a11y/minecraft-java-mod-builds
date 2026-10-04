@@ -1,7 +1,9 @@
 package dev.moonseungjun.openworldrpg.mixin;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.multiplayer.ProjectDownedRuntime;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -31,6 +33,9 @@ public abstract class LivingEntityCombatActivityMixin {
                 && sourceEntity instanceof LivingEntity attacker
                 && attacker != player) {
             CombatStateServices.markHostileHpActivity(player.getUUID(), gameTick);
+            if (player instanceof ServerPlayer serverPlayer) {
+                ProjectDownedRuntime.interruptRevive(serverPlayer);
+            }
         }
 
         if (sourceEntity instanceof Player player && target != player) {

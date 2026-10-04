@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.combat.state.PlayerActionRuntimeState;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerMovementRuntime;
+import dev.moonseungjun.openworldrpg.multiplayer.ProjectDownedRuntime;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,10 +30,9 @@ public final class ProjectPlayerActionRuntime {
             ServerPlayer player
     ) {
         Objects.requireNonNull(player, "player");
-        return state(player.getUUID())
-                .canStartAction(
-                        player.level().getGameTime()
-                );
+        long nowTick = player.level().getGameTime();
+        return !ProjectDownedRuntime.isDowned(player.getUUID(), nowTick)
+                && state(player.getUUID()).canStartAction(nowTick);
     }
 
     public static PlayerActionRuntimeState.BeginResult beginAction(
@@ -42,6 +42,9 @@ public final class ProjectPlayerActionRuntime {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(spec, "spec");
         long nowTick = player.level().getGameTime();
+        if (ProjectDownedRuntime.isDowned(player.getUUID(), nowTick)) {
+            return PlayerActionRuntimeState.BeginResult.rejected();
+        }
         var result = state(player.getUUID()).beginAction(
                 spec.actionId(),
                 nowTick,
@@ -63,9 +66,11 @@ public final class ProjectPlayerActionRuntime {
             long nowTick
     ) {
         Objects.requireNonNull(playerId, "playerId");
+        if (ProjectDownedRuntime.isDowned(playerId, nowTick)) {
+            return false;
+        }
         var state = STATES.get(playerId);
-        return state == null
-                || state.canDodgeCancel(nowTick);
+        return state == null || state.canDodgeCancel(nowTick);
     }
 
     public static boolean canBufferDodge(
@@ -73,6 +78,9 @@ public final class ProjectPlayerActionRuntime {
             long nowTick
     ) {
         Objects.requireNonNull(playerId, "playerId");
+        if (ProjectDownedRuntime.isDowned(playerId, nowTick)) {
+            return false;
+        }
         var state = STATES.get(playerId);
         if (state == null) {
             return false;
@@ -91,9 +99,11 @@ public final class ProjectPlayerActionRuntime {
             long nowTick
     ) {
         Objects.requireNonNull(playerId, "playerId");
+        if (ProjectDownedRuntime.isDowned(playerId, nowTick)) {
+            return false;
+        }
         var state = STATES.get(playerId);
-        return state == null
-                || state.commitDodgeCancel(nowTick);
+        return state == null || state.commitDodgeCancel(nowTick);
     }
 
     public static boolean cancelAction(
@@ -121,9 +131,11 @@ public final class ProjectPlayerActionRuntime {
             long nowTick
     ) {
         Objects.requireNonNull(playerId, "playerId");
+        if (ProjectDownedRuntime.isDowned(playerId, nowTick)) {
+            return false;
+        }
         var state = STATES.get(playerId);
-        return state == null
-                || state.basicAttackAllowed(nowTick);
+        return state == null || state.basicAttackAllowed(nowTick);
     }
 
     public static boolean guardStartAllowed(
@@ -131,9 +143,11 @@ public final class ProjectPlayerActionRuntime {
             long nowTick
     ) {
         Objects.requireNonNull(playerId, "playerId");
+        if (ProjectDownedRuntime.isDowned(playerId, nowTick)) {
+            return false;
+        }
         var state = STATES.get(playerId);
-        return state == null
-                || state.canStartAction(nowTick);
+        return state == null || state.canStartAction(nowTick);
     }
 
     public static PlayerActionRuntimeState.ReactionResult applyReaction(

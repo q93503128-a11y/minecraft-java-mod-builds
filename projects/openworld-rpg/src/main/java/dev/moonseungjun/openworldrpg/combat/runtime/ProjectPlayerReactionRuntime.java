@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
+import dev.moonseungjun.openworldrpg.multiplayer.ProjectDownedRuntime;
 import java.util.Objects;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -26,6 +27,7 @@ public final class ProjectPlayerReactionRuntime {
             return Application.none();
         }
 
+        ProjectDownedRuntime.interruptRevive(player);
         long nowTick = player.level().getGameTime();
         double multiplier = spec.ordinaryNonLaunch()
                 ? WarriorSkillRuntime
