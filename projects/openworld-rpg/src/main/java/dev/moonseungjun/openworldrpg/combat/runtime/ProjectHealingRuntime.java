@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerHealingAuthority;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatAttribute;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
@@ -174,6 +175,14 @@ public final class ProjectHealingRuntime {
         if (encounterActor != null
                 && caster != target
                 && effectiveHealing > 0.0) {
+            long gameTick = caster.level().getGameTime();
+            R01EarthloongPhysicalEncounterRuntime.recordEffectiveHealingThreat(
+                    encounterActor,
+                    caster,
+                    target,
+                    effectiveHealing,
+                    gameTick
+            );
             newEarthloongParticipation =
                     R01EarthloongEncounterService.recordValidatedSupportContribution(
                             encounterActor,
@@ -191,7 +200,7 @@ public final class ProjectHealingRuntime {
                     );
             CombatStateServices.markCombatActivity(
                     caster.getUUID(),
-                    caster.level().getGameTime()
+                    gameTick
             );
         }
 

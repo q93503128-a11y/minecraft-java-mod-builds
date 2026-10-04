@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerBarrierAuthority;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatAttribute;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerBarrierRuntimeState;
@@ -182,8 +183,19 @@ public final class ProjectBarrierRuntime {
                 clericGraceSource
         );
         if (!application.accepted()
-                || application.effectiveGranted() <= 0.0
-                || caster == target) {
+                || application.effectiveGranted() <= 0.0) {
+            return application;
+        }
+
+        long gameTick = caster.level().getGameTime();
+        R01EarthloongPhysicalEncounterRuntime.recordEffectiveBarrierThreat(
+                encounterActor,
+                caster,
+                target,
+                application.effectiveGranted(),
+                gameTick
+        );
+        if (caster == target) {
             return application;
         }
 

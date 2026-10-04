@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerDefenseRuntimeState;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
@@ -151,7 +152,14 @@ public final class ProjectPlayerIncomingDamageRuntime {
                 gameTick
         );
         if (counterwall.isPresent()) {
+            var counterwallResolution = counterwall.orElseThrow();
             resources.markCombatActivity(gameTick);
+            recordEarthloongGuardThreat(
+                    attacker,
+                    target,
+                    counterwallResolution,
+                    gameTick
+            );
             ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
                     target,
                     attacker,
@@ -173,7 +181,7 @@ public final class ProjectPlayerIncomingDamageRuntime {
             );
             return IncomingApplication.accepted(
                     false,
-                    counterwall.orElseThrow()
+                    counterwallResolution
             );
         }
 
@@ -185,7 +193,14 @@ public final class ProjectPlayerIncomingDamageRuntime {
                 gameTick
         );
         if (counter.isPresent()) {
+            var counterResolution = counter.orElseThrow();
             resources.markCombatActivity(gameTick);
+            recordEarthloongGuardThreat(
+                    attacker,
+                    target,
+                    counterResolution,
+                    gameTick
+            );
             ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
                     target,
                     attacker,
@@ -202,7 +217,7 @@ public final class ProjectPlayerIncomingDamageRuntime {
             );
             return IncomingApplication.accepted(
                     false,
-                    counter.orElseThrow()
+                    counterResolution
             );
         }
 
@@ -233,6 +248,12 @@ public final class ProjectPlayerIncomingDamageRuntime {
             );
         }
         resources.markCombatActivity(gameTick);
+        recordEarthloongGuardThreat(
+                attacker,
+                target,
+                resolution,
+                gameTick
+        );
 
         if (!resolution.dodged()
                 && (resolution.guarded()
@@ -343,6 +364,29 @@ public final class ProjectPlayerIncomingDamageRuntime {
         }
 
         return IncomingApplication.accepted(applied, resolution);
+    }
+
+    private static void recordEarthloongGuardThreat(
+            LivingEntity attacker,
+            ServerPlayer target,
+            PlayerDefenseRuntimeState.IncomingDefenseResult resolution,
+            long gameTick
+    ) {
+        if (!resolution.guarded()) {
+            return;
+        }
+        double preventedHpDamage = Math.max(
+                0.0,
+                resolution.mitigatedBeforeActiveDefense()
+                        - resolution.finalDamage()
+        );
+        R01EarthloongPhysicalEncounterRuntime.recordGuardThreat(
+                attacker,
+                target,
+                preventedHpDamage,
+                resolution.perfectGuarded(),
+                gameTick
+        );
     }
 
     static PlayerDefenseAuthority.IncomingHit scaleDirectDamage(

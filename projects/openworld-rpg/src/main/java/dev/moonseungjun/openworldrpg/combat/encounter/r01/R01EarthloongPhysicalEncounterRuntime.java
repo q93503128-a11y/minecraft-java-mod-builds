@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.encounter.r01;
 
+import dev.moonseungjun.openworldrpg.combat.authority.ProjectThreatRules;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerPoisePressureRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.ProjectPlayerShockRuntime;
 import dev.moonseungjun.openworldrpg.combat.runtime.GuardianProvokedRuntime;
@@ -102,10 +103,149 @@ public final class R01EarthloongPhysicalEncounterRuntime {
         state.threat.engageInitial(attacker.getUUID(), gameTick);
         state.threat.addThreat(
                 attacker.getUUID(),
-                100.0 * appliedCanonicalDamage / profile.maxHealth(),
+                ProjectThreatRules.damageThreat(
+                        appliedCanonicalDamage,
+                        profile.maxHealth()
+                ),
                 gameTick);
         state.scheduleDecisionIfIdle(gameTick);
         return true;
+    }
+
+    /**
+     * Records canon threat from effective healing performed on another player who is already
+     * engaged with this exact Earthloong. The healer joins the same threat table only after the
+     * server has measured non-zero effective healing.
+     */
+    public static boolean recordEffectiveHealingThreat(
+            LivingEntity earthloong,
+            ServerPlayer healer,
+            ServerPlayer healedTarget,
+            double effectiveHealing,
+            long gameTick
+    ) {
+        if (earthloong == null
+                || healer == null
+                || healedTarget == null
+                || !Double.isFinite(effectiveHealing)
+                || effectiveHealing <= 0.0
+                || gameTick < 0L
+                || healer == healedTarget
+                || healer.level() != earthloong.level()
+                || healedTarget.level() != earthloong.level()
+                || !healedTarget.isAlive()) {
+            return false;
+        }
+        ActorState state = threatState(earthloong);
+        if (state == null
+                || !state.threat.contains(healedTarget.getUUID())) {
+            return false;
+        }
+
+        double amount = ProjectThreatRules.effectiveHealingThreat(
+                effectiveHealing,
+                healedTarget.getMaxHealth()
+        );
+        state.threat.engageInitial(healer.getUUID(), gameTick);
+        state.threat.addThreat(healer.getUUID(), amount, gameTick);
+        state.scheduleDecisionIfIdle(gameTick);
+        return true;
+    }
+
+    /**
+     * Records canon threat from an effective barrier grant to a participant already engaged with
+     * this exact Earthloong. Self-barriers are valid threat when the recipient is already engaged;
+     * they remain ineligible for support-reward participation under PARTY_MULTIPLAYER canon.
+     */
+    public static boolean recordEffectiveBarrierThreat(
+            LivingEntity earthloong,
+            ServerPlayer source,
+            ServerPlayer recipient,
+            double effectiveBarrierGranted,
+            long gameTick
+    ) {
+        if (earthloong == null
+                || source == null
+                || recipient == null
+                || !Double.isFinite(effectiveBarrierGranted)
+                || effectiveBarrierGranted <= 0.0
+                || gameTick < 0L
+                || source.level() != earthloong.level()
+                || recipient.level() != earthloong.level()
+                || !recipient.isAlive()) {
+            return false;
+        }
+        ActorState state = threatState(earthloong);
+        if (state == null
+                || !state.threat.contains(recipient.getUUID())) {
+            return false;
+        }
+
+        double amount = ProjectThreatRules.effectiveBarrierThreat(
+                effectiveBarrierGranted,
+                recipient.getMaxHealth()
+        );
+        state.threat.engageInitial(source.getUUID(), gameTick);
+        state.threat.addThreat(source.getUUID(), amount, gameTick);
+        state.scheduleDecisionIfIdle(gameTick);
+        return true;
+    }
+
+    /**
+     * Records guard-generated threat for an actual authored Earthloong hit. The hit itself proves
+     * engagement, so a valid guard may seed the defender before adding prevented-HP threat and the
+     * flat perfect-guard bonus.
+     */
+    public static boolean recordGuardThreat(
+            LivingEntity earthloong,
+            ServerPlayer guardian,
+            double preventedHpDamage,
+            boolean perfectGuard,
+            long gameTick
+    ) {
+        if (earthloong == null
+                || guardian == null
+                || !Double.isFinite(preventedHpDamage)
+                || preventedHpDamage < 0.0
+                || (!perfectGuard && preventedHpDamage <= 0.0)
+                || gameTick < 0L
+                || guardian.level() != earthloong.level()
+                || !guardian.isAlive()) {
+            return false;
+        }
+        ActorState state = threatState(earthloong);
+        if (state == null) {
+            return false;
+        }
+
+        double amount = ProjectThreatRules.guardThreat(
+                preventedHpDamage,
+                guardian.getMaxHealth(),
+                perfectGuard
+        );
+        if (amount <= 0.0) {
+            return false;
+        }
+        state.threat.engageInitial(guardian.getUUID(), gameTick);
+        state.threat.addThreat(guardian.getUUID(), amount, gameTick);
+        state.scheduleDecisionIfIdle(gameTick);
+        return true;
+    }
+
+    private static ActorState threatState(LivingEntity earthloong) {
+        ActorState state = STATES.get(earthloong.getUUID());
+        if (state == null
+                || state.actor != earthloong
+                || state.verificationFixture
+                || earthloong.isRemoved()
+                || !earthloong.isAlive()) {
+            return null;
+        }
+        var profile = ExternalActorBindingRuntime.combatProfile(earthloong).orElse(null);
+        return profile != null
+                && EARTHLOONG_ID.equals(profile.entityId())
+                ? state
+                : null;
     }
 
     public static void clearPlayer(UUID playerId) {
