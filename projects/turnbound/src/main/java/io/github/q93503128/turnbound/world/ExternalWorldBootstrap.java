@@ -149,7 +149,7 @@ public final class ExternalWorldBootstrap {
                 && DrabyelHubServiceRuntime.nearRole(player, "GREETER")) {
             if (DrabyelLocalArcProgress.acceptRegional(player)) {
                 FieldNetwork.showDialogue(player, "문지기 아렌",
-                        "캐피털 밸리 정찰 의뢰를 맡겼습니다. M 지도에 표시한 세 지역 목표 중 하나를 해결하고 돌아오세요.");
+                        "캐피털 밸리 정찰 의뢰를 맡겼습니다. J 전체 지도에 표시한 세 지역 목표 중 하나를 해결하고 돌아오세요.");
             }
             refreshFieldContext(player);
             return;

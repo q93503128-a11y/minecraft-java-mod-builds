@@ -71,6 +71,10 @@ public final class QuestGuideLayer implements GuiLayer {
         }
 
         String hint = selected.main() ? playerFacingHint(snapshot.dialogue()) : "Shift+K로 표시할 목표를 전환할 수 있습니다.";
+        if (selected.main() && target != null) {
+            String targetHint = "현재 안내 화살표: " + target.label;
+            hint = hint.isBlank() ? targetHint : targetHint + " · " + hint;
+        }
         if (selected.main() && isPartyObjective(snapshot.objective())) {
             hint = "E 메뉴 → 파티에서 편성 후 ‘편성 적용’을 누르세요.";
         }
@@ -180,7 +184,8 @@ public final class QuestGuideLayer implements GuiLayer {
     static String playerFacingObjective(String raw) {
         if (raw == null || raw.isBlank()) return "";
         String text = stripLeadingInternalQuestId(raw.trim());
-        return text.replace("카이렌/브람/엘리시아/변경 사냥꾼", "카이렌 · 변경 사냥꾼")
+        return text.replace("M 지도", "J 전체 지도")
+                .replace("카이렌/브람/엘리시아/변경 사냥꾼", "카이렌 · 변경 사냥꾼")
                 .replace("P01/P03/P04/F03", "카이렌 · 변경 사냥꾼")
                 .replace("P01/F03", "카이렌 · 변경 사냥꾼")
                 .replace("ENC_M01/M02 승리", "초입 순찰 2개 격파")
@@ -197,7 +202,8 @@ public final class QuestGuideLayer implements GuiLayer {
 
     static String playerFacingHint(String raw) {
         if (raw == null) return "";
-        return raw.replace("Relay fragment", "Relay 조각")
+        return raw.replace("M 지도", "J 전체 지도")
+                .replace("Relay fragment", "Relay 조각")
                 .replace("Relay console", "Relay 제어 콘솔")
                 .replace("B01", "그라울")
                 .replace("B02", "베르나")

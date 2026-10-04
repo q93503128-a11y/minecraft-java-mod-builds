@@ -24,8 +24,10 @@ final class DrabyelSummonSanctum {
     record Stage(Vec3 position, float actorYaw) {}
 
     private static final int INNER_RADIUS = 6;
-    private static final int MIN_DISTANCE = 24;
-    private static final int MAX_DISTANCE = 72;
+    private static final int ROOF_RADIUS = 7;
+    private static final int ROOF_HEIGHT = 7;
+    private static final int MIN_DISTANCE = 128;
+    private static final int MAX_DISTANCE = 176;
     private static final Map<ServerLevel, BlockPos> CACHE = new IdentityHashMap<>();
 
     private DrabyelSummonSanctum() {}
@@ -79,8 +81,8 @@ final class DrabyelSummonSanctum {
         int ox = (int)Math.floor(origin.x);
         int oz = (int)Math.floor(origin.z);
         List<Candidate> out = new ArrayList<>();
-        for (int dz = -MAX_DISTANCE; dz <= MAX_DISTANCE; dz += 4) {
-            for (int dx = -MAX_DISTANCE; dx <= MAX_DISTANCE; dx += 4) {
+        for (int dz = -MAX_DISTANCE; dz <= MAX_DISTANCE; dz += 8) {
+            for (int dx = -MAX_DISTANCE; dx <= MAX_DISTANCE; dx += 8) {
                 int distanceSq = dx * dx + dz * dz;
                 if (distanceSq < MIN_DISTANCE * MIN_DISTANCE || distanceSq > MAX_DISTANCE * MAX_DISTANCE) continue;
                 int x = ox + dx;
@@ -116,9 +118,9 @@ final class DrabyelSummonSanctum {
     private static BlockPos safeCenter(ServerLevel level, int x, int z) {
         int minY = Integer.MAX_VALUE;
         int maxY = Integer.MIN_VALUE;
-        for (int dz = -INNER_RADIUS; dz <= INNER_RADIUS; dz++) {
-            for (int dx = -INNER_RADIUS; dx <= INNER_RADIUS; dx++) {
-                if (dx * dx + dz * dz > INNER_RADIUS * INNER_RADIUS) continue;
+        for (int dz = -ROOF_RADIUS; dz <= ROOF_RADIUS; dz++) {
+            for (int dx = -ROOF_RADIUS; dx <= ROOF_RADIUS; dx++) {
+                if (dx * dx + dz * dz > ROOF_RADIUS * ROOF_RADIUS) continue;
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + dx, z + dz);
                 BlockPos below = new BlockPos(x + dx, y - 1, z + dz);
                 if (level.getBlockState(below).isAir() || level.getBlockState(below).is(BlockTags.LEAVES)
@@ -130,11 +132,11 @@ final class DrabyelSummonSanctum {
         if (maxY - minY > 1) return null;
 
         int floorY = maxY;
-        for (int dz = -INNER_RADIUS; dz <= INNER_RADIUS; dz++) {
-            for (int dx = -INNER_RADIUS; dx <= INNER_RADIUS; dx++) {
-                if (dx * dx + dz * dz > INNER_RADIUS * INNER_RADIUS) continue;
+        for (int dz = -ROOF_RADIUS; dz <= ROOF_RADIUS; dz++) {
+            for (int dx = -ROOF_RADIUS; dx <= ROOF_RADIUS; dx++) {
+                if (dx * dx + dz * dz > ROOF_RADIUS * ROOF_RADIUS) continue;
                 BlockPos floor = new BlockPos(x + dx, floorY, z + dz);
-                for (int dy = 0; dy <= 3; dy++) {
+                for (int dy = 0; dy <= ROOF_HEIGHT + 1; dy++) {
                     BlockPos pos = floor.above(dy);
                     if (!level.getBlockState(pos).isAir() || !level.getFluidState(pos).isEmpty()) return null;
                 }
@@ -167,12 +169,43 @@ final class DrabyelSummonSanctum {
             }
         }
 
-        int[][] pillars = {{5,0},{-5,0},{0,5},{0,-5}};
+        int[][] pillars = {
+                {5,0},{-5,0},{0,5},{0,-5},
+                {4,4},{-4,4},{4,-4},{-4,-4}
+        };
         for (int[] pillar : pillars) {
             BlockPos base = center.offset(pillar[0], 1, pillar[1]);
-            level.setBlock(base, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(), 3);
-            level.setBlock(base.above(), Blocks.CHISELED_DEEPSLATE.defaultBlockState(), 3);
-            level.setBlock(base.above(2), Blocks.SEA_LANTERN.defaultBlockState(), 3);
+            for (int y = 0; y < ROOF_HEIGHT - 1; y++) {
+                level.setBlock(base.above(y),
+                        (y == 2 || y == 5)
+                                ? Blocks.CHISELED_DEEPSLATE.defaultBlockState()
+                                : Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(),
+                        3);
+            }
+        }
+
+        // A real ceiling keeps the reveal composition independent from weather/sky and reads as a dedicated chamber.
+        for (int dz = -ROOF_RADIUS; dz <= ROOF_RADIUS; dz++) {
+            for (int dx = -ROOF_RADIUS; dx <= ROOF_RADIUS; dx++) {
+                int radiusSq = dx * dx + dz * dz;
+                if (radiusSq > ROOF_RADIUS * ROOF_RADIUS) continue;
+                BlockPos roof = center.offset(dx, ROOF_HEIGHT, dz);
+                var state = radiusSq >= 40
+                        ? Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState()
+                        : Blocks.POLISHED_DEEPSLATE.defaultBlockState();
+                if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
+                    state = Blocks.TINTED_GLASS.defaultBlockState();
+                } else if ((Math.abs(dx) == 4 && dz == 0) || (Math.abs(dz) == 4 && dx == 0)) {
+                    state = Blocks.AMETHYST_BLOCK.defaultBlockState();
+                }
+                level.setBlock(roof, state, 3);
+            }
+        }
+
+        int[][] lights = {{3,3},{-3,3},{3,-3},{-3,-3}};
+        for (int[] light : lights) {
+            level.setBlock(center.offset(light[0], ROOF_HEIGHT - 1, light[1]),
+                    Blocks.SEA_LANTERN.defaultBlockState(), 3);
         }
     }
 

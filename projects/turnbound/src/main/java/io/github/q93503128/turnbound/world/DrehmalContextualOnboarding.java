@@ -142,10 +142,10 @@ final class DrehmalContextualOnboarding {
         }
         String nextService = nextHubServiceRole(clears, flags, roles);
         if ("BLACKSMITH".equals(nextService)) {
-            return new Guidance("대장장이를 찾아 장비를 확인하거나 강화하십시오.", "M 지도에는 마을 NPC 위치와 이름이 표시됩니다.");
+            return new Guidance("대장장이를 찾아 장비를 확인하거나 강화하십시오.", "J 전체 지도에는 마을 NPC 위치와 이름이 표시됩니다.");
         }
         if ("MARKET".equals(nextService)) {
-            return new Guidance("장비 상인을 찾아 다음 여정에 필요한 장비를 확인하십시오.", "구매가 필요 없다면 확인만 하고 지나가도 됩니다. M 지도에서 상인의 위치를 확인할 수 있습니다.");
+            return new Guidance("장비 상인을 찾아 다음 여정에 필요한 장비를 확인하십시오.", "구매가 필요 없다면 확인만 하고 지나가도 됩니다. J 전체 지도에서 상인의 위치를 확인할 수 있습니다.");
         }
         if ("TRAVEL".equals(nextService)) {
             return new Guidance("역참지기를 찾아 이동 거점과 탈것을 확인하십시오.", "발견한 역참으로 빠르게 이동하거나 길뿔 산양을 빌릴 수 있습니다.");
@@ -161,7 +161,7 @@ final class DrehmalContextualOnboarding {
         if (DrabyelLocalArcProgress.active(flags)) {
             return new Guidance(
                     "뉴 드라비엘 주변 조사 지점 3곳 중 2곳을 확인하십시오. (" + DrabyelLocalArcProgress.count(flags) + "/2)",
-                    "모든 지점을 돌 필요는 없습니다. M 지도에서 가까운 목표를 고르십시오.");
+                    "모든 지점을 돌 필요는 없습니다. J 전체 지도에서 가까운 목표를 고르십시오.");
         }
         if (!DrabyelLocalArcProgress.complete(flags)) {
             return new Guidance(
@@ -180,7 +180,7 @@ final class DrehmalContextualOnboarding {
         }
         return new Guidance(
                 "캐피털 밸리 정찰 의뢰의 지역 목표 하나를 해결하고 뉴 드라비엘로 돌아오십시오.",
-                "M 지도에는 실제로 출현 가능한 목표만 표시됩니다. 표시된 전투 목표 중 하나를 선택하십시오.");
+                "J 전체 지도에는 실제로 출현 가능한 목표만 표시됩니다. 표시된 전투 목표 중 하나를 선택하십시오.");
     }
 
     static String nextHubServiceRole(Set<String> clears, Set<String> flags, Set<String> roles) {

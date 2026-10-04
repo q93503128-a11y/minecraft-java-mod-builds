@@ -154,6 +154,25 @@ class FieldUiCodecTest {
     }
 
     @Test
+    void navigationTargetIsAlsoProjectedAsAnObjectiveMapPoint() {
+        FieldUiSnapshot.Navigation navigation = new FieldUiSnapshot.Navigation(
+                "regional:CV_DRABYEL_NORTH", "북부 도로 순찰대", 612.5D, 1440.5D);
+        List<FieldUiSnapshot.MapPoint> projected = DrehmalFirstRouteRuntime.withNavigationMarker(
+                List.of(new FieldUiSnapshot.MapPoint("service:smith", "대장장이", "SERVICE", 510.5D, 1805.5D, false)),
+                navigation);
+
+        FieldUiSnapshot.MapPoint target = projected.stream()
+                .filter(FieldUiSnapshot.MapPoint::objective)
+                .findFirst().orElseThrow();
+        assertEquals(navigation.x(), target.x());
+        assertEquals(navigation.z(), target.z());
+        assertTrue(target.label().contains(navigation.label()));
+
+        List<FieldUiSnapshot.MapPoint> deduped = DrehmalFirstRouteRuntime.withNavigationMarker(projected, navigation);
+        assertEquals(projected.size(), deduped.size());
+    }
+
+    @Test
     void roundTripsBattleTransitionOwnershipState() {
         FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(FieldUiSnapshot.battleTransition()));
         assertTrue(decoded.active());

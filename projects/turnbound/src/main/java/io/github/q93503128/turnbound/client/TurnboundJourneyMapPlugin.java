@@ -68,7 +68,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.level == null || minecraft.player == null) return;
             int y = minecraft.player.blockPosition().getY();
-            boolean customLabels = api.playerAccepts(Turnbound.MOD_ID, DisplayType.Marker);
+            boolean customMarkers = api.playerAccepts(Turnbound.MOD_ID, DisplayType.Marker);
             UIState fullscreenState = api.getUIState(Context.UI.Fullscreen);
             float scale = labelScale(fullscreenState);
 
@@ -81,25 +81,29 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
                         pos,
                         label,
                         Level.OVERWORLD,
-                        false);
+                        true);
                 int color = waypointColor(point);
                 waypoint.setColor(color);
+                waypoint.setIconIdentifier(Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"));
+                waypoint.setIconTextureSize(16, 16);
                 waypoint.setIconColor(color);
                 waypoint.setLabelColor(point.objective() ? 0xFFE7A3 : 0xFFFFFF);
                 waypoint.setShowBeacon(false);
                 waypoint.setShowInWorld(false);
                 waypoint.setShowOnMap(true);
-                waypoint.setShowLabel(!customLabels);
+                waypoint.setShowLabel(!customMarkers);
                 waypoint.setShowDeviation(false);
                 waypoint.setDescription(point.objective() ? "TURNBOUND 목표" : waypointDescription(point));
                 api.addWaypoint(Turnbound.MOD_ID, waypoint);
 
-                if (customLabels) {
+                if (customMarkers) {
                     MarkerOverlay marker = labelOverlay(pos, label, point, scale);
                     api.show(marker);
                     LABEL_OVERLAYS.add(marker);
                 }
             }
+            Turnbound.LOGGER.info("TURNBOUND JourneyMap synced {} map point(s); custom markers={}",
+                    snapshot.mapPoints().size(), customMarkers);
         } catch (Throwable throwable) {
             Turnbound.LOGGER.warn("TURNBOUND could not sync JourneyMap markers", throwable);
         }
@@ -124,16 +128,19 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
     private static MarkerOverlay labelOverlay(
             BlockPos pos, String label, FieldUiSnapshot.MapPoint point, float scale
     ) {
-        MapImage invisible = new MapImage(
+        int iconSize = point.objective() ? 16 : 11;
+        MapImage icon = new MapImage(
                 Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"),
                 16, 16);
-        invisible.setOpacity(0.0F)
-                .setDisplayWidth(1.0D)
-                .setDisplayHeight(1.0D)
+        icon.setColor(waypointColor(point) & 0xFFFFFF)
+                .setOpacity(1.0F)
+                .setDisplayWidth(iconSize)
+                .setDisplayHeight(iconSize)
+                .setRotation(45)
                 .centerAnchors()
                 .setBlur(false);
 
-        MarkerOverlay marker = new MarkerOverlay(Turnbound.MOD_ID, pos, invisible);
+        MarkerOverlay marker = new MarkerOverlay(Turnbound.MOD_ID, pos, icon);
         marker.setDimension(Level.OVERWORLD);
         marker.setTitle(label);
         marker.setLabel(label);
@@ -148,7 +155,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
                 .setBackgroundColor(0x101318)
                 .setBackgroundOpacity(point.objective() ? 0.84F : 0.72F)
                 .setFontShadow(true)
-                .setOffsetY(-8)
+                .setOffsetY(point.objective() ? -16 : -12)
                 .setActiveUIs(Context.UI.Fullscreen));
         return marker;
     }

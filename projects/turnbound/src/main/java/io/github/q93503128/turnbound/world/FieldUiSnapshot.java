@@ -241,6 +241,8 @@ public record FieldUiSnapshot(
             text = text.replace(token, "");
         }
         text = text
+                .replace("M 지도", "J 전체 지도")
+                .replace("M키 지도", "J 전체 지도")
                 .replace("BATTLE_B01", "들이받는 왕 그라울")
                 .replace("BATTLE_B02", "가시어미 베르나")
                 .replace("BATTLE_B03", "수문관리기 ORO-7")

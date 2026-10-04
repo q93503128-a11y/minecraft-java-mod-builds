@@ -128,7 +128,7 @@ final class DrabyelHubServiceRuntime {
                         &&DrabyelLocalArcProgress.regionalAccepted(flags)
                         &&!DrabyelLocalArcProgress.regionalGateReady(clears,flags)){
                     FieldNetwork.showDialogue(player,service.playerLabel(),
-                            "정찰 의뢰는 진행 중이에요. M 지도에 실제로 표시된 전투 목표 중 하나만 해결하면 충분합니다. 돌아오면 서쪽 길 이야기를 이어가죠.");
+                            "정찰 의뢰는 진행 중이에요. J 전체 지도에 실제로 표시된 전투 목표 중 하나만 해결하면 충분합니다. 돌아오면 서쪽 길 이야기를 이어가죠.");
                     return true;
                 }
                 if(DrabyelLocalArcProgress.complete(flags)&&AvsalExpansionProgress.briefingReady(clears,flags)){

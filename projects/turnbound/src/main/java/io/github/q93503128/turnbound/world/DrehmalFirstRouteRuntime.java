@@ -2,6 +2,7 @@ package io.github.q93503128.turnbound.world;
 
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -70,6 +71,8 @@ public final class DrehmalFirstRouteRuntime {
         DrabyelInteractionPromptRules.Prompt interaction = DrabyelHubServiceRuntime.prompt(player);
         if (!interaction.active()) interaction = DrehmalWaystationRuntime.prompt(player);
         FieldUiSnapshot.Navigation navigation = navigation(player);
+        List<FieldUiSnapshot.MapPoint> mapPoints = withNavigationMarker(
+                OpenworldMapPointService.points(player), navigation);
         return new FieldUiSnapshot(
                 true,
                 FieldUiSnapshot.Mode.NONE,
@@ -92,8 +95,30 @@ public final class DrehmalFirstRouteRuntime {
                 interaction.label(),
                 interaction.action(),
                 navigation,
-                OpenworldMapPointService.points(player),
+                List.copyOf(mapPoints),
                 OpenworldQuestTrackerService.active(player));
+    }
+
+    static List<FieldUiSnapshot.MapPoint> withNavigationMarker(
+            List<FieldUiSnapshot.MapPoint> source,
+            FieldUiSnapshot.Navigation navigation
+    ) {
+        List<FieldUiSnapshot.MapPoint> mapPoints = new ArrayList<>(source == null ? List.of() : source);
+        if (navigation == null || !navigation.active()) return List.copyOf(mapPoints);
+        boolean alreadyPresent = mapPoints.stream().anyMatch(point ->
+                point.id().equals(navigation.id())
+                        || (Math.abs(point.x() - navigation.x()) < 0.01D
+                        && Math.abs(point.z() - navigation.z()) < 0.01D));
+        if (!alreadyPresent) {
+            mapPoints.add(new FieldUiSnapshot.MapPoint(
+                    "navigation:" + navigation.id(),
+                    "현재 안내 · " + navigation.label(),
+                    "QUEST",
+                    navigation.x(),
+                    navigation.z(),
+                    true));
+        }
+        return List.copyOf(mapPoints);
     }
 
     static String locationId(ServerPlayer player) {
