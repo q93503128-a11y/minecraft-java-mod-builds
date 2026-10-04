@@ -137,9 +137,9 @@ public final class QuestGuideLayer implements GuiLayer {
     private static void drawDirectionCue(GuiGraphicsExtractor graphics, Minecraft minecraft, Target target) {
         double dx = target.x - minecraft.player.getX(), dz = target.z - minecraft.player.getZ();
         int distance = (int) Math.round(Math.hypot(dx, dz));
-        double delta = targetDeltaDegrees(minecraft.player.getX(), minecraft.player.getZ(),
+        double delta = QuestGuideDirection.targetDeltaDegrees(minecraft.player.getX(), minecraft.player.getZ(),
                 minecraft.player.getYRot(), target.x, target.z);
-        String arrow = directionArrow(delta);
+        String arrow = QuestGuideDirection.arrow(delta);
         String text = arrow + "  " + target.label + " · " + distance + "m";
         int maxW = Math.min(220, graphics.guiWidth() / 2);
         text = UiTextLayout.fit(text, maxW - 16);
@@ -147,29 +147,6 @@ public final class QuestGuideLayer implements GuiLayer {
         int x = (graphics.guiWidth() - w) / 2, y = 7;
         TurnboundUiSkin.inset(graphics, x, y, w, 20);
         graphics.text(minecraft.font, Component.literal(text), x + 9, y + 6, GOLD, true);
-    }
-
-    static double targetDeltaDegrees(double playerX, double playerZ, float playerYaw, double targetX, double targetZ) {
-        double targetYaw = Math.toDegrees(Math.atan2(-(targetX - playerX), targetZ - playerZ));
-        return wrapDegrees(targetYaw - playerYaw);
-    }
-
-    static String directionArrow(double delta) {
-        if (delta >= -22.5 && delta < 22.5) return "↑";
-        if (delta >= 22.5 && delta < 67.5) return "↗";
-        if (delta >= 67.5 && delta < 112.5) return "→";
-        if (delta >= 112.5 && delta < 157.5) return "↘";
-        if (delta >= 157.5 || delta < -157.5) return "↓";
-        if (delta >= -157.5 && delta < -112.5) return "↙";
-        if (delta >= -112.5 && delta < -67.5) return "←";
-        return "↖";
-    }
-
-    private static double wrapDegrees(double value) {
-        value %= 360.0;
-        if (value >= 180.0) value -= 360.0;
-        if (value < -180.0) value += 360.0;
-        return value;
     }
 
     private static String targetLine(Minecraft minecraft, Target target) {

@@ -7,15 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class QuestGuideDirectionTest {
     @Test
     void minecraftYawProjectsCardinalTargetsToExpectedScreenDirections() {
-        assertEquals("↑", QuestGuideLayer.directionArrow(
-                QuestGuideLayer.targetDeltaDegrees(0, 0, 0.0F, 0, 10)));
-        assertEquals("↓", QuestGuideLayer.directionArrow(
-                QuestGuideLayer.targetDeltaDegrees(0, 0, 0.0F, 0, -10)));
-        assertEquals("←", QuestGuideLayer.directionArrow(
-                QuestGuideLayer.targetDeltaDegrees(0, 0, 0.0F, 10, 0)));
-        assertEquals("→", QuestGuideLayer.directionArrow(
-                QuestGuideLayer.targetDeltaDegrees(0, 0, 0.0F, -10, 0)));
-        assertEquals("→", QuestGuideLayer.directionArrow(
-                QuestGuideLayer.targetDeltaDegrees(0, 0, -90.0F, 0, 10)));
+        assertEquals("↑", QuestGuideDirection.arrow(
+                QuestGuideDirection.targetDeltaDegrees(0, 0, 0.0F, 0, 10)));
+        assertEquals("↓", QuestGuideDirection.arrow(
+                QuestGuideDirection.targetDeltaDegrees(0, 0, 0.0F, 0, -10)));
+        assertEquals("←", QuestGuideDirection.arrow(
+                QuestGuideDirection.targetDeltaDegrees(0, 0, 0.0F, 10, 0)));
+        assertEquals("→", QuestGuideDirection.arrow(
+                QuestGuideDirection.targetDeltaDegrees(0, 0, 0.0F, -10, 0)));
+        assertEquals("→", QuestGuideDirection.arrow(
+                QuestGuideDirection.targetDeltaDegrees(0, 0, -90.0F, 0, 10)));
     }
 }
