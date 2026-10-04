@@ -949,7 +949,6 @@ charge path: up to 12 blocks
 benchmark damage: 28%
 guard pressure: heavy
 player poise pressure: 70
-guardable: false
 perfect_guardable: true
 perfect_guard_poise_multiplier: 1.40
 recovery after miss/end: 1.20 s
@@ -1410,6 +1409,7 @@ path: up to 16 blocks
 damage: 28%
 guard pressure: heavy
 player poise pressure: 70
+guardable: false
 perfect_guardable: true
 perfect_guard_poise_multiplier: 1.25
 recovery on miss: 1.20 s
