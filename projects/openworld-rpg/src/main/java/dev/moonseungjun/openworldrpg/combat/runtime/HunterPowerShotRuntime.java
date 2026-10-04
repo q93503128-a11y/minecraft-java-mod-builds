@@ -7,7 +7,6 @@ import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerProgressionService;
 import dev.moonseungjun.openworldrpg.combat.state.RootClass;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
-import dev.moonseungjun.openworldrpg.progression.r01.R01ClassInsightService;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -174,13 +173,6 @@ public final class HunterPowerShotRuntime {
                 nowTick
         );
         CombatStateServices.markCombatActivity(hunter.getUUID(), nowTick);
-        R01ClassInsightService.recordHunterCrownedMarkHit(
-                hunter,
-                target,
-                cast.quarryAtCast(),
-                cast.empowered(),
-                weakPointHit
-        );
 
         boolean activeQuarryCharge = false;
         if (cast.quarryAtCast() != null
