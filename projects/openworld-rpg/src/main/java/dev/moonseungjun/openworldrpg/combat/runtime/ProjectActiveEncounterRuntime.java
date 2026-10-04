@@ -108,7 +108,45 @@ public final class ProjectActiveEncounterRuntime {
         return OptionalInt.of(casterRef.contentLevel());
     }
 
-    static boolean sameEncounter(
+    public static boolean hasOtherLivingParticipant(
+            ServerPlayer player,
+            ActiveEncounterRef encounter
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(encounter, "encounter");
+        var server = player.level().getServer();
+        if (server == null || !isParticipantOf(player, encounter)) {
+            return false;
+        }
+        for (ServerPlayer candidate : server.getPlayerList().getPlayers()) {
+            if (candidate == player
+                    || candidate.level() != player.level()
+                    || !candidate.isAlive()
+                    || candidate.isSpectator()) {
+                continue;
+            }
+            if (isParticipantOf(candidate, encounter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isParticipantOf(
+            ServerPlayer player,
+            ActiveEncounterRef encounter
+    ) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(encounter, "encounter");
+        return activeEncounterFor(player)
+                .filter(current -> sameEncounter(current, encounter))
+                .filter(current ->
+                        current.contentLevel() == encounter.contentLevel()
+                )
+                .isPresent();
+    }
+
+    public static boolean sameEncounter(
             ActiveEncounterRef first,
             ActiveEncounterRef second
     ) {

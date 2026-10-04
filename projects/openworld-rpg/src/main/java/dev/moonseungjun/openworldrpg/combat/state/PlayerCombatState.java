@@ -486,6 +486,29 @@ public final class PlayerCombatState {
         mana = Math.min(maxMana(), mana + amount);
     }
 
+    /**
+     * Exact resource restoration used by the canonical multiplayer revive transaction.
+     */
+    public void setReviveResourceFractions(
+            double manaFraction,
+            double staminaFraction,
+            long nowTick
+    ) {
+        if (!Double.isFinite(manaFraction)
+                || manaFraction < 0.0
+                || manaFraction > 1.0
+                || !Double.isFinite(staminaFraction)
+                || staminaFraction < 0.0
+                || staminaFraction > 1.0) {
+            throw new IllegalArgumentException(
+                    "Revive resource fractions must be inside [0, 1]."
+            );
+        }
+        refresh(nowTick);
+        mana = maxMana() * manaFraction;
+        stamina = maxStamina() * staminaFraction;
+    }
+
     public void markCombatActivity(long nowTick) {
         if (nowTick > lastCombatActivityTick) {
             lastCombatActivityTick = nowTick;
