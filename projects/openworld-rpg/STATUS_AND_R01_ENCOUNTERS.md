@@ -2682,3 +2682,34 @@ Still intentionally requires later design/asset work:
 - later special statuses such as sleep/paralysis/curse if a real encounter/build needs them;
 - PvP behavior, because PvP is not a baseline product pillar;
 - final tuning after real client playtest.
+
+
+### Final-lethal Downed bridge
+
+Code state `61ff32373f7cb34ed770290af31f0decb044fbbd` supersedes the earlier
+"backend-only / no production lethal hook" limitation for the currently admitted Earthloong
+encounter path.
+
+- final lethal detection occurs after Minecraft has applied the real hit and after vanilla death
+  protection has had first priority;
+- exact Earthloong actor-instance participation plus another eligible living non-Downed participant
+  is still required;
+- single-player, missing-rescuer and Rescue-Fatigue lethal outcomes remain normal defeat/respawn;
+- `BYPASSES_INVULNERABILITY` damage remains a hard-defeat path;
+- Downed uses 1 backing HP only to keep Minecraft's entity alive during the rescue state; the actual
+  revive result remains the canonical 35% HP / 50% Stamina / 25% Mana;
+- normal damage is suppressed while Downed so the 15 s rescue window cannot be bypassed by an
+  overlapping/committed hit;
+- the 300-tick deadline now resolves through normal generic-kill death/respawn authority;
+- death respawn clears remaining Downed runtime state.
+
+The whole Downed/Revive feature is still not player-facing complete. The non-encounter nearby-play
+context, physical revive interaction/spatial validation, crawl locomotion, durable reconnect/restart
+semantics, Saint Miracle revive modifier, HUD/animation/presentation and multiplayer playtest remain
+separate gates.
+
+Build Openworld RPG #347 / run `37195035385`: **SUCCESS**.
+Artifact ID `11301011023`, artifact digest
+`sha256:77e98f88fd3d674c52aa19d10c41b165c8d782e7b3c4154cf5b4292346557ea0`.
+Normal JAR SHA-256:
+`64281e02d0213e01e38e2e94391f8fa9a437ef64f9e5ffac6d2de3479c52f128`.

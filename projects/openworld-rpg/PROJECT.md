@@ -1277,3 +1277,56 @@ Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR P
 client world join **NOT RUN**; production lethal Downed entry **NOT IMPLEMENTED**;
 PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
 
+
+
+### 2026-10-04 final-lethal Downed interception
+
+The exact encounter Downed backend is now connected to Minecraft's real final-lethal boundary at code
+state `61ff32373f7cb34ed770290af31f0decb044fbbd`. The new server mixin observes
+`LivingEntity.checkTotemDeathProtection` only after the hit has already passed Minecraft's ordinary
+damage/absorption resolution. Existing vanilla death protection keeps priority: if it saves the
+player, project Downed is not entered.
+
+If vanilla death protection did not save the player, a lethal hit may enter project Downed only when
+the existing exact encounter authority proves the player is participating in the live Earthloong
+instance and another eligible living, non-spectator, non-Downed participant belongs to that same
+actor-instance encounter. Single-player, no-rescuer and Rescue-Fatigue lethal outcomes continue into
+the normal defeat/respawn path. Damage types that bypass invulnerability remain hard-defeat paths
+rather than being converted to Downed.
+
+Minecraft's backing health is restored to **1 HP only as an internal liveness bridge** while Downed
+owns the rescue window. It is not a player-facing revive amount and does not replace the canonical
+revive result; a successful revive still writes **35% MaxHP / 50% Stamina / 25% Mana**. While the
+server Downed state owns the rescue window, ordinary non-bypass damage is rejected so a committed
+follow-up hit cannot bypass the 15 s rescue state. Project-owned external-actor one-shot damage
+authorization is explicitly consumed even when such a Downed hit is rejected, preventing token
+leakage into a later damage call.
+
+The 300-tick rescue deadline is now active server runtime rather than a passive timestamp. When it
+expires, the server sends the player through Minecraft's generic-kill hard-defeat path, which bypasses
+the Downed interception and therefore preserves the existing death, death-penalty and respawn
+authority. Death respawn also clears any remaining Downed session state.
+
+This closes **production final-lethal interception for the currently admitted exact Earthloong
+encounter branch**. It does not claim the whole player-facing Downed/Revive feature is finished.
+The separate non-encounter `nearby play context` branch, trusted physical revive interaction/spatial
+transport, crawl movement, durable reconnect/server-restart semantics, Saint Miracle's revive
+modifier, HUD/animation/presentation and actual multiplayer playtest remain open.
+
+Build Openworld RPG #347 / run `37195035385` is **SUCCESS** for
+`61ff32373f7cb34ed770290af31f0decb044fbbd` across tests/build, pinned dependency and creature
+inspection, core/gameplay dedicated-server smoke, gameplay client startup, both verification JARs and
+M0 mrpack packaging. Artifact
+`openworld-rpg-m0-61ff32373f7cb34ed770290af31f0decb044fbbd` (ID `11301011023`,
+digest `sha256:77e98f88fd3d674c52aa19d10c41b165c8d782e7b3c4154cf5b4292346557ea0`).
+Normal JAR SHA-256 is
+`64281e02d0213e01e38e2e94391f8fa9a437ef64f9e5ffac6d2de3479c52f128`;
+M0 playtest JAR SHA-256 is
+`ee7c854de0f8c559faf1f82a1168254d0e36aa4f56e62d683e8362d0ccb72e67`;
+R01 integration JAR SHA-256 is
+`708a416ad745b589cdd9d95c52a36248c4d81a101b65f0ec813f251396d2c0f8`;
+M0 mrpack SHA-256 is
+`7b1f2e4e4740cff9345e93357c7831fbf2718b482a208a366efeaf82fd77bd5e`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+client world join **NOT RUN**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
