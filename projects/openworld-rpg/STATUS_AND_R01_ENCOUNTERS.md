@@ -1522,6 +1522,33 @@ External identity preserved:
 - donor history includes a special underground forest-dungeon Earthloong;
 - donor block-breaking spectacle is **not** allowed to grief the authored RPG world indiscriminately.
 
+### Runtime threat-generation authority
+
+Code state `da66b6d03df0d99d3ee199c4e9defc89599477c6` binds Earthloong's live server threat table to
+the exact `COMBAT_BALANCE.md` baseline rather than damage-only aggro:
+
+- damage: `100 * PostMitigationDamage / TargetMaxHP`;
+- effective healing on another participant already engaged with this exact Earthloong:
+  `35 * EffectiveHealing / HealedTargetMaxHP`;
+- effective Barrier actually granted to an engaged participant:
+  `25 * EffectiveBarrierGranted / RecipientMaxHP`;
+- guard prevention: `20 * PreventedHPDamage / GuardianMaxHP`;
+- perfect guard adds the exact `+4` flat threat.
+
+Only server-measured effective heal/Barrier amounts enter the table. Healing does not self-enroll the
+caster, and both support paths require the recipient to belong to this exact encounter's threat
+table. Barrier threat may be self-generated only for an already engaged recipient, without changing
+the separate support-reward rule. Guard prevention is measured before Barrier absorption so the two
+systems cannot double-count the same prevented HP damage. Counterwall and Iron Counter use the same
+perfect-guard threat path as the universal guard.
+
+This does not alter the already-locked 10 initial threat, 6 s decay grace, 10%/s decay, engaged
+floor, 1.25x target-switch hysteresis or Provoked's boss x2 SelectionThreat weight. Not-yet-bound
+class/specialization threat-generation modifiers remain separate work rather than receiving guessed
+runtime state.
+
+Build Openworld RPG #343 / run `37169389094` is **SUCCESS** for this code state.
+
 ## Arena rule — authored breakables only
 
 Any Earthloong attack with environment-breaking spectacle may break only:

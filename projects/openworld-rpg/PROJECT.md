@@ -1128,3 +1128,40 @@ binding and final in-client boss acceptance remain gated; production spawn remai
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
 
+
+
+### 2026-10-04 Earthloong canonical threat-source binding
+
+Earthloong's live server threat table now consumes the exact baseline generation sources from
+`COMBAT_BALANCE.md` at code state `da66b6d03df0d99d3ee199c4e9defc89599477c6`.
+Damage uses `100 * PostMitigationDamage / TargetMaxHP`; effective healing on another participant
+already engaged with that exact Earthloong uses `35 * EffectiveHealing / HealedTargetMaxHP`;
+effective Barrier actually granted to an engaged participant uses
+`25 * EffectiveBarrierGranted / RecipientMaxHP`; and guarding an Earthloong hit uses
+`20 * PreventedHPDamage / GuardianMaxHP` with the canonical `+4` flat threat on a perfect guard.
+
+The healing and Barrier paths consume the already measured server-side effective amounts, so
+overheal and over-cap/unused Barrier do not manufacture threat. Healing cannot enroll a caster by
+healing themself because canon requires healing another engaged participant. Barrier threat may be
+self-generated only when that recipient is already legitimately engaged, while self-Barrier still
+does not become support-reward participation. Guard threat is sampled before Barrier absorption, so
+Barrier consumption is not double-counted as guard prevention. Universal perfect guard,
+Counterwall and Iron Counter all reach the same Earthloong threat source.
+
+Existing selection semantics are unchanged: stored threat still has 10 initial engagement threat,
+6 s no-decay grace, 10% current-value decay per second with the engaged floor, 1.25x switch
+hysteresis, and Guardian Provoked remains a separate x2 boss SelectionThreat weight rather than
+mutating stored threat. This pass does not invent specialization threat-generation multipliers whose
+own live specialization state has not yet been bound.
+
+Build Openworld RPG #343 / run `37169389094` is **SUCCESS** across tests/build, pinned
+dependency/registry checks, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs and M0 mrpack packaging. Artifact
+`openworld-rpg-m0-da66b6d03df0d99d3ee199c4e9defc89599477c6` (ID `11291260165`,
+digest `sha256:0753a8e9ae1e9771299d152bdb3ae09c322334d162efb25e8d433f84cecabb63`).
+Normal JAR SHA-256 is
+`121d9952ad0e8d68322d954a77288b8e3bbe0f98fb8799a341a7d1ce4a096f30`; M0 mrpack SHA-256 is
+`9c4ded65aa7a5d0ed9a1b808948ee33b4eae20aef917dfa3ac01f47f38a90e53`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+client world join **NOT RUN**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
