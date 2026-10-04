@@ -787,8 +787,8 @@ public final class MetaMenuScreen extends Screen {
         String resources="골드 "+s.gold()+"  ·  크리스탈 "+s.crystal()+"  ·  별의 정수 "+s.essence()+"  ·  파티 CP "+s.partyCp();
         g.text(font,Component.literal(UiTextLayout.fit(resources,pw-44)),
                 px+22,py+ph-22,SECONDARY,false);
-        g.text(font,Component.literal("M 지도  ·  N 미니맵  ·  E 닫기"),
-                px+pw-22-font.width("M 지도  ·  N 미니맵  ·  E 닫기"),py+16,MUTED,false);
+        g.text(font,Component.literal("J 전체 지도  ·  M 미니맵  ·  E 닫기"),
+                px+pw-22-font.width("J 전체 지도  ·  M 미니맵  ·  E 닫기"),py+16,MUTED,false);
     }
 
     private void drawParty(GuiGraphicsExtractor g){
