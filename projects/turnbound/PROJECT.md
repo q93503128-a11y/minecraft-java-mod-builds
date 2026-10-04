@@ -2241,3 +2241,54 @@ Runtime follow-up that still requires the real client:
 - verify the investigation markers/outline lead to at least two resolvable local targets on the user's existing save;
 - verify M/J/Shift+K input behavior against the installed JourneyMap key configuration;
 - verify AUTO healing choices under one-critical and multi-injured party states.
+
+
+## 2026-10-04 Build #1015 client feedback → JourneyMap / objective-arrow / summon-sanctum correction — Build #1016
+
+Verified implementation commit:
+`c01a5f39f20ff3c4f29144de23d04c6156b067af`
+
+Observed on the user's real client with Build #1015:
+- JourneyMap itself loaded and TURNBOUND's JourneyMap plugin initialized, but the fullscreen map showed no useful TURNBOUND objective/NPC/service markers.
+- the server still resolved the three New Drabyel investigation targets, so this was a client map-presentation/integration failure rather than missing quest target placement;
+- the old summon sanctum was built close enough to New Drabyel to remain visually tied to the village and had no ceiling;
+- player-facing objective copy still referred to the old M-map convention even though M had become the minimap toggle and J was the fullscreen map;
+- the top navigation arrow could point at a navigation target that was not guaranteed to be emitted as the same map point, making objective text / arrow / map state feel inconsistent.
+
+Corrections:
+- JourneyMap now gets an explicit visible TURNBOUND marker icon and label overlay instead of relying on an effectively invisible custom marker surface.
+- the exact active navigation target used by the top HUD arrow is injected into the map-point snapshot when not already present, with the same coordinates and label;
+- the expanded objective panel names the target currently owned by the HUD navigation arrow, so text and direction cue expose the same target instead of silently diverging;
+- player-facing onboarding/help copy now uses J for the fullscreen map and no longer tells the player to use an M map;
+- the summon sanctum search band moved from 24–72 blocks to 128–176 blocks from the summoner, uses a larger clearance test, and now builds a roofed chamber with full-height supports and interior lighting;
+- existing nearby Build #1015 sanctums are not selected by the new 128–176 block placement search. The code does not destructively remove old world blocks.
+
+Build TURNBOUND #1016:
+- run: 37196584085
+- Gradle tests/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+- artifact: turnbound-v04-workbranch / ID 11301492061
+- JAR SHA-256: `41bd3184715a208d310f83bc4de9251b3999853a4359a83bb42036da7a618a97`
+- MRPACK SHA-256: `215b0aabceb335c597c8f77117c120d2fb17da6f6e2e17ca0c688c3e2b5471b2`
+- downloaded artifact ZIP SHA-256: `38c2b29479e5e232b91d97c1ebc028063ea5d2137bba475ea42572fc8fc07e2e`
+
+Validation:
+- CODE REVIEWED: YES for the reported regression paths
+- AUTOMATED TESTS: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO for Build #1016
+- PLAYTESTED: NO for Build #1016
+- MULTIPLAYER TESTED: NO
+
+Next client validation:
+- open J fullscreen map and confirm TURNBOUND markers/labels are actually visible;
+- compare the main objective text, top arrow label and the highlighted map target and confirm all three identify the same place;
+- press M twice and confirm only the JourneyMap minimap visibility toggles;
+- summon once and confirm the newly used sanctum is far outside the village, roofed, readable in rain, and keeps the reveal/camera inside the chamber;
+- confirm exiting the summon result restores camera/control and leaves no presentation actor behind.
