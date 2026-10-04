@@ -22,6 +22,7 @@ POLY_PIZZA_BUNDLE_PAGE = "https://poly.pizza/bundle/Animated-Enemies-a53OJwHrhh"
 
 EXPECTED_SIZE = 216_696
 EXPECTED_GIT_BLOB_SHA1 = "fdb107f06725f487fed66c7386b31c56c236e8ad"
+EXPECTED_SHA256 = "70b4af1088dec939e167b07c0a5e69992a4851beac8bd24a9da1189b65ae101c"
 EXPECTED_ANIMATIONS = {
     "SnakeArmature|Snake_Attack",
     "SnakeArmature|Snake_Idle",
@@ -78,6 +79,12 @@ def download_source() -> bytes:
         raise RuntimeError(
             "Snake.glb Git blob mismatch: "
             f"expected {EXPECTED_GIT_BLOB_SHA1}, got {actual_blob}"
+        )
+    actual_sha256 = sha256_bytes(data)
+    if actual_sha256 != EXPECTED_SHA256:
+        raise RuntimeError(
+            "Snake.glb SHA-256 mismatch: "
+            f"expected {EXPECTED_SHA256}, got {actual_sha256}"
         )
     return data
 
@@ -335,6 +342,7 @@ def inspect(data: bytes) -> dict[str, Any]:
             "transport_path": MIRROR_PATH,
             "transport_url": SOURCE_URL,
             "expected_git_blob_sha1": EXPECTED_GIT_BLOB_SHA1,
+            "expected_sha256": EXPECTED_SHA256,
             "independent_mirror_cross_check": INDEPENDENT_MIRROR,
         },
         "glb": {

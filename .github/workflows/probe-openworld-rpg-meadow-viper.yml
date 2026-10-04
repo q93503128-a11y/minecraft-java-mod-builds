@@ -24,6 +24,7 @@ jobs:
           set -euo pipefail
           OUT=projects/openworld-rpg/build/reports/meadow-viper-intake
           rm -rf "$OUT"
+          mkdir -p projects/openworld-rpg/build/reports
           python3 projects/openworld-rpg/tools/r01_meadow_viper_asset_intake.py "$OUT" | tee projects/openworld-rpg/build/reports/meadow-viper-intake.log
           test -s "$OUT/Snake.glb"
           test -s "$OUT/meadow_viper_asset_intake.json"
