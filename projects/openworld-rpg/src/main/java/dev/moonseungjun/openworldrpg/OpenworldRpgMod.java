@@ -183,6 +183,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         R01NatureSpiritCombatRuntime.initialize(profile, LOGGER);
         R01RegalhartCombatRuntime.initialize(profile, LOGGER);
         R01SteelboarCombatRuntime.initialize(profile, LOGGER);
+        R01PlayerVerificationBootstrap.registerCommands();
         M0PlayerVerificationBootstrap.registerCommands();
         ServerTickEvents.START_SERVER_TICK.register(server -> {
             ProjectDownedRuntime.tick(server);

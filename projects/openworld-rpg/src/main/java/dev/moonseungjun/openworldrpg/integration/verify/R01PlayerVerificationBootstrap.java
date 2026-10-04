@@ -37,6 +37,13 @@ public final class R01PlayerVerificationBootstrap {
         ) != null;
     }
 
+    public static void registerCommands() {
+        if (!enabled()) {
+            return;
+        }
+        R01SpatialReviewHarness.registerCommands();
+    }
+
     public static void verifyStaticContracts(Logger logger) {
         Objects.requireNonNull(logger, "logger");
         if (!enabled()) {
