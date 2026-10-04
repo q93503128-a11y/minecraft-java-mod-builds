@@ -66,6 +66,8 @@ public final class ProjectBarrierRuntime {
                         applicableOutputBonus
                                 + ClericRootPassiveEffects
                                         .barrierOutputBonus(caster)
+                                + ClericSaintEffects
+                                        .barrierOutputBonus(caster)
                                 + GuardianRootPassiveEffects
                                         .barrierOutputBonus(caster)
                 );
@@ -354,6 +356,7 @@ public final class ProjectBarrierRuntime {
             }
 
             if (graceQualified) {
+                ClericRootPassiveRuntime.synchronize(sourcePlayer);
                 var combat = CombatStateServices.states()
                         .getOrCreate(
                                 sourcePlayer.getUUID(),

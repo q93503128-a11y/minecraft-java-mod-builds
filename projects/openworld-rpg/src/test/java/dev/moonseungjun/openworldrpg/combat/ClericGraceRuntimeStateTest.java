@@ -106,6 +106,43 @@ class ClericGraceRuntimeStateTest {
     }
 
     @Test
+    void synchronizedSaintSupportGainAddsTwoPipsAndKeepsTargetIcd() {
+        var state = new ClericGraceRuntimeState();
+        UUID target = UUID.randomUUID();
+        state.synchronizeSupportPipsPerQualifiedEvent(2);
+
+        var first = state.recordEffectiveHeal(
+                target,
+                6.0,
+                100.0,
+                10L,
+                10L
+        );
+        assertTrue(first.pipAdded());
+        assertEquals(2, first.currentPips());
+
+        var blocked = state.recordEffectiveHeal(
+                target,
+                20.0,
+                100.0,
+                20L,
+                20L
+        );
+        assertTrue(blocked.icdBlocked());
+        assertEquals(2, blocked.currentPips());
+
+        var ready = state.recordEffectiveHeal(
+                target,
+                6.0,
+                100.0,
+                50L,
+                50L
+        );
+        assertTrue(ready.pipAdded());
+        assertEquals(3, ready.currentPips());
+    }
+
+    @Test
     void combatActivityExtendsGraceButOutOfCombatExpiresAtTenSeconds() {
         var state = new ClericGraceRuntimeState();
         state.recordDamagingActiveHit(100L, 100L);

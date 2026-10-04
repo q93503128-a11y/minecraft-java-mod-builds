@@ -1,5 +1,6 @@
 package dev.moonseungjun.openworldrpg.combat.runtime;
 
+import dev.moonseungjun.openworldrpg.combat.authority.PlayerBarrierAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerHealingAuthority;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatAttribute;
@@ -22,6 +23,9 @@ import net.minecraft.world.entity.LivingEntity;
  * as encounter support participation.</p>
  */
 public final class ProjectHealingRuntime {
+    private static final String SAINT_OVERHEAL_BARRIER_SOURCE =
+            "openworld_rpg:saint/overflowing_grace/";
+
     private ProjectHealingRuntime() {
     }
 
@@ -155,6 +159,8 @@ public final class ProjectHealingRuntime {
                 )
                 * outputMultiplier
                 * ClericRootPassiveEffects
+                        .healingOutputMultiplier(caster)
+                * ClericSaintEffects
                         .healingOutputMultiplier(caster);
 
         float before = target.getHealth();
@@ -169,20 +175,57 @@ public final class ProjectHealingRuntime {
                 caster.level().getGameTime()
         );
 
+        double otherwiseWastedOverheal = Math.max(
+                0.0,
+                requestedHealing - effectiveHealing
+        );
+        double overflowBarrierRequested =
+                ClericSaintEffects.overhealBarrierAmount(
+                        caster,
+                        otherwiseWastedOverheal,
+                        target.getMaxHealth()
+                );
+        double overflowBarrierGranted = 0.0;
+        if (overflowBarrierRequested > 0.0) {
+            var overflow = ProjectBarrierRuntime.applyFixedBarrier(
+                    caster,
+                    target,
+                    SAINT_OVERHEAL_BARRIER_SOURCE + caster.getUUID(),
+                    overflowBarrierRequested,
+                    PlayerBarrierAuthority.DEFAULT_BARRIER_DURATION_TICKS,
+                    true
+            );
+            if (overflow.accepted()) {
+                overflowBarrierGranted = overflow.effectiveGranted();
+            }
+        }
+
         boolean newEarthloongParticipation = false;
         boolean newNatureSpiritParticipation = false;
         boolean newRegalhartParticipation = false;
         if (encounterActor != null
                 && caster != target
-                && effectiveHealing > 0.0) {
+                && (effectiveHealing > 0.0
+                        || overflowBarrierGranted > 0.0)) {
             long gameTick = caster.level().getGameTime();
-            R01EarthloongPhysicalEncounterRuntime.recordEffectiveHealingThreat(
-                    encounterActor,
-                    caster,
-                    target,
-                    effectiveHealing,
-                    gameTick
-            );
+            if (effectiveHealing > 0.0) {
+                R01EarthloongPhysicalEncounterRuntime.recordEffectiveHealingThreat(
+                        encounterActor,
+                        caster,
+                        target,
+                        effectiveHealing,
+                        gameTick
+                );
+            }
+            if (overflowBarrierGranted > 0.0) {
+                R01EarthloongPhysicalEncounterRuntime.recordEffectiveBarrierThreat(
+                        encounterActor,
+                        caster,
+                        target,
+                        overflowBarrierGranted,
+                        gameTick
+                );
+            }
             newEarthloongParticipation =
                     R01EarthloongEncounterService.recordValidatedSupportContribution(
                             encounterActor,
@@ -210,7 +253,8 @@ public final class ProjectHealingRuntime {
                 effectiveHealing,
                 newEarthloongParticipation,
                 newNatureSpiritParticipation,
-                newRegalhartParticipation
+                newRegalhartParticipation,
+                overflowBarrierGranted
         );
     }
 
@@ -220,8 +264,27 @@ public final class ProjectHealingRuntime {
             double effectiveHealing,
             boolean newEarthloongParticipation,
             boolean newNatureSpiritParticipation,
-            boolean newRegalhartParticipation
+            boolean newRegalhartParticipation,
+            double overflowBarrierGranted
     ) {
+        public Application(
+                boolean accepted,
+                double requestedHealing,
+                double effectiveHealing,
+                boolean newEarthloongParticipation,
+                boolean newNatureSpiritParticipation,
+                boolean newRegalhartParticipation
+        ) {
+            this(
+                    accepted,
+                    requestedHealing,
+                    effectiveHealing,
+                    newEarthloongParticipation,
+                    newNatureSpiritParticipation,
+                    newRegalhartParticipation,
+                    0.0
+            );
+        }
         public Application(
                 boolean accepted,
                 double requestedHealing,
@@ -244,7 +307,9 @@ public final class ProjectHealingRuntime {
                     || requestedHealing < 0.0
                     || !Double.isFinite(effectiveHealing)
                     || effectiveHealing < 0.0
-                    || effectiveHealing > requestedHealing + 0.001) {
+                    || effectiveHealing > requestedHealing + 0.001
+                    || !Double.isFinite(overflowBarrierGranted)
+                    || overflowBarrierGranted < 0.0) {
                 throw new IllegalArgumentException(
                         "Healing application amounts are invalid."
                 );
@@ -254,7 +319,8 @@ public final class ProjectHealingRuntime {
                     || effectiveHealing != 0.0
                     || newEarthloongParticipation
                     || newNatureSpiritParticipation
-                    || newRegalhartParticipation)) {
+                    || newRegalhartParticipation
+                    || overflowBarrierGranted != 0.0)) {
                 throw new IllegalArgumentException(
                         "Rejected healing cannot carry applied state."
                 );
@@ -262,9 +328,10 @@ public final class ProjectHealingRuntime {
             if ((newEarthloongParticipation
                     || newNatureSpiritParticipation
                     || newRegalhartParticipation)
-                    && effectiveHealing <= 0.0) {
+                    && effectiveHealing <= 0.0
+                    && overflowBarrierGranted <= 0.0) {
                 throw new IllegalArgumentException(
-                        "Support participation requires effective healing."
+                        "Support participation requires effective healing or barrier."
                 );
             }
             int participationCount =
@@ -279,7 +346,7 @@ public final class ProjectHealingRuntime {
         }
 
         public static Application rejected() {
-            return new Application(false, 0.0, 0.0, false, false, false);
+            return new Application(false, 0.0, 0.0, false, false, false, 0.0);
         }
     }
 }

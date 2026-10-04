@@ -22,6 +22,11 @@ public final class ClericRootPassiveRuntime {
         state(player.getUUID()).synchronizeBalancedServiceRank(
                 ClericRootPassiveEffects.balancedServiceRank(player)
         );
+        CombatStateServices.clericGraceStates()
+                .getOrCreate(player.getUUID())
+                .synchronizeSupportPipsPerQualifiedEvent(
+                        ClericSaintEffects.supportGracePips(player)
+                );
     }
 
     public static double previewManaCostMultiplier(

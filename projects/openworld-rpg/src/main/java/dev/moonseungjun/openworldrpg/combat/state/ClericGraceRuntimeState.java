@@ -21,6 +21,7 @@ public final class ClericGraceRuntimeState {
     public static final double SUPPORT_THRESHOLD_MAX_HP_FRACTION = 0.06;
 
     private int pips;
+    private int supportPipsPerQualifiedEvent = 1;
     private long expiryBonusTicks;
     private long lastGraceActivityTick = Long.MIN_VALUE / 4;
     private long damagingActiveReadyTick = Long.MIN_VALUE / 4;
@@ -77,7 +78,7 @@ public final class ClericGraceRuntimeState {
                 recipientId,
                 Math.addExact(nowTick, SUPPORT_TARGET_ICD_TICKS)
         );
-        return grantPip(nowTick);
+        return grantPips(nowTick, supportPipsPerQualifiedEvent);
     }
 
     public GainResult recordConsumedBarrier(
@@ -109,7 +110,16 @@ public final class ClericGraceRuntimeState {
                 recipientId,
                 Math.addExact(nowTick, SUPPORT_TARGET_ICD_TICKS)
         );
-        return grantPip(nowTick);
+        return grantPips(nowTick, supportPipsPerQualifiedEvent);
+    }
+
+    public void synchronizeSupportPipsPerQualifiedEvent(int pipsPerEvent) {
+        if (pipsPerEvent <= 0 || pipsPerEvent > MAX_PIPS) {
+            throw new IllegalArgumentException(
+                    "Support Grace pips per event must be inside [1, 3]."
+            );
+        }
+        supportPipsPerQualifiedEvent = pipsPerEvent;
     }
 
     public void synchronizeExpiryBonusTicks(long bonusTicks) {
@@ -144,14 +154,23 @@ public final class ClericGraceRuntimeState {
         damagingActiveReadyTick = Long.MIN_VALUE / 4;
         healTargetReadyTick.clear();
         barrierTargetReadyTick.clear();
+        supportPipsPerQualifiedEvent = 1;
         expiryBonusTicks = 0L;
     }
 
     private GainResult grantPip(long nowTick) {
-        boolean added = pips < MAX_PIPS;
-        if (added) {
-            pips++;
+        return grantPips(nowTick, 1);
+    }
+
+    private GainResult grantPips(long nowTick, int amount) {
+        if (amount <= 0 || amount > MAX_PIPS) {
+            throw new IllegalArgumentException(
+                    "Grace pip grant must be inside [1, 3]."
+            );
         }
+        int before = pips;
+        pips = Math.min(MAX_PIPS, Math.addExact(pips, amount));
+        boolean added = pips > before;
         lastGraceActivityTick = nowTick;
         return new GainResult(true, added, false, pips);
     }
