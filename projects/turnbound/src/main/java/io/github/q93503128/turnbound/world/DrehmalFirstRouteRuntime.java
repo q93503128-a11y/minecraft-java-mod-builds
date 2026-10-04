@@ -103,22 +103,36 @@ public final class DrehmalFirstRouteRuntime {
             List<FieldUiSnapshot.MapPoint> source,
             FieldUiSnapshot.Navigation navigation
     ) {
-        List<FieldUiSnapshot.MapPoint> mapPoints = new ArrayList<>(source == null ? List.of() : source);
-        if (navigation == null || !navigation.active()) return List.copyOf(mapPoints);
-        boolean alreadyPresent = mapPoints.stream().anyMatch(point ->
-                point.id().equals(navigation.id())
-                        || (Math.abs(point.x() - navigation.x()) < 0.01D
-                        && Math.abs(point.z() - navigation.z()) < 0.01D));
-        if (!alreadyPresent) {
-            mapPoints.add(new FieldUiSnapshot.MapPoint(
-                    "navigation:" + navigation.id(),
-                    "현재 안내 · " + navigation.label(),
-                    "QUEST",
-                    navigation.x(),
-                    navigation.z(),
-                    true));
+        List<FieldUiSnapshot.MapPoint> mapPoints = new ArrayList<>();
+        List<FieldUiSnapshot.MapPoint> original = source == null ? List.of() : source;
+        if (navigation == null || !navigation.active()) return List.copyOf(original);
+
+        boolean projected = false;
+        for (FieldUiSnapshot.MapPoint point : original) {
+            boolean sameTarget = point.id().equals(navigation.id())
+                    || (Math.abs(point.x() - navigation.x()) < 0.01D
+                    && Math.abs(point.z() - navigation.z()) < 0.01D);
+            if (!sameTarget) {
+                mapPoints.add(point);
+                continue;
+            }
+            if (!projected) {
+                mapPoints.add(currentNavigationPoint(navigation));
+                projected = true;
+            }
         }
+        if (!projected) mapPoints.add(currentNavigationPoint(navigation));
         return List.copyOf(mapPoints);
+    }
+
+    private static FieldUiSnapshot.MapPoint currentNavigationPoint(FieldUiSnapshot.Navigation navigation) {
+        return new FieldUiSnapshot.MapPoint(
+                "navigation:" + navigation.id(),
+                "현재 목표 · " + navigation.label(),
+                "QUEST",
+                navigation.x(),
+                navigation.z(),
+                true);
     }
 
     static String locationId(ServerPlayer player) {

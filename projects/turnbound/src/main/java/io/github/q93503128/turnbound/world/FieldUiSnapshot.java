@@ -230,7 +230,7 @@ public record FieldUiSnapshot(
     /** Final UI-boundary defense. Internal identifiers remain valid in logic/save data but not in authored copy. */
     static String playerFacingText(String value) {
         if (value == null || value.isBlank()) return "";
-        String text = value;
+        String text = PlayerFacingCopyRules.normalizeMapKeys(value);
         for (String token : List.of(
                 "MQ_P00_01 ", "MQ_P00_02 ", "MQ_P00_03 ",
                 "MQ_C01_01 ", "MQ_C01_02 ", "MQ_C01_03 ",
@@ -241,8 +241,6 @@ public record FieldUiSnapshot(
             text = text.replace(token, "");
         }
         text = text
-                .replace("M 지도", "J 전체 지도")
-                .replace("M키 지도", "J 전체 지도")
                 .replace("BATTLE_B01", "들이받는 왕 그라울")
                 .replace("BATTLE_B02", "가시어미 베르나")
                 .replace("BATTLE_B03", "수문관리기 ORO-7")

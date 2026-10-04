@@ -74,14 +74,16 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
 
             for (FieldUiSnapshot.MapPoint point : snapshot.mapPoints()) {
                 if (!point.active()) continue;
-                String label = point.objective() ? "★ " + point.label() : point.label();
+                boolean currentNavigation = JourneyMapMarkerPolicy.isCurrentNavigation(point);
+                String label = currentNavigation ? "★ " + point.label()
+                        : point.objective() ? "◆ " + point.label() : point.label();
                 BlockPos pos = new BlockPos((int)Math.floor(point.x()), y, (int)Math.floor(point.z()));
                 Waypoint waypoint = WaypointFactory.createWaypoint(
                         Turnbound.MOD_ID,
                         pos,
                         label,
                         Level.OVERWORLD,
-                        true);
+                        false);
                 int color = waypointColor(point);
                 waypoint.setColor(color);
                 waypoint.setIconIdentifier(Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"));
@@ -91,6 +93,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
                 waypoint.setShowBeacon(false);
                 waypoint.setShowInWorld(false);
                 waypoint.setShowOnMap(true);
+                waypoint.setShowIcon(true);
                 waypoint.setShowLabel(!customMarkers);
                 waypoint.setShowDeviation(false);
                 waypoint.setDescription(point.objective() ? "TURNBOUND 목표" : waypointDescription(point));
@@ -128,7 +131,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
     private static MarkerOverlay labelOverlay(
             BlockPos pos, String label, FieldUiSnapshot.MapPoint point, float scale
     ) {
-        int iconSize = point.objective() ? 16 : 11;
+        int iconSize = JourneyMapMarkerPolicy.isCurrentNavigation(point) ? 18 : point.objective() ? 16 : 11;
         MapImage icon = new MapImage(
                 Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"),
                 16, 16);
@@ -146,7 +149,11 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
         marker.setLabel(label);
         marker.setOverlayGroupName("TURNBOUND");
         marker.setDisplayOrder(point.objective() ? 2400 : 2200);
-        marker.setActiveUIs(Context.UI.Fullscreen);
+        if (JourneyMapMarkerPolicy.showOnMinimap(point)) {
+            marker.setActiveUIs(Context.UI.Fullscreen, Context.UI.Minimap);
+        } else {
+            marker.setActiveUIs(Context.UI.Fullscreen);
+        }
         marker.setMinZoom(UIState.FULLSCREEN_ZOOM_MIN);
         marker.setMaxZoom(UIState.ZOOM_IN_MAX);
         marker.setTextProperties(new TextProperties()

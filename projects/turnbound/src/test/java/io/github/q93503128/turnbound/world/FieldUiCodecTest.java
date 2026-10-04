@@ -173,6 +173,34 @@ class FieldUiCodecTest {
     }
 
     @Test
+    void navigationReplacesAnOverlappingServiceMarkerWithOneExactCurrentObjective() {
+        FieldUiSnapshot.Navigation navigation = new FieldUiSnapshot.Navigation(
+                "turnbound:service/new_drabyel/greeter", "문지기 아렌", 502.5D, 1801.5D);
+        List<FieldUiSnapshot.MapPoint> projected = DrehmalFirstRouteRuntime.withNavigationMarker(
+                List.of(
+                        new FieldUiSnapshot.MapPoint(
+                                "turnbound:service/new_drabyel/greeter", "문지기 아렌", "SERVICE",
+                                502.5D, 1801.5D, false),
+                        new FieldUiSnapshot.MapPoint(
+                                "service:smith", "대장장이", "SERVICE", 526.5D, 1839.5D, false)),
+                navigation);
+
+        assertEquals(2, projected.size());
+        List<FieldUiSnapshot.MapPoint> current = projected.stream()
+                .filter(point -> point.id().startsWith("navigation:"))
+                .toList();
+        assertEquals(1, current.size());
+        FieldUiSnapshot.MapPoint target = current.getFirst();
+        assertTrue(target.objective());
+        assertEquals("QUEST", target.kind());
+        assertEquals(navigation.x(), target.x());
+        assertEquals(navigation.z(), target.z());
+        assertTrue(target.label().contains(navigation.label()));
+        assertTrue(projected.stream().noneMatch(point ->
+                point.id().equals(navigation.id()) && !point.objective()));
+    }
+
+    @Test
     void roundTripsBattleTransitionOwnershipState() {
         FieldUiSnapshot decoded = FieldUiCodec.decode(FieldUiCodec.encode(FieldUiSnapshot.battleTransition()));
         assertTrue(decoded.active());

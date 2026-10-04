@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.world.FieldUiSnapshot;
+import io.github.q93503128.turnbound.world.PlayerFacingCopyRules;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -136,8 +137,8 @@ public final class QuestGuideLayer implements GuiLayer {
     private static void drawDirectionCue(GuiGraphicsExtractor graphics, Minecraft minecraft, Target target) {
         double dx = target.x - minecraft.player.getX(), dz = target.z - minecraft.player.getZ();
         int distance = (int) Math.round(Math.hypot(dx, dz));
-        double targetYaw = Math.toDegrees(Math.atan2(-dx, dz));
-        double delta = wrapDegrees(targetYaw - minecraft.player.getYRot());
+        double delta = targetDeltaDegrees(minecraft.player.getX(), minecraft.player.getZ(),
+                minecraft.player.getYRot(), target.x, target.z);
         String arrow = directionArrow(delta);
         String text = arrow + "  " + target.label + " · " + distance + "m";
         int maxW = Math.min(220, graphics.guiWidth() / 2);
@@ -148,7 +149,12 @@ public final class QuestGuideLayer implements GuiLayer {
         graphics.text(minecraft.font, Component.literal(text), x + 9, y + 6, GOLD, true);
     }
 
-    private static String directionArrow(double delta) {
+    static double targetDeltaDegrees(double playerX, double playerZ, float playerYaw, double targetX, double targetZ) {
+        double targetYaw = Math.toDegrees(Math.atan2(-(targetX - playerX), targetZ - playerZ));
+        return wrapDegrees(targetYaw - playerYaw);
+    }
+
+    static String directionArrow(double delta) {
         if (delta >= -22.5 && delta < 22.5) return "↑";
         if (delta >= 22.5 && delta < 67.5) return "↗";
         if (delta >= 67.5 && delta < 112.5) return "→";
@@ -184,7 +190,7 @@ public final class QuestGuideLayer implements GuiLayer {
     static String playerFacingObjective(String raw) {
         if (raw == null || raw.isBlank()) return "";
         String text = stripLeadingInternalQuestId(raw.trim());
-        return text.replace("M 지도", "J 전체 지도")
+        return PlayerFacingCopyRules.normalizeMapKeys(text)
                 .replace("카이렌/브람/엘리시아/변경 사냥꾼", "카이렌 · 변경 사냥꾼")
                 .replace("P01/P03/P04/F03", "카이렌 · 변경 사냥꾼")
                 .replace("P01/F03", "카이렌 · 변경 사냥꾼")
@@ -202,7 +208,7 @@ public final class QuestGuideLayer implements GuiLayer {
 
     static String playerFacingHint(String raw) {
         if (raw == null) return "";
-        return raw.replace("M 지도", "J 전체 지도")
+        return PlayerFacingCopyRules.normalizeMapKeys(raw)
                 .replace("Relay fragment", "Relay 조각")
                 .replace("Relay console", "Relay 제어 콘솔")
                 .replace("B01", "그라울")

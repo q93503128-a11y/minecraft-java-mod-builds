@@ -2,7 +2,11 @@ package io.github.q93503128.turnbound.world;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,6 +44,45 @@ final class PlayerFacingCopyContractTest {
                 "P0 diagnostic",
                 "P4 content gate")) {
             assertEquals("", FieldUiSnapshot.playerFacingText(raw), () -> "development copy leaked: " + raw);
+        }
+    }
+
+    @Test
+    void legacyFullMapKeyPhrasesNormalizeToJWithoutChangingMinimapCopy() {
+        for (String raw : List.of(
+                "M 지도에서 목표를 확인하십시오.",
+                "M키 지도에서 상인을 찾으십시오.",
+                "M 키 지도에서 길을 찾으십시오.",
+                "지도 M키를 눌러 위치를 확인하십시오.",
+                "지도 M 키를 눌러 위치를 확인하십시오.")) {
+            String normalized = PlayerFacingCopyRules.normalizeMapKeys(raw);
+            assertFalse(normalized.contains("M 지도"));
+            assertFalse(normalized.contains("M키 지도"));
+            assertFalse(normalized.contains("M 키 지도"));
+            assertTrue(normalized.contains("J 전체 지도"));
+        }
+        assertEquals("M 미니맵을 켜거나 끕니다.",
+                PlayerFacingCopyRules.normalizeMapKeys("M 미니맵을 켜거나 끕니다."));
+    }
+
+    @Test
+    void playerFacingSourceAndResourcesContainNoStaleFullMapMKeyCopy() throws IOException {
+        List<String> stale = List.of("M 지도", "M키 지도", "M 키 지도", "지도 M키", "지도 M 키");
+        for (Path root : List.of(Path.of("src/main/java"), Path.of("src/main/resources"))) {
+            assertTrue(Files.isDirectory(root), () -> "missing source root: " + root);
+            try (Stream<Path> files = Files.walk(root)) {
+                for (Path path : files.filter(Files::isRegularFile).toList()) {
+                    String name = path.getFileName().toString();
+                    if (name.equals("PlayerFacingCopyRules.java")) continue;
+                    if (!(name.endsWith(".java") || name.endsWith(".json") || name.endsWith(".txt")
+                            || name.endsWith(".toml") || name.endsWith(".mcmeta"))) continue;
+                    String content = Files.readString(path);
+                    for (String token : stale) {
+                        assertFalse(content.contains(token),
+                                () -> "stale fullscreen-map copy '" + token + "' in " + path);
+                    }
+                }
+            }
         }
     }
 

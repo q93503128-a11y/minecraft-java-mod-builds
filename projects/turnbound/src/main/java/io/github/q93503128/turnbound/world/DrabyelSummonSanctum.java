@@ -100,7 +100,8 @@ final class DrabyelSummonSanctum {
 
     private static BlockPos existingCenter(ServerLevel level, int x, int z) {
         int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-        for (int y = surface - 1; y >= surface - 4; y--) {
+        int lowestCandidateY = surface - (ROOF_HEIGHT + 3);
+        for (int y = surface - 1; y >= lowestCandidateY; y--) {
             BlockPos center = new BlockPos(x, y, z);
             if (sanctumBuilt(level, center)) return center;
         }
@@ -109,10 +110,18 @@ final class DrabyelSummonSanctum {
 
     private static boolean sanctumBuilt(ServerLevel level, BlockPos center) {
         if (!level.getBlockState(center).is(Blocks.CHISELED_DEEPSLATE)) return false;
-        return level.getBlockState(center.offset(3, 0, 0)).is(Blocks.AMETHYST_BLOCK)
+        boolean floorSignature = level.getBlockState(center.offset(3, 0, 0)).is(Blocks.AMETHYST_BLOCK)
                 && level.getBlockState(center.offset(-3, 0, 0)).is(Blocks.AMETHYST_BLOCK)
                 && level.getBlockState(center.offset(0, 0, 3)).is(Blocks.AMETHYST_BLOCK)
                 && level.getBlockState(center.offset(0, 0, -3)).is(Blocks.AMETHYST_BLOCK);
+        if (!floorSignature) return false;
+
+        // Roof blocks are the current structure-version signature. Old outdoor circles intentionally fail this check.
+        return level.getBlockState(center.offset(0, ROOF_HEIGHT, 0)).is(Blocks.TINTED_GLASS)
+                && level.getBlockState(center.offset(4, ROOF_HEIGHT, 0)).is(Blocks.AMETHYST_BLOCK)
+                && level.getBlockState(center.offset(-4, ROOF_HEIGHT, 0)).is(Blocks.AMETHYST_BLOCK)
+                && level.getBlockState(center.offset(0, ROOF_HEIGHT, 4)).is(Blocks.AMETHYST_BLOCK)
+                && level.getBlockState(center.offset(0, ROOF_HEIGHT, -4)).is(Blocks.AMETHYST_BLOCK);
     }
 
     private static BlockPos safeCenter(ServerLevel level, int x, int z) {
