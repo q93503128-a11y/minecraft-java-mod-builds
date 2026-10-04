@@ -1564,6 +1564,25 @@ interception and the separate non-encounter nearby-play-context rule remain unbo
 
 Build Openworld RPG #344 / run `37170548040` is **SUCCESS** for this code state.
 
+### Encounter Downed / revive backend authority
+
+Final code state `d106b67bce2b314f75af9212694d313e8a47937f` adds the server-owned state backend that later
+lethal/interact adapters must call. It owns the exact **15 s** rescue window, **2.5 s** base revive
+channel, **35% HP / 50% Stamina / 25% Mana** restore and **20 s Rescue Fatigue**.
+
+For the currently bound Earthloong path, Downed admission requires another living participant in the
+same exact actor-instance encounter. Downed server state blocks normal project actions, basic attack,
+guard and dodge paths and directly blocks R01 Fast Travel. Hostile HP damage or current authored
+reaction/control interrupts a reviver's active channel. Successful Earthloong revive is a legitimate
+support contribution through the existing encounter reward authority.
+
+This backend is deliberately **not** a production lethal hook. Ordinary gameplay does not yet enter
+Downed automatically. Global final-lethal interception, the non-encounter nearby-play-context branch,
+revive interaction/spatial transport, crawl movement, reconnect persistence, Saint Miracle's revive
+modifier and final presentation remain gated.
+
+Build Openworld RPG #345 / run `37180806782` is **SUCCESS** for this code state.
+
 ## Arena rule — authored breakables only
 
 Any Earthloong attack with environment-breaking spectacle may break only:

@@ -1197,3 +1197,45 @@ Normal JAR SHA-256 is
 
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 client world join **NOT RUN**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+
+
+### 2026-10-04 encounter Downed / revive backend authority
+
+The first server-owned Downed / revive backend is now present at final code state
+`d106b67bce2b314f75af9212694d313e8a47937f`, building on the exact encounter identity authority
+from `885183dd56cce5d93f83aa31508899db423ad4c2`. The backend owns the locked multiplayer numbers:
+**300 ticks / 15 s** rescue time, **50 ticks / 2.5 s** base revive channel, revive to **35% MaxHP /
+50% Stamina / 25% Mana**, and **400 ticks / 20 s** Rescue Fatigue.
+
+The currently admitted entry branch is encounter-scoped and fail-closed: an Earthloong participant
+may enter this backend only when another living, non-spectator participant belongs to the same exact
+Earthloong instance. Same content level or mere proximity is not enough. A successful revive may
+therefore record the reviver's existing Earthloong support participation without crossing encounter
+instances.
+
+While the server Downed state is active, the shared action authority rejects normal action starts,
+basic attacks, guard starts and dodge/cancel paths. Entering Downed clears an active project dodge /
+action and releases guard. R01 Fast Travel now checks the real server Downed state itself; a legacy
+caller flag may only over-block and cannot bypass an actual Downed state. Accepted hostile HP damage
+and current authored reaction/control paths interrupt an active revive channel. Rescue-window expiry
+does not silently restore actions; normal defeat/respawn authority must own that transition.
+
+This is still **backend authority, not production Downed gameplay**. No global final-lethal-damage
+interception is installed yet, so ordinary gameplay does not automatically enter Downed. The
+non-encounter `nearby play context` branch, trusted revive interaction/spatial transport, crawl
+movement binding, disconnect/reconnect persistence semantics, Saint Miracle's +5 s / 1.5 s revive
+modifier, and final HUD/animation/presentation remain separate gates. Those gaps must be closed
+before Downed/Revive is described as player-facing implemented or multiplayer-tested.
+
+Build Openworld RPG #345 / run `37180806782` is **SUCCESS** across unit tests/build, pinned
+dependency/registry checks, core/gameplay dedicated-server smoke, gameplay client startup, both
+verification JARs and M0 mrpack packaging. Artifact
+`openworld-rpg-m0-d106b67bce2b314f75af9212694d313e8a47937f` (ID `11295079102`,
+digest `sha256:14fc1ad7c37296c7e6ed27157dc02e8101e0c6c30f0cb803e6dc8da0f6272762`).
+Normal JAR SHA-256 is
+`508750debcf0d4630b77dd7350156eb35bca381b9a08c5c15af0be09ef68cbcb`; M0 mrpack SHA-256 is
+`361c3e6815c13863fd3be898453481daa7bf9cbf9074a264738a75bcb535fcfa`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+production lethal Downed entry **NOT IMPLEMENTED**; revive interaction transport **GATED**;
+PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
