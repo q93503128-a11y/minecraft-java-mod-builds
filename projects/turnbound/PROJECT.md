@@ -2292,3 +2292,55 @@ Next client validation:
 - press M twice and confirm only the JourneyMap minimap visibility toggles;
 - summon once and confirm the newly used sanctum is far outside the village, roofed, readable in rain, and keeps the reveal/camera inside the chamber;
 - confirm exiting the summon result restores camera/control and leaves no presentation actor behind.
+
+
+## 2026-10-04 JourneyMap/navigation/sanctum hardening — Build #1020
+
+Validated code HEAD:
+`809867ae543cdece053988fea49470f38bab60eb`
+
+Follow-up hardening after the Build #1016 client-feedback correction:
+- the exact HUD navigation target now replaces any overlapping ordinary map point with one authoritative `navigation:` objective point, so an NPC/service marker at the same coordinates cannot hide the current-goal highlight;
+- JourneyMap current navigation gets the strongest marker treatment and is the only TURNBOUND custom marker forced onto the minimap, while other NPC/service/quest overlays remain fullscreen-map focused;
+- JourneyMap waypoints are transient runtime projections rather than persistent user waypoints, preventing stale TURNBOUND objectives from surviving after the server snapshot changes;
+- the objective-arrow yaw math was isolated and regression-tested against Minecraft cardinal headings;
+- legacy fullscreen-map copy variants (`M 지도`, `M키 지도`, `M 키 지도`, `지도 M키`, `지도 M 키`) are normalized at the player-facing boundary, with a source/resource regression scan; genuine `M 미니맵` copy is preserved;
+- the roofed summon sanctum now uses its ceiling/rune pattern as a structure-version signature, so old outdoor circles are not accepted as the current sanctum;
+- existing roofed sanctums can be rediscovered after reload even though the heightmap sees the roof above the floor, avoiding duplicate chamber construction on subsequent sessions;
+- the remaining minimap help copy was aligned so M is described only as the minimap toggle.
+
+Build TURNBOUND #1020:
+- workflow run: `37198520795`
+- artifact: `turnbound-v04-workbranch`
+- artifact ID: `11301687645`
+- Gradle tests/build: PASS
+- NeoForge dedicated-server smoke: PASS
+- built JAR verification: PASS
+- one-click mrpack verification: PASS
+- artifact upload: PASS
+- JAR SHA-256: `29f1c74966a37d53bcec059505c2cfa2b3168fbe701fc02fb37e57edb6af1c42`
+- MRPACK SHA-256: `888ff29e21b7fcdb8c3b91f7d887eb1b0381461607e7aa3a681256ebd6c99fb0`
+- downloaded artifact ZIP SHA-256: `47b4f8df06b38533ab2a0459ff5ac7476db0673ac2cf496316e08afc8184f342`
+
+Prior Build #1015 client-log classification retained:
+- JourneyMap plugin initialization and server-side target resolution were alive;
+- no `TURNBOUND could not sync JourneyMap markers` warning was found in the prior review;
+- the large missing-sound / duplicate-sprite-atlas warning set belongs to the existing Drehmal/resource-pack compatibility surface, not evidence that TURNBOUND target generation failed;
+- the old sanctum was observed at `468, 63, 1851`, which motivated the 128–176 block roofed-sanctum replacement.
+
+Validation:
+- CODE REVIEWED: YES
+- AUTOMATED TESTS: YES
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- DEDICATED SERVER TESTED: YES
+- ONE-CLICK PACK VERIFIED: YES
+- CLIENT RUNTIME TESTED: NO for Build #1020
+- PLAYTESTED: NO for Build #1020
+- MULTIPLAYER TESTED: NO
+
+Required next real-client checks:
+- J fullscreen map visibly shows TURNBOUND NPC/service/quest markers and a stronger current-goal marker;
+- M toggles only the JourneyMap minimap and the current goal remains identifiable there;
+- the main objective text, top direction cue, and current-goal map point resolve to the same target coordinates;
+- a summon uses the far roofed sanctum, remains readable in rain, keeps the camera clear of roof/pillars, reveals the actor cleanly, restores the camera on exit, and leaves no presentation actor behind.
