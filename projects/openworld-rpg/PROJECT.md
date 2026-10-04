@@ -1330,3 +1330,44 @@ M0 mrpack SHA-256 is
 
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 client world join **NOT RUN**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+
+
+### 2026-10-04 trusted revive entity-interaction transport
+
+The currently admitted exact-encounter Downed backend now has a real server-authoritative revive
+interaction path at code state `7d834a5b32cf290bd0c55a41935dba87359de144` (implementation began in
+`2354eb01feb7c433547dcf4c5361234d286f53b6`). A normal Minecraft use/entity interaction with a
+Downed player reaches the project only after Minecraft 26.2 has accepted the target through its own
+server entity-interaction-range validation. The project therefore does **not** invent a separate
+revive distance such as 16/24/32 blocks.
+
+One accepted interaction starts the existing canonical **50-tick / 2.5 s** revive channel through the
+shared server action runtime. The server owns resolution; no client timer can complete the revive.
+During the channel the reviver must remain alive, non-spectator, non-Downed, in the same level, within
+the same Minecraft entity-interaction range used by the accepted packet, and a participant of the
+same exact encounter instance. Losing that spatial/encounter context or disconnecting interrupts the
+channel; existing hostile-damage/control interruption remains in force. If the 50 ticks complete
+while those conditions still hold, the existing revive transaction applies the canonical **35%
+MaxHP / 50% Stamina / 25% Mana** result and **20 s Rescue Fatigue**.
+
+This closes the trusted entity-interaction/spatial transport gate for the currently admitted exact
+Earthloong encounter branch. It does **not** invent or close the separate non-encounter `nearby play
+context` rule. Crawl/very-slow Downed locomotion, durable reconnect/server-restart semantics, Saint
+Miracle's revive modifier, final HUD/animation/presentation and real multiplayer playtest remain open.
+
+Build Openworld RPG #349 / run `37196960187` is **SUCCESS** for
+`7d834a5b32cf290bd0c55a41935dba87359de144` across unit tests/build, pinned dependency and creature
+inspection, bootstrap JAR verification, core/gameplay dedicated-server smoke, gameplay client startup,
+both verification JAR builds and M0 mrpack packaging. Artifact
+`openworld-rpg-m0-7d834a5b32cf290bd0c55a41935dba87359de144` (ID `11301433587`,
+digest `sha256:572bda08d2c8f0140e854e8a524681daab2d31d4e42e3341b4c60b438e315aa2`).
+Normal JAR SHA-256 is
+`bcef7894e655695dbf46b5a8b22780589d422dbb4b7dec1a2bc7bc44f60376c8`; M0 playtest JAR
+SHA-256 is `c93a50f93409681d59b449d8fe79a5dcef1ddb6c2cf8cad441118d518738bf6b`;
+R01 integration JAR SHA-256 is
+`74674454c3561f67787495fc43e83af4088c1130ba843d90cd09b9d67ccaba45`; M0 mrpack SHA-256 is
+`928db6a4b5e18c40777b5fa784ab2dbb51306c04a6b386e6361e3b6c5fd0f506`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+client world join **NOT RUN**; physical revive joined-player feel **NOT RUN**; PLAYTESTED **NO**;
+MULTIPLAYER TESTED **NO**.
