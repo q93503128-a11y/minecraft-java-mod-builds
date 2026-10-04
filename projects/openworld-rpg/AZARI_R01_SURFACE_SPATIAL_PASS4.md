@@ -265,3 +265,53 @@ R01 SPATIAL_BINDING COMPLETE: NO
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 ```
+
+
+## 10. 2026-10-04 integrated-client surface review transport
+
+The production gate above is unchanged: no candidate is promoted from raw-world evidence alone.
+Code state `3ea496637f549b14226ef3146bccd14cd77e0802` instead adds a test-artifact-only transport so the
+remaining real-client review can be performed without manually rediscovering coordinates.
+
+The R01 integration playtest JAR exposes:
+
+```text
+/owr_r01_surface_first
+/owr_r01_surface_next
+/owr_r01_surface_prev
+/owr_r01_surface_current
+/owr_r01_surface_jump <1-based-index>
+```
+
+The plan has **101 surface checkpoints**:
+- 85 spatial anchors;
+- 9 candidate-area center points;
+- 7 authored route waypoints.
+
+The first eight points are the progression-critical Alderford -> Quarry surface sequence. Remaining
+anchors/areas are deterministic, so repeated review sessions use the same ordering.
+
+Safety boundary:
+- explicit anchor Y is respected with a one-block standing offset;
+- area centers/route waypoints use `MOTION_BLOCKING_NO_LEAVES` to resolve surface height;
+- the five Quarry interior review volumes are **not** auto-teleported because their candidate
+  geometry can intentionally be solid or only partially open;
+- commands exist only when the R01 integration verification marker is active;
+- the harness never changes candidate/client_verified/production status, quest state or rewards.
+
+Build Openworld RPG #351 / run `37200048471`: **SUCCESS**.
+
+Updated verification state:
+
+```text
+R01 SURFACE REVIEW HARNESS: IMPLEMENTED
+R01 SURFACE REVIEW PLAN: 101 CHECKPOINTS
+NORMAL GAMEPLAY COMMAND EXPOSURE: NO
+QUARRY INTERIOR AUTO-TELEPORT: NO
+ACTUAL MINECRAFT CLIENT REVIEW: NO
+TRAVEL TIME MEASURED IN CLIENT: NO
+PRODUCTION SPATIAL BINDING: NO
+R01 SPATIAL_BINDING COMPLETE: NO
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+```

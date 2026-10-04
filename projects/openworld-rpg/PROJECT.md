@@ -1418,3 +1418,53 @@ R01 integration JAR SHA-256 is
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 client world join **NOT RUN**; specialization gameplay feel **NOT RUN**; PLAYTESTED **NO**;
 MULTIPLAYER TESTED **NO**.
+
+
+### 2026-10-04 R01 surface spatial-review harness
+
+Code state `3ea496637f549b14226ef3146bccd14cd77e0802` adds a dedicated real-client review transport for the
+R01 spatial closure gate. It does **not** promote any candidate coordinate and is unavailable in a
+normal gameplay artifact.
+
+The non-mutating R01 integration playtest artifact now exposes these review-only commands:
+
+- `/owr_r01_surface_first` — move to the first surface review point;
+- `/owr_r01_surface_next` — move to the next point, wrapping at the end;
+- `/owr_r01_surface_prev` — move to the previous point;
+- `/owr_r01_surface_current` — print the current review point and role;
+- `/owr_r01_surface_jump <1-based-index>` — jump directly to a numbered point.
+
+The review plan contains **101 surface checkpoints**: all 85 current spatial anchors, all 9 candidate
+areas by center point, and all 7 points of the Alderford-to-Quarry route. The first eight are locked
+to the critical progression sequence Alderford center -> gate/shrine -> Broken Road Marker ->
+Roadside Trouble -> Lost Cargo -> Quarry Waystone -> Quarry Overlook -> lower entrance. Remaining
+anchors and areas are deterministic by id, then route waypoints are appended in authored order.
+
+Candidate entries with an authored Y use that reviewed Y + 1 block. Area centers and route waypoints
+resolve their safe surface Y from `MOTION_BLOCKING_NO_LEAVES` at review time. The five Quarry
+interior review volumes are deliberately excluded from automatic teleport: several are natural-seam
+or solid-carve probes, so treating their centers as safe player positions would be false.
+
+This closes the **review-tooling** gap only. `r01_spatial_candidates.json` remains candidate-source
+data, the production accessors still expose no candidate coordinate, and actual client sightline,
+travel-time, authored-structure composition, dungeon traversal and arena acceptance must be observed
+before any entry is promoted.
+
+Build Openworld RPG #351 / run `37200048471`: **SUCCESS** for
+`3ea496637f549b14226ef3146bccd14cd77e0802`. Unit tests/build, pinned dependency/creature inspection,
+bootstrap JAR verification, core and gameplay dedicated-server smoke, gameplay client startup,
+both verification JAR builds and M0 mrpack packaging all passed. Artifact
+`openworld-rpg-m0-3ea496637f549b14226ef3146bccd14cd77e0802` (ID `11302049906`,
+digest `sha256:52702230574896d7a4e1392e57bb3e7b7da445091c95d133f2e3dbc341b38a27`).
+Normal JAR SHA-256:
+`653ef6ae19b47c813c3e4e7c29a9db4f8a083bd3e114a54eff303d3c82016018`.
+M0 playtest JAR SHA-256:
+`a4cf5e620091967435885f28a67d79fb272f90fd1e35a0e5968d8111c3d3baa4`.
+R01 integration JAR SHA-256:
+`b5f8b0cad90097d81ef4f033cea371bedbb32cc679b9341cd84caa3b05f940a7`.
+M0 mrpack SHA-256:
+`d70a31970884b48e73935a50ca179b0124232596a6a1b562bab5a660a5ecd59c`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+gameplay client startup **YES**; client world join **NOT RUN**; spatial client review **NOT RUN**;
+R01 SPATIAL_BINDING COMPLETE **NO**; PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
