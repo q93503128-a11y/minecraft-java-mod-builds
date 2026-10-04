@@ -15,8 +15,23 @@ public final class ProjectPerfectGuardRuntime {
             LivingEntity attacker,
             long nowTick
     ) {
+        return onSuccessfulPerfectGuard(defender, attacker, nowTick, 1.0);
+    }
+
+    public static Application onSuccessfulPerfectGuard(
+            ServerPlayer defender,
+            LivingEntity attacker,
+            long nowTick,
+            double authoredEncounterMultiplier
+    ) {
         Objects.requireNonNull(defender, "defender");
         Objects.requireNonNull(attacker, "attacker");
+        if (!Double.isFinite(authoredEncounterMultiplier)
+                || authoredEncounterMultiplier <= 0.0) {
+            throw new IllegalArgumentException(
+                    "Perfect-guard encounter multiplier must be finite and positive."
+            );
+        }
         if (defender.level().isClientSide()
                 || defender == attacker
                 || defender.level() != attacker.level()) {
@@ -35,6 +50,7 @@ public final class ProjectPerfectGuardRuntime {
                 profile.poiseMax(),
                 GuardianRootPassiveEffects
                         .perfectGuardPoiseOutputMultiplier(defender)
+                        * authoredEncounterMultiplier
         );
         var applied = ExternalActorBindingRuntime
                 .applyProjectPoiseDamage(

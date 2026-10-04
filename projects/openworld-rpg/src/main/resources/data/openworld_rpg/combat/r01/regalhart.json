@@ -30,7 +30,7 @@
       "areaRadius": 0.0,
       "benchmarkDamageShare": 0.28,
       "guardPressure": "HEAVY",
-      "guardable": null,
+      "guardable": false,
       "perfectGuardable": true,
       "playerPoisePressure": 70.0,
       "perfectGuardPoiseMultiplier": 1.25
@@ -44,10 +44,10 @@
       "movementEnvelopeBlocks": 0.0,
       "areaRadius": 0.0,
       "benchmarkDamageShare": 0.12,
-      "guardPressure": null,
+      "guardPressure": "MEDIUM",
       "guardable": true,
       "perfectGuardable": true,
-      "playerPoisePressure": null,
+      "playerPoisePressure": 28.0,
       "perfectGuardPoiseMultiplier": null
     },
     {
@@ -76,6 +76,8 @@
     "secondChargeMinimumPivotTellTicks": 13,
     "chainedChargeRecoveryTicks": 28,
     "normalSweepComboEvery": 3,
-    "sovereignSweepComboEvery": 2
+    "sovereignSweepComboEvery": 2,
+    "normalSweepFollowUpDelayTicks": 8,
+    "sovereignSweepFollowUpDelayTicks": 6
   }
 }

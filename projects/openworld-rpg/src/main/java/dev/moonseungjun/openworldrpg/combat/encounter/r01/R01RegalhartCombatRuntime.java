@@ -24,9 +24,8 @@ import org.slf4j.Logger;
 /**
  * Runtime seam for currently closed Regalhart impact pieces.
  *
- * <p>This does not admit Regalhart production spawning. It provides exact first-sweep timing and the
- * already-canonical Royal Bound landing-radius result for a later accepted movement/presentation
- * binder.</p>
+ * <p>This does not admit Regalhart production spawning. It provides exact single/mirrored Antler
+ * Sweep timing and closed impact results for a later accepted movement/presentation binder.</p>
  */
 public final class R01RegalhartCombatRuntime {
     private static final R01RegalhartEncounterData DATA =
@@ -75,10 +74,18 @@ public final class R01RegalhartCombatRuntime {
             SWEEPS.clear();
         });
         logger.info(
-                "Openworld RPG Regalhart authority armed for non-combo Antler Sweep, "
-                        + "presentation-confirmed Royal Bound landing impact, and fail-closed "
-                        + "Sovereign transition modifiers."
+                "Openworld RPG Regalhart authority armed for scheduled Antler Sweep, "
+                        + "presentation-confirmed impact results, and Sovereign transition modifiers."
         );
+    }
+
+    public static boolean beginScheduledAntlerSweep(
+            LivingEntity regalhart,
+            R01RegalhartActionController.Decision decision,
+            long gameTick
+    ) {
+        var state = stateFor(regalhart);
+        return state != null && state.begin(decision, gameTick);
     }
 
     public static boolean beginNonComboAntlerSweep(
@@ -86,8 +93,10 @@ public final class R01RegalhartCombatRuntime {
             R01RegalhartActionController.Decision decision,
             long gameTick
     ) {
-        var state = stateFor(regalhart);
-        return state != null && state.begin(decision, gameTick);
+        if (decision == null || decision.mirroredSweepFollowUp()) {
+            return false;
+        }
+        return beginScheduledAntlerSweep(regalhart, decision, gameTick);
     }
 
     public static Optional<R01RegalhartSweepExecutionState.Snapshot> sweepSnapshot(

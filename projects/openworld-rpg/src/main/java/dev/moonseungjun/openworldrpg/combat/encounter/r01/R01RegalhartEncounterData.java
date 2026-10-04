@@ -144,7 +144,9 @@ public record R01RegalhartEncounterData(
             int secondChargeMinimumPivotTellTicks,
             int chainedChargeRecoveryTicks,
             int normalSweepComboEvery,
-            int sovereignSweepComboEvery
+            int sovereignSweepComboEvery,
+            int normalSweepFollowUpDelayTicks,
+            int sovereignSweepFollowUpDelayTicks
     ) {
         public SovereignRule {
             if (!Double.isFinite(healthFractionInclusive)
@@ -162,7 +164,11 @@ public record R01RegalhartEncounterData(
                     || secondChargeMinimumPivotTellTicks <= 0
                     || chainedChargeRecoveryTicks <= 0
                     || normalSweepComboEvery <= 0
-                    || sovereignSweepComboEvery <= 0) {
+                    || sovereignSweepComboEvery <= 0
+                    || normalSweepFollowUpDelayTicks <= 0
+                    || sovereignSweepFollowUpDelayTicks <= 0
+                    || sovereignSweepFollowUpDelayTicks
+                            >= normalSweepFollowUpDelayTicks) {
                 throw new IllegalArgumentException("Invalid Regalhart Sovereign rule.");
             }
         }

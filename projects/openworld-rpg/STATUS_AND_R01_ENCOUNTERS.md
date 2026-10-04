@@ -949,6 +949,7 @@ charge path: up to 12 blocks
 benchmark damage: 28%
 guard pressure: heavy
 player poise pressure: 70
+guardable: false
 perfect_guardable: true
 perfect_guard_poise_multiplier: 1.40
 recovery after miss/end: 1.20 s
@@ -1399,7 +1400,7 @@ guardable/perfect_guardable: true
 recovery: 0.40 s
 ```
 
-Antler Sweep follow-up is deterministic: above 40% HP, **every third** Antler Sweep chains a second mirrored sweep when the target remains in a legal follow-up arc; at <=40% HP, **every second** Antler Sweep does so. A skipped follow-up because no legal target exists still advances the sequence counter. Total two-hit combo budget stays <=22% benchmark HP.
+Antler Sweep follow-up is deterministic: above 40% HP, **every third** Antler Sweep chains a second mirrored sweep when the target remains in a legal follow-up arc; at <=40% HP, **every second** Antler Sweep does so. A skipped follow-up because no legal target exists still advances the sequence counter. The second impact lands exactly **8 ticks / 0.40 s** after the first above 40% HP and **6 ticks / 0.30 s** after the first in Sovereign state; the normal **8-tick / 0.40 s** recovery starts after the final impact. Total two-hit combo budget stays <=22% benchmark HP.
 
 ## Attack 2 — Crown Charge
 
@@ -1424,7 +1425,9 @@ Anti-backside camping tool.
 wind-up: 0.40 s
 rear cone
 damage: 12%
+guard pressure: medium
 guardable/perfect_guardable: true
+player poise pressure: 28
 recovery: 0.35 s
 ```
 
@@ -1458,7 +1461,7 @@ After transition:
 - if no legal line exists, the chain is skipped but the sequence counter still advances;
 - second charge has its own >=0.65 s turn/tell;
 - chained charge ends with 1.40 s recovery;
-- Antler Sweep follow-up timing becomes slightly tighter, but no hidden damage multiplier is added.
+- mirrored Antler Sweep uses the exact 8-tick first-to-second impact interval above 40% HP and the tighter 6-tick interval in Sovereign state; no hidden damage multiplier is added.
 
 This is the project adaptation of the donor's low-HP special behavior: more pattern pressure, not an HP-sponge stat steroid.
 
@@ -1969,15 +1972,13 @@ Mid/far selection when both are geometrically legal:
 
 | Target distance | Crown Charge | Royal Bound |
 |---|---:|---:|
-| 4.5–7.0 | 45 | 55 |
-| 7.0–12.0 | 60 | 40 |
-| 12.0–16.0 | 75 | 25 |
+| >4.5 and <7.0 | 45 | 55 |
+| >=7.0 and <12.0 | 60 | 40 |
+| >=12.0 and <=16.0 | 75 | 25 |
 
-**Exact-boundary note:** the current table text overlaps at exactly `7.0` and `12.0` blocks
-without stating which adjacent row owns those two exact values. Until that tiny canon boundary is
-explicitly normalized, the runtime must fail closed/reposition at exactly those two floating-point
-distances rather than silently choosing one probability table. This does not affect the open
-intervals on either side.
+The exact `7.0` and `12.0` boundaries belong to the **farther** adjacent band. This preserves a
+monotonic increase in Crown Charge pressure as target distance grows and removes the former exact-
+endpoint reposition seam.
 
 An unavailable/cooling action is removed and weights are renormalized.
 

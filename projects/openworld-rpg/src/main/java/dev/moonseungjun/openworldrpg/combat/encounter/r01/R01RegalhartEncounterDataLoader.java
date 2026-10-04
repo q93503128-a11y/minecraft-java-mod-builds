@@ -77,16 +77,16 @@ public final class R01RegalhartEncounterDataLoader {
                 140, 18, 24,
                 16.0, 16.0, 0.0, 0.28,
                 PlayerDefenseAuthority.GuardPressureBand.HEAVY,
-                null, Boolean.TRUE,
+                Boolean.FALSE, Boolean.TRUE,
                 70.0, 1.25
         ));
         requireRule(rules, new R01RegalhartEncounterData.AttackRule(
                 R01RegalhartEncounterData.ActionId.REAR_KICK,
                 60, 8, 7,
                 3.5, 0.0, 0.0, 0.12,
-                null,
+                PlayerDefenseAuthority.GuardPressureBand.MEDIUM,
                 Boolean.TRUE, Boolean.TRUE,
-                null, null
+                28.0, null
         ));
         requireRule(rules, new R01RegalhartEncounterData.AttackRule(
                 R01RegalhartEncounterData.ActionId.ROYAL_BOUND,
@@ -107,7 +107,9 @@ public final class R01RegalhartEncounterDataLoader {
                 13,
                 28,
                 3,
-                2
+                2,
+                8,
+                6
         );
         if (!expectedSovereign.equals(data.sovereign())) {
             throw new IllegalArgumentException(
@@ -115,17 +117,13 @@ public final class R01RegalhartEncounterDataLoader {
             );
         }
 
-        if (rules.get(R01RegalhartEncounterData.ActionId.CROWN_CHARGE)
-                .impactContractClosed()) {
-            throw new IllegalArgumentException(
-                    "Crown Charge ordinary guardability must remain unresolved."
-            );
-        }
-        if (rules.get(R01RegalhartEncounterData.ActionId.REAR_KICK)
-                .impactContractClosed()) {
-            throw new IllegalArgumentException(
-                    "Rear Kick guard pressure must remain unresolved."
-            );
+        for (R01RegalhartEncounterData.ActionId action
+                : R01RegalhartEncounterData.ActionId.values()) {
+            if (!rules.get(action).impactContractClosed()) {
+                throw new IllegalArgumentException(
+                        "R01 Regalhart impact contract must be closed for " + action
+                );
+            }
         }
     }
 

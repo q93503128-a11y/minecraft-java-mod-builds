@@ -40,10 +40,41 @@ public final class ProjectPlayerIncomingDamageRuntime {
             PlayerDefenseAuthority.IncomingHit hit,
             ProjectPlayerReactionRuntime.ReactionSpec reaction
     ) {
+        return applyProjectOwnedActorHit(attacker, target, hit, reaction, 1.0);
+    }
+
+    public static IncomingApplication applyProjectOwnedActorHit(
+            LivingEntity attacker,
+            ServerPlayer target,
+            PlayerDefenseAuthority.IncomingHit hit,
+            double perfectGuardPoiseMultiplier
+    ) {
+        return applyProjectOwnedActorHit(
+                attacker,
+                target,
+                hit,
+                ProjectPlayerReactionRuntime.ReactionSpec.none(),
+                perfectGuardPoiseMultiplier
+        );
+    }
+
+    public static IncomingApplication applyProjectOwnedActorHit(
+            LivingEntity attacker,
+            ServerPlayer target,
+            PlayerDefenseAuthority.IncomingHit hit,
+            ProjectPlayerReactionRuntime.ReactionSpec reaction,
+            double perfectGuardPoiseMultiplier
+    ) {
         Objects.requireNonNull(attacker, "attacker");
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(hit, "hit");
         Objects.requireNonNull(reaction, "reaction");
+        if (!Double.isFinite(perfectGuardPoiseMultiplier)
+                || perfectGuardPoiseMultiplier <= 0.0) {
+            throw new IllegalArgumentException(
+                    "Perfect-guard poise multiplier must be finite and positive."
+            );
+        }
 
         if (target == attacker
                 || target.level().isClientSide()
@@ -124,7 +155,8 @@ public final class ProjectPlayerIncomingDamageRuntime {
             ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
                     target,
                     attacker,
-                    gameTick
+                    gameTick,
+                    perfectGuardPoiseMultiplier
             );
             ProjectUltimateChargeRuntime.recordGuardianPerfectGuard(
                     target,
@@ -157,7 +189,8 @@ public final class ProjectPlayerIncomingDamageRuntime {
             ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
                     target,
                     attacker,
-                    gameTick
+                    gameTick,
+                    perfectGuardPoiseMultiplier
             );
             GuardianResolveRuntime.onPerfectGuard(
                     target,
@@ -233,7 +266,8 @@ public final class ProjectPlayerIncomingDamageRuntime {
             ProjectPerfectGuardRuntime.onSuccessfulPerfectGuard(
                     target,
                     attacker,
-                    gameTick
+                    gameTick,
+                    perfectGuardPoiseMultiplier
             );
             GuardianResolveRuntime.onPerfectGuard(
                     target,

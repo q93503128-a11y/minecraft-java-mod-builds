@@ -14,7 +14,7 @@ class R01RegalhartActionControllerTest {
             UUID.fromString("10000000-2000-3000-4000-500000000000");
 
     @Test
-    void bundledRegalhartSelectionAndPhaseDataMatchCanonWithoutInventingImpactFields() {
+    void bundledRegalhartSelectionAndPhaseDataMatchClosedCanon() {
         var data = R01RegalhartEncounterDataLoader.load();
         var rules = data.rulesById();
 
@@ -32,12 +32,22 @@ class R01RegalhartActionControllerTest {
         assertEquals(140, charge.cooldownTicks());
         assertEquals(18, charge.tellTicks());
         assertEquals(16.0, charge.movementEnvelopeBlocks(), 0.000001);
-        assertFalse(charge.impactContractClosed());
+        assertFalse(charge.guardable());
+        assertTrue(charge.perfectGuardable());
+        assertEquals(70.0, charge.playerPoisePressure(), 0.000001);
+        assertEquals(1.25, charge.perfectGuardPoiseMultiplier(), 0.000001);
+        assertTrue(charge.impactContractClosed());
 
         var kick = rules.get(R01RegalhartEncounterData.ActionId.REAR_KICK);
         assertEquals(60, kick.cooldownTicks());
         assertEquals(3.5, kick.maximumRange(), 0.000001);
-        assertFalse(kick.impactContractClosed());
+        assertEquals(
+                dev.moonseungjun.openworldrpg.combat.authority.PlayerDefenseAuthority
+                        .GuardPressureBand.MEDIUM,
+                kick.guardPressure()
+        );
+        assertEquals(28.0, kick.playerPoisePressure(), 0.000001);
+        assertTrue(kick.impactContractClosed());
 
         var bound = rules.get(R01RegalhartEncounterData.ActionId.ROYAL_BOUND);
         assertEquals(180, bound.cooldownTicks());
@@ -52,6 +62,8 @@ class R01RegalhartActionControllerTest {
         assertEquals(2, sovereign.crownChargeComboEvery());
         assertEquals(13, sovereign.secondChargeMinimumPivotTellTicks());
         assertEquals(28, sovereign.chainedChargeRecoveryTicks());
+        assertEquals(8, sovereign.normalSweepFollowUpDelayTicks());
+        assertEquals(6, sovereign.sovereignSweepFollowUpDelayTicks());
     }
 
     @Test
@@ -88,38 +100,32 @@ class R01RegalhartActionControllerTest {
     }
 
     @Test
-    void unresolvedSevenAndTwelveEndpointsFailClosedInsteadOfInventingWeights() {
-        assertTrue(R01RegalhartActionController.exactUnresolvedWeightBoundary(7.0));
-        assertTrue(R01RegalhartActionController.exactUnresolvedWeightBoundary(12.0));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> R01RegalhartActionController.distanceWeights(7.0)
-        );
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> R01RegalhartActionController.distanceWeights(12.0)
-        );
-
-        assertTrue(controller("seven").select(
-                context(7.0, false, false, true, true, 1.0),
-                0
-        ).reposition());
-        assertTrue(controller("twelve").select(
-                context(12.0, false, false, true, true, 1.0),
-                0
-        ).reposition());
-
+    void sevenAndTwelveEndpointsBelongToTheFartherDistanceBand() {
         assertArrayEquals(
                 new int[] {45, 55},
                 R01RegalhartActionController.distanceWeights(6.999)
         );
         assertArrayEquals(
                 new int[] {60, 40},
-                R01RegalhartActionController.distanceWeights(7.001)
+                R01RegalhartActionController.distanceWeights(7.0)
         );
         assertArrayEquals(
                 new int[] {75, 25},
-                R01RegalhartActionController.distanceWeights(12.001)
+                R01RegalhartActionController.distanceWeights(12.0)
+        );
+        assertArrayEquals(
+                new int[] {75, 25},
+                R01RegalhartActionController.distanceWeights(16.0)
+        );
+        assertFalse(controller("seven").select(
+                context(7.0, false, false, true, true, 1.0), 0
+        ).reposition());
+        assertFalse(controller("twelve").select(
+                context(12.0, false, false, true, true, 1.0), 0
+        ).reposition());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> R01RegalhartActionController.distanceWeights(4.5)
         );
     }
 
@@ -224,6 +230,7 @@ class R01RegalhartActionControllerTest {
                 context(4.0, false, false, true, true, 1.0), 34
         );
         assertFalse(skippedDue.mirroredSweepFollowUp());
+        assertEquals(0, skippedDue.mirroredSweepFollowUpDelayTicks());
         assertEquals(3, normal.antlerSweepCounter());
 
         assertFalse(normal.select(
@@ -237,9 +244,24 @@ class R01RegalhartActionControllerTest {
         assertFalse(sovereign.select(
                 context(4.0, false, true, true, true, 0.40), 30
         ).mirroredSweepFollowUp());
-        assertTrue(sovereign.select(
+        var sovereignCombo = sovereign.select(
                 context(4.0, false, true, true, true, 0.40), 47
-        ).mirroredSweepFollowUp());
+        );
+        assertTrue(sovereignCombo.mirroredSweepFollowUp());
+        assertEquals(6, sovereignCombo.mirroredSweepFollowUpDelayTicks());
+
+        var normalWithArc = controller("normal-sweep-timing");
+        normalWithArc.select(
+                context(4.0, false, true, true, true, 1.0), 0
+        );
+        normalWithArc.select(
+                context(4.0, false, true, true, true, 1.0), 17
+        );
+        var normalCombo = normalWithArc.select(
+                context(4.0, false, true, true, true, 1.0), 34
+        );
+        assertTrue(normalCombo.mirroredSweepFollowUp());
+        assertEquals(8, normalCombo.mirroredSweepFollowUpDelayTicks());
     }
 
     @Test

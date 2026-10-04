@@ -63,27 +63,39 @@ class R01RegalhartClosedImpactRuntimeTest {
     }
 
     @Test
-    void incompleteChargeAndRearKickImpactContractsRemainBlocked() {
-        assertFalse(R01RegalhartImpactAuthority.impactReadyAction(
+    void crownChargeAndRearKickImpactContractsAreClosed() {
+        var data = R01RegalhartEncounterDataLoader.load();
+
+        var charge = data.rulesById().get(
+                R01RegalhartEncounterData.ActionId.CROWN_CHARGE
+        );
+        var chargeHit = charge.toIncomingHit(8);
+        assertFalse(chargeHit.guardable());
+        assertTrue(chargeHit.perfectGuardable());
+        assertEquals(
+                PlayerDefenseAuthority.GuardPressureBand.HEAVY,
+                chargeHit.guardPressure().orElseThrow()
+        );
+        assertEquals(70.0, charge.playerPoisePressure(), 0.000001);
+        assertEquals(1.25, charge.perfectGuardPoiseMultiplier(), 0.000001);
+        assertTrue(R01RegalhartImpactAuthority.impactReadyAction(
                 R01RegalhartEncounterData.ActionId.CROWN_CHARGE
         ));
-        assertFalse(R01RegalhartImpactAuthority.impactReadyAction(
+
+        var kick = data.rulesById().get(
+                R01RegalhartEncounterData.ActionId.REAR_KICK
+        );
+        var kickHit = kick.toIncomingHit(8);
+        assertTrue(kickHit.guardable());
+        assertTrue(kickHit.perfectGuardable());
+        assertEquals(
+                PlayerDefenseAuthority.GuardPressureBand.MEDIUM,
+                kickHit.guardPressure().orElseThrow()
+        );
+        assertEquals(28.0, kick.playerPoisePressure(), 0.000001);
+        assertTrue(R01RegalhartImpactAuthority.impactReadyAction(
                 R01RegalhartEncounterData.ActionId.REAR_KICK
         ));
-
-        var data = R01RegalhartEncounterDataLoader.load();
-        assertThrows(
-                IllegalStateException.class,
-                () -> data.rulesById()
-                        .get(R01RegalhartEncounterData.ActionId.CROWN_CHARGE)
-                        .toIncomingHit(8)
-        );
-        assertThrows(
-                IllegalStateException.class,
-                () -> data.rulesById()
-                        .get(R01RegalhartEncounterData.ActionId.REAR_KICK)
-                        .toIncomingHit(8)
-        );
     }
 
     @Test
@@ -106,6 +118,7 @@ class R01RegalhartClosedImpactRuntimeTest {
                 impact.phase()
         );
         assertEquals(109L, impact.impactTick());
+        assertEquals(0L, impact.secondImpactTick());
         assertEquals(117L, impact.recoveryEndTick());
         assertEquals(
                 R01RegalhartEncounterData.ActionId.ANTLER_SWEEP,
@@ -116,15 +129,49 @@ class R01RegalhartClosedImpactRuntimeTest {
     }
 
     @Test
-    void dueMirroredSweepIsRejectedUntilSecondHitTimingIsCanonClosed() {
+    void mirroredSweepOwnsTwoReadableImpactFramesAndPerFrameDeduplication() {
         var state = new R01RegalhartSweepExecutionState(
                 R01RegalhartEncounterDataLoader.load()
         );
-        assertFalse(state.begin(decision(true, 10L), 0));
+        assertTrue(state.begin(decision(true, 8, 10L), 100));
+
+        var first = state.snapshot(109).orElseThrow();
+        assertEquals(R01RegalhartSweepExecutionState.Phase.IMPACT_FRAME, first.phase());
+        assertEquals(109L, first.impactTick());
+        assertEquals(117L, first.secondImpactTick());
+        assertEquals(125L, first.recoveryEndTick());
+        assertTrue(state.confirmContact(10L, TARGET, 109).isPresent());
+        assertTrue(state.confirmContact(10L, TARGET, 109).isEmpty());
+        assertEquals(
+                R01RegalhartSweepExecutionState.Phase.FOLLOW_UP_GAP,
+                state.snapshot(110).orElseThrow().phase()
+        );
+        assertTrue(state.confirmContact(10L, TARGET, 117).isPresent());
+        assertTrue(state.confirmContact(10L, TARGET, 117).isEmpty());
+        assertTrue(state.snapshot(125).isEmpty());
+    }
+
+    @Test
+    void sovereignMirroredSweepUsesSixTickFollowUpDelay() {
+        var state = new R01RegalhartSweepExecutionState(
+                R01RegalhartEncounterDataLoader.load()
+        );
+        assertTrue(state.begin(decision(true, 6, 11L), 0));
+        var snapshot = state.snapshot(9).orElseThrow();
+        assertEquals(15L, snapshot.secondImpactTick());
+        assertEquals(23L, snapshot.recoveryEndTick());
     }
 
     private static R01RegalhartActionController.Decision decision(
             boolean mirroredFollowUp,
+            long counter
+    ) {
+        return decision(mirroredFollowUp, mirroredFollowUp ? 8 : 0, counter);
+    }
+
+    private static R01RegalhartActionController.Decision decision(
+            boolean mirroredFollowUp,
+            int followUpDelayTicks,
             long counter
     ) {
         return new R01RegalhartActionController.Decision(
@@ -134,6 +181,7 @@ class R01RegalhartClosedImpactRuntimeTest {
                 ),
                 counter,
                 mirroredFollowUp,
+                followUpDelayTicks,
                 false,
                 0L
         );

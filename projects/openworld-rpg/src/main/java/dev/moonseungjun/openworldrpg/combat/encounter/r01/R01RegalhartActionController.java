@@ -87,8 +87,7 @@ public final class R01RegalhartActionController {
             );
         }
 
-        if (context.targetDistance() > 16.0
-                || exactUnresolvedWeightBoundary(context.targetDistance())) {
+        if (context.targetDistance() > 16.0) {
             return Decision.reposition(actionCounter);
         }
 
@@ -210,12 +209,18 @@ public final class R01RegalhartActionController {
         }
 
         boolean mirroredSweepFollowUp = false;
+        int mirroredSweepFollowUpDelayTicks = 0;
         if (rule.id()
                 == R01RegalhartEncounterData.ActionId.ANTLER_SWEEP) {
             antlerSweepCounter++;
             mirroredSweepFollowUp =
                     antlerFollowUpDueAfterIncrement()
                             && mirroredSweepFollowUpArcLegal;
+            if (mirroredSweepFollowUp) {
+                mirroredSweepFollowUpDelayTicks = sovereignEntered
+                        ? data.sovereign().sovereignSweepFollowUpDelayTicks()
+                        : data.sovereign().normalSweepFollowUpDelayTicks();
+            }
         }
 
         if (rule.id() == lastCommittedAction) {
@@ -229,6 +234,7 @@ public final class R01RegalhartActionController {
                 rule.id(),
                 selectedCounter,
                 mirroredSweepFollowUp,
+                mirroredSweepFollowUpDelayTicks,
                 secondChargeDue
         );
     }
@@ -270,22 +276,14 @@ public final class R01RegalhartActionController {
     }
 
     /**
-     * The design table currently labels both adjacent rows with the exact 7.0 and 12.0 endpoints.
-     * Until canon explicitly assigns those two shared endpoints, selection fails closed there rather
-     * than silently changing the authored 45/55, 60/40 or 75/25 probability.
+     * Exact 7.0 and 12.0 block boundaries belong to the farther adjacent distance band.
      */
-    static boolean exactUnresolvedWeightBoundary(double distance) {
-        return Double.compare(distance, 7.0) == 0
-                || Double.compare(distance, 12.0) == 0;
-    }
-
     static int[] distanceWeights(double distance) {
         if (!Double.isFinite(distance)
                 || distance <= 4.5
-                || distance > 16.0
-                || exactUnresolvedWeightBoundary(distance)) {
+                || distance > 16.0) {
             throw new IllegalArgumentException(
-                    "Regalhart weighted distance must be in a canon-resolved mid/far interval."
+                    "Regalhart weighted distance must be inside (4.5, 16.0]."
             );
         }
         if (distance < 7.0) {
@@ -366,6 +364,7 @@ public final class R01RegalhartActionController {
             Optional<R01RegalhartEncounterData.ActionId> action,
             long actionCounter,
             boolean mirroredSweepFollowUp,
+            int mirroredSweepFollowUpDelayTicks,
             boolean sovereignSecondChargeDue,
             long sovereignTransitionEndTick
     ) {
@@ -382,6 +381,12 @@ public final class R01RegalhartActionController {
                             != R01RegalhartEncounterData.ActionId.ANTLER_SWEEP) {
                 throw new IllegalArgumentException(
                         "Mirrored follow-up must belong to Antler Sweep."
+                );
+            }
+            if (mirroredSweepFollowUp
+                    != (mirroredSweepFollowUpDelayTicks > 0)) {
+                throw new IllegalArgumentException(
+                        "Mirrored follow-up timing must exist exactly when the follow-up is due."
                 );
             }
             if (sovereignSecondChargeDue
@@ -406,6 +411,7 @@ public final class R01RegalhartActionController {
                 R01RegalhartEncounterData.ActionId action,
                 long actionCounter,
                 boolean mirroredSweepFollowUp,
+                int mirroredSweepFollowUpDelayTicks,
                 boolean sovereignSecondChargeDue
         ) {
             return new Decision(
@@ -413,6 +419,7 @@ public final class R01RegalhartActionController {
                     Optional.of(action),
                     actionCounter,
                     mirroredSweepFollowUp,
+                    mirroredSweepFollowUpDelayTicks,
                     sovereignSecondChargeDue,
                     0L
             );
@@ -427,6 +434,7 @@ public final class R01RegalhartActionController {
                     Optional.empty(),
                     actionCounter,
                     false,
+                    0,
                     false,
                     transitionEndTick
             );
@@ -441,6 +449,7 @@ public final class R01RegalhartActionController {
                     Optional.empty(),
                     actionCounter,
                     false,
+                    0,
                     false,
                     transitionEndTick
             );
@@ -452,6 +461,7 @@ public final class R01RegalhartActionController {
                     Optional.empty(),
                     actionCounter,
                     false,
+                    0,
                     false,
                     0L
             );
