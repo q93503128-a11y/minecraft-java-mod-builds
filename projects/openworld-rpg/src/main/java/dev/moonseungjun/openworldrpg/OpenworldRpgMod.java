@@ -156,6 +156,7 @@ public final class OpenworldRpgMod implements ModInitializer {
         PlayerClassMilestoneAttachments.initialize();
         PlayerPassiveProgressAttachments.initialize();
         ProjectCombatNetworking.initialize();
+        ProjectDownedRuntime.initializeInteractionBinding();
         OrdinaryEquipmentAffixCatalogRegistry.initialize(LOGGER);
         PlayerRewardTransactionAttachments.initialize();
         PlayerInventoryAttachments.initialize();
