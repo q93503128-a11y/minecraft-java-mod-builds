@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
@@ -253,14 +254,18 @@ public final class R01EarthloongPhysicalEncounterRuntime {
     }
 
     /**
-     * Returns the content level of a live authored Earthloong encounter that currently has this
-     * player in its threat-engagement table. Verification fixtures are excluded.
+     * Returns the exact live authored Earthloong encounter that currently owns this player's
+     * threat engagement. Verification fixtures are excluded.
+     *
+     * <p>If corrupted/overlapping runtime state claims the same player for more than one live
+     * Earthloong instance, this fails closed instead of collapsing two encounters into one generic
+     * content-level context.</p>
      */
-    public static OptionalInt activeEncounterLevelFor(
+    public static Optional<ActiveEncounterRef> activeEncounterFor(
             ServerPlayer player
     ) {
         Objects.requireNonNull(player, "player");
-        int level = 0;
+        ActiveEncounterRef found = null;
         for (ActorState state : STATES.values()) {
             if (state.verificationFixture
                     || state.actor.isRemoved()
@@ -272,13 +277,46 @@ public final class R01EarthloongPhysicalEncounterRuntime {
             var profile = ExternalActorBindingRuntime
                     .combatProfile(state.actor)
                     .orElse(null);
-            if (profile != null) {
-                level = Math.max(level, profile.contentLevel());
+            if (profile == null || !EARTHLOONG_ID.equals(profile.entityId())) {
+                continue;
+            }
+
+            ActiveEncounterRef candidate = new ActiveEncounterRef(
+                    state.actor.getUUID(),
+                    profile.contentLevel()
+            );
+            if (found != null
+                    && !found.actorId().equals(candidate.actorId())) {
+                return Optional.empty();
+            }
+            found = candidate;
+        }
+        return Optional.ofNullable(found);
+    }
+
+    /**
+     * Legacy level-only view for callers that do not need encounter identity.
+     */
+    public static OptionalInt activeEncounterLevelFor(
+            ServerPlayer player
+    ) {
+        return activeEncounterFor(player)
+                .map(ref -> OptionalInt.of(ref.contentLevel()))
+                .orElseGet(OptionalInt::empty);
+    }
+
+    public record ActiveEncounterRef(
+            UUID actorId,
+            int contentLevel
+    ) {
+        public ActiveEncounterRef {
+            Objects.requireNonNull(actorId, "actorId");
+            if (contentLevel <= 0) {
+                throw new IllegalArgumentException(
+                        "Active encounter content level must be positive."
+                );
             }
         }
-        return level > 0
-                ? OptionalInt.of(level)
-                : OptionalInt.empty();
     }
 
     public static double incomingDamageMultiplier(LivingEntity target) {
