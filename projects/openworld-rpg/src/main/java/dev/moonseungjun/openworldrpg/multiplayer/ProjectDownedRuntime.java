@@ -14,7 +14,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 
 /**
  * Server-owned Downed / revive backend for exact encounter-scoped co-op.
@@ -25,9 +27,41 @@ import net.minecraft.world.entity.LivingEntity;
  */
 public final class ProjectDownedRuntime {
     public static final String REVIVE_ACTION_ID = "openworld_rpg:action/revive";
+    /*
+     * Minecraft 26.2 ServerGamePacketListenerImpl#handleInteract uses the player's normal
+     * entity-interaction range plus this 3.0-block packet-validation buffer before calling
+     * Player#interactOn. Revive reuses that exact vanilla authority instead of inventing a separate
+     * project distance.
+     */
+    private static final double VANILLA_ENTITY_INTERACTION_BUFFER = 3.0;
     private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
 
     private ProjectDownedRuntime() {}
+
+    public static void initializeInteractionBinding() {
+        UseEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
+            if (level.isClientSide()
+                    || !(player instanceof ServerPlayer reviver)
+                    || !(entity instanceof ServerPlayer downedPlayer)
+                    || !isDowned(downedPlayer)) {
+                return InteractionResult.PASS;
+            }
+
+            Session session = SESSIONS.get(downedPlayer.getUUID());
+            if (session != null
+                    && session.state().reviverId()
+                            .filter(reviver.getUUID()::equals)
+                            .isPresent()) {
+                return InteractionResult.CONSUME;
+            }
+
+            BeginReviveResult result =
+                    beginEncounterReviveAfterValidatedInteraction(reviver, downedPlayer);
+            return result.status() == BeginReviveStatus.STARTED
+                    ? InteractionResult.CONSUME
+                    : InteractionResult.PASS;
+        });
+    }
 
     public static boolean isDowned(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
@@ -123,7 +157,8 @@ public final class ProjectDownedRuntime {
                         reviver.isSpectator(),
                         isDowned(reviver.getUUID(), nowTick)
                 )
-                || reviver.level() != downedPlayer.level()) {
+                || reviver.level() != downedPlayer.level()
+                || !withinTrustedReviveInteractionRange(reviver, downedPlayer)) {
             return BeginReviveResult.rejected(BeginReviveStatus.INVALID_REVIVER);
         }
         Session session = SESSIONS.get(downedPlayer.getUUID());
@@ -183,6 +218,7 @@ public final class ProjectDownedRuntime {
                         reviver.isSpectator(),
                         isDowned(reviver.getUUID(), nowTick)
                 )
+                || !withinTrustedReviveInteractionRange(reviver, downedPlayer)
                 || !ProjectActiveEncounterRuntime.isParticipantOf(reviver, session.encounter())) {
             interruptRevive(reviver);
             return CompleteReviveResult.rejected(CompleteReviveStatus.INVALID_CONTEXT);
@@ -219,6 +255,35 @@ public final class ProjectDownedRuntime {
                 combat.mana(nowTick),
                 session.state().snapshot(nowTick).rescueFatigueTicksRemaining()
         );
+    }
+
+    private static boolean withinTrustedReviveInteractionRange(
+            ServerPlayer reviver,
+            ServerPlayer downedPlayer
+    ) {
+        return reviver.level() == downedPlayer.level()
+                && reviver.isWithinEntityInteractionRange(
+                        downedPlayer,
+                        VANILLA_ENTITY_INTERACTION_BUFFER
+                );
+    }
+
+    private static boolean validActiveReviveChannel(
+            ServerPlayer reviver,
+            ServerPlayer downedPlayer,
+            Session session,
+            long nowTick
+    ) {
+        return eligibleLivingRescuerState(
+                        reviver.isAlive(),
+                        reviver.isSpectator(),
+                        isDowned(reviver.getUUID(), nowTick)
+                )
+                && withinTrustedReviveInteractionRange(reviver, downedPlayer)
+                && ProjectActiveEncounterRuntime.isParticipantOf(
+                        reviver,
+                        session.encounter()
+                );
     }
 
     private static boolean hasEligibleEncounterRescuer(
@@ -291,18 +356,39 @@ public final class ProjectDownedRuntime {
             }
             long nowTick = player.level().getGameTime();
             var current = entry.getValue().state().snapshot(nowTick);
-            if (!current.downed() || !current.rescueExpired()) {
+            if (!current.downed()) {
                 continue;
             }
 
-            ServerLevel level = player.level();
-            player.hurtServer(
-                    level,
-                    player.damageSources().genericKill(),
-                    Float.MAX_VALUE
-            );
-            if (!player.isAlive()) {
-                clearAfterDefeat(player.getUUID());
+            if (current.rescueExpired()) {
+                ServerLevel level = player.level();
+                player.hurtServer(
+                        level,
+                        player.damageSources().genericKill(),
+                        Float.MAX_VALUE
+                );
+                if (!player.isAlive()) {
+                    clearAfterDefeat(player.getUUID());
+                }
+                continue;
+            }
+
+            if (current.reviverId().isEmpty()) {
+                continue;
+            }
+
+            UUID reviverId = current.reviverId().orElseThrow();
+            ServerPlayer reviver = server.getPlayerList().getPlayer(reviverId);
+            if (reviver == null
+                    || !validActiveReviveChannel(reviver, player, entry.getValue(), nowTick)) {
+                if (entry.getValue().state().interruptRevive(reviverId) && reviver != null) {
+                    ProjectPlayerActionRuntime.cancelAction(reviver, REVIVE_ACTION_ID);
+                }
+                continue;
+            }
+
+            if (current.reviveChannelTicksRemaining() == 0L) {
+                completeEncounterReviveAfterValidatedInteraction(reviver, player);
             }
         }
     }
