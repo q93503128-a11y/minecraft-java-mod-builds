@@ -1583,6 +1583,25 @@ modifier and final presentation remain gated.
 
 Build Openworld RPG #345 / run `37180806782` is **SUCCESS** for this code state.
 
+### Downed combatant target / rescuer eligibility
+
+Code state `a78c1477fa09544eb707445f6c075e851d003cb4` closes an authority hole left by the first
+Downed backend:
+
+- an already-Downed participant cannot satisfy the "eligible living teammate" requirement for
+  another player's Downed admission;
+- a Downed player cannot start or finish a revive;
+- becoming Downed while reviving another player interrupts that owned revive channel;
+- Earthloong ordinary threat target selection excludes Downed players once a committed action is
+  finished, and donor-target seeding cannot newly engage a Downed target.
+
+The committed-action behavior remains unchanged: ordinary threat does not switch target in the
+middle of an authored attack/telegraph. This pass does not invent Earthloong disengage/reset timing.
+The exact boss reset/grace contract is still absent from current canon, so encounter-attempt Class
+Insight persistence remains gated rather than carrying flags across an ambiguous retry.
+
+Build Openworld RPG #346 / run `37185854113` is **SUCCESS** for this code state.
+
 ## Arena rule — authored breakables only
 
 Any Earthloong attack with environment-breaking spectacle may break only:

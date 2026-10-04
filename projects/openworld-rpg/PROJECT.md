@@ -1239,3 +1239,41 @@ Normal JAR SHA-256 is
 Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
 production lethal Downed entry **NOT IMPLEMENTED**; revive interaction transport **GATED**;
 PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+
+### 2026-10-04 Downed combatant eligibility closure
+
+Code state `a78c1477fa09544eb707445f6c075e851d003cb4` closes the next exact authority gap in the
+encounter-scoped Downed backend. A player already in project Downed state no longer counts as the
+living rescuer required to admit another Earthloong participant into Downed. The same eligibility
+gate is enforced when a revive begins and again when it completes.
+
+If a player becomes Downed while channeling another player's revive, that revive ownership is now
+interrupted before the shared action state is reset. This prevents an incapacitated reviver from
+retaining a stale channel id and completing it later. Earthloong's ordinary threat target-selection
+candidate set also excludes Downed players, and donor-target seeding cannot create fresh threat from
+a Downed player. A currently committed attack is still allowed to finish before ordinary target
+selection resumes, preserving the global no-target-switch-during-committed-attack rule.
+
+No new encounter distance, timeout or reset number was invented in this pass. Current canon defines
+that leaving an encounter clears threat after the encounter controller's normal disengage grace, but
+does not yet provide an exact Earthloong disengage/reset contract. Therefore persistent
+same-attempt Class Insight state such as Guardian **Hold the Storm** is still not admitted: actor UUID
+identity alone is insufficient to distinguish an abandoned attempt from a fresh retry on the same
+live actor.
+
+Build Openworld RPG #346 / run `37185854113` is **SUCCESS** for this code state across unit
+tests/build, dependency/registry checks, core/gameplay dedicated-server smoke, gameplay client
+startup, both verification JARs and M0 mrpack packaging. Artifact
+`openworld-rpg-m0-a78c1477fa09544eb707445f6c075e851d003cb4` (ID `11296399075`,
+digest `sha256:387e049a08c4ec0cd0f0b2fe6ca1ae36f8e4407297b2f69456ef46115b33b73a`).
+Normal JAR SHA-256 is
+`3cee4c87b01cc91b44f0e46620f218540e6152118ff0826f286bce5f87759466`; M0 playtest JAR
+SHA-256 is `5c2fe926a1b2d6e1fb944d7a9bf9eb97d9e709c952e4a6465ee20ad22aba4dbd`;
+R01 integration JAR SHA-256 is
+`cd3b82bb5c9f3d7d792c87f102b9c7e91f4c759e055b6e0c1c6e8a617c0f5cfb`; M0 mrpack SHA-256 is
+`408f24e1e2fe9eb9bd86052786fa524ad722d7ff0136c36568a628f95181e978`.
+
+Validation: CODE REVIEWED **YES**; TESTED **YES**; BUILD VERIFIED **YES**; JAR PRODUCED **YES**;
+client world join **NOT RUN**; production lethal Downed entry **NOT IMPLEMENTED**;
+PLAYTESTED **NO**; MULTIPLAYER TESTED **NO**.
+
