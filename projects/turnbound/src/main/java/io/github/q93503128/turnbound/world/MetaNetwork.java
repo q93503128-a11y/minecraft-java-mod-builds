@@ -30,7 +30,8 @@ public final class MetaNetwork {
                     String raw = payload.command();
                     if (raw == null || raw.isBlank()) return;
                     if ("GACHA_DONE".equals(raw)) {
-                        GachaPresentationActorService.finish(player);
+                        // 2D summoning has no world actor/camera lifecycle to clean up. This is only a state refresh.
+                        sync(player);
                         return;
                     }
 

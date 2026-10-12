@@ -1,16 +1,12 @@
 package io.github.q93503128.turnbound.world;
 
 /**
- * Pure timing/intensity contract for the world-first summon reveal.
- *
- * <p>Low-rarity reveals stay brief while four- and five-star reveals receive extra anticipation and a longer
- * character hold. Server actors and the client camera consume the same timing contract so the 3D reveal never
- * drifts away from the overlay.</p>
+ * Timing contract for the 2D summon presentation.
+ * Low-rarity pulls remain quick, while four- and five-star results get a noticeably longer anticipation/reveal hold.
  */
 public final class GachaPresentationTimeline {
     public enum Phase { SIGNAL, SILHOUETTE, REVEAL, NAME, COMPLETE }
 
-    /** Compatibility values for old callers; production reveal code uses the rarity-aware methods below. */
     public static final int SIGNAL_TICKS = 8;
     public static final int SILHOUETTE_TICKS = 8;
     public static final int REVEAL_TICK = SIGNAL_TICKS + SILHOUETTE_TICKS;
@@ -33,13 +29,17 @@ public final class GachaPresentationTimeline {
 
     public static Timing timing(int stars, boolean newlyOwned) {
         int clamped = Math.max(1, Math.min(5, stars));
-        int newHold = newlyOwned ? 2 : 0;
+        int newHold = newlyOwned ? switch (clamped) {
+            case 5 -> 4;
+            case 4 -> 3;
+            default -> 2;
+        } : 0;
         return switch (clamped) {
-            case 5 -> new Timing(10, 10, 7, 21 + newHold);
-            case 4 -> new Timing(8, 8, 6, 16 + newHold);
-            case 3 -> new Timing(6, 6, 6, 12 + newHold);
-            case 2 -> new Timing(5, 5, 5, 11 + newHold);
-            default -> new Timing(5, 5, 5, 9 + newHold);
+            case 5 -> new Timing(14, 14, 12, 24 + newHold);
+            case 4 -> new Timing(10, 10, 9, 17 + newHold);
+            case 3 -> new Timing(7, 7, 7, 12 + newHold);
+            case 2 -> new Timing(6, 6, 6, 10 + newHold);
+            default -> new Timing(5, 5, 6, 8 + newHold);
         };
     }
 

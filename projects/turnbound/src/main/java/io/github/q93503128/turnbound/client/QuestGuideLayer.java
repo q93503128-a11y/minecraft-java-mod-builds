@@ -18,8 +18,6 @@ public final class QuestGuideLayer implements GuiLayer {
     private static final int MUTED = 0xFFC9BDAA;
     private static final int GOLD = 0xFFFFC857;
     private static final int GREEN = 0xFF80D49A;
-    private static final float BODY_SCALE = 0.88F;
-    private static final float HINT_SCALE = 0.82F;
     private static boolean expanded = false;
     private static String selectedObjectiveId = "MAIN";
 
@@ -56,25 +54,24 @@ public final class QuestGuideLayer implements GuiLayer {
         if (target != null) drawDirectionCue(graphics, minecraft, target);
 
         int width = expanded
-                ? Math.min(236, Math.max(178, graphics.guiWidth() / 5))
-                : Math.min(176, Math.max(144, graphics.guiWidth() / 7));
+                ? Math.min(218, Math.max(184, graphics.guiWidth() / 5))
+                : Math.min(190, Math.max(158, graphics.guiWidth() / 7));
         int x = 7;
         int y = 7;
         int choiceCount = 1 + snapshot.questTrackers().size();
         int choiceIndex = objectiveIndex(snapshot, selected.id());
 
         if (!expanded) {
-            int h = 20;
+            int h = 22;
             TurnboundUiSkin.panel(graphics, x, y, width, h);
-            int rightReserve = choiceCount > 1 ? 48 : 44;
+            int rightReserve = choiceCount > 1 ? 52 : 46;
             String compact = UiTextLayout.fit(
                     selected.heading() + " · " + selected.objective(),
-                    Math.max(40, (int)((width - rightReserve - 12) / BODY_SCALE)));
-            drawScaledText(graphics, minecraft, compact, x + 7, y + 6, BODY_SCALE, TEXT, true);
+                    Math.max(40, width - rightReserve - 14));
+            graphics.text(minecraft.font, Component.literal(compact), x + 7, y + 7, TEXT, true);
             String right = choiceCount > 1 ? (choiceIndex + 1) + "/" + choiceCount + " · Tab" : "Tab 상세";
-            drawScaledText(graphics, minecraft, right,
-                    x + width - 7 - Math.round(minecraft.font.width(right) * HINT_SCALE),
-                    y + 6, HINT_SCALE, GOLD, false);
+            graphics.text(minecraft.font, Component.literal(right),
+                    x + width - 7 - minecraft.font.width(right), y + 7, GOLD, false);
             return;
         }
 
@@ -87,42 +84,35 @@ public final class QuestGuideLayer implements GuiLayer {
             hint = "E 메뉴 → 파티에서 편성 후 ‘편성 적용’을 누르세요.";
         }
 
-        int maxPanelHeight = Math.max(48, graphics.guiHeight() - 14);
-        List<String> objectiveLines = wrap(
-                minecraft, selected.objective(),
-                Math.max(64, (int)((width - 20) / BODY_SCALE)), 3);
-        List<String> hintLines = hint.isBlank() ? List.of() : wrap(
-                minecraft, hint,
-                Math.max(64, (int)((width - 20) / HINT_SCALE)), 2);
-        int height = 29 + objectiveLines.size() * 9 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 8);
-        height = Math.min(maxPanelHeight, Math.max(44, height));
+        List<String> objectiveLines = wrap(minecraft, selected.objective(), Math.max(72, width - 20), 2);
+        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, Math.max(72, width - 20), 2);
+        int height = 31 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 9);
+        height = Math.min(Math.max(48, graphics.guiHeight() - 14), Math.max(50, height));
 
         TurnboundUiSkin.panel(graphics, x, y, width, height);
         String heading = selected.heading() + (choiceCount > 1 ? "  " + (choiceIndex + 1) + "/" + choiceCount : "");
-        graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(heading, width - 80)), x + 9, y + 7, GOLD, true);
+        graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(heading, width - 84)), x + 9, y + 8, GOLD, true);
         String action = choiceCount > 1 ? "⇧Tab 전환" : "Tab 접기";
-        drawScaledText(graphics, minecraft, action,
-                x + width - 9 - Math.round(minecraft.font.width(action) * HINT_SCALE),
-                y + 8, HINT_SCALE, MUTED, false);
+        graphics.text(minecraft.font, Component.literal(action),
+                x + width - 9 - minecraft.font.width(action), y + 8, MUTED, false);
 
-        int ty = y + 21;
+        int ty = y + 22;
         for (String line : objectiveLines) {
-            drawScaledText(graphics, minecraft, line, x + 9, ty, BODY_SCALE, TEXT, true);
-            ty += 9;
+            graphics.text(minecraft.font, Component.literal(line), x + 9, ty, TEXT, true);
+            ty += 10;
         }
         if (!hintLines.isEmpty()) {
             ty += 2;
             for (String line : hintLines) {
-                if (ty + 7 >= y + height) break;
-                drawScaledText(graphics, minecraft, line, x + 9, ty, HINT_SCALE, MUTED, false);
-                ty += 8;
+                if (ty + 8 >= y + height) break;
+                graphics.text(minecraft.font, Component.literal(line), x + 9, ty, MUTED, false);
+                ty += 9;
             }
         }
         if (selected.main() && snapshot.patrolGoal() > 0 && snapshot.patrolsCleared() < snapshot.patrolGoal()) {
             String progress = snapshot.patrolsCleared() + "/" + snapshot.patrolGoal();
-            drawScaledText(graphics, minecraft, progress,
-                    x + width - 9 - Math.round(minecraft.font.width(progress) * HINT_SCALE),
-                    y + 21, HINT_SCALE, GREEN, true);
+            graphics.text(minecraft.font, Component.literal(progress),
+                    x + width - 9 - minecraft.font.width(progress), y + 22, GREEN, true);
         }
     }
 
@@ -212,23 +202,6 @@ public final class QuestGuideLayer implements GuiLayer {
             }
         }
         return text;
-    }
-
-    private static void drawScaledText(
-            GuiGraphicsExtractor graphics,
-            Minecraft minecraft,
-            String text,
-            int x,
-            int y,
-            float scale,
-            int color,
-            boolean shadow
-    ) {
-        graphics.pose().pushMatrix();
-        graphics.pose().translate(x, y);
-        graphics.pose().scale(scale, scale);
-        graphics.text(minecraft.font, Component.literal(text), 0, 0, color, shadow);
-        graphics.pose().popMatrix();
     }
 
     private static List<String> wrap(Minecraft minecraft, String text, int maxWidth, int maxLines) {

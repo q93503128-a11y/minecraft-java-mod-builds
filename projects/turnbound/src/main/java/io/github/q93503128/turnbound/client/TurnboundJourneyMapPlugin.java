@@ -131,7 +131,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
     private static MarkerOverlay labelOverlay(
             BlockPos pos, String label, FieldUiSnapshot.MapPoint point, float scale
     ) {
-        int iconSize = JourneyMapMarkerPolicy.isCurrentNavigation(point) ? 14 : point.objective() ? 12 : 8;
+        int iconSize = JourneyMapMarkerPolicy.isCurrentNavigation(point) ? 16 : point.objective() ? 14 : 10;
         MapImage icon = new MapImage(
                 Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"),
                 16, 16);
@@ -160,9 +160,9 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
                 .setScale(scale)
                 .setColor(point.objective() ? 0xFFE7A3 : 0xFFFFFF)
                 .setBackgroundColor(0x101318)
-                .setBackgroundOpacity(point.objective() ? 0.76F : 0.58F)
+                .setBackgroundOpacity(point.objective() ? 0.78F : 0.64F)
                 .setFontShadow(true)
-                .setOffsetY(point.objective() ? -13 : -10)
+                .setOffsetY(point.objective() ? -14 : -11)
                 .setActiveUIs(Context.UI.Fullscreen));
         return marker;
     }
@@ -182,11 +182,18 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
         }
     }
 
+    /**
+     * JourneyMap's fullscreen zoom value grows as the player zooms in. Keep labels readable at the default view,
+     * then scale them with that zoom instead of pinning them to a tiny fixed size.
+     */
+    static float labelScaleForZoom(int zoom) {
+        int safeZoom = Math.max(UIState.FULLSCREEN_ZOOM_MIN, zoom);
+        float proportional = 1.15F * (safeZoom / 2048.0F);
+        return Math.max(0.90F, Math.min(3.00F, proportional));
+    }
+
     private static float labelScale(UIState state) {
-        int zoom = state == null ? 1024 : Math.max(UIState.FULLSCREEN_ZOOM_MIN, state.zoom);
-        if (zoom >= 4096) return 0.78F;
-        if (zoom >= 2048) return 0.72F;
-        return 0.66F;
+        return labelScaleForZoom(state == null ? 2048 : state.zoom);
     }
 
     private static void onRadarUpdate(EntityRadarUpdateEvent event) {
