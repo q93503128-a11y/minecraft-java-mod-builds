@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class JourneyMapLabelScaleTest {
     @Test
     void labelsGrowWithFullscreenZoomInsteadOfShrinkingToTinyText() {
-        float zoom1024 = TurnboundJourneyMapPlugin.labelScaleForZoom(1024);
-        float zoom2048 = TurnboundJourneyMapPlugin.labelScaleForZoom(2048);
-        float zoom4096 = TurnboundJourneyMapPlugin.labelScaleForZoom(4096);
+        float zoom1024 = JourneyMapLabelScale.forZoom(1024);
+        float zoom2048 = JourneyMapLabelScale.forZoom(2048);
+        float zoom4096 = JourneyMapLabelScale.forZoom(4096);
 
         assertEquals(0.90F, zoom1024, 0.001F);
         assertEquals(1.15F, zoom2048, 0.001F);
@@ -21,6 +21,6 @@ class JourneyMapLabelScaleTest {
 
     @Test
     void extremeZoomIsCappedBeforeLabelsBecomeMapSized() {
-        assertEquals(3.00F, TurnboundJourneyMapPlugin.labelScaleForZoom(16384), 0.001F);
+        assertEquals(3.00F, JourneyMapLabelScale.forZoom(16384), 0.001F);
     }
 }

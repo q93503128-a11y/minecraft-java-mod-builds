@@ -182,18 +182,8 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
         }
     }
 
-    /**
-     * JourneyMap's fullscreen zoom value grows as the player zooms in. Keep labels readable at the default view,
-     * then scale them with that zoom instead of pinning them to a tiny fixed size.
-     */
-    static float labelScaleForZoom(int zoom) {
-        int safeZoom = Math.max(UIState.FULLSCREEN_ZOOM_MIN, zoom);
-        float proportional = 1.15F * (safeZoom / 2048.0F);
-        return Math.max(0.90F, Math.min(3.00F, proportional));
-    }
-
     private static float labelScale(UIState state) {
-        return labelScaleForZoom(state == null ? 2048 : state.zoom);
+        return JourneyMapLabelScale.forZoom(state == null ? 2048 : state.zoom);
     }
 
     private static void onRadarUpdate(EntityRadarUpdateEvent event) {
