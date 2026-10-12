@@ -5,7 +5,6 @@ import kr.moonseungjun.livingkingdoms.network.RequestCodexPayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -13,6 +12,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
+/** Kingdom notebook shortcuts and the inventory-side notebook panel. */
 public final class RealmCodexClient {
     private static final KeyMapping MAP_KEY = new KeyMapping(
             "key.livingkingdoms.realm_map", InputConstants.KEY_M, KeyMapping.Category.MISC
@@ -36,12 +36,16 @@ public final class RealmCodexClient {
         while (STATUS_KEY.consumeClick()) request("overview");
     }
 
-    public static void onScreenInit(ScreenEvent.Init.Post event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
-        Panel p = panel(screen.width, screen.height);
-        invisible(event, p.x() + 7, p.y() + 24, 96, 19, () -> request("overview"));
-        invisible(event, p.x() + 7, p.y() + 46, 46, 19, () -> request("map"));
-        invisible(event, p.x() + 57, p.y() + 46, 46, 19, () -> request("skills"));
+    /**
+     * The notebook is drawn after the vanilla inventory. Handle its click before the inventory so
+     * slot/recipe-book routing can never consume a visible notebook button first.
+     */
+    public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (!(event.getScreen() instanceof InventoryScreen screen) || event.getButton() != 0) return;
+        String page = notebookActionAt(screen.width, screen.height, event.getMouseX(), event.getMouseY());
+        if (page == null) return;
+        request(page);
+        event.setCanceled(true);
     }
 
     public static void onScreenRender(ScreenEvent.Render.Post event) {
@@ -64,10 +68,25 @@ public final class RealmCodexClient {
         customButton(g, p.x() + 57, p.y() + 46, 46, 19, "기술", inside(mx, my, p.x() + 57, p.y() + 46, 46, 19));
     }
 
-    private static void invisible(ScreenEvent.Init.Post event, int x, int y, int w, int h, Runnable action) {
-        Button button = Button.builder(Component.empty(), ignored -> action.run()).pos(x, y).size(w, h).build();
-        button.setAlpha(0.0F);
-        event.addListener(button);
+    static String notebookActionAt(int screenWidth, int screenHeight, double mx, double my) {
+        Panel p = panel(screenWidth, screenHeight);
+        if (inside(mx, my, p.x() + 7, p.y() + 24, 96, 19)) return "overview";
+        if (inside(mx, my, p.x() + 7, p.y() + 46, 46, 19)) return "map";
+        if (inside(mx, my, p.x() + 57, p.y() + 46, 46, 19)) return "skills";
+        return null;
+    }
+
+    /** Pure geometry regression used by the graphical CI; no packet or player is required. */
+    static boolean diagnosticNotebookRouting(int screenWidth, int screenHeight) {
+        Panel p = panel(screenWidth, screenHeight);
+        boolean overview = "overview".equals(notebookActionAt(
+                screenWidth, screenHeight, p.x() + 55, p.y() + 33));
+        boolean map = "map".equals(notebookActionAt(
+                screenWidth, screenHeight, p.x() + 30, p.y() + 55));
+        boolean skills = "skills".equals(notebookActionAt(
+                screenWidth, screenHeight, p.x() + 80, p.y() + 55));
+        boolean gap = notebookActionAt(screenWidth, screenHeight, p.x() + 55, p.y() + 55) == null;
+        return overview && map && skills && gap;
     }
 
     private static void customButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, boolean hover) {
@@ -87,7 +106,7 @@ public final class RealmCodexClient {
         return new Panel(x, y, 110, 70);
     }
 
-    private static boolean inside(int mx, int my, int x, int y, int w, int h) {
+    private static boolean inside(double mx, double my, int x, int y, int w, int h) {
         return mx >= x && my >= y && mx < x + w && my < y + h;
     }
 
