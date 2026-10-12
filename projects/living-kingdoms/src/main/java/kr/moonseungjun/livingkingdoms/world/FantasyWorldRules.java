@@ -4,8 +4,8 @@ import kr.moonseungjun.livingkingdoms.LivingKingdoms;
 import kr.moonseungjun.livingkingdoms.economy.RealmEconomyManager;
 import kr.moonseungjun.livingkingdoms.foundation.FoundationCatalog;
 import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
-import kr.moonseungjun.livingkingdoms.profile.OriginProfile;
 import kr.moonseungjun.livingkingdoms.profile.OriginProfileManager;
+import kr.moonseungjun.livingkingdoms.profile.ResidenceAssignment;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -104,7 +104,7 @@ public final class FantasyWorldRules {
             throw new IllegalStateException("Erden settlement safety catalog drifted");
         }
         LivingKingdoms.LOGGER.info(
-                "LK_ERDEN_GAMEPLAY_RULES_LOCK revision={} erden_only=true playable_species=1 playable_homelands=1 playable_backgrounds=1 playable_residences=1 sleep_skip=false bed_respawn=false shared_clock=true institutional_defeat=true recovery_fee={} item_loss=false personal_crafting=false vanilla_workstations=false capital_safe=true settlement_safe=true settlements={} road_danger=true wild_danger=true scripted_spawns_preserved=true initial_placement_teleport_only=true multiplayer_world_shared=true",
+                "LK_ERDEN_GAMEPLAY_RULES_LOCK revision={} erden_only=true playable_species=1 playable_homelands=1 playable_backgrounds=1 playable_residences=1 sleep_skip=false bed_respawn=false shared_clock=true institutional_defeat=true recovery_fee={} item_loss=false personal_crafting=false vanilla_workstations=false capital_safe=true settlement_safe=true settlements={} road_danger=true wild_danger=true scripted_spawns_preserved=true initial_placement_teleport_only=true verified_residence_only=true multiplayer_world_shared=true",
                 RULES_REVISION, RECOVERY_FEE_SILVER, ErdenRegionalSettlementCatalog.SETTLEMENT_COUNT
         );
     }
@@ -189,22 +189,21 @@ public final class FantasyWorldRules {
     }
 
     /**
-     * Converts lethal damage into institutional recovery. World time is never jumped: in multiplayer
-     * the recovery cost is personal silver plus temporary weakness/slowness while the shared kingdom
-     * simulation continues normally.
+     * Converts lethal damage into institutional recovery. Recovery uses only the residence position
+     * that was physically verified and persisted at first entry; roofs and terrain are never rescanned.
      */
     public static boolean handleDefeat(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || !insideRealm(player)) return false;
         if (player.isCreative() || player.isSpectator()) return false;
 
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
-        OriginProfile profile = OriginProfileManager.profile(player.getUUID()).orElse(null);
-        if (realm == null || profile == null) return false;
+        ResidenceAssignment assignment = OriginProfileManager.residenceAssignment(player.getUUID())
+                .filter(ResidenceAssignment::current)
+                .orElse(null);
+        if (realm == null || assignment == null) return false;
 
         event.setCanceled(true);
-        BlockPos recovery = RealmSitePlanner.residencePosition(
-                realm, profile.homelandId(), profile.residenceId()
-        );
+        BlockPos recovery = assignment.position();
         long balance = RealmEconomyManager.account(player).silver();
         long charged = Math.min(balance, RECOVERY_FEE_SILVER);
         if (charged > 0L) RealmEconomyManager.spend(player, charged);
@@ -219,8 +218,8 @@ public final class FantasyWorldRules {
                 recovery.getY() + 0.2D,
                 recovery.getZ() + 0.5D,
                 Set.<Relative>of(),
-                player.getYRot(),
-                player.getXRot(),
+                assignment.yaw(),
+                0.0F,
                 true
         );
         player.setDeltaMovement(0.0D, 0.0D, 0.0D);
@@ -228,7 +227,7 @@ public final class FantasyWorldRules {
         player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 20 * 45, 1, false, false, true));
         player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 20 * 20, 0, false, false, true));
         player.sendSystemMessage(Component.literal(
-                "전투불능 상태에서 구조되어 거주지로 후송되었습니다. 치료·구조비 은화 " + charged
+                "전투불능 상태에서 구조되어 검증된 거주지로 후송되었습니다. 치료·구조비 은화 " + charged
                         + "을 지불했고 소지품은 보존됩니다."
         ));
         return true;
