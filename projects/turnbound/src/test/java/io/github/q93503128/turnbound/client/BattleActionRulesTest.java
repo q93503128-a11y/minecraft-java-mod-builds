@@ -12,6 +12,10 @@ class BattleActionRulesTest {
             new ClientBattleState.Unit("ally_1", "P01", "ALLY", "Kyren", 900, 900, 0, 0, false);
     private static final ClientBattleState.Unit OTHER_ALLY =
             new ClientBattleState.Unit("ally_2", "P03", "ALLY", "Bram", 1000, 1000, 0, 0, false);
+    private static final ClientBattleState.Unit HURT_ALLY =
+            new ClientBattleState.Unit("ally_3", "P04", "ALLY", "Elysia", 250, 1000, 0, 0, false);
+    private static final ClientBattleState.Unit LESS_HURT_ALLY =
+            new ClientBattleState.Unit("ally_4", "P05", "ALLY", "Lynette", 520, 800, 0, 0, false);
     private static final ClientBattleState.Unit ENEMY =
             new ClientBattleState.Unit("enemy_1", "E01", "ENEMY", "Enemy", 600, 600, 0, 0, false);
     private static final ClientBattleState.Unit ENEMY_TWO =
@@ -49,10 +53,22 @@ class BattleActionRulesTest {
     }
 
     @Test
-    void selfForbiddenAllyTargetDefaultsToAnotherLivingAlly() {
-        List<ClientBattleState.Unit> units = List.of(ALLY, OTHER_ALLY, ENEMY);
-        assertEquals(1, BattleActionRules.defaultTarget(units, "ALLY_SINGLE_EXCEPT_SELF", "ally_1"));
-        assertNull(BattleActionRules.confirmedTarget(units, "ALLY_SINGLE_EXCEPT_SELF", "ally_1", 0));
-        assertEquals("ally_2", BattleActionRules.confirmedTarget(units, "ALLY_SINGLE_EXCEPT_SELF", "ally_1", 1));
+    void dualEnemyRapidCommitGetsAValidPrimaryTargetAutomatically() {
+        List<ClientBattleState.Unit> units = List.of(ALLY, ENEMY, ENEMY_TWO);
+        assertEquals(1, BattleActionRules.defaultTarget(units, "ENEMY_TWO", "ally_1"));
+    }
+
+    @Test
+    void allySingleDefaultsToLowestHealthRatio() {
+        List<ClientBattleState.Unit> units = List.of(ALLY, LESS_HURT_ALLY, HURT_ALLY, ENEMY);
+        assertEquals(2, BattleActionRules.defaultTarget(units, "ALLY_SINGLE", "ally_1"));
+    }
+
+    @Test
+    void selfForbiddenAllyTargetDefaultsToMostInjuredOtherLivingAlly() {
+        List<ClientBattleState.Unit> units = List.of(HURT_ALLY, LESS_HURT_ALLY, ENEMY);
+        assertEquals(1, BattleActionRules.defaultTarget(units, "ALLY_SINGLE_EXCEPT_SELF", "ally_3"));
+        assertNull(BattleActionRules.confirmedTarget(units, "ALLY_SINGLE_EXCEPT_SELF", "ally_3", 0));
+        assertEquals("ally_4", BattleActionRules.confirmedTarget(units, "ALLY_SINGLE_EXCEPT_SELF", "ally_3", 1));
     }
 }

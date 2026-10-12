@@ -12,12 +12,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Main objective guide with up to two auxiliary goals and a full-detail K view. */
+/** Main objective guide with up to two auxiliary goals and a compact Tab-expanded detail view. */
 public final class QuestGuideLayer implements GuiLayer {
     private static final int TEXT = 0xFFF6F0E4;
     private static final int MUTED = 0xFFC9BDAA;
     private static final int GOLD = 0xFFFFC857;
     private static final int GREEN = 0xFF80D49A;
+    private static final float BODY_SCALE = 0.88F;
+    private static final float HINT_SCALE = 0.82F;
     private static boolean expanded = false;
     private static String selectedObjectiveId = "MAIN";
 
@@ -54,62 +56,73 @@ public final class QuestGuideLayer implements GuiLayer {
         if (target != null) drawDirectionCue(graphics, minecraft, target);
 
         int width = expanded
-                ? Math.min(286, Math.max(210, graphics.guiWidth() / 4))
-                : Math.min(194, Math.max(158, graphics.guiWidth() / 6));
+                ? Math.min(236, Math.max(178, graphics.guiWidth() / 5))
+                : Math.min(176, Math.max(144, graphics.guiWidth() / 7));
         int x = 7;
         int y = 7;
         int choiceCount = 1 + snapshot.questTrackers().size();
         int choiceIndex = objectiveIndex(snapshot, selected.id());
 
         if (!expanded) {
-            int h = 22;
+            int h = 20;
             TurnboundUiSkin.panel(graphics, x, y, width, h);
-            String compact = UiTextLayout.fit(selected.heading() + " · " + selected.objective(), width - 66);
-            graphics.text(minecraft.font, Component.literal(compact), x + 8, y + 6, TEXT, true);
-            String right = choiceCount > 1 ? (choiceIndex + 1) + "/" + choiceCount + " · K" : "K 상세";
-            graphics.text(minecraft.font, Component.literal(right), x + width - 8 - minecraft.font.width(right), y + 6, GOLD, false);
+            int rightReserve = choiceCount > 1 ? 48 : 44;
+            String compact = UiTextLayout.fit(
+                    selected.heading() + " · " + selected.objective(),
+                    Math.max(40, (int)((width - rightReserve - 12) / BODY_SCALE)));
+            drawScaledText(graphics, minecraft, compact, x + 7, y + 6, BODY_SCALE, TEXT, true);
+            String right = choiceCount > 1 ? (choiceIndex + 1) + "/" + choiceCount + " · Tab" : "Tab 상세";
+            drawScaledText(graphics, minecraft, right,
+                    x + width - 7 - Math.round(minecraft.font.width(right) * HINT_SCALE),
+                    y + 6, HINT_SCALE, GOLD, false);
             return;
         }
 
-        String hint = selected.main() ? playerFacingHint(snapshot.dialogue()) : "Shift+K로 표시할 목표를 전환할 수 있습니다.";
+        String hint = selected.main() ? playerFacingHint(snapshot.dialogue()) : "Shift+Tab으로 표시할 목표를 전환할 수 있습니다.";
         if (selected.main() && target != null) {
-            String targetHint = "현재 안내 화살표: " + target.label;
+            String targetHint = "안내: " + target.label;
             hint = hint.isBlank() ? targetHint : targetHint + " · " + hint;
         }
         if (selected.main() && isPartyObjective(snapshot.objective())) {
             hint = "E 메뉴 → 파티에서 편성 후 ‘편성 적용’을 누르세요.";
         }
 
-        int maxPanelHeight = Math.max(54, graphics.guiHeight() - 14);
-        int maxTextLines = Math.max(4, (maxPanelHeight - 38) / 9);
-        List<String> objectiveLines = wrap(minecraft, selected.objective(), width - 20, Math.min(5, maxTextLines));
-        int remainingLines = Math.max(1, maxTextLines - objectiveLines.size());
-        List<String> hintLines = hint.isBlank() ? List.of() : wrap(minecraft, hint, width - 20, Math.min(4, remainingLines));
-        int height = 32 + objectiveLines.size() * 10 + (hintLines.isEmpty() ? 0 : 7 + hintLines.size() * 9);
-        height = Math.min(maxPanelHeight, Math.max(48, height));
+        int maxPanelHeight = Math.max(48, graphics.guiHeight() - 14);
+        List<String> objectiveLines = wrap(
+                minecraft, selected.objective(),
+                Math.max(64, (int)((width - 20) / BODY_SCALE)), 3);
+        List<String> hintLines = hint.isBlank() ? List.of() : wrap(
+                minecraft, hint,
+                Math.max(64, (int)((width - 20) / HINT_SCALE)), 2);
+        int height = 29 + objectiveLines.size() * 9 + (hintLines.isEmpty() ? 0 : 5 + hintLines.size() * 8);
+        height = Math.min(maxPanelHeight, Math.max(44, height));
 
         TurnboundUiSkin.panel(graphics, x, y, width, height);
         String heading = selected.heading() + (choiceCount > 1 ? "  " + (choiceIndex + 1) + "/" + choiceCount : "");
-        graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(heading, width - 92)), x + 10, y + 8, GOLD, true);
-        String action = choiceCount > 1 ? "⇧K 전환" : "K 접기";
-        graphics.text(minecraft.font, Component.literal(action), x + width - 10 - minecraft.font.width(action), y + 8, MUTED, false);
+        graphics.text(minecraft.font, Component.literal(UiTextLayout.fit(heading, width - 80)), x + 9, y + 7, GOLD, true);
+        String action = choiceCount > 1 ? "⇧Tab 전환" : "Tab 접기";
+        drawScaledText(graphics, minecraft, action,
+                x + width - 9 - Math.round(minecraft.font.width(action) * HINT_SCALE),
+                y + 8, HINT_SCALE, MUTED, false);
 
-        int ty = y + 22;
+        int ty = y + 21;
         for (String line : objectiveLines) {
-            graphics.text(minecraft.font, Component.literal(line), x + 10, ty, TEXT, true);
-            ty += 10;
+            drawScaledText(graphics, minecraft, line, x + 9, ty, BODY_SCALE, TEXT, true);
+            ty += 9;
         }
         if (!hintLines.isEmpty()) {
             ty += 2;
             for (String line : hintLines) {
-                if (ty + 8 >= y + height) break;
-                graphics.text(minecraft.font, Component.literal(line), x + 10, ty, MUTED, false);
-                ty += 9;
+                if (ty + 7 >= y + height) break;
+                drawScaledText(graphics, minecraft, line, x + 9, ty, HINT_SCALE, MUTED, false);
+                ty += 8;
             }
         }
         if (selected.main() && snapshot.patrolGoal() > 0 && snapshot.patrolsCleared() < snapshot.patrolGoal()) {
             String progress = snapshot.patrolsCleared() + "/" + snapshot.patrolGoal();
-            graphics.text(minecraft.font, Component.literal(progress), x + width - minecraft.font.width(progress) - 10, y + 22, GREEN, true);
+            drawScaledText(graphics, minecraft, progress,
+                    x + width - 9 - Math.round(minecraft.font.width(progress) * HINT_SCALE),
+                    y + 21, HINT_SCALE, GREEN, true);
         }
     }
 
@@ -147,11 +160,6 @@ public final class QuestGuideLayer implements GuiLayer {
         int x = (graphics.guiWidth() - w) / 2, y = 7;
         TurnboundUiSkin.inset(graphics, x, y, w, 20);
         graphics.text(minecraft.font, Component.literal(text), x + 9, y + 6, GOLD, true);
-    }
-
-    private static String targetLine(Minecraft minecraft, Target target) {
-        int distance = (int) Math.round(Math.hypot(target.x - minecraft.player.getX(), target.z - minecraft.player.getZ()));
-        return "◆ " + target.label + " · " + distance + "m";
     }
 
     private static boolean isPartyObjective(String raw) {
@@ -204,6 +212,23 @@ public final class QuestGuideLayer implements GuiLayer {
             }
         }
         return text;
+    }
+
+    private static void drawScaledText(
+            GuiGraphicsExtractor graphics,
+            Minecraft minecraft,
+            String text,
+            int x,
+            int y,
+            float scale,
+            int color,
+            boolean shadow
+    ) {
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(x, y);
+        graphics.pose().scale(scale, scale);
+        graphics.text(minecraft.font, Component.literal(text), 0, 0, color, shadow);
+        graphics.pose().popMatrix();
     }
 
     private static List<String> wrap(Minecraft minecraft, String text, int maxWidth, int maxLines) {

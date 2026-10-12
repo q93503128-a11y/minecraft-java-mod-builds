@@ -2,7 +2,6 @@ package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.content.CanonicalData;
 import io.github.q93503128.turnbound.network.MetaCommandPayload;
-import io.github.q93503128.turnbound.progression.GachaCatalog;
 import io.github.q93503128.turnbound.world.GachaPresentationTimeline;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,10 +15,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * World-first summon presentation. The server owns RNG and a private 3D hero actor in front of the player;
- * this screen only overlays readable result information and the final ten-pull summary.
- */
+/** Full-screen 2D summon presentation. RNG and ownership remain server-authoritative. */
 public final class GachaPresentationScreen extends Screen {
     private static final int TEXT = 0xFFF4F0E6;
     private static final int SECONDARY = 0xFFAEB7C6;
@@ -28,6 +24,7 @@ public final class GachaPresentationScreen extends Screen {
     private static final int GREEN = 0xFF62D39A;
     private static final int GOLD = 0xFFFFC857;
     private static final int PURPLE = 0xFFC794FF;
+    private static final int BACKDROP = 0xE8080A0E;
 
     public record Pull(
             String characterId, int stars, boolean newlyOwned, int essence, int pityAfter,
@@ -36,6 +33,8 @@ public final class GachaPresentationScreen extends Screen {
             this(characterId, stars, newlyOwned, essence, pityAfter, 0, 0, false);
         }
     }
+
+    /** Stage fields are retained only so old payloads decode safely; the 2D presentation never consumes them. */
     public record Batch(
             String action, int crystalSpent, List<Pull> pulls,
             double stageX, double stageY, double stageZ, float cameraYaw
@@ -45,9 +44,6 @@ public final class GachaPresentationScreen extends Screen {
         }
         public Batch(String action, int crystalSpent, List<Pull> pulls) {
             this(action, crystalSpent, pulls, Double.NaN, Double.NaN, Double.NaN, Float.NaN);
-        }
-        boolean hasStage() {
-            return Double.isFinite(stageX) && Double.isFinite(stageY) && Double.isFinite(stageZ) && Float.isFinite(cameraYaw);
         }
     }
 
@@ -66,20 +62,16 @@ public final class GachaPresentationScreen extends Screen {
         this.batch = batch == null ? new Batch("", 0, List.of()) : batch;
         List<Pull> authored = this.batch.pulls().stream().filter(Pull::spotlight).toList();
         if (!authored.isEmpty()) {
-            this.revealPulls = authored;
+            revealPulls = authored;
         } else if (this.batch.pulls().isEmpty()) {
-            this.revealPulls = List.of();
+            revealPulls = List.of();
         } else {
-            // Backward-compatible fallback for an older server payload.
             List<Pull> highlights = this.batch.pulls().stream()
                     .filter(pull -> pull.newlyOwned() || pull.stars() >= 4)
                     .toList();
-            if (!highlights.isEmpty()) this.revealPulls = highlights;
-            else {
-                Pull best = this.batch.pulls().getFirst();
-                for (Pull pull : this.batch.pulls()) if (pull.stars() > best.stars()) best = pull;
-                this.revealPulls = List.of(best);
-            }
+            if (!highlights.isEmpty()) revealPulls = highlights;
+            else revealPulls = List.of(this.batch.pulls().stream()
+                    .max(Comparator.comparingInt(Pull::stars)).orElse(this.batch.pulls().getFirst()));
         }
     }
 
@@ -120,9 +112,6 @@ public final class GachaPresentationScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        if (batch.hasStage()) {
-            SummonCameraController.enter(batch.stageX(), batch.stageY(), batch.stageZ(), batch.cameraYaw());
-        }
         skipButton = addRenderableWidget(new BattleHudButton(width - 118, 16, 100, 22,
                 Component.literal(batch.pulls().size() >= 10 ? "결과만 보기" : "건너뛰기"),
                 MUTED, ignored -> skipOrFinish()));
@@ -133,12 +122,6 @@ public final class GachaPresentationScreen extends Screen {
         super.tick();
         if (summaryOnly) return;
         ticks++;
-        Pull focus = currentReveal();
-        if (focus != null && batch.hasStage()) {
-            SummonCameraController.update(slotTick(), currentPhase(), focus.stars());
-        } else if (SummonCameraController.active()) {
-            SummonCameraController.exit();
-        }
         queuePhaseAudio();
         if (ticks >= revealDurationTicks()) showSummary();
     }
@@ -150,30 +133,19 @@ public final class GachaPresentationScreen extends Screen {
     }
 
     private void skipOrFinish() {
-        if (!summaryOnly) {
-            showSummary();
-            return;
-        }
-        finish();
+        if (!summaryOnly) showSummary();
+        else finish();
     }
 
     private void showSummary() {
         if (summaryOnly) return;
         summaryOnly = true;
-        if (batch.hasStage() && !batch.pulls().isEmpty()) {
-            Pull best = batch.pulls().stream()
-                    .max(Comparator.comparingInt(Pull::stars))
-                    .orElse(batch.pulls().getFirst());
-            int holdTick = Math.max(0, GachaPresentationTimeline.slotTicks(best.stars(), best.newlyOwned()) - 1);
-            SummonCameraController.update(holdTick, GachaPresentationTimeline.Phase.NAME, best.stars());
-        }
         if (skipButton != null) skipButton.setMessage(Component.literal("닫기"));
     }
 
     private void finish() {
         if (finishing) return;
         finishing = true;
-        SummonCameraController.exit();
         if (!presentationDone) {
             presentationDone = true;
             ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
@@ -181,16 +153,26 @@ public final class GachaPresentationScreen extends Screen {
         if (minecraft != null) minecraft.gui.setScreen(new MetaMenuScreen(MetaMenuScreen.Tab.ARCHIVE));
     }
 
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (event.key() == GLFW.GLFW_KEY_ESCAPE || event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_SPACE) {
+            skipOrFinish();
+            return true;
+        }
+        return super.keyPressed(event);
+    }
+
     @Override public void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) { }
 
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        graphics.fill(0, 0, width, height, BACKDROP);
         graphics.text(font, Component.literal("정령의 기록"), 18, 18, TEXT, true);
         graphics.text(font, Component.literal(batch.pulls().size() + "회 소환 · 크리스탈 -" + batch.crystalSpent()),
                 18, 34, SECONDARY, false);
 
         Pull focus = summaryOnly ? null : currentReveal();
-        if (focus != null) drawWorldRevealOverlay(graphics, focus, currentPhase());
+        if (focus != null) drawSpotlight(graphics, focus, currentPhase());
         else if (batch.pulls().size() <= 1) drawSingleSummary(graphics);
         else drawTenSummary(graphics);
 
@@ -230,58 +212,106 @@ public final class GachaPresentationScreen extends Screen {
         return GachaPresentationTimeline.phase(slotTick(), pull.stars(), pull.newlyOwned());
     }
 
-    private void drawWorldRevealOverlay(
-            GuiGraphicsExtractor graphics, Pull pull, GachaPresentationTimeline.Phase phase) {
+    private void drawSpotlight(GuiGraphicsExtractor graphics, Pull pull, GachaPresentationTimeline.Phase phase) {
         int accent = starColor(pull.stars());
-        int intensity = GachaPresentationTimeline.intensity(pull.stars());
-        drawRaritySignal(graphics, accent, intensity, phase);
+        int panelW = Math.min(440, Math.max(300, width - 80));
+        int panelH = Math.min(286, Math.max(220, height - 90));
+        int x = (width - panelW) / 2;
+        int y = Math.max(48, (height - panelH) / 2);
+        TurnboundFrameStyle.frame(graphics, x, y, panelW, panelH, accent);
 
-        if (!batch.hasStage()) {
-            int modelSize = Math.min(230, Math.max(132, Math.min(width / 3, height / 2)));
-            int modelCx = width / 2;
-            int modelTop = Math.max(28, height / 2 - modelSize / 2 - 30);
-            if (phase == GachaPresentationTimeline.Phase.SILHOUETTE) {
-                TurnboundPortraitRenderer.extractSilhouette(graphics, pull.characterId(),
-                        modelCx - modelSize / 2, modelTop, modelCx + modelSize / 2, modelTop + modelSize);
-                return;
-            }
-            if (phase == GachaPresentationTimeline.Phase.REVEAL || phase == GachaPresentationTimeline.Phase.NAME) {
-                TurnboundPortraitRenderer.extractBust(graphics, pull.characterId(),
-                        modelCx - modelSize / 2, modelTop, modelCx + modelSize / 2, modelTop + modelSize, false);
-            }
-        }
+        String rarity = stars(pull.stars());
+        graphics.text(font, Component.literal(rarity), x + 18, y + 15, accent, true);
+        String count = (Math.min(revealIndex() + 1, revealPulls.size())) + " / " + revealPulls.size();
+        graphics.text(font, Component.literal(count), x + panelW - 18 - font.width(count), y + 15, MUTED, false);
 
-        if (phase == GachaPresentationTimeline.Phase.SILHOUETTE) {
-            String cue = "형상이 소환장에 응집됩니다";
-            graphics.text(font, Component.literal(cue),
-                    (width - font.width(cue)) / 2, Math.max(50, height - 52), SECONDARY, false);
+        if (phase == GachaPresentationTimeline.Phase.SIGNAL) {
+            String cue = pull.stars() >= 5 ? "강렬한 공명이 응답합니다"
+                    : pull.stars() >= 4 ? "선명한 공명이 이어집니다"
+                    : "정령의 기록이 응답합니다";
+            graphics.text(font, Component.literal(cue), x + (panelW - font.width(cue)) / 2,
+                    y + panelH / 2 - 5, accent, true);
             return;
         }
 
-        // The real in-world BattleActorEntity is the reveal. Do not cover it with a flat portrait.
-        if (phase != GachaPresentationTimeline.Phase.NAME) return;
+        int portraitSize = Math.min(172, panelH - 92);
+        int portraitX = x + (panelW - portraitSize) / 2;
+        int portraitY = y + 40;
+        if (phase == GachaPresentationTimeline.Phase.SILHOUETTE) {
+            TurnboundPortraitRenderer.extractSilhouette(graphics, pull.characterId(),
+                    portraitX, portraitY, portraitX + portraitSize, portraitY + portraitSize);
+            String cue = "누군가의 형상이 모습을 드러냅니다";
+            graphics.text(font, Component.literal(cue), x + (panelW - font.width(cue)) / 2,
+                    y + panelH - 30, SECONDARY, false);
+            return;
+        }
 
-        int w = Math.min(410, width - 44);
-        int h = 76;
-        int x = (width - w) / 2;
-        int y = Math.max(62, height - h - 28);
-        TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
-        graphics.text(font, Component.literal(stars(pull.stars())), x + 18, y + 15, accent, true);
-        graphics.text(font, Component.literal(name(pull.characterId())), x + 18, y + 35, TEXT, true);
+        TurnboundPortraitRenderer.extractBust(graphics, pull.characterId(),
+                portraitX, portraitY, portraitX + portraitSize, portraitY + portraitSize, false);
+
+        if (phase != GachaPresentationTimeline.Phase.NAME) return;
+        String name = name(pull.characterId());
+        int textY = y + panelH - 52;
+        graphics.text(font, Component.literal(name), x + (panelW - font.width(name)) / 2, textY, TEXT, true);
         String result = pull.newlyOwned() ? "새로운 동료" : duplicateResult(pull);
-        graphics.text(font, Component.literal(result), x + 18, y + 54, pull.newlyOwned() ? GREEN : PURPLE, false);
-        if (pull.stars() >= 5) graphics.text(font, Component.literal("★5"), x + w - 48, y + 15, GOLD, true);
+        graphics.text(font, Component.literal(result), x + (panelW - font.width(result)) / 2,
+                textY + 17, pull.newlyOwned() ? GREEN : PURPLE, false);
     }
 
-    private void drawRaritySignal(
-            GuiGraphicsExtractor graphics, int accent, int intensity, GachaPresentationTimeline.Phase phase) {
-        if (phase != GachaPresentationTimeline.Phase.SIGNAL) return;
-        String cue = intensity >= 4 ? "★★★★★  강한 공명이 응답합니다"
-                : intensity >= 3 ? "★★★★  선명한 공명이 이어집니다"
-                : intensity >= 2 ? "★★★  형상이 가까워집니다"
-                : "정령의 기록이 응답합니다";
-        int tx = (width - font.width(cue)) / 2;
-        graphics.text(font, Component.literal(cue), tx, Math.max(44, height / 2 - 12), accent, true);
+    private void drawSingleSummary(GuiGraphicsExtractor graphics) {
+        if (batch.pulls().isEmpty()) return;
+        Pull pull = batch.pulls().getFirst();
+        int w = Math.min(430, width - 48), h = Math.min(190, height - 84);
+        int x = (width - w) / 2, y = Math.max(58, (height - h) / 2);
+        int accent = starColor(pull.stars());
+        TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
+        int portrait = Math.min(132, h - 30);
+        TurnboundPortraitRenderer.extractBust(graphics, pull.characterId(),
+                x + 14, y + 15, x + 14 + portrait, y + 15 + portrait, false);
+        int tx = x + portrait + 30;
+        graphics.text(font, Component.literal("소환 결과"), tx, y + 24, SECONDARY, false);
+        graphics.text(font, Component.literal(stars(pull.stars())), tx, y + 47, accent, true);
+        graphics.text(font, Component.literal(name(pull.characterId())), tx, y + 70, TEXT, true);
+        graphics.text(font, Component.literal(pull.newlyOwned() ? "새로운 동료" : duplicateResult(pull)),
+                tx, y + 94, pull.newlyOwned() ? GREEN : PURPLE, false);
+        graphics.text(font, Component.literal("닫기로 소환 기록으로 이동"), tx, y + 122, MUTED, false);
+    }
+
+    private void drawTenSummary(GuiGraphicsExtractor graphics) {
+        int count = batch.pulls().size();
+        if (count <= 0) return;
+        int cols = width >= 680 ? 5 : width >= 480 ? 4 : 2;
+        int rows = (count + cols - 1) / cols;
+        int gap = 7;
+        int panelW = Math.min(width - 32, cols * 112 + (cols - 1) * gap + 24);
+        int panelH = Math.min(height - 76, rows * 76 + (rows - 1) * gap + 42);
+        int x = (width - panelW) / 2;
+        int y = Math.max(52, (height - panelH) / 2);
+        TurnboundFrameStyle.frame(graphics, x, y, panelW, panelH, BLUE);
+        graphics.text(font, Component.literal("10회 소환 결과"), x + 14, y + 13, TEXT, true);
+
+        int cardW = Math.max(78, (panelW - 24 - (cols - 1) * gap) / cols);
+        int cardH = Math.max(60, (panelH - 42 - (rows - 1) * gap) / rows);
+        for (int i = 0; i < count; i++) {
+            Pull pull = batch.pulls().get(i);
+            int col = i % cols, row = i / cols;
+            int cx = x + 12 + col * (cardW + gap);
+            int cy = y + 34 + row * (cardH + gap);
+            int accent = starColor(pull.stars());
+            TurnboundUiSkin.inset(graphics, cx, cy, cardW, cardH);
+            graphics.fill(cx, cy, cx + 2, cy + cardH, accent);
+            int portrait = Math.min(42, cardH - 12);
+            TurnboundPortraitRenderer.extract(graphics, pull.characterId(),
+                    cx + 6, cy + 6, cx + 6 + portrait, cy + 6 + portrait, false);
+            int tx = cx + portrait + 12;
+            int textW = Math.max(24, cardW - portrait - 18);
+            graphics.text(font, Component.literal(UiTextLayout.fit(name(pull.characterId()), textW)),
+                    tx, cy + 8, TEXT, true);
+            graphics.text(font, Component.literal(stars(pull.stars())), tx, cy + 23, accent, false);
+            String status = pull.newlyOwned() ? "신규" : compactDuplicate(pull);
+            graphics.text(font, Component.literal(UiTextLayout.fit(status, textW)), tx, cy + 38,
+                    pull.newlyOwned() ? GREEN : PURPLE, false);
+        }
     }
 
     private void queuePhaseAudio() {
@@ -316,80 +346,18 @@ public final class GachaPresentationScreen extends Screen {
         };
     }
 
-    private static int withAlpha(int argb, int alpha) {
-        return (Math.max(0, Math.min(255, alpha)) << 24) | (argb & 0x00FFFFFF);
-    }
-
-    private void drawSingleSummary(GuiGraphicsExtractor graphics) {
-        if (batch.pulls().isEmpty()) return;
-        Pull pull = batch.pulls().getFirst();
-        int w = Math.min(420, width - 44), h = 112;
-        int x = (width - w) / 2, y = Math.max(66, height - h - 28);
-        int accent = starColor(pull.stars());
-        TurnboundFrameStyle.frame(graphics, x, y, w, h, accent);
-        int portrait = Math.min(86, h - 14);
-        TurnboundPortraitRenderer.extract(graphics, pull.characterId(), x + 8, y + 7, x + 8 + portrait, y + 7 + portrait, false);
-        int tx = x + portrait + 18;
-        graphics.text(font, Component.literal("소환 결과"), tx, y + 14, TEXT, true);
-        graphics.text(font, Component.literal(stars(pull.stars()) + " · " + name(pull.characterId())), tx, y + 38, accent, true);
-        graphics.text(font, Component.literal(pull.newlyOwned() ? "새로운 동료" : duplicateResult(pull)),
-                tx, y + 62, pull.newlyOwned() ? GREEN : PURPLE, false);
-        graphics.text(font, Component.literal("★5 천장 " + pull.pityAfter() + " / " + GachaCatalog.HARD_PITY),
-                tx, y + 84, SECONDARY, false);
-    }
-
-    private void drawTenSummary(GuiGraphicsExtractor graphics) {
-        int gap = 6;
-        int totalW = Math.min(760, width - 36);
-        int cardW = (totalW - gap * 4) / 5;
-        int cardH = Math.min(108, Math.max(74, (height - 116 - gap) / 2));
-        int startX = (width - totalW) / 2;
-        int startY = Math.max(62, (height - (cardH * 2 + gap)) / 2 + 14);
-        int summaryTicks = Math.max(0, ticks - revealDurationTicks());
-        int visible = summaryOnly ? batch.pulls().size()
-                : Math.min(batch.pulls().size(), Math.max(1, summaryTicks / 4 + 1));
-
-        for (int i = 0; i < batch.pulls().size() && i < 10; i++) {
-            int x = startX + (i % 5) * (cardW + gap);
-            int y = startY + (i / 5) * (cardH + gap);
-            if (i >= visible) {
-                TurnboundFrameStyle.inset(graphics, x, y, cardW, cardH);
-                continue;
-            }
-            Pull pull = batch.pulls().get(i);
-            int accent = starColor(pull.stars());
-            TurnboundFrameStyle.frame(graphics, x, y, cardW, cardH, accent);
-            graphics.text(font, Component.literal(stars(pull.stars())), x + 7, y + 6, accent, true);
-            int portraitTop = y + 15;
-            int portraitBottom = Math.max(portraitTop + 24, y + cardH - 35);
-            TurnboundPortraitRenderer.extract(graphics, pull.characterId(), x + 4, portraitTop, x + cardW - 4, portraitBottom, false);
-            graphics.text(font, Component.literal(shorten(name(pull.characterId()), 15)), x + 7, y + cardH - 31, TEXT, true);
-            String result = pull.newlyOwned() ? "신규" : compactDuplicateResult(pull);
-            graphics.text(font, Component.literal(result), x + 7, y + cardH - 18,
-                    pull.newlyOwned() ? GREEN : PURPLE, false);
-            graphics.text(font, Component.literal("천장 " + pull.pityAfter()), x + cardW - font.width("천장 " + pull.pityAfter()) - 6,
-                    y + cardH - 18, SECONDARY, false);
-        }
-    }
-
-    private static String duplicateResult(Pull pull) {
-        if (pull.bonusLevelGranted() > 0) return "+레벨 +1 (+" + pull.bonusLevelAfter() + ")";
-        return "중복 성장 MAX · 별의 정수 +" + pull.essence();
-    }
-
-    private static String compactDuplicateResult(Pull pull) {
-        if (pull.bonusLevelGranted() > 0) return "+레벨 +" + pull.bonusLevelAfter();
-        return "MAX · 정수 +" + pull.essence();
-    }
-
     private static String name(String id) {
         try { return CanonicalData.definition(id).name(); }
-        catch (RuntimeException ignored) { return "알 수 없는 동료"; }
+        catch (RuntimeException ignored) { return id == null ? "" : id; }
     }
 
-    private static String stars(int count) { return "★".repeat(Math.max(1, Math.min(5, count))); }
+    private static String stars(int stars) {
+        int count = Math.max(1, Math.min(5, stars));
+        return "★".repeat(count);
+    }
+
     private static int starColor(int stars) {
-        return switch (stars) {
+        return switch (Math.max(1, Math.min(5, stars))) {
             case 5 -> GOLD;
             case 4 -> PURPLE;
             case 3 -> BLUE;
@@ -397,29 +365,34 @@ public final class GachaPresentationScreen extends Screen {
             default -> SECONDARY;
         };
     }
-    private static String shorten(String value, int max) { return value.length() <= max ? value : value.substring(0, max - 1) + "…"; }
 
-    @Override
-    public boolean keyPressed(KeyEvent event) {
-        if (event.key() == GLFW.GLFW_KEY_ESCAPE || event.key() == GLFW.GLFW_KEY_ENTER
-                || event.key() == GLFW.GLFW_KEY_KP_ENTER || event.key() == GLFW.GLFW_KEY_SPACE) {
-            if (!summaryOnly) showSummary();
-            else finish();
-            return true;
-        }
-        return super.keyPressed(event);
+    private static String duplicateResult(Pull pull) {
+        if (pull.bonusLevelGranted() > 0) return "+레벨 +" + pull.bonusLevelGranted() + " · 누적 +" + pull.bonusLevelAfter();
+        if (pull.essence() > 0) return "별의 정수 +" + pull.essence();
+        return "보유 중";
     }
 
-    @Override public boolean shouldCloseOnEsc() { return false; }
-    @Override public void onClose() { finish(); }
+    private static String compactDuplicate(Pull pull) {
+        if (pull.bonusLevelGranted() > 0) return "+레벨";
+        if (pull.essence() > 0) return "정수 +" + pull.essence();
+        return "중복";
+    }
+
+    @Override
+    public void onClose() {
+        skipOrFinish();
+    }
 
     @Override
     public void removed() {
-        SummonCameraController.exit();
+        super.removed();
+        if (finishing || presentationDone) return;
+        if (minecraft != null && minecraft.gui.screen() instanceof GachaPresentationScreen) return;
         if (!presentationDone) {
             presentationDone = true;
             ClientPacketDistributor.sendToServer(new MetaCommandPayload("GACHA_DONE"));
         }
-        super.removed();
     }
+
+    @Override public boolean isPauseScreen() { return false; }
 }

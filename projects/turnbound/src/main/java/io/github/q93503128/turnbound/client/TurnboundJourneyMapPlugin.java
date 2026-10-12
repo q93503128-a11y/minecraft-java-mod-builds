@@ -131,7 +131,7 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
     private static MarkerOverlay labelOverlay(
             BlockPos pos, String label, FieldUiSnapshot.MapPoint point, float scale
     ) {
-        int iconSize = JourneyMapMarkerPolicy.isCurrentNavigation(point) ? 18 : point.objective() ? 16 : 11;
+        int iconSize = JourneyMapMarkerPolicy.isCurrentNavigation(point) ? 14 : point.objective() ? 12 : 8;
         MapImage icon = new MapImage(
                 Identifier.fromNamespaceAndPath("minecraft", "textures/block/white_wool.png"),
                 16, 16);
@@ -160,9 +160,9 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
                 .setScale(scale)
                 .setColor(point.objective() ? 0xFFE7A3 : 0xFFFFFF)
                 .setBackgroundColor(0x101318)
-                .setBackgroundOpacity(point.objective() ? 0.84F : 0.72F)
+                .setBackgroundOpacity(point.objective() ? 0.76F : 0.58F)
                 .setFontShadow(true)
-                .setOffsetY(point.objective() ? -16 : -12)
+                .setOffsetY(point.objective() ? -13 : -10)
                 .setActiveUIs(Context.UI.Fullscreen));
         return marker;
     }
@@ -184,8 +184,9 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
 
     private static float labelScale(UIState state) {
         int zoom = state == null ? 1024 : Math.max(UIState.FULLSCREEN_ZOOM_MIN, state.zoom);
-        if (zoom >= 4096) return 4.0F;
-        return 2.0F;
+        if (zoom >= 4096) return 0.78F;
+        if (zoom >= 2048) return 0.72F;
+        return 0.66F;
     }
 
     private static void onRadarUpdate(EntityRadarUpdateEvent event) {
@@ -210,8 +211,6 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
             fullscreenKey = mapping;
             InputConstants.Key reservedMinimapKey = InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_M);
             if (mapping.getKey().equals(reservedMinimapKey)) {
-                // Build #1013 temporarily forced fullscreen JourneyMap onto M. M is now TURNBOUND's minimap toggle,
-                // so migrate only that known collision back to JourneyMap's normal full-map key.
                 mapping.setKey(InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_J));
                 KeyMapping.resetMapping();
                 minecraft.options.save();

@@ -29,7 +29,32 @@ final class BattleActionRules {
             for (int i = 0; i < units.size(); i++) if (units.get(i).id().equals(actorId)) return i;
             return -1;
         }
+        if ("ALLY_SINGLE".equals(rule) || "ALLY_SINGLE_EXCEPT_SELF".equals(rule)) {
+            return mostInjuredValidAlly(units, rule, actorId);
+        }
+        if ("ENEMY_TWO".equals(rule)) {
+            return BattleTargeting.firstValid(units, rule, actorId);
+        }
         return needsSingleTarget(rule) ? BattleTargeting.firstValid(units, rule, actorId) : -1;
+    }
+
+    private static int mostInjuredValidAlly(List<ClientBattleState.Unit> units, String rule, String actorId) {
+        int best = -1;
+        for (int i = 0; i < units.size(); i++) {
+            ClientBattleState.Unit candidate = units.get(i);
+            if (!BattleTargeting.validTarget(rule, candidate, actorId)) continue;
+            if (best < 0 || moreInjured(candidate, units.get(best))) best = i;
+        }
+        return best;
+    }
+
+    private static boolean moreInjured(ClientBattleState.Unit candidate, ClientBattleState.Unit current) {
+        long candidateRatio = (long)Math.max(0, candidate.hp()) * Math.max(1, current.maxHp());
+        long currentRatio = (long)Math.max(0, current.hp()) * Math.max(1, candidate.maxHp());
+        if (candidateRatio != currentRatio) return candidateRatio < currentRatio;
+        int candidateMissing = Math.max(0, candidate.maxHp() - candidate.hp());
+        int currentMissing = Math.max(0, current.maxHp() - current.hp());
+        return candidateMissing > currentMissing;
     }
 
     /** Returns null when confirmation is invalid; empty string is valid for self/all-target actions. */

@@ -18,7 +18,6 @@ import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.DrehmalHubEntityPolicy;
 import io.github.q93503128.turnbound.world.FieldInteractionGuard;
 import io.github.q93503128.turnbound.world.FieldNetwork;
-import io.github.q93503128.turnbound.world.GachaPresentationActorService;
 import io.github.q93503128.turnbound.world.MetaNetwork;
 import io.github.q93503128.turnbound.world.PlayerShellRules;
 import io.github.q93503128.turnbound.world.TurnboundAttachments;
@@ -71,7 +70,6 @@ public final class Turnbound {
 
     private void tick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        GachaPresentationActorService.tick(player);
         if (CampaignPersistence.blocked(player)) return;
 
         // Production gameplay is fail-closed onto the selected authored world. Installing TURNBOUND in an arbitrary
@@ -105,7 +103,6 @@ public final class Turnbound {
 
     private void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        GachaPresentationActorService.finish(player);
         MultiplayerPartyService.disconnect(player);
         boolean releaseRuntime = true;
         if (!CampaignPersistence.blocked(player)) {
@@ -126,7 +123,6 @@ public final class Turnbound {
 
     private void serverStopping(ServerStoppingEvent event) {
         var players = event.getServer().getPlayerList().getPlayers();
-        GachaPresentationActorService.clearAll();
         MultiplayerPartyService.clear();
         BattleSessionManager.clearAll(players);
         for (ServerPlayer player : players) {

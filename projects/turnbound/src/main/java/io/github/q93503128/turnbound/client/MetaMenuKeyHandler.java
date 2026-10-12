@@ -15,7 +15,7 @@ public final class MetaMenuKeyHandler {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) return;
 
-        if (event.getKey() == GLFW.GLFW_KEY_K) {
+        if (event.getKey() == GLFW.GLFW_KEY_TAB) {
             if (minecraft.gui.screen() != null || ClientPresentationTransition.fieldPresentationSuppressed() || !ClientFieldState.snapshot().active()) return;
             if ((event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0) QuestGuideLayer.cycleObjective();
             else QuestGuideLayer.toggle();
