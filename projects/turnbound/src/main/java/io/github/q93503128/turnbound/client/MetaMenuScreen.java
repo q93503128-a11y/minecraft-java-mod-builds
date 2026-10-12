@@ -215,7 +215,6 @@ public final class MetaMenuScreen extends Screen {
         buildPagerAt(top+panelHeight-65);
     }
 
-
     private void buildCoop(){
         var party=ClientMultiplayerPartyState.snapshot();
         int x=left+16,w=panelWidth-32;
@@ -329,9 +328,7 @@ public final class MetaMenuScreen extends Screen {
             }
         }
 
-        if(detailTab==DetailTab.EQUIPMENT&&row.owned()){
-            buildCharacterEquipment(row);
-        }
+        if(detailTab==DetailTab.EQUIPMENT&&row.owned()) buildCharacterEquipment(row);
 
         if(detailTab==DetailTab.GROWTH&&row.owned()){
             int by=top+panelHeight-34;
@@ -373,13 +370,16 @@ public final class MetaMenuScreen extends Screen {
     private void buildCharacterEquipment(ClientMetaState.CharacterRow character){
         int y=contentTop()+25,x=left+16,w=panelWidth-32;
         if(characterEquipmentSlot.isBlank()){
-            int buttonH=28,gap=5;
-            for(int i=0;i<4;i++){
-                String slot=List.of("WEAPON","ARMOR","ACCESSORY","SIGNATURE").get(i);
+            int gap=5,buttonH=26,cardW=(w-gap)/2;
+            List<String> slots=List.of("WEAPON","ARMOR","ACCESSORY","SIGNATURE");
+            for(int i=0;i<slots.size();i++){
+                String slot=slots.get(i);
                 var equipped=equippedBy(character.id(),slot);
-                String label=slotLabel(slot)+" · "+(equipped==null?"비어 있음":equipped.name()+" +"+equipped.enhancement());
+                String item=equipped==null?"비어 있음":equipped.name()+" +"+equipped.enhancement();
+                String label=UiTextLayout.fit(slotLabel(slot)+" · "+item,cardW-12);
+                int xx=x+(i%2)*(cardW+gap),yy=y+(i/2)*(buttonH+gap);
                 final String chosen=slot;
-                addRenderableWidget(new BattleHudButton(x,y+i*(buttonH+gap),w,buttonH,Component.literal(label),
+                addRenderableWidget(new BattleHudButton(xx,yy,cardW,buttonH,Component.literal(label),
                         equipped==null?MUTED:tierColor(equipped.tier()),ignored->openCharacterEquipmentSlot(chosen)));
             }
             return;
@@ -388,7 +388,7 @@ public final class MetaMenuScreen extends Screen {
         addRenderableWidget(new BattleHudButton(x,y,w,18,Component.literal("← "+slotLabel(characterEquipmentSlot)+" 장비 선택"),MUTED,
                 ignored->closeCharacterEquipmentSlot()));
         List<ClientMetaState.EquipmentRow> choices=characterEquipmentChoices(character.id(),characterEquipmentSlot);
-        int listTop=y+23,rowH=23;
+        int listTop=y+23,rowH=21;
         int per=Math.max(1,UiPaging.rowsThatFit(listTop,contentBottom()-52,rowH+2,3));
         setPaging(choices.size(),per);
         int start=page*per,end=Math.min(choices.size(),start+per);
@@ -397,7 +397,7 @@ public final class MetaMenuScreen extends Screen {
             int yy=listTop+(i-start)*(rowH+2);
             String owner=gear.equippedCharacterId().isBlank()?"":" · "+characterName(gear.equippedCharacterId())+" 장착";
             String stats=statTypeLabel(gear.mainType())+" "+stat(gear.mainValue())+" · "+statTypeLabel(gear.subType())+" "+stat(gear.subValue());
-            String label=gear.tier()+" · "+gear.name()+" +"+gear.enhancement()+" · "+stats+owner;
+            String label=UiTextLayout.fit(gear.tier()+" · "+gear.name()+" +"+gear.enhancement()+" · "+stats+owner,w-12);
             final String instance=gear.instanceId();
             addRenderableWidget(new BattleHudButton(x,yy,w,rowH,Component.literal(label),
                     instance.equals(selectedEquipmentId)?BLUE:tierColor(gear.tier()),ignored->{selectedEquipmentId=instance;rebuild();}));
@@ -423,8 +423,6 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void buildArchive(){
-        // Global E-menu archive is deliberately read-only.
-        // Summon and Star Essence exchange remain physical NPC/facility actions.
         archiveLogOpen=true;
         currentTotal=0;
         currentPerPage=1;
@@ -461,7 +459,6 @@ public final class MetaMenuScreen extends Screen {
         setPaging(total,Math.max(1,rows));
         buildPager();
     }
-
 
     private List<ClientMetaState.RegionQuestRow> filteredQuestRows(){
         return questRows().stream().filter(row->switch(questFilter){
@@ -514,15 +511,24 @@ public final class MetaMenuScreen extends Screen {
             return;
         }
         List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
-        int gridTop=y+21,gridBottom=contentBottom()-22,cols=panelWidth>=600?6:panelWidth>=500?5:4,rowH=27,cardGap=3;
-        int visible=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+4,2),per=cols*visible;
+        int gridTop=y+21,gridBottom=contentBottom()-22,cols=panelWidth>=600?6:panelWidth>=500?5:4,rowH=23,cardGap=3;
+        int visible=UiPaging.rowsThatFit(gridTop,gridBottom,rowH+3,2),per=cols*visible;
         setPaging(rows.size(),per);
         int start=page*per,end=Math.min(rows.size(),start+per),cardW=(panelWidth-32-cardGap*(cols-1))/cols;
         for(int i=start;i<end;i++){
             var row=rows.get(i);
-            int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+4);
-            String name=((row.category().equals("ENEMIES")||row.category().equals("BOSSES"))&&!row.discovered())?"???":row.name();
-            addRenderableWidget(new BattleHudButton(xx,yy,cardW,rowH,Component.literal(name),row.detailUnlocked()?BLUE:row.discovered()?SECONDARY:MUTED,ignored->{}));
+            int local=i-start,xx=left+16+(local%cols)*(cardW+cardGap),yy=gridTop+(local/cols)*(rowH+3);
+            String label;
+            if(!row.discovered()) label="???";
+            else {
+                String detail=row.detailUnlocked()?row.summary():"상세 정보 잠김";
+                label=UiTextLayout.fit(row.name()+(detail.isBlank()?"":" · "+detail),cardW-10);
+            }
+            var button=new BattleHudButton(xx,yy,cardW,rowH,Component.literal(label),
+                    row.detailUnlocked()?BLUE:row.discovered()?SECONDARY:MUTED,
+                    ignored->{if(row.discovered())openCodexDetail(row);});
+            button.active=row.discovered();
+            addRenderableWidget(button);
         }
         buildPager();
     }
@@ -609,7 +615,6 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void setPaging(int total,int per){currentTotal=Math.max(0,total);currentPerPage=Math.max(1,per);page=UiPaging.clampPage(page,currentTotal,currentPerPage);}
-
     private void buildPager(){ buildPagerAt(top+panelHeight-22); }
 
     private void buildPagerAt(int y){
@@ -698,6 +703,7 @@ public final class MetaMenuScreen extends Screen {
     }
     private void sellSelected(){var e=equipment(selectedEquipmentId);if(e!=null&&e.sellable())send("SELL|"+e.instanceId());}
     private void selectCodex(String c){codexCategory=c;page=0;rebuild();}
+    private void openCodexDetail(ClientMetaState.CodexRow row){if(minecraft!=null&&row!=null&&row.discovered())minecraft.gui.setScreen(new CodexDetailScreen(this,row));}
     private void selectEndgame(String id){selectedEndgameId=id;rebuild();}
     private static void send(String command){ClientPacketDistributor.sendToServer(new MetaCommandPayload(command));}
     private static void partyCommand(String command){ClientPacketDistributor.sendToServer(new PartyCommandPayload(command));}
@@ -785,16 +791,12 @@ public final class MetaMenuScreen extends Screen {
 
         var s=ClientMetaState.snapshot();
         String resources="골드 "+s.gold()+"  ·  크리스탈 "+s.crystal()+"  ·  별의 정수 "+s.essence()+"  ·  파티 CP "+s.partyCp();
-        g.text(font,Component.literal(UiTextLayout.fit(resources,pw-44)),
-                px+22,py+ph-22,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit(resources,pw-44)),px+22,py+ph-22,SECONDARY,false);
         g.text(font,Component.literal("J 전체 지도  ·  M 미니맵  ·  E 닫기"),
                 px+pw-22-font.width("J 전체 지도  ·  M 미니맵  ·  E 닫기"),py+16,MUTED,false);
     }
 
-    private void drawParty(GuiGraphicsExtractor g){
-        // The roster is the information surface; preset/XP policy text does not consume a row.
-    }
-
+    private void drawParty(GuiGraphicsExtractor g){ }
 
     private void drawCoop(GuiGraphicsExtractor g){
         var party=ClientMultiplayerPartyState.snapshot();
@@ -929,20 +931,15 @@ public final class MetaMenuScreen extends Screen {
                     }else{
                         for(var passive:passives){
                             details.add(new DetailLine(passive.name(),GOLD));
-                            for(String line:UiTextLayout.wrap(passive.description(),Math.max(100,w-20),120)){
-                                details.add(new DetailLine(line,SECONDARY));
-                            }
+                            for(String line:UiTextLayout.wrap(passive.description(),Math.max(100,w-20),120)) details.add(new DetailLine(line,SECONDARY));
                         }
                     }
                 }else{
                     var skill=skills.get(index);
                     title=skill.name();
-                    metaLine=(skill.isBasic()?"기본 공격":"액티브")+" · "
-                            +(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
+                    metaLine=(skill.isBasic()?"기본 공격":"액티브")+" · "+(skill.cooldown()<=0?"쿨타임 없음":"쿨타임 "+skill.cooldown()+"턴");
                     titleColor=skill.isBasic()?GREEN:GOLD;
-                    for(String line:UiTextLayout.wrap(skill.description(),Math.max(100,w-20),120)){
-                        details.add(new DetailLine(line,TEXT));
-                    }
+                    for(String line:UiTextLayout.wrap(skill.description(),Math.max(100,w-20),120)) details.add(new DetailLine(line,TEXT));
                 }
 
                 int bodyY=detailY+45;
@@ -960,13 +957,12 @@ public final class MetaMenuScreen extends Screen {
                     cursor+=12;
                 }
             }
-            case EQUIPMENT->{ /* Slot/list widgets own this view; avoid text overlapping the clickable rows. */ }
+            case EQUIPMENT->{ }
             case GROWTH->{
                 var trial=ClientSignatureTrialState.forCharacter(r.id());
                 String status=r.awakened()?"각성 완료":trial!=null&&trial.awakeningReady()?"각성 가능":"선행 조건 진행 중";
                 TurnboundUiSkin.inset(g,x,y+32,w,76);
-                g.text(font,Component.literal("레벨 · "+r.level()+" / "+GrowthRulesV1.maxLevel()
-                        +(r.bonusLevel()>0?"  +"+r.bonusLevel()+" · 실질 "+r.effectiveLevel():"")),x+8,y+40,TEXT,true);
+                g.text(font,Component.literal("레벨 · "+r.level()+" / "+GrowthRulesV1.maxLevel()+(r.bonusLevel()>0?"  +"+r.bonusLevel()+" · 실질 "+r.effectiveLevel():"")),x+8,y+40,TEXT,true);
                 g.text(font,Component.literal("전투 경험치로 레벨 성장"),x+8,y+56,SECONDARY,false);
                 g.text(font,Component.literal("각성 · "+status),x+8,y+74,r.awakened()?GREEN:GOLD,true);
                 g.text(font,Component.literal(UiTextLayout.fit("Lv60 + 개인 퀘스트 + "+GrowthRulesV1.awakeningGoldCost()+" Gold",w-16)),x+8,y+90,SECONDARY,false);
@@ -1003,9 +999,7 @@ public final class MetaMenuScreen extends Screen {
                 int index=s.archiveHistory().size()-1-(archiveLogScroll+row);
                 if(index<0)break;
                 var r=s.archiveHistory().get(index);
-                String duplicate=r.bonusLevelGranted()>0
-                        ? " · +레벨 +1 (+"+r.bonusLevelAfter()+")"
-                        : " · +레벨 MAX · 별의 정수 +"+r.essenceGranted();
+                String duplicate=r.bonusLevelGranted()>0?" · +레벨 +1 (+"+r.bonusLevelAfter()+")":" · +레벨 MAX · 별의 정수 +"+r.essenceGranted();
                 String text="★"+r.nativeStars()+" · "+r.name()+(r.newlyOwned()?" · 신규":duplicate);
                 g.text(font,Component.literal(UiTextLayout.fit(text,panelWidth-32)),left+16,yy,r.newlyOwned()?GREEN:SECONDARY,false);
                 yy+=18;
@@ -1017,12 +1011,9 @@ public final class MetaMenuScreen extends Screen {
             return;
         }
 
-        String pity="★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY
-                +" · 확률 상승 "+GachaCatalog.SOFT_PITY_START+"회부터";
-        String upperRates=String.format(Locale.ROOT,"★5 %.0f%%   ★4 %.0f%%   ★3 %.0f%%",
-                GachaCatalog.BASE_FIVE_STAR_RATE*100.0,GachaCatalog.FOUR_STAR_RATE*100.0,GachaCatalog.THREE_STAR_RATE*100.0);
-        String lowerRates=String.format(Locale.ROOT,"★2 %.0f%%   ★1 %.0f%%",
-                GachaCatalog.TWO_STAR_RATE*100.0,GachaCatalog.ONE_STAR_RATE*100.0);
+        String pity="★5 천장 "+s.fiveStarPity()+" / "+GachaCatalog.HARD_PITY+" · 확률 상승 "+GachaCatalog.SOFT_PITY_START+"회부터";
+        String upperRates=String.format(Locale.ROOT,"★5 %.0f%%   ★4 %.0f%%   ★3 %.0f%%",GachaCatalog.BASE_FIVE_STAR_RATE*100.0,GachaCatalog.FOUR_STAR_RATE*100.0,GachaCatalog.THREE_STAR_RATE*100.0);
+        String lowerRates=String.format(Locale.ROOT,"★2 %.0f%%   ★1 %.0f%%",GachaCatalog.TWO_STAR_RATE*100.0,GachaCatalog.ONE_STAR_RATE*100.0);
 
         if(compactLayout){
             int x=left+16,w=Math.max(1,panelWidth-32),y=contentTop()+57;
@@ -1056,18 +1047,14 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawQuests(GuiGraphicsExtractor g){
-        if(!selectedQuestId.isBlank()&&questSection==QuestSection.QUESTS){
-            drawQuestDetail(g);
-            return;
-        }
+        if(!selectedQuestId.isBlank()&&questSection==QuestSection.QUESTS){drawQuestDetail(g);return;}
 
         int x=left+16,w=panelWidth-32,rowH=questRowHeight(),yy=questListTop();
         if(questSection==QuestSection.QUESTS){
             List<ClientMetaState.RegionQuestRow> rows=filteredQuestRows();
             int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage);
             if(start>=end){
-                g.text(font,Component.literal(questFilter==QuestFilter.COMPLETED?"완료된 퀘스트가 없습니다.":"표시할 퀘스트가 없습니다."),
-                        x+6,yy+10,MUTED,false);
+                g.text(font,Component.literal(questFilter==QuestFilter.COMPLETED?"완료된 퀘스트가 없습니다.":"표시할 퀘스트가 없습니다."),x+6,yy+10,MUTED,false);
                 return;
             }
             for(int i=start;i<end;i++){
@@ -1076,13 +1063,11 @@ public final class MetaMenuScreen extends Screen {
                 g.fill(x,yy,x+2,yy+rowH-3,q.completed()?GREEN:questCategoryColor(q.region()));
                 String title=(q.completed()?"✓ ":"○ ")+q.region()+" · "+q.id();
                 g.text(font,Component.literal(UiTextLayout.fit(title,w-18)),x+8,yy+5,q.completed()?GREEN:TEXT,true);
-                String detail=q.objectiveSpecified()&&!q.chestRule().isBlank()
-                        ?q.chestRule():"클릭해 세부 정보 보기";
+                String detail=q.objectiveSpecified()&&!q.chestRule().isBlank()?q.chestRule():"클릭해 세부 정보 보기";
                 List<String> detailLines=UiTextLayout.wrap(detail,Math.max(80,(int)((w-18)/0.86F)),180);
                 int lineY=yy+17;
                 for(int line=0;line<Math.min(2,detailLines.size());line++){
-                    drawQuestScaledText(g,detailLines.get(line),x+8,lineY,0.86F,
-                            q.objectiveSpecified()?(q.completed()?MUTED:SECONDARY):MUTED,false);
+                    drawQuestScaledText(g,detailLines.get(line),x+8,lineY,0.86F,q.objectiveSpecified()?(q.completed()?MUTED:SECONDARY):MUTED,false);
                     lineY+=11;
                 }
                 yy+=rowH;
@@ -1093,8 +1078,7 @@ public final class MetaMenuScreen extends Screen {
         List<ClientMetaState.ChallengeRow> rows=filteredAchievementRows();
         int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage);
         if(start>=end){
-            g.text(font,Component.literal(questFilter==QuestFilter.COMPLETED?"완료된 업적이 없습니다.":"표시할 업적이 없습니다."),
-                    x+6,yy+10,MUTED,false);
+            g.text(font,Component.literal(questFilter==QuestFilter.COMPLETED?"완료된 업적이 없습니다.":"표시할 업적이 없습니다."),x+6,yy+10,MUTED,false);
             return;
         }
         for(int i=start;i<end;i++){
@@ -1107,8 +1091,7 @@ public final class MetaMenuScreen extends Screen {
             List<String> detailLines=UiTextLayout.wrap(detail,Math.max(80,(int)((w-18)/0.86F)),180);
             int lineY=yy+17;
             for(int line=0;line<Math.min(2,detailLines.size());line++){
-                drawQuestScaledText(g,detailLines.get(line),x+8,lineY,0.86F,
-                        a.completed()?MUTED:SECONDARY,false);
+                drawQuestScaledText(g,detailLines.get(line),x+8,lineY,0.86F,a.completed()?MUTED:SECONDARY,false);
                 lineY+=11;
             }
             yy+=rowH;
@@ -1116,12 +1099,8 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawQuestDetail(GuiGraphicsExtractor g){
-        ClientMetaState.RegionQuestRow q=questRows().stream()
-                .filter(row->row.id().equals(selectedQuestId)).findFirst().orElse(null);
-        if(q==null){
-            selectedQuestId="";
-            return;
-        }
+        ClientMetaState.RegionQuestRow q=questRows().stream().filter(row->row.id().equals(selectedQuestId)).findFirst().orElse(null);
+        if(q==null){selectedQuestId="";return;}
         int x=left+16,y=contentTop()+27,w=panelWidth-32,h=Math.max(80,contentBottom()-y);
         TurnboundUiSkin.inset(g,x,y,w,h);
         g.fill(x,y,x+3,y+h,q.completed()?GREEN:questCategoryColor(q.region()));
@@ -1129,23 +1108,13 @@ public final class MetaMenuScreen extends Screen {
         String status=q.completed()?"완료":"진행 중";
         g.text(font,Component.literal(UiTextLayout.fit(q.region()+" · "+status,w-24)),x+12,y+27,q.completed()?GREEN:GOLD,false);
         g.text(font,Component.literal("목표 / 보상"),x+12,y+49,MUTED,true);
-        List<String> lines=UiTextLayout.wrap(
-                q.chestRule().isBlank()?"상세 목표가 기록되지 않았습니다.":q.chestRule(),
-                Math.max(80,w-28),180);
+        List<String> lines=UiTextLayout.wrap(q.chestRule().isBlank()?"상세 목표가 기록되지 않았습니다.":q.chestRule(),Math.max(80,w-28),180);
         int cursor=y+65;
-        for(String line:lines){
-            if(cursor>y+h-14)break;
-            g.text(font,Component.literal(line),x+12,cursor,SECONDARY,false);
-            cursor+=13;
-        }
+        for(String line:lines){if(cursor>y+h-14)break;g.text(font,Component.literal(line),x+12,cursor,SECONDARY,false);cursor+=13;}
     }
 
     private void drawQuestScaledText(GuiGraphicsExtractor g,String text,int x,int y,float scale,int color,boolean shadow){
-        g.pose().pushMatrix();
-        g.pose().translate(x,y);
-        g.pose().scale(scale,scale);
-        g.text(font,Component.literal(text),0,0,color,shadow);
-        g.pose().popMatrix();
+        g.pose().pushMatrix();g.pose().translate(x,y);g.pose().scale(scale,scale);g.text(font,Component.literal(text),0,0,color,shadow);g.pose().popMatrix();
     }
 
     private static int questCategoryColor(String category){
@@ -1157,25 +1126,15 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private void drawCodex(GuiGraphicsExtractor g){
-        if("CHARACTERS".equals(codexCategory))return;
-        List<ClientMetaState.CodexRow> rows=ClientMetaState.snapshot().codex().stream().filter(r->r.category().equals(codexCategory)).toList();
-        int start=page*currentPerPage,end=Math.min(rows.size(),start+currentPerPage),gridTop=contentTop()+21,cols=panelWidth>=600?6:panelWidth>=500?5:4,rowH=27,gap=3,cardW=(panelWidth-32-gap*(cols-1))/cols;
-        for(int i=start;i<end;i++){
-            var r=rows.get(i);
-            int local=i-start,x=left+16+(local%cols)*(cardW+gap),y=gridTop+(local/cols)*(rowH+4);
-            String detail=r.detailUnlocked()?r.summary():r.discovered()?"상세 정보 잠김":"미발견";
-            g.text(font,Component.literal(UiTextLayout.fit(detail,cardW-16)),x+8,y+16,r.detailUnlocked()?SECONDARY:MUTED,false);
-        }
+        // Compact codex entries are fully rendered by their buttons; clicking a discovered entry opens its detail surface.
     }
 
     private void drawSystem(GuiGraphicsExtractor g){
         int x=left+16,y=contentTop()+96,w=panelWidth-32;
         TurnboundUiSkin.inset(g,x,y,w,58);
         g.text(font,Component.literal("TURNBOUND 전용 설정"),x+8,y+8,TEXT,true);
-        g.text(font,Component.literal(UiTextLayout.fit(
-                "Minecraft의 그래픽·키·전체 음량은 ESC 설정을 그대로 사용합니다.",w-16)),x+8,y+23,SECONDARY,false);
-        g.text(font,Component.literal(UiTextLayout.fit(
-                "여기서는 게임 음악/효과음, 전투 타격 카메라, 탐색 미니맵만 조정합니다.",w-16)),x+8,y+37,MUTED,false);
+        g.text(font,Component.literal(UiTextLayout.fit("Minecraft의 그래픽·키·전체 음량은 ESC 설정을 그대로 사용합니다.",w-16)),x+8,y+23,SECONDARY,false);
+        g.text(font,Component.literal(UiTextLayout.fit("여기서는 게임 음악/효과음, 전투 타격 카메라, 탐색 미니맵만 조정합니다.",w-16)),x+8,y+37,MUTED,false);
     }
 
     private void drawChallenges(GuiGraphicsExtractor g){
@@ -1186,8 +1145,7 @@ public final class MetaMenuScreen extends Screen {
     }
 
     private List<ClientMetaState.CharacterRow> filteredCodexCharacters(){
-        Comparator<ClientMetaState.CharacterRow> c=Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar)
-                .reversed().thenComparing(ClientMetaState.CharacterRow::id);
+        Comparator<ClientMetaState.CharacterRow> c=Comparator.comparingInt(ClientMetaState.CharacterRow::nativeStar).reversed().thenComparing(ClientMetaState.CharacterRow::id);
         return ClientMetaState.snapshot().characters().stream()
                 .filter(r->ownershipFilter==OwnershipFilter.ALL||(ownershipFilter==OwnershipFilter.OWNED)==r.owned())
                 .filter(r->starFilter==0||r.nativeStar()==starFilter)
@@ -1224,10 +1182,7 @@ public final class MetaMenuScreen extends Screen {
     private static String label(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"편성";case COOP->"협동";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"고난도";case SYSTEM->"설정";};}
     private static String title(Tab t){return switch(t){case HOME->"빠른 메뉴";case PARTY->"전투 파티 편성";case COOP->"협동 파티";case CHARACTERS->"캐릭터";case EQUIPMENT->"장비";case ARCHIVE->"소환 기록";case QUESTS->"퀘스트";case CODEX->"도감";case CHALLENGES->"고난도 콘텐츠";case SYSTEM->"설정";};}
     private static String detailLabel(DetailTab d){return switch(d){case OVERVIEW->"개요";case SKILLS->"스킬";case EQUIPMENT->"장비";case GROWTH->"성장";};}
-    private static String levelLabel(ClientMetaState.CharacterRow row){
-        if(row==null)return"Lv.0";
-        return "Lv."+row.level()+(row.bonusLevel()>0?" +"+row.bonusLevel():"");
-    }
+    private static String levelLabel(ClientMetaState.CharacterRow row){if(row==null)return"Lv.0";return "Lv."+row.level()+(row.bonusLevel()>0?" +"+row.bonusLevel():"");}
 
     private static String primaryRoleLabel(String r){return switch(r){case"DPS"->"공격";case"SUPPORT"->"지원";case"TANK"->"수호";case"SUMMON"->"소환";default->r;};}
     private static String slotLabel(String s){return switch(s){case"WEAPON"->"무기";case"ARMOR"->"방어구";case"ACCESSORY"->"장신구";case"SIGNATURE"->"전용 장비";case"ALL"->"전체";default->s;};}
