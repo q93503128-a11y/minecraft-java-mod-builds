@@ -11,7 +11,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.Set;
 
 public final class LivingKingdomsNetwork {
-    public static final String PROTOCOL_VERSION = "realm-codex-5";
+    public static final String PROTOCOL_VERSION = "realm-codex-6";
     private static final Set<String> CODEX_PAGES = Set.of("overview", "equipment", "map", "skills", "status");
 
     private LivingKingdomsNetwork() {
