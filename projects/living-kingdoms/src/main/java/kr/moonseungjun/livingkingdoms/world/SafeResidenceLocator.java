@@ -1,5 +1,6 @@
 package kr.moonseungjun.livingkingdoms.world;
 
+import kr.moonseungjun.livingkingdoms.foundation.PlayableOriginCatalog;
 import kr.moonseungjun.livingkingdoms.worldgen.AuthoredContinentDensity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -9,17 +10,32 @@ import net.minecraft.world.level.block.Blocks;
 /** Resolves and verifies the active Erden residence and civic custody cells. */
 public final class SafeResidenceLocator {
     private static final int UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
+    private static final String STARTING_RESIDENTIAL_ROLE = "residential_middle_south_04";
 
     private SafeResidenceLocator() {
     }
 
     public static BlockPos preferredResidence(ServerLevel level, String homelandId, String residenceId) {
-        RealmSiteLayoutSavedData.RealmSite site = requiredSite(level, homelandId);
-        if (!"erden_city_room".equals(residenceId)) {
+        requiredSite(level, homelandId);
+        if (!PlayableOriginCatalog.DEFAULT_RESIDENCE.equals(residenceId)) {
             throw new IllegalArgumentException("Inactive residence: " + residenceId);
         }
-        int x = site.centerX() + 320;
-        int z = site.centerZ() + 180;
+        ExternalDistrictBuildingBuilder.BuildingEntrance entrance = ExternalDistrictBuildingBuilder.entrances().stream()
+                .filter(candidate -> candidate.role().equals(STARTING_RESIDENTIAL_ROLE))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Missing authored Erden starting residence: " + STARTING_RESIDENTIAL_ROLE));
+
+        int roadDx = entrance.x() - entrance.roadX();
+        int roadDz = entrance.z() - entrance.roadZ();
+        int inwardX = 0;
+        int inwardZ = 0;
+        if (Math.abs(roadDx) >= Math.abs(roadDz) && roadDx != 0) inwardX = Integer.signum(roadDx);
+        else if (roadDz != 0) inwardZ = Integer.signum(roadDz);
+        else throw new IllegalStateException("Starting residence entrance has no road separation");
+
+        int x = entrance.x() + inwardX * 3;
+        int z = entrance.z() + inwardZ * 3;
         int surfaceY = authoredSurfaceY(x, z);
         return new BlockPos(x, surfaceY + 1, z);
     }
@@ -27,7 +43,8 @@ public final class SafeResidenceLocator {
     public static BlockPos residence(ServerLevel level, String homelandId, String residenceId) {
         BlockPos preferred = preferredResidence(level, homelandId, residenceId);
         if (!level.hasChunkAt(preferred)) return preferred;
-        return findOrCreateWalkable(level, preferred, Blocks.SPRUCE_PLANKS, 12, 12);
+        BlockPos existing = findExistingWalkable(level, preferred, 10, 16);
+        return existing == null ? preferred : existing;
     }
 
     public static BlockPos preferredJail(ServerLevel level, String jurisdiction) {
@@ -41,11 +58,13 @@ public final class SafeResidenceLocator {
     public static BlockPos jail(ServerLevel level, String jurisdiction) {
         BlockPos preferred = preferredJail(level, jurisdiction);
         if (!level.hasChunkAt(preferred)) return preferred;
-        return findOrCreateWalkable(level, preferred, Blocks.STONE_BRICKS, 8, 10);
+        BlockPos existing = findExistingWalkable(level, preferred, 8, 10);
+        return existing == null ? secure(level, preferred, Blocks.STONE_BRICKS) : existing;
     }
 
     public static float yaw(String homelandId, String residenceId) {
-        if (!"erden_kingdom".equals(homelandId) || !"erden_city_room".equals(residenceId)) {
+        if (!PlayableOriginCatalog.DEFAULT_HOMELAND.equals(homelandId)
+                || !PlayableOriginCatalog.DEFAULT_RESIDENCE.equals(residenceId)) {
             throw new IllegalArgumentException("Inactive origin residence");
         }
         return 180.0F;
@@ -67,9 +86,9 @@ public final class SafeResidenceLocator {
         return site;
     }
 
-    private static BlockPos findOrCreateWalkable(ServerLevel level, BlockPos preferred, Block floor,
-                                                  int horizontalRadius, int verticalRadius) {
-        if (!level.hasChunkAt(preferred)) return preferred;
+    private static BlockPos findExistingWalkable(ServerLevel level, BlockPos preferred,
+                                                 int horizontalRadius, int verticalRadius) {
+        if (!level.hasChunkAt(preferred)) return null;
         for (int dy = 0; dy <= verticalRadius; dy++) {
             for (int sign : new int[]{1, -1}) {
                 if (dy == 0 && sign < 0) continue;
@@ -90,7 +109,7 @@ public final class SafeResidenceLocator {
                 }
             }
         }
-        return secure(level, preferred, floor);
+        return null;
     }
 
     private static BlockPos secure(ServerLevel level, BlockPos feet, Block floor) {
@@ -101,7 +120,7 @@ public final class SafeResidenceLocator {
             level.setBlock(feet.above(dy), Blocks.AIR.defaultBlockState(), UPDATE_FLAGS);
         }
         if (!isWalkable(level, feet)) {
-            throw new IllegalStateException("Unable to create safe residence spawn at " + feet);
+            throw new IllegalStateException("Unable to create safe custody spawn at " + feet);
         }
         return feet;
     }

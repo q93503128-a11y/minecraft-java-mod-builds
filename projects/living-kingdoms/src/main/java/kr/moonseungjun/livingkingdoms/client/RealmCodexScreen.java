@@ -10,10 +10,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class RealmCodexScreen extends Screen {
-    private static final int WORLD_MIN_X = -1600;
-    private static final int WORLD_MAX_X = 1600;
-    private static final int WORLD_MIN_Z = -450;
-    private static final int WORLD_MAX_Z = 450;
+    private static final int WORLD_MIN_X = -24_000;
+    private static final int WORLD_MAX_X = 24_000;
+    private static final int WORLD_MIN_Z = -20_000;
+    private static final int WORLD_MAX_Z = 20_000;
 
     private final Map<String, String> data;
     private String page;
@@ -61,7 +61,7 @@ public final class RealmCodexScreen extends Screen {
         g.fill(l.left() + 14, l.top() + 42, l.right() - 14, l.top() + 44, 0xFFB68B4E);
 
         super.extractRenderState(g, mouseX, mouseY, partialTick);
-        tab(g, l.left() + 18, l.top() + 13, 74, 22, "세계 지도", "map".equals(page));
+        tab(g, l.left() + 18, l.top() + 13, 74, 22, "에르덴 지도", "map".equals(page));
         tab(g, l.left() + 96, l.top() + 13, 74, 22, "상태 기록", "status".equals(page));
         tab(g, l.right() - 44, l.top() + 13, 26, 22, "×", false);
         g.centeredText(font, Component.literal("Living Kingdoms · 왕국 수첩"), l.centerX(), l.top() + 18, 0xFF3B2718);
@@ -78,16 +78,13 @@ public final class RealmCodexScreen extends Screen {
         g.fill(x, y, x + w, y + h, 0xFFDDC99F);
         g.fill(x + 3, y + 3, x + w - 3, y + h - 3, 0xFFEAD9B4);
 
-        // Broad continental bands. These are data-driven landmarks rather than a fake terrain screenshot.
-        irregularRegion(g, mapX(-1170, x, w), mapZ(38, y, h), 34, 24, 0xFF8C8272);
-        irregularRegion(g, mapX(0, x, w), mapZ(0, y, h), 44, 28, 0xFF9EB36B);
-        irregularRegion(g, mapX(1240, x, w), mapZ(35, y, h), 38, 28, 0xFF5F986A);
-        line(g, mapX(-1170, x, w), mapZ(38, y, h), mapX(0, x, w), mapZ(0, y, h), 0xFF8A6540);
-        line(g, mapX(0, x, w), mapZ(0, y, h), mapX(1240, x, w), mapZ(35, y, h), 0xFF8A6540);
+        // Current playable world: the complete 48 x 40 km Erden kingdom only.
+        irregularRegion(g, x + w / 2, y + (h - 16) / 2,
+                Math.max(30, (w - 52) / 2), Math.max(24, (h - 58) / 2), 0xFF9EB36B);
 
-        landmark(g, mapX(-1170, x, w), mapZ(38, y, h), "카르둠", 0xFF413A35);
-        landmark(g, mapX(0, x, w), mapZ(0, y, h), "에르덴", 0xFF38552F);
-        landmark(g, mapX(1240, x, w), mapZ(35, y, h), "실바나", 0xFF25583B);
+        int capitalX = parseInt("erden_x");
+        int capitalZ = parseInt("erden_z");
+        landmark(g, mapX(capitalX, x, w), mapZ(capitalZ, y, h), "에르덴 왕도", 0xFF38552F);
 
         int homeX = parseInt("home_x");
         int homeZ = parseInt("home_z");
@@ -98,7 +95,7 @@ public final class RealmCodexScreen extends Screen {
 
         int textY = y + h - 21;
         g.fill(x + 7, textY - 3, x + w - 7, y + h - 6, 0xC0F3E6C7);
-        g.text(font, Component.literal("● 현재 위치   ◆ 거주지   — 주요 교역로"), x + 12, textY, 0xFF4A3524);
+        g.text(font, Component.literal("● 현재 위치   ◆ 등록 거주지   에르덴 왕국 48×40 km"), x + 12, textY, 0xFF4A3524);
         g.text(font, Component.literal(shortText(value("region") + " · " + value("position"), 48)), x + 12, textY + 10, 0xFF5E432B);
     }
 
@@ -186,16 +183,6 @@ public final class RealmCodexScreen extends Screen {
     private static void marker(GuiGraphicsExtractor g, int x, int y, int color, int radius) {
         g.fill(x - radius, y - radius, x + radius + 1, y + radius + 1, 0xFFF5E6BE);
         g.fill(x - radius + 2, y - radius + 2, x + radius - 1, y + radius - 1, color);
-    }
-
-    private static void line(GuiGraphicsExtractor g, int x1, int y1, int x2, int y2, int color) {
-        int steps = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
-        for (int i = 0; i <= steps; i++) {
-            double t = steps == 0 ? 0.0 : (double) i / steps;
-            int x = (int) Math.round(x1 + (x2 - x1) * t);
-            int y = (int) Math.round(y1 + (y2 - y1) * t);
-            g.fill(x - 1, y - 1, x + 2, y + 2, color);
-        }
     }
 
     private static int mapX(int worldX, int x, int w) {

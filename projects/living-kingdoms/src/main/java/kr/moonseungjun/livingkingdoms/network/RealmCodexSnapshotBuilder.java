@@ -41,15 +41,16 @@ public final class RealmCodexSnapshotBuilder {
         Map<String, String> values = new LinkedHashMap<>();
         OriginProfile profile = OriginProfileManager.profile(player.getUUID()).orElse(null);
         ServerLevel realm = player.level().getServer().getLevel(StarterRealmManager.REALM_KEY);
+        boolean activeProfile = isActiveErdenProfile(profile);
 
         values.put("player", player.getGameProfile().name());
-        values.put("species_id", profile == null ? "human" : profile.speciesId());
-        values.put("species", profile == null ? "미정" : speciesName(profile.speciesId()));
-        values.put("homeland", profile == null ? "미정" : homelandName(profile.homelandId()));
-        values.put("affiliation", profile == null ? "무소속" : affiliationName(profile.homelandId()));
-        values.put("citizenship", profile == null ? "등록되지 않음" : citizenshipName(profile.homelandId()));
-        values.put("background", profile == null ? "미정" : backgroundName(profile.backgroundId()));
-        values.put("residence", profile == null ? "미정" : residenceName(profile.residenceId()));
+        values.put("species_id", activeProfile ? profile.speciesId() : PlayableOriginCatalog.DEFAULT_SPECIES);
+        values.put("species", activeProfile ? speciesName(profile.speciesId()) : "인간");
+        values.put("homeland", activeProfile ? homelandName(profile.homelandId()) : "에르덴 왕국");
+        values.put("affiliation", activeProfile ? affiliationName(profile.homelandId()) : "에르덴 왕국 · 로엔 변경백령");
+        values.put("citizenship", activeProfile ? citizenshipName(profile.homelandId()) : "에르덴 왕국 시민");
+        values.put("background", activeProfile ? backgroundName(profile.backgroundId()) : "평범한 주민");
+        values.put("residence", activeProfile ? residenceName(profile.residenceId()) : residenceName(PlayableOriginCatalog.DEFAULT_RESIDENCE));
         values.put("trait_title", SkillProgressionManager.traitTitle(player));
         values.put("trait_description", SkillProgressionManager.traitDescription(player));
         values.put("health", oneDecimal(player.getHealth()) + " / " + oneDecimal(player.getMaxHealth()));
@@ -93,12 +94,11 @@ public final class RealmCodexSnapshotBuilder {
                     String.format(Locale.ROOT, "%.4f", SkillProgressionManager.masteryProgress(player, track)));
         }
 
-        putSite(values, realm, "erden_kingdom", "erden");
-        putSite(values, realm, "silvana_forest", "silvana");
-        putSite(values, realm, "kardum_league", "kardum");
+        putSite(values, realm, PlayableOriginCatalog.DEFAULT_HOMELAND, "erden");
 
-        if (profile != null && realm != null) {
-            BlockPos home = RealmSitePlanner.residencePosition(realm, profile.homelandId(), profile.residenceId());
+        if (activeProfile && realm != null) {
+            BlockPos home = RealmSitePlanner.residencePosition(
+                    realm, PlayableOriginCatalog.DEFAULT_HOMELAND, PlayableOriginCatalog.DEFAULT_RESIDENCE);
             values.put("home_x", Integer.toString(home.getX()));
             values.put("home_z", Integer.toString(home.getZ()));
         }
@@ -107,6 +107,14 @@ public final class RealmCodexSnapshotBuilder {
         values.put("player_x", Integer.toString(player.blockPosition().getX()));
         values.put("player_z", Integer.toString(player.blockPosition().getZ()));
         return new OpenCodexPayload(page, encode(values));
+    }
+
+    private static boolean isActiveErdenProfile(OriginProfile profile) {
+        return profile != null
+                && PlayableOriginCatalog.DEFAULT_SPECIES.equals(profile.speciesId())
+                && PlayableOriginCatalog.DEFAULT_HOMELAND.equals(profile.homelandId())
+                && PlayableOriginCatalog.DEFAULT_BACKGROUND.equals(profile.backgroundId())
+                && PlayableOriginCatalog.DEFAULT_RESIDENCE.equals(profile.residenceId());
     }
 
     private static void putSite(Map<String, String> values, ServerLevel realm,
@@ -137,40 +145,24 @@ public final class RealmCodexSnapshotBuilder {
     }
 
     private static String speciesName(String id) {
-        return switch (id) { case "elf" -> "엘프"; case "dwarf" -> "드워프"; default -> "인간"; };
+        return PlayableOriginCatalog.DEFAULT_SPECIES.equals(id) ? "인간" : "비활성 출신";
     }
 
     private static String homelandName(String id) {
-        return switch (id) {
-            case "silvana_forest" -> "실바나 수림 공동체";
-            case "kardum_league" -> "카르둠 산악 연맹";
-            default -> "에르덴 왕국";
-        };
+        return PlayableOriginCatalog.DEFAULT_HOMELAND.equals(id) ? "에르덴 왕국" : "비활성 출신";
     }
 
     private static String affiliationName(String id) {
-        return switch (id) {
-            case "silvana_forest" -> "실바나 수림 의회";
-            case "kardum_league" -> "카르둠 산악 연맹";
-            default -> "에르덴 왕국 · 로엔 변경백령";
-        };
+        return PlayableOriginCatalog.DEFAULT_HOMELAND.equals(id)
+                ? "에르덴 왕국 · 로엔 변경백령" : "비활성 소속";
     }
 
     private static String citizenshipName(String id) {
-        return switch (id) {
-            case "silvana_forest" -> "수림 공동체 구성원";
-            case "kardum_league" -> "연맹 등록 자유민";
-            default -> "에르덴 왕국 시민";
-        };
+        return PlayableOriginCatalog.DEFAULT_HOMELAND.equals(id) ? "에르덴 왕국 시민" : "비활성 시민권";
     }
 
     private static String backgroundName(String id) {
-        return switch (id) {
-            case "fisher_family" -> "어부 집안";
-            case "wanderer" -> "방랑자";
-            case "scholar_student" -> "학술 수련생";
-            default -> "평범한 주민";
-        };
+        return PlayableOriginCatalog.DEFAULT_BACKGROUND.equals(id) ? "평범한 주민" : "비활성 배경";
     }
 
     private static String residenceName(String id) {
@@ -179,20 +171,14 @@ public final class RealmCodexSnapshotBuilder {
     }
 
     private static String jurisdictionName(String id) {
-        return switch (id) {
-            case "erden_kingdom" -> "에르덴 사법권";
-            case "silvana_forest" -> "실바나 수림법";
-            case "kardum_league" -> "카르둠 연맹법";
-            default -> "수배 없음";
-        };
+        return PlayableOriginCatalog.DEFAULT_HOMELAND.equals(id) ? "에르덴 사법권" : "수배 없음";
     }
 
     private static String regionName(ServerLevel realm, int x, int z) {
         if (realm == null) return "미개척 대륙";
-        if (near(x, z, RealmSitePlanner.site(realm, "erden_kingdom"), 420)) return "에르덴 로엔 변경백령";
-        if (near(x, z, RealmSitePlanner.site(realm, "silvana_forest"), 360)) return "실바나 수림권";
-        if (near(x, z, RealmSitePlanner.site(realm, "kardum_league"), 360)) return "카르둠 산악권";
-        return "미개척 대륙";
+        RealmSiteLayoutSavedData.RealmSite erden = RealmSitePlanner.site(realm, PlayableOriginCatalog.DEFAULT_HOMELAND);
+        if (near(x, z, erden, 1_300)) return "에르덴 왕도권";
+        return "에르덴 왕국 외곽";
     }
 
     private static boolean near(int x, int z, RealmSiteLayoutSavedData.RealmSite site, int radius) {
