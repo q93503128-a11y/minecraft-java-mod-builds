@@ -104,9 +104,9 @@ public final class GachaPresentationScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        skipButton = addRenderableWidget(new BattleHudButton(width - 108, 12, 92, 20,
+        skipButton = addRenderableWidget(new BattleHudButton(width - 92, 12, 76, 18,
                 Component.literal("건너뛰기"), MUTED, ignored -> skipOrFinish()));
-        primaryButton = addRenderableWidget(new BattleHudButton(width - 132, height - 36, 116, 22,
+        primaryButton = addRenderableWidget(new BattleHudButton(width - 122, height - 34, 106, 20,
                 Component.literal("다음"), GOLD, ignored -> primaryAction()));
         updateControls();
     }
@@ -196,7 +196,7 @@ public final class GachaPresentationScreen extends Screen {
         g.fill(0, 0, width, height, BACKDROP);
         SummonLayerRenderer.fullScreen(g, SummonAssets.BG_ARCHIVE, width, height);
         SummonPresentationRenderer.render(this, g);
-        SummonLayerRenderer.fullScreen(g, SummonAssets.VIGNETTE, width, height);
+        SummonLayerRenderer.fullScreen(g, SummonAssets.VEIL_SOFT, width, height);
         super.extractRenderState(g, mouseX, mouseY, partialTick);
     }
 
