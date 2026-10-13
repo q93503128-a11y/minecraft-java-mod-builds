@@ -1,0 +1,146 @@
+name: Intake Openworld RPG Trail Stag asset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/intake-openworld-rpg-trail-stag.yml
+
+permissions:
+  contents: write
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download and verify exact CC0 Stag artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="projects/openworld-rpg/src/main/resources/assets/openworld_rpg/models/entity/trail_stag/Stag.glb"
+          report="projects/openworld-rpg/external-assets/quaternius-trail-stag/RUNTIME.md"
+          mkdir -p "$(dirname "$target")" "$(dirname "$report")"
+          curl --fail --location --retry 4 --retry-all-errors \
+            --output "$target" \
+            "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/478a184d29af65637ba335ea3127995066fe11b6/public/glb/animals_pack/Stag.glb"
+
+          actual_blob="$(git hash-object "$target")"
+          test "$actual_blob" = "18927223c253a8ac497a442c1a419d3c287fb84c"
+          test "$(wc -c < "$target" | tr -d ' ')" = "685252"
+
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, struct
+
+          target = Path("projects/openworld-rpg/src/main/resources/assets/openworld_rpg/models/entity/trail_stag/Stag.glb")
+          report = Path("projects/openworld-rpg/external-assets/quaternius-trail-stag/RUNTIME.md")
+          data = target.read_bytes()
+          if data[:4] != b"glTF":
+              raise SystemExit("not a GLB")
+          version, total_len = struct.unpack_from("<II", data, 4)
+          if version != 2 or total_len != len(data):
+              raise SystemExit(f"unexpected GLB header: version={version}, declared={total_len}, actual={len(data)}")
+          json_len, json_type = struct.unpack_from("<II", data, 12)
+          if json_type != 0x4E4F534A:
+              raise SystemExit("first GLB chunk is not JSON")
+          doc = json.loads(data[20:20 + json_len].decode("utf-8").rstrip(" \t\r\n\x00"))
+          accessors = doc.get("accessors", [])
+
+          def animation_duration(anim):
+              end = 0.0
+              for sampler in anim.get("samplers", []):
+                  idx = sampler.get("input")
+                  if isinstance(idx, int) and 0 <= idx < len(accessors):
+                      acc = accessors[idx]
+                      mx = acc.get("max") or []
+                      if mx:
+                          end = max(end, float(mx[0]))
+              return end
+
+          materials = [m.get("name", f"material_{i}") for i, m in enumerate(doc.get("materials", []))]
+          skins = doc.get("skins", [])
+          animations = doc.get("animations", [])
+          meshes = doc.get("meshes", [])
+          primitives = sum(len(m.get("primitives", [])) for m in meshes)
+          sha256 = hashlib.sha256(data).hexdigest()
+          lines = [
+              "# Quaternius Trail Stag — runtime artifact evidence",
+              "",
+              "> Generated from the exact repository-pinned runtime GLB during source admission.",
+              "",
+              f"- runtime path: `{target.as_posix()}`",
+              f"- byte size: `{len(data)}`",
+              f"- Git blob: `18927223c253a8ac497a442c1a419d3c287fb84c`",
+              f"- SHA-256: `{sha256}`",
+              f"- generator: `{doc.get('asset', {}).get('generator', 'unknown')}`",
+              f"- GLB/glTF version: `{doc.get('asset', {}).get('version', version)}`",
+              f"- scenes: `{len(doc.get('scenes', []))}`",
+              f"- nodes: `{len(doc.get('nodes', []))}`",
+              f"- meshes: `{len(meshes)}`",
+              f"- mesh primitives: `{primitives}`",
+              f"- materials: `{len(materials)}`",
+              f"- skins: `{len(skins)}`",
+              f"- animations: `{len(animations)}`",
+              "",
+              "## Materials",
+              "",
+          ]
+          lines += [f"- `{name}`" for name in materials] or ["- none"]
+          lines += ["", "## Skins", ""]
+          if skins:
+              for i, skin in enumerate(skins):
+                  lines.append(f"- skin {i}: `{skin.get('name', 'unnamed')}` — joints `{len(skin.get('joints', []))}`")
+          else:
+              lines.append("- none")
+          lines += ["", "## Embedded animations", ""]
+          if animations:
+              for i, anim in enumerate(animations):
+                  lines.append(
+                      f"- `{anim.get('name', f'animation_{i}')}` — duration `{animation_duration(anim):.6f}s`, "
+                      f"channels `{len(anim.get('channels', []))}`, samplers `{len(anim.get('samplers', []))}`"
+                  )
+          else:
+              lines.append("- none")
+          lines += [
+              "",
+              "## Admission note",
+              "",
+              "The runtime file is byte-identical to the pinned public transport artifact above. "
+              "Minecraft scale, ground contact, rider-seat alignment and collision footprint still require integrated client-world acceptance.",
+              "",
+          ]
+          report.write_text("\n".join(lines), encoding="utf-8")
+          print(f"sha256={sha256}")
+          print(f"animations={[(a.get('name'), animation_duration(a), len(a.get('channels', []))) for a in animations]}")
+          print(f"skins={[(s.get('name'), len(s.get('joints', []))) for s in skins]}")
+          PY
+
+      - name: Commit admitted asset to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add \
+            projects/openworld-rpg/src/main/resources/assets/openworld_rpg/models/entity/trail_stag/Stag.glb \
+            projects/openworld-rpg/external-assets/quaternius-trail-stag/RUNTIME.md
+          if git diff --cached --quiet; then
+            echo "Trail Stag artifact already admitted."
+            exit 0
+          fi
+          git commit -m "assets(openworld-rpg): pin Trail Stag CC0 source [skip ci]"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git pull --rebase origin main
+            sleep 2
+          done
+          echo "Could not fast-forward asset admission after retries." >&2
+          exit 1
