@@ -14,7 +14,8 @@
     ],
     "client": [
       "dev.moonseungjun.openworldrpg.client.OpenworldRpgClient",
-      "dev.moonseungjun.openworldrpg.client.entity.MeadowViperClientBootstrap"
+      "dev.moonseungjun.openworldrpg.client.entity.MeadowViperClientBootstrap",
+      "dev.moonseungjun.openworldrpg.client.entity.TrailStagClientBootstrap"
     ]
   },
   "mixins": [
