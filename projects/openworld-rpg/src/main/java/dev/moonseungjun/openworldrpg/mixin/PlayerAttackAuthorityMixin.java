@@ -13,6 +13,7 @@ import dev.moonseungjun.openworldrpg.combat.runtime.WarriorRootPassiveEffects;
 import dev.moonseungjun.openworldrpg.combat.runtime.WarriorSkillRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
+import dev.moonseungjun.openworldrpg.entity.TrailStagEntity;
 import dev.moonseungjun.openworldrpg.integration.actor.ExternalActorBindingRuntime;
 import dev.moonseungjun.openworldrpg.integration.bettercombat.BetterCombatAuthorityAdapter;
 import net.minecraft.world.damagesource.DamageSource;
@@ -41,6 +42,13 @@ public abstract class PlayerAttackAuthorityMixin {
         Player attacker = (Player) (Object) this;
         if (attacker.level().isClientSide()) {
             return original.call(target, source, proposedDamage);
+        }
+        if (attacker.getVehicle() instanceof TrailStagEntity) {
+            // Canon requires a safe dismount followed by a 0.10 s buffered replay. Better Combat's
+            // donor attack context is scoped to this call, so replaying Player.attack later would
+            // silently lose its combo/reach authority. Until that context-preserving bridge is
+            // bound, mounted damage fails closed rather than leaking a mount attack into gameplay.
+            return false;
         }
 
         BetterCombatAuthorityAdapter.AttackContext context =
