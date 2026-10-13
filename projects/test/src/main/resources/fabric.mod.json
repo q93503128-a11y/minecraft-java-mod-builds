@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "moon_test",
+  "version": "${version}",
+  "name": "테스트",
+  "description": "문승준 Minecraft Java 실험용 테스트 짬처리통.",
+  "authors": ["Moonseungjun"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.moonseungjun.testmod.TestMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
