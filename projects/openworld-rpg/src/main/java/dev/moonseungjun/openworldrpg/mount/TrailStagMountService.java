@@ -35,12 +35,15 @@ public final class TrailStagMountService {
         return next;
     }
 
-    public static SummonEligibility evaluateSummon(
+    /**
+     * Gates the start and continuation of the one-second summon channel. Placement checks belong to
+     * completion because the player may move during the channel and the server must probe the final
+     * authoritative position rather than trusting an earlier candidate.
+     */
+    public static SummonEligibility evaluatePreChannel(
             ServerPlayer player,
             long nowTick,
             long ticksSinceHostileCombat,
-            boolean forbiddenMountVolume,
-            boolean hasLegalSpawnCandidate,
             boolean presentationRuntimeReady
     ) {
         Objects.requireNonNull(player, "player");
@@ -51,11 +54,31 @@ public final class TrailStagMountService {
         if (!state.trailStagSelected()) return SummonEligibility.LOCKED;
         if (!presentationRuntimeReady) return SummonEligibility.PRESENTATION_NOT_READY;
         if (player.isSpectator() || !player.isAlive()) return SummonEligibility.INVALID_PLAYER;
-        if (forbiddenMountVolume) return SummonEligibility.FORBIDDEN_VOLUME;
         if (state.forcedCooldownTicksRemaining(nowTick) > 0L) return SummonEligibility.FORCED_COOLDOWN;
         if (ticksSinceHostileCombat < TrailStagMountRules.HOSTILE_COMBAT_QUIET_TICKS) {
             return SummonEligibility.COMBAT_LOCK;
         }
+        return SummonEligibility.ALLOWED;
+    }
+
+    public static SummonEligibility evaluateSummon(
+            ServerPlayer player,
+            long nowTick,
+            long ticksSinceHostileCombat,
+            boolean forbiddenMountVolume,
+            boolean hasLegalSpawnCandidate,
+            boolean presentationRuntimeReady
+    ) {
+        SummonEligibility preChannel = evaluatePreChannel(
+                player,
+                nowTick,
+                ticksSinceHostileCombat,
+                presentationRuntimeReady
+        );
+        if (preChannel != SummonEligibility.ALLOWED) {
+            return preChannel;
+        }
+        if (forbiddenMountVolume) return SummonEligibility.FORBIDDEN_VOLUME;
         if (!hasLegalSpawnCandidate) return SummonEligibility.NEED_OPEN_GROUND;
         return SummonEligibility.ALLOWED;
     }

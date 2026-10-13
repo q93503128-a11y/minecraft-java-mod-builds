@@ -11,13 +11,20 @@ import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Project-owned frequent combat inputs. Spell Engine remains a casting backend, not the input UI.
+ * Project-owned frequent combat and traversal inputs. Spell Engine remains a casting backend, not the input UI.
  */
 public final class OpenworldRpgClient implements ClientModInitializer {
     private static final KeyMapping DODGE_KEY =
             key(
                     "key.openworld_rpg.dodge",
                     GLFW.GLFW_KEY_Q
+            );
+
+    private static final KeyMapping MOUNT_KEY =
+            key(
+                    "key.openworld_rpg.mount_action",
+                    GLFW.GLFW_KEY_U,
+                    CategoryHolder.TRAVERSAL
             );
 
     private static final List<KeyMapping> SKILL_KEYS =
@@ -35,6 +42,7 @@ public final class OpenworldRpgClient implements ClientModInitializer {
             KeyMappingHelper.registerKeyMapping(key);
         }
         KeyMappingHelper.registerKeyMapping(DODGE_KEY);
+        KeyMappingHelper.registerKeyMapping(MOUNT_KEY);
         ProjectDodgeClientBridge.initialize();
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
@@ -70,6 +78,11 @@ public final class OpenworldRpgClient implements ClientModInitializer {
                         client.player
                 );
             }
+            while (MOUNT_KEY.consumeClick()) {
+                TrailStagMountClientBridge.request(
+                        client.player
+                );
+            }
         });
     }
 
@@ -89,11 +102,23 @@ public final class OpenworldRpgClient implements ClientModInitializer {
             String translationKey,
             int glfwKey
     ) {
+        return key(
+                translationKey,
+                glfwKey,
+                CategoryHolder.COMBAT
+        );
+    }
+
+    private static KeyMapping key(
+            String translationKey,
+            int glfwKey,
+            KeyMapping.Category category
+    ) {
         return new KeyMapping(
                 translationKey,
                 InputConstants.Type.KEYSYM,
                 glfwKey,
-                CategoryHolder.COMBAT
+                category
         );
     }
 
@@ -103,6 +128,13 @@ public final class OpenworldRpgClient implements ClientModInitializer {
                         Identifier.fromNamespaceAndPath(
                                 OpenworldRpgMod.MOD_ID,
                                 "combat"
+                        )
+                );
+        private static final KeyMapping.Category TRAVERSAL =
+                KeyMapping.Category.register(
+                        Identifier.fromNamespaceAndPath(
+                                OpenworldRpgMod.MOD_ID,
+                                "traversal"
                         )
                 );
     }
