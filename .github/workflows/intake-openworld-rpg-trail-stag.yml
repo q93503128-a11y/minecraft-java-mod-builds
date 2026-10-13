@@ -31,7 +31,7 @@ jobs:
 
           actual_blob="$(git hash-object "$target")"
           test "$actual_blob" = "18927223c253a8ac497a442c1a419d3c287fb84c"
-          test "$(wc -c < "$target" | tr -d ' ')" = "685252"
+          test "$(wc -c < "$target" | tr -d ' ')" = "685176"
 
           python - <<'PY'
           from pathlib import Path
