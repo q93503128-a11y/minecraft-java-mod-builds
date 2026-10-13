@@ -53,10 +53,10 @@ public final class TrailStagEntity extends PathfinderMob implements PlayerRideab
     private int landingRecoveryTicks;
     private boolean wasGrounded = true;
     private int ownerGraceTicks = 2;
+    private int cleanDespawnTicks = -1;
 
     public TrailStagEntity(EntityType<? extends TrailStagEntity> type, Level level) {
         super(type, level);
-        setInvulnerable(true);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -80,6 +80,12 @@ public final class TrailStagEntity extends PathfinderMob implements PlayerRideab
         entityData.set(RESOLVE_MAXIMUM, (float) fresh.maximum());
         entityData.set(RESOLVE_CURRENT, (float) fresh.current());
         ownerGraceTicks = 2;
+        cleanDespawnTicks = -1;
+    }
+
+    @Nullable
+    public UUID ownerId() {
+        return ownerId;
     }
 
     public boolean ownedBy(Player player) {
@@ -96,6 +102,21 @@ public final class TrailStagEntity extends PathfinderMob implements PlayerRideab
 
     public boolean authoredAirborne() {
         return entityData.get(AUTHORED_AIRBORNE);
+    }
+
+    public void armCleanDespawn() {
+        cleanDespawnTicks = 20;
+    }
+
+    public int cleanDespawnTicksRemaining() {
+        return cleanDespawnTicks;
+    }
+
+    public int tickCleanDespawnCountdown() {
+        if (cleanDespawnTicks > 0) {
+            cleanDespawnTicks--;
+        }
+        return cleanDespawnTicks;
     }
 
     /** Called from the final player-damage application boundary; input is already authoritative. */
