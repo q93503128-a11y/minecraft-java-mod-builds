@@ -345,6 +345,8 @@ public final class MeadowViperEntity extends PathfinderMob {
 
     private Optional<ServerPlayer> nearestAmbientPlayer(ServerLevel level) {
         return level.players().stream()
+                .filter(ServerPlayer.class::isInstance)
+                .map(ServerPlayer.class::cast)
                 .filter(this::validTarget)
                 .filter(player -> horizontalDistanceTo(player) <= WARNING_RADIUS)
                 .min(Comparator.comparingDouble(player -> distanceToSqr(player)));
