@@ -22,6 +22,14 @@ public final class OpenworldRpgEntityTypes {
                     .clientTrackingRange(8)
     );
 
+    public static final EntityType<TrailStagEntity> TRAIL_STAG = register(
+            "trail_stag",
+            EntityType.Builder.<TrailStagEntity>of(TrailStagEntity::new, MobCategory.CREATURE)
+                    // Collision is a review seed until the exact Stag is accepted in-client.
+                    .sized(TrailStagEntity.REVIEW_WIDTH, TrailStagEntity.REVIEW_HEIGHT)
+                    .clientTrackingRange(10)
+    );
+
     private OpenworldRpgEntityTypes() {
     }
 
@@ -44,6 +52,10 @@ public final class OpenworldRpgEntityTypes {
         FabricDefaultAttributeRegistry.register(
                 MEADOW_VIPER,
                 MeadowViperEntity.createAttributes()
+        );
+        FabricDefaultAttributeRegistry.register(
+                TRAIL_STAG,
+                TrailStagEntity.createAttributes()
         );
     }
 }
