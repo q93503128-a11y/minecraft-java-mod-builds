@@ -26,6 +26,8 @@ class R01ExternalActorCatalogTest {
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:the_regalhart"));
         assertTrue(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:the_earthloong"));
 
+        // Meadow Viper is project-owned; it must not pollute the pinned external-dependency surface.
+        assertFalse(R01ExternalActorCatalog.registryTargetClosed(R01ExternalActorCatalog.MEADOW_VIPER));
         assertFalse(R01ExternalActorCatalog.registryTargetClosed("alexsmobs:cave_centipede"));
         assertFalse(R01ExternalActorCatalog.registryTargetClosed("threateningly_mobs:nature_spirit"));
     }
@@ -35,6 +37,11 @@ class R01ExternalActorCatalogTest {
         assertTrue(
                 R01ExternalActorCatalog.productionSpawnReady(
                         R01ExternalActorCatalog.EARTHLOONG
+                )
+        );
+        assertFalse(
+                R01ExternalActorCatalog.productionSpawnReady(
+                        R01ExternalActorCatalog.MEADOW_VIPER
                 )
         );
         assertFalse(
@@ -114,7 +121,12 @@ class R01ExternalActorCatalogTest {
                                 Function.identity()
                         ));
 
-        assertEquals(7, profiles.size());
+        assertEquals(8, profiles.size());
+        assertProfile(
+                profiles.get(R01ExternalActorCatalog.MEADOW_VIPER),
+                2, 75.0, 7.0, 4.0, 18.0,
+                ExternalActorCombatProfile.CombatRank.COMMON
+        );
         assertProfile(
                 profiles.get(R01ExternalActorCatalog.BISON),
                 3, 155.0, 23.0, 7.0, 50.0,
