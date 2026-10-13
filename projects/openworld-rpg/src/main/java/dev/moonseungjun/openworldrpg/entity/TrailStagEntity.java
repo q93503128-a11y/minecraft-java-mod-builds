@@ -105,7 +105,7 @@ public final class TrailStagEntity extends PathfinderMob implements PlayerRideab
     }
 
     public void armCleanDespawn() {
-        cleanDespawnTicks = 20;
+        cleanDespawnTicks = TrailStagMountRules.CLEAN_RETURN_TICKS;
     }
 
     public int cleanDespawnTicksRemaining() {
