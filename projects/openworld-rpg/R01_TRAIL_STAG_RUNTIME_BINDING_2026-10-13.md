@@ -1,7 +1,7 @@
 # R01 Trail Stag — production traversal runtime binding
 
 > Recorded: 2026-10-13
-> Scope: exact Trail Stag source admission, project-owned rideable entity, server traversal authority, Resolve, safe summon/dismount, client presentation.
+> Scope: exact Trail Stag source admission, project-owned rideable entity, server traversal authority, Resolve, safe summon/dismount, mounted-basic-attack transition, client presentation.
 
 ## Exact source runtime
 
@@ -56,7 +56,7 @@ hop horizontal retention: 85%
 landing recovery: 0.15 s
 ```
 
-The hop is fixed rather than chargeable, cannot be repeated in air, and exposes an authoritative airborne state to the renderer. Normal project combat skill and dodge keys are consumed without casting while the player rides the Trail Stag.
+The hop is fixed rather than chargeable, cannot be repeated in air, and exposes an authoritative airborne state to the renderer. Normal project combat skill and dodge keys are consumed without casting while the player rides the Trail Stag. Trail Stag has no generic dash/speed-burst action; its launch identity remains sustained ground-travel convenience.
 
 ## Resolve authority bound
 
@@ -85,9 +85,28 @@ Candidate order remains:
 
 If no legal supported collision-clear player volume exists, ordinary dismount is rejected and the rider remains mounted. A successful ordinary separation arms the Stag's 1.0 s clean despawn. Resolve break is not allowed to leave the player mounted; it prefers the same legal search and uses an emergency collision-clear vertical separation only for the forced-break case.
 
+## Mounted basic-attack transition bound
+
+The canonical `basic attack while riding -> safe dismount -> 0.10 s -> attack` boundary is now bound at Better Combat's server request entry rather than by reconstructing melee state later.
+
+Behavior:
+
+- the bridge activates only while the server player is riding their own project Trail Stag;
+- the mounted Better Combat request is cancelled before donor damage can execute;
+- the server runs the same canonical Trail Stag safe-dismount search used by ordinary separation;
+- if no safe position exists, the attack is rejected and the rider remains mounted;
+- if separation succeeds, exactly one opaque Better Combat request is retained for that player;
+- execution is scheduled for exactly 2 server ticks later, matching the authored 0.10 s buffer;
+- replay returns through pinned Better Combat `ServerNetwork#handleAttackRequest`, so Better Combat re-resolves its own hand/combo/range/target authority instead of Openworld RPG fabricating stale donor combat state;
+- a duplicate pending request fails closed rather than producing two attacks;
+- disconnect, dead-player or spectator transition discards the pending request;
+- donor-contract resolution/invocation failure logs and fails closed instead of falling back to an unvalidated `Player.attack` call.
+
+`PlayerAttackAuthorityMixin` still refuses project Trail Stag mounted damage at the final player attack boundary as a defensive fallback for attack paths that bypass the dedicated Better Combat request bridge.
+
 ## Integration still intentionally outside this gate
 
-These are not accepted merely because the runtime compiles:
+These are not accepted merely because the runtime and startup checks pass:
 
 - final Minecraft model scale and ground contact;
 - rider-seat alignment;
@@ -95,15 +114,33 @@ These are not accepted merely because the runtime compiles:
 - Walk/Gallop/hop visual timing and foot contact;
 - authored R01 no-mount region data provider;
 - `A Stag at the Ford` narrative unlock event integration if that event is not yet live;
-- mounted basic-attack -> safe dismount -> 0.10 s attack buffer integration;
 - integrated R01 client-world spatial acceptance;
 - multiplayer behavior.
 
-The mounted-basic-attack path is kept separate from this change because the current melee authority is Better Combat context-bound; replaying `Player.attack` two ticks later would silently lose that donor attack context and would be an incorrect implementation of the 0.10 s buffer.
+The remaining presentation/spatial items require an actual Minecraft client-world review. The successful automated client startup check is not treated as a visual playtest.
 
 ## Verification
 
-This commit intentionally triggers the normal Openworld RPG integration workflow. Do not promote the following fields until that exact runtime has completed its checks.
+Validated code commit:
+
+`fab45a34377e05ada41b61a2575d8bffc298f04a`
+
+GitHub Actions:
+
+- workflow: `Build Openworld RPG`
+- run: `38369080541` / Build Openworld RPG #367
+- result: SUCCESS
+- `Test and build M0 core`: SUCCESS
+- core-profile dedicated server smoke: SUCCESS
+- gameplay-profile dependency server smoke: SUCCESS
+- gameplay-profile client startup smoke: SUCCESS
+- JVM-free joined-player Arc Bolt playtest JAR build: SUCCESS
+- non-mutating R01 integration playtest JAR build: SUCCESS
+- M0 Modrinth playtest pack: SUCCESS
+- artifact id: `11798910808`
+- artifact: `openworld-rpg-m0-fab45a34377e05ada41b61a2575d8bffc298f04a`
+- artifact bytes: `13269484`
+- artifact SHA-256: `b41a8456b82b33ba1b31c4e887178c95686f546c6a247a30102495bcabaf6441`
 
 ```text
 SOURCE ASSET ACQUIRED: YES
@@ -114,11 +151,14 @@ RUNTIME ENTITY BOUND: YES
 SERVER TRAVERSAL AUTHORITY BOUND: YES
 RESOLVE RUNTIME BOUND: YES
 SAFE DISMOUNT AUTHORITY BOUND: YES
+MOUNTED BASIC-ATTACK SAFE-DISMOUNT BUFFER BOUND: YES
 SOURCE ANIMATION RUNTIME BOUND: YES
-TESTED: PENDING FINAL WORKFLOW
-BUILD VERIFIED: PENDING FINAL WORKFLOW
-JAR PRODUCED: PENDING FINAL WORKFLOW
-CLIENT STARTUP: PENDING FINAL WORKFLOW
+TESTED: YES
+BUILD VERIFIED: YES
+JAR PRODUCED: YES
+CORE SERVER TESTED: YES
+GAMEPLAY DEPENDENCY SERVER TESTED: YES
+CLIENT STARTUP: YES
 CLIENT WORLD JOIN: NOT RUN
 MINECRAFT SCALE ACCEPTED: NO
 GROUND CONTACT ACCEPTED: NO
