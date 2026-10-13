@@ -1,0 +1,187 @@
+name: Generate Openworld RPG Trail Stag renderer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/generate-openworld-rpg-trail-stag-renderer.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate exact Stag GLB reader from proven Viper runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          base = Path('projects/openworld-rpg/src/main/java/dev/moonseungjun/openworldrpg/client/entity')
+          source = (base / 'MeadowViperGltfModel.java').read_text(encoding='utf-8')
+          text = source
+          text = text.replace('MeadowViperGltfModel', 'TrailStagGltfModel')
+          text = text.replace('MeadowViperRenderState', 'TrailStagRenderState')
+          text = text.replace('Meadow Viper', 'Trail Stag')
+          text = text.replace('Snake.glb', 'Stag.glb')
+          text = text.replace('models/entity/meadow_viper/snake.glb', 'models/entity/trail_stag/Stag.glb')
+          text = text.replace(
+              '70b4af1088dec939e167b07c0a5e69992a4851beac8bd24a9da1189b65ae101c',
+              '34818768f3e9298c9580ea79bfca2b79854a36877888a5e1e5df374b015f9e89'
+          )
+          text = text.replace('exact runtime reader/skinner for the pinned Quaternius Stag.glb.',
+                              'exact runtime reader/skinner for the pinned Quaternius Stag.glb.')
+
+          old_primitives = '''        JsonArray materials = root.getAsJsonArray("materials");
+                  JsonArray primitiveJson = root.getAsJsonArray("meshes")
+                          .get(0).getAsJsonObject().getAsJsonArray("primitives");
+                  Primitive[] primitives = new Primitive[primitiveJson.size()];
+                  for (int i = 0; i < primitiveJson.size(); i++) {
+                      JsonObject primitive = primitiveJson.get(i).getAsJsonObject();
+                      JsonObject attributes = primitive.getAsJsonObject("attributes");
+                      float[] positions = access.floats(attributes.get("POSITION").getAsInt());
+                      float[] normals = access.floats(attributes.get("NORMAL").getAsInt());
+                      int[] jointIndices = access.ints(attributes.get("JOINTS_0").getAsInt());
+                      float[] weights = access.floats(attributes.get("WEIGHTS_0").getAsInt());
+                      int[] indices = access.ints(primitive.get("indices").getAsInt());
+                      int material = primitive.get("material").getAsInt();
+                      primitives[i] = new Primitive(
+                              positions,
+                              normals,
+                              jointIndices,
+                              weights,
+                              indices,
+                              materialArgb(materials.get(material).getAsJsonObject())
+                      );
+                  }'''
+          # Keep indentation from source exact by regex rather than relying on copied whitespace.
+          primitive_pattern = re.compile(
+              r'        JsonArray materials = root\.getAsJsonArray\("materials"\);\n'
+              r'        JsonArray primitiveJson = root\.getAsJsonArray\("meshes"\).*?'
+              r'        }\n\n        Map<String, Clip> clips =',
+              re.S
+          )
+          replacement = '''        JsonArray materials = root.getAsJsonArray("materials");
+                  List<Primitive> primitiveList = new ArrayList<>();
+                  for (JsonElement meshElement : root.getAsJsonArray("meshes")) {
+                      JsonArray primitiveJson = meshElement.getAsJsonObject().getAsJsonArray("primitives");
+                      for (JsonElement primitiveElement : primitiveJson) {
+                          JsonObject primitive = primitiveElement.getAsJsonObject();
+                          JsonObject attributes = primitive.getAsJsonObject("attributes");
+                          if (!attributes.has("POSITION")
+                                  || !attributes.has("NORMAL")
+                                  || !attributes.has("JOINTS_0")
+                                  || !attributes.has("WEIGHTS_0")
+                                  || !primitive.has("indices")
+                                  || !primitive.has("material")) {
+                              throw new IllegalStateException("Pinned Trail Stag primitive lost its skinned runtime contract.");
+                          }
+                          primitiveList.add(new Primitive(
+                                  access.floats(attributes.get("POSITION").getAsInt()),
+                                  access.floats(attributes.get("NORMAL").getAsInt()),
+                                  access.ints(attributes.get("JOINTS_0").getAsInt()),
+                                  access.floats(attributes.get("WEIGHTS_0").getAsInt()),
+                                  access.ints(primitive.get("indices").getAsInt()),
+                                  materialArgb(materials.get(primitive.get("material").getAsInt()).getAsJsonObject())
+                          ));
+                      }
+                  }
+                  Primitive[] primitives = primitiveList.toArray(Primitive[]::new);
+          
+                  Map<String, Clip> clips ='''
+          text, count = primitive_pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit('could not replace primitive parser')
+
+          contract_pattern = re.compile(
+              r'    private static void requirePinnedContract\(.*?\n    private static void requireClip\(',
+              re.S
+          )
+          contract = '''    private static void requirePinnedContract(
+                  Node[] nodes,
+                  int[] joints,
+                  Primitive[] primitives,
+                  Map<String, Clip> clips
+              ) {
+                  if (nodes.length != 56 || joints.length != 38 || primitives.length != 6) {
+                      throw new IllegalStateException(
+                              "Pinned Trail Stag GLB structure drifted: nodes=" + nodes.length
+                                      + " joints=" + joints.length + " primitives=" + primitives.length
+                      );
+                  }
+                  requireClip(clips, "AnimalArmature|Attack_Headbutt", 0.791667F, 22);
+                  requireClip(clips, "AnimalArmature|Attack_Kick", 0.791667F, 28);
+                  requireClip(clips, "AnimalArmature|Death", 1.083333F, 30);
+                  requireClip(clips, "AnimalArmature|Eating", 12.083333F, 19);
+                  requireClip(clips, "AnimalArmature|Gallop", 0.500000F, 32);
+                  requireClip(clips, "AnimalArmature|Gallop_Jump", 1.375000F, 35);
+                  requireClip(clips, "AnimalArmature|Idle", 3.333333F, 21);
+                  requireClip(clips, "AnimalArmature|Idle_2", 3.333333F, 21);
+                  requireClip(clips, "AnimalArmature|Idle_Headlow", 3.333333F, 23);
+                  requireClip(clips, "AnimalArmature|Idle_HitReact_Left", 0.458333F, 20);
+                  requireClip(clips, "AnimalArmature|Idle_HitReact_Right", 0.500000F, 21);
+                  requireClip(clips, "AnimalArmature|Jump_toIdle", 1.500000F, 35);
+                  requireClip(clips, "AnimalArmature|Walk", 1.166667F, 31);
+              }
+          
+              private static void requireClip('''
+          text, count = contract_pattern.subn(contract, text, count=1)
+          if count != 1:
+              raise SystemExit('could not replace pinned contract')
+
+          selection_pattern = re.compile(
+              r'    private record AnimationSelection\(String clipName, float clipTimeSeconds\) \{.*?\n    private static float lerp',
+              re.S
+          )
+          selection = '''    private record AnimationSelection(String clipName, float clipTimeSeconds) {
+                  private static final String GALLOP = "AnimalArmature|Gallop";
+                  private static final String JUMP = "AnimalArmature|Gallop_Jump";
+                  private static final String IDLE = "AnimalArmature|Idle";
+                  private static final String WALK = "AnimalArmature|Walk";
+          
+                  private static AnimationSelection forState(TrailStagRenderState state) {
+                      if (state.authoredAirborne || !state.onGround) {
+                          // The embedded jump is a one-shot. Vertical direction selects a stable source
+                          // phase until integrated client review supplies accepted contact timing.
+                          return new AnimationSelection(JUMP, state.verticalVelocity >= 0.0F ? 0.45F : 0.95F);
+                      }
+                      if (state.horizontalSpeed >= 0.20F) {
+                          return loop(GALLOP, state.ageSeconds, 0.500000F);
+                      }
+                      if (state.horizontalSpeed > 0.02F) {
+                          return loop(WALK, state.ageSeconds, 1.166667F);
+                      }
+                      return loop(IDLE, state.ageSeconds, 3.333333F);
+                  }
+          
+                  private static AnimationSelection loop(String name, float age, float duration) {
+                      float time = duration <= 0.0F ? 0.0F : age % duration;
+                      return new AnimationSelection(name, time);
+                  }
+              }
+          
+              private static float lerp'''
+          text, count = selection_pattern.subn(selection, text, count=1)
+          if count != 1:
+              raise SystemExit('could not replace animation selector')
+
+          # No Viper-specific source references may survive in the generated runtime.
+          for forbidden in ('MeadowViper', 'SnakeArmature', 'meadow_viper'):
+              if forbidden in text:
+                  raise SystemExit(f'forbidden generated token remains: {forbidden}')
+          (base / 'TrailStagGltfModel.java').write_text(text, encoding='utf-8')
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add projects/openworld-rpg/src/main/java/dev/moonseungjun/openworldrpg/client/entity/TrailStagGltfModel.java
+          git commit -m "feat(openworld-rpg): bind exact Trail Stag GLB runtime [skip ci]"
+          git push origin HEAD:main
