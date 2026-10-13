@@ -1,6 +1,7 @@
 package dev.moonseungjun.openworldrpg.mount;
 
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
+import dev.moonseungjun.openworldrpg.entity.TrailStagEntity;
 import dev.moonseungjun.openworldrpg.network.TrailStagMountRequestPayload;
 import java.util.Objects;
 import java.util.UUID;
@@ -8,13 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
-/**
- * Server authority for Trail Stag mount-button requests and the one-second summon channel.
- *
- * <p>The live entity/presentation binder is intentionally registered separately. Until the exact
- * accepted Stag asset and rideable runtime exist, requests fail closed rather than exposing a
- * vanilla, static, or invisible substitute.</p>
- */
+/** Server authority for Trail Stag mount-button requests and the one-second summon channel. */
 public final class TrailStagMountIntentRuntime {
     private static final long NO_HOSTILE_ACTIVITY_CUTOFF = Long.MIN_VALUE / 8L;
     private static final ConcurrentHashMap<UUID, PlayerRuntimeState> STATES =
@@ -55,6 +50,14 @@ public final class TrailStagMountIntentRuntime {
                 return RequestResult.REPLAYED_SEQUENCE;
             }
             runtime.lastSequence = sequence;
+
+            if (player.getVehicle() instanceof TrailStagEntity stag && stag.ownedBy(player)) {
+                runtime.channel = null;
+                return TrailStagLiveBinding.requestSafeDismount(player, stag)
+                        ? RequestResult.DISMOUNTED
+                        : RequestResult.NO_ROOM_TO_DISMOUNT;
+            }
+
             if (runtime.channel != null) {
                 return RequestResult.ALREADY_CHANNELING;
             }
@@ -179,6 +182,8 @@ public final class TrailStagMountIntentRuntime {
 
     public enum RequestResult {
         CHANNEL_STARTED,
+        DISMOUNTED,
+        NO_ROOM_TO_DISMOUNT,
         INVALID_PROTOCOL,
         INVALID_SEQUENCE,
         REPLAYED_SEQUENCE,
@@ -190,10 +195,6 @@ public final class TrailStagMountIntentRuntime {
         COMBAT_LOCK
     }
 
-    /**
-     * Production entity binder. Completion must run the real authored-volume and placement probes;
-     * ALLOWED may be returned only after the project-owned Trail Stag was actually created safely.
-     */
     public interface LiveBinding {
         boolean presentationRuntimeReady();
 
