@@ -195,11 +195,12 @@ public final class MeadowViperEntity extends PathfinderMob {
     ) {
         getNavigation().stop();
         applyCollisionAwareLunge(target, phaseAge);
+
         // Resolve around the source clip's lunge/contact peak, not at active-frame start.
         if (!activeImpactResolved && phaseAge >= 2L) {
             activeImpactResolved = true;
             double contactDistance = horizontalDistanceTo(target);
-            double visibleContactDistance = REVIEW_ATTACK_PEAK_FORWARD_REACHH
+            double visibleContactDistance = REVIEW_ATTACK_PEAK_FORWARD_REACH
                     + target.getBbWidth() * 0.5;
             if (contactDistance <= BITE_RANGE
                     && contactDistance <= visibleContactDistance + 1.0e-3
