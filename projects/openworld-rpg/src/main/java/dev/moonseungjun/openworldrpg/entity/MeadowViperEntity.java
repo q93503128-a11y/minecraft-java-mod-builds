@@ -270,147 +270,114 @@ public final class MeadowViperEntity extends PathfinderMob {
         if (distance < 1.0e-6) {
             return;
         }
-        double visibleContactDistance = REVIEW_ATTACK_PEAK_FORWARD_REACH
-                + target.getBbWidth() * 0.5;
-        double needed = Math.max(0.0, distance - visibleContactDistance);
-        // Reach visible contact by active tick 2, where the source attack clip is near peak extension.
-        int remainingContactSteps = Math.max(1, 3 - (int) activeAge);
-        double thisTick = needed / remainingContactSteps;
-        if (thisTick > 1.0e-4) {
-            move(MoverType.SELF, horizontal.normalize().scale(thisTick));
-        }
-    }
+        double visibleContactDistance = REVIEW_ATTACK_PEAK_FORWARD_REACH
+È\™Ù]™Ù]˜•ÚY
 
-    private void applyCoilBite(ServerPlayer target) {
-        double rawDamage = ProjectCombatRules.rawEnemyPhysicalDamageFromBenchmarkShare(2, 0.09);
-        PlayerDefenseAuthority.IncomingHit hit = PlayerDefenseAuthority.IncomingHit.baseline(
-                rawDamage,
-                ProjectImpactTransaction.DamageSchool.PHYSICAL,
-                2,
-                PlayerDefenseAuthority.GuardPressureBand.LIGHT,
-                true,
-                true,
-                true
-        );
-        ProjectPlayerIncomingDamageRuntime.IncomingApplication incoming =
-                ProjectPlayerIncomingDamageRuntime.applyProjectOwnedActorHit(this, target, hit);
-        if (!incoming.accepted()) {
-            return;
-        }
+H
+ˆNÂˆİX›H™YYYHX]›X^
+Œ\İ[˜ÙHHš\ÚX›PÛÛXİ\İ[˜ÙJNÂˆËÈ™XXÚš\ÚX›HÛÛXİHXİ]™HXÚÈ‹Ú\™HHÛİ\˜ÙH]XÚÈÛ\\È™X\ˆXZÈ^[œÚ[Û‹‚ˆ[™[XZ[š[™ĞÛÛXİİ\ÈHX]›X^
+KÈH
+[
+HXİ]™PYÙJNÂˆİX›H\ÕXÚÈH™YYYÈ™[XZ[š[™ĞÛÛXİİ\ÎÂˆYˆ
+\ÕXÚÈˆKŒKM
+HÂˆ[İ™J[İ™\•\K”ÑS‹Üš^›Û[››Ü›X[^™J
+KœØØ[J\ÕXÚÊJNÂˆBˆB‚ˆš]˜]H›ÚY\PÛÚ[š]JÙ\™\”^Y\ˆ\™Ù]
+HÂˆİX›H˜]Ñ[XYÙHH›Ú™XİÛÛX˜][\Ëœ˜]Ñ[™[^T\ÚXØ[[XYÙQœ›ÛP™[˜ÚX\šÔÚ\™J‹ŒJNÂˆ^Y\‘Y™[œÙP]]Üš]K’[˜ÛÛZ[™Ò]]H^Y\‘Y™[œÙP]]Üš]K’[˜ÛÛZ[™Ò]˜˜\Ù[[™Jˆ˜]Ñ[XYÙKˆ›Ú™Xİ[\Xİ˜[œØXİ[Û‹‘[XYÙTØÚÛÛ”TÒPĞSˆ‹ˆ^Y\‘Y™[œÙP]]Üš]K‘İX\™™\Üİ\™P˜[™“QÒˆYKˆYKˆYBˆ
+NÂˆ›Ú™Xİ^Y\’[˜ÛÛZ[™Ñ[XYÙT[[YK’[˜ÛÛZ[™Ğ\XØ][Ûˆ[˜ÛÛZ[™ÈBˆ›Ú™Xİ^Y\’[˜ÛÛZ[™Ñ[XYÙT[[YK˜\T›Ú™XİİÛ™YXİÜ’]
+\Ë\™Ù]]
+NÂˆYˆ
+Z[˜ÛÛZ[™Ë˜XØÙ\Y
 
-        ProjectPlayerPoisePressureRuntime.applyAuthoredPressure(target, PLAYER_POISE_PRESSURE);
-        double statusMultiplier = incoming.resolution()
-                .map(result -> poisonBuildupMultiplier(target, result))
-                .orElse(0.0);
-        R01MeadowViperPoisonRuntime.applyBuildup(
-                target,
-                R01MeadowViperPoisonRuntime.BITE_BUILDUP,
-                statusMultiplier
-        );
-    }
+JHÂˆ™]\›ÂˆB‚ˆ›Ú™Xİ^Y\”Ú\ÙT™\Üİ\™T[[YK˜\P]]Ü™Y™\Üİ\™J\™Ù]VQT—ÔÒTÑWÔ‘TÔÕT‘JNÂˆİX›Hİ]\Ó][\Y\ˆH[˜ÛÛZ[™Ëœ™\ÛÛ][ÛŠ
+Bˆ›X\
+™\İ[OˆÚ\ÛÛZ[\][\Y\Š\™Ù]™\İ[
+JBˆ›Ü‘[ÙJŒ
+NÂˆŒSYXYİÕš\\”Ú\ÛÛ”[[YK˜\PZ[\
+ˆ\™Ù]ˆŒSYXYİÕš\\”Ú\ÛÛ”[[YK’UWĞ•RSTˆİ]\Ó][\Y\‚ˆ
+NÂˆB‚ˆš]˜]Hİ]XÈİX›HÚ\ÛÛZ[\][\Y\ŠˆÙ\™\”^Y\ˆ\™Ù]ˆ]‹›[ÛÛœÙ][™Ú[‹›Ü[ÛÜ›œË˜ÛÛX˜]œİ]K”^Y\‘Y™[œÙT[[YTİ]K’[˜ÛÛZ[™ÑY™[œÙT™\İ[™\İ[ˆ
+HÂˆYˆ
+™\İ[™ÙÙY
 
-    private static double poisonBuildupMultiplier(
-            ServerPlayer target,
-            dev.moonseungjun.openworldrpg.combat.state.PlayerDefenseRuntimeState.IncomingDefenseResult result
-    ) {
-        if (result.dodged() || result.perfectGuarded()) {
-            return 0.0;
-        }
-        if (!result.guarded()) {
-            return 1.0;
-        }
-        var defense = CombatStateServices.defenseSnapshots()
-                .snapshot(target.getUUID())
-                .orElse(null);
-        if (defense == null || defense.guardType().isEmpty()) {
-            return 1.0;
-        }
-        double absorption = PlayerDefenseAuthority.guardAbsorption(
-                defense.guardType().orElseThrow(),
-                ProjectImpactTransaction.DamageSchool.PHYSICAL
-        );
-        if (result.guardBroken()) {
-            absorption *= 0.5;
-        }
-        return Math.max(0.0, 1.0 - absorption);
-    }
+H™\İ[œ\™™XİİX\™Y
 
-    private Optional<ServerPlayer> resolveTarget(ServerLevel level) {
-        if (targetId == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(level.getPlayerByUUID(targetId))
-                .filter(this::validTarget);
-    }
+JHÂˆ™]\›ˆŒÂˆBˆYˆ
+\™\İ[™İX\™Y
 
-    private Optional<ServerPlayer> nearestAmbientPlayer(ServerLevel level) {
-        return level.players().stream()
-                .filter(ServerPlayer.class::isInstance)
-                .map(ServerPlayer.class::cast)
-                .filter(this::validTarget)
-                .filter(player -> horizontalDistanceTo(player) <= WARNING_RADIUS)
-                .min(Comparator.comparingDouble(player -> distanceToSqr(player)));
-    }
+JHÂˆ™]\›ˆKŒÂˆBˆ˜\ˆY™[œÙHHÛÛX˜]İ]TÙ\šXÙ\Ë™Y™[œÙTÛ˜\ÚİÊ
+BˆœÛ˜\Úİ
+\™Ù]™Ù]URQ
 
-    private boolean validTarget(ServerPlayer player) {
-        return player != null
-                && player.isAlive()
-                && !player.isSpectator()
-                && !player.isCreative()
-                && player.level() == level();
-    }
+JBˆ›Ü‘[ÙJ[
+NÂˆYˆ
+Y™[œÙHOH[Y™[œÙK™İX\™\J
+Kš\Ñ[\J
+JHÂˆ™]\›ˆKŒÂˆBˆİX›HXœÛÜœ[ÛˆH^Y\‘Y™[œÙP]]Üš]K™İX\™XœÛÜœ[ÛŠˆY™[œÙK™İX\™\J
+K›Ü‘[ÙU›İÊ
+Kˆ›Ú™Xİ[\Xİ˜[œØXİ[Û‹‘[XYÙTØÚÛÛ”TÒPĞSˆ
+NÂˆYˆ
+™\İ[™İX\™œ›ÚÙ[Š
+JHÂˆXœÛÜœ[Ûˆ
+HNÂˆBˆ™]\›ˆX]›X^
+ŒKŒHXœÛÜœ[ÛŠNÂˆB‚ˆš]˜]HÜ[Û˜[Ù\™\”^Y\ˆ™\ÛÛ™U\™Ù]
+Ù\™\“]™[]™[
+HÂˆYˆ
+\™Ù]YOH[
+HÂˆ™]\›ˆÜ[Û˜[™[\J
+NÂˆBˆ™]\›ˆÜ[Û˜[›Ù“[X›J]™[™Ù]^Y\UURQ
+\™Ù]Y
+JBˆ™š[\ŠÙ\™\”^Y\‹˜Û\ÜÎš\Ò[œİ[˜ÙJBˆ›X\
+Ù\™\”^Y\‹˜Û\ÜÎ˜Ø\İ
+Bˆ™š[\Š\Î˜[Y\™Ù]
+NÂˆB‚ˆš]˜]HÜ[Û˜[Ù\™\”^Y\ˆ™X\™\İ[XšY[^Y\ŠÙ\™\“]™[]™[
+HÂˆ™]\›ˆ]™[œ^Y\œÊ
+Kœİ™X[J
+Bˆ™š[\ŠÙ\™\”^Y\‹˜Û\ÜÎš\Ò[œİ[˜ÙJBˆ›X\
+Ù\™\”^Y\‹˜Û\ÜÎ˜Ø\İ
+Bˆ™š[\Š\Î˜[Y\™Ù]
+Bˆ™š[\Š^Y\ˆOˆÜš^›Û[\İ[˜ÙUÊ^Y\ŠHHĞT“’S‘×ÔQUTÊBˆ›Z[ŠÛÛ\\˜]Ü‹˜ÛÛ\\š[™ÑİX›J^Y\ˆOˆ\İ[˜ÙUÔÜ\Š^Y\ŠJJNÂˆB‚ˆš]˜]H›ÛÛX[ˆ˜[Y\™Ù]
+Ù\™\”^Y\ˆ^Y\ŠHÂˆ™]\›ˆ^Y\ˆOH[ˆ	‰ˆ^Y\‹š\Ğ[]™J
+Bˆ	‰ˆ\^Y\‹š\ÔÜXİ]ÜŠ
+Bˆ	‰ˆ\^Y\‹š\ĞÜ™X]]™J
+Bˆ	‰ˆ^Y\‹›]™[
 
-    private double horizontalDistanceTo(ServerPlayer player) {
-        double dx = player.getX() - getX();
-        double dz = player.getZ() - getZ();
-        return Math.sqrt(dx * dx + dz * dz);
-    }
+HOH]™[
 
-    private void face(ServerPlayer target) {
-        getLookControl().setLookAt(target, 30.0F, 30.0F);
-    }
+NÂˆB‚ˆš]˜]HİX›HÜš^›Û[\İ[˜ÙUÊÙ\™\”^Y\ˆ^Y\ŠHÂˆİX›HH^Y\‹™Ù]
 
-    private void transition(Phase next, long nowTick) {
-        if (phase() == next) {
-            return;
-        }
-        entityData.set(PHASE, next.id());
-        entityData.set(PHASE_START_TICK, nowTick);
-    }
+HHÙ]
 
-    private void resetNeutral(long nowTick) {
-        targetId = null;
-        provoked = false;
-        activeImpactResolved = false;
-        getNavigation().stop();
-        transition(Phase.NEUTRAL, nowTick);
-    }
+NÂˆİX›HˆH^Y\‹™Ù]Š
+HHÙ]Š
+NÂˆ™]\›ˆX]œÜ\
+
+ˆ
+Èˆ
+ˆŠNÂˆB‚ˆš]˜]H›ÚY˜XÙJÙ\™\”^Y\ˆ\™Ù]
+HÂˆÙ]ÛÚĞÛÛ›Û
 
-    public enum Phase {
-        NEUTRAL(0),
-        WARNING(1),
-        BITE_WINDUP(2),
-        BITE_ACTIVE(3),
-        RECOVERY(4),
-        SPACING(5);
+KœÙ]ÛÚĞ]
+\™Ù]ÌŒ‹ÌŒŠNÂˆB‚ˆš]˜]H›ÚY˜[œÚ][ÛŠ\ÙH™^Û™È›İÕXÚÊHÂˆYˆ
+\ÙJ
+HOH™^
+HÂˆ™]\›ÂˆBˆ[]Q]KœÙ]
+TÑK™^šY
 
-        private final int id;
+JNÂˆ[]Q]KœÙ]
+TÑWÔÕT•ÕPÒË›İÕXÚÊNÂˆB‚ˆš]˜]H›ÚY™\Ù]™]]˜[
+Û™È›İÕXÚÊHÂˆ\™Ù]YH[Âˆ›İ›ÚÙYH˜[ÙNÂˆXİ]™R[\Xİ™\ÛÛ™YH˜[ÙNÂˆÙ]˜]šYØ][ÛŠ
+KœİÜ
 
-        Phase(int id) {
-            this.id = id;
-        }
+NÂˆ˜[œÚ][ÛŠ\ÙK“‘UUS›İÕXÚÊNÂˆB‚ˆX›XÈ[[H\ÙHÂˆ‘UUS
+
+KˆĞT“’S‘ÊJKˆ’UWÕÒS‘T
+ŠKˆ’UWĞPÕU‘JÊKˆ‘PÓÕ‘T–J
+KˆÔPÒS‘ÊJNÂ‚ˆš]˜]Hš[˜[[YÂ‚ˆ\ÙJ[Y
+HÂˆ\ËšYHYÂˆB‚ˆX›XÈ[Y
 
-        public int id() {
-            return id;
-        }
-
-        public static Phase byId(int id) {
-            for (Phase phase : values()) {
-                if (phase.id == id) {
-                    return phase;
-                }
-            }
-            return NEUTRAL;
-        }
-    }
-}
+HÂˆ™]\›ˆYÂˆB‚ˆX›XÈİ]XÈ\ÙHRY
+[Y
+HÂˆ›Üˆ
+\ÙH\ÙHˆ˜[Y\Ê
+JHÂˆYˆ
+\ÙKšYOHY
+HÂˆ™]\›ˆ\ÙNÂˆBˆBˆ™]\›ˆ‘UUSÂˆBˆBŸB
