@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -63,7 +64,7 @@ public final class TrailStagLiveBinding implements TrailStagMountIntentRuntime.L
         if (!level.addFreshEntity(stag)) {
             return TrailStagMountService.SummonEligibility.NEED_OPEN_GROUND;
         }
-        if (!player.startRiding(stag, true)) {
+        if (!player.startRiding(stag)) {
             stag.discard();
             return TrailStagMountService.SummonEligibility.NEED_OPEN_GROUND;
         }
@@ -127,10 +128,11 @@ public final class TrailStagLiveBinding implements TrailStagMountIntentRuntime.L
 
     private static void discardPreviousOwnedSummon(ServerPlayer owner) {
         UUID entityId = ACTIVE_BY_OWNER.remove(owner.getUUID());
-        if (entityId == null || owner.getServer() == null) {
+        if (entityId == null || !(owner.level() instanceof ServerLevel ownerLevel)) {
             return;
         }
-        for (ServerLevel level : owner.getServer().getAllLevels()) {
+        MinecraftServer server = ownerLevel.getServer();
+        for (ServerLevel level : server.getAllLevels()) {
             Entity entity = level.getEntity(entityId);
             if (entity instanceof TrailStagEntity stag) {
                 stag.ejectPassengers();
