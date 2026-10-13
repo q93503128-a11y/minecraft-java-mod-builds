@@ -1,0 +1,8 @@
+{
+  "item.moon_test.starfall_focus": "Starfall Focus",
+  "message.moon_test.starfall_cast": "The starlight answers.",
+  "message.moon_test.overworld_only": "Starfall requires the Overworld night sky.",
+  "message.moon_test.night_only": "Starfall can only be used at night.",
+  "message.moon_test.target_required": "Aim at terrain within 64 blocks.",
+  "message.moon_test.sky_required": "The target must be open to the night sky."
+}
