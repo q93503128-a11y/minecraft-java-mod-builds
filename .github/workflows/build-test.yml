@@ -25,11 +25,11 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.8'
+          gradle-version: '9.6.0'
 
       - name: Verify toolchain
         run: |
@@ -55,17 +55,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="build/libs/test-0.1.0.jar"
+          JAR="build/libs/test-0.2.0.jar"
           test -s "$JAR"
           python - <<'PY'
           import zipfile
-          jar = 'build/libs/test-0.1.0.jar'
+          jar = 'build/libs/test-0.2.0.jar'
           with zipfile.ZipFile(jar) as z:
               names = z.namelist()
               assert 'fabric.mod.json' in names, 'fabric.mod.json missing'
               assert any(n.startswith('dev/moonseungjun/testmod/') and n.endswith('.class') for n in names), 'compiled classes missing'
               assert any(n.startswith('assets/moon_test/') for n in names), 'assets namespace missing'
               assert any(n.startswith('data/moon_test/') for n in names), 'data namespace missing'
+              assert 'assets/moon_test/items/starfall_focus.json' in names, '26.3 client item definition missing'
               assert not any(n.endswith('.java') for n in names), 'source .java leaked into runtime JAR'
               assert len(names) == len(set(names)), 'duplicate ZIP entries found'
           PY
@@ -75,13 +76,13 @@ jobs:
           # Test Build and Runtime Report
 
           - Commit: ${GITHUB_SHA}
-          - Project: test 0.1.0
-          - Minecraft: 1.21.1
-          - Java: 21
+          - Project: test 0.2.0
+          - Minecraft: 26.3
+          - Java: 25
           - Fabric Loader: 0.19.5
-          - Fabric API: 0.116.16+1.21.1
-          - Gradle: 8.8
-          - Fabric Loom: 1.7.4
+          - Fabric API: 0.162.0+26.3
+          - Gradle: 9.6.0
+          - Fabric Loom: 1.17.20
           - Clean build: PASS
           - JAR structure check: PASS
           - SHA-256: ${SHA}
@@ -97,7 +98,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-0.1.0-logs
+          name: test-0.2.0-logs
           path: projects/test/build/raw-logs.zip
           if-no-files-found: warn
           retention-days: 14
@@ -106,10 +107,10 @@ jobs:
         if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: test-0.1.0-deliverables
+          name: test-0.2.0-deliverables
           path: |
-            projects/test/build/libs/test-0.1.0.jar
-            projects/test/build/libs/test-0.1.0.jar.sha256
+            projects/test/build/libs/test-0.2.0.jar
+            projects/test/build/libs/test-0.2.0.jar.sha256
             projects/test/BUILD_AND_RUNTIME_REPORT.md
           if-no-files-found: error
           retention-days: 30
