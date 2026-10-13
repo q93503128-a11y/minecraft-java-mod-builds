@@ -6,6 +6,7 @@ public final class TrailStagMountRules {
 
     public static final int SUMMON_CHANNEL_TICKS = 20;
     public static final int HOSTILE_COMBAT_QUIET_TICKS = 80;
+    public static final int CLEAN_RETURN_TICKS = 20;
     public static final int RESOLVE_BREAK_RESUMMON_COOLDOWN_TICKS = 240;
 
     public static final double RESOLVE_MAX_HP_MULTIPLIER = 1.00;
