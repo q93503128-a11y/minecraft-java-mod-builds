@@ -8,8 +8,10 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 public final class OpenworldRpgMixinPlugin implements IMixinConfigPlugin {
-    private static final String BETTER_COMBAT_MIXIN =
-            "dev.moonseungjun.openworldrpg.mixin.PlayerAttackAuthorityMixin";
+    private static final Set<String> BETTER_COMBAT_MIXINS = Set.of(
+            "dev.moonseungjun.openworldrpg.mixin.PlayerAttackAuthorityMixin",
+            "dev.moonseungjun.openworldrpg.mixin.BetterCombatTrailStagAttackBufferMixin"
+    );
     private static final String SPELL_ENGINE_MIXIN_PREFIX =
             "dev.moonseungjun.openworldrpg.mixin.SpellEngine";
 
@@ -24,7 +26,7 @@ public final class OpenworldRpgMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (BETTER_COMBAT_MIXIN.equals(mixinClassName)) {
+        if (BETTER_COMBAT_MIXINS.contains(mixinClassName)) {
             return FabricLoader.getInstance().isModLoaded("bettercombat");
         }
         if (mixinClassName.startsWith(SPELL_ENGINE_MIXIN_PREFIX)) {

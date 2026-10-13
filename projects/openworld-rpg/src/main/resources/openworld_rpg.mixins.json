@@ -11,6 +11,7 @@
     "PlayerDownedLethalMixin",
     "ExternalActorProgressionMixin",
     "ExternalActorDamageAuthorityMixin",
+    "BetterCombatTrailStagAttackBufferMixin",
     "PlayerAttackAuthorityMixin",
     "PlayerFoodSystemSuppressionMixin",
     "PlayerPoisonHealingReceivedMixin",
