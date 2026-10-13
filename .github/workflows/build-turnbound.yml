@@ -26,6 +26,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
+      - name: Generate 2D summon assets
+        working-directory: projects/turnbound
+        run: python3 tools/generate_summon_assets.py --root . --output src/main/resources
       - name: Test and build TURNBOUND
         working-directory: projects/turnbound
         run: gradle clean test build oneClickPack --stacktrace
@@ -65,6 +68,9 @@ jobs:
           grep -qx 'data/turnbound/enemies/v04.json' jar-contents.txt
           grep -qx 'data/turnbound/equipment/v04.json' jar-contents.txt
           grep -qx 'data/turnbound/battles/v04.json' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/bg_archive.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/portraits/p02.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/portraits/f04.png' jar-contents.txt
           unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
           grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
           grep -Fq "version=\"${expected_version}\"" <(tr -d ' ' < built-neoforge.mods.toml)
