@@ -153,7 +153,10 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
           git add projects/openworld-rpg/src/main/java/dev/moonseungjun/openworldrpg/client/entity/TrailStagGltfModel.java
           git commit -m "feat(openworld-rpg): bind exact Trail Stag GLB runtime [skip ci]"
-          git push origin HEAD:main
+          if ! git push origin HEAD:main; then
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
