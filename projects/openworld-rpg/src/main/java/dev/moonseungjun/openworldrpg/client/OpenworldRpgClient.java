@@ -2,6 +2,7 @@ package dev.moonseungjun.openworldrpg.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.openworldrpg.OpenworldRpgMod;
+import dev.moonseungjun.openworldrpg.entity.TrailStagEntity;
 import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -10,9 +11,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
-/**
- * Project-owned frequent combat and traversal inputs. Spell Engine remains a casting backend, not the input UI.
- */
+/** Project-owned frequent combat and traversal inputs. */
 public final class OpenworldRpgClient implements ClientModInitializer {
     private static final KeyMapping DODGE_KEY =
             key(
@@ -64,19 +63,24 @@ public final class OpenworldRpgClient implements ClientModInitializer {
                 return;
             }
 
+            boolean ridingTrailStag = client.player.getVehicle() instanceof TrailStagEntity;
             for (int slot = 0; slot < SKILL_KEYS.size(); slot++) {
                 KeyMapping key = SKILL_KEYS.get(slot);
                 while (key.consumeClick()) {
-                    ProjectSpellClientBridge.castSlot(
-                            client.player,
-                            slot
-                    );
+                    if (!ridingTrailStag) {
+                        ProjectSpellClientBridge.castSlot(
+                                client.player,
+                                slot
+                        );
+                    }
                 }
             }
             while (DODGE_KEY.consumeClick()) {
-                ProjectDodgeClientBridge.request(
-                        client.player
-                );
+                if (!ridingTrailStag) {
+                    ProjectDodgeClientBridge.request(
+                            client.player
+                    );
+                }
             }
             while (MOUNT_KEY.consumeClick()) {
                 TrailStagMountClientBridge.request(
