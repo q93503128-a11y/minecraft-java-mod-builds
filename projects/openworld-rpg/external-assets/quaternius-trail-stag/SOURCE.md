@@ -2,7 +2,7 @@
 
 > Recorded: 2026-10-13
 > Intended use: R01 first permanent mount visual/animation source
-> Runtime asset status: **NOT YET PINNED**
+> Runtime asset status: **PINNED — presentation acceptance still pending client-world review**
 
 ## Source-specific license evidence
 
@@ -32,19 +32,28 @@ license shown: Public Domain (CC0)
 
 This is source-specific CC0 evidence for this historical/public Stag distribution and therefore does not rely on the current central Quaternius license page.
 
-## Transport/mirror evidence
+## Accepted runtime artifact
 
-A public GitHub showcase mirror currently exposes a converted GLB at:
+The accepted runtime bytes are pinned at:
+
+```text
+projects/openworld-rpg/src/main/resources/assets/openworld_rpg/models/entity/trail_stag/Stag.glb
+```
+
+Pinned transport identity:
 
 ```text
 repository: trebeljahr/quaternius-showcase
 commit: 478a184d29af65637ba335ea3127995066fe11b6
 path: public/glb/animals_pack/Stag.glb
 Git blob: 18927223c253a8ac497a442c1a419d3c287fb84c
-reported size: 685252 bytes
+byte size: 685176
+SHA-256: 34818768f3e9298c9580ea79bfca2b79854a36877888a5e1e5df374b015f9e89
 ```
 
-A separate public repository also exposes a textual glTF Stag artifact:
+`RUNTIME.md` records the admitted GLB structure and all embedded clips: 56 nodes, 38 skin joints, 2 meshes / 6 primitives, 6 materials and 13 animations.
+
+A separate public repository also exposes a textual glTF Stag artifact and was used only as independent identity/transport evidence:
 
 ```text
 repository: WaelYasmina/cloningmodels
@@ -54,25 +63,22 @@ Git blob: 9bf3b64fdb88aa7d50645a32ed6c2828e8085a03
 reported size: 3067762 bytes
 ```
 
-These mirrors are transport/identity evidence only. Their presence does not replace byte-level comparison against the exact accepted source artifact.
-
 ## Admission boundary
 
 Closed:
 
 - selected creature identity;
-- source-specific author attribution;
-- source-specific CC0/public-domain evidence;
-- public formats and animation-family evidence;
-- two independently located transport artifacts.
+- source-specific author attribution and CC0/public-domain evidence;
+- exact runtime byte identity and SHA-256;
+- mesh/material/skin/animation structure inspection;
+- repository-pinned runtime GLB.
 
-Still required before player-facing runtime admission:
+Still requires integrated Minecraft client-world acceptance:
 
-1. acquire the exact accepted Stag artifact bytes;
-2. record SHA-256 of the bytes actually used;
-3. inspect mesh, material, skeleton/joints and embedded animation clip names/durations;
-4. pin the accepted runtime file in the project;
-5. bind the project-owned rideable renderer without converting it into a vanilla horse presentation;
-6. accept Minecraft scale, ground contact, rider seat, collision width/height and animation/movement agreement in the integrated R01 client pass.
+1. final model scale and ground contact;
+2. rider seat alignment;
+3. collision width/height agreement with the visible Stag;
+4. walk/gallop/hop animation agreement with authoritative movement;
+5. R01 environmental readability with the other admitted actors and props.
 
-Do not expose a vanilla horse, static substitute or invisible rideable while this gate remains open.
+A vanilla horse, static substitute or invisible rideable is not an acceptable fallback.
