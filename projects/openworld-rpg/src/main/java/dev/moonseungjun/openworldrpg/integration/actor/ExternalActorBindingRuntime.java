@@ -139,13 +139,16 @@ public final class ExternalActorBindingRuntime {
         });
 
         initialized = true;
+        long externalCombatProfileCount = COMBAT_PROFILES.keySet().stream()
+                .filter(R01ExternalActorCatalog.requiredRegistryTargets()::contains)
+                .count();
         logger.info(
                 "Openworld RPG R01 external actor registry gate armed for {} exact pinned targets; "
                         + "{} have project combat-stat authority. Cave Centipede multipart registry "
                         + "and Nature Spirit legacy registry are closed; non-Earthloong production "
                         + "spawns remain gated by attack/reward/presentation acceptance.",
                 R01ExternalActorCatalog.requiredRegistryTargets().size(),
-                COMBAT_PROFILES.size()
+                externalCombatProfileCount
         );
     }
 
