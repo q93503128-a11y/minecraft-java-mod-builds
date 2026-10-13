@@ -13,6 +13,7 @@
     "ExternalActorDamageAuthorityMixin",
     "PlayerAttackAuthorityMixin",
     "PlayerFoodSystemSuppressionMixin",
+    "PlayerPoisonHealingReceivedMixin",
     "SpellEngineProjectSkillExposureMixin",
     "SpellEngineHunterQuickstepPierceMixin"
   ],

@@ -9,10 +9,12 @@
   "environment": "*",
   "entrypoints": {
     "main": [
+      "dev.moonseungjun.openworldrpg.entity.OpenworldRpgEntityBootstrap",
       "dev.moonseungjun.openworldrpg.OpenworldRpgMod"
     ],
     "client": [
-      "dev.moonseungjun.openworldrpg.client.OpenworldRpgClient"
+      "dev.moonseungjun.openworldrpg.client.OpenworldRpgClient",
+      "dev.moonseungjun.openworldrpg.client.entity.MeadowViperClientBootstrap"
     ]
   },
   "mixins": [

@@ -3,6 +3,7 @@ package dev.moonseungjun.openworldrpg.combat.runtime;
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerBarrierAuthority;
 import dev.moonseungjun.openworldrpg.combat.authority.PlayerHealingAuthority;
 import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01EarthloongPhysicalEncounterRuntime;
+import dev.moonseungjun.openworldrpg.combat.encounter.r01.R01MeadowViperPoisonRuntime;
 import dev.moonseungjun.openworldrpg.combat.state.CombatAttribute;
 import dev.moonseungjun.openworldrpg.combat.state.CombatStateServices;
 import dev.moonseungjun.openworldrpg.combat.state.PlayerEquipmentService;
@@ -175,9 +176,14 @@ public final class ProjectHealingRuntime {
                 caster.level().getGameTime()
         );
 
+        double receivableHealing = requestedHealing
+                * R01MeadowViperPoisonRuntime.healingReceivedMultiplier(
+                        target,
+                        target.level().getGameTime()
+                );
         double otherwiseWastedOverheal = Math.max(
                 0.0,
-                requestedHealing - effectiveHealing
+                receivableHealing - effectiveHealing
         );
         double overflowBarrierRequested =
                 ClericSaintEffects.overhealBarrierAmount(

@@ -14,6 +14,7 @@ import java.util.Set;
  * Nature Spirit. Registry/stat closure does not imply production-spawn acceptance.</p>
  */
 public final class R01ExternalActorCatalog {
+    public static final String MEADOW_VIPER = "openworld_rpg:meadow_viper";
     public static final String GAZELLE = "alexsmobs:gazelle";
     public static final String BISON = "alexsmobs:bison";
     public static final String RACCOON = "alexsmobs:raccoon";
@@ -54,6 +55,7 @@ public final class R01ExternalActorCatalog {
             Set.of(EARTHLOONG);
 
     private static final Set<String> PROJECT_LOOT_AUTHORITY_TARGETS = Set.of(
+            MEADOW_VIPER,
             BISON,
             GRIZZLY,
             CAVE_CENTIPEDE_HEAD,
@@ -67,6 +69,16 @@ public final class R01ExternalActorCatalog {
 
     private static final List<ExternalActorCombatProfile> COMBAT_PROFILES =
             List.of(
+                    new ExternalActorCombatProfile(
+                            MEADOW_VIPER,
+                            2,
+                            75.0F,
+                            7.0,
+                            4.0,
+                            18.0,
+                            ExternalActorCombatProfile.CombatRank.COMMON,
+                            ExternalActorReactionCapabilities.none()
+                    ),
                     new ExternalActorCombatProfile(
                             BISON,
                             3,

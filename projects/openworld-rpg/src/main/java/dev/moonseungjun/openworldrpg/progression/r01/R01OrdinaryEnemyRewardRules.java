@@ -50,6 +50,7 @@ public final class R01OrdinaryEnemyRewardRules {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(rolls, "rolls");
         long gold = switch (source) {
+            case MEADOW_VIPER -> rolls.goldRollPercent() < 60 ? 2L : 0L;
             case BISON, GRIZZLY -> 0L;
             case CAVE_CENTIPEDE -> rolls.goldRollPercent() < 70 ? 3L : 0L;
             case STEELBOAR -> 18L;
@@ -57,8 +58,8 @@ public final class R01OrdinaryEnemyRewardRules {
 
         Map<String, Integer> materials = new HashMap<>();
         switch (source) {
-            case CAVE_CENTIPEDE -> {
-                // Donor Cave Centipede Leg remains excluded from project-normalized loot.
+            case MEADOW_VIPER, CAVE_CENTIPEDE -> {
+                // No baseline material drop; donor/venom materials remain intentionally excluded.
             }
             case BISON -> {
                 if (rolls.primaryMaterialRollPercent() < 70) {
@@ -122,6 +123,7 @@ public final class R01OrdinaryEnemyRewardRules {
     }
 
     public enum EnemySource {
+        MEADOW_VIPER(R01ExternalActorCatalog.MEADOW_VIPER, 2, 0.01, 0.008),
         CAVE_CENTIPEDE(R01ExternalActorCatalog.CAVE_CENTIPEDE_HEAD, 4, 0.01, 0.008),
         BISON(R01ExternalActorCatalog.BISON, 3, 0.01, 0.008),
         GRIZZLY(R01ExternalActorCatalog.GRIZZLY, 6, 0.01, 0.008),
