@@ -1,8 +1,0 @@
-{
-  "item.starfall_skill.starfall_focus": "Starfall Focus",
-  "message.starfall_skill.cast": "The starlight answers.",
-  "message.starfall_skill.overworld_only": "Starfall requires the Overworld night sky.",
-  "message.starfall_skill.night_only": "Starfall can only be used at night.",
-  "message.starfall_skill.target_required": "Aim at terrain within 64 blocks.",
-  "message.starfall_skill.sky_required": "The target must be open to the night sky."
-}
