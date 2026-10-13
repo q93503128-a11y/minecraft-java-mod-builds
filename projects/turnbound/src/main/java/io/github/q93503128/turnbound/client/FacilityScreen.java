@@ -61,6 +61,14 @@ abstract class FacilityScreen extends Screen {
             float partialTick
     );
 
+    /**
+     * Immersive physical services may own the full screen instead of being forced into the shared framed panel.
+     * The default remains the compact Foozle facility shell.
+     */
+    protected boolean immersivePresentation() {
+        return false;
+    }
+
     protected String subtitle() {
         return "";
     }
@@ -84,11 +92,17 @@ abstract class FacilityScreen extends Screen {
 
     @Override
     public final void extractBackground(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        // Keep the 3D world visible behind compact physical-NPC service surfaces.
+        // Compact facilities keep the world visible. Immersive facilities render their own scene in renderFacility().
     }
 
     @Override
     public final void extractRenderState(@NotNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        if (immersivePresentation()) {
+            renderFacility(graphics, mouseX, mouseY, partialTick);
+            super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+            return;
+        }
+
         TurnboundFrameStyle.frame(graphics, left, top, panelWidth, panelHeight, accent);
         graphics.text(font, title, left + 13, top + 12, TurnboundUiTokens.TEXT_PRIMARY, true);
         String subtitle = subtitle();
