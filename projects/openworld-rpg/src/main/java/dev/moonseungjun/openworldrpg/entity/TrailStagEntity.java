@@ -182,19 +182,25 @@ public final class TrailStagEntity extends PathfinderMob implements PlayerRideab
     @Nullable
     public LivingEntity getControllingPassenger() {
         Entity first = getFirstPassenger();
-        return first instanceof Player player && ownedBy(player) ? player : null;
+        if (!(first instanceof Player player)) {
+            return null;
+        }
+        // ownerId is intentionally server-transient and therefore absent on the client. Passenger
+        // membership itself is server-synchronized, so the client may treat the synchronized first
+        // player passenger as the local control source while the server still enforces ownership.
+        return level().isClientSide() || ownedBy(player) ? player : null;
     }
 
     @Override
     protected boolean canAddPassenger(Entity passenger) {
         return getPassengers().isEmpty()
                 && passenger instanceof Player player
-                && ownedBy(player);
+                && (level().isClientSide() || ownedBy(player));
     }
 
     @Override
     protected Vec3 getRiddenInput(Player controller, Vec3 selfInput) {
-        if (!ownedBy(controller) || landingRecoveryTicks > 0) {
+        if ((!level().isClientSide() && !ownedBy(controller)) || landingRecoveryTicks > 0) {
             return Vec3.ZERO;
         }
         float forward = Mth.clamp(controller.zza, -1.0F, 1.0F);
