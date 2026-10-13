@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "starfall_skill",
+  "version": "${version}",
+  "name": "Starfall Skill",
+  "description": "A night-only stellar light strike skill prototype.",
+  "authors": ["Moonseungjun"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.moonseungjun.starfall.StarfallMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
