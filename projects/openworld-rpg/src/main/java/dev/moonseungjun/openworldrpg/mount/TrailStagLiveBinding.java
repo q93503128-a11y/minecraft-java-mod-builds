@@ -23,7 +23,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public final class TrailStagLiveBinding implements TrailStagMountIntentRuntime.LiveBinding {
     private static final TrailStagLiveBinding INSTANCE = new TrailStagLiveBinding();
     private static final ConcurrentHashMap<UUID, UUID> ACTIVE_BY_OWNER = new ConcurrentHashMap<>();
-    private static final int CLEAN_DESPAWN_TICKS = 20;
 
     private TrailStagLiveBinding() {
     }
@@ -82,9 +81,14 @@ public final class TrailStagLiveBinding implements TrailStagMountIntentRuntime.L
             return false;
         }
         Vec3 position = target.get();
-        player.dismountTo(position.x, position.y, position.z);
-        stag.armCleanDespawn();
-        return true;
+        boolean separated = TrailStagDismountGuard.runAuthorized(() -> {
+            player.dismountTo(position.x, position.y, position.z);
+            return player.getVehicle() != stag;
+        });
+        if (separated) {
+            stag.armCleanDespawn();
+        }
+        return separated;
     }
 
     /** Resolve break must end the mounted state; prefer the same safety search, then nearest open column. */
@@ -95,7 +99,10 @@ public final class TrailStagLiveBinding implements TrailStagMountIntentRuntime.L
         }
         Optional<Vec3> safe = firstLegalDismount((ServerLevel) stag.level(), player, stag);
         Vec3 target = safe.orElseGet(() -> emergencyDismount((ServerLevel) stag.level(), player, stag));
-        player.dismountTo(target.x, target.y, target.z);
+        TrailStagDismountGuard.runAuthorized(() -> {
+            player.dismountTo(target.x, target.y, target.z);
+            return true;
+        });
         stag.armCleanDespawn();
     }
 
@@ -289,7 +296,12 @@ public final class TrailStagLiveBinding implements TrailStagMountIntentRuntime.L
 
     private record Support(boolean present, boolean nonLiquid, double highestY, double variance) {
         private static Support missing() {
-            return new Support(false, false, 0.0, Double.POSITIVE_INFINITY);
+            return new Support(
+                    false,
+                    false,
+                    0.0,
+                    TrailStagPlacementAuthority.MAX_SUPPORT_HEIGHT_VARIANCE + 1.0
+            );
         }
     }
 }
