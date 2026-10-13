@@ -2,8 +2,8 @@ package dev.moonseungjun.testmod;
 
 import com.mojang.math.Transformation;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -20,7 +20,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -70,8 +70,9 @@ public final class TestMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT).register(entries -> entries.accept(STARFALL_FOCUS));
-        ServerTickEvents.END_WORLD_TICK.register(TestMod::tickWorld);
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT)
+                .register(output -> output.accept(STARFALL_FOCUS));
+        ServerTickEvents.END_LEVEL_TICK.register(TestMod::tickWorld);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ensureFocus(handler.getPlayer()));
     }
 
@@ -103,7 +104,7 @@ public final class TestMod implements ModInitializer {
         ACTIVE_CASTS.computeIfAbsent(level.dimension(), ignored -> new ArrayList<>()).add(cast);
 
         level.playSound(null, caster.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.6F, 1.55F);
-        caster.displayClientMessage(Component.translatable("message.moon_test.starfall_cast"), true);
+        caster.sendOverlayMessage(Component.translatable("message.moon_test.starfall_cast"));
     }
 
     private static void tickWorld(ServerLevel level) {
@@ -302,7 +303,7 @@ public final class TestMod implements ModInitializer {
             float scale,
             boolean glowing
     ) {
-        Display.TextDisplay display = new Display.TextDisplay(EntityType.TEXT_DISPLAY, level);
+        Display.TextDisplay display = new Display.TextDisplay(EntityTypes.TEXT_DISPLAY, level);
         display.setText(Component.literal(glyph).withStyle(style -> style.withColor(color).withBold(true)));
         display.setBackgroundColor(0);
         display.setBillboardConstraints(Display.BillboardConstraints.CENTER);
@@ -362,8 +363,21 @@ public final class TestMod implements ModInitializer {
     }
 
     private static boolean isNight(ServerLevel level) {
-        long time = Math.floorMod(level.getDayTime(), 24000L);
+        long time = Math.floorMod(level.getOverworldClockTime(), 24000L);
         return time >= 13000L && time <= 23000L;
+    }
+
+    private static boolean setTestNight(ServerLevel level) {
+        var defaultClock = level.dimensionType().defaultClock();
+        if (defaultClock.isEmpty()) {
+            return false;
+        }
+
+        var clock = defaultClock.get();
+        long totalTicks = level.clockManager().getInstance(clock).totalTicks();
+        long dayStart = totalTicks - Math.floorMod(totalTicks, 24000L);
+        level.clockManager().setTotalTicks(clock, dayStart + 18000L);
+        return true;
     }
 
     private static double clamp01(double value) {
@@ -384,18 +398,20 @@ public final class TestMod implements ModInitializer {
                 return InteractionResult.PASS;
             }
             if (serverLevel.dimension() != Level.OVERWORLD) {
-                serverPlayer.displayClientMessage(Component.translatable("message.moon_test.overworld_only"), true);
+                serverPlayer.sendOverlayMessage(Component.translatable("message.moon_test.overworld_only"));
                 return InteractionResult.FAIL;
             }
 
             if (serverPlayer.isShiftKeyDown()) {
-                serverLevel.setDayTime(18000L);
-                serverPlayer.displayClientMessage(Component.translatable("message.moon_test.night_opened"), true);
-                return InteractionResult.SUCCESS;
+                if (setTestNight(serverLevel)) {
+                    serverPlayer.sendOverlayMessage(Component.translatable("message.moon_test.night_opened"));
+                    return InteractionResult.SUCCESS;
+                }
+                return InteractionResult.FAIL;
             }
 
             if (!isNight(serverLevel)) {
-                serverPlayer.displayClientMessage(Component.translatable("message.moon_test.night_only"), true);
+                serverPlayer.sendOverlayMessage(Component.translatable("message.moon_test.night_only"));
                 return InteractionResult.FAIL;
             }
 
@@ -409,14 +425,14 @@ public final class TestMod implements ModInitializer {
                     serverPlayer
             ));
             if (hit.getType() != HitResult.Type.BLOCK) {
-                serverPlayer.displayClientMessage(Component.translatable("message.moon_test.target_required"), true);
+                serverPlayer.sendOverlayMessage(Component.translatable("message.moon_test.target_required"));
                 return InteractionResult.FAIL;
             }
 
             Vec3 target = hit.getLocation();
             BlockPos skyCheck = BlockPos.containing(target).above();
             if (!serverLevel.canSeeSky(skyCheck)) {
-                serverPlayer.displayClientMessage(Component.translatable("message.moon_test.sky_required"), true);
+                serverPlayer.sendOverlayMessage(Component.translatable("message.moon_test.sky_required"));
                 return InteractionResult.FAIL;
             }
 
