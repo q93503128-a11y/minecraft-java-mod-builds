@@ -18,6 +18,17 @@ final class SummonAssets {
     static final Identifier LIGHT_SWEEP = texture("light_sweep.png");
     static final Identifier VIGNETTE = texture("vignette.png");
     static final Identifier PAGE = texture("page.png");
+
+    // Second-pass cinematic layers. These are deliberately reusable across every summon result.
+    static final Identifier SIGIL_BACK = texture("sigil_back.png");
+    static final Identifier FLARE_CYAN = texture("flare_cyan.png");
+    static final Identifier FLARE_VIOLET = texture("flare_violet.png");
+    static final Identifier FLARE_GOLD = texture("flare_gold.png");
+    static final Identifier SHARDS_CYAN = texture("shards_cyan.png");
+    static final Identifier SHARDS_VIOLET = texture("shards_violet.png");
+    static final Identifier SHARDS_GOLD = texture("shards_gold.png");
+    static final Identifier VEIL_SOFT = texture("veil_soft.png");
+
     static final Identifier CARD_COMMON = texture("card_common.png");
     static final Identifier CARD_RARE = texture("card_rare.png");
     static final Identifier CARD_LEGENDARY = texture("card_legendary.png");
@@ -37,6 +48,18 @@ final class SummonAssets {
         if (stars >= 5) return CARD_LEGENDARY;
         if (stars >= 4) return CARD_RARE;
         return CARD_COMMON;
+    }
+
+    static Identifier flare(int stars) {
+        if (stars >= 5) return FLARE_GOLD;
+        if (stars >= 4) return FLARE_VIOLET;
+        return FLARE_CYAN;
+    }
+
+    static Identifier shards(int stars) {
+        if (stars >= 5) return SHARDS_GOLD;
+        if (stars >= 4) return SHARDS_VIOLET;
+        return SHARDS_CYAN;
     }
 
     private static Identifier texture(String file) {
