@@ -31,13 +31,35 @@ Still required for a playable Trail Stag:
 5. bind rider steering, acceleration, fixed hop, Resolve damage interception and clean despawn;
 6. run the integrated Minecraft client review for scale, ground contact, rider seat, collision footprint, movement/animation agreement and safe dismount behavior.
 
-## Validation state before CI
+## Verification
+
+Validated code commit:
+
+`970b1571ebbd24e70abfba952c11b25598004ebf`
+
+GitHub Actions:
+
+- workflow: `Build Openworld RPG`
+- run: `38357388207` / Build Openworld RPG #361
+- result: SUCCESS
+- `Test and build M0 core`: SUCCESS
+- core-profile dedicated server smoke: SUCCESS
+- gameplay-profile dependency server smoke: SUCCESS
+- gameplay-profile client startup smoke: SUCCESS
+- JVM-free joined-player Arc Bolt playtest JAR build: SUCCESS
+- non-mutating R01 integration playtest JAR build: SUCCESS
+- artifact id: `11793161956`
+- artifact: `openworld-rpg-m0-970b1571ebbd24e70abfba952c11b25598004ebf`
+- artifact SHA-256: `312dbfdab9cecb13bb4a0130835225a9795bd4a8c53826d23310965438c77be3`
 
 ```text
 CODE REVIEWED: YES
-TESTED: PENDING CI
-BUILD VERIFIED: NO
-JAR PRODUCED: NO
+TESTED: YES
+BUILD VERIFIED: YES
+JAR PRODUCED: YES
+CORE SERVER TESTED: YES
+GAMEPLAY DEPENDENCY SERVER TESTED: YES
+CLIENT STARTUP TESTED: YES
 U-KEY CLIENT INPUT BOUND: YES
 SERVER SUMMON CHANNEL AUTHORITY BOUND: YES
 LIVE TRAIL STAG ENTITY: GATED
