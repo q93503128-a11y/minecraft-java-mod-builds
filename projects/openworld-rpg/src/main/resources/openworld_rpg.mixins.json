@@ -14,6 +14,8 @@
     "PlayerAttackAuthorityMixin",
     "PlayerFoodSystemSuppressionMixin",
     "PlayerPoisonHealingReceivedMixin",
+    "PlayerTrailStagResolveMixin",
+    "TrailStagSafeDismountMixin",
     "SpellEngineProjectSkillExposureMixin",
     "SpellEngineHunterQuickstepPierceMixin"
   ],
