@@ -32,13 +32,14 @@ def configure_render():
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
+    scene.view_settings.exposure = 0.75
     if hasattr(scene, "eevee") and hasattr(scene.eevee, "taa_render_samples"):
         scene.eevee.taa_render_samples = 48
 
     scene.world.use_nodes = True
     background = scene.world.node_tree.nodes.get("Background")
-    background.inputs["Color"].default_value = (0.002, 0.003, 0.007, 1.0)
-    background.inputs["Strength"].default_value = 0.07
+    background.inputs["Color"].default_value = (0.003, 0.004, 0.009, 1.0)
+    background.inputs["Strength"].default_value = 0.08
 
     for look in ("AgX - Medium High Contrast", "Medium High Contrast"):
         try:
@@ -54,7 +55,7 @@ def configure_render():
     glare = tree.nodes.new("CompositorNodeGlare")
     glare.glare_type = "FOG_GLOW"
     glare.quality = "HIGH"
-    glare.threshold = 1.25
+    glare.threshold = 1.45
     glare.size = 6
     comp = tree.nodes.new("CompositorNodeComposite")
     tree.links.new(rl.outputs["Image"], glare.inputs["Image"])
@@ -96,10 +97,9 @@ def import_gltf(path: Path, label: str):
 
 def override_materials(objects, material):
     for obj in objects:
-        if obj.type != "MESH":
-            continue
-        obj.data.materials.clear()
-        obj.data.materials.append(material)
+        if obj.type == "MESH":
+            obj.data.materials.clear()
+            obj.data.materials.append(material)
 
 
 def add_box(name, location, scale, material, rotation=(0, 0, 0), bevel=0.0):
@@ -145,7 +145,7 @@ def point_at(obj, target):
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
-def add_camera(location, target, lens=48):
+def add_camera(location, target, lens=50):
     data = bpy.data.cameras.new("VaultCamera")
     data.lens = lens
     data.sensor_width = 36
@@ -157,18 +157,14 @@ def add_camera(location, target, lens=48):
     return obj
 
 
-def add_quarter_ring(asset_path, prefix, center, scale, material, rotation_offset=0.0):
+def add_quarter_ring(asset_path, prefix, center, scale, material):
     roots = []
     for i in range(4):
         root, objects = import_gltf(asset_path, f"{prefix}_{i + 1}")
         override_materials(objects, material)
         root.location = center
         root.scale = (scale, scale, scale)
-        root.rotation_euler = (
-            math.radians(90),
-            math.radians(rotation_offset + i * 90),
-            0,
-        )
+        root.rotation_euler = (math.radians(90), math.radians(i * 90), 0)
         roots.append(root)
     return roots
 
@@ -178,109 +174,98 @@ def build_scene(asset_root: Path):
     props = asset_root / "Props"
     columns = asset_root / "Columns"
 
-    frame_mat = make_principled("Frame_Neutral", (0.035, 0.043, 0.060), metallic=0.82, roughness=0.25)
-    door_mat = make_principled("Door_Neutral", (0.013, 0.016, 0.024), metallic=0.90, roughness=0.19)
-    stage_mat = make_principled("Stage_Neutral", (0.021, 0.026, 0.036), metallic=0.78, roughness=0.26)
-    support_mat = make_principled("Support_Neutral", (0.018, 0.022, 0.032), metallic=0.84, roughness=0.31)
-    clamp_mat = make_principled("Clamp_Neutral", (0.070, 0.076, 0.090), metallic=0.90, roughness=0.18)
-    ring_outer_mat = make_principled("SealRing_Outer_Metal", (0.030, 0.036, 0.050), metallic=0.92, roughness=0.20)
-    ring_inner_mat = make_principled("SealRing_Inner_Metal", (0.055, 0.058, 0.070), metallic=0.88, roughness=0.23)
+    frame_mat = make_principled("Frame_Neutral", (0.075, 0.085, 0.115), metallic=0.82, roughness=0.25)
+    door_mat = make_principled("Door_Neutral", (0.035, 0.041, 0.058), metallic=0.90, roughness=0.18)
+    stage_mat = make_principled("Stage_Neutral", (0.047, 0.054, 0.070), metallic=0.78, roughness=0.25)
+    support_mat = make_principled("Support_Neutral", (0.050, 0.057, 0.078), metallic=0.84, roughness=0.29)
+    clamp_mat = make_principled("Clamp_Neutral", (0.12, 0.13, 0.16), metallic=0.90, roughness=0.18)
+    ring_mat = make_principled("SealRing_Metal", (0.075, 0.080, 0.100), metallic=0.92, roughness=0.20)
     violet = make_principled(
-        "Violet_Indicator", (0.025, 0.004, 0.055), metallic=0.2, roughness=0.24,
-        emission=(0.28, 0.035, 0.85), emission_strength=5.5,
+        "Violet_Indicator", (0.020, 0.004, 0.045), metallic=0.15, roughness=0.22,
+        emission=(0.25, 0.025, 0.72), emission_strength=4.0,
     )
     gold = make_principled(
-        "GoldWhite_Emission", (0.10, 0.045, 0.004), metallic=0.1, roughness=0.18,
-        emission=(1.0, 0.42, 0.055), emission_strength=11.0,
+        "GoldWhite_Emission", (0.10, 0.040, 0.003), metallic=0.08, roughness=0.18,
+        emission=(1.0, 0.36, 0.04), emission_strength=10.0,
     )
-    floor_mat = make_principled("VoidFloor", (0.004, 0.006, 0.011), metallic=0.72, roughness=0.20)
+    floor_mat = make_principled("VoidFloor", (0.010, 0.013, 0.022), metallic=0.70, roughness=0.21)
 
-    frame, frame_objects = import_gltf(platforms / "Door_Frame_SquareTall.gltf", "VaultFrame")
-    override_materials(frame_objects, frame_mat)
+    frame, objects = import_gltf(platforms / "Door_Frame_SquareTall.gltf", "VaultFrame")
+    override_materials(objects, frame_mat)
     frame.location = (0, 3.30, 0)
-    frame.scale = (1.28, 1.28, 1.28)
+    frame.scale = (1.34, 1.34, 1.34)
 
-    left_door, left_objects = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Left")
-    override_materials(left_objects, door_mat)
-    left_door.location = (0, 3.14, 0.48)
-    left_door.scale = (1.31, 1.31, 1.31)
+    left_door, objects = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Left")
+    override_materials(objects, door_mat)
+    left_door.location = (0, 3.12, 0.55)
+    left_door.scale = (1.36, 1.36, 1.36)
 
-    right_door, right_objects = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Right")
-    override_materials(right_objects, door_mat)
-    right_door.location = (0, 3.14, 0.48)
-    right_door.scale = (-1.31, 1.31, 1.31)
+    right_door, objects = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Right")
+    override_materials(objects, door_mat)
+    right_door.location = (0, 3.12, 0.55)
+    right_door.scale = (-1.36, 1.36, 1.36)
 
-    stage, stage_objects = import_gltf(platforms / "Platform_Round1.gltf", "RevealStage")
-    override_materials(stage_objects, stage_mat)
-    stage.location = (0, -0.35, 0)
-    stage.scale = (1.30, 1.30, 1.30)
+    stage, objects = import_gltf(platforms / "Platform_Round1.gltf", "RevealStage")
+    override_materials(objects, stage_mat)
+    stage.location = (0, -0.50, 0)
+    stage.scale = (1.34, 1.34, 1.34)
 
-    for x in (-4.05, 4.05):
-        support, support_objects = import_gltf(columns / "Column_Hollow.gltf", f"Support_{'L' if x < 0 else 'R'}")
-        override_materials(support_objects, support_mat)
-        support.location = (x, 3.45, 0)
-        support.scale = (0.88, 0.88, 1.15)
+    for x in (-4.18, 4.18):
+        support, objects = import_gltf(columns / "Column_Hollow.gltf", f"Support_{'L' if x < 0 else 'R'}")
+        override_materials(objects, support_mat)
+        support.location = (x, 3.52, 0)
+        support.scale = (0.90, 0.90, 1.18)
 
-    # Real kit geometry replaces the generic neon torus blockout.
+    # Real curved structural pieces form a dark mechanical halo around the door.
     outer_ring = add_quarter_ring(
         columns / "Column_MetalSupport_Curve.gltf",
-        "OuterSealQuarter",
-        (0, 2.72, 2.72),
-        0.49,
-        ring_outer_mat,
-        rotation_offset=0,
-    )
-    inner_ring = add_quarter_ring(
-        platforms / "Platform_CenterPlate_Curve.gltf",
-        "InnerSealQuarter",
-        (0, 2.58, 2.72),
-        0.80,
-        ring_inner_mat,
-        rotation_offset=45,
+        "SealSupportQuarter",
+        (0, 2.78, 2.76),
+        0.50,
+        ring_mat,
     )
 
-    # Four physical clamps sit at the cardinal locking points and remain readable.
+    # Physical locks at the four main stress points.
     clamp_positions = [
-        (-2.16, 2.36, 2.72, 0.0),
-        (2.16, 2.36, 2.72, math.pi),
-        (0.0, 2.36, 4.88, math.pi / 2),
-        (0.0, 2.36, 0.56, -math.pi / 2),
+        (-2.30, 2.34, 2.76, 0.0),
+        (2.30, 2.34, 2.76, math.pi),
+        (0.0, 2.34, 5.05, math.pi / 2),
+        (0.0, 2.34, 0.47, -math.pi / 2),
     ]
     clamps = []
     for i, (x, y, z, rz) in enumerate(clamp_positions):
-        clamp, clamp_objects = import_gltf(props / "Prop_Clamp.gltf", f"LockClamp_{i + 1}")
-        override_materials(clamp_objects, clamp_mat)
+        clamp, objects = import_gltf(props / "Prop_Clamp.gltf", f"LockClamp_{i + 1}")
+        override_materials(objects, clamp_mat)
         clamp.location = (x, y, z)
-        clamp.scale = (2.10, 2.10, 2.10)
+        clamp.scale = (2.35, 2.35, 2.35)
         clamp.rotation_euler = (math.radians(90), 0, rz)
         clamps.append(clamp)
 
-    # Sparse emissive status marks only; the machinery itself stays metal.
     indicators = [
-        add_box("Indicator_Top", (0, 2.28, 4.40), (0.24, 0.035, 0.030), violet, bevel=0.018),
-        add_box("Indicator_Bottom", (0, 2.28, 1.04), (0.24, 0.035, 0.030), violet, bevel=0.018),
-        add_box("Indicator_Left", (-1.68, 2.28, 2.72), (0.030, 0.035, 0.24), violet, bevel=0.018),
-        add_box("Indicator_Right", (1.68, 2.28, 2.72), (0.030, 0.035, 0.24), violet, bevel=0.018),
+        add_box("Indicator_Top", (0, 2.18, 4.47), (0.21, 0.028, 0.025), violet, bevel=0.014),
+        add_box("Indicator_Bottom", (0, 2.18, 1.05), (0.21, 0.028, 0.025), violet, bevel=0.014),
+        add_box("Indicator_Left", (-1.71, 2.18, 2.76), (0.025, 0.028, 0.21), violet, bevel=0.014),
+        add_box("Indicator_Right", (1.71, 2.18, 2.76), (0.025, 0.028, 0.21), violet, bevel=0.014),
     ]
-    seam = add_box("VaultSeam", (0, 2.30, 2.62), (0.018, 0.025, 1.58), violet, bevel=0.009)
+    seam = add_box("VaultSeam", (0, 2.14, 2.68), (0.014, 0.020, 1.64), violet, bevel=0.007)
 
-    bpy.ops.mesh.primitive_plane_add(size=40, location=(0, 0, -0.035))
+    bpy.ops.mesh.primitive_plane_add(size=42, location=(0, 0, -0.035))
     floor = bpy.context.object
     floor.name = "ChamberFloor"
     floor.data.materials.append(floor_mat)
 
-    # Keep most of the machine dark; lighting reveals form instead of painting it blue.
-    add_area_light("Cool_Rim_Left", (-5.8, 0.0, 6.6), 720, (0.10, 0.13, 0.36), 3.8, (0, 3.0, 2.5))
-    add_area_light("Cool_Rim_Right", (5.5, 1.0, 5.4), 540, (0.05, 0.14, 0.28), 3.6, (0, 3.0, 2.7))
-    add_area_light("Top_Rim", (0, 3.3, 8.5), 850, (0.22, 0.08, 0.42), 3.4, (0, 3.0, 2.7))
-    add_area_light("Front_Fill", (0, -7.5, 3.2), 260, (0.07, 0.075, 0.10), 4.5, (0, 3.0, 2.4))
+    # Form-revealing lighting; the machine stays dark but readable.
+    add_area_light("Front_Key", (-2.2, -5.5, 5.2), 980, (0.16, 0.18, 0.28), 4.0, (0, 3.0, 2.55))
+    add_area_light("Right_Rim", (5.2, 0.8, 5.8), 1250, (0.05, 0.17, 0.46), 3.5, (0, 3.1, 2.8))
+    add_area_light("Left_Rim", (-5.4, 1.8, 4.6), 760, (0.22, 0.07, 0.34), 3.1, (0, 3.1, 2.6))
+    add_area_light("Top_Rim", (0, 3.5, 8.6), 1100, (0.27, 0.11, 0.43), 3.0, (0, 3.0, 2.7))
+    add_area_light("Floor_Fill", (0, -1.0, 0.7), 430, (0.07, 0.09, 0.14), 4.0, (0, 3.0, 1.8))
 
-    camera = add_camera((0, -10.6, 1.95), (0, 2.95, 2.45), lens=48)
-
+    camera = add_camera((1.05, -11.0, 2.02), (0, 3.0, 2.52), lens=50)
     return {
         "left_door": left_door,
         "right_door": right_door,
-        "inner_ring": inner_ring,
+        "outer_ring": outer_ring,
         "indicators": indicators,
         "seam": seam,
         "gold": gold,
@@ -298,41 +283,40 @@ def render(scene_parts, output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
     camera = scene_parts["camera"]
 
-    camera.location = (0, -10.6, 1.95)
-    camera.data.lens = 48
-    point_at(camera, (0, 2.95, 2.45))
+    camera.location = (1.05, -11.0, 2.02)
+    camera.data.lens = 50
+    point_at(camera, (0, 3.0, 2.52))
     scene.render.filepath = str(output_dir / "01_locked_hero.png")
     bpy.ops.render.render(write_still=True)
 
-    camera.location = (0.48, -7.55, 1.72)
-    camera.data.lens = 52
-    point_at(camera, (-0.10, 3.0, 2.62))
+    camera.location = (-0.65, -7.9, 1.75)
+    camera.data.lens = 54
+    point_at(camera, (0.05, 3.0, 2.66))
     scene.render.filepath = str(output_dir / "02_approach.png")
     bpy.ops.render.render(write_still=True)
 
-    # Highest-rarity blocking only. Authored fracture geometry still comes later.
+    # Highest-rarity lighting/blocking only; fracture geometry is still not authored.
     left = scene_parts["left_door"]
     right = scene_parts["right_door"]
-    left.location.x -= 1.16
-    left.location.y -= 0.26
-    left.rotation_euler[2] = math.radians(6)
-    right.location.x += 1.16
-    right.location.y -= 0.26
-    right.rotation_euler[2] = math.radians(-6)
-    for i, quarter in enumerate(scene_parts["inner_ring"]):
-        quarter.rotation_euler[1] += math.radians(11 if i % 2 == 0 else -11)
+    left.location.x -= 1.12
+    left.location.y -= 0.24
+    left.rotation_euler[2] = math.radians(5)
+    right.location.x += 1.12
+    right.location.y -= 0.24
+    right.rotation_euler[2] = math.radians(-5)
+    for i, quarter in enumerate(scene_parts["outer_ring"]):
+        quarter.rotation_euler[1] += math.radians(4 if i % 2 == 0 else -4)
     for indicator in scene_parts["indicators"]:
         set_material(indicator, scene_parts["gold"])
     set_material(scene_parts["seam"], scene_parts["gold"])
 
-    # Backlight surface is a previs stand-in for the final volumetric fracture flash.
-    core = add_box("Legendary_Backlight_Blockout", (0, 3.48, 2.62), (1.42, 0.025, 1.82), scene_parts["gold"], bevel=0.12)
-    add_point_light("LegendaryCore", (0, 2.95, 2.62), 1450, (1.0, 0.34, 0.045), 0.35)
-    add_area_light("LegendaryBacklight", (0, 3.30, 2.62), 2200, (1.0, 0.44, 0.08), 2.4, (0, -2.0, 2.5))
+    add_box("Legendary_Backlight_Blockout", (0, 3.45, 2.70), (1.46, 0.020, 1.86), scene_parts["gold"], bevel=0.10)
+    add_area_light("Legendary_Backlight", (0, 3.28, 2.70), 3000, (1.0, 0.40, 0.055), 2.5, (0, -2.0, 2.45))
+    add_point_light("Legendary_FrontBounce", (0, 1.8, 2.7), 720, (1.0, 0.24, 0.025), 0.45)
 
-    camera.location = (0, -8.65, 1.92)
-    camera.data.lens = 46
-    point_at(camera, (0, 3.0, 2.48))
+    camera.location = (0.42, -8.85, 1.92)
+    camera.data.lens = 48
+    point_at(camera, (0, 3.0, 2.52))
     scene.render.filepath = str(output_dir / "03_legendary_backlight_blockout.png")
     bpy.ops.render.render(write_still=True)
 
