@@ -1,9 +1,1 @@
-{
-  "item.moon_test.starfall_focus": "별빛 강하 촉매",
-  "message.moon_test.starfall_cast": "먼 별빛이 응답한다.",
-  "message.moon_test.overworld_only": "오버월드의 밤하늘 아래에서만 사용할 수 있다.",
-  "message.moon_test.night_only": "별빛 강하는 밤에만 사용할 수 있다. 웅크린 채 사용하면 밤이 열린다.",
-  "message.moon_test.night_opened": "밤하늘이 열렸다.",
-  "message.moon_test.target_required": "96블록 안의 지면을 바라봐야 한다.",
-  "message.moon_test.sky_required": "목표 지점 위로 밤하늘이 열려 있어야 한다."
-}
+{}
