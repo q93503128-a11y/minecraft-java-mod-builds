@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           git clone --depth 1 --filter=blob:none --sparse https://github.com/agentkaerf/FreeModels.git /tmp/FreeModels
-          git -C /tmp/FreeModels sparse-checkout set \
+          git -C /tmp/FreeModels sparse-checkout set --skip-checks \
             'Modular SciFi MegaKit[Standard]/glTF/Platforms' \
             'Modular SciFi MegaKit[Standard]/glTF/Props' \
             'Modular SciFi MegaKit[Standard]/glTF/Columns'
