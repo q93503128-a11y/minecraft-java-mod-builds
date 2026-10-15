@@ -51,7 +51,7 @@ The v2 cinematic is asset-driven:
 - dedicated VFX textures or shaders only where they materially improve the scene
 - code limited primarily to camera, timeline, rarity branching, sound synchronization and asset visibility/playback
 
-The reveal concept is now a **dimensional containment gate**, not a literal bank-vault door.
+The reveal concept is a **dimensional containment gate**, not a literal bank-vault door.
 
 Target structure:
 
@@ -79,7 +79,7 @@ Primary hero source direction:
 - Helley — `Portal gate Sci-Fi`
 - Official source: Sketchfab model `86f65251573843bcbf74d3857c8dd9d1`
 - License shown on the model page: Creative Commons Attribution
-- Status: hero candidate locked, raw file still must pass real 3D inspection
+- Status: visual hero candidate locked; official raw download must be supplied by the user and then pass real 3D inspection
 
 Secondary environment source:
 
@@ -87,20 +87,22 @@ Secondary environment source:
 - License: CC0 1.0 Universal
 - Role: stage, side supports, rails, background machinery and restrained secondary dressing only
 
-Important preproduction result:
+Important preproduction results:
 
-- Quaternius-only hero mockups were rendered and rejected.
-- A CC0 bank-vault-door hero mockup was rendered and rejected.
-- Combining the bank-vault door with Quaternius was also rejected.
-- Do not return to any of those rejected compositions.
+- Quaternius-only hero mockups: rendered and rejected
+- CC0 bank-vault hero and Quaternius composite: rendered and rejected
+- OpenGameArt `Eldritch Portal`: public PBR `.blend` rendered and rejected because its dark-fantasy design language conflicts with the target
+- Blendkit anonymous acquisition route: rejected because public access/search was unreliable
+- 3DAssets.dev recovery-facility door/arch: source metadata reviewed; CI API/CDN access failed and no visual approval was granted
+- Do not return to any rejected composition or lower the hero quality gate merely because a source is easier to download
 
 ### Implementation gate
 
 Minecraft v2 implementation must not begin until:
 
-1. the Helley model is downloaded from the official source
+1. the user downloads Helley's model through the official Sketchfab flow and provides the original file/archive
 2. exact attribution/license information is recorded
-3. raw mesh/animation/materials are inspected in Blender or equivalent
+3. raw mesh/animation/materials are inspected using ordinary non-generative 3D tooling
 4. a real preview is produced with minimal supporting environment
 5. that preview passes visual review at the intended camera distance
 
@@ -120,9 +122,11 @@ are reported separately.
 
 Current v2 state:
 
-- SOURCE/Licensing research: REVIEWED
+- SOURCE/licensing research: REVIEWED
 - Rejected real-mesh previews: COMPLETED
-- Final hero raw-asset inspection: NOT YET COMPLETED
+- Current legacy 0.3.0 prototype BUILD VERIFIED: YES
+- Final hero raw-asset inspection: BLOCKED ON OFFICIAL Helley DOWNLOAD
 - Minecraft v2 implementation: NOT STARTED
+- v2 BUILD VERIFIED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
