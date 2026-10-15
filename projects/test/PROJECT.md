@@ -44,40 +44,67 @@ Do not treat build success of that prototype as evidence of visual quality.
 
 The v2 cinematic is asset-driven:
 
-- real 3D vault / frame / stage / lock assets
-- authored model animation for locks and door movement
-- authored fracture pieces for the highest-rarity branch
+- a real 3D hero gate with authored mechanical detail
+- authored model animation for gate/containment movement
+- real stage/chamber geometry
 - texture/material-based emissive lighting
 - dedicated VFX textures or shaders only where they materially improve the scene
 - code limited primarily to camera, timeline, rarity branching, sound synchronization and asset visibility/playback
 
-The target reveal structure remains:
+The reveal concept is now a **dimensional containment gate**, not a literal bank-vault door.
+
+Target structure:
 
 1. enter the dimensional chamber
-2. approach the vault
-3. rotate the seal mechanism
-4. release four locks sequentially
-5. normal/rare branch opens normally
-6. highest-rarity branch attempts normal opening and fails
-7. brief silence and internal impacts
-8. violet signal cuts out
-9. gold-white light leaks from the seam
-10. authored vault fracture bursts outward
-11. backlit silhouette appears
-12. reward/character reveal motion
-13. minimal result UI appears after the reveal lands
+2. approach the containment gate
+3. mechanical activation begins
+4. normal/rare branch stabilizes and opens the dimensional membrane normally
+5. highest-rarity branch begins the same way but stalls
+6. brief silence
+7. internal impacts deform the membrane / disturb real mechanical parts
+8. normal emissive signal cuts out
+9. gold-white light leaks from inside
+10. containment field tears or inverts
+11. authored mechanical movement crosses the camera path
+12. backlit reward/character silhouette appears
+13. reveal motion lands
+14. minimal result UI appears afterward
 
 ### Asset canon
 
 See `GACHA_VAULT_ASSET_PLAN.md` before further implementation.
 
-Primary external base currently selected for preproduction:
+Primary hero source direction:
 
-- Quaternius `Modular Sci-Fi MegaKit` Standard pack
+- Helley — `Portal gate Sci-Fi`
+- Official source: Sketchfab model `86f65251573843bcbf74d3857c8dd9d1`
+- License shown on the model page: Creative Commons Attribution
+- Status: hero candidate locked, raw file still must pass real 3D inspection
+
+Secondary environment source:
+
+- Quaternius `Modular Sci-Fi MegaKit`
 - License: CC0 1.0 Universal
-- Main candidate pieces: `Door_DarkMetal`, `Door_Frame_SquareTall`, `Prop_Clamp`, `Platform_Round1`, `Column_Hollow` plus supporting structural pieces
+- Role: stage, side supports, rails, background machinery and restrained secondary dressing only
 
-Do not return to code-first visual design if the real-asset mockup is not convincing.
+Important preproduction result:
+
+- Quaternius-only hero mockups were rendered and rejected.
+- A CC0 bank-vault-door hero mockup was rendered and rejected.
+- Combining the bank-vault door with Quaternius was also rejected.
+- Do not return to any of those rejected compositions.
+
+### Implementation gate
+
+Minecraft v2 implementation must not begin until:
+
+1. the Helley model is downloaded from the official source
+2. exact attribution/license information is recorded
+3. raw mesh/animation/materials are inspected in Blender or equivalent
+4. a real preview is produced with minimal supporting environment
+5. that preview passes visual review at the intended camera distance
+
+If the raw asset fails, replace the hero source instead of filling the scene with more particles or generic kit pieces.
 
 ## Validation language
 
@@ -90,3 +117,12 @@ Do not claim visual quality from compilation alone.
 - MULTIPLAYER TESTED
 
 are reported separately.
+
+Current v2 state:
+
+- SOURCE/Licensing research: REVIEWED
+- Rejected real-mesh previews: COMPLETED
+- Final hero raw-asset inspection: NOT YET COMPLETED
+- Minecraft v2 implementation: NOT STARTED
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
