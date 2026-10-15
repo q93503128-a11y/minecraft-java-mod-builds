@@ -20,10 +20,13 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Install Blender
+      - name: Install Blender headless runtime
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y blender python3-numpy
+          sudo apt-get install -y \
+            blender python3-numpy \
+            libegl1 libgl1 libgl1-mesa-dri \
+            libxrender1 libxi6 libxkbcommon0 xvfb
           blender --version | head -n 2
 
       - name: Fetch CC0 Quaternius preview assets
@@ -44,12 +47,14 @@ jobs:
 
       - name: Render asset-driven vault previs
         shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
           OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-vault-previs"
           ASSET_ROOT='/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF'
           mkdir -p "$OUT"
-          blender --background \
+          xvfb-run -a blender --background \
             --python "$GITHUB_WORKSPACE/projects/test/tools/gacha_vault_preview/build_scene.py" \
             -- "$ASSET_ROOT" "$OUT"
           test -s "$OUT/01_locked_hero.png"
@@ -74,6 +79,7 @@ jobs:
           - Transport mirror used by CI: agentkaerf/FreeModels
           - Mirror commit: ${MIRROR_SHA}
           - Real imported meshes: Door_DarkMetal, Door_Frame_SquareTall, Platform_Round1, Prop_Clamp, Column_Hollow
+          - Preview materials: neutral authored previs materials because the transport mirror omits referenced shared kit textures
           - Custom seal ring: BLOCKOUT ONLY; must be replaced/refined as authored hero geometry before Minecraft implementation
           - Legendary door displacement: BLOCKOUT ONLY; this is not the authored fracture animation
           - Visual approval: NOT YET GRANTED
