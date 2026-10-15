@@ -1,0 +1,91 @@
+name: Render Gacha Vault Previs
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/test/tools/gacha_vault_preview/**'
+      - '.github/workflows/render-gacha-vault-previs.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender
+          blender --version | head -n 2
+
+      - name: Fetch CC0 Quaternius preview assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/agentkaerf/FreeModels.git /tmp/FreeModels
+          git -C /tmp/FreeModels sparse-checkout set \
+            'Modular SciFi MegaKit[Standard]/glTF/Platforms' \
+            'Modular SciFi MegaKit[Standard]/glTF/Props' \
+            'Modular SciFi MegaKit[Standard]/glTF/Columns'
+          git -C /tmp/FreeModels rev-parse HEAD | tee /tmp/quaternius_mirror_commit.txt
+          test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Platforms/Door_DarkMetal.gltf'
+          test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Platforms/Door_Frame_SquareTall.gltf'
+          test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Platforms/Platform_Round1.gltf'
+          test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Props/Prop_Clamp.gltf'
+          test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Columns/Column_Hollow.gltf'
+
+      - name: Render asset-driven vault previs
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-vault-previs"
+          ASSET_ROOT='/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF'
+          mkdir -p "$OUT"
+          blender --background \
+            --python "$GITHUB_WORKSPACE/projects/test/tools/gacha_vault_preview/build_scene.py" \
+            -- "$ASSET_ROOT" "$OUT"
+          test -s "$OUT/01_locked_hero.png"
+          test -s "$OUT/02_approach.png"
+          test -s "$OUT/03_legendary_backlight_blockout.png"
+          test -s "$OUT/gacha_vault_previs.blend"
+
+      - name: Write provenance and status report
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-vault-previs"
+          MIRROR_SHA="$(cat /tmp/quaternius_mirror_commit.txt)"
+          cat > "$OUT/PREVIS_REPORT.md" <<EOF
+          # Gacha Vault Previs Report
+
+          - Project commit: ${GITHUB_SHA}
+          - Purpose: real-asset visual preproduction only; no Minecraft runtime implementation
+          - External base: Quaternius Modular Sci-Fi MegaKit Standard
+          - Official source: https://quaternius.com/packs/modularscifimegakit.html
+          - Official license: CC0 1.0 Universal
+          - Transport mirror used by CI: agentkaerf/FreeModels
+          - Mirror commit: ${MIRROR_SHA}
+          - Real imported meshes: Door_DarkMetal, Door_Frame_SquareTall, Platform_Round1, Prop_Clamp, Column_Hollow
+          - Custom seal ring: BLOCKOUT ONLY; must be replaced/refined as authored hero geometry before Minecraft implementation
+          - Legendary door displacement: BLOCKOUT ONLY; this is not the authored fracture animation
+          - Visual approval: NOT YET GRANTED
+          - Minecraft implementation: NOT STARTED
+          - PLAYTESTED: NO
+          EOF
+          sha256sum "$OUT"/*.png "$OUT/gacha_vault_previs.blend" > "$OUT/SHA256SUMS.txt"
+
+      - name: Upload previs
+        uses: actions/upload-artifact@v4
+        with:
+          name: gacha-vault-previs-${{ github.run_number }}
+          path: projects/test/build/gacha-vault-previs/
+          if-no-files-found: error
+          retention-days: 30
