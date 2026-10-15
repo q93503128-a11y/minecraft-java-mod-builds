@@ -1,11 +1,10 @@
-# One-shot visual source inspection for the current gacha preproduction gate.
-name: Inspect Gacha Blendkit Hero
+name: Inspect Gacha Mechanical Hero
 
 on:
   push:
     branches: [main]
     paths:
-      - 'projects/test/tools/gacha_blendkit_probe.py'
+      - '.github/scripts/gacha_3dassets_probe.py'
       - '.github/workflows/inspect-gacha-blendkit-hero.yml'
   workflow_dispatch:
 
@@ -22,30 +21,31 @@ jobs:
       - name: Install Blender headless runtime
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y blender python3-numpy xvfb curl
+          sudo apt-get install -y blender python3-numpy xvfb
           blender --version | head -n 2
 
-      - name: Probe and render free Blendkit hero
+      - name: Download and render direct CC0 mechanical candidates
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
-          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-blendkit-hero"
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-mechanical-hero"
           mkdir -p "$OUT"
           xvfb-run -a blender --background \
-            --python "$GITHUB_WORKSPACE/projects/test/tools/gacha_blendkit_probe.py" \
+            --python "$GITHUB_WORKSPACE/.github/scripts/gacha_3dassets_probe.py" \
             -- "$OUT"
-          test -s "$OUT/SEARCH_RESULT.json"
-          test -s "$OUT/SELECTED_ASSET.json"
-          test -s "$OUT/01_front.png"
-          test -s "$OUT/02_three_quarter.png"
-          test -s "$OUT/03_close.png"
-          test -s "$OUT/hero_candidate.blend"
+          test -s "$OUT/PROVENANCE.json"
+          test -s "$OUT/01_blast_door_front.png"
+          test -s "$OUT/01_blast_door_three_quarter.png"
+          test -s "$OUT/03_decon_arch_front.png"
+          test -s "$OUT/03_decon_arch_three_quarter.png"
+          test -s "$OUT/05_scale_compare.png"
+          test -s "$OUT/mechanical_candidates.blend"
 
       - name: Upload inspection
         uses: actions/upload-artifact@v4
         with:
-          name: gacha-blendkit-hero-${{ github.run_number }}
-          path: projects/test/build/gacha-blendkit-hero/
+          name: gacha-mechanical-hero-${{ github.run_number }}
+          path: projects/test/build/gacha-mechanical-hero/
           if-no-files-found: error
           retention-days: 30
