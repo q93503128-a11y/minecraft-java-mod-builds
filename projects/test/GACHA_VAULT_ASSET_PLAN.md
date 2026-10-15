@@ -4,231 +4,230 @@
 
 Build the `Dimensional Vault` gacha reveal as an asset-driven cinematic, not code-drawn UI.
 
-The code may control camera, timeline, rarity branch, sound timing, asset visibility and animation playback. It must not invent the primary visual design from rectangles, lines, gradients or particle spam.
+Code may control camera, timeline, rarity branching, sound timing, asset visibility and animation playback. It must not invent the primary visual design from rectangles, lines, gradients, TextDisplay glyphs or particle spam.
 
-## Canonical external source
+## Current production decision
 
-Quaternius — Modular Sci-Fi MegaKit
+### Hero gate — SELECTED SOURCE DIRECTION
 
-- Official pack: https://quaternius.com/packs/modularscifimegakit.html
-- Official itch page: https://quaternius.itch.io/modular-sci-fi-megakit
+Primary hero candidate:
+
+- Asset: `Portal gate Sci-Fi`
+- Author: Helley
+- Official model page: https://sketchfab.com/3d-models/portal-gate-sci-fi-86f65251573843bcbf74d3857c8dd9d1
+- Model page status observed during preproduction: downloadable, animated, game-ready
+- Observed geometry: about 32k triangles / 17.6k vertices
+- License shown on the model page: Creative Commons Attribution
+
+Why it was selected:
+
+- It already reads as a hero object rather than a corridor prop.
+- The silhouette has enough mechanical layering to hold the center of a cinematic without relying on emissive circles or particle density.
+- The ring has real structural depth, supports, cabling and asymmetry.
+- It is visually stronger than every locally rendered Quaternius-only and generic bank-vault mockup tested in this experiment.
+- The asset already supports animation, which is preferable to reconstructing a premium gate from code-authored primitives.
+
+Status: **PRIMARY HERO CANDIDATE LOCKED — RAW ASSET VISUAL APPROVAL STILL PENDING**
+
+Do not call the asset final until the official downloadable file has been acquired and inspected in Blender/another real 3D authoring tool.
+
+### Artist / AI-use boundary
+
+The artist profile states that the artist does not want their models used for training or developing AI.
+
+Project rule:
+
+- Do not upload the raw model or textures to generative-AI training/fine-tuning/model-generation services.
+- Do not use the asset as an input reference for generative 3D reconstruction.
+- Ordinary non-generative tooling such as Blender, format conversion, CI file validation and in-game rendering is allowed subject to the model license.
+- Preserve required attribution when the asset is used or redistributed.
+- At acquisition time, save the exact license text/version and attribution string beside the imported asset.
+
+### Supporting environment — Quaternius only
+
+Quaternius `Modular Sci-Fi MegaKit` remains useful, but it is no longer the hero-gate source.
+
+Official source:
+
+- https://quaternius.com/packs/modularscifimegakit.html
+- https://quaternius.itch.io/modular-sci-fi-megakit
 - License: CC0 1.0 Universal
-- Standard free pack: `Modular SciFi MegaKit[Standard].zip`
-- Official page states the free Standard portion is roughly 60–70% of the full pack and is available in FBX / OBJ / glTF.
-- The pack is allowed for personal, educational and commercial use under CC0.
 
-A public GitHub mirror (`agentkaerf/FreeModels`) was used only to inspect the exact Standard glTF file inventory and geometry metadata. The original Quaternius pages above remain the source-of-truth for attribution/provenance.
+Allowed supporting roles:
 
-## Adopted Standard-pack parts
+- reveal floor / stage
+- side columns
+- wall machinery
+- secondary clamps
+- rails / access platform
+- background structural dressing
 
-### 1. Main vault leaves — `Door_DarkMetal`
+Useful Standard-pack pieces already inspected:
 
-Path:
-`Modular SciFi MegaKit[Standard]/glTF/Platforms/Door_DarkMetal.gltf`
-
-Observed geometry bounds from the glTF accessor:
-
-- X: `-2.1057 .. 0.0`
-- Y: `0.0 .. 4.0489`
-- Z: `-0.1016 .. 0.1016`
-
-Interpretation:
-
-- The mesh is effectively a one-sided half-door panel rather than a complete centered door.
-- This is useful for a mirrored left/right vault-leaf composition.
-- Use two instances or an edited duplicate, not a stretched single quad.
-- Keep each leaf as an independent animation part so the normal reveal can slide/open while the highest-rarity branch can break or be displaced separately.
-
-Status: **ADOPT AS BASE**
-
-### 2. Main frame — `Door_Frame_SquareTall`
-
-Path:
-`Modular SciFi MegaKit[Standard]/glTF/Platforms/Door_Frame_SquareTall.gltf`
-
-Observed geometry bounds:
-
-- X: `-2.4219 .. 2.4219`
-- Y: about `0 .. 5.0`
-- Z: `-0.2534 .. 0.2534`
-
-Interpretation:
-
-- Approximate visible frame width is 4.84 units and height 5 units.
-- This proportion matches a central monumental vault opening better than the smaller ordinary-door frame.
-- It should be scaled up as a hero prop and surrounded by additional supports, not presented as a normal corridor doorway.
-
-Status: **ADOPT AS MAIN FRAME**
-
-### 3. Lock clamps — `Prop_Clamp`
-
-Path:
-`Modular SciFi MegaKit[Standard]/glTF/Props/Prop_Clamp.gltf`
-
-Observed geometry is compact (roughly sub-1-unit footprint) and uses the same trim material family as the pack.
-
-Use:
-
-- Four copies around the vault frame.
-- Each clamp gets a real transform animation: retract / rotate / release.
-- Timing should be sequential rather than simultaneous.
-- Do not represent locks as UI icons or colored rectangles.
-
-Status: **ADOPT AS LOCK BASE**
-
-### 4. Central floor stage — `Platform_Round1`
-
-Path:
-`Modular SciFi MegaKit[Standard]/glTF/Platforms/Platform_Round1.gltf`
-
-Observed outer bounds:
-
-- X/Z: about `-2.9954 .. 2.9954`
-- Overall diameter: about 6 units
-- Thin vertical profile, suitable as a circular reveal stage.
-
-Use:
-
-- Main circular floor directly in front of the vault.
-- Camera entry path should cross this stage before reaching the door.
-- Inner circular material region can be repurposed as the reveal focal zone.
-
-Status: **ADOPT AS HERO FLOOR**
-
-### 5. Ring/support candidate — `Column_Hollow`
-
-Path:
-`Modular SciFi MegaKit[Standard]/glTF/Columns/Column_Hollow.gltf`
-
-Observed bounds:
-
-- X/Z: about `-0.6047 .. 0.6047`
-- Y: `0 .. 5.0`
-
-This is a tall hollow column rather than a ready-made horizontal ring.
-
-Use:
-
-- Good candidate for side machinery / tall energy conduits / framing supports.
-- Do **not** force it into the central rotating ring role.
-
-Status: **ADOPT FOR SIDE SUPPORTS, NOT MAIN RING**
-
-## Additional Standard-pack candidates seen in the real inventory
-
-Keep available for scene dressing and mechanical layering:
-
-- `Column_Astra`
+- `Platform_Round1`
+- `Prop_Clamp`
+- `Column_Hollow`
 - `Column_MetalSupport`
 - `Column_MetalSupport_Curve`
 - `Column_Pipes`
-- `Column_Round`
 - `Prop_AccessPoint`
-- `Prop_Fan_Small`
-- `Prop_ItemHolder`
-- `Prop_Light_Corner`
-- `Prop_Light_Floor`
-- `Prop_Light_Small`
-- `Prop_Light_Wide`
-- `Prop_PipeHolder`
-- `Platform_CenterPlate_Curve`
+- `Prop_Light_*`
 - `Platform_DarkPlates_Curves`
-- `Platform_Metal2_Curve`
-- `Platform_Rails_4Wide`
-- `Platform_Rails_4WideTall`
+- `Platform_Rails_4Wide*`
 
-These are support assets only. Do not clutter the reveal chamber merely because the pack contains them.
+Do not let Quaternius geometry replace the visual identity of the hero gate.
 
-## Main rotating seal/ring
+## Visual validation already performed
 
-The Standard pack does not expose an obvious ready-made hero ring that should simply be dropped in as-is.
+The following previews were rendered in headless Blender from real external meshes. They were deliberately rejected instead of being promoted just because the pipeline succeeded.
 
-Decision:
+### Previs A — Quaternius door + code-authored neon ring
 
-- Build the central seal/ring as a lightweight custom assembly using the pack's visual language.
-- Reuse curves, trim materials and supports from the CC0 pack where useful.
-- Keep the ring split into independently animatable pieces.
-- The ring must visibly rotate/lock, not just change color.
+Verdict: **REJECTED**
 
-Preferred structure:
+Problems:
 
-1. Outer fixed frame
-2. Large rotating ring
-3. Smaller counter-rotating inner ring
-4. Central seam / seal plate
-5. Four clamp interfaces
+- central glowing torus dominated the silhouette
+- read as a generic sci-fi portal template rather than a dimensional vault
+- door and clamps disappeared behind the ring
+- too much of the visual identity came from code-authored primitive geometry
 
-## Highest-rarity fracture
+### Previs B — Quaternius curved structural ring
 
-Do not generate fake fracture pieces procedurally at runtime.
+Verdict: **REJECTED**
 
-Create a prepared fracture variant of the two vault leaves:
+Problems:
 
-- 5–8 major pieces total
-- Each piece has a designed exit vector and spin
-- One large foreground fragment may cross the camera path
-- The normal door mesh is hidden at the fracture frame
-- Fractured pieces then play a deterministic authored animation
+- real curve meshes improved physicality but the composition still read as a circular UI ornament
+- the central plate obscured the actual door
+- mechanical hierarchy was weak
 
-This must look intentional and repeatable, not like physics debris spam.
+### Previs C — Quaternius physical-door emphasis
 
-## Materials and emission
+Verdict: **REJECTED**
 
-The Quaternius Standard glTF files use shared trim texture families such as:
+Problems:
 
-- `T_Trim_01_BaseColor_Red.png`
-- `T_Trim_01_Normal.png`
-- `T_Trim_01_ORM.png`
-- `T_Trim_02_BaseColor_Red.png`
-- `T_Trim_02_Normal.png`
-- `T_Trim_02_ORM.png`
+- the door became readable, but the hero still looked like an assembled free-kit prop
+- clamps looked attached rather than structurally integrated
+- insufficient authored complexity for a premium gacha focal object
 
-Rules:
+### Previs D — OpenGameArt CC0 bank-vault door
 
-- Preserve the underlying material design language.
-- Recolor/emissive work should be authored as real texture/material variants, not screen-space rectangles.
-- Normal / upper-rarity anticipation may use cool white / violet accents.
-- Highest rarity initially shares the upper-rarity violet signal, then all emission cuts out briefly before gold-white fracture light appears from inside.
+Source inspected:
 
-## Cinematic sequence target
+- https://opengameart.org/content/vault-door
+- Author: tbbk
+- License: CC0
 
-Target duration: roughly 6–7 seconds for the highest-rarity branch.
+Verdict: **REJECTED AS HERO**
 
-1. Summon starts in the current world.
-2. Camera transitions into the dimensional chamber.
-3. Round stage and vault come into view.
-4. Large seal ring begins rotating.
-5. Four clamps release sequentially.
-6. Normal branch: vault leaves open normally.
-7. Highest-rarity branch: leaves attempt to open but stop.
-8. Brief silence.
-9. First internal impact.
-10. Second impact + visible seam/fracture cue.
-11. Violet emission cuts out.
-12. Gold-white light leaks from the seam.
-13. Third impact.
-14. Authored fracture pieces burst outward.
-15. Backlit silhouette appears.
-16. Character/reward reveal animation.
-17. Minimal result UI appears only after the cinematic reveal has already landed.
+Useful finding:
+
+- the thick circular leaf, central handle and real hinge mechanism gave better physical weight than the Quaternius leaves
+
+Reason for rejection:
+
+- visual identity remained a conventional bank vault
+- large hinge arm dominated the form
+- combining it with the Quaternius frame still looked like kitbash rather than a purpose-built dimensional device
+
+It may remain a mechanical-reference source only. Do not ship it as the hero gate.
+
+## Final visual language
+
+The cinematic is still called the `Dimensional Vault`, but the hero device is now a dimensional containment gate rather than a literal bank-vault door.
+
+The gate should feel like a machine that seals something behind a dimensional membrane.
+
+Visual hierarchy:
+
+1. Helley hero gate mechanical ring
+2. restrained physical locking/containment modules
+3. real stage and chamber structure
+4. controlled emissive accents
+5. dimensional membrane / interior light
+6. reward silhouette and reveal
+
+Particles are support only, never the main visual language.
+
+## Hero asset adaptation rules
+
+When the Helley asset is acquired:
+
+- remove or hide the desert/cactus presentation pieces if they are part of the downloadable scene
+- keep the mechanical gate as the hero object
+- preserve the original mesh quality and authored proportions unless a clear gameplay/camera reason requires modification
+- separate moving mechanical groups only where animation requires it
+- do not flatten the model into a single billboard or screen-space effect
+- do not cover the model with unrelated Quaternius props just to make it look busier
+- keep any new custom geometry subordinate to the original hero silhouette
+
+## Highest-rarity event
+
+The old `door leaf fracture` concept is no longer mandatory because the hero source is a portal/containment gate rather than a pair of vault doors.
+
+Preferred highest-rarity branch:
+
+1. gate begins the same normal activation sequence as an upper-rarity result
+2. mechanical activation stalls before the membrane stabilizes
+3. all normal emissive indicators cut out
+4. 0.2–0.3 s of near-silence
+5. an internal impact distorts the membrane from behind
+6. a second impact forces several real mechanical segments out of alignment
+7. gold-white light leaks through the unstable inner boundary
+8. the containment field inverts / tears open
+9. one or more authored mechanical pieces move across the camera path
+10. backlit reward silhouette becomes visible inside the breach
+11. character/reward reveal animation lands
+12. result UI appears only afterward
+
+The surprise must come from a different event and motion pattern, not merely a gold recolor.
+
+## Normal / 10-pull pacing
+
+Single high-rarity target duration: roughly 5–7 seconds.
+
+10-pull:
+
+- play the chamber/gate entry once
+- reveal low-rarity results rapidly
+- pause when a high-rarity result is reached
+- highest rarity is allowed to take over the full gate-breach sequence
+- provide a skip path later, but do not design the base animation around skipping
 
 ## Rejected approaches
 
-- Fullscreen UI made primarily from `fill`, rectangles, lines or gradients
+- Quaternius door/frame as the final hero object
+- generic bank-vault door as the final hero object
+- fullscreen UI made primarily from `fill`, rectangles, lines or gradients
 - TextDisplay glyphs pretending to be premium VFX
-- Vanilla particle clouds as the hero visual
-- Random runtime debris for the vault fracture
-- A static generated image used as the final summon animation
-- Copying another game's train, tape, wish-star, pod or exact visual identity
+- vanilla particle clouds as the hero visual
+- random runtime debris
+- a static generated image used as the final summon animation
+- copying another game's exact gacha vehicle, wish-star, pod, train or visual identity
 
 ## Next production gate
 
-Before implementing the Minecraft cinematic again:
+Minecraft implementation is **BLOCKED** until all of the following are complete:
 
-1. Acquire the actual Quaternius Standard asset files from the official free distribution.
-2. Assemble a vault mockup from the adopted parts in a real 3D authoring tool.
-3. Produce a still or short preview showing the real geometry and camera framing.
-4. Review that preview visually.
-5. Only after the scene passes the visual quality gate, implement it in Minecraft.
+1. Download the Helley asset from the official Sketchfab model page.
+2. Record exact attribution/license information beside the imported source.
+3. Inspect mesh groups, animation clips, textures and material layout in Blender or equivalent.
+4. Produce a real still or short video with the hero gate plus only the minimum required Quaternius supporting environment.
+5. Review the preview at the intended Minecraft camera distance.
+6. Confirm that the gate itself, without particle spam, already looks strong enough.
+7. Only then choose the Minecraft rendering path and implement the cinematic.
 
-Do not return to code-first visual design if the asset mockup is not yet convincing.
+If the official raw asset fails the visual or technical gate, replace the hero source. Do not fall back to the rejected Quaternius-only or bank-vault mockups.
+
+## Validation state
+
+- SOURCE/Licensing research: REVIEWED
+- Real Quaternius mesh previews: RENDERED, REJECTED
+- CC0 bank-vault mesh preview: RENDERED, REJECTED AS HERO
+- Helley hero candidate: WEB VISUALLY REVIEWED, RAW FILE NOT YET ACQUIRED
+- Minecraft v2 implementation: NOT STARTED
+- BUILD VERIFIED for v2 cinematic: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
