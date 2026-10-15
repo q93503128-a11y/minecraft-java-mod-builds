@@ -10,9 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  acquire:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +20,8 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          mkdir -p projects/test/build/gacha-itch-source
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-itch-source"
+          mkdir -p "$OUT"
           npm init -y >/dev/null 2>&1
           npm install --silent playwright@1.56.1
           npx playwright install --with-deps chromium >/dev/null
@@ -31,15 +32,14 @@ jobs:
           const browser = await chromium.launch({headless:true});
           const page = await browser.newPage({acceptDownloads:true});
           await page.goto('https://marin1234.itch.io/asset-jam-space-hallways/purchase', {waitUntil:'domcontentloaded', timeout:120000});
-          const free = page.getByText('No thanks, just take me to the downloads', {exact:false});
-          await free.click({timeout:30000});
+          await page.getByText('No thanks, just take me to the downloads', {exact:false}).click({timeout:30000});
           await page.waitForLoadState('domcontentloaded');
-          await page.waitForTimeout(1500);
+          await page.waitForTimeout(1000);
           const links = await page.locator('a').evaluateAll(xs => xs.map(a => ({text:(a.textContent||'').trim(), href:a.href})).filter(x => x.text || x.href));
           fs.writeFileSync(`${out}/download-page-links.json`, JSON.stringify(links, null, 2));
           let target = page.locator('a').filter({hasText:'assets spaceship.zip'}).first();
           if (await target.count() === 0) target = page.locator('a.download_btn').first();
-          if (await target.count() === 0) throw new Error('No downloadable asset link found after the public free-download step');
+          if (await target.count() === 0) throw new Error('No downloadable asset link found after public free-download step');
           const downloadPromise = page.waitForEvent('download', {timeout:60000});
           await target.click();
           const download = await downloadPromise;
@@ -49,86 +49,27 @@ jobs:
             author:'marin1234',
             source:'https://marin1234.itch.io/asset-jam-space-hallways',
             license:'CC0',
+            license_evidence:'Asset Pack Jam requires CC0 or similar; project page states free under CC0',
             download_method:'normal public itch.io free-download UI; no authentication or bypass',
             filename:download.suggestedFilename()
           }, null, 2));
           await browser.close();
           JS
-          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-itch-source" node "$GITHUB_WORKSPACE/fetch-itch.mjs"
-          test -s projects/test/build/gacha-itch-source/assets-spaceship.zip
-          unzip -t projects/test/build/gacha-itch-source/assets-spaceship.zip >/dev/null
-          mkdir -p projects/test/build/gacha-itch-source/extracted
-          unzip -q projects/test/build/gacha-itch-source/assets-spaceship.zip -d projects/test/build/gacha-itch-source/extracted
-          find projects/test/build/gacha-itch-source/extracted -maxdepth 4 -type f | sort > projects/test/build/gacha-itch-source/file-list.txt
+          OUT="$OUT" node "$GITHUB_WORKSPACE/fetch-itch.mjs"
+          test -s "$OUT/assets-spaceship.zip"
+          unzip -t "$OUT/assets-spaceship.zip" >/dev/null
+          unzip -l "$OUT/assets-spaceship.zip" > "$OUT/file-list.txt"
+          sha256sum "$OUT/assets-spaceship.zip" > "$OUT/assets-spaceship.zip.sha256"
 
-      - name: Install Blender
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y blender xvfb >/dev/null
-          blender --version | head -n 2
-
-      - name: Inspect and render authored Blender sources
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-        run: |
-          set -euo pipefail
-          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-itch-source"
-          cat > /tmp/inspect_blend.py <<'PY'
-          import bpy, json, sys
-          from pathlib import Path
-          from mathutils import Vector
-
-          src = Path(sys.argv[sys.argv.index('--')+1])
-          out = Path(sys.argv[sys.argv.index('--')+2])
-          out.mkdir(parents=True, exist_ok=True)
-          bpy.ops.wm.open_mainfile(filepath=str(src))
-          meshes=[o for o in bpy.context.scene.objects if o.type=='MESH' and not o.hide_render]
-          pts=[]
-          for o in meshes:
-              for c in o.bound_box: pts.append(o.matrix_world @ Vector(c))
-          actions=[a.name for a in bpy.data.actions]
-          meta={'source':str(src),'mesh_objects':[o.name for o in meshes],'actions':actions,'armatures':[o.name for o in bpy.context.scene.objects if o.type=='ARMATURE']}
-          (out/'inspection.json').write_text(json.dumps(meta,indent=2),encoding='utf-8')
-          if not pts: raise RuntimeError('No renderable mesh')
-          lo=Vector((min(p.x for p in pts),min(p.y for p in pts),min(p.z for p in pts)))
-          hi=Vector((max(p.x for p in pts),max(p.y for p in pts),max(p.z for p in pts)))
-          center=(lo+hi)*0.5; size=hi-lo; scale=6.0/max(size.x,size.y,size.z)
-          root=bpy.data.objects.new('InspectionRoot',None); bpy.context.scene.collection.objects.link(root)
-          for o in list(bpy.context.scene.objects):
-              if o.type in {'CAMERA','LIGHT'}: bpy.data.objects.remove(o,do_unlink=True)
-              elif o.parent is None and o != root: o.parent=root
-          root.scale=(scale,scale,scale); root.location=(-center.x*scale,-center.y*scale,-lo.z*scale)
-          scene=bpy.context.scene
-          try: scene.render.engine='BLENDER_EEVEE_NEXT'
-          except: scene.render.engine='BLENDER_EEVEE'
-          scene.render.resolution_x=1280; scene.render.resolution_y=720; scene.render.resolution_percentage=100
-          scene.render.image_settings.file_format='PNG'; scene.view_settings.exposure=.55
-          scene.world.use_nodes=True; bg=scene.world.node_tree.nodes.get('Background'); bg.inputs['Color'].default_value=(.004,.006,.012,1); bg.inputs['Strength'].default_value=.16
-          bpy.ops.mesh.primitive_plane_add(size=28,location=(0,0,-.03))
-          mat=bpy.data.materials.new('Floor'); mat.use_nodes=True; bsdf=mat.node_tree.nodes.get('Principled BSDF'); bsdf.inputs['Base Color'].default_value=(.01,.014,.022,1); bsdf.inputs['Metallic'].default_value=.45; bsdf.inputs['Roughness'].default_value=.3; bpy.context.object.data.materials.append(mat)
-          def point(obj,target): obj.rotation_euler=(Vector(target)-obj.location).to_track_quat('-Z','Y').to_euler()
-          for name,loc,energy,color,sizev in [('Key',(-5,-6,6),1300,(.8,.88,1),4),('Rim',(5,1,5),1100,(.08,.25,.8),3),('Warm',(-3,2,3.5),450,(.8,.18,.04),2)]:
-              d=bpy.data.lights.new(name,'AREA'); d.energy=energy; d.color=color; d.size=sizev; o=bpy.data.objects.new(name,d); bpy.context.scene.collection.objects.link(o); o.location=loc; point(o,(0,0,2.5))
-          cd=bpy.data.cameras.new('Camera'); cam=bpy.data.objects.new('Camera',cd); bpy.context.scene.collection.objects.link(cam); scene.camera=cam
-          for fname,loc,lens in [('front.png',(0,-10,3),58),('three-quarter.png',(6.5,-7.5,3.4),60),('close.png',(2.5,-6.2,2.9),65)]:
-              cam.location=loc; cam.data.lens=lens; point(cam,(0,0,2.5)); scene.render.filepath=str(out/fname); bpy.ops.render.render(write_still=True)
-          bpy.ops.wm.save_as_mainfile(filepath=str(out/'inspection.blend'))
-          PY
-          mapfile -t blends < <(find "$OUT/extracted" -type f -iname '*.blend' | sort)
-          printf '%s\n' "${blends[@]}" > "$OUT/blend-files.txt"
-          if [ "${#blends[@]}" -eq 0 ]; then echo 'No .blend source found' >&2; exit 1; fi
-          i=0
-          for blend in "${blends[@]}"; do
-            i=$((i+1)); [ "$i" -gt 4 ] && break
-            dir="$OUT/render-$i"
-            mkdir -p "$dir"
-            xvfb-run -a blender --background --python /tmp/inspect_blend.py -- "$blend" "$dir"
-          done
-
-      - name: Upload inspection artifact
+      - name: Upload source inventory
         uses: actions/upload-artifact@v4
         with:
-          name: gacha-cc0-authored-door-${{ github.run_number }}
-          path: projects/test/build/gacha-itch-source/
+          name: gacha-cc0-source-${{ github.run_number }}
+          path: |
+            projects/test/build/gacha-itch-source/assets-spaceship.zip
+            projects/test/build/gacha-itch-source/assets-spaceship.zip.sha256
+            projects/test/build/gacha-itch-source/file-list.txt
+            projects/test/build/gacha-itch-source/source.json
+            projects/test/build/gacha-itch-source/download-page-links.json
           if-no-files-found: error
           retention-days: 14
