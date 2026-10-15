@@ -10,6 +10,9 @@
   "entrypoints": {
     "main": [
       "dev.moonseungjun.testmod.TestMod"
+    ],
+    "client": [
+      "dev.moonseungjun.testmod.client.GachaClient"
     ]
   },
   "depends": {
