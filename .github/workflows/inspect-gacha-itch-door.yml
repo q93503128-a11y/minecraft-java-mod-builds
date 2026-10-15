@@ -1,4 +1,4 @@
-name: Inspect Gacha CC0 Door
+name: Inspect Gacha CC0 Portal
 
 on:
   push:
@@ -10,66 +10,137 @@ permissions:
   contents: read
 
 jobs:
-  acquire:
+  inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download public CC0 asset through normal itch.io UI
+      - name: Download free CC0 Portal Shutdown FBX pack
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-itch-source"
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-portal-candidate"
           mkdir -p "$OUT"
           npm init -y >/dev/null 2>&1
           npm install --silent playwright@1.56.1
           npx playwright install --with-deps chromium >/dev/null
-          cat > "$GITHUB_WORKSPACE/fetch-itch.mjs" <<'JS'
+          cat > "$GITHUB_WORKSPACE/fetch-portal.mjs" <<'JS'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
           const out = process.env.OUT;
           const browser = await chromium.launch({headless:true});
           const page = await browser.newPage({acceptDownloads:true});
-          await page.goto('https://marin1234.itch.io/asset-jam-space-hallways/purchase', {waitUntil:'domcontentloaded', timeout:120000});
+          await page.goto('https://tomate-salat.itch.io/portal-shutdown-assets/purchase', {waitUntil:'domcontentloaded', timeout:120000});
           await page.getByText('No thanks, just take me to the downloads', {exact:false}).click({timeout:30000});
           await page.waitForLoadState('domcontentloaded');
           await page.waitForTimeout(1000);
-          const links = await page.locator('a').evaluateAll(xs => xs.map(a => ({text:(a.textContent||'').trim(), href:a.href})).filter(x => x.text || x.href));
-          fs.writeFileSync(`${out}/download-page-links.json`, JSON.stringify(links, null, 2));
-          let target = page.locator('a').filter({hasText:'assets spaceship.zip'}).first();
-          if (await target.count() === 0) target = page.locator('a.download_btn').first();
-          if (await target.count() === 0) throw new Error('No downloadable asset link found after public free-download step');
+          const buttons = page.locator('a.download_btn');
+          const count = await buttons.count();
+          if (!count) throw new Error('No public download buttons found');
+          const inventory = [];
+          for (let i=0;i<count;i++) inventory.push({text:(await buttons.nth(i).innerText()).trim(), href:await buttons.nth(i).getAttribute('href')});
+          fs.writeFileSync(`${out}/download-buttons.json`, JSON.stringify(inventory, null, 2));
           const downloadPromise = page.waitForEvent('download', {timeout:60000});
-          await target.click();
+          await buttons.first().click();
           const download = await downloadPromise;
-          await download.saveAs(`${out}/assets-spaceship.zip`);
+          await download.saveAs(`${out}/candidate-download`);
           fs.writeFileSync(`${out}/source.json`, JSON.stringify({
-            title:'asset jam spaceship hallways',
-            author:'marin1234',
-            source:'https://marin1234.itch.io/asset-jam-space-hallways',
-            license:'CC0',
-            license_evidence:'Asset Pack Jam requires CC0 or similar; project page states free under CC0',
+            title:'Portal Shutdown - Assets',
+            author:'Tomate Salat',
+            source:'https://tomate-salat.itch.io/portal-shutdown-assets',
+            license:'CC0 1.0 Universal',
+            selected_free_file:'FBX pack (first public download)',
             download_method:'normal public itch.io free-download UI; no authentication or bypass',
-            filename:download.suggestedFilename()
+            suggested_filename:download.suggestedFilename()
           }, null, 2));
           await browser.close();
           JS
-          OUT="$OUT" node "$GITHUB_WORKSPACE/fetch-itch.mjs"
-          test -s "$OUT/assets-spaceship.zip"
-          unzip -t "$OUT/assets-spaceship.zip" >/dev/null
-          unzip -l "$OUT/assets-spaceship.zip" > "$OUT/file-list.txt"
-          sha256sum "$OUT/assets-spaceship.zip" > "$OUT/assets-spaceship.zip.sha256"
+          OUT="$OUT" node "$GITHUB_WORKSPACE/fetch-portal.mjs"
+          test -s "$OUT/candidate-download"
+          file "$OUT/candidate-download" | tee "$OUT/file-type.txt"
+          mkdir -p "$OUT/extracted"
+          if unzip -t "$OUT/candidate-download" >/dev/null 2>&1; then
+            unzip -q "$OUT/candidate-download" -d "$OUT/extracted"
+          else
+            cp "$OUT/candidate-download" "$OUT/extracted/downloaded-file"
+          fi
+          find "$OUT/extracted" -type f | sort > "$OUT/file-list.txt"
+          PORTAL=$(find "$OUT/extracted" -type f -iname '*portal*.fbx' | head -n 1)
+          test -n "$PORTAL"
+          cp "$PORTAL" "$OUT/portal.fbx"
+          sha256sum "$OUT/portal.fbx" > "$OUT/portal.fbx.sha256"
 
-      - name: Upload source inventory
+      - name: Install Blender headless runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender xvfb >/dev/null
+          blender --version | head -n 2
+
+      - name: Render actual portal FBX
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-portal-candidate"
+          cat > /tmp/render_portal.py <<'PY'
+          import bpy, json, sys, math
+          from pathlib import Path
+          from mathutils import Vector
+
+          src=Path(sys.argv[sys.argv.index('--')+1]); out=Path(sys.argv[sys.argv.index('--')+2])
+          bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
+          bpy.ops.import_scene.fbx(filepath=str(src))
+          imported=[o for o in bpy.context.scene.objects if o.type=='MESH']
+          if not imported: raise RuntimeError('Portal FBX imported no meshes')
+          pts=[]
+          for o in imported:
+              for c in o.bound_box: pts.append(o.matrix_world @ Vector(c))
+          lo=Vector((min(p.x for p in pts),min(p.y for p in pts),min(p.z for p in pts)))
+          hi=Vector((max(p.x for p in pts),max(p.y for p in pts),max(p.z for p in pts)))
+          size=hi-lo; center=(lo+hi)*.5; scale=6.0/max(size.x,size.y,size.z)
+          root=bpy.data.objects.new('PortalRoot',None); bpy.context.scene.collection.objects.link(root)
+          for o in list(bpy.context.scene.objects):
+              if o.parent is None and o!=root: o.parent=root
+          root.scale=(scale,scale,scale); root.location=(-center.x*scale,-center.y*scale,-lo.z*scale)
+          meta={'meshes':[o.name for o in imported], 'materials':[m.name for m in bpy.data.materials], 'bounds':[list(lo),list(hi)], 'dimensions':list(size), 'objects':len(bpy.context.scene.objects)}
+          (out/'inspection.json').write_text(json.dumps(meta,indent=2),encoding='utf-8')
+          scene=bpy.context.scene
+          try: scene.render.engine='BLENDER_EEVEE_NEXT'
+          except: scene.render.engine='BLENDER_EEVEE'
+          scene.render.resolution_x=1280; scene.render.resolution_y=720; scene.render.resolution_percentage=100
+          scene.render.image_settings.file_format='PNG'; scene.view_settings.exposure=.7
+          scene.world.use_nodes=True; bg=scene.world.node_tree.nodes.get('Background'); bg.inputs['Color'].default_value=(.003,.005,.011,1); bg.inputs['Strength'].default_value=.12
+          bpy.ops.mesh.primitive_plane_add(size=24,location=(0,0,-.04))
+          floor=bpy.context.object; mat=bpy.data.materials.new('InspectionFloor'); mat.use_nodes=True; bsdf=mat.node_tree.nodes.get('Principled BSDF'); bsdf.inputs['Base Color'].default_value=(.008,.012,.02,1); bsdf.inputs['Metallic'].default_value=.55; bsdf.inputs['Roughness'].default_value=.24; floor.data.materials.append(mat)
+          def point(o,t): o.rotation_euler=(Vector(t)-o.location).to_track_quat('-Z','Y').to_euler()
+          for name,loc,energy,color,sz in [('Key',(-5,-6,6),1250,(.78,.86,1),4),('Blue',(5,0,5),1250,(.05,.22,1),3),('Warm',(-4,2,3.5),500,(1,.16,.03),2)]:
+              d=bpy.data.lights.new(name,'AREA'); d.energy=energy; d.color=color; d.size=sz; o=bpy.data.objects.new(name,d); bpy.context.scene.collection.objects.link(o); o.location=loc; point(o,(0,0,2.5))
+          cd=bpy.data.cameras.new('Camera'); cam=bpy.data.objects.new('Camera',cd); bpy.context.scene.collection.objects.link(cam); scene.camera=cam
+          views=[('01_front.png',(0,-10,3),58,0),('02_three_quarter.png',(6.3,-7.4,3.2),60,0),('03_opposite.png',(-6.3,-7.4,3.2),60,0),('04_close.png',(0,-6.2,2.8),70,0)]
+          for fname,loc,lens,rot in views:
+              root.rotation_euler[2]=rot; cam.location=loc; cam.data.lens=lens; point(cam,(0,0,2.5)); scene.render.filepath=str(out/fname); bpy.ops.render.render(write_still=True)
+          bpy.ops.wm.save_as_mainfile(filepath=str(out/'portal-inspection.blend'))
+          PY
+          xvfb-run -a blender --background --python /tmp/render_portal.py -- "$OUT/portal.fbx" "$OUT"
+          test -s "$OUT/01_front.png"
+          test -s "$OUT/04_close.png"
+
+      - name: Upload portal inspection
         uses: actions/upload-artifact@v4
         with:
-          name: gacha-cc0-source-${{ github.run_number }}
+          name: gacha-portal-candidate-${{ github.run_number }}
           path: |
-            projects/test/build/gacha-itch-source/assets-spaceship.zip
-            projects/test/build/gacha-itch-source/assets-spaceship.zip.sha256
-            projects/test/build/gacha-itch-source/file-list.txt
-            projects/test/build/gacha-itch-source/source.json
-            projects/test/build/gacha-itch-source/download-page-links.json
+            projects/test/build/gacha-portal-candidate/source.json
+            projects/test/build/gacha-portal-candidate/download-buttons.json
+            projects/test/build/gacha-portal-candidate/file-list.txt
+            projects/test/build/gacha-portal-candidate/portal.fbx
+            projects/test/build/gacha-portal-candidate/portal.fbx.sha256
+            projects/test/build/gacha-portal-candidate/inspection.json
+            projects/test/build/gacha-portal-candidate/01_front.png
+            projects/test/build/gacha-portal-candidate/02_three_quarter.png
+            projects/test/build/gacha-portal-candidate/03_opposite.png
+            projects/test/build/gacha-portal-candidate/04_close.png
+            projects/test/build/gacha-portal-candidate/portal-inspection.blend
           if-no-files-found: error
           retention-days: 14
