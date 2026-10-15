@@ -1,4 +1,4 @@
-name: Render Authored Gacha Door Storyboard
+name: Render Authored Gacha Runtime Layers
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +20,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-door-storyboard"
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-runtime-layers"
           mkdir -p "$OUT"
           npm init -y >/dev/null 2>&1
           npm install --silent playwright@1.56.1
@@ -36,16 +36,25 @@ jobs:
           await page.waitForLoadState('domcontentloaded');
           let target = page.locator('a').filter({hasText:'assets spaceship.zip'}).first();
           if (await target.count() === 0) target = page.locator('a.download_btn').first();
+          if (await target.count() === 0) throw new Error('public source download not found');
           const p = page.waitForEvent('download', {timeout:60000});
           await target.click();
           const d = await p;
           await d.saveAs(`${out}/source.zip`);
-          fs.writeFileSync(`${out}/provenance.json`, JSON.stringify({title:'asset jam spaceship hallways',author:'marin1234',source:'https://marin1234.itch.io/asset-jam-space-hallways',license:'CC0 1.0 Universal',ai:'No generative AI used'},null,2));
+          fs.writeFileSync(`${out}/provenance.json`, JSON.stringify({
+            title:'asset jam spaceship hallways',
+            author:'marin1234',
+            source:'https://marin1234.itch.io/asset-jam-space-hallways',
+            license:'CC0 1.0 Universal',
+            ai:'No generative AI used',
+            acquisition:'normal public itch.io free-download UI; no authentication or bypass'
+          }, null, 2));
           await browser.close();
           JS
           OUT="$OUT" node "$GITHUB_WORKSPACE/fetch-source.mjs"
           unzip -q "$OUT/source.zip" -d "$OUT/src"
           BLEND=$(find "$OUT/src" -type f -iname '*.blend' ! -iname '*.blend1' | head -n 1)
+          test -n "$BLEND"
           cp "$BLEND" "$OUT/source.blend"
 
       - name: Install Blender
@@ -53,78 +62,178 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y blender python3-numpy xvfb >/dev/null
 
-      - name: Render real authored door animation frames
+      - name: Render physical backgrounds and authored door layers
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
-          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-door-storyboard"
-          cat > /tmp/render_storyboard.py <<'PY'
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-runtime-layers"
+          cat > /tmp/render_layers.py <<'PY'
           import bpy, json, sys
           from pathlib import Path
           from mathutils import Vector
 
-          src=Path(sys.argv[sys.argv.index('--')+1]); out=Path(sys.argv[sys.argv.index('--')+2])
+          src = Path(sys.argv[sys.argv.index('--') + 1])
+          out = Path(sys.argv[sys.argv.index('--') + 2])
           bpy.ops.wm.open_mainfile(filepath=str(src))
-          scene=bpy.context.scene
-          arm=bpy.data.objects.get('Armature')
-          act=bpy.data.actions.get('door')
-          if not arm or not act: raise RuntimeError('authored door rig/action missing')
-          if arm.animation_data is None: arm.animation_data_create()
-          arm.animation_data.action=act
+          scene = bpy.context.scene
+          arm = bpy.data.objects.get('Armature')
+          action = bpy.data.actions.get('door')
+          door = bpy.data.objects.get('door.001')
+          if not arm or not action or not door:
+              raise RuntimeError('authored door rig/action/door.001 missing')
+          if arm.animation_data is None:
+              arm.animation_data_create()
+          arm.animation_data.action = action
 
-          # Hide author asset-layout collection; keep actual corridor scene only.
-          assets=bpy.data.collections.get('assets')
-          if assets: assets.hide_render=True
-          for o in list(bpy.data.objects):
-              if o.type in {'CAMERA','LIGHT'}: bpy.data.objects.remove(o,do_unlink=True)
+          assets = bpy.data.collections.get('assets')
+          if assets:
+              assets.hide_render = True
+          for obj in list(bpy.data.objects):
+              if obj.type in {'CAMERA', 'LIGHT'}:
+                  bpy.data.objects.remove(obj, do_unlink=True)
 
-          try: scene.render.engine='BLENDER_EEVEE_NEXT'
-          except: scene.render.engine='BLENDER_EEVEE'
-          scene.render.resolution_x=960; scene.render.resolution_y=540; scene.render.resolution_percentage=100
-          scene.render.image_settings.file_format='PNG'; scene.render.film_transparent=False
-          scene.view_settings.exposure=.6
-          scene.world.use_nodes=True
-          bg=scene.world.node_tree.nodes.get('Background'); bg.inputs['Color'].default_value=(.002,.003,.008,1); bg.inputs['Strength'].default_value=.08
+          try:
+              scene.render.engine = 'BLENDER_EEVEE_NEXT'
+          except Exception:
+              scene.render.engine = 'BLENDER_EEVEE'
+          scene.render.resolution_x = 960
+          scene.render.resolution_y = 540
+          scene.render.resolution_percentage = 100
+          scene.render.image_settings.file_format = 'PNG'
+          scene.render.image_settings.color_mode = 'RGBA'
+          scene.render.image_settings.compression = 35
+          scene.world.use_nodes = True
+          world_bg = scene.world.node_tree.nodes.get('Background')
+          world_bg.inputs['Color'].default_value = (.002, .003, .008, 1)
+          world_bg.inputs['Strength'].default_value = .06
 
-          def point(o,t): o.rotation_euler=(Vector(t)-o.location).to_track_quat('-Z','Y').to_euler()
-          # Long-lens corridor composition aimed at the authored door at y=6.5.
-          cd=bpy.data.cameras.new('GachaCamera'); cam=bpy.data.objects.new('GachaCamera',cd); bpy.context.scene.collection.objects.link(cam); scene.camera=cam
-          cam.location=(0.0,-0.4,1.65); cam.data.lens=31; point(cam,(0.0,6.5,1.55))
+          def point_at(obj, target):
+              obj.rotation_euler = (Vector(target) - obj.location).to_track_quat('-Z', 'Y').to_euler()
 
-          # Physical lighting only; no screen-space shapes.
-          for name,loc,energy,color,size in [
-              ('CoolKey',(-2.0,2.2,3.4),760,(.36,.50,1.0),2.4),
-              ('DoorRim',(2.2,5.2,2.4),1050,(.14,.28,1.0),1.7),
-              ('FloorFill',(0.0,1.8,.35),430,(.18,.24,.50),2.2),
-          ]:
-              d=bpy.data.lights.new(name,'AREA'); d.energy=energy; d.color=color; d.shape='DISK'; d.size=size
-              o=bpy.data.objects.new(name,d); bpy.context.scene.collection.objects.link(o); o.location=loc; point(o,(0,6.0,1.4))
+          camera_data = bpy.data.cameras.new('GachaCamera')
+          camera = bpy.data.objects.new('GachaCamera', camera_data)
+          bpy.context.scene.collection.objects.link(camera)
+          scene.camera = camera
+          camera.location = (0.0, -0.4, 1.65)
+          camera.data.lens = 31
+          point_at(camera, (0.0, 6.5, 1.55))
 
-          frames=[(200,'01_closed.png'),(260,'02_unlocking.png'),(310,'03_opening.png'),(346,'04_open.png')]
-          for frame,name in frames:
-              scene.frame_set(frame)
-              scene.render.filepath=str(out/name)
+          lights = {}
+          def add_area(name, location, energy, color, size, target=(0, 6.0, 1.4)):
+              data = bpy.data.lights.new(name, 'AREA')
+              data.energy = energy
+              data.color = color
+              data.shape = 'DISK'
+              data.size = size
+              obj = bpy.data.objects.new(name, data)
+              bpy.context.scene.collection.objects.link(obj)
+              obj.location = location
+              point_at(obj, target)
+              lights[name] = obj
+              return obj
+
+          add_area('CoolKey', (-2.0, 2.2, 3.4), 760, (.36, .50, 1.0), 2.4)
+          add_area('DoorRim', (2.2, 5.2, 2.4), 1050, (.14, .28, 1.0), 1.7)
+          add_area('FloorFill', (0.0, 1.8, .35), 430, (.18, .24, .50), 2.2)
+          breach_data = bpy.data.lights.new('BreachLight', 'POINT')
+          breach_data.energy = 0
+          breach_data.color = (1.0, .62, .15)
+          breach_data.shadow_soft_size = 1.15
+          breach = bpy.data.objects.new('BreachLight', breach_data)
+          bpy.context.scene.collection.objects.link(breach)
+          breach.location = (0.0, 7.1, 1.65)
+
+          base_energy = {name: obj.data.energy for name, obj in lights.items()}
+          base_color = {name: tuple(obj.data.color) for name, obj in lights.items()}
+          scene.frame_set(200)
+          door.hide_render = True
+          scene.render.film_transparent = False
+
+          def restore_base():
+              scene.view_settings.exposure = .58
+              world_bg.inputs['Strength'].default_value = .06
+              breach.data.energy = 0
+              for name, obj in lights.items():
+                  obj.data.energy = base_energy[name]
+                  obj.data.color = base_color[name]
+
+          def render_background(filename, mode):
+              restore_base()
+              if mode == 'rare':
+                  lights['CoolKey'].data.color = (.48, .20, 1.0)
+                  lights['DoorRim'].data.color = (.72, .16, 1.0)
+                  lights['FloorFill'].data.color = (.30, .12, .65)
+              elif mode == 'dark':
+                  scene.view_settings.exposure = -1.05
+                  world_bg.inputs['Strength'].default_value = .015
+                  for obj in lights.values():
+                      obj.data.energy *= .07
+              elif mode == 'legendary':
+                  scene.view_settings.exposure = .78
+                  lights['CoolKey'].data.energy *= .38
+                  lights['DoorRim'].data.energy *= .32
+                  lights['FloorFill'].data.energy *= .25
+                  breach.data.energy = 1850
+                  breach.data.color = (1.0, .64, .18)
+              scene.render.filepath = str(out / filename)
               bpy.ops.render.render(write_still=True)
-          meta={'action':'door','frame_range':[float(act.frame_range[0]),float(act.frame_range[1])],'frames':[x[0] for x in frames],'camera_location':list(cam.location)}
-          (out/'storyboard.json').write_text(json.dumps(meta,indent=2),encoding='utf-8')
-          bpy.ops.wm.save_as_mainfile(filepath=str(out/'authored-door-storyboard.blend'))
-          PY
-          xvfb-run -a blender --background --python /tmp/render_storyboard.py -- "$OUT/source.blend" "$OUT"
-          test -s "$OUT/01_closed.png"
-          test -s "$OUT/04_open.png"
 
-      - name: Upload storyboard
+          render_background('background_normal.png', 'normal')
+          render_background('background_rare.png', 'rare')
+          render_background('background_dark.png', 'dark')
+          render_background('background_legendary.png', 'legendary')
+
+          # Door-only transparent authored animation frames. All identity comes from the original model/action.
+          restore_base()
+          scene.view_settings.exposure = .58
+          scene.render.film_transparent = True
+          door.hide_render = False
+          original_mesh_visibility = {}
+          for obj in bpy.context.scene.objects:
+              if obj.type == 'MESH':
+                  original_mesh_visibility[obj.name] = obj.hide_render
+                  obj.hide_render = (obj != door)
+
+          sample_frames = [200, 205, 211, 216, 222, 227, 233, 238, 244, 249, 255, 260]
+          for index, frame in enumerate(sample_frames):
+              scene.frame_set(frame)
+              scene.render.filepath = str(out / f'door_{index:02d}.png')
+              bpy.ops.render.render(write_still=True)
+
+          for name, hidden in original_mesh_visibility.items():
+              obj = bpy.data.objects.get(name)
+              if obj:
+                  obj.hide_render = hidden
+
+          metadata = {
+              'source_action': 'door',
+              'source_action_range': [float(action.frame_range[0]), float(action.frame_range[1])],
+              'runtime_open_segment': [200, 260],
+              'sample_frames': sample_frames,
+              'door_object': door.name,
+              'resolution': [960, 540],
+              'backgrounds': ['background_normal.png', 'background_rare.png', 'background_dark.png', 'background_legendary.png'],
+              'method': 'Blender-rendered authored model and animation; runtime code only sequences textures'
+          }
+          (out / 'runtime-layers.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
+          bpy.ops.wm.save_as_mainfile(filepath=str(out / 'gacha-runtime-source.blend'))
+          PY
+          xvfb-run -a blender --background --python /tmp/render_layers.py -- "$OUT/source.blend" "$OUT"
+          test -s "$OUT/background_normal.png"
+          test -s "$OUT/background_legendary.png"
+          test -s "$OUT/door_00.png"
+          test -s "$OUT/door_11.png"
+
+      - name: Upload runtime layers
         uses: actions/upload-artifact@v4
         with:
-          name: gacha-authored-door-storyboard-${{ github.run_number }}
+          name: gacha-authored-runtime-layers-${{ github.run_number }}
           path: |
-            projects/test/build/gacha-door-storyboard/provenance.json
-            projects/test/build/gacha-door-storyboard/storyboard.json
-            projects/test/build/gacha-door-storyboard/01_closed.png
-            projects/test/build/gacha-door-storyboard/02_unlocking.png
-            projects/test/build/gacha-door-storyboard/03_opening.png
-            projects/test/build/gacha-door-storyboard/04_open.png
-            projects/test/build/gacha-door-storyboard/authored-door-storyboard.blend
+            projects/test/build/gacha-runtime-layers/provenance.json
+            projects/test/build/gacha-runtime-layers/runtime-layers.json
+            projects/test/build/gacha-runtime-layers/background_*.png
+            projects/test/build/gacha-runtime-layers/door_*.png
+            projects/test/build/gacha-runtime-layers/gacha-runtime-source.blend
           if-no-files-found: error
           retention-days: 14
