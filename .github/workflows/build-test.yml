@@ -121,3 +121,40 @@ jobs:
       - name: Fail if build failed
         if: steps.build.outcome != 'success'
         run: exit 1
+
+  inspect_gacha_hero:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Blender headless runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender python3-numpy xvfb
+          blender --version | head -n 2
+
+      - name: Probe and render free Blendkit hero
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-blendkit-hero"
+          mkdir -p "$OUT"
+          xvfb-run -a blender --background \
+            --python "$GITHUB_WORKSPACE/projects/test/tools/gacha_blendkit_probe.py" \
+            -- "$OUT"
+          test -s "$OUT/SEARCH_RESULT.json"
+          test -s "$OUT/SELECTED_ASSET.json"
+          test -s "$OUT/01_front.png"
+          test -s "$OUT/02_three_quarter.png"
+          test -s "$OUT/03_close.png"
+          test -s "$OUT/hero_candidate.blend"
+
+      - name: Upload hero inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: gacha-blendkit-hero-${{ github.run_number }}
+          path: projects/test/build/gacha-blendkit-hero/
+          if-no-files-found: error
+          retention-days: 30
