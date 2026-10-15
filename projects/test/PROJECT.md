@@ -28,26 +28,56 @@ Use it for quick but real JAR prototypes such as combat skills, VFX/sound timing
 
 Experiments should still compile and remain testable, but they do not need to share a single game theme.
 
-## Current experiment: 차원 보관고 가챠 연출
+## Current experiment: 차원 보관고 가챠 연출 v2 — asset preproduction
 
 This experiment tests presentation only. It does not implement currency, probabilities, banners, inventory rewards or character ownership.
 
-- Press `G` to play the cinematic.
-- Successive uses cycle `normal -> rare -> legendary -> normal` so every presentation state can be reviewed without commands or RNG.
-- The sequence is built as a full-screen cinematic using Minecraft's 26.3 `GuiGraphicsExtractor` render-state path.
-- Presentation beats: dark vault approach -> sequential lock release -> rarity light hint -> gate opening -> transition -> silhouette scan -> rarity reveal.
-- Normal and rare results open the vault through the expected mechanism.
-- Legendary initially presents a violet hint, then the normal opening fails. Pressure builds, the hint flips to gold, and the gate is blown outward from inside before the reveal.
-- The world is not paused while the cinematic is visible.
-- Escape closes the cinematic at any point.
+### Rejected prototype boundary
 
-### Visual rules
+The existing `0.3.0` full-screen code-drawn gacha cinematic is a rejected visual prototype.
 
-- Do not substitute particle quantity for composition.
-- Do not use Minecraft's default menu/button stack as the cinematic language.
-- The reveal must have an anticipation beat before the rarity confirmation.
-- Legendary must differ through event choreography, not only a color swap.
-- The current humanoid is deliberately an anonymous silhouette; no permanent character design is claimed by this experiment.
+It was useful only to validate timing/key-input plumbing. Its rectangles, lines, gradients, procedural shards and code-authored vault silhouette are **not** the visual baseline for v2 and must not be polished or extended into the final presentation.
+
+Do not treat build success of that prototype as evidence of visual quality.
+
+### v2 direction
+
+The v2 cinematic is asset-driven:
+
+- real 3D vault / frame / stage / lock assets
+- authored model animation for locks and door movement
+- authored fracture pieces for the highest-rarity branch
+- texture/material-based emissive lighting
+- dedicated VFX textures or shaders only where they materially improve the scene
+- code limited primarily to camera, timeline, rarity branching, sound synchronization and asset visibility/playback
+
+The target reveal structure remains:
+
+1. enter the dimensional chamber
+2. approach the vault
+3. rotate the seal mechanism
+4. release four locks sequentially
+5. normal/rare branch opens normally
+6. highest-rarity branch attempts normal opening and fails
+7. brief silence and internal impacts
+8. violet signal cuts out
+9. gold-white light leaks from the seam
+10. authored vault fracture bursts outward
+11. backlit silhouette appears
+12. reward/character reveal motion
+13. minimal result UI appears after the reveal lands
+
+### Asset canon
+
+See `GACHA_VAULT_ASSET_PLAN.md` before further implementation.
+
+Primary external base currently selected for preproduction:
+
+- Quaternius `Modular Sci-Fi MegaKit` Standard pack
+- License: CC0 1.0 Universal
+- Main candidate pieces: `Door_DarkMetal`, `Door_Frame_SquareTall`, `Prop_Clamp`, `Platform_Round1`, `Column_Hollow` plus supporting structural pieces
+
+Do not return to code-first visual design if the real-asset mockup is not convincing.
 
 ## Validation language
 
