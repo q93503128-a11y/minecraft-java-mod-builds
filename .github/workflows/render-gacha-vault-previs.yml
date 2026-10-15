@@ -26,10 +26,10 @@ jobs:
           sudo apt-get install -y \
             blender python3-numpy \
             libegl1 libgl1 libgl1-mesa-dri \
-            libxrender1 libxi6 libxkbcommon0 xvfb
+            libxrender1 libxi6 libxkbcommon0 xvfb unzip curl
           blender --version | head -n 2
 
-      - name: Fetch CC0 Quaternius preview assets
+      - name: Fetch CC0 Quaternius environment assets
         shell: bash
         run: |
           set -euo pipefail
@@ -39,28 +39,41 @@ jobs:
             'Modular SciFi MegaKit[Standard]/glTF/Props' \
             'Modular SciFi MegaKit[Standard]/glTF/Columns'
           git -C /tmp/FreeModels rev-parse HEAD | tee /tmp/quaternius_mirror_commit.txt
-          test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Platforms/Door_DarkMetal.gltf'
           test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Platforms/Door_Frame_SquareTall.gltf'
           test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Platforms/Platform_Round1.gltf'
           test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Props/Prop_Clamp.gltf'
           test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Columns/Column_Hollow.gltf'
+          test -f '/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF/Columns/Column_MetalSupport_Curve.gltf'
 
-      - name: Render asset-driven vault previs
+      - name: Fetch CC0 physical vault hero
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/gacha-hero
+          curl -fL --retry 3 --retry-delay 2 \
+            -A 'Mozilla/5.0 asset-previs' \
+            'https://opengameart.org/sites/default/files/vault_door_and_wall_0.zip' \
+            -o /tmp/gacha-hero/source.zip
+          unzip -q /tmp/gacha-hero/source.zip -d /tmp/gacha-hero/unpacked
+          test -f '/tmp/gacha-hero/unpacked/door/door.fbx'
+
+      - name: Render composite asset-driven vault previs
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -euo pipefail
           OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-vault-previs"
-          ASSET_ROOT='/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF'
+          QROOT='/tmp/FreeModels/Modular SciFi MegaKit[Standard]/glTF'
+          VROOT='/tmp/gacha-hero/unpacked'
           mkdir -p "$OUT"
           xvfb-run -a blender --background \
-            --python "$GITHUB_WORKSPACE/projects/test/tools/gacha_vault_preview/build_scene.py" \
-            -- "$ASSET_ROOT" "$OUT"
-          test -s "$OUT/01_locked_hero.png"
-          test -s "$OUT/02_approach.png"
-          test -s "$OUT/03_legendary_backlight_blockout.png"
-          test -s "$OUT/gacha_vault_previs.blend"
+            --python "$GITHUB_WORKSPACE/projects/test/tools/gacha_vault_preview/build_composite_scene.py" \
+            -- "$QROOT" "$VROOT" "$OUT"
+          test -s "$OUT/01_locked_composite.png"
+          test -s "$OUT/02_approach_composite.png"
+          test -s "$OUT/03_legendary_breach.png"
+          test -s "$OUT/gacha_vault_composite.blend"
 
       - name: Write provenance and status report
         shell: bash
@@ -69,29 +82,28 @@ jobs:
           OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-vault-previs"
           MIRROR_SHA="$(cat /tmp/quaternius_mirror_commit.txt)"
           cat > "$OUT/PREVIS_REPORT.md" <<EOF
-          # Gacha Vault Previs Report
+          # Gacha Vault Composite Previs Report
 
           - Project commit: ${GITHUB_SHA}
           - Purpose: real-asset visual preproduction only; no Minecraft runtime implementation
-          - External base: Quaternius Modular Sci-Fi MegaKit Standard
-          - Official source: https://quaternius.com/packs/modularscifimegakit.html
-          - Official license: CC0 1.0 Universal
-          - Transport mirror used by CI: agentkaerf/FreeModels
-          - Mirror commit: ${MIRROR_SHA}
-          - Real imported meshes: Door_DarkMetal, Door_Frame_SquareTall, Platform_Round1, Prop_Clamp, Column_Hollow
-          - Preview materials: neutral authored previs materials because the transport mirror omits referenced shared kit textures
-          - Custom seal ring: BLOCKOUT ONLY; must be replaced/refined as authored hero geometry before Minecraft implementation
-          - Legendary door displacement: BLOCKOUT ONLY; this is not the authored fracture animation
+          - Hero core: `vault door` by tbbk, OpenGameArt, CC0
+          - Hero source: https://opengameart.org/content/vault-door
+          - Environment/base hardware: Quaternius Modular Sci-Fi MegaKit Standard, CC0 1.0 Universal
+          - Quaternius official source: https://quaternius.com/packs/modularscifimegakit.html
+          - Transport mirror used for Quaternius CI fetch: agentkaerf/FreeModels @ ${MIRROR_SHA}
+          - Real imported environment meshes: Door_Frame_SquareTall, Platform_Round1, Prop_Clamp, Column_Hollow, Column_MetalSupport_Curve
+          - Preview materials: neutral authored previs materials
+          - Legendary breach: BLOCKOUT ONLY; final fracture/animation not authored
           - Visual approval: NOT YET GRANTED
           - Minecraft implementation: NOT STARTED
           - PLAYTESTED: NO
           EOF
-          sha256sum "$OUT"/*.png "$OUT/gacha_vault_previs.blend" > "$OUT/SHA256SUMS.txt"
+          sha256sum "$OUT"/*.png "$OUT/gacha_vault_composite.blend" > "$OUT/SHA256SUMS.txt"
 
       - name: Upload previs
         uses: actions/upload-artifact@v4
         with:
-          name: gacha-vault-previs-${{ github.run_number }}
+          name: gacha-vault-composite-previs-${{ github.run_number }}
           path: projects/test/build/gacha-vault-previs/
           if-no-files-found: error
           retention-days: 30
