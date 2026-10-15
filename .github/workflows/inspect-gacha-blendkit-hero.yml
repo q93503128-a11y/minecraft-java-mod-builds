@@ -1,3 +1,4 @@
+# One-shot visual source inspection for the current gacha preproduction gate.
 name: Inspect Gacha Blendkit Hero
 
 on:
