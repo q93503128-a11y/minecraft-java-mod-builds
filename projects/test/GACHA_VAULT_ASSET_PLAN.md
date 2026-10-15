@@ -19,17 +19,18 @@ Primary hero candidate:
 - Observed geometry: about 32k triangles / 17.6k vertices
 - License shown on the model page: Creative Commons Attribution
 
-Why it was selected:
+Why it remains selected after source research:
 
-- It already reads as a hero object rather than a corridor prop.
-- The silhouette has enough mechanical layering to hold the center of a cinematic without relying on emissive circles or particle density.
-- The ring has real structural depth, supports, cabling and asymmetry.
-- It is visually stronger than every locally rendered Quaternius-only and generic bank-vault mockup tested in this experiment.
-- The asset already supports animation, which is preferable to reconstructing a premium gate from code-authored primitives.
+- It reads as a purpose-built hero object rather than a corridor prop or generic bank vault.
+- The silhouette already has enough mechanical layering to hold the center of the cinematic without a code-authored glowing ring.
+- The ring, supports, cables and asymmetric secondary structures provide a stronger mechanical hierarchy than every source that was actually rendered during this experiment.
+- It already supports animation, which is preferable to manufacturing the primary visual identity from runtime primitives.
 
-Status: **PRIMARY HERO CANDIDATE LOCKED — RAW ASSET VISUAL APPROVAL STILL PENDING**
+Status: **PRIMARY HERO CANDIDATE LOCKED — RAW ASSET INSPECTION BLOCKED ON OFFICIAL DOWNLOAD**
 
-Do not call the asset final until the official downloadable file has been acquired and inspected in Blender/another real 3D authoring tool.
+The official Sketchfab download requires an end-user authenticated download path. Do not scrape, reconstruct or bypass that path. The next production step is for the user to download the model from the official page and provide the original archive/file to this project for ordinary Blender inspection and game integration.
+
+Do not call the asset final until that official file has been inspected.
 
 ### Artist / AI-use boundary
 
@@ -37,13 +38,13 @@ The artist profile states that the artist does not want their models used for tr
 
 Project rule:
 
-- Do not upload the raw model or textures to generative-AI training/fine-tuning/model-generation services.
+- Do not upload the raw model or textures to generative-AI training, fine-tuning or model-generation services.
 - Do not use the asset as an input reference for generative 3D reconstruction.
 - Ordinary non-generative tooling such as Blender, format conversion, CI file validation and in-game rendering is allowed subject to the model license.
 - Preserve required attribution when the asset is used or redistributed.
 - At acquisition time, save the exact license text/version and attribution string beside the imported asset.
 
-### Supporting environment — Quaternius only
+## Supporting environment — Quaternius only
 
 Quaternius `Modular Sci-Fi MegaKit` remains useful, but it is no longer the hero-gate source.
 
@@ -114,7 +115,7 @@ Problems:
 
 ### Previs D — OpenGameArt CC0 bank-vault door
 
-Source inspected:
+Source:
 
 - https://opengameart.org/content/vault-door
 - Author: tbbk
@@ -124,7 +125,7 @@ Verdict: **REJECTED AS HERO**
 
 Useful finding:
 
-- the thick circular leaf, central handle and real hinge mechanism gave better physical weight than the Quaternius leaves
+- thick circular leaf, central handle and real hinge mechanism gave better physical weight than the Quaternius leaves
 
 Reason for rejection:
 
@@ -132,17 +133,74 @@ Reason for rejection:
 - large hinge arm dominated the form
 - combining it with the Quaternius frame still looked like kitbash rather than a purpose-built dimensional device
 
-It may remain a mechanical-reference source only. Do not ship it as the hero gate.
+Keep as mechanical reference only.
+
+### Previs E — OpenGameArt `Eldritch Portal`
+
+Source:
+
+- https://opengameart.org/content/eldritch-portal-model-with-pbr-textures
+- Author: phantasmaCora
+- License observed during acquisition: CC-BY 4.0
+- Public `.blend` was acquired directly and rendered in Blender.
+
+Verdict: **REJECTED AS HERO**
+
+Reason:
+
+- PBR material quality was stronger than the earlier free-kit blockouts
+- however, the spikes/tentacle-like silhouette belongs to dark fantasy rather than precision mechanical sci-fi
+- rotating or recoloring it would not solve the design-language mismatch
+
+### Blendkit anonymous-download route
+
+Verdict: **REJECTED AS A PRODUCTION SOURCE PATH**
+
+Observed during CI:
+
+- one public API host returned HTTP 403
+- the alternative public search endpoint did not resolve the intended exact source reliably
+
+Decision:
+
+- do not spend more production time reverse-engineering or bypassing a provider download flow
+- only use a future Blendkit source if its ordinary official download path is directly available and license terms are explicit
+
+### 3DAssets.dev recovery-facility candidates
+
+Sources researched:
+
+- `Twin leaf blast door`
+- `Decontamination arch`
+- pack: `UFO Crash Site and Recovery Facility`
+- license shown by source: CC0 1.0 Universal
+- direct permanent CDN URLs are documented by the source
+
+Technical observations from source metadata:
+
+- blast door has separate left/right door nodes and useful mechanical proportions
+- decontamination arch has real thickness, nozzle/rail/lamp details and can be useful as secondary chamber dressing
+- both are low-poly static assets rather than authored cinematic hero props
+
+CI result:
+
+- API route first failed with HTTP 503 from the source API
+- direct documented CDN route then failed on the GitHub runner because `cdn.3dassets.dev` could not resolve DNS
+- no successful Blender visual inspection was produced from these files
+
+Verdict: **NOT APPROVED AS HERO; NO FURTHER RETRY**
+
+Even if access succeeds later, treat these as possible support/base geometry only unless a real visual preview proves otherwise. Do not lower the hero quality gate merely because they are CC0.
 
 ## Final visual language
 
-The cinematic is still called the `Dimensional Vault`, but the hero device is now a dimensional containment gate rather than a literal bank-vault door.
+The cinematic is still called the `Dimensional Vault`, but the hero device is a dimensional containment gate rather than a literal bank-vault door.
 
 The gate should feel like a machine that seals something behind a dimensional membrane.
 
 Visual hierarchy:
 
-1. Helley hero gate mechanical ring
+1. Helley hero gate mechanical structure
 2. restrained physical locking/containment modules
 3. real stage and chamber structure
 4. controlled emissive accents
@@ -153,25 +211,25 @@ Particles are support only, never the main visual language.
 
 ## Hero asset adaptation rules
 
-When the Helley asset is acquired:
+When the official Helley asset is supplied:
 
-- remove or hide the desert/cactus presentation pieces if they are part of the downloadable scene
-- keep the mechanical gate as the hero object
-- preserve the original mesh quality and authored proportions unless a clear gameplay/camera reason requires modification
-- separate moving mechanical groups only where animation requires it
-- do not flatten the model into a single billboard or screen-space effect
-- do not cover the model with unrelated Quaternius props just to make it look busier
-- keep any new custom geometry subordinate to the original hero silhouette
+- keep the raw archive/source untouched beside the working copy
+- record exact license and attribution information before edits
+- inspect the actual hierarchy, materials, textures and animation clips first
+- remove or hide unrelated presentation/environment pieces only after confirming they are separable
+- preserve authored proportions unless camera/runtime constraints require a change
+- separate or re-rig moving groups only where the cinematic needs it
+- do not flatten the model into a billboard or replace its identity with screen-space effects
+- do not cover it with unrelated kit pieces merely to make it busier
+- any Quaternius/custom additions remain subordinate to the hero silhouette
 
 ## Highest-rarity event
-
-The old `door leaf fracture` concept is no longer mandatory because the hero source is a portal/containment gate rather than a pair of vault doors.
 
 Preferred highest-rarity branch:
 
 1. gate begins the same normal activation sequence as an upper-rarity result
 2. mechanical activation stalls before the membrane stabilizes
-3. all normal emissive indicators cut out
+3. normal emissive indicators cut out
 4. 0.2–0.3 s of near-silence
 5. an internal impact distorts the membrane from behind
 6. a second impact forces several real mechanical segments out of alignment
@@ -193,13 +251,15 @@ Single high-rarity target duration: roughly 5–7 seconds.
 - play the chamber/gate entry once
 - reveal low-rarity results rapidly
 - pause when a high-rarity result is reached
-- highest rarity is allowed to take over the full gate-breach sequence
+- highest rarity may take over the full gate-breach sequence
 - provide a skip path later, but do not design the base animation around skipping
 
 ## Rejected approaches
 
 - Quaternius door/frame as the final hero object
 - generic bank-vault door as the final hero object
+- dark-fantasy `Eldritch Portal` as the final hero object
+- lowering the quality bar to a low-detail CC0 door because it is easy to download
 - fullscreen UI made primarily from `fill`, rectangles, lines or gradients
 - TextDisplay glyphs pretending to be premium VFX
 - vanilla particle clouds as the hero visual
@@ -209,25 +269,29 @@ Single high-rarity target duration: roughly 5–7 seconds.
 
 ## Next production gate
 
-Minecraft implementation is **BLOCKED** until all of the following are complete:
+Minecraft v2 implementation is **BLOCKED** until all of the following are complete:
 
-1. Download the Helley asset from the official Sketchfab model page.
-2. Record exact attribution/license information beside the imported source.
-3. Inspect mesh groups, animation clips, textures and material layout in Blender or equivalent.
+1. User downloads `Portal gate Sci-Fi` from Helley's official Sketchfab page and supplies the original model/archive.
+2. Save the exact attribution/license information beside the imported source.
+3. Inspect mesh groups, animation clips, textures and material layout in Blender or equivalent non-generative tooling.
 4. Produce a real still or short video with the hero gate plus only the minimum required Quaternius supporting environment.
-5. Review the preview at the intended Minecraft camera distance.
+5. Review that preview at the intended Minecraft camera distance.
 6. Confirm that the gate itself, without particle spam, already looks strong enough.
 7. Only then choose the Minecraft rendering path and implement the cinematic.
 
-If the official raw asset fails the visual or technical gate, replace the hero source. Do not fall back to the rejected Quaternius-only or bank-vault mockups.
+If the official raw asset fails the visual or technical gate, replace the hero source. Do not fall back to the rejected Quaternius-only, bank-vault, Eldritch or low-detail door mockups.
 
 ## Validation state
 
-- SOURCE/Licensing research: REVIEWED
+- SOURCE/licensing research: REVIEWED
 - Real Quaternius mesh previews: RENDERED, REJECTED
 - CC0 bank-vault mesh preview: RENDERED, REJECTED AS HERO
+- OpenGameArt Eldritch preview: RENDERED, REJECTED AS HERO
+- Blendkit route: ACCESS/RELIABILITY REJECTED
+- 3DAssets mechanical candidates: SOURCE REVIEWED, CI ACCESS FAILED, NOT VISUALLY APPROVED
 - Helley hero candidate: WEB VISUALLY REVIEWED, RAW FILE NOT YET ACQUIRED
 - Minecraft v2 implementation: NOT STARTED
+- BUILD VERIFIED for current legacy 0.3.0 prototype: YES (latest successful normal build during this research session)
 - BUILD VERIFIED for v2 cinematic: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
