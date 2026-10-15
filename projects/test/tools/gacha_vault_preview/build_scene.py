@@ -42,16 +42,14 @@ def configure_render():
     background.inputs["Color"].default_value = (0.003, 0.005, 0.012, 1.0)
     background.inputs["Strength"].default_value = 0.10
 
-    # Filmic/AgX high-contrast look when available.
     view = scene.view_settings
-    for look in ("AgX - Medium High Contrast", "AgX - Medium High Contrast", "Medium High Contrast"):
+    for look in ("AgX - Medium High Contrast", "Medium High Contrast"):
         try:
             view.look = look
             break
         except Exception:
             pass
 
-    # Subtle bloom/glare without screen-space UI geometry.
     scene.use_nodes = True
     tree = scene.node_tree
     tree.nodes.clear()
@@ -97,6 +95,15 @@ def import_gltf(path: Path, label: str):
         if obj.parent is None:
             obj.parent = root
     return root, imported
+
+
+def override_materials(objects, material):
+    """Use stable neutral previs materials when the public transport mirror lacks kit textures."""
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        obj.data.materials.clear()
+        obj.data.materials.append(material)
 
 
 def add_torus(name, location, major, minor, material, rotation=(math.radians(90), 0, 0)):
@@ -183,7 +190,6 @@ def add_mechanical_ring_details(radius, y, z, material, count=12):
             rotation=(0, -a, 0),
             bevel=0.035,
         )
-        # Brackets are visual blockout for a later authored ring model.
         block.rotation_euler[1] = -a
 
 
@@ -192,49 +198,48 @@ def build_scene(asset_root: Path):
     props = asset_root / "Props"
     columns = asset_root / "Columns"
 
-    graphite = make_principled("Graphite_Blockout", (0.025, 0.03, 0.045), metallic=0.82, roughness=0.22)
+    frame_mat = make_principled("Frame_Neutral", (0.040, 0.050, 0.072), metallic=0.78, roughness=0.27)
+    door_mat = make_principled("Door_Neutral", (0.018, 0.022, 0.032), metallic=0.86, roughness=0.18)
+    stage_mat = make_principled("Stage_Neutral", (0.027, 0.032, 0.044), metallic=0.74, roughness=0.24)
+    support_mat = make_principled("Support_Neutral", (0.022, 0.027, 0.040), metallic=0.82, roughness=0.31)
+    clamp_mat = make_principled("Clamp_Neutral", (0.075, 0.082, 0.100), metallic=0.88, roughness=0.20)
+    graphite = make_principled("Graphite_Blockout", (0.025, 0.030, 0.045), metallic=0.82, roughness=0.22)
     violet = make_principled(
-        "Violet_Emission",
-        (0.05, 0.01, 0.10),
-        metallic=0.25,
-        roughness=0.22,
-        emission=(0.39, 0.06, 1.0),
-        emission_strength=7.0,
+        "Violet_Emission", (0.05, 0.01, 0.10), metallic=0.25, roughness=0.22,
+        emission=(0.39, 0.06, 1.0), emission_strength=7.0,
     )
     gold = make_principled(
-        "GoldWhite_Emission",
-        (0.12, 0.07, 0.01),
-        metallic=0.1,
-        roughness=0.18,
-        emission=(1.0, 0.58, 0.12),
-        emission_strength=14.0,
+        "GoldWhite_Emission", (0.12, 0.07, 0.01), metallic=0.1, roughness=0.18,
+        emission=(1.0, 0.58, 0.12), emission_strength=14.0,
     )
     floor_mat = make_principled("VoidFloor", (0.006, 0.008, 0.014), metallic=0.65, roughness=0.18)
 
-    # Real Quaternius CC0 geometry.
-    frame, _ = import_gltf(platforms / "Door_Frame_SquareTall.gltf", "VaultFrame")
+    frame, frame_objects = import_gltf(platforms / "Door_Frame_SquareTall.gltf", "VaultFrame")
+    override_materials(frame_objects, frame_mat)
     frame.location = (0, 3.15, 0)
     frame.scale = (1.16, 1.16, 1.16)
 
-    left_door, _ = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Left")
+    left_door, left_objects = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Left")
+    override_materials(left_objects, door_mat)
     left_door.location = (0, 3.03, 0.48)
     left_door.scale = (1.22, 1.22, 1.22)
 
-    right_door, _ = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Right")
+    right_door, right_objects = import_gltf(platforms / "Door_DarkMetal.gltf", "VaultDoor_Right")
+    override_materials(right_objects, door_mat)
     right_door.location = (0, 3.03, 0.48)
     right_door.scale = (-1.22, 1.22, 1.22)
 
-    stage, _ = import_gltf(platforms / "Platform_Round1.gltf", "RevealStage")
+    stage, stage_objects = import_gltf(platforms / "Platform_Round1.gltf", "RevealStage")
+    override_materials(stage_objects, stage_mat)
     stage.location = (0, -0.15, 0)
     stage.scale = (1.18, 1.18, 1.18)
 
-    # Tall real kit supports. They frame the hero prop without becoming the hero prop.
     for x in (-3.45, 3.45):
-        support, _ = import_gltf(columns / "Column_Hollow.gltf", f"Support_{'L' if x < 0 else 'R'}")
+        support, support_objects = import_gltf(columns / "Column_Hollow.gltf", f"Support_{'L' if x < 0 else 'R'}")
+        override_materials(support_objects, support_mat)
         support.location = (x, 3.20, 0)
         support.scale = (0.92, 0.92, 1.08)
 
-    # Four real Quaternius clamp meshes. Exact rotation will be authored after visual approval.
     clamp_positions = [
         (-2.45, 2.75, 1.35, 0.0),
         (2.45, 2.75, 1.35, math.pi),
@@ -243,26 +248,24 @@ def build_scene(asset_root: Path):
     ]
     clamps = []
     for i, (x, y, z, rz) in enumerate(clamp_positions):
-        clamp, _ = import_gltf(props / "Prop_Clamp.gltf", f"LockClamp_{i + 1}")
+        clamp, clamp_objects = import_gltf(props / "Prop_Clamp.gltf", f"LockClamp_{i + 1}")
+        override_materials(clamp_objects, clamp_mat)
         clamp.location = (x, y, z)
         clamp.scale = (1.75, 1.75, 1.75)
         clamp.rotation_euler = (math.radians(90), 0, rz)
         clamps.append(clamp)
 
-    # Hero ring is intentionally a blockout. Final ring must be authored as a proper model.
+    # Hero ring remains BLOCKOUT ONLY until this composition passes visual review.
     ring_outer = add_torus("SealRing_Outer", (0, 2.62, 2.65), 2.12, 0.105, graphite)
     ring_inner = add_torus("SealRing_Inner", (0, 2.56, 2.65), 1.70, 0.062, violet)
     add_mechanical_ring_details(2.10, 2.60, 2.65, graphite, count=12)
-
     seam = add_box("VaultSeam", (0, 2.48, 2.55), (0.022, 0.035, 1.83), violet, bevel=0.012)
 
-    # Dark reflective surrounding floor; not UI, just the chamber floor plane.
     bpy.ops.mesh.primitive_plane_add(size=36, location=(0, 0, -0.035))
     void_floor = bpy.context.object
     void_floor.name = "ChamberFloor"
     void_floor.data.materials.append(floor_mat)
 
-    # Designed 3D lighting rig.
     add_area_light("Key_Left", (-5.0, -1.0, 6.5), 1050, (0.18, 0.10, 0.65), 4.2, (0, 2.5, 2.4))
     add_area_light("Key_Right", (5.0, -0.5, 5.2), 900, (0.08, 0.18, 0.55), 3.8, (0, 2.8, 2.5))
     add_area_light("Top_Rim", (0, 3.0, 8.0), 1200, (0.35, 0.12, 0.8), 3.2, (0, 3.0, 2.6))
@@ -272,14 +275,10 @@ def build_scene(asset_root: Path):
     camera = add_camera((0, -9.4, 2.25), (0, 2.65, 2.40), lens=42)
 
     return {
-        "frame": frame,
         "left_door": left_door,
         "right_door": right_door,
-        "clamps": clamps,
-        "ring_outer": ring_outer,
         "ring_inner": ring_inner,
         "seam": seam,
-        "violet": violet,
         "gold": gold,
         "camera": camera,
     }
@@ -290,21 +289,19 @@ def render(scene_parts, output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
     camera = scene_parts["camera"]
 
-    # 1) Locked hero composition.
     camera.location = (0, -9.4, 2.25)
     camera.data.lens = 42
     point_at(camera, (0, 2.65, 2.40))
     scene.render.filepath = str(output_dir / "01_locked_hero.png")
     bpy.ops.render.render(write_still=True)
 
-    # 2) Closer approach composition used before the last lock releases.
     camera.location = (0.35, -6.8, 2.05)
     camera.data.lens = 46
     point_at(camera, (0, 2.75, 2.55))
     scene.render.filepath = str(output_dir / "02_approach.png")
     bpy.ops.render.render(write_still=True)
 
-    # 3) Highest-rarity lighting/blocking preview. This is NOT the final fracture mesh.
+    # Highest-rarity blocking only. Final fracture must use authored replacement geometry.
     left = scene_parts["left_door"]
     right = scene_parts["right_door"]
     left.location.x -= 1.05
