@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/scripts/gacha_3dassets_probe.py'
+      - '.github/scripts/gacha_3dassets_direct_probe.py'
       - '.github/workflows/inspect-gacha-blendkit-hero.yml'
   workflow_dispatch:
 
@@ -32,7 +32,7 @@ jobs:
           OUT="$GITHUB_WORKSPACE/projects/test/build/gacha-mechanical-hero"
           mkdir -p "$OUT"
           xvfb-run -a blender --background \
-            --python "$GITHUB_WORKSPACE/.github/scripts/gacha_3dassets_probe.py" \
+            --python "$GITHUB_WORKSPACE/.github/scripts/gacha_3dassets_direct_probe.py" \
             -- "$OUT"
           test -s "$OUT/PROVENANCE.json"
           test -s "$OUT/01_blast_door_front.png"
