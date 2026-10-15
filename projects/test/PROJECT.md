@@ -28,24 +28,9 @@ Use it for quick but real JAR prototypes such as combat skills, VFX/sound timing
 
 Experiments should still compile and remain testable, but they do not need to share a single game theme.
 
-## Current experiment: 별빛 강하 0.2
+## Current experiment
 
-- Starfall Focus is granted automatically when the player joins if they do not already carry one.
-- Right-click while aiming at exposed terrain within 96 blocks to cast.
-- Overworld and night only for the actual cast.
-- Sneak + right-click opens the test night immediately, so normal testing does not require `/time set night`.
-- No cooldown; this is an experiment playground.
-- 0.5 seconds after casting, a distant star-like light appears roughly 150+ blocks away along the sky path.
-- The light hangs and pulses briefly before beginning its descent.
-- The descent starts very slowly, then continuously accelerates toward the target over several seconds.
-- The visible meteor is built from Display Entities: one bright core plus a small number of delayed luminous afterimages. It is not a cloud of particles and has no rocky meteor body.
-- On impact, the core blooms and a coherent ring of light expands from the exact damage center.
-- Damage, knockback and terrain crater share the same impact center.
-- Server authority: validation, damage, knockback and terrain destruction.
-
-## Visual rule for this experiment
-
-Do not increase quality by simply increasing particle count. The meteor must remain readable as one moving celestial light with a clear distant origin, held anticipation, long descent, accelerating streak and decisive impact.
+None.
 
 ## Validation language
 
