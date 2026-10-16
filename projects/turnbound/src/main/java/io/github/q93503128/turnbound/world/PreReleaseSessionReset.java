@@ -28,6 +28,11 @@ public final class PreReleaseSessionReset {
         ExternalWorldBootstrap.remove(player);
         CampaignProgressStore.resetToNewGame(player.getUUID());
 
+        // Live placement caches are keyed by ServerLevel and survive the profile/world-data wipe above.
+        // Without clearing them the retest walks and fights on pre-reset coordinates.
+        DrehmalAdaptiveRoutePlacement.clear();
+        DrabyelHubAutoPlacement.clear();
+
         ExternalWorldSavedData external = ExternalWorldSavedData.get(server);
         external.resetPlayer(player.getUUID());
         TurnboundWorldSavedData.get(server).resetForPreReleaseSession();

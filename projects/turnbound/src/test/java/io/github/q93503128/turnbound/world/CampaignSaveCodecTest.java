@@ -158,6 +158,42 @@ class CampaignSaveCodecTest {
     }
 
     @Test
+    void schemaFourPlusTwentyPendingRewardNormalizesToUnenhancedAndRefundsRetiredSpend() {
+        String legacy = """
+                {
+                  "schemaVersion": 4,
+                  "profile": {
+                    "gold": 1000,
+                    "summonCrystal": 0,
+                    "starEssence": 0,
+                    "awakeningCore": 0,
+                    "ownedCharacters": ["P01"],
+                    "fiveStarPity": 0,
+                    "starterArchiveUnlocked": false,
+                    "starterArchiveUsed": false
+                  },
+                  "characters": {"P01":{"level":60,"xp":0}},
+                  "growth": {"P01":{"currentStar":4,"awakened":false,"characterQuestComplete":true,"signatureTrialCleared":false}},
+                  "equipment": {
+                    "nextSerial": 2,
+                    "items": [],
+                    "pendingRewards": [{"instanceId":"eq_00000009","itemId":"W01","enhancementLevel":20}],
+                    "loadouts": {},
+                    "choiceTokens": {}
+                  },
+                  "quests": {},
+                  "clearedEncounters": []
+                }
+                """;
+
+        CampaignProgressStore.Snapshot migrated = CampaignSaveCodec.decode(legacy);
+        assertEquals(1, migrated.equipment().pendingRewards().size());
+        assertEquals(0, migrated.equipment().pendingRewards().getFirst().enhancementLevel(),
+                "pending storage only holds unenhanced drops");
+        assertEquals(1_000 + EquipmentInventory.legacyOverflowRefund("W01", 20), migrated.profile().gold());
+    }
+
+    @Test
     void unknownSchemaIsRejectedInsteadOfSilentlyResettingProgress() {
         String json = CampaignSaveCodec.encode(new CampaignProgressStore.Snapshot(
                 new PlayerProfile.Snapshot(5_000, 0, 0, 0, Set.of("P01"), 0, false, false),

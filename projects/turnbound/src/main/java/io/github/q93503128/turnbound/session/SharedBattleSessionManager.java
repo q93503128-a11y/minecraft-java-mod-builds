@@ -82,7 +82,15 @@ final class SharedBattleSessionManager {
         if(command==null)return true;
         String[] parts=command.split("\\|",-1);
         switch(parts[0]){
-            case "FLEE"->{if(s.finished())requestResultExit(s,p,false);else if(s.fleeAllowed(p.getUUID()))abortRunning(s,p);else BattleNetwork.sync(p,s);}
+            case "FLEE"->{
+                if(s.finished())requestResultExit(s,p,false);
+                // The outcome is already decided once the outro starts (finished flips only after the
+                // 32/102-tick result presentation). Aborting here would discard earned rewards, while the
+                // solo path settles ALLY_VICTORY in the same window. Hold the result screen instead.
+                else if(s.state().outcome()!=BattleOutcome.RUNNING)BattleNetwork.sync(p,s);
+                else if(s.fleeAllowed(p.getUUID()))abortRunning(s,p);
+                else BattleNetwork.sync(p,s);
+            }
             case "ACT"->{if(parts.length>=4)s.action(p,parts[1],parts[2],parts[3]);}
             case "FOCUS"->s.focusTarget(p,parts.length>=2?parts[1]:"");
             case "AUTO"->s.toggleAuto(p);
@@ -99,6 +107,8 @@ final class SharedBattleSessionManager {
         SharedBattleSession s=p==null?null:BY_PARTICIPANT.get(p.getUUID());
         if(s==null)return false;
         if(!s.initiatorId().equals(p.getUUID()))return true;
+        // Same outro guard as the FLEE path: never abort a decided battle, or victory rewards are lost.
+        if(s.state().outcome()!=BattleOutcome.RUNNING){BattleNetwork.sync(p,s);return true;}
         abortRunning(s,p);
         return true;
     }

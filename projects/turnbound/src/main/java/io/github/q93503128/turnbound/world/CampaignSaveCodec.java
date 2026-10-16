@@ -279,8 +279,18 @@ public final class CampaignSaveCodec {
             JsonObject row = element.getAsJsonObject();
             String itemId = requiredString(row, "itemId");
             if (!knownEquipment(itemId)) { orphaned.add(itemId); continue; }
-            pendingRewards.add(new EquipmentInventory.Item(requiredString(row, "instanceId"), itemId,
-                    optionalInt(row, "enhancementLevel", 0)));
+            // Pending storage only ever holds unenhanced drops (grantReward always mints level 0), and the
+            // Snapshot invariant rejects any other pending level. A legacy row carrying retired +11..+20
+            // levels must therefore normalize to the only legal pending state instead of throwing in the
+            // Item/Snapshot constructors and blocking login; the retired spend is refunded exactly as for
+            // owned items above. Non-legacy enhanced pending rows stay fail-closed (real corruption signal).
+            int pendingRawLevel = optionalInt(row, "enhancementLevel", 0);
+            int pendingLevel = pendingRawLevel;
+            if (legacySchema && pendingRawLevel > io.github.q93503128.turnbound.progression.GrowthRulesV1.maxEnhancement()) {
+                goldRefund = Math.addExact(goldRefund, EquipmentInventory.legacyOverflowRefund(itemId, pendingRawLevel));
+                pendingLevel = 0;
+            }
+            pendingRewards.add(new EquipmentInventory.Item(requiredString(row, "instanceId"), itemId, pendingLevel));
         }
         Map<String, EquipmentInventory.Loadout> loadouts = new LinkedHashMap<>();
         for (var entry : optionalObject(raw, "loadouts").entrySet()) {

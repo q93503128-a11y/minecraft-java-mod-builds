@@ -15,9 +15,14 @@ import net.minecraft.world.phys.Vec3;
 import java.util.*;
 
 final class DrehmalAdaptiveRoutePlacement {
-    private static final Map<ServerLevel, Snapshot> CACHE = new IdentityHashMap<>();
-    private static final Map<ServerLevel, Long> OPENING_RECOVERY_AT = new IdentityHashMap<>();
-    private static final Map<ServerLevel, Integer> OPENING_RECOVERY_ATTEMPTS = new IdentityHashMap<>();
+    // Weak keys so unloaded dimensions are released instead of being retained until a full clear().
+    // Mirrors DrabyelHubAutoPlacement; ServerLevel identity equality makes this equivalent to the old IdentityHashMap.
+    private static final Map<ServerLevel, Snapshot> CACHE =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    private static final Map<ServerLevel, Long> OPENING_RECOVERY_AT =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    private static final Map<ServerLevel, Integer> OPENING_RECOVERY_ATTEMPTS =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
     private static final Set<String> REQUIRED_REGIONAL_OBJECTIVES = Set.of(
             "CV_DRABYEL_NORTH", DrehmalContentUnlocks.WARNING_CAVE_ELITE);
     private record ScoredPosition(DrehmalFirstRouteCatalog.Position position, double score) {}

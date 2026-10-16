@@ -14,7 +14,7 @@ public final class ClientWorldLoadingBootstrap {
         ClientPresentationTransition.tick();
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
-            if (lastLevel != null) ClientFieldState.beginWorld();
+            if (lastLevel != null) resetFieldState();
             ClientPresentationTransition.reset();
             lastLevel = null;
             return;
@@ -24,10 +24,16 @@ public final class ClientWorldLoadingBootstrap {
             lastLevel = minecraft.level;
             // On a normal join no snapshot exists yet. If networking won the race and already supplied
             // the new field snapshot, do not erase it here and wait forever for a second packet.
-            if (!ClientFieldState.initialSnapshotReceived()) ClientFieldState.beginWorld();
+            if (!ClientFieldState.initialSnapshotReceived()) resetFieldState();
         }
         if (!ClientFieldState.initialSnapshotReceived() && minecraft.gui.screen() == null) {
             minecraft.gui.setScreen(new WorldLoadingScreen());
         }
+    }
+
+    /** Snapshot reset plus JourneyMap ghost-marker eviction so the previous dimension leaves nothing behind. */
+    private static void resetFieldState() {
+        ClientFieldState.beginWorld();
+        TurnboundJourneyMapPlugin.clearOnWorldReset();
     }
 }

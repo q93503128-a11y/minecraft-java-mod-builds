@@ -45,10 +45,13 @@ abstract class FacilityScreen extends Screen {
     @Override
     protected final void init() {
         super.init();
-        panelWidth = Math.min(preferredWidth, Math.max(minimumWidth, width - 24));
-        panelHeight = Math.min(preferredHeight, Math.max(minimumHeight, height - 24));
-        left = (width - panelWidth) / 2;
-        top = (height - panelHeight) / 2;
+        // Fit the viewport first: on 320px-class windows the old Math.max(minimum, width - 24) pushed the
+        // panel origin negative and clipped Market/Summon/Forge controls off-screen. Minimums stay as
+        // construction hints, but reachability wins over preferred density on tiny screens.
+        panelWidth = Math.min(preferredWidth, Math.max(0, width - 8));
+        panelHeight = Math.min(preferredHeight, Math.max(0, height - 8));
+        left = Math.max(0, (width - panelWidth) / 2);
+        top = Math.max(0, (height - panelHeight) / 2);
         buildFacility();
     }
 

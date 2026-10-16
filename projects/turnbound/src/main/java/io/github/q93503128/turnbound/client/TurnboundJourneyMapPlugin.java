@@ -57,7 +57,10 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
 
     public static void sync(FieldUiSnapshot snapshot) {
         if (api == null || snapshot == null) return;
-        int next = Objects.hash(snapshot.active(), snapshot.mapPoints());
+        // Waypoint Y follows the player, but the snapshot carries no Y. Without a vertical component the
+        // fingerprint never changes on climbs/falls and markers float at a stale height. Quantize to
+        // 16-block bands so crossings refresh once instead of spamming removeAll/add every tick.
+        int next = Objects.hash(snapshot.active(), snapshot.mapPoints(), verticalBand());
         if (next == fingerprint) return;
         fingerprint = next;
         try {
@@ -114,6 +117,33 @@ public final class TurnboundJourneyMapPlugin implements IClientPlugin {
 
     public static void toggleMinimap() {
         if (api != null) api.toggleMinimap(!api.minimapEnabled());
+    }
+
+    /** 16-block quantized player height for the sync fingerprint. 0 when the player is unavailable. */
+    private static int verticalBand() {
+        try {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft == null || minecraft.player == null) return 0;
+            return minecraft.player.blockPosition().getY() >> 4;
+        } catch (Throwable throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * Clears TURNBOUND markers when the client leaves a world. The snapshot reset alone never reaches
+     * JourneyMap, so without this ghosts of the previous dimension linger until the next server packet.
+     */
+    public static void clearOnWorldReset() {
+        if (api == null) return;
+        try {
+            api.removeAll(Turnbound.MOD_ID);
+            api.removeAllWaypoints(Turnbound.MOD_ID);
+            LABEL_OVERLAYS.clear();
+            fingerprint = Objects.hash(false, List.of(), verticalBand());
+        } catch (Throwable throwable) {
+            Turnbound.LOGGER.warn("TURNBOUND could not clear JourneyMap markers on world reset", throwable);
+        }
     }
 
     public static boolean minimapEnabled() {
