@@ -80,6 +80,52 @@ jobs:
 
           echo 'AUGMENT_PACK_SERVER_SMOKE_PASS'
 
+      - name: Install virtual display for client smoke
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Client boot smoke test
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p run-pack-client build/reports/modpack
+
+          set +e
+          timeout --signal=TERM --kill-after=20s 120s \
+            xvfb-run -a -s '-screen 0 1280x720x24' \
+            ./gradlew --no-daemon runPackClient \
+              -PaugmentationPackRuntime=true --stacktrace \
+            2>&1 | tee build/reports/modpack/pack-client-console.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [[ $status -ne 124 ]]; then
+            echo "Pack client did not remain healthy until smoke timeout (status $status)"
+            exit 1
+          fi
+
+          if [[ ! -f run-pack-client/logs/latest.log ]]; then
+            echo 'Client produced no latest.log'
+            exit 1
+          fi
+
+          cp run-pack-client/logs/latest.log build/reports/modpack/pack-client-latest.log
+
+          if grep -Eqi 'Mod resolution encountered an incompatible mod set|Could not execute entrypoint|Mixin transformation of .* failed|Minecraft has crashed|Exception in thread "Render thread"|Uncaught exception in thread "Render thread"' run-pack-client/logs/latest.log; then
+            echo 'Fatal pack-load signature found in client log'
+            tail -n 300 run-pack-client/logs/latest.log
+            exit 1
+          fi
+
+          if ! grep -Eqi 'Backend library: LWJGL|Reloading ResourceManager|OpenAL initialized|Created: .*atlas' run-pack-client/logs/latest.log; then
+            echo 'Client never reached a client-initialization marker before timeout'
+            tail -n 300 run-pack-client/logs/latest.log
+            exit 1
+          fi
+
+          echo 'AUGMENT_PACK_CLIENT_SMOKE_PASS'
+
       - name: Upload verification reports
         if: always()
         uses: actions/upload-artifact@v4
