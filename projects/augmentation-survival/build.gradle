@@ -24,6 +24,9 @@ def pinnedPackArtifacts = [
         [name: 'Naturalist', coord: "maven.modrinth:F8BQNPWX:${project.naturalist_version_id}"],
         [name: "Farmer's Delight Refabricated", coord: "maven.modrinth:7vxePowz:${project.farmers_delight_version_id}"],
         [name: 'Better Combat', coord: "maven.modrinth:5sy6g3kz:${project.better_combat_version_id}"],
+        [name: 'Chrono Dawn', coord: "curse.maven:chrono-dawn-1414198:${project.chronodawn_curse_file}"],
+        [name: 'World Bosses', coord: "curse.maven:world-bosses-1545677:${project.world_bosses_curse_file}"],
+        [name: 'MCEndgame', coord: "maven.modrinth:yJtKNlKW:${project.mcendgame_version_id}"],
         [name: 'Resourceful Lib', coord: "maven.modrinth:G1hIVOrD:${project.resourceful_lib_version_id}"],
         [name: 'Puzzles Lib', coord: "maven.modrinth:QAGBst4M:${project.puzzles_lib_version_id}"],
         [name: 'Forge Config API Port', coord: "maven.modrinth:ohNO6lps:${project.forge_config_api_port_version_id}"],
@@ -31,7 +34,9 @@ def pinnedPackArtifacts = [
         [name: 'Multiloader Data Extensions', coord: "fuzs.multiloaderdataextensions:multiloaderdataextensions-fabric:${project.multiloader_data_extensions_version}"],
         [name: 'GeckoLib', coord: "maven.modrinth:8BmcQJ2H:${project.geckolib_version_id}"],
         [name: 'Player Animation Library', coord: "maven.modrinth:ha1mEyJS:${project.player_animation_version_id}"],
-        [name: 'Cloth Config API', coord: "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}"]
+        [name: 'Cloth Config API', coord: "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}"],
+        [name: 'Architectury API', coord: "maven.modrinth:lhGA9TYQ:${project.architectury_api_version_id}"],
+        [name: 'Fabric Language Kotlin', coord: "maven.modrinth:Ha28R6CL:${project.fabric_language_kotlin_version_id}"]
 ]
 
 loom {
@@ -64,6 +69,14 @@ repositories {
         url = 'https://api.modrinth.com/maven'
         content {
             includeGroup 'maven.modrinth'
+        }
+    }
+
+    maven {
+        name = 'CurseMaven'
+        url = 'https://cursemaven.com'
+        content {
+            includeGroup 'curse.maven'
         }
     }
 
