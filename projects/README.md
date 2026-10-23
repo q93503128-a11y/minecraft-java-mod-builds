@@ -4,6 +4,11 @@
 
 ## 활성 프로젝트
 
+- [`augmentation-survival`](./augmentation-survival/) — 정식 명칭 미정, Minecraft 장기 서바이벌에 등급별 증강과 강한 파워 판타지를 결합하는 증강 중심 모드
+  - 상태: `DESIGN CANON BUILDING / NO SOURCE BOOTSTRAP YET`
+  - 정본 시작점: [`augmentation-survival/PROJECT.md`](./augmentation-survival/PROJECT.md), [`augmentation-survival/GAME_DESIGN.md`](./augmentation-survival/GAME_DESIGN.md)
+  - 핵심 원칙: 일반~신화 등급 코어, 같은 등급 증강 3택, 최대 레벨 증강 중복 제외, 3:1 상위 코어 합성, 철 시대 기본 증강 장치, 다이아·금 기반 강화 장치에서 합성 해금, 한 장소에 여러 코어 등급 분포, 전투 외 채광·이동·탐험·생존·생산 증강 포함, 엔더 드래곤 이전 고등급 접근 허용, 외부 바이옴·구조물·몹을 증강 성장 루프에 통합하는 소형 모드팩 검토
+
 - [`campfire-sessions`](./campfire-sessions/) — 기타·의자·선곡 UI를 결합한 소형 음악 연주 모드
   - 상태: `ALPHA.1 TEST SLICE / CI BUILD PENDING`
   - 현재 버전: `0.1.0-alpha.1`
