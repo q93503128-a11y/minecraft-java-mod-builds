@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "augmentation_survival",
+  "version": "${version}",
+  "name": "Augmentation Survival",
+  "description": "Survival-wide augmentation progression. Working title and bootstrap metadata.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.moonseungjun.augmentationsurvival.AugmentationSurvival"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "=26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

@@ -1,0 +1,213 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+def packRuntimeEnabled = (findProperty('augmentationPackRuntime') ?: 'false').toString().toBoolean()
+
+def pinnedPackArtifacts = [
+        [name: 'Terralith', coord: "maven.modrinth:8oi3bsk5:${project.terralith_version_id}"],
+        [name: 'Lithostitched', coord: "maven.modrinth:XaDC71GB:${project.lithostitched_version_id}"],
+        [name: 'Repurposed Structures', coord: "maven.modrinth:muf0XoRe:${project.repurposed_structures_version}"],
+        [name: 'Dungeons and Taverns', coord: "maven.modrinth:tpehi7ww:${project.dungeons_taverns_version_id}"],
+        [name: 'Friends&Foes', coord: "maven.modrinth:POQ2i9zu:${project.friends_foes_version_id}"],
+        [name: 'Illager Invasion', coord: "maven.modrinth:jSV9w0J5:${project.illager_invasion_version_id}"],
+        [name: 'Naturalist', coord: "maven.modrinth:F8BQNPWX:${project.naturalist_version_id}"],
+        [name: "Farmer's Delight Refabricated", coord: "maven.modrinth:7vxePowz:${project.farmers_delight_version_id}"],
+        [name: 'Better Combat', coord: "maven.modrinth:5sy6g3kz:${project.better_combat_version_id}"],
+        [name: 'Resourceful Lib', coord: "maven.modrinth:G1hIVOrD:${project.resourceful_lib_version_id}"],
+        [name: 'Puzzles Lib', coord: "maven.modrinth:QAGBst4M:${project.puzzles_lib_version_id}"],
+        [name: 'Forge Config API Port', coord: "maven.modrinth:ohNO6lps:${project.forge_config_api_port_version_id}"],
+        [name: 'GeckoLib', coord: "maven.modrinth:8BmcQJ2H:${project.geckolib_version_id}"],
+        [name: 'Player Animation Library', coord: "maven.modrinth:ha1mEyJS:${project.player_animation_version_id}"],
+        [name: 'Cloth Config API', coord: "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}"]
+]
+
+loom {
+    mods {
+        "augmentation_survival" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        packServer {
+            server()
+            displayName = 'Augmentation Survival Pack Server'
+            runDirectory = file('run-pack-server')
+        }
+
+        packClient {
+            client()
+            displayName = 'Augmentation Survival Pack Client'
+            runDirectory = file('run-pack-client')
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content {
+            includeGroup 'maven.modrinth'
+        }
+    }
+
+    maven {
+        name = 'Shedaniel'
+        url = 'https://maven.shedaniel.me/'
+        content {
+            includeGroup 'me.shedaniel.cloth'
+        }
+    }
+}
+
+configurations {
+    packProbe {
+        canBeConsumed = false
+        canBeResolved = true
+        visible = false
+        description = 'Exact external modpack artifacts used for dependency and integration inspection.'
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    pinnedPackArtifacts.each { spec ->
+        add('packProbe', spec.coord) {
+            transitive = false
+        }
+        if (packRuntimeEnabled) {
+            add('localRuntime', spec.coord) {
+                transitive = false
+            }
+        }
+    }
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+}
+
+tasks.register('inspectPackDependencies') {
+    group = 'verification'
+    description = 'Resolve pinned pack jars, inspect Fabric metadata, and inventory loot/worldgen data available for augmentation integration.'
+
+    doLast {
+        def resolved = configurations.packProbe.resolve().toList().sort { a, b -> a.name <=> b.name }
+        if (resolved.size() != pinnedPackArtifacts.size()) {
+            throw new GradleException("Expected ${pinnedPackArtifacts.size()} pack artifacts, resolved ${resolved.size()}: ${resolved*.name}")
+        }
+
+        def report = layout.buildDirectory.file('reports/modpack/pack-artifact-inventory.txt').get().asFile
+        report.parentFile.mkdirs()
+        report.text = ''
+
+        def ids = [:]
+        resolved.each { file ->
+            if (!file.isFile() || file.length() <= 0L) {
+                throw new GradleException("Pack artifact missing or empty: ${file}")
+            }
+
+            def zip = new java.util.zip.ZipFile(file)
+            try {
+                def entries = Collections.list(zip.entries()).collect { it.name }
+                def fabricEntry = zip.getEntry('fabric.mod.json')
+                def id = '(no-fabric-metadata)'
+                def versionValue = '(unknown)'
+                def environment = '(unknown)'
+                def depends = '(none declared)'
+
+                if (fabricEntry != null) {
+                    def meta = new JsonSlurper().parseText(zip.getInputStream(fabricEntry).getText('UTF-8'))
+                    id = String.valueOf(meta.id)
+                    versionValue = String.valueOf(meta.version)
+                    environment = String.valueOf(meta.environment)
+                    depends = meta.depends instanceof Map
+                            ? meta.depends.collect { key, value -> "${key}=${value}" }.sort().join(', ')
+                            : String.valueOf(meta.depends)
+                    if (ids.containsKey(id)) {
+                        throw new GradleException("Duplicate Fabric mod id '${id}' in ${ids[id]} and ${file.name}")
+                    }
+                    ids[id] = file.name
+                }
+
+                def loot = entries.findAll { it.contains('/loot_table/') || it.contains('/loot_tables/') }
+                def structures = entries.findAll {
+                    it.contains('/worldgen/structure/') || it.contains('/worldgen/structure_set/') || it.contains('/structure/')
+                }
+                def biomes = entries.findAll {
+                    it.contains('/worldgen/biome/') || it.contains('/tags/worldgen/biome/')
+                }
+                def recipes = entries.findAll { it.contains('/recipe/') || it.contains('/recipes/') }
+
+                def line = [
+                        "file=${file.name}",
+                        "bytes=${file.length()}",
+                        "id=${id}",
+                        "version=${versionValue}",
+                        "environment=${environment}",
+                        "depends=${depends}",
+                        "lootEntries=${loot.size()}",
+                        "structureEntries=${structures.size()}",
+                        "biomeEntries=${biomes.size()}",
+                        "recipeEntries=${recipes.size()}"
+                ].join('\t')
+                println "AUGMENT_PACK_ARTIFACT ${line}"
+                report << line << System.lineSeparator()
+
+                [loot: loot, structures: structures, biomes: biomes].each { kind, values ->
+                    values.take(12).each { value ->
+                        report << "  ${kind}: ${value}" << System.lineSeparator()
+                    }
+                }
+            } finally {
+                zip.close()
+            }
+        }
+
+        println "AUGMENT_PACK_INSPECTION_PASS count=${resolved.size()} report=${report}"
+    }
+}
+
+tasks.register('verifyPackRuntimeClasspath') {
+    group = 'verification'
+    description = 'Resolve the Loom development runtime with the official pack enabled.'
+    doLast {
+        if (!packRuntimeEnabled) {
+            throw new GradleException('Run with -PaugmentationPackRuntime=true')
+        }
+        def files = configurations.runtimeClasspath.resolve()
+        if (files.isEmpty()) {
+            throw new GradleException('Runtime classpath resolved empty')
+        }
+        println "AUGMENT_PACK_RUNTIME_CLASSPATH_PASS files=${files.size()}"
+    }
+}
