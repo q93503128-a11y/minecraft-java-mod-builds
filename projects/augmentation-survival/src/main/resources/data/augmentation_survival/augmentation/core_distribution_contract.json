@@ -53,7 +53,7 @@
       "roles": ["structure_chest", "worldgen_exploration"]
     },
     {
-      "mod_id": "dungeons_and_taverns",
+      "mod_id": "mr_dungeons_andtaverns",
       "roles": ["structure_chest", "worldgen_exploration"]
     },
     {
