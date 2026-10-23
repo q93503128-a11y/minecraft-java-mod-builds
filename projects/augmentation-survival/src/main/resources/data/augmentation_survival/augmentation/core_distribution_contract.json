@@ -73,12 +73,25 @@
       "mod_id": "farmersdelight",
       "roles": ["survival_production_context"],
       "note": "Production content supports non-combat augment value and is not a default core source."
+    },
+    {
+      "mod_id": "chronodawn",
+      "roles": ["boss_reward", "boss_structure", "dimension_progression"]
+    },
+    {
+      "mod_id": "worldbosses",
+      "roles": ["boss_reward", "raid_cache", "boss_structure", "boss_dimension"]
+    },
+    {
+      "mod_id": "mcendgame",
+      "roles": ["repeatable_dungeon_boss", "pinnacle_boss", "endgame_dungeon"]
     }
   ],
   "integration_policy": {
     "preserve_existing_loot": true,
     "server_authoritative_rewards": true,
     "better_combat_is_reward_source": false,
+    "boss_reward_details": "see boss_core_reward_contract.json",
     "weight_policy": "unset_until_playtest",
     "source_specific_assignments": "deferred_to_M1_integration_pass"
   }

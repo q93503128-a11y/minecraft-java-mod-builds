@@ -5,169 +5,215 @@ Minecraft: 26.2
 Loader: Fabric 0.19.5
 Java: 25
 
-이 문서는 Augmentation Survival을 중심으로 사용할 공식 소형 모드팩의 첫 동시 로딩 후보를 고정한다. `동시 부팅 검증 완료`와 `최종 채택`은 같은 뜻이 아니다. 실제 월드·전투·플레이테스트를 통과하기 전까지 콘텐츠 모드는 후보 상태다.
+이 문서는 Augmentation Survival을 중심으로 사용할 공식 소형 모드팩 기준선이다. `동시 부팅 검증 완료`와 `최종 채택`은 같은 뜻이 아니다. 실제 월드·전투·플레이테스트를 통과하기 전까지 콘텐츠 모드는 후보 상태다.
 
 ## 1. 콘텐츠 모드 pins
 
-| 역할 | 프로젝트 | 고정 버전 | Maven pin | 상태 |
-|---|---|---:|---|---|
-| 오버월드 바이옴/지형 | Terralith | 2.6.4 Fabric | `maven.modrinth:8oi3bsk5:OxfI2n80` | smoke verified candidate |
-| Terralith 필수 worldgen lib | Lithostitched | 1.8.0 Fabric 26.2 | `maven.modrinth:XaDC71GB:sGGUpIGT` | required / smoke verified |
-| 구조물 변형 | Repurposed Structures | 7.7.6+26.2-fabric | `maven.modrinth:muf0XoRe:7.7.6+26.2-fabric` | smoke verified candidate |
-| 던전/여관/구조물 | Dungeons and Taverns | 5.3.2+mod | `maven.modrinth:tpehi7ww:y9AUViOD` | smoke verified candidate |
-| 바닐라풍 몹 | Friends&Foes | 4.0.27+mc26.2 | `maven.modrinth:POQ2i9zu:rJBCX3gG` | smoke verified candidate |
-| 일리저/레이드 확장 | Illager Invasion | 26.2.0 Fabric | `maven.modrinth:jSV9w0J5:1EML9Osa` | smoke verified candidate; warning tracked |
-| 생태계/동물 | Naturalist | 2.0.6+26.2-fabric | `maven.modrinth:F8BQNPWX:zrGHo70e` | smoke verified candidate; warning tracked |
-| 농사/요리 | Farmer's Delight Refabricated | 26.2-3.6.22 | `maven.modrinth:7vxePowz:tLeFs9pK` | smoke verified candidate |
-| 전투 체감 | Better Combat | 3.2.2+26.2-fabric | `maven.modrinth:5sy6g3kz:enlZuzkJ` | conditional candidate; smoke verified only |
+| 역할 | 프로젝트 | 고정 버전 | 상태 |
+|---|---|---:|---|
+| 오버월드 지형/바이옴 대규모 확장 | Terralith | 2.6.4 Fabric | smoke verified candidate |
+| 바닐라 구조물 변형 대량 추가 | Repurposed Structures | 7.7.6+26.2-fabric | smoke verified candidate |
+| 던전·여관·탐험 구조물 대량 추가 | Dungeons and Taverns | 5.3.2 | smoke verified candidate |
+| 바닐라풍 몹 추가 | Friends&Foes | 4.0.27 | smoke verified candidate |
+| 일리저·레이드 적/구조물 확장 | Illager Invasion | 26.2.0 Fabric | smoke verified candidate; warning tracked |
+| 야생동물·생태계 확장 | Naturalist | 2.0.6 | smoke verified candidate; warning tracked |
+| 농사·요리·생산 확장 | Farmer's Delight Refabricated | 26.2-3.6.22 | smoke verified candidate |
+| 근접 전투 모션·공격감 개선 | Better Combat | 3.2.2 | conditional candidate; smoke verified only |
+| 시간 차원 + 제작형 보스 6종 | Chrono Dawn | 0.12.0 | smoke verified boss candidate |
+| 월드 제단/레이드 캐시/보스 차원 + 주요 보스 11종 | World Bosses | 2.0.2 | smoke verified boss candidate; visual warnings tracked |
+| 반복형 절차 던전 + 던전 보스/후반 보스 | MCEndgame | 1.7.0+26.2 | smoke verified boss candidate; progression overlap tracked |
 
-## 2. 명시적 지원 라이브러리 pins
+## 2. 주요 지원 라이브러리
 
-Modrinth Maven의 전이 dependency만 믿지 않고 실제 `fabric.mod.json`을 검사해 필요한 라이브러리를 명시적으로 핀한다.
+- Fabric API `0.160.0+26.2`
+- Lithostitched `1.8.0`
+- Resourceful Lib `5.0.3`
+- Puzzles Lib `26.2.3`
+- Forge Config API Port `26.2.1`
+- MidnightLib `1.9.3`
+- Multiloader Data Extensions `26.2.0`
+- GeckoLib `5.5.5`
+- Player Animation Library `1.2.6+26.2`
+- Cloth Config API `26.2.155`
+- Architectury API `21.1.9`
+- Fabric Language Kotlin `1.14.0+kotlin.2.4.20`
 
-| 라이브러리 | 버전 | Maven pin | 주 사용처 |
-|---|---:|---|---|
-| Resourceful Lib | 5.0.3 Fabric | `maven.modrinth:G1hIVOrD:SmfwDCLg` | Friends&Foes |
-| Puzzles Lib | 26.2.3 Fabric | `maven.modrinth:QAGBst4M:KU5rZUAR` | Illager Invasion |
-| Forge Config API Port | 26.2.1 Fabric | `maven.modrinth:ohNO6lps:rSd3GiG8` | Puzzles Lib / Illager Invasion |
-| MidnightLib | 1.9.3+26.2-fabric | `maven.modrinth:codAaoxh:3uBvRFE9` | Repurposed Structures |
-| Multiloader Data Extensions | 26.2.0 Fabric | `fuzs.multiloaderdataextensions:multiloaderdataextensions-fabric:26.2.0` | Illager Invasion |
-| GeckoLib | 5.5.5 Fabric | `maven.modrinth:8BmcQJ2H:7gaQHok7` | 향후 애니메이션/호환 후보; M0 probe 유지 |
-| Player Animation Library | 1.2.6+26.2 | `maven.modrinth:ha1mEyJS:Hq1CwB9w` | Better Combat |
-| Cloth Config API | 26.2.155 Fabric | `me.shedaniel.cloth:cloth-config-fabric:26.2.155` | Better Combat |
+Modrinth Maven의 전이 dependency만 믿지 않고 실제 `fabric.mod.json`을 검사해 필요한 지원 라이브러리를 명시적으로 핀한다.
 
-Fabric API `0.160.0+26.2`는 프로젝트 기본 dependency로 별도 관리한다.
-
-## 3. 왜 이 구성인가
+## 3. 각 콘텐츠의 역할
 
 ### Terralith
-오버월드 탐험의 지형·바이옴 밀도를 높인다. 바이옴 자체를 코어 단일 등급과 묶지 않고, 바이옴 태그와 그 안의 구조물/몹/코어 콘텐츠에 등급 분포를 부여한다.
-
-주의: Terralith는 월드 생성 정체성을 크게 바꾸므로 기존 월드에 뒤늦게 추가·제거하는 것을 정상 지원 경로로 간주하지 않는다.
+오버월드 지형과 바이옴을 크게 확장한다. 바이옴 자체를 코어 한 등급과 묶지 않고, 해당 바이옴의 구조물·몹·탐험 콘텐츠가 여러 등급 분포를 갖도록 한다.
 
 ### Repurposed Structures + Dungeons and Taverns
-증강 코어를 자연스럽게 배치할 상자·던전·탐험 지점을 크게 늘린다. 우리 호환 레이어는 원본 loot를 덮어쓰지 않고 코어 pool을 추가하는 방식이 기본이다.
-
-두 구조물 모드와 Terralith를 동시에 사용하므로 실제 월드에서 구조물 밀도가 과해지는지는 별도 플레이테스트가 필요하다.
+코어를 자연스럽게 배치할 상자·던전·탐험 지점을 크게 늘린다. 기존 loot를 교체하지 않고 증강 코어 pool을 추가하는 것이 기본이다.
 
 ### Friends&Foes + Illager Invasion + Naturalist
-전투 적과 비전투 생태계를 동시에 넓힌다. 모든 동물을 코어 파밍 대상으로 만들지는 않는다. Naturalist는 탐험·생존·비전투 증강의 활용 폭을 넓히는 역할이 우선이다.
-
-Friends&Foes와 Illager Invasion은 일리저 계열 역할이 겹칠 가능성이 있으므로 실제 raid/entity 동작과 config를 확인해야 한다.
+일반 적, 일리저 전투, 야생 생태계를 확장한다. Naturalist의 평범한 동물을 코어 파밍 대상으로 만들지는 않는다.
 
 ### Farmer's Delight Refabricated
-농업·음식·생산 계열 증강이 실제로 쓸 콘텐츠를 만든다. 별도의 RPG 성장축이 아니라 Minecraft 생존 루프를 확장하기 때문에 방향과 맞는다.
+농업·음식·생산 증강이 실제로 쓸 콘텐츠를 늘린다. 별도의 RPG 성장축이 아니라 생존 루프 보강용이다.
 
 ### Better Combat
-전투 체감 개선 후보. 향후 증강의 공격 범위, 추가타, 광역 피해, 공속 변경이 Better Combat의 공격 판정과 충돌할 수 있으므로 `conditional candidate`다. 단순 동시 로딩만으로 최종 채택하지 않는다.
+전투 체감 개선 후보. 증강의 공격 범위, 추가타, 광역 피해, 공속 변경과 실제 판정이 맞는지 플레이테스트가 필요하다.
 
-## 4. 실제 JAR에서 확인한 증강 코어 연동 표면
+## 4. 보스 콘텐츠 확장
 
-최종 M0 probe는 17개 외부 JAR을 실제로 resolve하고 Fabric metadata와 데이터 엔트리를 검사한다.
+### Chrono Dawn — 시간 차원과 보스 6종
+
+전용 시간 테마 차원과 6종의 작성된 보스를 추가한다. 가장 중요한 장점은 제작자가 `BossDefeatedEvents` 애드온 API를 제공한다는 점이다.
+
+증강 연동 방식:
+
+- 공식 보스 처치 이벤트를 서버에서 수신
+- 보스 ID를 증강 보상 프로필에 매핑
+- 기존 보상을 유지하면서 추가 코어를 지급
+- 정확한 등급 확률은 실제 보스 난이도 측정 후 확정
+
+라이선스가 LGPL-3.0이므로 필요하면 호환을 위한 소스 수준 수정도 가능하다.
+
+### World Bosses — 월드 곳곳의 주요 보스 11종
+
+제단/의식, raid cache, 별도 보스 차원과 함께 현재 2.0.2 기준 11개의 주요 보스 보상 흐름을 제공한다. 실제 서버 로그에서 11종 raid cache 설정 로딩과 보스 차원 `worldbosses:worldbreaker` 등록을 확인했다.
+
+증강 연동 방식:
+
+- 외부 JAR을 수정하지 않는다.
+- 우리 모드의 서버 사망 이벤트/entity namespace adapter로 보스 처치를 감지한다.
+- 필요하면 World Bosses의 기존 raid cache loot에 코어 pool을 추가한다.
+- 기존 보상은 보존한다.
+
+이 모드는 All Rights Reserved이므로 직접 수정본을 재배포하는 방식은 사용하지 않는다.
+
+### MCEndgame — 반복형 던전과 보스
+
+절차 생성되는 후반 던전, 반복 가능한 던전 보스와 Beastweaver 계열 후반 보스 이벤트를 추가한다. 오픈소스 LGPL-3.0-or-later라 필요하면 소스 수준 호환도 가능하다.
+
+주의점:
+
+- 자체 장비/던전 성장축이 증강과 경쟁할 수 있다.
+- 최종 팩에서는 증강이 주인공이 되도록 자체 보상·진행을 축소/조정할 가능성이 있다.
+- 반복 보스에서 신화 코어가 무한히 쉽게 공급되지 않도록 별도 정책이 필요하다.
+- 기본 설정은 익명 gameplay analytics가 켜져 있으므로 공식 팩 배포 설정에서는 `mcendgame.json`의 `sendAnalytics=false`를 기본으로 두는 방향을 사용한다.
+
+## 5. 실제 JAR에서 확인한 연동 표면
+
+Run 5에서 총 22개 외부 JAR을 실제 resolve하고 Fabric metadata와 데이터 엔트리를 검사했다.
 
 대표 결과:
 
-- Terralith: loot 65 / structure 254 / biome 관련 334
-- Repurposed Structures: loot 219 / structure 관련 3725 / biome 관련 187
-- Dungeons and Taverns (`mr_dungeons_andtaverns`): loot 679 / structure 관련 5559 / biome 관련 54
-- Friends&Foes: loot 46 / structure 관련 92 / biome 관련 24
-- Illager Invasion: loot 29 / structure 관련 74 / biome 관련 7
-- Naturalist: loot 83 / biome 관련 116
-- Farmer's Delight Refabricated: loot 116 / structure 관련 8 / biome 관련 15 / recipe 589
+- Terralith: loot 65 / structure 254 / biome 334
+- Repurposed Structures: loot 219 / structure 3725 / biome 187
+- Dungeons and Taverns (`mr_dungeons_andtaverns`): loot 679 / structure 5559 / biome 54
+- Friends&Foes: loot 46 / structure 92 / biome 24
+- Illager Invasion: loot 29 / structure 74 / biome 7
+- Naturalist: loot 83 / biome 116
+- Farmer's Delight Refabricated: loot 116 / structure 8 / biome 15 / recipe 589
+- Chrono Dawn (`chronodawn`): loot 203 / structure 63 / biome 25 / recipe 415
+- World Bosses (`worldbosses`): loot 51 / structure 36 / biome 5 / recipe 61
+- MCEndgame (`mcendgame`): loot 5 / structure 67 / biome 4 / recipe 18
 
-따라서 외부 구조물·몹·바이옴을 증강 코어 획득 루프에 결합할 데이터 표면은 충분히 존재한다.
+외부 구조물·몹·보스를 증강 코어 획득 루프에 결합할 데이터/이벤트 표면은 충분하다.
 
-### 구조물 상자
-바닐라와 외부 모드 loot table에 원본 보상을 보존하면서 우리 코어 pool을 추가한다.
+## 6. 증강 코어 연동 원칙
 
-### 외부 몹
-loot table이 있으면 data layer로, 자체 보상 코드라면 Fabric 서버 이벤트/호환 adapter로 추가한다. 중요 드랍 판정은 서버 권한으로 처리한다.
+- `장소 = 코어 한 등급`으로 고정하지 않는다.
+- 각 장소/몹/보스는 여러 인접 등급의 분포를 가진다.
+- 기존 loot와 보스 보상은 가능한 한 보존한다.
+- 중요 보상 판정은 서버 권한으로 처리한다.
+- 일반 탐험은 일반~희귀, 위험 콘텐츠는 상위 등급 쪽으로 분포가 이동한다.
+- 실제 보스는 평범한 구조물보다 명확하게 좋은 코어 획득처가 된다.
+- 최고급 보스는 전설 중심 + 신화 가능 구조를 사용할 수 있으나 정확한 확률은 플레이테스트 전에 고정하지 않는다.
 
-### 외부 바이옴
-바이옴 자체가 코어를 직접 주는 구조보다 biome tag/worldgen hook를 통해 코어 저장고, 희귀 자원, 특수 스폰 또는 탐험 목표를 배치하는 방식을 우선한다.
+데이터 계약:
 
-### 핵심 불변조건
-`장소 = 코어 한 등급`으로 고정하지 않는다. 모든 콘텐츠는 필요에 따라 여러 인접 등급의 확률 분포를 가진다. 정확한 확률은 플레이테스트 전 임의 확정하지 않는다.
+- `data/augmentation_survival/augmentation/core_distribution_contract.json`
+- `data/augmentation_survival/augmentation/boss_core_reward_contract.json`
 
-## 5. 코어 분포 데이터 계약
+둘 다 현재는 `runtime_active=false`이며 실제 코어 아이템/드랍 시스템 구현 전의 설계 계약이다.
 
-`data/augmentation_survival/augmentation/core_distribution_contract.json`에 M1 구현이 읽을 수 있는 분포 계약을 추가했다.
-
-현재는 의도적으로 `runtime_active=false`, `exact_weights_defined=false`다.
-
-정의된 범위:
-
-- 일반 탐험: 일반 ~ 희귀
-- 위험한 중간 콘텐츠: 고급 ~ 영웅
-- 위험한 상위 콘텐츠: 희귀 ~ 전설
-- 최고난도 콘텐츠: 전설 ~ 신화, 전설 중심
-
-이 파일은 확률표나 실제 드랍 구현이 아니라 다음 단계의 데이터 구조 기준이다.
-
-## 6. JAR 수정 정책
-
-외부 모드 JAR을 직접 패치·재배포하는 것을 기본 해법으로 사용하지 않는다.
+## 7. 외부 모드 수정 정책
 
 우선순위:
-1. 우리 모드의 loot/event/data 호환 코드
+
+1. 우리 모드의 loot/event/API 호환 코드
 2. 데이터팩/resource overlay
-3. 외부 모드가 제공하는 config/API
-4. 필요할 때만 최소 compatibility mixin/adapter
+3. 외부 모드 공식 config/API
+4. 라이선스가 허용하고 실제 필요가 있을 때만 최소 소스 수정 또는 compatibility mixin/adapter
 
-외부 모드 자산을 복사하거나 라이선스가 허용하지 않는 수정본을 번들하지 않는다.
+World Bosses처럼 ARR인 모드는 JAR 수정/재배포를 하지 않는다. Chrono Dawn과 MCEndgame은 LGPL 범위에서 필요 시 소스 호환 작업이 가능하다.
 
-## 7. 자동 검증
+## 8. 자동 검증
 
-`inspectPackDependencies`는 pinned JAR을 실제로 resolve한 뒤 JAR 존재, Fabric metadata, 중복 mod id, loot/structure/biome/recipe 엔트리를 기록한다.
+`inspectPackDependencies`
+- pinned JAR 실제 resolve
+- Fabric metadata
+- 중복 mod id
+- loot/structure/biome/recipe 데이터 인벤토리
 
-`runPackServer -PaugmentationPackRuntime=true`는 dedicated server가 같은 런타임 조합으로 준비 완료 상태까지 도달하는지 검사한다.
+`runPackServer -PaugmentationPackRuntime=true`
+- 같은 모드 조합의 dedicated server가 ready state까지 도달하는지 검사
 
-`runPackClient -PaugmentationPackRuntime=true`는 GitHub Actions의 Xvfb 가상 화면에서 클라이언트를 기동해 Fabric client entrypoint, LWJGL/OpenGL 초기화, ResourceManager reload, texture atlas 생성까지 도달한 뒤 120초 smoke window 동안 치명적 종료가 없는지 검사한다.
+`runPackClient -PaugmentationPackRuntime=true`
+- Xvfb 가상 화면에서 client entrypoint, LWJGL/OpenGL, ResourceManager, texture atlas 초기화 후 smoke window 동안 치명적 종료가 없는지 검사
 
-## 8. 검증 이력 / 현재 상태
+## 9. 검증 이력
 
 ### Run 1 — GitHub Actions 39893877935
 
-- TOOLCHAIN: PASS — Java 25 / Gradle 9.5.1 / Loom 1.17.20
 - BUILD: PASS
-- INITIAL 15 ARTIFACT RESOLUTION: PASS
-- JAR METADATA/DATA INVENTORY: PASS
-- RUNTIME CLASSPATH RESOLUTION: PASS
+- 초기 JAR inspection: PASS
 - PACK SERVER: FAIL
-- FIRST REAL FAILURE: Repurposed Structures가 요구하는 `midnightlib` 누락
-- FOLLOW-UP FOUND BY METADATA AUDIT: Illager Invasion이 `multiloaderdataextensions`도 hard dependency로 선언
-- 판정: 코드 회귀나 모드 간 충돌이 아니라 dependency manifest 누락
-
-이후 두 라이브러리를 명시적으로 추가했다.
+- 첫 실질 실패: Repurposed Structures의 MidnightLib 누락
+- 추가 발견: Illager Invasion의 Multiloader Data Extensions 누락
+- 판정: 코드 충돌이 아니라 dependency manifest 누락
 
 ### Run 3 — GitHub Actions 39896924152
 
-- TOOLCHAIN: PASS
+기존 17 JAR 기준:
+
 - BUILD: PASS
-- PINNED ARTIFACT RESOLUTION: PASS — 17/17
+- JAR RESOLUTION: PASS 17/17
+- SERVER SMOKE: PASS
+- CLIENT SMOKE: PASS
+
+### Run 5 — GitHub Actions 39901741533
+
+보스 콘텐츠까지 확장한 22 JAR 기준:
+
+- TOOLCHAIN: PASS — Java 25 / Gradle 9.5.1 / Loom 1.17.20
+- BUILD: PASS
+- JAR RESOLUTION: PASS — 22/22
 - JAR METADATA/DATA INVENTORY: PASS
-- RUNTIME CLASSPATH RESOLUTION: PASS — 144 files
-- PACK SERVER SMOKE: PASS — dedicated server ready state 도달
-- PACK CLIENT SMOKE: PASS — client renderer/resource 초기화 후 120초 유지
+- RUNTIME CLASSPATH: PASS — 149 files
+- PACK SERVER SMOKE: PASS
+- PACK CLIENT SMOKE: PASS
+- Chrono Dawn 차원 로딩 확인: `chronodawn:chronodawn`
+- World Bosses 차원 로딩 확인: `worldbosses:worldbreaker`
+- GeckoLib client resource load: 44 models / 41 animations
 
-확인된 비차단 경고:
+## 10. 현재 추적할 비차단 문제
 
-- Illager Invasion 리소스에 포함된 `neoforge:acceptable_villager_distances` data-map은 Fabric에서 존재하지 않는 NeoForge data-map으로 무시된다. 서버/클라이언트 smoke에는 영향이 없었지만 주민의 적대 몹 감지거리 동작이 NeoForge와 완전히 같은지는 플레이테스트 전까지 미검증으로 둔다.
-- Naturalist가 외부 Field Guide 클래스 3개를 대상으로 하는 mixin target-not-found 경고를 출력한다. 현재 조합에서는 치명적 mixin 실패 없이 client smoke를 통과했다. 실제 Field Guide 연동 기능이 필요한지는 추후 플레이테스트에서 판단한다.
-- CI Linux 환경에는 `libflite`와 실제 오디오 장치가 없어 narrator/OpenAL 초기화가 실패한다. 렌더러와 리소스 로딩은 계속 정상 진행됐으므로 모드팩 충돌로 분류하지 않는다.
-- Mod Menu/YACL 권장 dependency, 개발환경 refmap/translation 경고는 현재 hard dependency가 아니며 smoke를 차단하지 않는다.
+- Illager Invasion: Fabric에서 NeoForge 전용 `neoforge:acceptable_villager_distances` data-map을 무시한다. 실제 주민 감지거리 기능차는 플레이테스트 필요.
+- Naturalist: 선택적 Field Guide 클래스가 없을 때 mixin target-not-found 경고가 3개 발생한다. client smoke는 통과.
+- World Bosses: client resource load에서 `worldbreaker_*` 도구의 particle texture reference와 `varkhul_trophy`의 `minecraft:block/magma_block` 참조 경고가 발생했다. 실제 화면에서 깨지는지 시각 검수 필요.
+- MCEndgame: 기본 analytics가 활성화된다. 공식 팩 설정에서는 비활성화를 우선한다.
+- CI Linux: `libflite`/오디오 장치 부재로 narrator/OpenAL이 실패하지만 렌더링과 리소스 로딩은 정상 진행한다.
+- Better Combat과 증강 공격 판정의 실제 공존은 아직 플레이테스트하지 않았다.
 
-현재 상태:
+## 11. 현재 상태
 
 - VERSION/PIN RESEARCHED: YES
-- JAR METADATA/DATA REVIEWED: YES — 17 pinned artifacts
-- BUILD VERIFIED: YES — Run 3
-- JAR PRODUCED: YES — Run 3 artifact
+- JAR METADATA/DATA REVIEWED: YES — 22 pinned artifacts
+- BUILD VERIFIED: YES — Run 5
+- JAR PRODUCED: YES — Run 5 artifact
 - PACK SERVER SMOKE TESTED: YES / PASS
 - PACK CLIENT SMOKE TESTED: YES / PASS
-- CORE DISTRIBUTION CONTRACT ADDED: YES
+- BOSS PACK SERVER/CLIENT CO-LOAD: YES / PASS
+- BOSS CORE REWARD CONTRACT ADDED: YES
 - CORE LOOT INTEGRATION IMPLEMENTED: NO
 - WORLDGEN DENSITY/VISUAL TESTED: NO
+- BOSS GAMEPLAY TESTED: NO
 - BETTER COMBAT + AUGMENT INTERACTION TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO

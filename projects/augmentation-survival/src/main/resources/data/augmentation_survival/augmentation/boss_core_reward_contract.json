@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "status": "boss-reward-contract-only",
+  "runtime_active": false,
+  "exact_weights_defined": false,
+  "purpose": "Define how external boss content will feed augmentation core progression without modifying third-party JARs by default.",
+  "reward_bands": [
+    {
+      "id": "boss_standard",
+      "min_tier": "rare",
+      "max_tier": "epic",
+      "intent": "A real boss should normally feel better than routine exploration."
+    },
+    {
+      "id": "boss_major",
+      "min_tier": "epic",
+      "max_tier": "legendary",
+      "intent": "Major bosses are a direct route into high-grade augmentation progression."
+    },
+    {
+      "id": "boss_pinnacle",
+      "min_tier": "legendary",
+      "max_tier": "mythic",
+      "dominant_tier": "legendary",
+      "intent": "Pinnacle bosses can expose mythic cores before or around the Ender Dragon era without making mythic routine."
+    }
+  ],
+  "sources": [
+    {
+      "mod_id": "chronodawn",
+      "display_name": "Chrono Dawn",
+      "content_summary": "Dedicated time-themed dimension with six authored bosses.",
+      "known_major_boss_count": 6,
+      "integration_method": "official BossDefeatedEvents addon API",
+      "source_edit_policy": "allowed_when_needed",
+      "license": "LGPL-3.0",
+      "reward_assignment": "per-boss mapping deferred until gameplay difficulty is measured"
+    },
+    {
+      "mod_id": "worldbosses",
+      "display_name": "World Bosses",
+      "content_summary": "World shrines, raid caches, a boss dimension, and eleven major boss encounters in the current 2.0.2 content set.",
+      "known_major_boss_count": 11,
+      "integration_method": "augmentation-side server death/entity adapter and optional loot/cache injection",
+      "source_edit_policy": "do_not_modify_or_redistribute_third_party_jar",
+      "license": "All Rights Reserved",
+      "reward_assignment": "per-boss mapping deferred until gameplay difficulty is measured"
+    },
+    {
+      "mod_id": "mcendgame",
+      "display_name": "MCEndgame",
+      "content_summary": "Repeatable generated endgame dungeons with dungeon bosses and a pinnacle Beastweaver boss event.",
+      "known_major_boss_count": "repeatable dungeon boss pool plus Beastweaver",
+      "integration_method": "augmentation-side server boss adapter; source hook is permitted if required",
+      "source_edit_policy": "allowed_when_needed",
+      "license": "LGPL-3.0-or-later",
+      "reward_assignment": "repeatable-boss mythic policy deferred; avoid trivial infinite mythic farming"
+    }
+  ],
+  "global_rules": {
+    "server_authoritative": true,
+    "preserve_original_boss_rewards": true,
+    "direct_core_reward_or_augmented_loot": "implementation choice per boss source",
+    "one_fixed_core_grade_per_boss": false,
+    "first_kill_bonus_policy": "deferred",
+    "repeatable_mythic_policy": "deferred",
+    "exact_per_boss_tiers": "deferred_until_playtest"
+  }
+}
