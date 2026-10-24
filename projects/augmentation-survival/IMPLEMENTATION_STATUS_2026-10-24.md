@@ -1,7 +1,7 @@
 # Augmentation Survival — Implementation Status
 
 Date: 2026-10-24
-Status: M1C FUNCTIONAL BASELINE / COMBAT+MOVEMENT+PROJECTILE+ACTIVE+SURVIVAL+HARVEST+CONSUMPTION SHARED RUNTIMES IMPLEMENTED / THREAT APPLICATION BULK NEXT
+Status: M1C FUNCTIONAL BASELINE / SHARED GAMEPLAY RUNTIMES + SAVE-WIDE THREAT HOSTILE SCALING IMPLEMENTED / EXTERNAL BOSS ADAPTER BULK NEXT
 
 ## 146-roster implementation count
 
@@ -11,34 +11,36 @@ The count below measures whether the canonical gameplay effect has a runtime imp
 - Partially implemented: **4 / 146** — `회복 증폭`, `전리품 챙기기`, `보물 낚시`, `풍요`
 - Not fully implemented: **64 / 146**
 - No gameplay runtime yet: **60 / 146**
-- **This batch touched: 8 augments**
-  - newly fully implemented: **6**
-  - newly partially implemented: **2**
+- **This threat-system batch changes no augment roster count.**
 
-This batch completes the canonical runtime baseline for `든든한 한 끼`, `낚시 감각`, `빨리 먹기`, `쌍둥이`, `먹으면서 걷기`, `비축 식사`. `보물 낚시` and `풍요` now have functional baselines but remain partial for the exactness/provenance reasons documented below.
+The previous consumption/fishing batch completed the canonical runtime baseline for `든든한 한 끼`, `낚시 감각`, `빨리 먹기`, `쌍둥이`, `먹으면서 걷기`, `비축 식사`. `보물 낚시` and `풍요` retain functional partial baselines. The current batch activates the already-designed save-wide threat curve against actual hostile entities rather than adding a new augment.
 
 ## Verified code checkpoint
 
-- Verified gameplay-code checkpoint: `fb7c963a93ef721810512d3d4510195f1ae5fd1f`
-- Feature commit: `fb7c963a93ef721810512d3d4510195f1ae5fd1f` — `feat(augmentation-survival): add consumption fishing and abundance runtime`
-- GitHub Actions: `40081679446` / Build Augmentation Survival Pack #50
+- Verified gameplay-code checkpoint: `913224aa2b3f57b57398b18b9984dccc51b40478`
+- Main threat feature commit: `4131ebc19a51bbfaa5599451d22efaff080c103c` — `feat(augmentation-survival): apply save-wide hostile threat scaling`
+- 26.2 API/correctness correction: `913224aa2b3f57b57398b18b9984dccc51b40478` — `fix(augmentation-survival): align threat runtime with 26.2 server API`
+- GitHub Actions: `40084458272` / Build Augmentation Survival Pack #52
 - Build and pinned-pack inspection: PASS
 - Pack dependency inspection: PASS — 23 pinned external artifacts
 - Runtime classpath verification: PASS — 150 files
 - Dedicated server smoke: PASS — 92 mods
 - Client boot smoke: PASS — 108 mods
 - Verification artifacts upload: PASS
-- Artifact: `augmentation-survival-pack-smoke-50`
-- Artifact ID: `12555731050`
-- Artifact ZIP SHA-256: `8908a66e3f83e3fc7746883d8abb7379f72f61ec7f7e9570a6888e0a2639d30c`
+- Artifact: `augmentation-survival-pack-smoke-52`
+- Artifact ID: `12556463231`
+- Artifact ZIP SHA-256: `36eeff6a26deab0adf5dacef64d60b6da2301747764f2e950287d2bd06bfe680`
 - Canonical augment catalog initialization: PASS — 146 definitions
+- Enemy scaling contract initialization: PASS — `Loaded enemy scaling contract: 9 stages, 4 exact profiles, 0 namespace profiles`
 - Stat contract initialization: PASS — 7 definitions / 7 modifier groups
 - Survival contract initialization: PASS
 - Resource-harvest contract initialization: PASS
-- Consumption/fishing contract initialization: PASS — `Loaded consumption/fishing contract: food, reserve, fishing and breeding runtime`
+- Consumption/fishing contract initialization: PASS
 - Combat / expansion / movement / projectile / core contracts initialization: PASS
 
-The full-pack smoke still reports the known external/harness warnings: optional Naturalist FieldGuide mixins, missing Linux narrator `flite`, no CI OpenAL device, World Bosses texture-reference warnings, and the smoke server's initially absent `server.properties`. None prevented the server from reaching ready state or the client from remaining healthy through the smoke timeout. Compilation also still reports the pre-existing `ProjectileAugmentService` deprecated-API warning.
+Build #51 (`40084209926`) exposed one real compile failure: Minecraft 26.2 does not provide `ServerPlayer.getServer()`. The follow-up commit obtains the server through the player's `ServerLevel`, and also incorporated two code-review corrections before revalidation: delayed installments bypass threat damage amplification because they already contain reserved post-mitigation damage, and ordinary/elite hostiles no longer receive persistent threat attachments. Build #52 then passed compile/build and both full-pack smoke tests. The failed run was not blindly rerun.
+
+The full-pack smoke still reports known external/harness warnings: optional Naturalist FieldGuide mixins, missing Linux narrator `flite`, no CI OpenAL device, World Bosses texture-reference warnings, and the smoke server's initially absent `server.properties`. None prevented the server from reaching ready state or the client from remaining healthy through the smoke timeout. Compilation also still reports the pre-existing `ProjectileAugmentService` deprecated-API warning.
 
 Documentation commits after this checkpoint do not change Java gameplay code and must not be treated as new gameplay verification targets.
 
@@ -90,71 +92,80 @@ Documentation commits after this checkpoint do not change Java gameplay code and
 
 `resource_harvest_contract.json` remains the data-driven tuning source for crop output, ore output, normal-mob bundle duplication and derived crop/tree/tunnel actions.
 
-### Root crop / ore output
-
 - `풍작` — mature crop harvest has +8% per level chance to create one additional primary crop output
 - `씨앗 챙기기` — mature crop harvest has +15% per level chance to create one additional planting item
 - `한 조각 더` — conventional ore break has +5% per level chance to create one additional ordinary primary drop; augment cores are excluded
-- drop inspection recomputes the vanilla block drop result from the actual pre-break tool snapshot so Fortune/Silk Touch-compatible output identity is preserved rather than guessed from block IDs
+- `다시 심기` — after mature crop destruction, waits one server tick for normal crop drops, consumes one nearby matching planting item, and restores the age-0 crop if the position is still empty
+- `싹쓸이 수확` — destroys up to 2 / 4 / 8 additional nearby mature same-crop blocks through the normal server block-destruction path and forces canonical replanting on derived crops
+- `나무 베기` — bounded connected-log traversal destroys up to 3 / 6 / 10 additional log-tag blocks
+- `굴파기` — destroys up to 1 / 2 / 3 matching blocks behind a valid root break; derived durability is reconciled to 50% effective cost
+- `전리품 챙기기` — direct player normal-mob kills have a 5% / 10% / 15% ordinary bundle-duplication baseline; remains **PARTIAL** for external-boss and crowded-drop provenance
 
-### Replant / sweeping harvest
+The harvest feature was first pushed as `df9dea84098d37bffb3bf309176dbd9de08eda6a`. Build #48 (`40079556176`) exposed only two 26.2 API differences. `8b8b2974726a6a60ea05fb3a898ac705ba4c913f` corrected those boundaries and Build #49 passed both full-pack smoke tests.
 
-- `다시 심기` — after mature crop destruction, waits one server tick for normal crop drops, consumes one nearby matching planting item, and restores the age-0 crop only if the original block position is still empty
-- `싹쓸이 수확` — on root mature-crop harvest, selects nearest same-crop mature blocks in a bounded local search and destroys up to 2 / 4 / 8 through the normal server block-destruction path
-- sweep-derived crops force canonical replant behavior even without separate `다시 심기`
+## Consumption / fishing / breeding bulk batch retained — 8 augments touched
 
-### Tree felling / tunneling
+`consumption_fishing_contract.json` is the shared tuning source. Authority-sensitive results stay on the server. A small clientbound prediction snapshot carries only values required for local food-use timing and input feel.
 
-- `나무 베기` — breaking a log starts bounded connected-log traversal and destroys up to 3 / 6 / 10 additional log-tag blocks
-- `굴파기` — after an ordinary non-ore/non-log/non-crop/non-block-entity root break, destroys up to 1 / 2 / 3 matching blocks behind the root mining direction
-- automatic secondary block breaks re-enter `ServerPlayerGameMode.destroyBlock`, preserving normal tool eligibility, hooks, Fortune/Silk Touch, drops, stats and existing durability-saving hooks
-- a thread-local derived-break mode prevents geometric retriggering
-- tunneling measures actual derived durability loss and refunds fractional durability so the effective additional-block durability cost is 50%, composing with Unbreaking and `도구 관리`
+- `든든한 한 끼` — +8% / +16% / +24% extra saturation relative to the normal food saturation gain baseline
+- `빨리 먹기` — food-use duration -5% per level, up to -25%, synchronized for server and local prediction
+- `먹으면서 걷기` — eases the actual vanilla consumable slowdown 33% / 66% / 100% toward normal movement
+- `비축 식사` — stores overflow nutrition at 4 / 8 / 12 hunger points and consumes reserve before visible hunger falls; no parallel fake hunger model
+- `낚시 감각` — accelerates the actual vanilla lure-wait countdown by the canonical 10% / 20% / 30%
+- `보물 낚시` — +1 / +2 / +3 vanilla luck-equivalent baseline; **PARTIAL** because this is not mathematically identical to canonical +2 / +4 / +6 percentage points
+- `쌍둥이` — after normal breeding finalization, 10% / 20% / 30% chance for one additional offspring through the parents' normal offspring factory
+- `풍요` — final ordinary-drop duplication baseline for block breaks, normal player-attributed mob kills and fishing; **PARTIAL** because final source provenance and unique/progression exclusions are not yet comprehensive
 
-### Normal-mob loot duplication — PARTIAL
+## New save-wide hostile threat scaling runtime
 
-- `전리품 챙기기` — direct player normal-mob kills roll once at 5% / 10% / 15%; on success, fresh nearby ordinary item drops are copied as one death-bundle baseline
-- augment cores and configured bosses are excluded; generated copies cannot recursively copy themselves
-- remains **PARTIAL** because external boss identification is not comprehensive and the nearby-item capture needs stronger provenance for crowded simultaneous drops
+`enemy_scaling_contract.json` is now runtime-active and is parsed into a dedicated threat profile catalog that is deliberately separate from core-reward boss classification.
 
-The harvest feature was first pushed as `df9dea84098d37bffb3bf309176dbd9de08eda6a`. Build #48 (`40079556176`) exposed only two 26.2 API differences: the Fabric block-break callback provided `Level`, and `BlockTags.ORES` was unavailable. `8b8b2974726a6a60ea05fb3a898ac705ba4c913f` narrowed the level safely and moved ore checks to the Fabric conventional ore tag. Build #49 then passed build plus both full-pack smoke tests; the failed run was not blindly rerun.
+### Save-wide progression application
 
-## New consumption / fishing / breeding bulk batch — 8 augments touched
+- player augment-level mutations recompute canonical `AugmentCatalog.powerScore(...)` and feed the existing save-wide high-water state
+- threat remains one shared save value across dimensions and players and never automatically decreases
+- when a stage rises, loaded scalable entities are reconciled once across loaded server levels; there is no per-tick global entity scan
+- newly loaded/spawned scalable entities reconcile when they enter a `ServerLevel`
+- max-health changes preserve the entity's current health ratio instead of healing or injuring it as a side effect of stage advancement
 
-`consumption_fishing_contract.json` is the shared tuning source. Authority-sensitive results stay on the server. A small clientbound prediction snapshot carries only the values required for local food-use timing and use-input feel.
+### Normal hostile scaling
 
-### Food / saturation
+Ordinary entities implementing vanilla `Enemy` default to the normal threat group unless an exact/namespace profile overrides them.
 
-- `든든한 한 끼` — food consumption adds +8% / +16% / +24% extra saturation relative to the normal food saturation gain baseline
-- `빨리 먹기` — food use duration is reduced 5% per level, up to 25%; server and local client use the same synced augment level rather than allowing server-only early completion
-- `먹으면서 걷기` — while using a consumable, the client input path reads the actual vanilla `UseEffects.speedMultiplier` and eases that slowdown 33% / 66% / 100% toward normal movement
+Stage 8 remains canonical:
+- max health x12.00
+- outgoing damage x2.70
+- movement speed x1.175
+- armor +12
+- knockback resistance +0.20
 
-### Reserve meal
+Health and movement use stable transient multiplicative attribute modifiers; armor and knockback resistance use stable transient additive modifiers. Outgoing hostile damage is applied once at the shared server pre-mitigation `DamageSource` boundary before player armor/protection. `DELAYED_DAMAGE` explicitly bypasses this multiplier so reserved delayed installments are not amplified twice.
 
-- `비축 식사` — can intentionally consume food while the visible hunger bar is full if reserve capacity is available
-- overflow nutrition is stored at 4 / 8 / 12 hunger points in server-owned persistent state
-- when vanilla exhaustion would reduce visible food level, reserve is spent first and restores that loss after the vanilla food tick; saturation/exhaustion/natural-regeneration rules are not replaced with a parallel fake hunger system
-- `persistent_ints` was added as an optional schema-v2 field and is also synced only as a small client prediction/display value; the server remains authoritative
+### Elite scaling
 
-### Fishing
+- generic elite formula uses 65% of the **extra** normal scaling, not 65% of the final total multiplier
+- initial exact elite profiles: `minecraft:warden`, `minecraft:elder_guardian`
+- elite entities use current save stage like normal hostiles and refresh on actual stage increases
 
-- `낚시 감각` — observes the actual vanilla decrease of the fishing hook's lure wait timer and adds fractional extra progress to produce the canonical 10% / 20% / 30% wait reduction without replacing the fishing state machine
-- `보물 낚시` — adds a +1 / +2 / +3 vanilla fishing luck-equivalent baseline at hook construction; this is useful and functional but remains **PARTIAL** because the canonical +2 / +4 / +6 percentage-point treasure chance is not mathematically identical to vanilla luck-weight changes
+### Boss scaling and encounter snapshot
 
-### Breeding
+- generic boss health uses 35% of the normal extra health scaling
+- generic boss damage currently uses the canonical midpoint, 30% of normal extra damage scaling, inside the allowed 25–35% band
+- generic boss speed/armor/knockback scaling is disabled; boss-specific profiles/adapters own those decisions
+- initial exact boss profiles: `minecraft:wither`, `minecraft:ender_dragon`
+- a recognized boss persists only its encounter threat-stage snapshot; later save-wide stage increases do not rescale that active boss encounter
+- ordinary/elite hostiles do **not** receive persistent threat attachments, avoiding save churn across every mob
 
-- `쌍둥이` — after vanilla breeding finalization, rolls 10% / 20% / 30% and, on success, creates one additional offspring through the parents' normal `getBreedOffspring` path
-- breeding actor attribution uses the parents' love-cause players and prefers the higher `쌍둥이` level when both are available
-- the normal child, parent breeding cooldown/state and vanilla breeding transaction are retained
+### Classification boundary
 
-### Final ordinary output — `풍요` PARTIAL
+Threat difficulty classification does not reuse `BossCoreRewardCatalog` / reward-band assignment. This prevents a scripted external boss that lacks a reward assignment from silently receiving the ordinary hostile x12 health curve. External scripted bosses must gain explicit threat profiles/adapters before their boss scaling is claimed complete.
 
-- `풍요` now has a shared final ordinary-drop duplication baseline for block breaks, normal player-attributed mob kills and successful fishing retrieval
-- capture is delayed until vanilla/mod drops and compatible augmentation-added output are present, then the final eligible fresh stack is copied once instead of rerunning its loot table
-- block capture waits 1 tick, normal-mob capture 2 ticks, fishing capture 1 tick; the normal-mob delay allows `전리품 챙기기` output to exist before final x2 duplication
-- exact original and generated item UUIDs are tracked transiently so overlapping capture windows cannot geometrically multiply the same item
-- augment cores, non-stackables, damageable gear and current custom-data stacks are excluded; configured bosses are excluded from the normal-mob path
-- remains **PARTIAL** because this is still spatial fresh-item capture rather than a complete source-provenance output pipeline; external boss/progression/unique-component coverage is not complete
+Current threat profile catalog at the verified checkpoint:
+- 9 stages
+- 4 exact profiles
+- 0 namespace profiles
+- default vanilla `Enemy` -> NORMAL
+- non-`Enemy` without explicit profile -> EXCLUDED
 
 ## Deliberately not claimed complete
 
@@ -163,23 +174,22 @@ The harvest feature was first pushed as `df9dea84098d37bffb3bf309176dbd9de08eda6
 - `전리품 챙기기` remains partial for provenance/external-boss coverage.
 - `보물 낚시` remains partial because vanilla luck-equivalent adjustment is not the exact fixed percentage-point contract.
 - `풍요` remains partial because exact final-output provenance and comprehensive unique/progression exclusions are incomplete.
-- `손재주` is not implemented because the canon specifies a whitelist but the exact whitelist entries are not currently fixed; no arbitrary whitelist was invented.
-- `한 마리 더` remains a held/unconfirmed proposal and is **not** counted in the locked 146 roster or implementation totals.
-- consumption/fishing/breeding/abundance effects are build/boot verified but **not live-player tested**.
-- Farmer's Delight crop, food and consumable compatibility needs live gameplay validation.
-- `비축 식사` needs live persistence, hunger/exhaustion and inventory-use testing.
-- `낚시 감각` needs real fishing wait-distribution testing; `보물 낚시` needs actual loot-table outcome sampling before any balance claim.
-- `쌍둥이` needs live tests across vanilla and modded breedable animals.
-- `먹으면서 걷기` needs live input feel and multiplayer movement-authority validation.
-- `풍요` needs a full block / Fortune / Silk Touch / harvest / mob / fishing / external-mod drop matrix test.
-- previous resource-harvest effects remain build/boot verified but not live-player tested.
+- `손재주` is not implemented because its non-combat gathering whitelist is not fixed; no arbitrary whitelist was invented.
+- `한 마리 더` remains a held/unconfirmed proposal and is not counted in the locked 146 roster.
+- threat scaling is build/full-pack boot verified but **not live-player gameplay tested**.
+- threat stage advancement with actual loaded mobs has not been live-tested.
+- normal/elite stage numeric values have not been measured in a running player session.
+- Wither/Ender Dragon boss snapshot behavior has not been live-tested.
+- external Chrono Dawn / World Bosses / MCEndgame scripted bosses are not yet explicit threat profiles and must not be claimed boss-scaled.
+- custom/scripted damage without a living dealer can require an external adapter before threat damage scaling is guaranteed.
+- no threat-stage HUD/presentation is implemented.
+- consumption/fishing/breeding/abundance effects remain build/boot verified but not live-player tested.
+- Farmer's Delight crop/food/consumable compatibility needs live gameplay validation.
 - active input remains a functional baseline; `Left Alt + 1..0` may also switch the vanilla hotbar until final input UX is implemented.
 - `약점 표식` multiplayer ownership still needs a multi-owner-safe representation.
-- full Chrono Dawn / World Bosses / MCEndgame boss identity adapters remain incomplete for boss-targeted control/damage and loot-exclusion effects.
 - projectile and movement shared runtimes remain build/boot verified, not live-playtested for feel and matrix interactions.
-- save-wide threat high-water state exists but final live hostile stat application remains incomplete.
-- final device/active/combat/resource VFX, sound, models, HUD and UI visual polish are not done.
-- compilation still reports the pre-existing `ProjectileAugmentService` deprecated-API warning; it is not a #50 failure and is not claimed resolved.
+- final device/active/combat/resource/threat VFX, sound, models, HUD and UI visual polish are not done.
+- compilation still reports the pre-existing `ProjectileAugmentService` deprecated-API warning; it is not a #52 failure and is not claimed resolved.
 - multiplayer is not tested.
 
 ## Batching rule
@@ -197,32 +207,34 @@ For every next batch:
 
 ## Next implementation direction
 
-Next large system batch: **save-wide threat live hostile scaling + elite/boss application boundary**.
+Next large system batch: **external boss threat/control/damage identity adapters + boss-profile mapping**.
 
 Primary goals:
+- inspect the actual entity IDs and boss mechanics shipped by Chrono Dawn, World Bosses and MCEndgame instead of guessing namespace-wide boss status;
+- bind every safely identifiable scripted boss to explicit BOSS threat profiles and preserve each mod's phases, AI and custom health logic;
+- unify boss identity use for threat scaling, boss-targeted control restrictions, boss-hunt damage and ordinary-loot duplication exclusions where the semantics match, without coupling reward probability to difficulty classification;
+- add adapters for scripted damage sources that bypass a living dealer where needed;
+- keep external ordinary enemies on normal scaling only when they satisfy the normal hostile contract;
+- do not use a broad namespace=BOSS shortcut that would classify ordinary mod mobs as bosses.
 
-- wire the already-persistent save-wide threat high-water state into real hostile spawn/stat application instead of leaving it as stored progression only;
-- apply the canonical stage table consistently to ordinary hostiles and the reduced elite/boss coefficients without multiplying external boss stats repeatedly on reload/rejoin;
-- establish stable baseline-vs-applied modifiers so entities are not re-scaled geometrically when chunks reload or threat rises;
-- keep damage, health, movement, armor and knockback resistance server-authoritative;
-- add/extend data-driven external profile adapters for Chrono Dawn / World Bosses / MCEndgame where exact boss/elite identity can be resolved safely;
-- avoid global per-tick entity scans: apply on spawn/load and on actual threat-stage advancement using bounded tracked entities or one-time reconciliation;
-- preserve external mod AI, skills, loot and boss phases rather than replacing their entity logic.
-
-After threat application, choose the next roster bulk boundary from remaining protection/reactive/status combat, collision-heavy movement physics, companion/entity systems or higher-tier unique mechanics whose contracts are sufficiently fixed.
-
-Do not implement `손재주` until its non-combat gathering whitelist is actually fixed in canon.
+After that adapter pass, choose the next large remaining roster subsystem from reactive/status combat, collision-heavy movement physics, companion/entity systems, or higher-tier unique mechanics whose contracts are fixed.
 
 ## Validation labels
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `fb7c963a93ef721810512d3d4510195f1ae5fd1f`
-- JAR PRODUCED: YES — Actions run `40081679446`
+- BUILD VERIFIED: YES — `913224aa2b3f57b57398b18b9984dccc51b40478`
+- JAR PRODUCED: YES — Actions run `40084458272`
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
-- PACK SERVER SMOKE: PASS
-- PACK CLIENT SMOKE: PASS
+- PACK SERVER SMOKE: PASS — 92 mods
+- PACK CLIENT SMOKE: PASS — 108 mods
 - CANONICAL AUGMENT CATALOG INITIALIZATION: PASS — 146 definitions
+- ENEMY SCALING CONTRACT INITIALIZATION: PASS — 9 stages / 4 exact profiles / 0 namespace profiles
+- SAVE-WIDE THREAT HOSTILE RUNTIME: BUILD/BOOT VERIFIED
+- THREAT LIVE-PLAYER TESTED: NO
+- THREAT STAGE-RISE LOADED-MOB REFRESH LIVE TESTED: NO
+- BOSS THREAT SNAPSHOT LIVE TESTED: NO
+- EXTERNAL BOSS THREAT ADAPTERS: INCOMPLETE
 - STAT CONTRACT INITIALIZATION: PASS — 7 definitions / 7 modifier groups
 - SURVIVAL CONTRACT INITIALIZATION: PASS
 - RESOURCE-HARVEST CONTRACT INITIALIZATION: PASS
@@ -232,16 +244,8 @@ Do not implement `손재주` until its non-combat gathering whitelist is actuall
 - MOVEMENT CONTRACT INITIALIZATION: PASS
 - PROJECTILE CONTRACT INITIALIZATION: PASS
 - CONSUMPTION/FISHING/BREEDING LIVE-PLAYER TESTED: NO
-- FOOD USE LIVE-PLAYER TESTED: NO
-- RESERVE MEAL LIVE TESTED: NO
-- FISHING TIMING LIVE TESTED: NO
-- TREASURE CHANCE LIVE TESTED: NO
-- TWIN BREEDING LIVE TESTED: NO
-- EAT-WHILE-WALKING FEEL LIVE TESTED: NO
 - ABUNDANCE DROP MATRIX LIVE TESTED: NO
 - RESOURCE-HARVEST LIVE-PLAYER TESTED: NO
-- FARMER'S DELIGHT HARVEST/FOOD COMPATIBILITY TESTED: NO
-- LOOT-SCOOP LIVE TESTED: NO
 - ACTIVE ENGINE LIVE-PLAYER TESTED: NO
 - BROAD COMBAT EXPANSION LIVE TESTED: NO
 - PROJECTILE LIVE-PLAYER TESTED: NO
