@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.CoreDistributionCatalog;
 import dev.moonseungjun.augmentationsurvival.core.CoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.CoreSourceResolver;
+import dev.moonseungjun.augmentationsurvival.core.FishingCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
 import dev.moonseungjun.augmentationsurvival.threat.WorldThreatAttachments;
 import net.fabricmc.api.ModInitializer;
@@ -26,6 +27,7 @@ public final class AugmentationSurvival implements ModInitializer {
         BossCoreRewardCatalog.initialize();
         CoreRewardService.initialize();
         BossCoreRewardService.initialize();
+        FishingCoreRewardService.initialize();
         LOGGER.info("Augmentation Survival runtime spine initialized");
     }
 }
