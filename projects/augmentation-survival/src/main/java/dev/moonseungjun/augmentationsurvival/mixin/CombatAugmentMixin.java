@@ -24,7 +24,9 @@ abstract class CombatAugmentMixin {
             DamageSource source,
             float originalDamage
     ) {
-        float threatScaled = ThreatScalingService.modifyHostileOutgoingDamage(source, damage);
+        float threatScaled = CombatProvenanceContext.isDelayedDamage()
+                ? damage
+                : ThreatScalingService.modifyHostileOutgoingDamage(source, damage);
         return CombatAugmentService.modifyOutgoingDamage(
                 (LivingEntity) (Object) this,
                 source,

@@ -49,13 +49,12 @@ public final class ThreatScalingService {
     public static void observePlayerPower(ServerPlayer player, AugmentationPlayerState state) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(state, "state");
-        MinecraftServer server = player.getServer();
-        if (server == null) {
-            return;
-        }
+        MinecraftServer server = ((ServerLevel) player.level()).getServer();
         WorldThreatState before = WorldThreatService.state(server);
-        double score = AugmentCatalog.powerScore(state.augmentLevels());
-        WorldThreatState after = WorldThreatService.observePowerScore(server, score);
+        WorldThreatState after = WorldThreatService.observePowerScore(
+                server,
+                AugmentCatalog.powerScore(state.augmentLevels())
+        );
         if (after.stage() > before.stage()) {
             refreshLoadedEntities(server, before.stage(), after.stage());
         }
@@ -65,34 +64,23 @@ public final class ThreatScalingService {
         Objects.requireNonNull(entity, "entity");
         Objects.requireNonNull(level, "level");
         EnemyScalingCatalog.Profile profile = EnemyScalingCatalog.resolveProfile(entity);
-        ThreatEntityState state = entity.getAttachedOrSet(
-                ThreatEntityAttachments.ENTITY_STATE,
-                ThreatEntityState.initial()
-        );
-
         if (profile.scaleGroup() == EnemyScalingCatalog.ScaleGroup.EXCLUDED) {
-            applyScale(entity, EnemyScalingCatalog.EffectiveScale.IDENTITY);
-            if (state.appliedStage() != -1 || state.bossSnapshotStage() != -1) {
-                entity.setAttached(ThreatEntityAttachments.ENTITY_STATE, ThreatEntityState.initial());
-            }
             return;
         }
 
-        int worldStage = WorldThreatService.state(level.getServer()).stage();
-        int targetStage = worldStage;
-        int bossSnapshot = state.bossSnapshotStage();
+        int targetStage = WorldThreatService.state(level.getServer()).stage();
         if (profile.scaleGroup() == EnemyScalingCatalog.ScaleGroup.BOSS) {
-            if (bossSnapshot < 0) {
-                bossSnapshot = worldStage;
+            ThreatEntityState state = entity.getAttachedOrSet(
+                    ThreatEntityAttachments.ENTITY_STATE,
+                    ThreatEntityState.initial()
+            );
+            if (state.bossSnapshotStage() < 0) {
+                state = new ThreatEntityState(targetStage);
+                entity.setAttached(ThreatEntityAttachments.ENTITY_STATE, state);
             }
-            targetStage = bossSnapshot;
+            targetStage = state.bossSnapshotStage();
         }
-
         applyScale(entity, EnemyScalingCatalog.scaleFor(targetStage, profile));
-        ThreatEntityState next = new ThreatEntityState(targetStage, bossSnapshot);
-        if (!next.equals(state)) {
-            entity.setAttached(ThreatEntityAttachments.ENTITY_STATE, next);
-        }
     }
 
     /** Applies hostile damage scaling once at the shared pre-mitigation damage boundary. */
@@ -109,21 +97,20 @@ public final class ThreatScalingService {
             return damage;
         }
 
-        ThreatEntityState state = living.getAttachedOrSet(
-                ThreatEntityAttachments.ENTITY_STATE,
-                ThreatEntityState.initial()
-        );
-        int stage;
-        if (profile.scaleGroup() == EnemyScalingCatalog.ScaleGroup.BOSS
-                && state.bossSnapshotStage() >= 0) {
+        int stage = WorldThreatService.state(level.getServer()).stage();
+        if (profile.scaleGroup() == EnemyScalingCatalog.ScaleGroup.BOSS) {
+            ThreatEntityState state = living.getAttachedOrSet(
+                    ThreatEntityAttachments.ENTITY_STATE,
+                    ThreatEntityState.initial()
+            );
+            if (state.bossSnapshotStage() < 0) {
+                state = new ThreatEntityState(stage);
+                living.setAttached(ThreatEntityAttachments.ENTITY_STATE, state);
+            }
             stage = state.bossSnapshotStage();
-        } else if (state.appliedStage() >= 0) {
-            stage = state.appliedStage();
-        } else {
-            stage = WorldThreatService.state(level.getServer()).stage();
         }
-        double multiplier = EnemyScalingCatalog.scaleFor(stage, profile).damageMultiplier();
-        double scaled = damage * multiplier;
+
+        double scaled = damage * EnemyScalingCatalog.scaleFor(stage, profile).damageMultiplier();
         if (!Double.isFinite(scaled)) {
             return Float.MAX_VALUE;
         }
