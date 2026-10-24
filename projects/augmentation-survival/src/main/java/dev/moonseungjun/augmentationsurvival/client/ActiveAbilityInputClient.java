@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
+import org.lwjgl.glfw.GLFW;
 
 /** Hold the augment skill-mode key and press 1..0 to request active slots 1..10. */
 public final class ActiveAbilityInputClient {
@@ -17,7 +18,7 @@ public final class ActiveAbilityInputClient {
     private static final KeyMapping MODE_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.augmentation_survival.active_mode",
             InputConstants.Type.KEYSYM,
-            InputConstants.KEY_LEFT_ALT,
+            GLFW.GLFW_KEY_LEFT_ALT,
             CATEGORY
     ));
     private static final int[] SLOT_KEYS = {

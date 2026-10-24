@@ -8,7 +8,6 @@ import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,7 +18,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -131,7 +129,9 @@ public final class CombatExpansionService {
         WeaknessMark mark = WEAKNESS_MARKS.get(victim.getUUID());
         if (mark != null && mark.expiresAtTick > victim.level().getGameTime()) {
             Entity dealer = source.getEntity();
-            MinecraftServer server = victim.getServer();
+            MinecraftServer server = victim.level() instanceof ServerLevel serverLevel
+                    ? serverLevel.getServer()
+                    : null;
             ServerPlayer owner = server == null ? null : server.getPlayerList().getPlayer(mark.ownerId);
             if (dealer != null && owner != null
                     && (dealer == owner || owner.isAlliedTo(dealer))) {
