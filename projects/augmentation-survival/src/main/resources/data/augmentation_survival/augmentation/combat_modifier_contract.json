@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "outgoing": {
+    "keen_edge_per_level": 0.04,
+    "precise_aim_per_level": 0.04,
+    "last_strength_per_level": 0.10,
+    "last_strength_health_threshold": 0.30
+  },
+  "incoming": {
+    "tough_skin_per_level": 0.02,
+    "light_landing_per_level": 0.12,
+    "strong_lungs_per_level": 0.15
+  },
+  "kill_streak": {
+    "movement_per_level_per_stack": 0.03,
+    "attack_speed_per_level_per_stack": 0.05,
+    "max_stacks": 3,
+    "duration_ticks": 80
+  },
+  "urgent_steps": {
+    "movement_per_level": 0.10,
+    "duration_ticks": 60
+  },
+  "healing": {
+    "amplification_per_level": 0.10
+  },
+  "lifesteal": {
+    "heal_per_level": 1.0
+  },
+  "last_stand": {
+    "cooldown_ticks": 3600,
+    "invulnerable_ticks": 20
+  }
+}

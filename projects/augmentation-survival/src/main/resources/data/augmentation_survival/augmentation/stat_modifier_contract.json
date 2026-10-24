@@ -12,6 +12,18 @@
       "attribute": "attack_speed",
       "amount_per_level": 0.04,
       "operation": "add_multiplied_base"
+    },
+    {
+      "augment_id": "quick_feet",
+      "attribute": "movement_speed",
+      "amount_per_level": 0.03,
+      "operation": "add_multiplied_base"
+    },
+    {
+      "augment_id": "brace",
+      "attribute": "knockback_resistance",
+      "amount_per_level": 0.10,
+      "operation": "add_value"
     }
   ]
 }

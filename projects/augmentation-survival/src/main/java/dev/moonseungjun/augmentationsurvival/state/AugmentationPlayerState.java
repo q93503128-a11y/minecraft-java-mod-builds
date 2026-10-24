@@ -101,6 +101,39 @@ public record AugmentationPlayerState(
         );
     }
 
+    public long cooldownReadyTick(String augmentId) {
+        if (augmentId == null || augmentId.isBlank()) {
+            throw new IllegalArgumentException("augmentId must not be blank");
+        }
+        return cooldownReadyTicks.getOrDefault(augmentId, 0L);
+    }
+
+    public AugmentationPlayerState withCooldownReadyTick(String augmentId, long readyTick) {
+        if (augmentId == null || augmentId.isBlank()) {
+            throw new IllegalArgumentException("augmentId must not be blank");
+        }
+        if (readyTick < 0L) {
+            throw new IllegalArgumentException("readyTick cannot be negative");
+        }
+        if (cooldownReadyTick(augmentId) == readyTick) {
+            return this;
+        }
+        Map<String, Long> cooldowns = new HashMap<>(cooldownReadyTicks);
+        if (readyTick == 0L) {
+            cooldowns.remove(augmentId);
+        } else {
+            cooldowns.put(augmentId, readyTick);
+        }
+        return new AugmentationPlayerState(
+                schemaVersion,
+                augmentLevels,
+                activeSlots,
+                cooldowns,
+                stolenAuthorityBossIds,
+                bossFirstKillRewardIds
+        );
+    }
+
     public boolean hasBossFirstKillReward(String bossId) {
         return bossFirstKillRewardIds.contains(bossId);
     }

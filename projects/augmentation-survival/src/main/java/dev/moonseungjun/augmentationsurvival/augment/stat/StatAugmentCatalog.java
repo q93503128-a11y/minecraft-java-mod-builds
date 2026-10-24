@@ -190,7 +190,9 @@ public final class StatAugmentCatalog {
 
     public enum AttributeTarget {
         MAX_HEALTH("max_health", Attributes.MAX_HEALTH),
-        ATTACK_SPEED("attack_speed", Attributes.ATTACK_SPEED);
+        ATTACK_SPEED("attack_speed", Attributes.ATTACK_SPEED),
+        MOVEMENT_SPEED("movement_speed", Attributes.MOVEMENT_SPEED),
+        KNOCKBACK_RESISTANCE("knockback_resistance", Attributes.KNOCKBACK_RESISTANCE);
 
         private final String id;
         private final Holder<Attribute> attribute;

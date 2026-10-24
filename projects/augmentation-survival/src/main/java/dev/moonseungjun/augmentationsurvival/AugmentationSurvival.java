@@ -1,6 +1,8 @@
 package dev.moonseungjun.augmentationsurvival;
 
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
@@ -33,6 +35,8 @@ public final class AugmentationSurvival implements ModInitializer {
         AugmentCatalog.initialize();
         StatAugmentCatalog.initialize();
         PlayerStatAugmentService.initialize();
+        CombatTuning.initialize();
+        CombatAugmentService.initialize();
         CoreDistributionCatalog.initialize();
         CoreSourceResolver.initialize();
         BossCoreRewardCatalog.initialize();
