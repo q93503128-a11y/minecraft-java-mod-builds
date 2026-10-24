@@ -25,15 +25,15 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / SHARED COMBAT-HEAL-DEATH BASELINE IMPLEMENTED / PROTECTION+MOVEMENT BATCHES NEXT`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / PROTECTION+HEALING ENGINE IMPLEMENTED / MOVEMENT BATCH NEXT`
 
 외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-Reference vertical slice는 더 이상 증강 1~2개씩 독립 구현하는 방식으로 진행하지 않는다. 영구 stat runtime을 시작점으로 공통 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치 기반 효과, timed combat state, augment-generated healing, lethal-damage interception까지 하나의 공유 런타임으로 확장했다.
+Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. 영구 stat runtime을 시작점으로 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치/timed state, augment-generated healing, lethal interception에 이어 protection pool과 delayed-damage/healing continuation까지 하나의 공유 전투 계층으로 확장했다.
 
-현재 공통 stat/runtime에 연결된 실제 gameplay effect는 `강건함`, `속공`, `빠른 발`, `버티기`, `날 선 감각`, `정확한 조준`, `질긴 피부`, `가벼운 착지`, `튼튼한 폐`, `마지막 힘`, `연속 처치`, `다급한 발걸음`, `흡혈`, `한 번 버티기`다. `회복 증폭`은 augment-generated heal 공통 진입점에 연결되어 있으나 모든 외부 비자연 회복을 가로채는 전역 구현으로는 아직 완성하지 않았다.
+현재 실제 gameplay runtime에 연결된 효과는 `강건함`, `속공`, `빠른 발`, `버티기`, `날 선 감각`, `정확한 조준`, `질긴 피부`, `가벼운 착지`, `튼튼한 폐`, `마지막 힘`, `연속 처치`, `다급한 발걸음`, `흡혈`, `한 번 버티기`, `피해 적응`, `피해 지연`, `넘치는 회복`, `회복 나눔`, `비상 토템`, `재림`이다. `회복 증폭`은 augment-generated non-natural heal 공통 진입점에 연결되어 있으나 모든 vanilla/external 비자연 회복을 가로채는 전역 구현으로는 아직 완성하지 않았다. `보호막`은 source-owned shield pool/tuning/API까지 구현했지만 common active-ability input engine이 아직 없어 실제 액티브 발동은 연결하지 않았다.
 
-이 shared combat runtime은 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 피해 수치, 재접속/사망 후 stat 재적용, Better Combat 전투 체감, 처치 효과, 치명상/토템 순서의 gameplay playtest는 아직 수행하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+최신 protection+healing batch는 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 피해 수치, 지연피해 타이밍, 회복 대상/흡수량, 치명상/토템/재림 순서, Better Combat 전투 체감은 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -132,21 +132,22 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~3의 기능 기준선과 4번의 stat + shared combat/heal/death baseline이 구현되었다. 앞으로는 한 증강씩 독립 하드코딩하지 않고 **공통 런타임 하나를 완성하면서 그 경계에 맞는 canonical 증강을 한 번에 연결하는 대형 묶음**으로 진행한다. 다음은 피해 적응/지연/보호막과 overflow/share healing을 하나의 protection+healing batch로 묶고, 이후 이동 runtime batch와 projectile flight-segment batch로 이어간다.
+현재 1~3의 기능 기준선과 4번의 stat + shared combat/protection/heal/death vertical slice가 구현 중이다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **공통 런타임 하나를 완성하면서 그 경계에 맞는 canonical 증강을 한 번에 연결하는 대형 묶음**으로 진행한다. protection+healing batch 다음은 `두 번 점프` + `공중 연계`를 중심으로 관련 이동 증강을 묶는 movement runtime batch이며, 이후 projectile flight-segment batch와 common active-ability batch로 이어간다.
 
 ## 현재 검증 상태
 
 검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `d523acc93aa2727ac3b608b01d43ba0a22995a25`
+- BUILD VERIFIED: YES — `59f45a9a4ce1f2febf09404b295f3c8b816c18f8`
 - JAR PRODUCED: YES
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
-- GitHub Actions: `40067817151` / Build Augmentation Survival Pack #35
-- Verification artifact: `augmentation-survival-pack-smoke-35` / ID `12550201468`
+- GitHub Actions: `40070335710` / Build Augmentation Survival Pack #38
+- Verification artifact: `augmentation-survival-pack-smoke-38` / ID `12550967850`
+- Artifact ZIP SHA-256: `a9ceeb08ae35ac27696715ffe98a6aed3df7f48de087bb0955ac37ce7bc6f16a`
 
 현재 구현 범위:
 
@@ -169,8 +170,10 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - ROOT MELEE / PROJECTILE DAMAGE AUGMENT PATH: IMPLEMENTED BASELINE
 - POST-MITIGATION DAMAGE-REDUCTION PATH: IMPLEMENTED BASELINE
 - TIMED COMBAT EFFECT STATE: IMPLEMENTED BASELINE
+- PROTECTION / DELAYED-DAMAGE ENGINE: IMPLEMENTED BASELINE
+- SOURCE-OWNED SHIELD / AUGMENT ABSORPTION POOLS: IMPLEMENTED ENGINE
 - AUGMENT-GENERATED HEALING PATH: IMPLEMENTED BASELINE
-- LETHAL-DAMAGE INTERCEPTION PATH: IMPLEMENTED BASELINE
+- LETHAL-DAMAGE CHAIN: IMPLEMENTED BASELINE
 - `강건함`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
 - `속공`: IMPLEMENTED / BETTER COMBAT LIVE TEST PENDING
 - `빠른 발`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
@@ -184,10 +187,20 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - `연속 처치`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
 - `다급한 발걸음`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
 - `흡혈`: IMPLEMENTED DIRECT PLAYER-KILL BASELINE / LIVE-PLAYER TEST PENDING
-- `한 번 버티기`: IMPLEMENTED BASELINE / LIVE TOTEM-ORDER TEST PENDING
 - `회복 증폭`: PARTIAL — COMMON AUGMENT-HEAL PATH ONLY
+- `피해 적응`: IMPLEMENTED BASELINE / LIVE-PLAYER TEST PENDING
+- `피해 지연`: IMPLEMENTED BASELINE / LIVE-PLAYER TEST PENDING
+- `넘치는 회복`: IMPLEMENTED ON ROUTED AUGMENT HEALS / HUD+LIVE TEST PENDING
+- `회복 나눔`: IMPLEMENTED TEAM+TAMED BASELINE / DOMINATION ADAPTER+LIVE TEST PENDING
+- `한 번 버티기`: IMPLEMENTED BASELINE / LIVE TOTEM-ORDER TEST PENDING
+- `비상 토템`: IMPLEMENTED BASELINE / LIVE INVENTORY-TOTEM TEST PENDING
+- `재림`: IMPLEMENTED BASELINE / LIVE STASIS+ORDER TEST PENDING
+- `보호막`: POOL/TUNING/API IMPLEMENTED / ACTIVE TRIGGER NOT IMPLEMENTED
 - FINAL DEVICE MODEL/TEXTURE/VFX/SOUND: NOT IMPLEMENTED
 - REMAINING AUGMENT GAMEPLAY EFFECT RUNTIME: NOT IMPLEMENTED
+- PROTECTION PIPELINE LIVE-PLAYER TESTED: NO
+- HEALING PIPELINE LIVE-PLAYER TESTED: NO
+- LETHAL CHAIN LIVE-PLAYER TESTED: NO
 - COMBAT AUGMENT LIVE-PLAYER TESTED: NO
 - STAT AUGMENT LIVE-PLAYER TESTED: NO
 - STAT RECONNECT/DEATH TESTED: NO
