@@ -10,6 +10,9 @@
   "sun_affinity": {
     "movement_per_level": 0.04
   },
+  "webbed_feet": {
+    "movement_per_level": 0.10
+  },
   "step_up": {
     "additional_height": 0.40
   },
