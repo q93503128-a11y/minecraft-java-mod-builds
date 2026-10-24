@@ -15,6 +15,7 @@ public enum CombatProvenance {
     COMPANION,
     REFLECTED,
     SPECIAL_PERCENT_HP,
+    DELAYED_DAMAGE,
     OTHER;
 
     public boolean isRootDirect() {

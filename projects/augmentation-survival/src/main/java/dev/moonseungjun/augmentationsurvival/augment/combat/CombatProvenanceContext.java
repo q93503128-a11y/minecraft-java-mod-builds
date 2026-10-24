@@ -11,16 +11,16 @@ import net.minecraft.world.damagesource.DamageSource;
  * ROOT-only counters and damage bonuses never recurse accidentally.
  */
 public final class CombatProvenanceContext {
-    private static final ThreadLocal<CombatProvenance> OVERRIDE = new ThreadLocal<>();
+    private static final ThreadLocal<Context> OVERRIDE = new ThreadLocal<>();
 
     private CombatProvenanceContext() {
     }
 
     public static CombatProvenance resolve(DamageSource source) {
         Objects.requireNonNull(source, "source");
-        CombatProvenance overridden = OVERRIDE.get();
+        Context overridden = OVERRIDE.get();
         if (overridden != null) {
-            return overridden;
+            return overridden.provenance();
         }
         if (!(source.getEntity() instanceof ServerPlayer)) {
             return CombatProvenance.OTHER;
@@ -35,6 +35,20 @@ public final class CombatProvenanceContext {
         return CombatProvenance.OTHER;
     }
 
+    public static boolean isDelayedDamage() {
+        Context context = OVERRIDE.get();
+        return context != null && context.provenance() == CombatProvenance.DELAYED_DAMAGE;
+    }
+
+    public static float delayedDamageOr(float fallback) {
+        Context context = OVERRIDE.get();
+        if (context == null || context.provenance() != CombatProvenance.DELAYED_DAMAGE) {
+            return fallback;
+        }
+        float amount = context.explicitDamage();
+        return Float.isFinite(amount) && amount > 0.0F ? amount : fallback;
+    }
+
     public static void runAs(CombatProvenance provenance, Runnable action) {
         callAs(provenance, () -> {
             action.run();
@@ -43,10 +57,21 @@ public final class CombatProvenanceContext {
     }
 
     public static <T> T callAs(CombatProvenance provenance, Supplier<T> action) {
-        Objects.requireNonNull(provenance, "provenance");
+        return callWithContext(new Context(provenance, Float.NaN), action);
+    }
+
+    public static <T> T callAsDelayed(float amount, Supplier<T> action) {
+        if (!(amount > 0.0F) || !Float.isFinite(amount)) {
+            return action.get();
+        }
+        return callWithContext(new Context(CombatProvenance.DELAYED_DAMAGE, amount), action);
+    }
+
+    private static <T> T callWithContext(Context context, Supplier<T> action) {
+        Objects.requireNonNull(context, "context");
         Objects.requireNonNull(action, "action");
-        CombatProvenance previous = OVERRIDE.get();
-        OVERRIDE.set(provenance);
+        Context previous = OVERRIDE.get();
+        OVERRIDE.set(context);
         try {
             return action.get();
         } finally {
@@ -55,6 +80,12 @@ public final class CombatProvenanceContext {
             } else {
                 OVERRIDE.set(previous);
             }
+        }
+    }
+
+    private record Context(CombatProvenance provenance, float explicitDamage) {
+        private Context {
+            Objects.requireNonNull(provenance, "provenance");
         }
     }
 }

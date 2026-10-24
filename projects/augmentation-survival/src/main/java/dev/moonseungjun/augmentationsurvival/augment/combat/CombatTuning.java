@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-/** Data-driven tuning for the first shared combat runtime slice. */
+/** Data-driven tuning for the shared combat, protection, healing and lethal runtime. */
 public final class CombatTuning {
     private static final String RESOURCE_PATH =
             "data/augmentation_survival/augmentation/combat_modifier_contract.json";
@@ -21,7 +21,9 @@ public final class CombatTuning {
 
     public static void initialize() {
         current = loadBundled();
-        AugmentationSurvival.LOGGER.info("Loaded combat augment contract: shared combat/heal/death baseline");
+        AugmentationSurvival.LOGGER.info(
+                "Loaded combat augment contract: shared combat/protection/heal/death baseline"
+        );
     }
 
     public static Snapshot current() {
@@ -56,6 +58,13 @@ public final class CombatTuning {
                 requireAugment("lifesteal");
                 requireAugment("healing_amplification");
                 requireAugment("last_stand");
+                requireAugment("damage_adaptation");
+                requireAugment("delayed_damage");
+                requireAugment("overflow_healing");
+                requireAugment("healing_share");
+                requireAugment("shield");
+                requireAugment("emergency_totem");
+                requireAugment("reincarnation");
 
                 JsonObject outgoing = root.getAsJsonObject("outgoing");
                 JsonObject incoming = root.getAsJsonObject("incoming");
@@ -64,6 +73,12 @@ public final class CombatTuning {
                 JsonObject healing = root.getAsJsonObject("healing");
                 JsonObject lifesteal = root.getAsJsonObject("lifesteal");
                 JsonObject lastStand = root.getAsJsonObject("last_stand");
+                JsonObject adaptation = root.getAsJsonObject("damage_adaptation");
+                JsonObject delayed = root.getAsJsonObject("delayed_damage");
+                JsonObject overflow = root.getAsJsonObject("overflow_healing");
+                JsonObject share = root.getAsJsonObject("healing_share");
+                JsonObject shield = root.getAsJsonObject("shield");
+                JsonObject reincarnation = root.getAsJsonObject("reincarnation");
 
                 return new Snapshot(
                         schemaVersion,
@@ -83,7 +98,21 @@ public final class CombatTuning {
                         positive(healing, "amplification_per_level"),
                         positive(lifesteal, "heal_per_level"),
                         requirePositiveInt(lastStand, "cooldown_ticks"),
-                        requirePositiveInt(lastStand, "invulnerable_ticks")
+                        requirePositiveInt(lastStand, "invulnerable_ticks"),
+                        fraction(adaptation, "reduction_per_level"),
+                        requirePositiveInt(adaptation, "duration_ticks"),
+                        fraction(delayed, "level1_fraction"),
+                        fraction(delayed, "per_additional_level"),
+                        requirePositiveInt(delayed, "installment_count"),
+                        requirePositiveInt(delayed, "interval_ticks"),
+                        positive(overflow, "absorption_cap_per_level"),
+                        fraction(share, "share_per_level"),
+                        positive(share, "radius"),
+                        positive(shield, "level1_amount"),
+                        positive(shield, "per_additional_level"),
+                        requirePositiveInt(shield, "duration_ticks"),
+                        requirePositiveInt(reincarnation, "cooldown_ticks"),
+                        requirePositiveInt(reincarnation, "stasis_ticks")
                 );
             }
         } catch (IOException exception) {
@@ -147,7 +176,37 @@ public final class CombatTuning {
             double healingAmplificationPerLevel,
             double lifestealHealPerLevel,
             int lastStandCooldownTicks,
-            int lastStandInvulnerableTicks
+            int lastStandInvulnerableTicks,
+            double damageAdaptationReductionPerLevel,
+            int damageAdaptationDurationTicks,
+            double delayedDamageLevel1Fraction,
+            double delayedDamagePerAdditionalLevel,
+            int delayedDamageInstallmentCount,
+            int delayedDamageIntervalTicks,
+            double overflowHealingAbsorptionCapPerLevel,
+            double healingSharePerLevel,
+            double healingShareRadius,
+            double shieldLevel1Amount,
+            double shieldPerAdditionalLevel,
+            int shieldDurationTicks,
+            int reincarnationCooldownTicks,
+            int reincarnationStasisTicks
     ) {
+        public double delayedDamageFraction(int level) {
+            if (level <= 0) {
+                return 0.0D;
+            }
+            return Math.min(
+                    1.0D,
+                    delayedDamageLevel1Fraction + delayedDamagePerAdditionalLevel * (level - 1)
+            );
+        }
+
+        public double shieldAmount(int level) {
+            if (level <= 0) {
+                return 0.0D;
+            }
+            return shieldLevel1Amount + shieldPerAdditionalLevel * (level - 1);
+        }
     }
 }

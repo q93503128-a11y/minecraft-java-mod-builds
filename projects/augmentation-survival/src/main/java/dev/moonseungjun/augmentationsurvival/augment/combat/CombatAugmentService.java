@@ -12,9 +12,12 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.Stats;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -23,6 +26,11 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.DeathProtection;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Shared server-owned combat runtime for root damage, reactive movement, kill effects and lethal
@@ -39,6 +47,8 @@ public final class CombatAugmentService {
     private static final String URGENT_STEPS_ID = id("urgent_steps");
     private static final String LIFESTEAL_ID = id("lifesteal");
     private static final String LAST_STAND_ID = id("last_stand");
+    private static final String EMERGENCY_TOTEM_ID = id("emergency_totem");
+    private static final String REINCARNATION_ID = id("reincarnation");
 
     private static final Identifier DYNAMIC_MOVEMENT_ID = Identifier.fromNamespaceAndPath(
             AugmentationSurvival.MOD_ID,
@@ -76,6 +86,9 @@ public final class CombatAugmentService {
         if (!(damage > 0.0F) || !Float.isFinite(damage)) {
             return damage;
         }
+        if (CombatProvenanceContext.isDelayedDamage()) {
+            return damage;
+        }
         if (!(source.getEntity() instanceof ServerPlayer attacker)) {
             return damage;
         }
@@ -100,8 +113,11 @@ public final class CombatAugmentService {
         return safeScale(damage, 1.0D + bonus);
     }
 
-    /** Applies augment damage-reduction layers after vanilla armor/protection and before absorption. */
+    /** Applies augment damage layers after vanilla armor/Protection and before vanilla absorption. */
     public static float modifyPostMitigationDamage(LivingEntity victim, DamageSource source, float damage) {
+        if (CombatProvenanceContext.isDelayedDamage()) {
+            return damage;
+        }
         if (!(victim instanceof ServerPlayer player) || !(damage > 0.0F) || !Float.isFinite(damage)) {
             return damage;
         }
@@ -120,7 +136,57 @@ public final class CombatAugmentService {
         if (source.typeHolder().is(DamageTypeTags.IS_DROWNING)) {
             multiplier *= 1.0D - tuning.strongLungsPerLevel() * boundedLevel(state, STRONG_LUNGS_ID);
         }
-        return safeScale(damage, Math.max(0.0D, multiplier));
+        float reduced = safeScale(damage, Math.max(0.0D, multiplier));
+        return ProtectionAugmentService.modifyAfterReductions(player, source, reduced);
+    }
+
+    /** Called after vanilla hand-held death protection failed. */
+    public static boolean tryPostVanillaDeathProtection(
+            LivingEntity entity,
+            DamageSource source
+    ) {
+        if (!(entity instanceof ServerPlayer player)
+                || source.typeHolder().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            return false;
+        }
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+
+        if (boundedLevel(state, EMERGENCY_TOTEM_ID) > 0 && consumeEmergencyTotem(player)) {
+            return true;
+        }
+
+        if (boundedLevel(state, REINCARNATION_ID) <= 0) {
+            return false;
+        }
+        long now = player.level().getGameTime();
+        if (now < state.cooldownReadyTick(REINCARNATION_ID)) {
+            return false;
+        }
+
+        CombatTuning.Snapshot tuning = CombatTuning.current();
+        long recoverTick = now + tuning.reincarnationStasisTicks();
+        player.setHealth(1.0F);
+        player.stopUsingItem();
+        player.setDeltaMovement(Vec3.ZERO);
+        player.setSprinting(false);
+        player.resetFallDistance();
+        AugmentationPlayerStateService.replace(
+                player,
+                state.withCooldownReadyTick(
+                        REINCARNATION_ID,
+                        now + tuning.reincarnationCooldownTicks()
+                )
+        );
+        RuntimeState runtime = RUNTIME.computeIfAbsent(player.getUUID(), ignored -> new RuntimeState());
+        runtime.reincarnationRecoverTick = recoverTick;
+        runtime.invulnerableUntilTick = Math.max(runtime.invulnerableUntilTick, recoverTick);
+        return true;
+    }
+
+    public static boolean isActionLocked(ServerPlayer player) {
+        RuntimeState runtime = RUNTIME.get(player.getUUID());
+        return runtime != null
+                && runtime.reincarnationRecoverTick > player.level().getGameTime();
     }
 
     private static boolean allowDamage(LivingEntity entity, DamageSource source, float amount) {
@@ -134,6 +200,7 @@ public final class CombatAugmentService {
         return source.typeHolder().is(DamageTypeTags.BYPASSES_INVULNERABILITY);
     }
 
+    /** Last stand deliberately runs before vanilla hand-held totem processing. */
     private static boolean allowDeath(LivingEntity entity, DamageSource source, float amount) {
         if (!(entity instanceof ServerPlayer player)) {
             return true;
@@ -166,9 +233,18 @@ public final class CombatAugmentService {
             float damageTaken,
             boolean blocked
     ) {
-        if (!(entity instanceof ServerPlayer player) || blocked || !(damageTaken > 0.0F)) {
+        if (!(entity instanceof ServerPlayer player)) {
             return;
         }
+        if (CombatProvenanceContext.isDelayedDamage()) {
+            return;
+        }
+
+        ProtectionAugmentService.afterDamage(player, source, damageTaken, blocked);
+        if (blocked || !(damageTaken > 0.0F)) {
+            return;
+        }
+
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         if (boundedLevel(state, URGENT_STEPS_ID) <= 0) {
             return;
@@ -234,6 +310,15 @@ public final class CombatAugmentService {
                 runtime.urgentUntilTick = 0L;
                 changed = true;
             }
+            if (runtime.reincarnationRecoverTick > now) {
+                player.setDeltaMovement(Vec3.ZERO);
+                player.setSprinting(false);
+                player.stopUsingItem();
+                player.resetFallDistance();
+            } else if (runtime.reincarnationRecoverTick > 0L) {
+                runtime.reincarnationRecoverTick = 0L;
+                player.setHealth(player.getMaxHealth());
+            }
             if (runtime.invulnerableUntilTick > 0L && now >= runtime.invulnerableUntilTick) {
                 runtime.invulnerableUntilTick = 0L;
             }
@@ -251,6 +336,31 @@ public final class CombatAugmentService {
                 iterator.remove();
             }
         }
+    }
+
+    private static boolean consumeEmergencyTotem(ServerPlayer player) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
+            if (stack.isEmpty() || !stack.is(Items.TOTEM_OF_UNDYING)) {
+                continue;
+            }
+            DeathProtection protection = stack.get(DataComponents.DEATH_PROTECTION);
+            if (protection == null) {
+                continue;
+            }
+
+            ItemStack protectionItem = stack.copy();
+            stack.shrink(1);
+            player.getInventory().setChanged();
+            player.awardStat(Stats.ITEM_USED.get(protectionItem.getItem()));
+            CriteriaTriggers.USED_TOTEM.trigger(player, protectionItem);
+            protectionItem.causeUseVibration(player, GameEvent.ITEM_INTERACT_FINISH);
+            player.setHealth(1.0F);
+            protection.applyEffects(protectionItem, player);
+            player.level().broadcastEntityEvent(player, (byte) 35);
+            player.inventoryMenu.broadcastChanges();
+            return true;
+        }
+        return false;
     }
 
     private static void clearRuntime(ServerPlayer player) {
@@ -335,12 +445,14 @@ public final class CombatAugmentService {
         private long killStreakUntilTick;
         private long urgentUntilTick;
         private long invulnerableUntilTick;
+        private long reincarnationRecoverTick;
 
         private boolean active() {
             return killStacks > 0
                     || killStreakUntilTick > 0L
                     || urgentUntilTick > 0L
-                    || invulnerableUntilTick > 0L;
+                    || invulnerableUntilTick > 0L
+                    || reincarnationRecoverTick > 0L;
         }
     }
 }

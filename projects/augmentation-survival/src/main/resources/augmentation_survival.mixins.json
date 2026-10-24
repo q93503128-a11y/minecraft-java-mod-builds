@@ -3,7 +3,9 @@
   "package": "dev.moonseungjun.augmentationsurvival.mixin",
   "mixins": [
     "RaidMixin",
-    "CombatAugmentMixin"
+    "CombatAugmentMixin",
+    "PlayerActionLockMixin",
+    "ServerPlayerGameModeActionLockMixin"
   ],
   "injectors": {
     "defaultRequire": 1
