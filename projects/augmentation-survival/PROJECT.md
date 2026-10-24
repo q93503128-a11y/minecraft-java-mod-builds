@@ -25,13 +25,15 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / REFERENCE STAT SLICE IMPLEMENTED / COMBAT PIPELINE NEXT`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / SHARED COMBAT-HEAL-DEATH BASELINE IMPLEMENTED / PROTECTION+MOVEMENT BATCHES NEXT`
 
 외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-Reference vertical slice의 첫 단계로 `강건함`과 `속공`의 실제 gameplay stat runtime을 구현했다. 영구 augment level을 source of truth로 두고, 접속/리스폰/상태 변경 시 transient vanilla attribute modifier를 재조정한다. 동일 stat axis의 양의 보너스를 하나의 결정적 modifier로 합칠 수 있는 data-driven contract를 사용하며 매 tick 전수 검사는 하지 않는다.
+Reference vertical slice는 더 이상 증강 1~2개씩 독립 구현하는 방식으로 진행하지 않는다. 영구 stat runtime을 시작점으로 공통 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치 기반 효과, timed combat state, augment-generated healing, lethal-damage interception까지 하나의 공유 런타임으로 확장했다.
 
-`강건함`/`속공` 코드는 build, full pack dependency inspection, dedicated-server smoke, client boot smoke까지 통과했다. 다만 실제 플레이어를 사용한 즉시 적용/재접속/사망 후 재적용, Better Combat 공격속도 체감, 중복 modifier 방지의 gameplay playtest는 아직 수행하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+현재 공통 stat/runtime에 연결된 실제 gameplay effect는 `강건함`, `속공`, `빠른 발`, `버티기`, `날 선 감각`, `정확한 조준`, `질긴 피부`, `가벼운 착지`, `튼튼한 폐`, `마지막 힘`, `연속 처치`, `다급한 발걸음`, `흡혈`, `한 번 버티기`다. `회복 증폭`은 augment-generated heal 공통 진입점에 연결되어 있으나 모든 외부 비자연 회복을 가로채는 전역 구현으로는 아직 완성하지 않았다.
+
+이 shared combat runtime은 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 피해 수치, 재접속/사망 후 stat 재적용, Better Combat 전투 체감, 처치 효과, 치명상/토템 순서의 gameplay playtest는 아직 수행하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -130,18 +132,21 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~3의 기능 기준선과 4번의 첫 stat slice(`강건함`, `속공`)가 구현되었다. 다음은 `흡혈`, `한 번 버티기`, shield/damage-delay 중 한 경로로 공통 전투/회복/사망 pipeline을 세우는 작업이다. 146개를 한 번에 독립 하드코딩하지 않는다.
+현재 1~3의 기능 기준선과 4번의 stat + shared combat/heal/death baseline이 구현되었다. 앞으로는 한 증강씩 독립 하드코딩하지 않고 **공통 런타임 하나를 완성하면서 그 경계에 맞는 canonical 증강을 한 번에 연결하는 대형 묶음**으로 진행한다. 다음은 피해 적응/지연/보호막과 overflow/share healing을 하나의 protection+healing batch로 묶고, 이후 이동 runtime batch와 projectile flight-segment batch로 이어간다.
 
 ## 현재 검증 상태
 
 검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `3911b238d234d1bf335726befaaa2d1e39e7fd11`
+- BUILD VERIFIED: YES — `d523acc93aa2727ac3b608b01d43ba0a22995a25`
 - JAR PRODUCED: YES
+- PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
+- PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
-- GitHub Actions: `40065641689` / Build Augmentation Survival Pack #34
+- GitHub Actions: `40067817151` / Build Augmentation Survival Pack #35
+- Verification artifact: `augmentation-survival-pack-smoke-35` / ID `12550201468`
 
 현재 구현 범위:
 
@@ -159,11 +164,31 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - SECOND CHOICE ATOMIC 2-PICK: IMPLEMENTED
 - 3:1 CORE UPGRADE ONE/ALL: IMPLEMENTED
 - FUNCTIONAL DEVICE CARD UI: IMPLEMENTED BASELINE
-- REFERENCE STAT CONTRACT: IMPLEMENTED
-- `강건함` GAMEPLAY EFFECT: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `속공` GAMEPLAY EFFECT: IMPLEMENTED / BETTER COMBAT LIVE TEST PENDING
+- UNCONDITIONAL STAT CONTRACT: IMPLEMENTED — 4 definitions / 4 modifier groups
+- SHARED COMBAT PROVENANCE: IMPLEMENTED BASELINE
+- ROOT MELEE / PROJECTILE DAMAGE AUGMENT PATH: IMPLEMENTED BASELINE
+- POST-MITIGATION DAMAGE-REDUCTION PATH: IMPLEMENTED BASELINE
+- TIMED COMBAT EFFECT STATE: IMPLEMENTED BASELINE
+- AUGMENT-GENERATED HEALING PATH: IMPLEMENTED BASELINE
+- LETHAL-DAMAGE INTERCEPTION PATH: IMPLEMENTED BASELINE
+- `강건함`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `속공`: IMPLEMENTED / BETTER COMBAT LIVE TEST PENDING
+- `빠른 발`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `버티기`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `날 선 감각`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `정확한 조준`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `질긴 피부`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `가벼운 착지`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `튼튼한 폐`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `마지막 힘`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `연속 처치`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `다급한 발걸음`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `흡혈`: IMPLEMENTED DIRECT PLAYER-KILL BASELINE / LIVE-PLAYER TEST PENDING
+- `한 번 버티기`: IMPLEMENTED BASELINE / LIVE TOTEM-ORDER TEST PENDING
+- `회복 증폭`: PARTIAL — COMMON AUGMENT-HEAL PATH ONLY
 - FINAL DEVICE MODEL/TEXTURE/VFX/SOUND: NOT IMPLEMENTED
 - REMAINING AUGMENT GAMEPLAY EFFECT RUNTIME: NOT IMPLEMENTED
+- COMBAT AUGMENT LIVE-PLAYER TESTED: NO
 - STAT AUGMENT LIVE-PLAYER TESTED: NO
 - STAT RECONNECT/DEATH TESTED: NO
 - DEVICE FLOW PLAYTESTED: NO
