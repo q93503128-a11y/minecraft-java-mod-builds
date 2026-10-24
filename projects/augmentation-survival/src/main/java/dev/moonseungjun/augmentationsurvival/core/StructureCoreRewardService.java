@@ -16,13 +16,17 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Adds at most one augmentation-core roll when a natural structure container first generates loot.
+ * Adds at most one augmentation-core roll when a natural exploration container first generates loot.
  *
- * <p>The loot table alone is not trusted. The loot origin must be inside a currently generated
- * structure piece whose ID resolves through {@link CoreSourceResolver}. This prevents copied loot
- * tables or player-placed containers outside natural structures from becoming progression farms.</p>
+ * <p>Structure containers require the loot origin to be inside a currently generated structure
+ * piece whose ID resolves through {@link CoreSourceResolver}. The vanilla simple-dungeon chest is
+ * the intentional exception because monster rooms are feature-generated rather than registered
+ * structures; its exact vanilla loot-table ID is trusted as the natural-generation marker.</p>
  */
 public final class StructureCoreRewardService {
+    private static final Identifier SIMPLE_DUNGEON_LOOT =
+            Identifier.fromNamespaceAndPath("minecraft", "chests/simple_dungeon");
+
     private StructureCoreRewardService() {
     }
 
@@ -30,6 +34,16 @@ public final class StructureCoreRewardService {
         LootTableEvents.MODIFY_DROPS.register((holder, context, drops) -> holder.unwrapKey().ifPresent(tableKey -> {
             Identifier lootTableId = tableKey.identifier();
             if (!isStructureContainerTable(lootTableId)) {
+                return;
+            }
+
+            CoreSourceResolver.StructureResolution featureResolution = featureGeneratedResolution(lootTableId);
+            if (featureResolution != null) {
+                CoreDistributionCatalog.rollDistributionTemplate(
+                        featureResolution.distributionProfile(),
+                        featureResolution.coreRollMultiplier(),
+                        context.getRandom()
+                ).ifPresent(tier -> drops.add(new ItemStack(AugmentCoreItems.item(tier))));
                 return;
             }
 
@@ -50,6 +64,13 @@ public final class StructureCoreRewardService {
                     context.getRandom()
             ).ifPresent(tier -> drops.add(new ItemStack(AugmentCoreItems.item(tier))));
         }));
+    }
+
+    private static CoreSourceResolver.StructureResolution featureGeneratedResolution(Identifier lootTableId) {
+        if (lootTableId.equals(SIMPLE_DUNGEON_LOOT)) {
+            return new CoreSourceResolver.StructureResolution("routine_exploration", 1.0, false);
+        }
+        return null;
     }
 
     private static boolean isStructureContainerTable(Identifier lootTableId) {
