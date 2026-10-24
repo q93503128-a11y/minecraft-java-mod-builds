@@ -120,7 +120,7 @@ public final class ProjectileAugmentService {
             );
         }
 
-        Vec3 normal = Vec3.atLowerCornerOf(hitResult.getDirection().getNormal());
+        Vec3 normal = hitResult.getDirection().getUnitVec3();
         double dot = movement.dot(normal);
         Vec3 reflected = movement.subtract(normal.scale(2.0D * dot));
         if (reflected.lengthSqr() <= 1.0E-7D) {
