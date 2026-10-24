@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "armor_pierce": {
+    "effectiveness_reduction": [0.10, 0.20, 0.30]
+  },
+  "hunt_record": {
+    "max_stacks": 30,
+    "max_health_per_stack": 1.0,
+    "root_damage_bonus_per_stack": 0.005
+  },
+  "tree_climb": {
+    "ladder_ascent_speed": 0.20,
+    "speed_scale": [0.40, 0.60, 0.80]
+  },
+  "pearl_mastery": {
+    "self_damage_reduction": [0.50, 0.75, 1.00],
+    "cooldown_reduction": [0.15, 0.30, 0.45]
+  }
+}

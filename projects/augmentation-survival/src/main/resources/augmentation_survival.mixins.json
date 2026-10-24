@@ -25,6 +25,8 @@
     "AbstractArrowAugmentAccessor",
     "AbstractArrowAugmentMixin",
     "ProjectileWeaponItemAugmentMixin",
+    "EnderPearlMasteryMixin",
+    "TridentPortableRiptideMixin",
     "PlayerActionLockMixin",
     "ServerPlayerGameModeActionLockMixin"
   ],

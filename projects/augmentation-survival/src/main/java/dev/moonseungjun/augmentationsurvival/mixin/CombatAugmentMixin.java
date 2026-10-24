@@ -1,9 +1,12 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.FocusedAimAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,13 +36,39 @@ abstract class CombatAugmentMixin {
                 source,
                 threatScaled
         );
-        if (focused != null) {
-            return focused;
-        }
-        return CombatAugmentService.modifyOutgoingDamage(
-                (LivingEntity) (Object) this,
+        float modified = focused != null
+                ? focused
+                : CombatAugmentService.modifyOutgoingDamage(
+                        (LivingEntity) (Object) this,
+                        source,
+                        threatScaled
+                );
+        return AdvancedUtilityAugmentService.modifyRootOutgoingDamage(source, modified);
+    }
+
+    /** Reduces only the armor/toughness inputs for ROOT direct attacks with Armor Pierce. */
+    @WrapOperation(
+            method = "getDamageAfterArmorAbsorb",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/damagesource/CombatRules;getDamageAfterAbsorb(Lnet/minecraft/world/entity/LivingEntity;FLnet/minecraft/world/damagesource/DamageSource;FF)F"
+            )
+    )
+    private float augmentationSurvival$applyArmorPierce(
+            LivingEntity victim,
+            float damage,
+            DamageSource source,
+            float armor,
+            float armorToughness,
+            Operation<Float> original
+    ) {
+        double multiplier = AdvancedUtilityAugmentService.armorEffectivenessMultiplier(source);
+        return original.call(
+                victim,
+                damage,
                 source,
-                threatScaled
+                (float) (armor * multiplier),
+                (float) (armorToughness * multiplier)
         );
     }
 
@@ -82,10 +111,16 @@ abstract class CombatAugmentMixin {
         if (CombatProvenanceContext.isDelayedDamage()) {
             return;
         }
-        cir.setReturnValue(CombatAugmentService.modifyPostMitigationDamage(
-                (LivingEntity) (Object) this,
+        LivingEntity self = (LivingEntity) (Object) this;
+        float advanced = AdvancedUtilityAugmentService.modifyIncomingBeforeProtection(
+                self,
                 source,
                 cir.getReturnValueF()
+        );
+        cir.setReturnValue(CombatAugmentService.modifyPostMitigationDamage(
+                self,
+                source,
+                advanced
         ));
     }
 

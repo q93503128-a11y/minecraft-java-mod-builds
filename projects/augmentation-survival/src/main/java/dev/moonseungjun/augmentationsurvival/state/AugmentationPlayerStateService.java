@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentSer
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -62,6 +63,7 @@ public final class AugmentationPlayerStateService {
         MobilityUtilityAugmentService.reconcile(player, next);
         ReactiveCombatAugmentService.reconcile(player, next);
         SurvivalAugmentService.reconcile(player, next);
+        AdvancedUtilityAugmentService.reconcile(player, next);
         ConsumptionAugmentService.syncClient(player, next);
         if (!current.augmentLevels().equals(next.augmentLevels())) {
             ThreatScalingService.observePlayerPower(player, next);

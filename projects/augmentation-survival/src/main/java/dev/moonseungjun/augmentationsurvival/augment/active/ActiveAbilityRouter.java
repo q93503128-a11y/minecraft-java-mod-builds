@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 public final class ActiveAbilityRouter {
     private static final String THREAT_SUPPRESSION_ID = id("threat_suppression");
     private static final String INSTANT_MINING_ID = id("instant_mining");
+    private static final String DEATH_RETURN_ID = id("death_return");
     private static final String THREAT_TOGGLE_KEY = "active_toggle/threat_suppression";
     private static final String INSTANT_MINING_TOGGLE_KEY = "active_toggle/instant_mining";
 
@@ -34,7 +35,8 @@ public final class ActiveAbilityRouter {
             id("berserk"),
             id("healing_wave"),
             THREAT_SUPPRESSION_ID,
-            INSTANT_MINING_ID
+            INSTANT_MINING_ID,
+            DEATH_RETURN_ID
     );
 
     private ActiveAbilityRouter() {
@@ -43,6 +45,7 @@ public final class ActiveAbilityRouter {
     public static void initialize() {
         AugmentCatalog.require(THREAT_SUPPRESSION_ID);
         AugmentCatalog.require(INSTANT_MINING_ID);
+        AugmentCatalog.require(DEATH_RETURN_ID);
     }
 
     public static boolean tryUseSlot(ServerPlayer player, int slotIndex) {
@@ -61,6 +64,9 @@ public final class ActiveAbilityRouter {
         }
         if (abilityId.equals(INSTANT_MINING_ID)) {
             return toggle(player, state, INSTANT_MINING_ID, INSTANT_MINING_TOGGLE_KEY);
+        }
+        if (abilityId.equals(DEATH_RETURN_ID)) {
+            return DeathReturnAugmentService.tryUse(player);
         }
 
         List<String> legacy = resolveSlots(state, LEGACY_ORDER);
