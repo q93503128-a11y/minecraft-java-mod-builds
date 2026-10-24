@@ -25,19 +25,20 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE + SHARED GAMEPLAY RUNTIMES / SAVE-WIDE THREAT + EXTERNAL BOSS COMPATIBILITY / 100-OF-146 GAMEPLAY RUNTIME VERIFIED`
+`M1C CORE ECONOMY + DEVICE + SHARED GAMEPLAY RUNTIMES / SAVE-WIDE THREAT + EXTERNAL BOSS COMPATIBILITY / 106-OF-146 GAMEPLAY RUNTIME VERIFIED`
 
 외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water와 실제 hostile stat application, 외부 보스 공통 identity adapter, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource → harvest/drop → consumption/fishing/breeding → save-wide threat application → external boss compatibility → reactive/status/mobility/utility bulk 순으로 공통 런타임 경계를 확장했다.
+Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource → harvest/drop → consumption/fishing/breeding → save-wide threat application → external boss compatibility → reactive/status/mobility/utility bulk → advanced utility/permanent progression 순으로 공통 런타임 경계를 확장했다.
 
 현재 146종 기준 gameplay runtime 진행도:
 
-- 완전 구현: **100 / 146**
+- 완전 구현: **106 / 146**
 - 부분 구현: **4 / 146** — `회복 증폭`, `전리품 챙기기`, `보물 낚시`, `풍요`
-- 완전 구현되지 않음: **46 / 146**
-- gameplay runtime 자체가 아직 없음: **42 / 146**
-- 최신 bulk batch 신규 증강 구현: **18종** — `돌려보내기`, `상태 반사`, `강인한 정신`, `보호막 폭발`, `되밟기`, `무적`, `소지품 보존`, `물살 타기`, `기수`, `물 위 달리기`, `집중 조준`, `줍는 손`, `방패잡이`, `연료 절약`, `빠른 양조`, `경험 보존`, `위협 억제`, `순간 채굴`
+- 완전 구현되지 않음: **40 / 146**
+- gameplay runtime 자체가 아직 없음: **36 / 146**
+- 최신 batch 신규 완전 구현: **6종** — `방어 무시`, `사냥 기록`, `나무타기`, `진주 숙련`, `휴대 수류`, `사망 지점 귀환`
+- 최신 batch 부분 구현: **0종**
 
 여기서 “완전 구현”은 canonical gameplay 효과의 runtime 구현을 뜻한다. 실제 플레이테스트, 최종 VFX/사운드/HUD/UI polish까지 끝났다는 뜻은 아니다.
 
@@ -45,11 +46,13 @@ Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아�
 
 - stat / combat / protection / healing / lethal 공통 파이프라인
 - reactive/status/protection/path-echo/invincibility 공통 런타임
-- movement / aerial / flowing-water / mount 공통 런타임
+- armor-effectiveness / permanent hunt-record combat bridge
+- movement / aerial / flowing-water / mount / tree-climb 공통 런타임
 - projectile shot-action / flight-segment + focused-aim snapshot 런타임
-- 10-slot server-authoritative active engine + toggle active routing
+- 10-slot server-authoritative active engine + toggle/one-use routing
 - survival/resource + harvest/derived-break + food/fishing/breeding 런타임
 - pickup / machine / death-XP / inventory-preservation utility 런타임
+- vanilla item-use integration for ender-pearl cooldown/self-damage and portable Riptide
 - save-wide threat 0~8 live hostile scaling
 - external boss common identity/control-profile runtime
 
@@ -59,9 +62,9 @@ resource-harvest batch에서는 `풍작`, `씨앗 챙기기`, `한 조각 더`, 
 
 consumption/fishing/breeding batch에서는 `든든한 한 끼`, `낚시 감각`, `빨리 먹기`, `쌍둥이`, `먹으면서 걷기`, `비축 식사`를 완전 구현 baseline으로 연결했다. `보물 낚시`는 vanilla luck-equivalent이므로 canonical 고정 %p와 정확히 같지 않아 부분 구현이다. `풍요`는 block/mob/fishing final ordinary stack duplication baseline이 있으나 spatial capture/unique progression exclusions가 남아 부분 구현이다. 코어는 `풍요` 복제 대상에서 제외한다.
 
-최신 bulk pass에서는 기존 combat/protection/status/projectile/movement/state boundary를 재사용해 `돌려보내기`, `상태 반사`, `강인한 정신`, `보호막 폭발`, `되밟기`, `무적`, `집중 조준`, `물살 타기`, `기수`, `물 위 달리기`를 연결했다. utility boundary에는 `줍는 손`, `방패잡이`, `연료 절약`, `빠른 양조`, `경험 보존`, `소지품 보존`을 연결했고, 기존 active router를 확장해 `위협 억제`, `순간 채굴` 토글을 서버 권한으로 처리한다.
+reactive/status/mobility/utility bulk pass에서는 `돌려보내기`, `상태 반사`, `강인한 정신`, `보호막 폭발`, `되밟기`, `무적`, `집중 조준`, `물살 타기`, `기수`, `물 위 달리기`, `줍는 손`, `방패잡이`, `연료 절약`, `빠른 양조`, `경험 보존`, `소지품 보존`, `위협 억제`, `순간 채굴`을 연결했다.
 
-`비축 식사`의 작은 영구 수치와 일부 토글 상태를 위해 player state schema v2 optional `persistent_ints` map을 사용한다. 기존 save field는 유지되고 새 field가 없으면 빈 map으로 decode한다.
+최신 advanced utility/permanent progression pass에서는 기존 combat provenance, persistent state, movement, active routing, vanilla item-use boundary를 재사용해 `방어 무시`, `사냥 기록`, `나무타기`, `진주 숙련`, `휴대 수류`, `사망 지점 귀환`을 연결했다. `사냥 기록`의 entity-type별 최초 처치 스택과 `사망 지점 귀환`의 사망당 1회 사용권은 기존 schema-v2 `persistent_ints`에 저장한다.
 
 ### Save-wide threat runtime
 
@@ -79,33 +82,19 @@ consumption/fishing/breeding batch에서는 `든든한 한 끼`, `낚시 감각`
 - `minecraft:ender_dragon`
 - Chrono Dawn 6종: `time_guardian`, `chronos_warden`, `clockwork_colossus`, `entropy_keeper`, `temporal_phantom`, `time_tyrant`
 
-Pinned World Bosses 2.0.2는 서버 registry에서 token selector를 exact ID로 resolve한다. 최신 full-pack verified checkpoint에서도 11/11이 실제로 bind됐다:
+Pinned World Bosses 2.0.2는 서버 registry에서 token selector를 exact ID로 resolve하며 최신 full-pack checkpoint에서도 11/11이 bind된다. MCEndgame는 entity type 자체가 boss 여부를 결정하지 않으므로 pinned runtime의 `MobEntityDungeonBossAccessor#mcendgame$isDungeonBoss` dynamic adapter를 사용한다.
 
-- `worldbosses:sylvaron`
-- `worldbosses:aureon`
-- `worldbosses:nekhraz`
-- `worldbosses:varkhul`
-- `worldbosses:morvath`
-- `worldbosses:elyndra`
-- `worldbosses:astrael`
-- `worldbosses:shadow_king`
-- `worldbosses:dragon_mother`
-- `worldbosses:storm_griffin`
-- `worldbosses:shadow_weaver`
-
-MCEndgame는 entity type 자체가 boss 여부를 결정하지 않으므로 pinned runtime의 `MobEntityDungeonBossAccessor#mcendgame$isDungeonBoss`를 dynamic adapter로 bind한다. 최신 full-pack verified checkpoint에서도 accessor 1/1이 실제로 bind됐다.
-
-동일 identity source는 현재 threat boss curve/snapshot, `우두머리 사냥`, `전투 순환`, normal-mob 전용 `전리품 챙기기`/`풍요` exclusion, 기존 boss pull scalar, `위협 억제`의 boss exclusion에 재사용된다.
+동일 identity source는 threat boss curve/snapshot, `우두머리 사냥`, `전투 순환`, normal-mob 전용 `전리품 챙기기`/`풍요` exclusion, boss pull scalar, `위협 억제`, generic boss-origin status exclusion에 재사용된다.
 
 Compatibility contract는 pull/swap/time-stop/stun/percent-HP/wall-impact/dominate 제어 필드도 제공한다. 현재 profile 값은 기존 pull/swap 동작을 유지하도록 설정되어 있으며, 모든 미래 per-boss restriction이 각 능력에서 이미 enforcement된 것으로 간주하지 않는다.
 
-기존 common active engine은 `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`과 `능력 가속`, `이중 충전`, `재연`, `전투 순환`을 처리한다. toggle routing은 `위협 억제`, `순간 채굴`을 처리한다. broad combat runtime은 `연쇄 폭발`, `벼락`, `메아리 타격`, `약점 표식`, `속도 전환`, `육중한 일격`, `생명 파동`, `난전`, `유리 대포`, `우두머리 사냥`을 처리한다.
+기존 common active engine은 `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`과 `능력 가속`, `이중 충전`, `재연`, `전투 순환`을 처리한다. toggle routing은 `위협 억제`, `순간 채굴`, one-use routing은 `사망 지점 귀환`을 처리한다. broad combat runtime은 `연쇄 폭발`, `벼락`, `메아리 타격`, `약점 표식`, `속도 전환`, `육중한 일격`, `생명 파동`, `난전`, `유리 대포`, `우두머리 사냥`, 그리고 최신 `방어 무시`/`사냥 기록` bridge를 포함한다.
 
-Projectile runtime은 `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`을 한 shot-action/flight-segment 엔진으로 처리하며 ROOT/derived/reflected provenance를 분리한다. `집중 조준`은 root 발사 snapshot으로 이 경계에 결합한다. Movement runtime은 `숨 고르기`, `야행성`, `햇빛 체질`, `물갈퀴`, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`, `물살 타기`, `기수`, `물 위 달리기`를 포함한다.
+Projectile runtime은 `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`을 한 shot-action/flight-segment 엔진으로 처리하며 ROOT/derived/reflected provenance를 분리한다. `집중 조준`은 root 발사 snapshot으로 이 경계에 결합한다. Movement runtime은 `숨 고르기`, `야행성`, `햇빛 체질`, `물갈퀴`, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`, `물살 타기`, `기수`, `물 위 달리기`, `나무타기`를 포함한다.
 
-최신 gameplay checkpoint `898f0a595fbdb0ac7adeb344056d794cca5152af`는 Build Augmentation Survival Pack #62 (`40095699643`)에서 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke를 모두 통과했다. 서버는 92 mods, 클라이언트는 108 mods로 full-pack 부팅했다. 검증 artifact는 `augmentation-survival-pack-smoke-62` / ID `12560243897`, ZIP SHA-256 `be1b882c5d5e4ec18a2d0505605ff1b1c3028fe1c8a12c9296fd8cb8d7c557a7`이다.
+최신 gameplay checkpoint `c131c2121f9418a23db29f9701348972ec8b96bd`는 Build Augmentation Survival Pack #65 (`40099460009`)에서 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke를 모두 통과했다. 서버는 92 mods, 클라이언트는 108 mods로 full-pack 부팅했다. 검증 artifact는 `augmentation-survival-pack-smoke-65` / ID `12562406429`, ZIP SHA-256 `a0a35296563cf902d532e597ee41e54027fe7300ea36825faf04d68464f1ddc7`이다.
 
-실제 플레이어가 새 18종 증강을 사용하는 live gameplay test, 외부 보스 live encounter, threat stage 상승 수치/체감, boss snapshot, 음식/낚시/harvest/combat matrix와 multiplayer correctness는 아직 검증하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+새 6종의 실제 플레이어 사용감/동기화, 외부 보스 live encounter, threat stage 상승 수치/체감, boss snapshot, 음식/낚시/harvest/combat matrix와 multiplayer correctness는 아직 검증하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -172,6 +161,8 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 
 - 일부 구조물/외부 보스의 개별 risk/reward profile 세부 매핑
 - 일부 증강의 세부 파라미터 (`탄도 장막`, `임시 발판`, `생명 연결`, `작아지기`, `벽치기`)
+- `물약 확산`의 정확한 주변 범위
+- `손재주`의 비전투 수집 whitelist
 - 위협 단계 수치 테이블의 최종 플레이테스트 값
 - 코어 획득 확률의 최종 플레이테스트 튜닝 값
 
@@ -205,17 +196,17 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~4 기능 기준선, 8번 save-wide threat gameplay application baseline, 9번의 핵심 external boss identity adapter baseline과 100종 gameplay runtime까지 구현되어 있다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **현재 공통 기반으로 구현 가능한 쉬운/중간 난도 증강을 먼저 전수 분류하고, 같은 runtime boundary에 맞는 것은 한 번에 전부 연결하는 대형 묶음**으로 진행한다. 최소 개수 목표보다 “현재 엔진으로 안전하게 구현 가능한 것을 남기지 않는다”를 batching 기준으로 삼는다.
+현재 1~4 기능 기준선, 8번 save-wide threat gameplay application baseline, 9번의 핵심 external boss identity adapter baseline과 **106종 gameplay runtime**까지 구현되어 있다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **현재 공통 기반으로 구현 가능한 쉬운/중간 난도 증강을 먼저 전수 분류하고, 같은 runtime boundary에 맞는 것은 한 번에 전부 연결하는 대형 묶음**으로 진행한다. 최소 개수 목표보다 “현재 엔진으로 안전하게 구현 가능한 것을 남기지 않는다”를 batching 기준으로 삼는다.
 
-다음 large implementation pass는 **남은 42종 no-runtime 로스터**를 다시 계산해 가장 밀도가 높은 shared subsystem을 선택한다. 이미 고정된 의미를 현재 server-authoritative state, active routing, entity compatibility, combat provenance, world interaction boundary에 붙일 수 있는 항목을 우선하고, 세부 의미가 아직 고정되지 않은 증강은 임의 수치나 동작을 만들어 넣지 않는다.
+다음 large implementation pass는 **남은 36종 no-runtime 로스터**를 다시 계산해 가장 밀도가 높은 shared subsystem을 선택한다. 이미 고정된 의미를 현재 server-authoritative state, active routing, entity compatibility, combat provenance, world interaction boundary에 붙일 수 있는 항목을 우선한다. 세부 의미가 아직 고정되지 않은 증강은 임의 수치나 동작을 만들어 넣지 않는다.
 
 ## 현재 검증 상태
 
 검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `898f0a595fbdb0ac7adeb344056d794cca5152af`
-- JAR PRODUCED: YES — Actions run `40095699643`
+- BUILD VERIFIED: YES — `c131c2121f9418a23db29f9701348972ec8b96bd`
+- JAR PRODUCED: YES — Actions run `40099460009`
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS — 92 mods
@@ -227,62 +218,48 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - CHRONO DAWN EXACT BOSS PROFILE DEFINITIONS: PASS — 6
 - ENEMY SCALING CONTRACT INITIALIZATION: PASS — 9 stages / 4 native exact profiles / 0 namespace profiles
 - STAT CONTRACT INITIALIZATION: PASS — 7 definitions / 7 modifier groups
-- SURVIVAL CONTRACT INITIALIZATION: PASS
-- RESOURCE-HARVEST CONTRACT INITIALIZATION: PASS
-- CONSUMPTION/FISHING CONTRACT INITIALIZATION: PASS
-- COMBAT/PROTECTION/HEAL/DEATH CONTRACT INITIALIZATION: PASS
-- MOVEMENT CONTRACT INITIALIZATION: PASS
-- PROJECTILE CONTRACT INITIALIZATION: PASS
-- EXPANSION CONTRACT INITIALIZATION: PASS
-- REACTIVE COMBAT / MOBILITY UTILITY / UTILITY RUNTIME: BUILD/BOOT VERIFIED
-- GitHub Actions: `40095699643` / Build Augmentation Survival Pack #62
-- Verification artifact: `augmentation-survival-pack-smoke-62` / ID `12560243897`
-- Artifact ZIP SHA-256: `be1b882c5d5e4ec18a2d0505605ff1b1c3028fe1c8a12c9296fd8cb8d7c557a7`
+- SURVIVAL / RESOURCE-HARVEST / CONSUMPTION-FISHING-BREEDING CONTRACTS: PASS
+- COMBAT / PROTECTION / HEAL / DEATH / EXPANSION CONTRACTS: PASS
+- MOVEMENT / PROJECTILE / REACTIVE / UTILITY CONTRACTS: PASS
+- ADVANCED UTILITY CONTRACT: PASS
+- GitHub Actions: `40099460009` / Build Augmentation Survival Pack #65
+- Verification artifact: `augmentation-survival-pack-smoke-65` / ID `12562406429`
+- Artifact ZIP SHA-256: `a0a35296563cf902d532e597ee41e54027fe7300ea36825faf04d68464f1ddc7`
 
 현재 구현 범위:
 
 - ROSTER LOCKED: YES — 146
-- GAMEPLAY RUNTIME FULLY IMPLEMENTED: **100 / 146**
+- GAMEPLAY RUNTIME FULLY IMPLEMENTED: **106 / 146**
 - GAMEPLAY RUNTIME PARTIAL: **4 / 146** — `회복 증폭`, `전리품 챙기기`, `보물 낚시`, `풍요`
-- NOT FULLY IMPLEMENTED: **46 / 146**
-- NO GAMEPLAY RUNTIME YET: **42 / 146**
-- CURRENT BULK BATCH NEW AUGMENTS: **18**
+- NOT FULLY IMPLEMENTED: **40 / 146**
+- NO GAMEPLAY RUNTIME YET: **36 / 146**
+- CURRENT BATCH NEW FULL AUGMENTS: **6**
+- CURRENT BATCH PARTIAL AUGMENTS: **0**
 - FINAL COMPATIBILITY AUDIT: YES
 - INTERACTION CONTRACT V2: YES
 - CORE ACQUISITION LOOP: IMPLEMENTED BASELINE
 - PERSISTENT PLAYER AUGMENT STATE: IMPLEMENTED — schema v2 optional `persistent_ints`
-- SAVE-WIDE THREAT STATE: IMPLEMENTED
-- SAVE-WIDE HOSTILE THREAT SCALING: IMPLEMENTED BASELINE / LIVE TEST PENDING
-- NORMAL THREAT CURVE: IMPLEMENTED BASELINE
-- ELITE THREAT CURVE: IMPLEMENTED BASELINE — Warden/Elder Guardian native exact profiles
-- BOSS THREAT SNAPSHOT: IMPLEMENTED BASELINE
+- SAVE-WIDE THREAT STATE / HOSTILE SCALING / BOSS SNAPSHOT: IMPLEMENTED BASELINE / LIVE TEST PENDING
 - EXTERNAL BOSS IDENTITY ADAPTER: IMPLEMENTED BASELINE / FULL-PACK BINDING VERIFIED
 - CORE / DEVICE / 3-CHOICE TRANSACTION: IMPLEMENTED BASELINE
 - SECOND CHOICE ATOMIC 2-PICK: IMPLEMENTED
 - 3:1 CORE UPGRADE ONE/ALL: IMPLEMENTED
 - FUNCTIONAL DEVICE CARD UI: IMPLEMENTED BASELINE
-- UNCONDITIONAL/UTILITY STAT CONTRACT: IMPLEMENTED — 7 definitions / 7 modifier groups
-- SHARED COMBAT/PROTECTION/HEAL/LETHAL RUNTIMES: IMPLEMENTED BASELINE
-- REACTIVE/STATUS/PROTECTION RUNTIME: IMPLEMENTED BASELINE
-- SHARED MOVEMENT / AERIAL / MOBILITY UTILITY RUNTIME: IMPLEMENTED BASELINE
+- SHARED COMBAT / PROTECTION / HEAL / LETHAL / REACTIVE RUNTIMES: IMPLEMENTED BASELINE
+- ADVANCED ARMOR / PERMANENT HUNT RECORD RUNTIME: IMPLEMENTED BASELINE
+- SHARED MOVEMENT / AERIAL / MOBILITY / TREE-CLIMB RUNTIME: IMPLEMENTED BASELINE
 - PROJECTILE SHOT-ACTION / FLIGHT-SEGMENT RUNTIME: IMPLEMENTED BASELINE
-- COMMON ACTIVE-ABILITY ENGINE + TOGGLE ROUTING: IMPLEMENTED BASELINE
-- BROAD COMBAT EXPANSION RUNTIME: IMPLEMENTED BASELINE
-- SHARED SURVIVAL / RESOURCE RUNTIME: IMPLEMENTED BASELINE
-- RESOURCE-HARVEST / DERIVED BREAK RUNTIME: IMPLEMENTED BASELINE
-- CONSUMPTION / FISHING / BREEDING RUNTIME: IMPLEMENTED BASELINE
-- PICKUP / MACHINE / DEATH PRESERVATION UTILITY RUNTIME: IMPLEMENTED BASELINE
+- COMMON ACTIVE-ABILITY ENGINE + TOGGLE/ONE-USE ROUTING: IMPLEMENTED BASELINE
+- SHARED SURVIVAL / RESOURCE / HARVEST / CONSUMPTION RUNTIMES: IMPLEMENTED BASELINE
+- PICKUP / MACHINE / DEATH PRESERVATION / ITEM-USE UTILITY RUNTIME: IMPLEMENTED BASELINE
 - FINAL ORDINARY DROP `풍요` RUNTIME: PARTIAL BASELINE
 - FINAL DEVICE/ACTIVE/COMBAT/RESOURCE/THREAT MODEL-TEXTURE-VFX-SOUND-HUD: NOT COMPLETE
-- NEW 18-AUGMENT BULK PASS LIVE-PLAYER TESTED: NO
+- NEW 6-AUGMENT BATCH LIVE-PLAYER TESTED: NO
 - EXTERNAL BOSS LIVE ENCOUNTER TESTED: NO
 - THREAT LIVE-PLAYER TESTED: NO
-- THREAT STAGE-RISE LOADED-MOB REFRESH LIVE TESTED: NO
-- BOSS THREAT SNAPSHOT LIVE TESTED: NO
 - CONSUMPTION/FISHING/BREEDING LIVE-PLAYER TESTED: NO
 - ABUNDANCE DROP MATRIX LIVE TESTED: NO
 - RESOURCE-HARVEST LIVE-PLAYER TESTED: NO
-- SURVIVAL/RESOURCE LIVE-PLAYER TESTED: NO
 - ACTIVE ENGINE LIVE-PLAYER TESTED: NO
 - PROJECTILE LIVE-PLAYER TESTED: NO
 - MOVEMENT LIVE-PLAYER TESTED: NO
