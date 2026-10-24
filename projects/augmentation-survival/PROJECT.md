@@ -25,19 +25,31 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / COMBAT+MOVEMENT+PROJECTILE+ACTIVE SHARED RUNTIMES IMPLEMENTED / NEXT BULK SYSTEM BATCH`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / COMBAT+MOVEMENT+PROJECTILE+ACTIVE+SURVIVAL SHARED RUNTIMES IMPLEMENTED / LOOT+FARMING BULK NEXT`
 
 외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. 영구 stat runtime을 시작점으로 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치/timed state, augment-generated healing, lethal interception, protection/delayed-damage, shared movement/aerial, shot-action + projectile flight-segment에 이어 **common active engine + broad combat expansion**까지 확장했다.
+Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource 순으로 공통 런타임 경계를 확장했다.
 
-최신 대형 배치에서는 공통 액티브 입력/쿨다운/charge/replay 경계를 만들고 `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`을 연결했다. 여기에 `능력 가속`, `이중 충전`, `재연`, `전투 순환`을 같은 엔진의 메타 규칙으로 붙였고, 기존 전투/회복/provenance 경계를 재사용해 `연쇄 폭발`, `벼락`, `메아리 타격`, `약점 표식`, `속도 전환`, `육중한 일격`, `생명 파동`, `난전`, `유리 대포`, `우두머리 사냥`까지 한 번에 연결했다. 총 20종이 이번 shared-system batch에 포함된다.
+현재 146종 기준 gameplay runtime 진행도는 다음과 같다.
 
-현재 액티브 입력 기능 기준선은 `증강 스킬 모드` 기본키인 Left Alt를 누른 채 `1..0`으로 10개 슬롯을 요청하는 방식이다. 클라이언트는 슬롯 번호만 보내고 실제 보유 여부, 슬롯 해석, cooldown/charge, 대상 판정과 결과는 서버가 결정한다. 최종 active-slot 관리 UI는 아직 없으므로 기존 persistent `activeSlots`를 우선 사용하고, 설정되지 않은 경우 보유한 지원 액티브를 자동 채우는 functional fallback이 있다. 이 입력은 아직 실제 플레이로 조작감을 검수하지 않았으며 modifier+숫자키가 vanilla hotbar 전환도 동시에 일으킬 수 있어 최종 UX로 간주하지 않는다.
+- 완전 구현: **69 / 146**
+- 부분 구현: **1 / 146** — `회복 증폭`
+- 완전 구현되지 않음: **77 / 146**
+- gameplay runtime 자체가 아직 없음: **76 / 146**
+- 최신 survival/resource batch 구현: **17종**
 
-기존 projectile batch의 `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`과 movement batch의 `숨 고르기`, `야행성` 이동속도 facet, `햇빛 체질` 이동속도 facet, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`도 유지된다. `야행성` 채굴속도와 `햇빛 체질` 자연회복 간격, `발 안 묶이기`, `물살 타기`, `매달리기`, `탄성 저장`, `물 위 달리기`처럼 별도 매질/충돌 물리가 필요한 이동기는 별도 physics batch 대상으로 남아 있다. `탄성 저장`의 추진력 변환식은 정본에 충분히 명시되지 않아 임의 수치를 만들지 않는다.
+여기서 “완전 구현”은 canonical gameplay 효과의 runtime 구현을 뜻한다. 실제 플레이테스트, 최종 VFX/사운드/HUD/UI polish까지 끝났다는 뜻은 아니다.
 
-최신 active/combat expansion batch는 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어 액티브 입력/쿨다운/이중충전/재연, Better Combat 실제 공격 cadence, 새 전투 효과의 수치/체감, 외부 보스 control, multiplayer mark ownership은 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+최신 survival/resource batch에서는 `광부의 손`, `벌목 요령`, `적게 먹기`, `물갈퀴`, `숨 오래 참기`, `추위 적응`, `긴 팔`, `물속 작업`, `발 안 묶이기`, `도구 관리`, `방어구 관리`, `밤눈`, `연속 채굴`, `자동 보충`, `회복력`을 새로 연결하고 기존 부분 구현이던 `야행성`의 야간 채굴속도 facet과 `햇빛 체질`의 주간 자연회복 간격 facet을 완료했다.
+
+채굴속도 계열은 같은 스탯의 보너스를 합산한 뒤 한 번 적용하고, `긴 팔`, `물속 작업`, `발 안 묶이기`, `숨 오래 참기`는 가능한 범위에서 vanilla attribute를 재사용한다. 자연회복 계열은 별도 가짜 heal tick을 만들지 않고 vanilla natural-regeneration timer를 가속한다. 내구도 계열은 vanilla Unbreaking 앞의 durability-loss event 자체를 확률적으로 취소한다. `자동 보충`은 선택된 hotbar stack이 소진됐을 때 main inventory의 동일 item+components stack을 이동시킨다.
+
+기존 common active engine에서는 `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`과 `능력 가속`, `이중 충전`, `재연`, `전투 순환`을 처리한다. broad combat runtime은 `연쇄 폭발`, `벼락`, `메아리 타격`, `약점 표식`, `속도 전환`, `육중한 일격`, `생명 파동`, `난전`, `유리 대포`, `우두머리 사냥`을 처리한다.
+
+Projectile runtime은 `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`을 한 shot-action/flight-segment 엔진으로 처리하며 ROOT/derived/reflected provenance를 분리한다. Movement runtime은 `숨 고르기`, `야행성`, `햇빛 체질`, `물갈퀴`, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`를 포함한다.
+
+최신 gameplay checkpoint `1c9cae521727e9280b4ba0e42159916284e32205`는 Build Augmentation Survival Pack #47에서 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke를 모두 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 survival/resource 수치와 조작감, Better Combat cadence, projectile matrix, active input, multiplayer correctness는 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -136,66 +148,62 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~3의 기능 기준선과 4번의 stat + shared combat/protection/heal/death + movement/aerial + projectile + active/combat vertical slice가 구현 중이다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **현재 공통 기반으로 구현 가능한 쉬운/중간 난도 증강을 먼저 전수 분류하고, 같은 runtime boundary에 맞는 것은 한 번에 전부 연결하는 대형 묶음**으로 진행한다. 최소 개수 목표보다 “현재 엔진으로 안전하게 구현 가능한 것을 남기지 않는다”를 batching 기준으로 삼는다.
+현재 1~3의 기능 기준선과 4번의 주요 shared runtime vertical slice가 구현되어 있다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **현재 공통 기반으로 구현 가능한 쉬운/중간 난도 증강을 먼저 전수 분류하고, 같은 runtime boundary에 맞는 것은 한 번에 전부 연결하는 대형 묶음**으로 진행한다. 최소 개수 목표보다 “현재 엔진으로 안전하게 구현 가능한 것을 남기지 않는다”를 batching 기준으로 삼는다.
+
+다음 bulk unit은 block-output / loot / farming 경계다. `풍작`, 씨앗/재파종, 추가 드롭, 수확 범위 등 compatible canonical augments를 전수 inventory한 뒤 Fortune/Silk Touch/Farmer's Delight 원본 동작을 보존하는 공통 출력 파이프라인으로 묶는다.
 
 ## 현재 검증 상태
 
 검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `960bc9739ac92989499f6d177438aec730503ae4`
+- BUILD VERIFIED: YES — `1c9cae521727e9280b4ba0e42159916284e32205`
 - JAR PRODUCED: YES
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
-- STAT CONTRACT INITIALIZATION: PASS
+- STAT CONTRACT INITIALIZATION: PASS — 7 definitions / 7 modifier groups
+- SURVIVAL CONTRACT INITIALIZATION: PASS
 - COMBAT/PROTECTION/HEAL/DEATH CONTRACT INITIALIZATION: PASS
 - MOVEMENT CONTRACT INITIALIZATION: PASS
 - PROJECTILE CONTRACT INITIALIZATION: PASS
 - EXPANSION CONTRACT INITIALIZATION: PASS
-- GitHub Actions: `40076587240` / Build Augmentation Survival Pack #46
-- Verification artifact: `augmentation-survival-pack-smoke-46` / ID `12552963409`
-- Artifact ZIP SHA-256: `940bf01dca404c463dd54a6f1a88caeb0535152f6b5d4743bb471cf910ff8d04`
+- GitHub Actions: `40078301895` / Build Augmentation Survival Pack #47
+- Verification artifact: `augmentation-survival-pack-smoke-47` / ID `12554605978`
+- Artifact ZIP SHA-256: `39a861e050b7b2054eb3469f1d97cf2b454ad48790466de2176ceb461a35781d`
 
 현재 구현 범위:
 
 - ROSTER LOCKED: YES — 146
+- GAMEPLAY RUNTIME FULLY IMPLEMENTED: **69 / 146**
+- GAMEPLAY RUNTIME PARTIAL: **1 / 146** — `회복 증폭`
+- NOT FULLY IMPLEMENTED: **77 / 146**
+- NO GAMEPLAY RUNTIME YET: **76 / 146**
+- CURRENT BATCH COMPLETED: **17**
 - FINAL COMPATIBILITY AUDIT: YES
 - INTERACTION CONTRACT V2: YES
-- CORE ACQUISITION LOOP DESIGNED: YES
-- INITIAL CORE WEIGHTS DEFINED: YES
-- IMPLEMENTATION PLAN: YES
+- CORE ACQUISITION LOOP: IMPLEMENTED BASELINE
 - PERSISTENT PLAYER AUGMENT STATE: IMPLEMENTED
-- SAVE-WIDE THREAT STATE: IMPLEMENTED
-- 146 RUNTIME CATALOG: IMPLEMENTED
-- CORE ACQUISITION RUNTIME: IMPLEMENTED BASELINE
+- SAVE-WIDE THREAT STATE: IMPLEMENTED / LIVE HOSTILE SCALING INCOMPLETE
 - CORE / DEVICE / 3-CHOICE TRANSACTION: IMPLEMENTED BASELINE
 - SECOND CHOICE ATOMIC 2-PICK: IMPLEMENTED
 - 3:1 CORE UPGRADE ONE/ALL: IMPLEMENTED
 - FUNCTIONAL DEVICE CARD UI: IMPLEMENTED BASELINE
-- UNCONDITIONAL STAT CONTRACT: IMPLEMENTED BASELINE
-- SHARED COMBAT PROVENANCE: IMPLEMENTED BASELINE
-- PROTECTION / DELAYED-DAMAGE ENGINE: IMPLEMENTED BASELINE
-- AUGMENT-GENERATED HEALING PATH: IMPLEMENTED BASELINE
-- LETHAL-DAMAGE CHAIN: IMPLEMENTED BASELINE
+- UNCONDITIONAL/UTILITY STAT CONTRACT: IMPLEMENTED — 7 definitions / 7 modifier groups
+- SHARED COMBAT/PROTECTION/HEAL/LETHAL RUNTIMES: IMPLEMENTED BASELINE
 - SHARED MOVEMENT / AERIAL RUNTIME: IMPLEMENTED BASELINE
 - PROJECTILE SHOT-ACTION / FLIGHT-SEGMENT RUNTIME: IMPLEMENTED BASELINE
 - COMMON ACTIVE-ABILITY ENGINE: IMPLEMENTED BASELINE
 - BROAD COMBAT EXPANSION RUNTIME: IMPLEMENTED BASELINE
-- `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`: IMPLEMENTED BASELINE / LIVE TEST PENDING
-- `능력 가속`, `이중 충전`, `재연`, `전투 순환`: PARTIAL ROSTER INTEGRATION — CURRENT SIX ACTIVES
-- `연쇄 폭발`, `벼락`, `메아리 타격`, `약점 표식`, `속도 전환`, `육중한 일격`, `생명 파동`, `난전`, `유리 대포`: IMPLEMENTED BASELINE / LIVE TEST PENDING
-- `우두머리 사냥`: PARTIAL — EXACT CONFIGURED BOSS IDENTITIES ONLY
-- `약점 표식`: MULTIPLAYER OWNERSHIP FIX PENDING — CURRENTLY ONE MARK OWNER PER TARGET
-- `야행성`: PARTIAL — NIGHT MOVEMENT IMPLEMENTED / MINING SPEED PENDING
-- `햇빛 체질`: PARTIAL — DAY MOVEMENT IMPLEMENTED / NATURAL REGEN INTERVAL PENDING
-- COLLISION/MEDIUM-HEAVY MOVEMENT MECHANICS: NOT IMPLEMENTED
-- SAVE-WIDE THREAT LIVE HOSTILE SCALING: NOT COMPLETE
-- FINAL DEVICE/ACTIVE/COMBAT MODEL-TEXTURE-VFX-SOUND-HUD: NOT COMPLETE
+- SHARED SURVIVAL / RESOURCE RUNTIME: IMPLEMENTED BASELINE
+- `야행성`: COMPLETE GAMEPLAY RUNTIME / LIVE TEST PENDING
+- `햇빛 체질`: COMPLETE GAMEPLAY RUNTIME / LIVE TEST PENDING
+- `광부의 손`, `벌목 요령`, `적게 먹기`, `물갈퀴`, `숨 오래 참기`, `추위 적응`, `긴 팔`, `물속 작업`, `발 안 묶이기`, `도구 관리`, `방어구 관리`, `밤눈`, `연속 채굴`, `자동 보충`, `회복력`: IMPLEMENTED / LIVE TEST PENDING
+- DROP/FARMING OUTPUT SHARED ENGINE: NOT IMPLEMENTED
+- FINAL DEVICE/ACTIVE/COMBAT/RESOURCE MODEL-TEXTURE-VFX-SOUND-HUD: NOT COMPLETE
+- SURVIVAL/RESOURCE LIVE-PLAYER TESTED: NO
 - ACTIVE ENGINE LIVE-PLAYER TESTED: NO
-- ACTIVE INPUT/COOLDOWN/DOUBLE-CHARGE/REPLAY LIVE TESTED: NO
-- BROAD COMBAT EXPANSION LIVE TESTED: NO
 - PROJECTILE LIVE-PLAYER TESTED: NO
 - MOVEMENT LIVE-PLAYER TESTED: NO
 - PROTECTION PIPELINE LIVE-PLAYER TESTED: NO
