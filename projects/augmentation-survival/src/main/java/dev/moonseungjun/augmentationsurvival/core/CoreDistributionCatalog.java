@@ -50,6 +50,25 @@ public final class CoreDistributionCatalog {
         return catalog;
     }
 
+    public static Optional<AugmentTier> rollDistributionTemplate(
+            String profileId,
+            double chanceMultiplier,
+            RandomSource random
+    ) {
+        DistributionTemplate profile = current().distributionTemplates().get(profileId);
+        if (profile == null) {
+            throw new IllegalArgumentException("Unknown core distribution profile: " + profileId);
+        }
+        if (!Double.isFinite(chanceMultiplier) || chanceMultiplier < 0.0) {
+            throw new IllegalArgumentException("chanceMultiplier must be finite and non-negative");
+        }
+        double chance = Math.min(1.0, profile.coreRollChance() * chanceMultiplier);
+        if (random.nextDouble() >= chance) {
+            return Optional.empty();
+        }
+        return Optional.of(rollTier(profile.weights(), random));
+    }
+
     public static Optional<AugmentTier> rollMobProfile(String profileId, RandomSource random) {
         MobProfile profile = current().mobProfiles().get(profileId);
         if (profile == null) {
