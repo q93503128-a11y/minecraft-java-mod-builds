@@ -66,6 +66,35 @@ public final class AugmentCatalog {
         return current().byTier().getOrDefault(tier, List.of());
     }
 
+    public static List<AugmentDefinition> allDefinitions() {
+        return List.copyOf(current().byId().values());
+    }
+
+    public static int indexOf(String id) {
+        int index = 0;
+        for (String candidateId : current().byId().keySet()) {
+            if (candidateId.equals(id)) {
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
+
+    public static AugmentDefinition definitionAt(int index) {
+        if (index < 0 || index >= current().byId().size()) {
+            throw new IllegalArgumentException("Augment catalog index out of range: " + index);
+        }
+        int currentIndex = 0;
+        for (AugmentDefinition definition : current().byId().values()) {
+            if (currentIndex == index) {
+                return definition;
+            }
+            currentIndex++;
+        }
+        throw new IllegalStateException("Augment catalog index resolution failed: " + index);
+    }
+
     public static double powerScore(Map<String, Integer> levels) {
         double score = 0.0;
         for (Map.Entry<String, Integer> entry : levels.entrySet()) {
