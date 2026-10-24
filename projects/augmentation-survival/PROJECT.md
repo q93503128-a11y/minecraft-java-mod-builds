@@ -25,11 +25,13 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / REFERENCE AUGMENT SLICE NEXT`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / REFERENCE STAT SLICE IMPLEMENTED / COMBAT PIPELINE NEXT`
 
-외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 시작했다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
+외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-146종 증강의 실제 gameplay effect는 아직 구현되지 않았다. 다음 작업은 146개를 한 번에 하드코딩하는 것이 아니라 `강건함`/`속공`부터 공통 stat behavior를 검증하는 reference vertical slice다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+Reference vertical slice의 첫 단계로 `강건함`과 `속공`의 실제 gameplay stat runtime을 구현했다. 영구 augment level을 source of truth로 두고, 접속/리스폰/상태 변경 시 transient vanilla attribute modifier를 재조정한다. 동일 stat axis의 양의 보너스를 하나의 결정적 modifier로 합칠 수 있는 data-driven contract를 사용하며 매 tick 전수 검사는 하지 않는다.
+
+`강건함`/`속공` 코드는 build, full pack dependency inspection, dedicated-server smoke, client boot smoke까지 통과했다. 다만 실제 플레이어를 사용한 즉시 적용/재접속/사망 후 재적용, Better Combat 공격속도 체감, 중복 modifier 방지의 gameplay playtest는 아직 수행하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -128,18 +130,18 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~3의 기능 기준선이 구현되었고 다음 작업은 4번이다. 146개를 한 번에 독립 하드코딩하지 않는다.
+현재 1~3의 기능 기준선과 4번의 첫 stat slice(`강건함`, `속공`)가 구현되었다. 다음은 `흡혈`, `한 번 버티기`, shield/damage-delay 중 한 경로로 공통 전투/회복/사망 pipeline을 세우는 작업이다. 146개를 한 번에 독립 하드코딩하지 않는다.
 
 ## 현재 검증 상태
 
-검증된 M1C 코드 체크포인트:
+검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `168cb49c37435ade9207017e25a428adf9209dff`
+- BUILD VERIFIED: YES — `3911b238d234d1bf335726befaaa2d1e39e7fd11`
 - JAR PRODUCED: YES
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
-- GitHub Actions: `40064257071` / Build Augmentation Survival Pack #33
+- GitHub Actions: `40065641689` / Build Augmentation Survival Pack #34
 
 현재 구현 범위:
 
@@ -157,8 +159,13 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - SECOND CHOICE ATOMIC 2-PICK: IMPLEMENTED
 - 3:1 CORE UPGRADE ONE/ALL: IMPLEMENTED
 - FUNCTIONAL DEVICE CARD UI: IMPLEMENTED BASELINE
+- REFERENCE STAT CONTRACT: IMPLEMENTED
+- `강건함` GAMEPLAY EFFECT: IMPLEMENTED / LIVE-PLAYER TEST PENDING
+- `속공` GAMEPLAY EFFECT: IMPLEMENTED / BETTER COMBAT LIVE TEST PENDING
 - FINAL DEVICE MODEL/TEXTURE/VFX/SOUND: NOT IMPLEMENTED
-- AUGMENT GAMEPLAY EFFECT RUNTIME: NOT IMPLEMENTED
+- REMAINING AUGMENT GAMEPLAY EFFECT RUNTIME: NOT IMPLEMENTED
+- STAT AUGMENT LIVE-PLAYER TESTED: NO
+- STAT RECONNECT/DEATH TESTED: NO
 - DEVICE FLOW PLAYTESTED: NO
 - UI VISUAL REVIEW: NO
 - BETTER COMBAT GAMEPLAY TESTED: NO
