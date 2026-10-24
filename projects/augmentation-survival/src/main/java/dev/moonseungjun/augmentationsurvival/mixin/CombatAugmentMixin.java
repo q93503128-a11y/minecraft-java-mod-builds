@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -23,10 +24,11 @@ abstract class CombatAugmentMixin {
             DamageSource source,
             float originalDamage
     ) {
+        float threatScaled = ThreatScalingService.modifyHostileOutgoingDamage(source, damage);
         return CombatAugmentService.modifyOutgoingDamage(
                 (LivingEntity) (Object) this,
                 source,
-                damage
+                threatScaled
         );
     }
 
