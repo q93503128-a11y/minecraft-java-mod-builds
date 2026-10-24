@@ -316,7 +316,7 @@ public final class CoreSourceResolver {
     public record StructureResolution(
             String distributionProfile,
             double coreRollMultiplier,
-            boolean excluded
+            boolean excludedSource
     ) {
         public static StructureResolution none() {
             return new StructureResolution(null, 0.0, false);
