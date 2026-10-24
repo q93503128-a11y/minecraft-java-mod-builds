@@ -16,7 +16,8 @@ public record AugmentationPlayerState(
         Map<String, Integer> augmentLevels,
         List<String> activeSlots,
         Map<String, Long> cooldownReadyTicks,
-        List<String> stolenAuthorityBossIds
+        List<String> stolenAuthorityBossIds,
+        List<String> bossFirstKillRewardIds
 ) {
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
@@ -34,7 +35,10 @@ public record AugmentationPlayerState(
                     .forGetter(AugmentationPlayerState::cooldownReadyTicks),
             Codec.STRING.listOf()
                     .optionalFieldOf("stolen_authority_boss_ids", List.of())
-                    .forGetter(AugmentationPlayerState::stolenAuthorityBossIds)
+                    .forGetter(AugmentationPlayerState::stolenAuthorityBossIds),
+            Codec.STRING.listOf()
+                    .optionalFieldOf("boss_first_kill_reward_ids", List.of())
+                    .forGetter(AugmentationPlayerState::bossFirstKillRewardIds)
     ).apply(instance, AugmentationPlayerState::new));
 
     public AugmentationPlayerState {
@@ -48,6 +52,7 @@ public record AugmentationPlayerState(
         activeSlots = List.copyOf(activeSlots);
         cooldownReadyTicks = Map.copyOf(cooldownReadyTicks);
         stolenAuthorityBossIds = List.copyOf(stolenAuthorityBossIds);
+        bossFirstKillRewardIds = List.copyOf(bossFirstKillRewardIds);
     }
 
     public static AugmentationPlayerState initial() {
@@ -56,7 +61,31 @@ public record AugmentationPlayerState(
                 Map.of(),
                 List.of(),
                 Map.of(),
+                List.of(),
                 List.of()
+        );
+    }
+
+    public boolean hasBossFirstKillReward(String bossId) {
+        return bossFirstKillRewardIds.contains(bossId);
+    }
+
+    public AugmentationPlayerState withBossFirstKillReward(String bossId) {
+        if (bossId == null || bossId.isBlank()) {
+            throw new IllegalArgumentException("bossId must not be blank");
+        }
+        if (hasBossFirstKillReward(bossId)) {
+            return this;
+        }
+        java.util.ArrayList<String> claimed = new java.util.ArrayList<>(bossFirstKillRewardIds);
+        claimed.add(bossId);
+        return new AugmentationPlayerState(
+                schemaVersion,
+                augmentLevels,
+                activeSlots,
+                cooldownReadyTicks,
+                stolenAuthorityBossIds,
+                claimed
         );
     }
 }
