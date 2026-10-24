@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.projectile.FocusedAimAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileTuning;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -28,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Shot-action boundary shared by arrow saving and scatter-shot auxiliary projectiles. */
+/** Shot-action boundary shared by arrow saving, focused aim and scatter-shot projectiles. */
 @Mixin(ProjectileWeaponItem.class)
 public abstract class ProjectileWeaponItemAugmentMixin {
     private static final String ARROW_SAVER_ID = id("arrow_saver");
@@ -106,6 +107,9 @@ public abstract class ProjectileWeaponItemAugmentMixin {
         }
         if (self instanceof BowItem && power < 2.99F) {
             return;
+        }
+        if (self instanceof BowItem) {
+            FocusedAimAugmentService.prepareBowShot(player);
         }
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);

@@ -1,6 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.network;
 
-import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
+import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
@@ -16,7 +16,7 @@ public final class ActiveAbilityNetworking {
         );
         ServerPlayNetworking.registerGlobalReceiver(
                 ActiveAbilityRequestPayload.TYPE,
-                (payload, context) -> ActiveAbilityService.tryUseSlot(
+                (payload, context) -> ActiveAbilityRouter.tryUseSlot(
                         context.player(),
                         payload.slotIndex()
                 )

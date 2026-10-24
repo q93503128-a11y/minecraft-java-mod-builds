@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.projectile.FocusedAimAugmentService;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,6 +28,14 @@ abstract class CombatAugmentMixin {
         float threatScaled = CombatProvenanceContext.isDelayedDamage()
                 ? damage
                 : ThreatScalingService.modifyHostileOutgoingDamage(source, damage);
+        Float focused = FocusedAimAugmentService.modifyFocusedProjectileDamage(
+                (LivingEntity) (Object) this,
+                source,
+                threatScaled
+        );
+        if (focused != null) {
+            return focused;
+        }
         return CombatAugmentService.modifyOutgoingDamage(
                 (LivingEntity) (Object) this,
                 source,

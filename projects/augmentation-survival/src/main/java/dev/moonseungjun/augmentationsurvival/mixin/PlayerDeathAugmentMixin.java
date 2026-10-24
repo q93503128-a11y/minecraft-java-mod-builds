@@ -1,6 +1,8 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.moonseungjun.augmentationsurvival.augment.survival.DeathPreservationAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -9,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Prevents actual-death inventory drops for the keep-inventory augment. */
+/** Actual-death inventory and XP preservation boundaries. */
 @Mixin(Player.class)
 public abstract class PlayerDeathAugmentMixin {
     @Inject(
@@ -22,5 +24,16 @@ public abstract class PlayerDeathAugmentMixin {
                 && DeathPreservationAugmentService.shouldKeepInventory(player)) {
             ci.cancel();
         }
+    }
+
+    @ModifyReturnValue(
+            method = "getBaseExperienceReward(Lnet/minecraft/server/level/ServerLevel;)I",
+            at = @At("RETURN")
+    )
+    private int augmentationSurvival$reduceDroppedExperience(int original, ServerLevel level) {
+        if ((Object) this instanceof ServerPlayer player) {
+            return UtilityAugmentService.modifyDeathExperienceReward(player, original);
+        }
+        return original;
     }
 }

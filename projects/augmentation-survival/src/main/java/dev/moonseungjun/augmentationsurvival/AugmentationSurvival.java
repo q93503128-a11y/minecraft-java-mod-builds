@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival;
 
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
@@ -13,6 +14,7 @@ import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityAug
 import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityTuning;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementTuning;
+import dev.moonseungjun.augmentationsurvival.augment.projectile.FocusedAimAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileTuning;
 import dev.moonseungjun.augmentationsurvival.augment.resource.AbundanceService;
@@ -25,6 +27,8 @@ import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.survival.DeathPreservationAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
+import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardCatalog;
 import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardService;
@@ -77,12 +81,15 @@ public final class AugmentationSurvival implements ModInitializer {
         CombatTuning.initialize();
         ExpansionTuning.initialize();
         ReactiveCombatTuning.initialize();
+        UtilityAugmentTuning.initialize();
         ProtectionAugmentService.initialize();
         ActiveAbilityService.initialize();
+        ActiveAbilityRouter.initialize();
         CombatExpansionService.initialize();
         CombatAugmentService.initialize();
         ReactiveCombatAugmentService.initialize();
         DeathPreservationAugmentService.initialize();
+        UtilityAugmentService.initialize();
         ActiveAbilityNetworking.initialize();
         MovementTuning.initialize();
         MobilityUtilityTuning.initialize();
@@ -90,6 +97,7 @@ public final class AugmentationSurvival implements ModInitializer {
         MobilityUtilityAugmentService.initialize();
         MovementNetworking.initialize();
         ProjectileTuning.initialize();
+        FocusedAimAugmentService.initialize();
         ProjectileAugmentService.initialize();
         CoreDistributionCatalog.initialize();
         CoreSourceResolver.initialize();
