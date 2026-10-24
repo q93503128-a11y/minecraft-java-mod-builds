@@ -1,7 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
-import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -10,11 +9,10 @@ import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Hooks status application, invulnerable knockback and shield-disable duration. */
+/** Hooks status application and invulnerable knockback at LivingEntity-owned boundaries. */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityReactiveAugmentMixin {
     @Inject(
@@ -67,21 +65,6 @@ public abstract class LivingEntityReactiveAugmentMixin {
             CallbackInfo ci
     ) {
         augmentationSurvival$cancelInvulnerableKnockback(ci);
-    }
-
-    @ModifyArg(
-            method = "blockUsingItem",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/component/BlocksAttacks;disable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/LivingEntity;FLnet/minecraft/world/item/ItemStack;)V"
-            ),
-            index = 2
-    )
-    private float augmentationSurvival$reduceShieldDisableDuration(float originalSeconds) {
-        if ((Object) this instanceof ServerPlayer player) {
-            return UtilityAugmentService.modifyShieldDisableSeconds(player, originalSeconds);
-        }
-        return originalSeconds;
     }
 
     private void augmentationSurvival$cancelInvulnerableKnockback(CallbackInfo ci) {
