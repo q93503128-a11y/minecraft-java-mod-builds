@@ -1,7 +1,13 @@
 # Augmentation Survival — Enemy Power Scaling Design
 
 Date: 2026-10-24
-Status: canonical architecture / numeric table provisional until playtest
+Status: CANONICAL INITIAL IMPLEMENTATION BASELINE / NUMBERS PLAYTEST-TUNABLE
+
+구현 수치 정본:
+
+- `src/main/resources/data/augmentation_survival/augmentation/enemy_scaling_contract.json`
+
+이 문서는 적 성장의 의도와 상호작용을 설명하고, 실제 단계 경계/배율은 위 JSON 계약을 사용한다.
 
 ## 1. 목적
 
@@ -17,6 +23,8 @@ Status: canonical architecture / numeric table provisional until playtest
 이다.
 
 따라서 적은 플레이어 성장의 100%를 따라가지 않고 **부분적으로만 단계 상승**한다. 특히 공격력보다 최대체력을 더 크게 올려 후반의 광역/연쇄/추가타 화력을 받아낼 시간을 확보한다.
+
+위협 5는 적 성장의 **하드 캡**이다. 플레이어 증강 파워는 이후에도 계속 성장하므로 후반 파워 판타지를 영구적인 rubber-band scaling으로 상쇄하지 않는다.
 
 ## 2. 기술 구조
 
@@ -38,9 +46,9 @@ Minecraft/Fabric의 엔티티 attribute를 서버에서 조정하는 방식으�
 
 ## 3. 플레이어 증강 파워 점수
 
-각 플레이어의 획득 증강 레벨을 내부 power score로 환산한다.
+각 플레이어의 **획득한 증강 레벨**을 내부 power score로 환산한다.
 
-초기 권장 가중치:
+초기 구현 가중치:
 
 - 일반 레벨 1개: 1
 - 고급 레벨 1개: 1.5
@@ -51,7 +59,7 @@ Minecraft/Fabric의 엔티티 attribute를 서버에서 조정하는 방식으�
 
 이 점수는 플레이어에게 직접 보여주는 레벨이 아니라 적 스케일링용 내부 지표다.
 
-개별 증강의 실제 체감 차이가 매우 크므로 최종 구현에서는 필요 시 일부 고성능 증강에 별도 power weight를 줄 수 있다.
+개별 증강의 실제 체감 차이가 매우 크므로 플레이테스트에서 필요하면 일부 고성능 증강에 별도 power weight를 줄 수 있다.
 
 ## 4. 월드 전체 공통 위협 단계
 
@@ -82,7 +90,7 @@ Minecraft/Fabric의 엔티티 attribute를 서버에서 조정하는 방식으�
 
 보스는 전투 도중 갑자기 체력이 튀는 것을 막기 위해 **encounter 시작 시 현재 월드 위협 단계를 스냅샷**하고 해당 전투 동안 고정한다.
 
-## 5. 일반 적대몹 위협 단계 — 초기 플레이테스트 테이블
+## 5. 일반 적대몹 위협 단계 — 초기 구현 테이블
 
 | 단계 | world power score | 최대체력 | 공격 피해 | 이동속도 | 방어력 | 넉백 저항 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -93,14 +101,17 @@ Minecraft/Fabric의 엔티티 attribute를 서버에서 조정하는 방식으�
 | 4 | 175~259 | x3.00 | x1.55 | x1.075 | +4 | +0.05 |
 | 5 | 260+ | x4.50 | x1.80 | x1.10 | +6 | +0.10 |
 
-이 수치는 첫 실제 전투 플레이테스트 전의 시작점이다.
+이 수치는 첫 실제 전투 플레이테스트의 시작값이다.
 
 중요:
 
 - **체력 상승을 공격력보다 크게 둔다.** 후반 증강은 광역/추가타/폭딜이 크게 늘어나기 때문이다.
 - 이동속도는 조금만 올린다. 과도한 속도 증가는 전투 난이도보다 조작 스트레스를 만든다.
 - 일반몹이 강해져도 플레이어의 영웅/전설/신화 파워 상승률이 더 크도록 한다.
-- 단계 5에서도 단순 HP 스펀지가 되지 않는지는 실제 TTK로 검증한다.
+- 위협 5 이후 적 배율은 더 오르지 않는다.
+- 단계 5에서도 단순 HP 스펀지가 되는지는 실제 TTK로 검증하며, 전투가 늘어지는 증상이 나오면 공격력을 올리기보다 HP 배율을 먼저 낮춘다.
+
+예시: 기본 최대체력 20인 일반 적은 위협 5에서 최대체력 90이 된다. 그러나 플레이어는 위협 5 이후에도 증강을 계속 획득할 수 있으므로 이 값이 영구적인 난이도 동기화가 되지는 않는다.
 
 ## 6. 위협 단계 HUD
 
@@ -120,18 +131,22 @@ Minecraft/Fabric의 엔티티 attribute를 서버에서 조정하는 방식으�
 
 ### 엘리트 / 구조물 특수몹
 
-일반몹 추가 증가분의 약 65%를 적용하는 것을 기본값으로 한다.
+일반몹 **추가 증가분의 65%**를 적용한다.
 
-예: 일반몹 최대체력 x3.0 단계라면 추가 증가분은 +2.0이고, 엘리트는 `1 + 2.0×0.65 = x2.30` 수준에서 시작한다.
+예: 일반몹 최대체력 x3.0 단계라면 추가 증가분은 +2.0이고, 엘리트는 `1 + 2.0×0.65 = x2.30`이다.
+
+위협 5의 일반몹 HP x4.5라면 엘리트는 `1 + 3.5×0.65 = x3.275`가 된다.
 
 ### 보스
 
-보스는 자체 HP/패턴/phase를 보존하기 위해 일반몹 추가 증가분의 약 35%만 기본 적용한다.
+보스는 자체 HP/패턴/phase를 보존하기 위해 일반몹 추가 증가분의 일부만 적용한다.
 
-- HP는 약 35% 비율
-- 공격 피해는 약 25~35% 비율
-- 이동속도는 기본적으로 추가 스케일하지 않는다.
-- armor/knockback/stun immunity는 보스 자체 프로필 우선.
+- HP: 일반몹 추가 증가분의 35%
+- 공격 피해: 일반몹 추가 증가분의 25~35%
+- 이동속도: 기본 추가 스케일 없음
+- armor/knockback/stun immunity: 보스 자체 프로필 우선
+
+따라서 위협 5에서 일반몹 HP가 x4.5여도 보스 HP 기본값은 `1 + 3.5×0.35 = x2.225` 수준이다. 이미 체력이 큰 외부 보스를 일반몹처럼 4.5배로 만들지 않는다.
 
 Chrono Dawn, World Bosses, MCEndgame 등 scripted boss는 개별 profile에서 multiplier, stun/pull/swap/time-stop 지원 여부를 함께 관리한다.
 
@@ -139,7 +154,7 @@ Chrono Dawn, World Bosses, MCEndgame 등 scripted boss는 개별 profile에서 m
 
 하드코딩된 entity ID 분기문을 늘리지 않는다.
 
-예정 프로필 필드:
+프로필 필드:
 
 - entity/tag/namespace selector
 - scaleGroup: normal / elite / boss / excluded
@@ -155,7 +170,9 @@ Chrono Dawn, World Bosses, MCEndgame 등 scripted boss는 개별 profile에서 m
 - allowPercentHpDamage
 - customAdapter
 
-기본값은 넓게 적용하고, 문제가 있는 외부 몹만 예외를 추가한다.
+기본 적대몹은 `normal`로 넓게 적용하고, 강한 구조물 적은 `elite`, 인식된 보스 encounter는 `boss`, 문제가 있는 특수 개체만 예외를 추가한다.
+
+코어 보상 분류와 적 스케일 분류는 의미상 연결될 수 있지만 같은 데이터로 강제 결합하지 않는다. 보상과 난이도는 독립적으로 튜닝 가능해야 한다.
 
 ## 9. 보상과 스케일 분리
 
@@ -181,21 +198,24 @@ XP 조정도 실제 플레이테스트 후 별도로 판단한다.
 ## 11. 구현/검증 순서
 
 1. save-wide world threat score / stage 저장 구조 구현
-2. vanilla hostile 몇 종에 attribute modifier 기반 단계 스케일 구현
-3. 단계 상승 시 로드된 적 1회 갱신 + 언로드 적 재로드 갱신 검증
-4. zombie/skeleton/creeper/spider 등 기본군 실제 전투 테스트
-5. Better Combat 사용 상태에서 플레이어 DPS 대비 TTK 측정
-6. Friends&Foes / Illager Invasion 일반몹 확인
-7. Chrono Dawn / World Bosses / MCEndgame 보스 profile 추가
-8. 일반/엘리트/보스 multiplier 조정
-9. 멀티플레이 실제 테스트 가능 시 세이브 공통 위협 단계 동기화 검증
+2. `enemy_scaling_contract.json` loader + validation
+3. vanilla hostile 몇 종에 attribute modifier 기반 단계 스케일 구현
+4. 단계 상승 시 로드된 적 1회 갱신 + 언로드 적 재로드 갱신 검증
+5. zombie/skeleton/creeper/spider 등 기본군 실제 전투 테스트
+6. Better Combat 사용 상태에서 플레이어 DPS 대비 TTK 측정
+7. Friends&Foes / Illager Invasion 일반몹 확인
+8. Chrono Dawn / World Bosses / MCEndgame 보스 profile 추가
+9. 일반/엘리트/보스 multiplier 조정
+10. 멀티플레이 실제 테스트 가능 시 세이브 공통 위협 단계 동기화 검증
 
 현재 상태:
 
 - DESIGN DEFINED: YES
 - WORLD-GLOBAL THREAT RULE: YES
+- INITIAL IMPLEMENTATION TABLE LOCKED: YES
+- DATA CONTRACT WRITTEN: YES
 - IMPLEMENTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
-문서 설계만 추가하므로 build/CI는 실행하지 않는다.
+Docs/data only. Build/CI not run for this scaling-contract pass.
