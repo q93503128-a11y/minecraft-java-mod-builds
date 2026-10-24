@@ -5,6 +5,7 @@
     "RaidMixin",
     "CombatAugmentMixin",
     "LivingEntityReactiveAugmentMixin",
+    "PlayerShieldGripMixin",
     "PlayerDeathAugmentMixin",
     "MovementAugmentMixin",
     "SurvivalPlayerMixin",
