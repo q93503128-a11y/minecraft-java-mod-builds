@@ -3,11 +3,12 @@
 Date: 2026-10-24
 Status: IMPLEMENTATION-READY PLAN
 
-목표는 146개 증강을 146개의 독립 하드코딩으로 만드는 것이 아니다. 먼저 공통 런타임 spine을 만든 뒤 단순 증강은 데이터/공통 handler로, 복잡한 증강만 전용 behavior로 구현한다.
+목표는 146개 증강을 146개의 독립 하드코딩으로 만드는 것이 아니다. 먼저 공통 런타임 spine과 코어 획득 경제를 만든 뒤 단순 증강은 데이터/공통 handler로, 복잡한 증강만 전용 behavior로 구현한다.
 
 정본:
 - `AUGMENTS.md`
 - `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`
+- `CORE_ACQUISITION_DESIGN_2026-10-24.md`
 - `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`
 - `HUD_AND_PLAYER_TEXT_STANDARD.md`
 - `ENEMY_POWER_SCALING_DESIGN.md`
@@ -17,10 +18,11 @@ Status: IMPLEMENTATION-READY PLAN
 1. 서버가 gameplay authority를 가진다.
 2. 이벤트/provenance 구조를 증강 구현보다 먼저 만든다.
 3. 저장 schema version을 첫 구현부터 둔다.
-4. 단순 수치는 data-driven, 복잡 행동은 Java behavior registry.
-5. 외부 모드는 adapter/profile 경계 밖으로 새지 않게 한다.
-6. 클라이언트는 HUD/UI/VFX/입력 요청을 맡고 피해·드롭·성장 결과를 결정하지 않는다.
-7. build를 작은 변경마다 반복하지 않고 의미 있는 구현 단위가 끝날 때 검증한다.
+4. 코어 획득/보스 보상/구조물 분포는 data-driven profile로 둔다.
+5. 단순 증강 수치는 data-driven, 복잡 행동은 Java behavior registry.
+6. 외부 모드는 adapter/profile 경계 밖으로 새지 않게 한다.
+7. 클라이언트는 HUD/UI/VFX/입력 요청을 맡고 피해·드롭·성장 결과를 결정하지 않는다.
+8. build를 작은 변경마다 반복하지 않고 의미 있는 구현 단위가 끝날 때 검증한다.
 
 ## 2. 권장 패키지 구조
 
@@ -79,6 +81,12 @@ dev.moonseungjun.augmentationsurvival
 │  ├─ ReplayPolicy
 │  └─ ActiveSlotManager
 ├─ acquisition/
+│  ├─ CoreItemRegistry
+│  ├─ CoreDistributionProfile
+│  ├─ CoreSourceProfile
+│  ├─ CoreRewardService
+│  ├─ BossCoreRewardService
+│  ├─ FirstKillRewardState
 │  ├─ AugmentDeviceMenu
 │  ├─ AugmentOfferService
 │  ├─ AugmentSelectionTransaction
@@ -159,11 +167,14 @@ abilityCooldowns / charges
 persistentCounters
 huntedEntityTypes
 stolenAuthorityBossIds
+bossFirstKillRewardIds
 lastActualDeathPoint
 perDeathResources
 ```
 
 증강 소유/레벨은 사망으로 사라지지 않는다.
+
+보스 최초 처치 보상 기록도 플레이어별 영구 상태로 저장한다.
 
 상태 객체는 외부에서 임의로 mutate하지 않고 service를 통해 교체/갱신한다.
 
@@ -244,6 +255,8 @@ ProjectileContext
 
 이 context가 무한루프 방지와 Better Combat 호환의 중심이다.
 
+코어 reward는 일반 loot stack pipeline과 별도 progression reward context로 관리한다. `풍요`, Looting, Fortune, 일반 드롭 복제 증강이 코어 보상을 증폭하지 않게 한다.
+
 ## 7. 액티브 엔진
 
 모든 액티브가 공통 AbilityManager를 사용한다.
@@ -263,9 +276,28 @@ ProjectileContext
 
 `재연`은 각 능력의 `ReplayPolicy`를 읽어 50% 효과가 무엇을 의미하는지 명시적으로 처리한다.
 
-## 8. 첫 수직 슬라이스
+## 8. 코어 경제 구현 기준
 
-146개 전부를 시작하지 않는다. 다음 reference augments로 공통 구조를 검증한다.
+`CORE_ACQUISITION_DESIGN_2026-10-24.md`와 두 JSON contract를 그대로 초기 구현값으로 사용한다.
+
+필수 경로:
+
+- 일반 코어 제작
+- 자연 loot container 추가 roll
+- 일반/special/elite mob player-attributed kill roll
+- Raid Victory / Elder Guardian / Warden event reward
+- treasure fishing 추가 roll
+- standard/major/pinnacle boss 개인 보상
+- 플레이어별 boss first-kill bonus
+- 3:1 core upgrade
+
+구조물/외부 보스 ID 분기를 Java if/else로 대량 작성하지 않고 profile loader를 사용한다.
+
+고밀도 던전과 단일 핵심 보상 상자는 `coreRollMultiplier`로 보정한다.
+
+## 9. 첫 수직 슬라이스
+
+코어 획득과 장치가 동작한 뒤 146개 전부를 시작하지 않는다. 다음 reference augments로 공통 구조를 검증한다.
 
 ### 상태 / 스탯
 - `강건함`
@@ -328,7 +360,7 @@ ProjectileContext
 
 이 수직 슬라이스가 통과하기 전 고등급 100개를 대량 구현하지 않는다.
 
-## 9. 구현 마일스톤
+## 10. 구현 마일스톤
 
 ### M1A — Runtime Spine
 
@@ -343,26 +375,50 @@ ProjectileContext
 완료 게이트:
 - 새 월드/재접속 후 상태 보존
 - dedicated server에서 client request validation 구조 동작
-- 한 가지 stat augment가 실제 적용
+- 최소 persistent state round-trip 성공
 
-### M1B — Reference Vertical Slice
-
-8절 reference augment 구현.
-
-완료 게이트:
-- melee/projectile/heal/death/movement/resource/active 각 최소 한 경로 실제 동작
-- 관통→도탄→추적→동일 대상 재관통 확인
-- invalid client request가 서버 상태를 바꾸지 않음
-
-### M2 — Core / Device / Acquisition
+### M1B — Core Economy Foundation
 
 - 6등급 core item
+- core distribution/profile loader
+- 자연 loot 추가 roll
+- mob kill reward service
+- raid/special-event reward
+- treasure fishing reward
+- boss reward band
+- first-kill reward persistence
+
+완료 게이트:
+- routine/mid/high/pinnacle profile이 정의값대로 roll
+- 일반 mob/elite/boss가 서로 다른 reward path 사용
+- Looting/Fortune/풍요가 core reward를 복제하지 않음
+- boss first-kill bonus가 플레이어별 1회만 지급
+
+### M1C — Core Device / Selection
+
 - 기본/강화 증강 장치
 - 3-choice offer
 - maxed pool 제거
 - 두 번째 선택 transaction
 - 3:1 core upgrade
-- inventory/device UI
+- inventory/device UI 최소 기능
+
+완료 게이트:
+- 유효 후보 3개 생성
+- selection commit 전 core 미소비
+- invalid/취소 selection 무소비
+- 두 번째 선택 원자적 2개 획득
+- tier 전체 maxed면 core 소비 없음
+
+### M2 — Reference Vertical Slice
+
+9절 reference augment 구현.
+
+완료 게이트:
+- melee/projectile/heal/death/movement/resource/active 각 최소 한 경로 실제 동작
+- 관통→도탄→추적→동일 대상 재관통 확인
+- invalid client request가 서버 상태를 바꾸지 않음
+- 실제 core 획득 → 장치 → 증강 획득 → 효과 발동의 한 사이클 완주
 
 ### M3 — Common / Advanced Bulk
 
@@ -402,13 +458,15 @@ ProjectileContext
 
 초기 테이블은 플레이테스트에서 조정한다.
 
-### M7 — External Pack Integration
+### M7 — External Pack Integration Expansion
 
-- loot/core distribution
+- Repurposed Structures/Dungeons and Taverns 세부 source profile
 - Farmer's Delight crop/processing
 - Better Combat authority adapter
-- Chrono Dawn / World Bosses / MCEndgame boss profiles
+- Chrono Dawn / World Bosses / MCEndgame 개별 boss profile
 - authority packages
+
+코어 경제의 공통 loader/reward engine 자체는 M1B에서 이미 구현한다. M7은 외부 콘텐츠별 세부 매핑과 실제 gameplay 검증 단계다.
 
 ### M8 — Presentation / UX
 
@@ -423,6 +481,7 @@ ProjectileContext
 
 ### M9 — Playtest / Performance / Multiplayer
 
+- core acquisition/hour 및 tier pacing
 - TTK/threat tuning
 - worst-case projectile fan-out
 - authority barrage scheduler
@@ -430,21 +489,27 @@ ProjectileContext
 - save migration
 - actual multiplayer sync
 
-## 10. 테스트 전략
+## 11. 테스트 전략
 
 ### 순수 로직 테스트 우선 대상
 
+- core distribution weight normalization
+- source multiplier
+- boss first-kill/repeat reward selection
+- 3:1 upgrade
+- selection transaction
 - stat stacking
 - damage reduction order
 - heal pipeline
 - death-prevention order
 - cooldown/charge/replay
-- selection transaction
 - flight segment state machine
 - threat stage thresholds
 
 ### GameTest / integration 대상
 
+- natural loot container injection one-time behavior
+- mob kill reward attribution
 - actual projectile collision/ricochet
 - movement/size/collision safety
 - block harvest/drop inheritance
@@ -454,6 +519,9 @@ ProjectileContext
 
 ### 실제 client playtest 필수
 
+- 시간당 코어 획득량과 첫 등급 도달 시간
+- 고밀도 외부 던전 과잉 보상 여부
+- boss first-kill vs 반복 효율
 - Better Combat feel
 - health HUD readability
 - active-slot UX
@@ -462,10 +530,12 @@ ProjectileContext
 - giant/shrink collision feel
 - world threat TTK
 
-## 11. 성능 예산
+## 12. 성능 예산
 
 첫 구현부터 profiler 대상 후보:
 
+- 대량 구조물 loot profile lookup
+- 보스 participant/reward 처리
 - 분산+도탄+추적+관통 최대 조합
 - 위험 감지/상자 찾기/광석 눈썰미의 탐색 주기
 - 되밟기 path buffer
@@ -477,32 +547,37 @@ ProjectileContext
 
 성능 문제가 의심될 때 기능을 임의 축소하지 않고 재현 조건과 profiler로 확인한다.
 
-## 12. 구현 전 파라미터 정책
+## 13. 구현 전 파라미터 정책
 
 아직 미정인 탄도 장막/임시 발판/생명 연결/작아지기/벽치기 수치는 handler를 막지 않는다.
 
-- definition JSON에 parameter field를 미리 둔다.
-- 테스트용 안전 기본값을 정식 정본처럼 숨겨 고정하지 않는다.
-- 해당 증강 구현 차례가 오면 플레이테스트 가능한 초깃값을 별도 결정한다.
+코어 경제 수치는 구현 전 미정이 아니다. 현재 `CORE_ACQUISITION_DESIGN_2026-10-24.md`의 값을 초기 구현값으로 사용하고 playtest 결과로 data profile만 조정한다.
 
-## 13. 검증 강도
+- definition/profile JSON에 parameter field를 미리 둔다.
+- 코드 상수로 확률을 박지 않는다.
+- 콘텐츠별 조정은 데이터에서 수행한다.
 
-- 현재 문서 패스: build/CI 없음.
+## 14. 검증 강도
+
+- 현재 문서/data-contract 패스: build/CI 없음.
 - M1A 코드 단위 완료: 좁은 정적 확인 + 필요 시 compile/build 1회.
+- M1B loot/reward 코드 단위 완료: distribution unit test + targeted integration + build 1회.
 - save/network/serialization 변경: 관련 테스트 + build.
 - 외부 mod adapter 완료: pack server/client + 대상 gameplay 검증.
 - release candidate: `docs/BUILD_STANDARD.md` 전체 검증.
 
-## 14. 현재 개발 준비 상태
+## 15. 현재 개발 준비 상태
 
 - 146 ROSTER LOCKED: YES
 - INTERACTION V2: YES
+- CORE ACQUISITION ECONOMY: YES — initial implementation weights
 - FINAL COMPAT AUDIT: YES
 - IMPLEMENTATION ARCHITECTURE: YES
 - FIRST VERTICAL SLICE DEFINED: YES
 - RUNTIME SPINE IMPLEMENTED: NO
+- CORE ECONOMY IMPLEMENTED: NO
 - CORE/DEVICE IMPLEMENTED: NO
 - AUGMENTS IMPLEMENTED: NO
-- BUILD/CI THIS PASS: NOT RUN — docs-only
+- BUILD/CI THIS PASS: NOT RUN — docs/data-contract only
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
