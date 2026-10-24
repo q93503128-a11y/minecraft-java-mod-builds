@@ -6,6 +6,8 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.device.AugmentDeviceBlocks;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,7 +44,10 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     private static final int DATA_SELECTION_COUNT = 5;
     private static final int DATA_SELECTED_MASK = 6;
     private static final int DATA_LAST_OUTPUT_COUNT = 7;
-    private static final int DATA_COUNT = 8;
+    private static final int DATA_CURRENT_LEVEL_0 = 8;
+    private static final int DATA_CURRENT_LEVEL_1 = 9;
+    private static final int DATA_CURRENT_LEVEL_2 = 10;
+    private static final int DATA_COUNT = 11;
 
     private static final int BUTTON_BEGIN_TIER = 0;
     private static final int BUTTON_SELECT_CANDIDATE = 100;
@@ -151,8 +156,11 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
                 pendingToken = result.token();
                 data.set(DATA_STATUS, STATUS_READY);
                 data.set(DATA_SELECTION_COUNT, result.selectionCount());
+                AugmentationPlayerState playerState = AugmentationPlayerStateService.state(player);
                 for (int index = 0; index < result.candidateIds().size() && index < 3; index++) {
-                    data.set(DATA_CANDIDATE_0 + index, AugmentCatalog.indexOf(result.candidateIds().get(index)));
+                    String candidateId = result.candidateIds().get(index);
+                    data.set(DATA_CANDIDATE_0 + index, AugmentCatalog.indexOf(candidateId));
+                    data.set(DATA_CURRENT_LEVEL_0 + index, playerState.level(candidateId));
                 }
             }
             case NO_CORE -> data.set(DATA_STATUS, STATUS_NO_CORE);
@@ -262,6 +270,9 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         data.set(DATA_SELECTION_COUNT, 0);
         data.set(DATA_SELECTED_MASK, 0);
         data.set(DATA_LAST_OUTPUT_COUNT, 0);
+        data.set(DATA_CURRENT_LEVEL_0, 0);
+        data.set(DATA_CURRENT_LEVEL_1, 0);
+        data.set(DATA_CURRENT_LEVEL_2, 0);
     }
 
     @Override
@@ -319,6 +330,13 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         }
         int index = data.get(DATA_CANDIDATE_0 + slot);
         return index < 0 ? null : AugmentCatalog.definitionAt(index);
+    }
+
+    public int currentLevel(int slot) {
+        if (slot < 0 || slot >= 3) {
+            throw new IllegalArgumentException("Candidate slot out of range: " + slot);
+        }
+        return data.get(DATA_CURRENT_LEVEL_0 + slot);
     }
 
     public static int beginButtonId(AugmentTier tier) {
