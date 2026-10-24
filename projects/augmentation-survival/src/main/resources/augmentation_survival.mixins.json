@@ -5,6 +5,8 @@
     "RaidMixin",
     "CombatAugmentMixin",
     "LivingEntityReactiveAugmentMixin",
+    "MobEffectTimeStopMixin",
+    "ProjectileTimeStopMixin",
     "PlayerShieldGripMixin",
     "PlayerDeathAugmentMixin",
     "MovementAugmentMixin",

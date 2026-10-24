@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "return_home": {
+    "focus_ticks": 100
+  },
+  "time_stop": {
+    "radius": 32.0,
+    "duration_ticks": 180,
+    "cooldown_ticks": 1200
+  },
+  "divine_punishment": {
+    "radius": 32.0,
+    "normal_fraction_level_1": 0.60,
+    "normal_fraction_level_2": 0.90,
+    "boss_fraction_level_1": 0.10,
+    "boss_fraction_level_2": 0.25,
+    "stun_ticks_level_2": 40,
+    "cooldown_ticks": 1200
+  }
+}

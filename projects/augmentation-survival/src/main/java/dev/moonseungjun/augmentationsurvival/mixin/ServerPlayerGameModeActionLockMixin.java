@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -19,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Locks mining and item/block use during reincarnation recovery stasis. */
+/** Locks reincarnation actions and reports block/item actions that interrupt return-home focus. */
 @Mixin(ServerPlayerGameMode.class)
 abstract class ServerPlayerGameModeActionLockMixin {
     @Shadow
@@ -35,6 +36,7 @@ abstract class ServerPlayerGameModeActionLockMixin {
             int sequence,
             CallbackInfo ci
     ) {
+        SpecialActiveAugmentService.notifyDisruptingAction(player);
         if (CombatAugmentService.isActionLocked(player)) {
             ci.cancel();
         }
@@ -48,6 +50,7 @@ abstract class ServerPlayerGameModeActionLockMixin {
             InteractionHand hand,
             CallbackInfoReturnable<InteractionResult> cir
     ) {
+        SpecialActiveAugmentService.notifyDisruptingAction(player);
         if (CombatAugmentService.isActionLocked(player)) {
             cir.setReturnValue(InteractionResult.PASS);
         }
@@ -62,6 +65,7 @@ abstract class ServerPlayerGameModeActionLockMixin {
             BlockHitResult hitResult,
             CallbackInfoReturnable<InteractionResult> cir
     ) {
+        SpecialActiveAugmentService.notifyDisruptingAction(player);
         if (CombatAugmentService.isActionLocked(player)) {
             cir.setReturnValue(InteractionResult.PASS);
         }
