@@ -70,21 +70,21 @@ public final class UtilityAugmentService {
         return (int) Math.min(Integer.MAX_VALUE, Math.max(1L, Math.round(scaled)));
     }
 
-    public static float modifyBrewingSpeedMultiplier(
+    public static int modifyBrewingDuration(
             ServerLevel level,
             BlockPos pos,
-            float originalMultiplier
+            int originalDuration
     ) {
-        if (!(originalMultiplier > 0.0F) || !Float.isFinite(originalMultiplier)) {
-            return originalMultiplier;
+        if (originalDuration <= 0) {
+            return originalDuration;
         }
         int augmentLevel = highestNearbyLevel(level, pos, FAST_BREWING_ID);
         if (augmentLevel <= 0) {
-            return originalMultiplier;
+            return originalDuration;
         }
         double reduction = UtilityAugmentTuning.current().brewingTimeReduction(augmentLevel);
-        double denominator = Math.max(0.01D, 1.0D - reduction);
-        return (float) Math.min(Float.MAX_VALUE, originalMultiplier / denominator);
+        double scaled = originalDuration * Math.max(0.01D, 1.0D - reduction);
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(1L, Math.round(scaled)));
     }
 
     public static boolean canRunOnWater(ServerPlayer player) {

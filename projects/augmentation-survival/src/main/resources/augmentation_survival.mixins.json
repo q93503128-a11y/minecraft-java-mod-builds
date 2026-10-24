@@ -11,6 +11,7 @@
     "InstantMiningPlayerMixin",
     "WaterRunLivingEntityMixin",
     "AbstractFurnaceUtilityMixin",
+    "BrewingStandAugmentAccessor",
     "BrewingStandUtilityMixin",
     "PlayerConsumptionAugmentMixin",
     "FoodPropertiesAugmentMixin",
