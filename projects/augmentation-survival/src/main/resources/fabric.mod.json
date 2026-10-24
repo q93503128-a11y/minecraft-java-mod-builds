@@ -3,7 +3,7 @@
   "id": "augmentation_survival",
   "version": "${version}",
   "name": "Augmentation Survival",
-  "description": "Survival-wide augmentation progression. Working title and bootstrap metadata.",
+  "description": "Build permanent augments through exploration, combat, crafting, and escalating survival threats.",
   "environment": "*",
   "entrypoints": {
     "main": [

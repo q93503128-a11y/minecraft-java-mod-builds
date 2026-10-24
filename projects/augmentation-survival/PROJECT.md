@@ -25,11 +25,11 @@
 
 ## 현재 상태
 
-`M1 IMPLEMENTATION PREP / 146-AUGMENT + CORE ECONOMY DESIGN LOCK`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / REFERENCE AUGMENT SLICE NEXT`
 
-외부 모드팩 M0 부팅/의존성 검증은 이미 통과한 기준선이 있다. 현재는 신규 증강 제작을 멈추고 **146종 정본, 상호작용 V2, 코어 획득 경제, 최종 호환성 감사, 저장/네트워크/이벤트 구조, 첫 수직 슬라이스**를 잠근 구현 준비 단계다.
+외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 시작했다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-현재 Java runtime은 bootstrap 수준이며 146종 증강과 코어 획득 시스템 자체는 아직 구현되지 않았다.
+146종 증강의 실제 gameplay effect는 아직 구현되지 않았다. 다음 작업은 146개를 한 번에 하드코딩하는 것이 아니라 `강건함`/`속공`부터 공통 stat behavior를 검증하는 reference vertical slice다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -61,7 +61,7 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 7. 최신 playtest feedback
 8. 과거 대화
 
-세부 구현 문서인 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`, `CORE_ACQUISITION_DESIGN_2026-10-24.md`, `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`, `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`는 위 정본을 구체화한다. 충돌 시 위 기본 우선순위를 따른다.
+세부 구현 문서인 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`, `CORE_ACQUISITION_DESIGN_2026-10-24.md`, `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`, `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`, `IMPLEMENTATION_STATUS_2026-10-24.md`는 위 정본을 구체화한다. 충돌 시 위 기본 우선순위를 따른다.
 
 저장소 공용 `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`는 상위 공통 작업 계약으로 항상 함께 적용한다.
 
@@ -116,32 +116,32 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 
 세부 계획은 `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`를 따른다.
 
-1. Runtime spine: definition / behavior registry / persistent state / networking / provenance / ability engine
+1. Runtime/state foundation
 2. Core item / acquisition profile / loot-event reward layer
-3. Core / device / 3-choice transaction / UI
+3. Core / device / 3-choice transaction / functional UI
 4. Reference vertical slice: 스탯·회복·사망·이동·투사체·액티브·자원 최소 한 경로
 5. 일반·고급 bulk implementation
 6. 희귀·영웅 복잡 파이프라인
 7. 전설·신화 및 공유 저장/권능
-8. save-wide threat scaling
+8. save-wide threat scaling gameplay application
 9. 외부 모드 adapter 확장
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-146개를 한 번에 독립 하드코딩하지 않는다.
+현재 1~3의 기능 기준선이 구현되었고 다음 작업은 4번이다. 146개를 한 번에 독립 하드코딩하지 않는다.
 
 ## 현재 검증 상태
 
-기존 M0 pack 기준:
+검증된 M1C 코드 체크포인트:
 
-- BUILD VERIFIED: YES
+- CODE REVIEWED: YES
+- BUILD VERIFIED: YES — `168cb49c37435ade9207017e25a428adf9209dff`
 - JAR PRODUCED: YES
-- 22/22 PACK ARTIFACT RESOLUTION: PASS
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
-- BOSS PACK CO-LOAD: PASS
+- GitHub Actions: `40064257071` / Build Augmentation Survival Pack #33
 
-현재 설계/구현 준비 기준:
+현재 구현 범위:
 
 - ROSTER LOCKED: YES — 146
 - FINAL COMPATIBILITY AUDIT: YES
@@ -149,12 +149,18 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - CORE ACQUISITION LOOP DESIGNED: YES
 - INITIAL CORE WEIGHTS DEFINED: YES
 - IMPLEMENTATION PLAN: YES
-- RUNTIME SPINE IMPLEMENTED: NO
-- CORE / DEVICE IMPLEMENTED: NO
-- AUGMENT RUNTIME IMPLEMENTED: NO
+- PERSISTENT PLAYER AUGMENT STATE: IMPLEMENTED
+- SAVE-WIDE THREAT STATE: IMPLEMENTED
+- 146 RUNTIME CATALOG: IMPLEMENTED
+- CORE ACQUISITION RUNTIME: IMPLEMENTED BASELINE
+- CORE / DEVICE / 3-CHOICE TRANSACTION: IMPLEMENTED BASELINE
+- SECOND CHOICE ATOMIC 2-PICK: IMPLEMENTED
+- 3:1 CORE UPGRADE ONE/ALL: IMPLEMENTED
+- FUNCTIONAL DEVICE CARD UI: IMPLEMENTED BASELINE
+- FINAL DEVICE MODEL/TEXTURE/VFX/SOUND: NOT IMPLEMENTED
+- AUGMENT GAMEPLAY EFFECT RUNTIME: NOT IMPLEMENTED
+- DEVICE FLOW PLAYTESTED: NO
+- UI VISUAL REVIEW: NO
 - BETTER COMBAT GAMEPLAY TESTED: NO
 - BOSS GAMEPLAY TESTED: NO
-- PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
-
-이번 패스는 docs/data-contract only이므로 새 build/CI를 실행하지 않는다.
