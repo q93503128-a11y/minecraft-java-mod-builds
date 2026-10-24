@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "bumper_crop": {
+    "bonus_chance_per_level": 0.08
+  },
+  "seed_saver": {
+    "bonus_chance_per_level": 0.15
+  },
+  "extra_piece": {
+    "bonus_chance_per_level": 0.05
+  },
+  "loot_scoop": {
+    "bundle_copy_chance_per_level": 0.05,
+    "capture_radius": 1.5,
+    "max_item_age_ticks": 3
+  },
+  "replant": {
+    "delay_ticks": 1,
+    "pickup_radius": 1.5
+  },
+  "sweeping_harvest": {
+    "additional_crops_by_level": [2, 4, 8],
+    "search_radius": 2,
+    "vertical_radius": 1
+  },
+  "tree_felling": {
+    "additional_logs_by_level": [3, 6, 10],
+    "max_search_nodes": 96
+  },
+  "tunneling": {
+    "additional_blocks_by_level": [1, 2, 3],
+    "durability_multiplier": 0.50
+  }
+}

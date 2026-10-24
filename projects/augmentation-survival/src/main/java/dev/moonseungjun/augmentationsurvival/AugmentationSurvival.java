@@ -11,6 +11,8 @@ import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentSer
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementTuning;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileTuning;
+import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestService;
+import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
@@ -47,8 +49,10 @@ public final class AugmentationSurvival implements ModInitializer {
         AugmentCatalog.initialize();
         StatAugmentCatalog.initialize();
         SurvivalTuning.initialize();
+        ResourceHarvestTuning.initialize();
         PlayerStatAugmentService.initialize();
         SurvivalAugmentService.initialize();
+        ResourceHarvestService.initialize();
         CombatTuning.initialize();
         ExpansionTuning.initialize();
         ProtectionAugmentService.initialize();
