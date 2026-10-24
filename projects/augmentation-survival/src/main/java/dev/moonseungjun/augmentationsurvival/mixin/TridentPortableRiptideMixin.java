@@ -46,7 +46,7 @@ public abstract class TridentPortableRiptideMixin {
             method = "use",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/Entity;isInWaterOrRain()Z"
+                    target = "Lnet/minecraft/world/entity/player/Player;isInWaterOrRain()Z"
             )
     )
     private boolean augmentationSurvival$allowPortableUse(boolean original) {
@@ -85,7 +85,7 @@ public abstract class TridentPortableRiptideMixin {
             method = "releaseUsing",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/Entity;isInWaterOrRain()Z"
+                    target = "Lnet/minecraft/world/entity/player/Player;isInWaterOrRain()Z"
             )
     )
     private boolean augmentationSurvival$allowPortableRelease(boolean original) {
