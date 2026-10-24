@@ -25,15 +25,15 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / PROTECTION+HEALING ENGINE IMPLEMENTED / MOVEMENT BATCH NEXT`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / PROTECTION+MOVEMENT SHARED RUNTIMES IMPLEMENTED / PROJECTILE FLIGHT-SEGMENT NEXT`
 
 외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. 영구 stat runtime을 시작점으로 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치/timed state, augment-generated healing, lethal interception에 이어 protection pool과 delayed-damage/healing continuation까지 하나의 공유 전투 계층으로 확장했다.
+Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. 영구 stat runtime을 시작점으로 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치/timed state, augment-generated healing, lethal interception, protection/delayed-damage에 이어 shared movement/aerial runtime까지 확장했다.
 
-현재 실제 gameplay runtime에 연결된 효과는 `강건함`, `속공`, `빠른 발`, `버티기`, `날 선 감각`, `정확한 조준`, `질긴 피부`, `가벼운 착지`, `튼튼한 폐`, `마지막 힘`, `연속 처치`, `다급한 발걸음`, `흡혈`, `한 번 버티기`, `피해 적응`, `피해 지연`, `넘치는 회복`, `회복 나눔`, `비상 토템`, `재림`이다. `회복 증폭`은 augment-generated non-natural heal 공통 진입점에 연결되어 있으나 모든 vanilla/external 비자연 회복을 가로채는 전역 구현으로는 아직 완성하지 않았다. `보호막`은 source-owned shield pool/tuning/API까지 구현했지만 common active-ability input engine이 아직 없어 실제 액티브 발동은 연결하지 않았다.
+현재 실제 gameplay runtime에는 stat/combat/protection/healing 계열 외에 `숨 고르기`, `야행성`의 이동속도 facet, `햇빛 체질`의 이동속도 facet, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`가 추가로 연결되어 있다. `야행성`의 채굴 속도와 `햇빛 체질`의 자연회복 간격은 아직 남아 있으며, `발 안 묶이기`, `물살 타기`, `매달리기`, `탄성 저장`, `물 위 달리기`, `속도 전환`처럼 지형/매질/충돌 물리를 크게 바꾸는 이동기는 별도 physics batch 대상으로 남겼다. `탄성 저장`은 저장 낙하거리의 추진력 변환식이 정본에 충분히 명시되지 않아 임의 수치를 만들지 않았다.
 
-최신 protection+healing batch는 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 피해 수치, 지연피해 타이밍, 회복 대상/흡수량, 치명상/토템/재림 순서, Better Combat 전투 체감은 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+최신 movement+aerial batch는 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 이동 체감, 이중 점프 입력/동기화, 착지 판정, 공중 연계 재충전, Better Combat과의 실제 전투 중 coexistence는 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -132,22 +132,23 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~3의 기능 기준선과 4번의 stat + shared combat/protection/heal/death vertical slice가 구현 중이다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **공통 런타임 하나를 완성하면서 그 경계에 맞는 canonical 증강을 한 번에 연결하는 대형 묶음**으로 진행한다. protection+healing batch 다음은 `두 번 점프` + `공중 연계`를 중심으로 관련 이동 증강을 묶는 movement runtime batch이며, 이후 projectile flight-segment batch와 common active-ability batch로 이어간다.
+현재 1~3의 기능 기준선과 4번의 stat + shared combat/protection/heal/death + movement/aerial vertical slice가 구현 중이다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **공통 런타임 하나를 완성하면서 그 경계에 맞는 canonical 증강을 한 번에 연결하는 대형 묶음**으로 진행한다. movement+aerial batch 다음은 `관통 화살` + `추적 화살` + `도탄`을 중심으로 관련 투사체 증강을 묶는 projectile flight-segment runtime이며, 그 다음 common active-ability batch로 이어간다.
 
 ## 현재 검증 상태
 
 검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `59f45a9a4ce1f2febf09404b295f3c8b816c18f8`
+- BUILD VERIFIED: YES — `446bf22d1de6517c70b71d36f864d2a31509eefa`
 - JAR PRODUCED: YES
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
-- GitHub Actions: `40070335710` / Build Augmentation Survival Pack #38
-- Verification artifact: `augmentation-survival-pack-smoke-38` / ID `12550967850`
-- Artifact ZIP SHA-256: `a9ceeb08ae35ac27696715ffe98a6aed3df7f48de087bb0955ac37ce7bc6f16a`
+- MOVEMENT CONTRACT INITIALIZATION: PASS
+- GitHub Actions: `40072354505` / Build Augmentation Survival Pack #42
+- Verification artifact: `augmentation-survival-pack-smoke-42` / ID `12552215797`
+- Artifact ZIP SHA-256: `4bc0b680aa58beb4394dcdc36d5176e2c6d8a11998411836dd0f2d31b2a314ba`
 
 현재 구현 범위:
 
@@ -174,6 +175,7 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - SOURCE-OWNED SHIELD / AUGMENT ABSORPTION POOLS: IMPLEMENTED ENGINE
 - AUGMENT-GENERATED HEALING PATH: IMPLEMENTED BASELINE
 - LETHAL-DAMAGE CHAIN: IMPLEMENTED BASELINE
+- SHARED MOVEMENT / AERIAL RUNTIME: IMPLEMENTED BASELINE
 - `강건함`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
 - `속공`: IMPLEMENTED / BETTER COMBAT LIVE TEST PENDING
 - `빠른 발`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
@@ -196,8 +198,22 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - `비상 토템`: IMPLEMENTED BASELINE / LIVE INVENTORY-TOTEM TEST PENDING
 - `재림`: IMPLEMENTED BASELINE / LIVE STASIS+ORDER TEST PENDING
 - `보호막`: POOL/TUNING/API IMPLEMENTED / ACTIVE TRIGGER NOT IMPLEMENTED
+- `숨 고르기`: IMPLEMENTED / LIVE MOVEMENT TEST PENDING
+- `야행성`: PARTIAL — NIGHT MOVEMENT IMPLEMENTED / MINING SPEED NOT IMPLEMENTED
+- `햇빛 체질`: PARTIAL — DAY MOVEMENT IMPLEMENTED / NATURAL REGEN INTERVAL NOT IMPLEMENTED
+- `성큼걸음`: IMPLEMENTED / LIVE STEP-COLLISION TEST PENDING
+- `멀리뛰기`: IMPLEMENTED / LIVE SPRINT-JUMP TEST PENDING
+- `관성 전환`: IMPLEMENTED / LIVE FALL-LANDING TEST PENDING
+- `두 번 점프`: IMPLEMENTED SERVER-AUTHORITATIVE BASELINE / LIVE INPUT+SYNC TEST PENDING
+- `공중 연계`: IMPLEMENTED ROOT-MELEE RECHARGE BASELINE / LIVE BETTER-COMBAT TEST PENDING
+- COLLISION/MEDIUM-HEAVY MOVEMENT MECHANICS: NOT IMPLEMENTED
+- PROJECTILE FLIGHT-SEGMENT RUNTIME: NOT IMPLEMENTED
+- COMMON ACTIVE-ABILITY ENGINE: NOT IMPLEMENTED
 - FINAL DEVICE MODEL/TEXTURE/VFX/SOUND: NOT IMPLEMENTED
 - REMAINING AUGMENT GAMEPLAY EFFECT RUNTIME: NOT IMPLEMENTED
+- MOVEMENT LIVE-PLAYER TESTED: NO
+- DOUBLE-JUMP INPUT/SYNC LIVE TESTED: NO
+- AERIAL-COMBO LIVE TESTED: NO
 - PROTECTION PIPELINE LIVE-PLAYER TESTED: NO
 - HEALING PIPELINE LIVE-PLAYER TESTED: NO
 - LETHAL CHAIN LIVE-PLAYER TESTED: NO
@@ -207,5 +223,6 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - DEVICE FLOW PLAYTESTED: NO
 - UI VISUAL REVIEW: NO
 - BETTER COMBAT GAMEPLAY TESTED: NO
+- BETTER COMBAT MOVEMENT COEXISTENCE PLAYTESTED: NO
 - BOSS GAMEPLAY TESTED: NO
 - MULTIPLAYER TESTED: NO
