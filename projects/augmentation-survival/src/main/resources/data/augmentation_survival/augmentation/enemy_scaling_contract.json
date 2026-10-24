@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "status": "canonical-initial-implementation-baseline",
+  "runtime_active": false,
+  "purpose": "Define save-wide threat progression and server-authoritative hostile scaling without coupling combat difficulty to core rewards.",
+  "power_score": {
+    "high_water_mark": true,
+    "decreases_automatically": false,
+    "weights_per_owned_augment_level": {
+      "common": 1.0,
+      "uncommon": 1.5,
+      "rare": 2.0,
+      "epic": 3.0,
+      "legendary": 5.0,
+      "mythic": 8.0
+    },
+    "note": "Individual augment definitions may override power weight later if measured strength differs materially from tier baseline."
+  },
+  "threat_stages": [
+    {
+      "stage": 0,
+      "min_power_score": 0,
+      "max_power_score": 24,
+      "normal": { "health": 1.0, "damage": 1.0, "speed": 1.0, "armor_add": 0.0, "knockback_resistance_add": 0.0 }
+    },
+    {
+      "stage": 1,
+      "min_power_score": 25,
+      "max_power_score": 59,
+      "normal": { "health": 1.25, "damage": 1.10, "speed": 1.0, "armor_add": 0.0, "knockback_resistance_add": 0.0 }
+    },
+    {
+      "stage": 2,
+      "min_power_score": 60,
+      "max_power_score": 109,
+      "normal": { "health": 1.60, "damage": 1.20, "speed": 1.03, "armor_add": 1.0, "knockback_resistance_add": 0.0 }
+    },
+    {
+      "stage": 3,
+      "min_power_score": 110,
+      "max_power_score": 174,
+      "normal": { "health": 2.10, "damage": 1.35, "speed": 1.05, "armor_add": 2.0, "knockback_resistance_add": 0.03 }
+    },
+    {
+      "stage": 4,
+      "min_power_score": 175,
+      "max_power_score": 259,
+      "normal": { "health": 3.00, "damage": 1.55, "speed": 1.075, "armor_add": 4.0, "knockback_resistance_add": 0.05 }
+    },
+    {
+      "stage": 5,
+      "min_power_score": 260,
+      "max_power_score": null,
+      "normal": { "health": 4.50, "damage": 1.80, "speed": 1.10, "armor_add": 6.0, "knockback_resistance_add": 0.10 }
+    }
+  ],
+  "scale_groups": {
+    "normal": {
+      "extra_scale_weight": 1.0,
+      "speed_scaling_enabled": true
+    },
+    "elite": {
+      "extra_scale_weight": 0.65,
+      "formula": "1 + (normal_multiplier - 1) * 0.65 for multiplicative stats; additive bonuses * 0.65",
+      "speed_scaling_enabled": true
+    },
+    "boss": {
+      "health_extra_scale_weight": 0.35,
+      "damage_extra_scale_weight_min": 0.25,
+      "damage_extra_scale_weight_max": 0.35,
+      "speed_scaling_enabled": false,
+      "armor_and_control_rules": "boss profile overrides generic scaling"
+    },
+    "excluded": {
+      "scaling_enabled": false
+    }
+  },
+  "application_rules": {
+    "scope": "save_wide_all_dimensions",
+    "multiplayer_shared_stage": true,
+    "new_hostiles_use_current_stage": true,
+    "loaded_normal_and_elite_refresh_once_on_stage_increase": true,
+    "unloaded_entities_refresh_when_loaded": true,
+    "recalculate_every_tick": false,
+    "health_ratio_preserved_when_max_health_changes": true,
+    "boss_stage_snapshot_at_encounter_start": true,
+    "already_dominated_allies_do_not_rescale_on_future_stage_increase": true
+  },
+  "balance_rules": {
+    "health_scales_more_than_damage": true,
+    "movement_speed_growth_is_intentionally_small": true,
+    "stage_5_is_a_hard_scaling_ceiling": true,
+    "player_power_may_continue_growing_after_stage_5": true,
+    "reason": "Threat should preserve combat relevance without cancelling the power fantasy or turning every encounter into permanent rubber-band scaling."
+  },
+  "reward_separation": {
+    "core_drop_rate_changes_with_threat": false,
+    "core_tier_weights_change_with_threat": false,
+    "xp_scaling": "undecided_until_playtest"
+  },
+  "profile_contract": {
+    "fields": [
+      "entity_or_tag_selector",
+      "scaleGroup",
+      "healthScaleWeight",
+      "damageScaleWeight",
+      "speedScaleWeight",
+      "armorScaleWeight",
+      "knockbackScaleWeight",
+      "allowStun",
+      "allowPull",
+      "allowSwap",
+      "allowTimeStop",
+      "allowPercentHpDamage",
+      "customAdapter"
+    ],
+    "default_hostile_scale_group": "normal",
+    "external_scripted_bosses_require_recognized_boss_profile": true
+  }
+}
