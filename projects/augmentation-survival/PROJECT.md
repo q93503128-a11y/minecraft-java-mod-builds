@@ -25,17 +25,19 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / COMBAT+MOVEMENT+PROJECTILE SHARED RUNTIMES IMPLEMENTED / COMMON ACTIVE-ABILITY ENGINE NEXT`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / COMBAT+MOVEMENT+PROJECTILE+ACTIVE SHARED RUNTIMES IMPLEMENTED / NEXT BULK SYSTEM BATCH`
 
 외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. 영구 stat runtime을 시작점으로 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치/timed state, augment-generated healing, lethal interception, protection/delayed-damage, shared movement/aerial에 이어 **shot-action + projectile flight-segment runtime**까지 확장했다.
+Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. 영구 stat runtime을 시작점으로 combat provenance, ROOT 공격 보정, post-mitigation 피해 감소, 처치/timed state, augment-generated healing, lethal interception, protection/delayed-damage, shared movement/aerial, shot-action + projectile flight-segment에 이어 **common active engine + broad combat expansion**까지 확장했다.
 
-현재 projectile batch에는 `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`이 한 공통 엔진으로 연결되어 있다. 투사체 자체에 identity/segment 상태를 붙여 전역 projectile scan을 만들지 않았고, vanilla Piercing/Multishot/블록 적중 효과를 가능한 좁은 경계에서 보존한다. ROOT 물리 화살, 분산 보조탄, 연쇄 피해, 반사된 화살은 combat provenance상 구분된다.
+최신 대형 배치에서는 공통 액티브 입력/쿨다운/charge/replay 경계를 만들고 `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`을 연결했다. 여기에 `능력 가속`, `이중 충전`, `재연`, `전투 순환`을 같은 엔진의 메타 규칙으로 붙였고, 기존 전투/회복/provenance 경계를 재사용해 `연쇄 폭발`, `벼락`, `메아리 타격`, `약점 표식`, `속도 전환`, `육중한 일격`, `생명 파동`, `난전`, `유리 대포`, `우두머리 사냥`까지 한 번에 연결했다. 총 20종이 이번 shared-system batch에 포함된다.
 
-이전 movement batch의 `숨 고르기`, `야행성` 이동속도 facet, `햇빛 체질` 이동속도 facet, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`도 유지된다. `야행성` 채굴속도와 `햇빛 체질` 자연회복 간격, 그리고 `발 안 묶이기`, `물살 타기`, `매달리기`, `탄성 저장`, `물 위 달리기`, `속도 전환`처럼 지형/매질/충돌 물리를 크게 바꾸는 이동기는 별도 physics batch 대상으로 남아 있다. `탄성 저장`의 추진력 변환식은 정본에 충분히 명시되지 않아 임의 수치를 만들지 않았다.
+현재 액티브 입력 기능 기준선은 `증강 스킬 모드` 기본키인 Left Alt를 누른 채 `1..0`으로 10개 슬롯을 요청하는 방식이다. 클라이언트는 슬롯 번호만 보내고 실제 보유 여부, 슬롯 해석, cooldown/charge, 대상 판정과 결과는 서버가 결정한다. 최종 active-slot 관리 UI는 아직 없으므로 기존 persistent `activeSlots`를 우선 사용하고, 설정되지 않은 경우 보유한 지원 액티브를 자동 채우는 functional fallback이 있다. 이 입력은 아직 실제 플레이로 조작감을 검수하지 않았으며 modifier+숫자키가 vanilla hotbar 전환도 동시에 일으킬 수 있어 최종 UX로 간주하지 않는다.
 
-최신 projectile batch는 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 관통 개수/피해, 추적 회전감, 도탄 기하, 연쇄 대상/피해, 분산 발사, 화살 절약, Piercing·Multishot 조합은 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+기존 projectile batch의 `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`과 movement batch의 `숨 고르기`, `야행성` 이동속도 facet, `햇빛 체질` 이동속도 facet, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`도 유지된다. `야행성` 채굴속도와 `햇빛 체질` 자연회복 간격, `발 안 묶이기`, `물살 타기`, `매달리기`, `탄성 저장`, `물 위 달리기`처럼 별도 매질/충돌 물리가 필요한 이동기는 별도 physics batch 대상으로 남아 있다. `탄성 저장`의 추진력 변환식은 정본에 충분히 명시되지 않아 임의 수치를 만들지 않는다.
+
+최신 active/combat expansion batch는 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke까지 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어 액티브 입력/쿨다운/이중충전/재연, Better Combat 실제 공격 cadence, 새 전투 효과의 수치/체감, 외부 보스 control, multiplayer mark ownership은 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -134,24 +136,27 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~3의 기능 기준선과 4번의 stat + shared combat/protection/heal/death + movement/aerial + projectile shot-action/flight-segment vertical slice가 구현 중이다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **공통 런타임 하나를 완성하면서 그 경계에 맞는 canonical 증강을 한 번에 연결하는 대형 묶음**으로 진행한다. projectile batch 다음은 이미 준비된 `보호막`을 포함해 여러 액티브를 한 입력/선택/쿨다운/charge 경계로 묶는 **common active-ability engine**이다.
+현재 1~3의 기능 기준선과 4번의 stat + shared combat/protection/heal/death + movement/aerial + projectile + active/combat vertical slice가 구현 중이다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **현재 공통 기반으로 구현 가능한 쉬운/중간 난도 증강을 먼저 전수 분류하고, 같은 runtime boundary에 맞는 것은 한 번에 전부 연결하는 대형 묶음**으로 진행한다. 최소 개수 목표보다 “현재 엔진으로 안전하게 구현 가능한 것을 남기지 않는다”를 batching 기준으로 삼는다.
 
 ## 현재 검증 상태
 
 검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `316f92a67ba7b7a5ecd5651e2fe122d5ac54f05b`
+- BUILD VERIFIED: YES — `960bc9739ac92989499f6d177438aec730503ae4`
 - JAR PRODUCED: YES
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
+- STAT CONTRACT INITIALIZATION: PASS
+- COMBAT/PROTECTION/HEAL/DEATH CONTRACT INITIALIZATION: PASS
 - MOVEMENT CONTRACT INITIALIZATION: PASS
 - PROJECTILE CONTRACT INITIALIZATION: PASS
-- GitHub Actions: `40074027578` / Build Augmentation Survival Pack #44
-- Verification artifact: `augmentation-survival-pack-smoke-44` / ID `12552780881`
-- Artifact ZIP SHA-256: `0463311e3211f75e27ba2c99479d3a399cfcc54c01536a4dc5cca437bfce6ba3`
+- EXPANSION CONTRACT INITIALIZATION: PASS
+- GitHub Actions: `40076587240` / Build Augmentation Survival Pack #46
+- Verification artifact: `augmentation-survival-pack-smoke-46` / ID `12552963409`
+- Artifact ZIP SHA-256: `940bf01dca404c463dd54a6f1a88caeb0535152f6b5d4743bb471cf910ff8d04`
 
 현재 구현 범위:
 
@@ -169,65 +174,34 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - SECOND CHOICE ATOMIC 2-PICK: IMPLEMENTED
 - 3:1 CORE UPGRADE ONE/ALL: IMPLEMENTED
 - FUNCTIONAL DEVICE CARD UI: IMPLEMENTED BASELINE
-- UNCONDITIONAL STAT CONTRACT: IMPLEMENTED — 4 definitions / 4 modifier groups
+- UNCONDITIONAL STAT CONTRACT: IMPLEMENTED BASELINE
 - SHARED COMBAT PROVENANCE: IMPLEMENTED BASELINE
-- ROOT MELEE / PROJECTILE DAMAGE AUGMENT PATH: IMPLEMENTED BASELINE
-- POST-MITIGATION DAMAGE-REDUCTION PATH: IMPLEMENTED BASELINE
-- TIMED COMBAT EFFECT STATE: IMPLEMENTED BASELINE
 - PROTECTION / DELAYED-DAMAGE ENGINE: IMPLEMENTED BASELINE
-- SOURCE-OWNED SHIELD / AUGMENT ABSORPTION POOLS: IMPLEMENTED ENGINE
 - AUGMENT-GENERATED HEALING PATH: IMPLEMENTED BASELINE
 - LETHAL-DAMAGE CHAIN: IMPLEMENTED BASELINE
 - SHARED MOVEMENT / AERIAL RUNTIME: IMPLEMENTED BASELINE
 - PROJECTILE SHOT-ACTION / FLIGHT-SEGMENT RUNTIME: IMPLEMENTED BASELINE
-- `강건함`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `속공`: IMPLEMENTED / BETTER COMBAT LIVE TEST PENDING
-- `빠른 발`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `버티기`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `날 선 감각`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `정확한 조준`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `질긴 피부`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `가벼운 착지`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `튼튼한 폐`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `마지막 힘`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `연속 처치`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `다급한 발걸음`: IMPLEMENTED / LIVE-PLAYER TEST PENDING
-- `흡혈`: IMPLEMENTED DIRECT PLAYER-KILL BASELINE / LIVE-PLAYER TEST PENDING
-- `회복 증폭`: PARTIAL — COMMON AUGMENT-HEAL PATH ONLY
-- `피해 적응`: IMPLEMENTED BASELINE / LIVE-PLAYER TEST PENDING
-- `피해 지연`: IMPLEMENTED BASELINE / LIVE-PLAYER TEST PENDING
-- `넘치는 회복`: IMPLEMENTED ON ROUTED AUGMENT HEALS / HUD+LIVE TEST PENDING
-- `회복 나눔`: IMPLEMENTED TEAM+TAMED BASELINE / DOMINATION ADAPTER+LIVE TEST PENDING
-- `한 번 버티기`: IMPLEMENTED BASELINE / LIVE TOTEM-ORDER TEST PENDING
-- `비상 토템`: IMPLEMENTED BASELINE / LIVE INVENTORY-TOTEM TEST PENDING
-- `재림`: IMPLEMENTED BASELINE / LIVE STASIS+ORDER TEST PENDING
-- `보호막`: POOL/TUNING/API IMPLEMENTED / ACTIVE TRIGGER NOT IMPLEMENTED
-- `숨 고르기`: IMPLEMENTED / LIVE MOVEMENT TEST PENDING
-- `야행성`: PARTIAL — NIGHT MOVEMENT IMPLEMENTED / MINING SPEED NOT IMPLEMENTED
-- `햇빛 체질`: PARTIAL — DAY MOVEMENT IMPLEMENTED / NATURAL REGEN INTERVAL NOT IMPLEMENTED
-- `성큼걸음`: IMPLEMENTED / LIVE STEP-COLLISION TEST PENDING
-- `멀리뛰기`: IMPLEMENTED / LIVE SPRINT-JUMP TEST PENDING
-- `관성 전환`: IMPLEMENTED / LIVE FALL-LANDING TEST PENDING
-- `두 번 점프`: IMPLEMENTED SERVER-AUTHORITATIVE BASELINE / LIVE INPUT+SYNC TEST PENDING
-- `공중 연계`: IMPLEMENTED ROOT-MELEE RECHARGE BASELINE / LIVE BETTER-COMBAT TEST PENDING
-- `화살 아끼기`: IMPLEMENTED ROOT-AMMO BASELINE / LIVE AMMO TEST PENDING
-- `관통 화살`: IMPLEMENTED FLIGHT-SEGMENT BASELINE / LIVE PIERCE TEST PENDING
-- `연쇄 화살`: IMPLEMENTED DERIVED-CHAIN BASELINE / LIVE TARGETING+DAMAGE TEST PENDING
-- `분산 사격`: IMPLEMENTED DERIVED-PROJECTILE BASELINE / LIVE BOW+CROSSBOW TEST PENDING
-- `추적 화살`: IMPLEMENTED HOMING BASELINE / LIVE TURN+REACQUIRE TEST PENDING
-- `도탄`: IMPLEMENTED SEGMENT-RICOCHET BASELINE / LIVE GEOMETRY TEST PENDING
+- COMMON ACTIVE-ABILITY ENGINE: IMPLEMENTED BASELINE
+- BROAD COMBAT EXPANSION RUNTIME: IMPLEMENTED BASELINE
+- `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`: IMPLEMENTED BASELINE / LIVE TEST PENDING
+- `능력 가속`, `이중 충전`, `재연`, `전투 순환`: PARTIAL ROSTER INTEGRATION — CURRENT SIX ACTIVES
+- `연쇄 폭발`, `벼락`, `메아리 타격`, `약점 표식`, `속도 전환`, `육중한 일격`, `생명 파동`, `난전`, `유리 대포`: IMPLEMENTED BASELINE / LIVE TEST PENDING
+- `우두머리 사냥`: PARTIAL — EXACT CONFIGURED BOSS IDENTITIES ONLY
+- `약점 표식`: MULTIPLAYER OWNERSHIP FIX PENDING — CURRENTLY ONE MARK OWNER PER TARGET
+- `야행성`: PARTIAL — NIGHT MOVEMENT IMPLEMENTED / MINING SPEED PENDING
+- `햇빛 체질`: PARTIAL — DAY MOVEMENT IMPLEMENTED / NATURAL REGEN INTERVAL PENDING
 - COLLISION/MEDIUM-HEAVY MOVEMENT MECHANICS: NOT IMPLEMENTED
-- COMMON ACTIVE-ABILITY ENGINE: NOT IMPLEMENTED
-- FINAL DEVICE MODEL/TEXTURE/VFX/SOUND: NOT IMPLEMENTED
-- REMAINING AUGMENT GAMEPLAY EFFECT RUNTIME: NOT IMPLEMENTED
+- SAVE-WIDE THREAT LIVE HOSTILE SCALING: NOT COMPLETE
+- FINAL DEVICE/ACTIVE/COMBAT MODEL-TEXTURE-VFX-SOUND-HUD: NOT COMPLETE
+- ACTIVE ENGINE LIVE-PLAYER TESTED: NO
+- ACTIVE INPUT/COOLDOWN/DOUBLE-CHARGE/REPLAY LIVE TESTED: NO
+- BROAD COMBAT EXPANSION LIVE TESTED: NO
 - PROJECTILE LIVE-PLAYER TESTED: NO
 - MOVEMENT LIVE-PLAYER TESTED: NO
 - PROTECTION PIPELINE LIVE-PLAYER TESTED: NO
 - HEALING PIPELINE LIVE-PLAYER TESTED: NO
 - LETHAL CHAIN LIVE-PLAYER TESTED: NO
-- COMBAT AUGMENT LIVE-PLAYER TESTED: NO
 - STAT AUGMENT LIVE-PLAYER TESTED: NO
-- STAT RECONNECT/DEATH TESTED: NO
 - DEVICE FLOW PLAYTESTED: NO
 - UI VISUAL REVIEW: NO
 - BETTER COMBAT GAMEPLAY TESTED: NO
