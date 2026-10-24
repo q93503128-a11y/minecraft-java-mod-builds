@@ -6,6 +6,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,6 +28,7 @@ abstract class PhaseShiftPlayerActionMixin {
     private void augmentationSurvival$phaseEntityInteractLock(
             Entity target,
             InteractionHand hand,
+            Vec3 hitLocation,
             CallbackInfoReturnable<InteractionResult> cir
     ) {
         Object self = this;
