@@ -1,6 +1,6 @@
 # Augmentation Survival — Core Acquisition Design
 
-Date: 2026-10-24
+Date: 2026-10-24  
 Status: CANONICAL INITIAL IMPLEMENTATION BASELINE / NUMBERS PLAYTEST-TUNABLE
 
 이 문서는 증강 코어의 획득처, 등급 분포, 보스 보상, 반복 파밍 방지 원칙을 정의한다.
@@ -8,6 +8,13 @@ Status: CANONICAL INITIAL IMPLEMENTATION BASELINE / NUMBERS PLAYTEST-TUNABLE
 목표는 특정 한 활동만 반복하는 것이 아니라 Minecraft의 탐험·전투·제작·낚시·보스 콘텐츠가 모두 증강 성장으로 연결되게 만드는 것이다.
 
 정확한 수치는 첫 플레이테스트 후 조정할 수 있으나, **획득 구조와 상대적 우선순위는 구현 기준으로 사용한다.**
+
+관련 정본은 역할을 분리한다.
+
+- 확률/등급 분포: `src/main/resources/data/augmentation_survival/augmentation/core_distribution_contract.json`
+- 보스 reward band/첫 처치/반복 정책: `src/main/resources/data/augmentation_survival/augmentation/boss_core_reward_contract.json`
+- 실제 구조물·몹·이벤트·보스 출처 매핑: `src/main/resources/data/augmentation_survival/augmentation/core_source_profiles.json`
+- 출처 매핑 설명/감사 기록: `CORE_SOURCE_PROFILE_MATRIX_2026-10-24.md`
 
 ## 1. 핵심 경제 원칙
 
@@ -33,22 +40,20 @@ Status: CANONICAL INITIAL IMPLEMENTATION BASELINE / NUMBERS PLAYTEST-TUNABLE
 - 영웅 3 -> 전설 1
 - 전설 3 -> 신화 1
 
-따라서 같은 가치 기준으로 보면:
+일반 환산 가치:
 
 - 일반 = 1
-- 고급 = 일반 3
-- 희귀 = 일반 9
-- 영웅 = 일반 27
-- 전설 = 일반 81
-- 신화 = 일반 243
+- 고급 = 3
+- 희귀 = 9
+- 영웅 = 27
+- 전설 = 81
+- 신화 = 243
 
-이 구조 자체가 운이 나쁜 플레이어의 확정 진척 역할을 한다.
-
-그래서 별도의 숨겨진 pity 게이지는 초기 구현에 넣지 않는다.
+이 구조 자체가 운이 나쁜 플레이어의 확정 진척 역할을 하므로 별도 숨겨진 pity 게이지는 초기 구현에 넣지 않는다.
 
 ## 3. 일반 코어 제작
 
-`GAME_DESIGN.md`의 현재 레시피를 그대로 사용한다.
+`GAME_DESIGN.md`의 현재 레시피를 사용한다.
 
 ```text
 R A R
@@ -63,21 +68,22 @@ R A R
 
 제작은 초반에 증강 시스템을 반드시 체험할 수 있게 하는 확정 루트다.
 
-다만 일반 코어를 대량 자동생산하는 별도 기계는 초기 구현에 넣지 않는다.
+일반 코어를 대량 자동생산하는 별도 기계는 초기 구현에 넣지 않는다.
 
 ## 4. 자연 구조물 전리품
 
-자연 생성 loot container는 기존 전리품을 유지하고 **추가 코어 roll**을 한 번 수행한다.
+자연 생성 loot container는 기존 전리품을 유지하고 추가 core roll을 수행한다.
 
-한 컨테이너에서 코어 추가 roll은 최대 1회다.
+- 한 컨테이너에서 추가 core roll 최대 1회
+- 플레이어 설치 상자 제외
+- 이미 자연 loot가 소비된 컨테이너 재시드 금지
+- 복제 컨테이너에서 새 natural core roll 생성 금지
 
-플레이어가 설치한 상자, 이미 자연 loot table이 소비된 컨테이너, 복제된 컨테이너에는 새 코어 roll을 만들지 않는다.
+### 4.1 `routine_exploration`
 
-### 4.1 routine_exploration
+추가 core roll: **8%**
 
-코어 추가 roll 확률: **8%**
-
-성공했을 때 등급:
+성공 시:
 
 - 일반 84%
 - 고급 15%
@@ -92,13 +98,13 @@ R A R
 - Repurposed Structures의 낮은 위험도 구조물
 - Dungeons and Taverns의 소형/비전투 중심 구조물
 
-마을의 일반 생활 상자는 기본적으로 코어 주력 공급처로 사용하지 않는다. 너무 안전하고 반복적으로 밀집된 상자는 개별 allowlist에서 제외할 수 있다.
+마을의 일반 생활 상자는 안전하고 밀집되어 있으므로 기본 코어 공급처에서 제외한다.
 
-### 4.2 dangerous_mid
+### 4.2 `dangerous_mid`
 
-코어 추가 roll 확률: **12%**
+추가 core roll: **12%**
 
-성공했을 때 등급:
+성공 시:
 
 - 고급 70%
 - 희귀 25%
@@ -110,15 +116,15 @@ R A R
 - 정글 사원
 - 약탈자 전초기지
 - 네더 요새
-- 요새(Stronghold)
+- Stronghold
 - 일반 Trial Chamber 보상/금고 계열
 - 중형 던전과 전투형 구조물
 
-### 4.3 dangerous_high
+### 4.3 `dangerous_high`
 
-코어 추가 roll 확률: **18%**
+추가 core roll: **18%**
 
-성공했을 때 등급:
+성공 시:
 
 - 희귀 70%
 - 영웅 25%
@@ -128,33 +134,29 @@ R A R
 
 - 보루 잔해의 위험도가 높은 loot
 - 고대 도시
-- 우드랜드 맨션의 핵심 보상
+- 우드랜드 맨션 핵심 보상
 - 엔드 시티
 - Ominous/고난도 Trial 계열 보상
 - Dungeons and Taverns의 대형 전투 던전
 - MCEndgame의 고난도 던전 컨테이너
 - Chrono Dawn / World Bosses의 보스 전 단계 핵심 캐시
 
-### 4.4 pinnacle_cache
+### 4.4 `pinnacle_cache`
 
-일반 구조물 상자가 아니라 **명시적으로 지정한 최고급 보상 캐시**에만 사용한다.
+일반 구조물 상자가 아니라 **명시적으로 지정한 최고급 완료 보상 캐시**에만 사용한다.
 
-코어 추가 roll 확률: **35%**
+추가 core roll: **35%**
 
-성공했을 때 등급:
+성공 시:
 
 - 전설 90%
 - 신화 10%
 
-일반적인 여러 칸짜리 던전 상자에 이 프로필을 대량 적용하지 않는다.
+일반적인 다중 상자 던전에 대량 적용하지 않는다.
 
-Boss raid cache, 최종 보상실, 일회성에 가까운 최고급 캐시처럼 콘텐츠 완료를 대표하는 보상에만 사용한다.
+## 5. 구조물 밀도 보정
 
-## 5. 단일 핵심 보상 구조물 보정
-
-상자가 하나뿐인 구조물은 다수 상자 던전보다 기대 보상이 지나치게 낮아질 수 있다.
-
-따라서 구조물별 데이터 프로필에 `coreRollMultiplier`를 둘 수 있다.
+구조물별 `coreRollMultiplier`를 둘 수 있다.
 
 초기 기준:
 
@@ -162,62 +164,55 @@ Boss raid cache, 최종 보상실, 일회성에 가까운 최고급 캐시처럼
 - 단일 핵심 보상 상자: x1.5~x2.5
 - 고밀도 던전: x0.5~x0.8 가능
 
-예를 들어 buried treasure처럼 사실상 한 상자가 콘텐츠 전부인 경우 routine/mid 프로필의 기본 확률을 그대로 쓰지 않고 별도 multiplier를 적용한다.
+이 multiplier는 **아이템 수량이 아니라 추가 core roll 확률**에 적용한다.
 
-이 값은 구조물 단위 data profile에서 관리하며 코드에 구조물 ID를 대량 하드코딩하지 않는다.
+예를 들어 buried treasure처럼 사실상 한 상자가 콘텐츠 전부면 상향하고, 고대 도시나 대형 외부 던전처럼 컨테이너가 많은 곳은 하향한다.
+
+구체적인 source별 보정은 `core_source_profiles.json`에서 관리한다.
 
 ## 6. 일반 몹 코어 드랍
 
-일반 몹 파밍은 코어의 주력 루트가 아니다. 그러나 전투 중 드물게 코어가 튀어나오는 기대감은 유지한다.
+일반 몹 파밍은 코어의 주력 루트가 아니다. 전투 중 드물게 코어가 나오는 기대감만 유지한다.
 
-### 6.1 일반 적대몹
+### 6.1 `normal_hostile`
 
-플레이어 귀속 처치 시 코어 roll: **0.20%**
-
-성공 시:
+플레이어 귀속 처치 시 core roll: **0.20%**
 
 - 일반 90%
 - 고급 10%
 
-### 6.2 특수 적대몹
+### 6.2 `special_hostile`
 
-특수몹/강화몹 profile의 코어 roll: **1.5%**
-
-성공 시:
+플레이어 귀속 처치 시 core roll: **1.5%**
 
 - 일반 65%
 - 고급 30%
 - 희귀 5%
 
-### 6.3 엘리트 / 레이드 특수몹
+### 6.3 `elite_hostile`
 
-엘리트 profile의 코어 roll: **4%**
-
-성공 시:
+플레이어 귀속 처치 시 core roll: **4%**
 
 - 고급 65%
 - 희귀 30%
 - 영웅 5%
 
-### 6.4 일반 몹 드랍 안전 규칙
+### 6.4 몹 드랍 안전 규칙
 
-- 자동 환경사, 낙사 장치, 호퍼 자동화만으로는 core roll을 만들지 않는다.
+- 자동 환경사/낙사 장치/호퍼 자동화만으로는 core roll을 만들지 않는다.
 - 플레이어 귀속 처치만 인정한다.
-- `분신`, `지배` 등 COMPANION 처치는 일반 코어 roll을 만들지 않는다.
-- 플레이어가 만든 파생 피해로 죽은 적은 플레이어 귀속 처치로 인정할 수 있다.
-- Looting은 코어 roll 확률/수량에 적용하지 않는다.
+- `분신`, `지배` 등 COMPANION 단독 처치는 일반 코어 roll을 만들지 않는다.
+- 플레이어가 만든 적법한 파생 피해의 kill attribution은 인정할 수 있다.
+- Looting은 코어 확률/수량에 적용하지 않는다.
 - `풍요`, `전리품 챙기기` 등 일반 드롭 증가 효과는 코어를 복제하지 않는다.
-- 한 개체의 한 번의 사망 처리에서 코어 roll은 최대 1회다.
+- 한 개체의 한 번의 사망 처리에서 일반 core roll은 최대 1회다.
+- 별도 이벤트/보스 보상을 받는 개체는 같은 사망에서 일반 core roll을 중복하지 않는다.
 
 ## 7. 이벤트 보상
 
-일반 몹과 보스 사이에 있는 콘텐츠 완료 보상을 따로 둔다.
-
 ### Raid Victory
 
-레이드 승리 참여 플레이어에게 개인 보상 코어 **1개 보장**.
-
-등급:
+참여 플레이어 개인 보상 코어 **1개 보장**.
 
 - 고급 65%
 - 희귀 30%
@@ -227,8 +222,6 @@ Boss raid cache, 최종 보상실, 일회성에 가까운 최고급 캐시처럼
 
 직접 처치 보상 코어 **1개 보장**.
 
-등급:
-
 - 고급 50%
 - 희귀 45%
 - 영웅 5%
@@ -237,19 +230,15 @@ Boss raid cache, 최종 보상실, 일회성에 가까운 최고급 캐시처럼
 
 플레이어 귀속 처치 시 코어 **1개 보장**.
 
-등급:
-
 - 희귀 65%
 - 영웅 30%
 - 전설 5%
 
-Warden은 보스 UI 여부와 무관하게 고난도 특수 적으로 별도 profile을 사용한다.
+Warden은 보스 UI 여부와 무관하게 고난도 특수 적 이벤트 profile을 사용한다.
 
 ## 8. 낚시
 
-낚시는 전투를 하지 않는 플레이어도 낮은 등급 코어 진척을 얻을 수 있는 보조 루트다.
-
-**보물 범주 낚시에 성공했을 때** 기존 보상과 별개로 코어 추가 roll **12%**.
+보물 범주 낚시에 성공했을 때 기존 보상과 별개로 추가 core roll **12%**.
 
 성공 시:
 
@@ -263,39 +252,32 @@ Warden은 보스 UI 여부와 무관하게 고난도 특수 적으로 별도 pro
 
 ## 9. 보스 코어 보상
 
-실제 보스 처치는 구조물 상자보다 확실하게 좋은 성장 루트여야 한다.
+보스 원래 보상은 유지하고, 증강 코어는 서버 권한의 개인 추가 보상으로 지급한다.
 
-보스 원래 보상은 유지하고, 증강 코어는 서버 권한의 개인 추가 보상으로 지급하는 방향을 기본으로 한다.
-
-### 9.1 boss_standard
+### 9.1 `boss_standard`
 
 처치 시 코어 **1개 보장**.
 
 - 희귀 75%
 - 영웅 25%
 
-대상:
+정식 보스이지만 최종급은 아닌 encounter에 사용한다.
 
-- 미니보스보다 명확히 강하지만 최종급은 아닌 정식 보스
-- 외부 모드의 기본 보스 profile
-
-### 9.2 boss_major
+### 9.2 `boss_major`
 
 처치 시 코어 **1개 보장**.
 
 - 영웅 80%
 - 전설 20%
 
-대표 대상:
+초기 대표 대상:
 
 - Wither
-- Chrono Dawn 주요 보스의 초기 기본값
-- World Bosses의 주요 보스 기본값
-- MCEndgame의 반복형 던전 보스 중 상위급
+- Chrono Dawn 인식 보스 기본값
+- World Bosses 인식 보스 기본값
+- MCEndgame 반복 던전 보스 기본값
 
-외부 보스는 실제 난이도 측정 후 standard/major/pinnacle 사이에서 개별 재분류한다.
-
-### 9.3 boss_pinnacle
+### 9.3 `boss_pinnacle`
 
 처치 시 코어 **1개 보장**.
 
@@ -306,112 +288,106 @@ Warden은 보스 UI 여부와 무관하게 고난도 특수 적으로 별도 pro
 
 대표 대상:
 
-- Ender Dragon 첫 처치
-- 외부 모드의 실제 최종급/pinnacle boss
-- MCEndgame Beastweaver처럼 최종급으로 검증된 보스
+- Ender Dragon
+- 실제 최종급 외부 보스
+- MCEndgame Beastweaver는 exact ID 검증 후 승격할 pinnacle 후보
 
 ### 9.4 첫 처치 보너스
 
-플레이어별 보스 type 최초 처치에는 **같은 reward band의 코어 1개를 추가 지급**한다.
+플레이어별 보스 type 최초 처치에는 **같은 reward band의 코어 1개 추가**.
 
-즉 첫 처치는 기본적으로 2개, 이후 반복 처치는 1개다.
+즉 최초 처치는 기본적으로 2개, 이후 반복 처치는 1개다.
 
 목적:
 
-- 같은 보스만 반복하는 것보다 여러 보스를 찾아다니는 것을 장려
-- 공식 모드팩의 여러 보스 콘텐츠를 실제 증강 성장 루프에 연결
-- 첫 도전의 보상 체감 강화
+- 한 보스 반복보다 여러 보스 탐험 장려
+- 공식 모드팩의 다양한 보스를 증강 성장에 연결
+- 첫 도전 보상 체감 강화
 
-### 9.5 반복 가능한 pinnacle 보스
+### 9.5 반복 가능한 pinnacle
 
-반복 소환/반복 던전이 쉬운 pinnacle boss는 첫 처치 이후 직접 신화 확률을 낮출 수 있다.
-
-초기 반복 분포:
+반복 pinnacle의 초기 분포:
 
 - 전설 95%
 - 신화 5%
 
-특히 Ender Dragon 반복 처치는 첫 처치 이후 `boss_major` 또는 이 반복 pinnacle 프로필 중 실제 플레이테스트에 맞는 쪽을 사용한다. 초기 구현 기본값은 **반복 pinnacle 95/5**로 둔다.
+Ender Dragon 반복 처치의 초기 기본값도 이 반복 pinnacle 분포다.
 
-## 10. 외부 모드별 기본 연결
+반복 가능한 외부 pinnacle은 실제 파밍 속도에 따라 직접 신화 확률을 더 낮출 수 있지만 전설 보상 자체는 제거하지 않는다.
+
+## 10. 외부 모드 연결
 
 ### Terralith
 
-바이옴 자체에서 코어를 무작위로 떨어뜨리지 않는다.
-
-해당 바이옴에 배치되는 구조물/몹/탐험 콘텐츠의 profile을 통해 코어를 얻는다.
+바이옴 자체에서 코어를 무작위 생성하지 않는다. 해당 바이옴의 구조물/몹/탐험 콘텐츠를 통해 얻는다.
 
 ### Repurposed Structures
 
-가능하면 원본 vanilla 구조물의 위험도 profile을 상속한다.
+가능하면 대응 vanilla 구조물 위험도를 상속한다.
 
-예:
+- mineshaft/shipwreck 계열 -> routine
+- fortress/stronghold/pyramid/outpost 계열 -> dangerous_mid
+- mansion/bastion/ancient-city/end-city급 계열 -> dangerous_high
+- village 계열 -> 제외
 
-- mineshaft 계열 -> routine
-- fortress/stronghold 계열 -> dangerous_mid
-- mansion/bastion/ancient-city급 계열 -> dangerous_high
-
-개별 예외는 data profile로 수정한다.
+개별 variant를 대량 exact 하드코딩하지 않고 path family + namespace fallback을 사용한다.
 
 ### Dungeons and Taverns
 
-구조물 밀도와 상자 수가 많으므로 크기/위험도 기준으로 profile을 나눈다.
+구조물/상자 밀도가 높으므로 크기와 위험도에 따라 routine/mid/high로 나누며 기본 multiplier를 낮춘다.
 
-- 소형 -> routine
-- 중형 전투 -> dangerous_mid
-- 대형/심층 -> dangerous_high
-
-상자가 특히 많은 구조물은 `coreRollMultiplier < 1`로 보정한다.
+정확한 family 보정은 `core_source_profiles.json`에 둔다.
 
 ### Friends&Foes
 
-일반 추가 몹은 normal/special mob profile을 사용한다.
+확인된 특수 전투 개체를 special/elite로 승격한다.
 
-명확한 특수 전투 개체만 special 또는 elite로 승격한다.
+이번 source audit에서 exact registry ID가 확인된 대상:
+
+- iceologer -> elite
+- illusioner -> elite
+- mauler -> special
+- wildfire -> elite
+
+비적대 Friends&Foes 개체는 코어 드랍 대상이 아니다.
 
 ### Illager Invasion
 
-일반 일리저는 normal/special, 강한 raid unit은 elite profile을 사용한다.
+26.2.x namespace의 적대 개체는 기본 special로 시작한다.
 
-raid victory 보상은 Minecraft 공통 raid completion 보상을 따른다.
+개별 exact registry ID를 추측하지 않으며, 실제 ID와 난이도가 검증된 강한 raid unit만 elite override로 승격한다.
+
+raid victory는 Minecraft 공통 event profile을 따른다.
 
 ### Naturalist
 
 평범한 야생동물은 코어 드랍 대상이 아니다.
 
-코어 파밍을 위해 야생동물을 대량 학살하는 플레이를 유도하지 않는다.
-
 ### Farmer's Delight Refabricated
 
-일반 농사/요리 생산에서 코어를 직접 생성하지 않는다.
-
-비전투 증강 활용처를 늘리는 역할에 집중한다.
+일반 농사/요리 생산에서 progression core를 직접 생성하지 않는다.
 
 ### Chrono Dawn
 
-6개 작성 보스는 기본적으로 boss_major에서 시작한다.
+recognized boss encounter는 기본 `boss_major`.
 
-실제 난이도/진행 단계 확인 후 일부를 boss_standard 또는 boss_pinnacle로 조정한다.
-
-시간 차원의 핵심 캐시는 dangerous_high 또는 명시적 pinnacle_cache로 연결할 수 있다.
+실제 난이도/진행 단계 확인 후 일부를 standard 또는 pinnacle로 조정한다.
 
 ### World Bosses
 
-주요 보스는 기본 boss_major.
+recognized boss encounter는 기본 `boss_major`.
 
-실제 최종급으로 확인된 보스만 boss_pinnacle로 승격한다.
-
-raid cache는 dangerous_high, 최고급 완료 캐시만 pinnacle_cache 사용.
+실제 최종급만 pinnacle로 승격한다. raid cache는 구조물/cache profile을 사용한다.
 
 ### MCEndgame
 
-- 일반 고난도 던전 상자: dangerous_high
-- 반복 던전 보스: boss_major 기본
-- 최종급 Beastweaver: boss_pinnacle 후보
+- 일반 고난도 던전 상자 -> dangerous_high
+- recognized 반복 던전 보스 -> boss_major 기본
+- Beastweaver -> boss_pinnacle 후보
 
-반복 보스에서 신화가 지나치게 빠르게 누적되면 직접 신화 확률을 낮추되 전설 보상 자체를 제거하지 않는다.
+Beastweaver exact registry ID는 이번 audit에서 검증되지 않았으므로 `core_source_profiles.json`에 비활성 pending override로만 기록한다.
 
-## 11. 코어 획득에 영향을 주지 않는 증강
+## 11. 코어 획득에 영향을 주지 않는 효과
 
 별도 명시가 없는 한 다음은 코어에 적용하지 않는다.
 
@@ -422,66 +398,107 @@ raid cache는 dangerous_high, 최고급 완료 캐시만 pinnacle_cache 사용.
 - 자동 채굴/수확 추가 블록
 - 동료/분신 처치 보상 귀속
 
-코어는 일반 아이템 드롭 파이프라인과 별도의 progression reward로 취급한다.
+코어는 일반 아이템 drop pipeline과 별도의 progression reward다.
 
 ## 12. 플레이 진행 목표
 
-정확한 시간은 플레이 스타일과 월드 seed에 따라 달라지므로 강제 타이머로 쓰지 않는다.
-
-첫 플레이테스트 목표 체감:
+강제 타이머가 아니라 첫 플레이테스트 목표 체감이다.
 
 - 일반: 첫 10~30분 안에 최소 1개 접근 가능
 - 고급: 첫 30~60분 안에 현실적으로 접근 가능
 - 희귀: 약 1~2시간대부터 탐험/전투로 직접 노릴 수 있음
 - 영웅: 약 2~5시간대부터 위험 콘텐츠/보스로 현실적으로 등장
 - 전설: 약 5~10시간대부터 고난도 구조물/주요 보스로 노릴 수 있음
-- 신화: 약 8~15시간대부터 최고급 보스 또는 전설 3:1 합성으로 첫 획득 가능
+- 신화: 약 8~15시간대부터 pinnacle 보스 또는 전설 3:1 합성으로 첫 획득 가능
 
-이는 `첫 획득 가능 시점`이지 전체 로스터 완성 시간 목표가 아니다.
+이는 첫 획득 가능 시점이지 전체 로스터 완성 시간 목표가 아니다.
 
-신화는 엔더 드래곤 처치 이후에만 허용하지 않는다. 공식 팩의 다른 pinnacle 콘텐츠를 먼저 공략하면 드래곤 이전에도 얻을 수 있어야 한다.
+신화는 Ender Dragon 이후에만 허용하지 않는다. 다른 pinnacle 콘텐츠를 먼저 공략하면 드래곤 이전에도 얻을 수 있어야 한다.
 
-## 13. 플레이테스트에서 볼 지표
-
-초기 수치의 성공 여부는 다음으로 판단한다.
+## 13. 플레이테스트 지표
 
 - 시간당 획득 코어 수 / 등급
 - 획득 경로별 비율: 제작 / 상자 / 일반몹 / 이벤트 / 낚시 / 보스 / 합성
 - 첫 고급/희귀/영웅/전설/신화 도달 시간
-- 상자 수가 많은 외부 던전의 코어 과잉 여부
+- 고밀도 외부 던전의 코어 과잉 여부
 - 몹팜이 탐험보다 효율적인지 여부
 - 동일 보스 반복이 다양한 보스 탐험을 압도하는지 여부
 - 3:1 합성으로 소모되는 저등급 코어 비율
-- 146종 후보 풀에서 원하는 빌드가 지나치게 늦게 완성되는지 여부
+- 현재 전체 증강 후보 풀에서 원하는 빌드 완성 속도
 
 ## 14. 구현 데이터 구조
 
-소스별 값은 data-driven으로 둔다.
+세 파일의 책임을 섞지 않는다.
 
-권장 필드:
+### `core_distribution_contract.json`
 
-- source id / selector
-- source kind
-- distribution profile
-- coreRollChance
-- coreRollMultiplier
+관리 대상:
+
+- structure distribution template
+- mob profile
+- event profile
+- fishing profile
+- core roll chance
 - tier weights
-- maxCoreRolls
-- requirePlayerAttributedKill
-- firstKillBonus
-- repeatDistribution
-- perPlayerReward
+
+### `boss_core_reward_contract.json`
+
+관리 대상:
+
+- boss_standard / major / pinnacle
+- first kill bonus
+- repeat distribution
+- per-player reward
+- 외부 boss adapter 기본 정책
+
+### `core_source_profiles.json`
+
+관리 대상:
+
+- source ID / selector
+- source kind
+- exact override
+- path family
+- namespace default
+- global fallback
+- `coreRollMultiplier`
 - exclusions
+- event/boss redirect
 
-구현 시 `core_distribution_contract.json`과 `boss_core_reward_contract.json`을 이 문서의 수치로 갱신한다.
+선택자 우선순위:
 
-## 15. 현재 상태
+1. exact override
+2. path prefix/family
+3. namespace default
+4. global fallback
+
+먼저 맞은 규칙이 승리한다.
+
+확인하지 못한 외부 exact registry ID는 절대로 추측해서 활성화하지 않는다.
+
+자세한 매핑은 `CORE_SOURCE_PROFILE_MATRIX_2026-10-24.md`를 따른다.
+
+## 15. 런타임 구현 원칙
+
+- 서버가 최종 보상을 결정한다.
+- 구조물 loot 초기화/소비 시점, mob death, event completion, boss adapter 같은 **이벤트 기반 훅**에서만 판정한다.
+- 주변 전체 구조물/몹을 매 tick 검색하지 않는다.
+- 동일 사망/동일 loot container에서 중복 판정을 막는 provenance/state가 필요하다.
+- 보스 개인 보상은 shared ground drop에 의존하지 않는다.
+- source resolver는 JSON을 읽고 profile ID를 반환하며 확률 자체를 코드에 복제하지 않는다.
+
+## 16. 현재 상태
 
 - ACQUISITION LOOP DESIGNED: YES
 - EXACT INITIAL WEIGHTS DEFINED: YES
-- RUNTIME IMPLEMENTED: NO
+- SOURCE PROFILE MATRIX WRITTEN: YES
+- DATA SOURCE RESOLVER CONTRACT WRITTEN: YES
+- VERIFIED FRIENDS&FOES EXACT HOSTILE IDS: YES
+- ILLAGER INVASION EXACT PER-ENTITY IDS LOCKED: NO
+- EXTERNAL BOSS EXACT PER-BOSS IDS LOCKED: NO
+- RUNTIME CONSUMER IMPLEMENTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 - FINAL BALANCE LOCKED: NO
 
-Docs/design only. Build/CI not run.
+Docs/data contract only. Build/CI not run.
