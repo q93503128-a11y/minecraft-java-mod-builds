@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "logging_knack": {
+    "block_break_speed_per_level": 0.10
+  },
+  "nocturnal": {
+    "mining_speed_per_level": 0.05
+  },
+  "continuous_mining": {
+    "window_ticks": 40,
+    "max_stacks": 5,
+    "block_break_speed_per_stack_per_level": 0.03
+  },
+  "efficient_metabolism": {
+    "exhaustion_reduction_per_level": 0.04
+  },
+  "webbed_feet": {
+    "swim_speed_per_level": 0.10
+  },
+  "long_breath": {
+    "oxygen_bonus_by_level": [0.1111111111, 0.25, 0.4285714286]
+  },
+  "cold_adaptation": {
+    "freeze_buildup_reduction_by_level": [0.15, 0.30, 0.45]
+  },
+  "tool_care": {
+    "durability_avoid_per_level": 0.05
+  },
+  "armor_care": {
+    "durability_avoid_per_level": 0.05
+  },
+  "recovery": {
+    "natural_regen_interval_reduction_per_level": 0.10
+  },
+  "sun_affinity": {
+    "natural_regen_interval_reduction_per_level": 0.05
+  },
+  "night_vision": {
+    "refresh_duration_ticks": 220,
+    "refresh_threshold_ticks": 60
+  }
+}
