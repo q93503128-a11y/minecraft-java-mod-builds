@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import net.minecraft.core.BlockPos;
@@ -20,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Locks reincarnation actions and reports block/item actions that interrupt return-home focus. */
+/** Locks reincarnation actions and reports block/item actions that interrupt concentration channels. */
 @Mixin(ServerPlayerGameMode.class)
 abstract class ServerPlayerGameModeActionLockMixin {
     @Shadow
@@ -37,6 +38,7 @@ abstract class ServerPlayerGameModeActionLockMixin {
             CallbackInfo ci
     ) {
         SpecialActiveAugmentService.notifyDisruptingAction(player);
+        AdvancedActiveAugmentService.notifyDisruptingAction(player);
         if (CombatAugmentService.isActionLocked(player)) {
             ci.cancel();
         }
@@ -51,6 +53,7 @@ abstract class ServerPlayerGameModeActionLockMixin {
             CallbackInfoReturnable<InteractionResult> cir
     ) {
         SpecialActiveAugmentService.notifyDisruptingAction(player);
+        AdvancedActiveAugmentService.notifyDisruptingAction(player);
         if (CombatAugmentService.isActionLocked(player)) {
             cir.setReturnValue(InteractionResult.PASS);
         }
@@ -66,6 +69,7 @@ abstract class ServerPlayerGameModeActionLockMixin {
             CallbackInfoReturnable<InteractionResult> cir
     ) {
         SpecialActiveAugmentService.notifyDisruptingAction(player);
+        AdvancedActiveAugmentService.notifyDisruptingAction(player);
         if (CombatAugmentService.isActionLocked(player)) {
             cir.setReturnValue(InteractionResult.PASS);
         }

@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.state;
 
+import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
@@ -64,6 +65,7 @@ public final class AugmentationPlayerStateService {
         ReactiveCombatAugmentService.reconcile(player, next);
         SurvivalAugmentService.reconcile(player, next);
         AdvancedUtilityAugmentService.reconcile(player, next);
+        AdvancedActiveAugmentService.reconcile(player, next);
         ConsumptionAugmentService.syncClient(player, next);
         if (!current.augmentLevels().equals(next.augmentLevels())) {
             ThreatScalingService.observePlayerPower(player, next);

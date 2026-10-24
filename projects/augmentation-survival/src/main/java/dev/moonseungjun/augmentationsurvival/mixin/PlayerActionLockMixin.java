@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Locks stasis attacks and reports attack actions that interrupt return-home concentration. */
+/** Locks stasis attacks and reports attack actions that interrupt active concentration channels. */
 @Mixin(Player.class)
 abstract class PlayerActionLockMixin {
     @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
@@ -18,6 +19,7 @@ abstract class PlayerActionLockMixin {
         Object self = this;
         if (self instanceof ServerPlayer player) {
             SpecialActiveAugmentService.notifyDisruptingAction(player);
+            AdvancedActiveAugmentService.notifyDisruptingAction(player);
             if (CombatAugmentService.isActionLocked(player)) {
                 ci.cancel();
             }
