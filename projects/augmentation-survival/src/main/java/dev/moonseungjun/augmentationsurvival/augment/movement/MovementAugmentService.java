@@ -301,7 +301,7 @@ public final class MovementAugmentService {
     }
 
     private static boolean isDaytime(ServerPlayer player) {
-        long dayTime = Math.floorMod(player.level().getDayTime(), 24_000L);
+        long dayTime = Math.floorMod(player.level().getOverworldClockTime(), 24_000L);
         return dayTime < 13_000L;
     }
 
