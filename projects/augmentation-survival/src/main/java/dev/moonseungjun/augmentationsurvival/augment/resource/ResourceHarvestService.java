@@ -22,6 +22,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -87,8 +88,8 @@ public final class ResourceHarvestService {
             return true;
         });
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
-            if (player instanceof ServerPlayer serverPlayer) {
-                afterBlockBreak(world, serverPlayer, pos, state, blockEntity);
+            if (player instanceof ServerPlayer serverPlayer && world instanceof ServerLevel serverLevel) {
+                afterBlockBreak(serverLevel, serverPlayer, pos, state, blockEntity);
             }
         });
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(ResourceHarvestService::afterKill);
@@ -176,7 +177,7 @@ public final class ResourceHarvestService {
             List<ItemStack> baseDrops,
             AugmentationPlayerState augments
     ) {
-        if (!state.is(BlockTags.ORES)) {
+        if (!state.is(ConventionalBlockTags.ORES)) {
             return;
         }
         int levelValue = boundedLevel(augments, EXTRA_PIECE_ID);
@@ -303,7 +304,7 @@ public final class ResourceHarvestService {
     ) {
         int augmentLevel = boundedLevel(augments, TUNNELING_ID);
         if (augmentLevel <= 0
-                || rootState.is(BlockTags.ORES)
+                || rootState.is(ConventionalBlockTags.ORES)
                 || rootState.is(BlockTags.LOGS)
                 || rootState.getBlock() instanceof CropBlock
                 || rootState.hasBlockEntity()) {
@@ -316,7 +317,7 @@ public final class ResourceHarvestService {
             BlockPos target = origin.offset(step[0] * index, step[1] * index, step[2] * index);
             BlockState targetState = level.getBlockState(target);
             if (targetState.getBlock() != rootState.getBlock()
-                    || targetState.is(BlockTags.ORES)
+                    || targetState.is(ConventionalBlockTags.ORES)
                     || targetState.hasBlockEntity()) {
                 break;
             }
