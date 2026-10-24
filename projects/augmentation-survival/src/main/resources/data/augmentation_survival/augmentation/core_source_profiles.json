@@ -114,6 +114,27 @@
         "prefixes": ["fort", "large", "deep"],
         "distribution_profile": "dangerous_high",
         "core_roll_multiplier": 0.6
+      },
+      {
+        "namespace": "nova_structures",
+        "prefixes": ["tavern", "small", "camp"],
+        "distribution_profile": "routine_exploration",
+        "core_roll_multiplier": 0.8,
+        "reason": "Verified Dungeons and Taverns data namespace."
+      },
+      {
+        "namespace": "nova_structures",
+        "prefixes": ["outpost", "dungeon", "crypt", "ruin"],
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.7,
+        "reason": "Verified Dungeons and Taverns data namespace."
+      },
+      {
+        "namespace": "nova_structures",
+        "prefixes": ["fort", "large", "deep"],
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.6,
+        "reason": "Verified Dungeons and Taverns data namespace."
       }
     ],
     "namespace_default": [
@@ -128,6 +149,12 @@
         "distribution_profile": "dangerous_mid",
         "core_roll_multiplier": 0.65,
         "reason": "Dense structure pack default; individual high or low risk families override this."
+      },
+      {
+        "namespace": "nova_structures",
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.65,
+        "reason": "Verified Dungeons and Taverns data namespace; dense-pack default until individual families are measured."
       },
       {
         "namespace": "illagerinvasion",
@@ -320,7 +347,7 @@
     "friendsandfoes": "Exact hostile IDs iceologer, illusioner, mauler, and wildfire were verified from the public FriendsAndFoesEntityTypes registration source during the 2026-10-24 audit.",
     "illagerinvasion": "The 26.2.x branch and combat entity resource names were inspected, but exact registry registration IDs were not treated as verified; namespace fallback is intentional.",
     "repurposed_structures": "Use namespace and semantic path-family matching instead of an exhaustive generated-variant list; exact variant IDs are deliberately not required for baseline resolution.",
-    "dungeons_and_taverns": "Use the baseline namespace plus risk-oriented path families and a density-reduced namespace default. Unknown variants remain dangerous_mid until measured.",
+    "dungeons_and_taverns": "The public 26.2 data pack uses namespace nova_structures for structure/loot data. Runtime source matching supports nova_structures directly; the historical mr_dungeons_andtaverns identifier remains as a compatibility alias.",
     "boss_mods": "External boss namespaces use recognized-encounter adapters and boss_major defaults. No unverified exact boss registry IDs are invented."
   }
 }
