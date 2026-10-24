@@ -192,7 +192,10 @@ public final class StatAugmentCatalog {
         MAX_HEALTH("max_health", Attributes.MAX_HEALTH),
         ATTACK_SPEED("attack_speed", Attributes.ATTACK_SPEED),
         MOVEMENT_SPEED("movement_speed", Attributes.MOVEMENT_SPEED),
-        KNOCKBACK_RESISTANCE("knockback_resistance", Attributes.KNOCKBACK_RESISTANCE);
+        KNOCKBACK_RESISTANCE("knockback_resistance", Attributes.KNOCKBACK_RESISTANCE),
+        BLOCK_INTERACTION_RANGE("block_interaction_range", Attributes.BLOCK_INTERACTION_RANGE),
+        SUBMERGED_MINING_SPEED("submerged_mining_speed", Attributes.SUBMERGED_MINING_SPEED),
+        MOVEMENT_EFFICIENCY("movement_efficiency", Attributes.MOVEMENT_EFFICIENCY);
 
         private final String id;
         private final Holder<Attribute> attribute;
