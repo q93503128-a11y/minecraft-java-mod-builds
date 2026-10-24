@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "canonical-initial-implementation-baseline",
   "runtime_active": false,
   "purpose": "Define save-wide threat progression and server-authoritative hostile scaling without coupling combat difficulty to core rewards.",
@@ -50,8 +50,26 @@
     {
       "stage": 5,
       "min_power_score": 260,
-      "max_power_score": null,
+      "max_power_score": 364,
       "normal": { "health": 4.50, "damage": 1.80, "speed": 1.10, "armor_add": 6.0, "knockback_resistance_add": 0.10 }
+    },
+    {
+      "stage": 6,
+      "min_power_score": 365,
+      "max_power_score": 489,
+      "normal": { "health": 6.50, "damage": 2.05, "speed": 1.125, "armor_add": 8.0, "knockback_resistance_add": 0.13 }
+    },
+    {
+      "stage": 7,
+      "min_power_score": 490,
+      "max_power_score": 639,
+      "normal": { "health": 9.00, "damage": 2.35, "speed": 1.15, "armor_add": 10.0, "knockback_resistance_add": 0.16 }
+    },
+    {
+      "stage": 8,
+      "min_power_score": 640,
+      "max_power_score": null,
+      "normal": { "health": 12.00, "damage": 2.70, "speed": 1.175, "armor_add": 12.0, "knockback_resistance_add": 0.20 }
     }
   ],
   "scale_groups": {
@@ -89,8 +107,8 @@
   "balance_rules": {
     "health_scales_more_than_damage": true,
     "movement_speed_growth_is_intentionally_small": true,
-    "stage_5_is_a_hard_scaling_ceiling": true,
-    "player_power_may_continue_growing_after_stage_5": true,
+    "stage_8_is_a_hard_scaling_ceiling": true,
+    "player_power_may_continue_growing_after_stage_8": true,
     "reason": "Threat should preserve combat relevance without cancelling the power fantasy or turning every encounter into permanent rubber-band scaling."
   },
   "reward_separation": {
