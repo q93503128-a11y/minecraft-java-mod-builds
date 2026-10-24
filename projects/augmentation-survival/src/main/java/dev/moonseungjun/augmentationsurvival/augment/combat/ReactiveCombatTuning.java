@@ -38,7 +38,7 @@ public final class ReactiveCombatTuning {
     private static Snapshot loadBundled() {
         for (String path : new String[]{
                 "return_to_sender", "status_reflect", "strong_mind",
-                "shield_burst", "retrace", "invulnerability"
+                "shield_burst", "retrace", "invincibility"
         }) {
             AugmentCatalog.require(AugmentationSurvival.MOD_ID + ":" + path);
         }
