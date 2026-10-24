@@ -4,6 +4,7 @@
   "mixins": [
     "RaidMixin",
     "CombatAugmentMixin",
+    "MovementAugmentMixin",
     "PlayerActionLockMixin",
     "ServerPlayerGameModeActionLockMixin"
   ],

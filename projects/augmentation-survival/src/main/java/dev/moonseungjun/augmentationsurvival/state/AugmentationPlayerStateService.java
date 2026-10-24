@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.state;
 
+import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -52,6 +53,7 @@ public final class AugmentationPlayerStateService {
         }
         player.setAttached(AugmentationAttachments.PLAYER_STATE, next);
         PlayerStatAugmentService.reconcile(player, next);
+        MovementAugmentService.reconcile(player, next);
         return next;
     }
 }
