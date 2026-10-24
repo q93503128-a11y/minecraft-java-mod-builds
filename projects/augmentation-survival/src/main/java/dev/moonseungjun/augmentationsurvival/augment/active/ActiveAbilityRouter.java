@@ -20,35 +20,22 @@ public final class ActiveAbilityRouter {
     private static final String REWIND_ID = id("rewind");
     private static final String TIME_ACCELERATION_ID = id("time_acceleration");
     private static final String SHIELD_THROW_ID = id("shield_throw");
+    private static final String PHASE_SHIFT_ID = id("phase_shift");
+    private static final String DOMINATION_ID = id("domination");
+    private static final String GIGANTIFICATION_ID = id("gigantification");
     private static final String TIME_STOP_ID = id("time_stop");
     private static final String DIVINE_PUNISHMENT_ID = id("divine_punishment");
     private static final String THREAT_TOGGLE_KEY = "active_toggle/threat_suppression";
     private static final String INSTANT_MINING_TOGGLE_KEY = "active_toggle/instant_mining";
 
     private static final List<String> LEGACY_ORDER = List.of(
-            id("cleanse"),
-            id("pull"),
-            id("swap"),
-            id("shield"),
-            id("berserk"),
-            id("healing_wave")
+            id("cleanse"), id("pull"), id("swap"), id("shield"), id("berserk"), id("healing_wave")
     );
     private static final List<String> ALL_ORDER = List.of(
-            id("cleanse"),
-            id("pull"),
-            id("swap"),
-            id("shield"),
-            id("berserk"),
-            id("healing_wave"),
-            SHIELD_THROW_ID,
-            REWIND_ID,
-            TIME_ACCELERATION_ID,
-            THREAT_SUPPRESSION_ID,
-            INSTANT_MINING_ID,
-            DEATH_RETURN_ID,
-            RETURN_HOME_ID,
-            TIME_STOP_ID,
-            DIVINE_PUNISHMENT_ID
+            id("cleanse"), id("pull"), id("swap"), id("shield"), id("berserk"), id("healing_wave"),
+            SHIELD_THROW_ID, REWIND_ID, TIME_ACCELERATION_ID, PHASE_SHIFT_ID,
+            THREAT_SUPPRESSION_ID, INSTANT_MINING_ID, DEATH_RETURN_ID, RETURN_HOME_ID,
+            DOMINATION_ID, GIGANTIFICATION_ID, TIME_STOP_ID, DIVINE_PUNISHMENT_ID
     );
 
     private ActiveAbilityRouter() {
@@ -56,15 +43,9 @@ public final class ActiveAbilityRouter {
 
     public static void initialize() {
         for (String augmentId : new String[]{
-                THREAT_SUPPRESSION_ID,
-                INSTANT_MINING_ID,
-                DEATH_RETURN_ID,
-                RETURN_HOME_ID,
-                REWIND_ID,
-                TIME_ACCELERATION_ID,
-                SHIELD_THROW_ID,
-                TIME_STOP_ID,
-                DIVINE_PUNISHMENT_ID
+                THREAT_SUPPRESSION_ID, INSTANT_MINING_ID, DEATH_RETURN_ID, RETURN_HOME_ID,
+                REWIND_ID, TIME_ACCELERATION_ID, SHIELD_THROW_ID, PHASE_SHIFT_ID,
+                DOMINATION_ID, GIGANTIFICATION_ID, TIME_STOP_ID, DIVINE_PUNISHMENT_ID
         }) {
             AugmentCatalog.require(augmentId);
         }
@@ -95,6 +76,11 @@ public final class ActiveAbilityRouter {
                 || abilityId.equals(SHIELD_THROW_ID)) {
             return AdvancedActiveAugmentService.tryUse(player, abilityId);
         }
+        if (abilityId.equals(PHASE_SHIFT_ID)
+                || abilityId.equals(DOMINATION_ID)
+                || abilityId.equals(GIGANTIFICATION_ID)) {
+            return AdvancedWorldAugmentService.tryUse(player, abilityId);
+        }
         if (abilityId.equals(RETURN_HOME_ID)
                 || abilityId.equals(TIME_STOP_ID)
                 || abilityId.equals(DIVINE_PUNISHMENT_ID)) {
@@ -118,45 +104,28 @@ public final class ActiveAbilityRouter {
                 && state.persistentInt(INSTANT_MINING_TOGGLE_KEY) > 0;
     }
 
-    private static boolean toggle(
-            ServerPlayer player,
-            AugmentationPlayerState state,
-            String augmentId,
-            String key
-    ) {
-        if (boundedLevel(state, augmentId) <= 0) {
-            return false;
-        }
+    private static boolean toggle(ServerPlayer player, AugmentationPlayerState state, String augmentId, String key) {
+        if (boundedLevel(state, augmentId) <= 0) return false;
         int next = state.persistentInt(key) > 0 ? 0 : 1;
         AugmentationPlayerStateService.replace(player, state.withPersistentInt(key, next));
         return true;
     }
 
-    private static List<String> resolveSlots(
-            AugmentationPlayerState state,
-            List<String> supportedOrder
-    ) {
+    private static List<String> resolveSlots(AugmentationPlayerState state, List<String> supportedOrder) {
         Set<String> supported = Set.copyOf(supportedOrder);
         LinkedHashSet<String> resolved = new LinkedHashSet<>();
         for (String configured : state.activeSlots()) {
-            if (supported.contains(configured) && boundedLevel(state, configured) > 0) {
-                resolved.add(configured);
-            }
+            if (supported.contains(configured) && boundedLevel(state, configured) > 0) resolved.add(configured);
         }
         for (String fallback : supportedOrder) {
-            if (boundedLevel(state, fallback) > 0) {
-                resolved.add(fallback);
-            }
+            if (boundedLevel(state, fallback) > 0) resolved.add(fallback);
         }
         return new ArrayList<>(resolved);
     }
 
     private static int boundedLevel(AugmentationPlayerState state, String augmentId) {
         int level = state.level(augmentId);
-        if (level <= 0) {
-            return 0;
-        }
-        return Math.min(level, AugmentCatalog.require(augmentId).maxLevel());
+        return level <= 0 ? 0 : Math.min(level, AugmentCatalog.require(augmentId).maxLevel());
     }
 
     private static String id(String path) {

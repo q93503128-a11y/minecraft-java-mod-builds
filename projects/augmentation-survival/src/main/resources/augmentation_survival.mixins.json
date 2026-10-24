@@ -34,7 +34,17 @@
     "TridentPortableRiptideMixin",
     "ActiveAbilityOvertimeMixin",
     "PlayerActionLockMixin",
-    "ServerPlayerGameModeActionLockMixin"
+    "ServerPlayerGameModeActionLockMixin",
+    "PhaseShiftCollisionMixin",
+    "PhaseShiftPlayerActionMixin",
+    "PhaseShiftGameModeActionMixin",
+    "PlayerGigantificationKnockbackMixin",
+    "CompanionSpecialActiveFilterMixin",
+    "EntityCompanionAllyMixin",
+    "LivingEntityCompanionDeathMixin",
+    "LivingEntityCompanionFriendlyFireMixin",
+    "ItemCombinerMenuAccessor",
+    "AnvilForbiddenMagicMixin"
   ],
   "client": [
     "LocalPlayerConsumptionMixin"

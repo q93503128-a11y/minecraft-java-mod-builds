@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "phase_shift": {
+    "duration_ticks": 100,
+    "cooldown_ticks": 400
+  },
+  "domination": {
+    "range": 24.0,
+    "cap": [3, 5, 10]
+  },
+  "gigantification": {
+    "duration_ticks": 400,
+    "cooldown_ticks": 1200,
+    "size_multiplier": [1.75, 2.50],
+    "health_multiplier": [1.75, 2.50],
+    "reach_bonus": [3.0, 6.0],
+    "melee_damage_bonus": [0.35, 0.70],
+    "knockback_multiplier": 2.0,
+    "fear_radius_level_2": 8.0,
+    "fear_ticks_level_2": 40
+  }
+}
