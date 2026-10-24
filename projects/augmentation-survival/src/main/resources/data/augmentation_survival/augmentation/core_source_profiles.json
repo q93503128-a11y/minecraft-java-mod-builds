@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "status": "canonical-source-resolution-baseline",
+  "runtime_active": false,
+  "purpose": "Map structure, hostile, event, and boss sources onto the canonical core distribution and boss reward contracts without hardcoding balance weights in runtime code.",
+  "contract_refs": {
+    "distribution": "augmentation_survival:augmentation/core_distribution_contract.json",
+    "boss_rewards": "augmentation_survival:augmentation/boss_core_reward_contract.json"
+  },
+  "selector_precedence": [
+    "exact",
+    "path_prefix",
+    "namespace_default",
+    "global_fallback"
+  ],
+  "resolution_rules": {
+    "first_match_wins": true,
+    "balance_weights_live_only_in_contracts": true,
+    "unknown_structure_default": "no_core_source",
+    "unknown_hostile_default": "normal_hostile_if_server_classifies_as_hostile",
+    "unknown_boss_default": "no_direct_boss_reward_until_adapter_classifies_encounter",
+    "unverified_exact_ids_are_never_guessed": true
+  },
+  "structure_sources": {
+    "exact": [
+      {
+        "selector": "minecraft:buried_treasure",
+        "distribution_profile": "routine_exploration",
+        "core_roll_multiplier": 2.0,
+        "reason": "Single-cache exploration reward; compensate for one-container density."
+      },
+      {
+        "selector": "minecraft:ancient_city",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.65,
+        "reason": "Very high danger but many containers; density correction prevents a single city becoming a core factory."
+      },
+      {
+        "selector": "minecraft:mansion",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.75,
+        "reason": "Large combat structure with multiple loot opportunities."
+      },
+      {
+        "selector": "minecraft:end_city",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.8,
+        "reason": "Late exploration structure with multiple containers and strong traversal pressure."
+      }
+    ],
+    "path_prefix": [
+      {
+        "namespace": "minecraft",
+        "prefixes": ["mineshaft", "shipwreck", "ruined_portal", "ocean_ruin", "trail_ruins", "igloo"],
+        "distribution_profile": "routine_exploration",
+        "core_roll_multiplier": 1.0
+      },
+      {
+        "namespace": "minecraft",
+        "prefixes": ["desert_pyramid", "jungle_pyramid", "pillager_outpost", "fortress", "stronghold", "trial_chambers"],
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 1.0
+      },
+      {
+        "namespace": "minecraft",
+        "prefixes": ["bastion_remnant"],
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.8
+      },
+      {
+        "namespace": "minecraft",
+        "prefixes": ["village"],
+        "excluded": true,
+        "reason": "Safe, dense civilian storage is not a primary core source."
+      },
+      {
+        "namespace": "repurposed_structures",
+        "prefixes": ["mineshaft", "shipwreck", "ruined_portal", "ocean_ruin"],
+        "distribution_profile": "routine_exploration",
+        "core_roll_multiplier": 1.0
+      },
+      {
+        "namespace": "repurposed_structures",
+        "prefixes": ["stronghold", "fortress", "pyramid", "outpost", "temple"],
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.9
+      },
+      {
+        "namespace": "repurposed_structures",
+        "prefixes": ["mansion", "bastion", "ancient_city", "end_city"],
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.75
+      },
+      {
+        "namespace": "repurposed_structures",
+        "prefixes": ["village"],
+        "excluded": true,
+        "reason": "Inherit the vanilla village anti-farm policy."
+      },
+      {
+        "namespace": "mr_dungeons_andtaverns",
+        "prefixes": ["tavern", "small", "camp"],
+        "distribution_profile": "routine_exploration",
+        "core_roll_multiplier": 0.8
+      },
+      {
+        "namespace": "mr_dungeons_andtaverns",
+        "prefixes": ["outpost", "dungeon"],
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.7
+      },
+      {
+        "namespace": "mr_dungeons_andtaverns",
+        "prefixes": ["fort", "large", "deep"],
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.6
+      }
+    ],
+    "namespace_default": [
+      {
+        "namespace": "repurposed_structures",
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.85,
+        "reason": "Unclassified generated variants remain useful without requiring a brittle exhaustive ID list."
+      },
+      {
+        "namespace": "mr_dungeons_andtaverns",
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.65,
+        "reason": "Dense structure pack default; individual high or low risk families override this."
+      },
+      {
+        "namespace": "illagerinvasion",
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.8,
+        "reason": "Combat-oriented added structure loot uses the middle-risk baseline until exact structures are measured."
+      }
+    ],
+    "namespace_exclusions": [
+      {
+        "namespace": "terralith",
+        "reason": "Biome/worldgen context only; cores come from contained structures and encounters, not the biome namespace itself."
+      },
+      {
+        "namespace": "naturalist",
+        "reason": "Wildlife/world context is not a structure core source."
+      },
+      {
+        "namespace": "farmersdelight",
+        "reason": "Normal production content does not generate progression cores."
+      }
+    ]
+  },
+  "hostile_sources": {
+    "exact": [
+      {
+        "selector": "minecraft:witch",
+        "mob_profile": "special_hostile"
+      },
+      {
+        "selector": "minecraft:vindicator",
+        "mob_profile": "special_hostile"
+      },
+      {
+        "selector": "minecraft:pillager",
+        "mob_profile": "special_hostile"
+      },
+      {
+        "selector": "minecraft:vex",
+        "mob_profile": "special_hostile"
+      },
+      {
+        "selector": "minecraft:piglin_brute",
+        "mob_profile": "special_hostile"
+      },
+      {
+        "selector": "minecraft:shulker",
+        "mob_profile": "special_hostile"
+      },
+      {
+        "selector": "minecraft:evoker",
+        "mob_profile": "elite_hostile"
+      },
+      {
+        "selector": "minecraft:ravager",
+        "mob_profile": "elite_hostile"
+      },
+      {
+        "selector": "friendsandfoes:iceologer",
+        "mob_profile": "elite_hostile",
+        "verified_exact_id": true
+      },
+      {
+        "selector": "friendsandfoes:illusioner",
+        "mob_profile": "elite_hostile",
+        "verified_exact_id": true
+      },
+      {
+        "selector": "friendsandfoes:mauler",
+        "mob_profile": "special_hostile",
+        "verified_exact_id": true
+      },
+      {
+        "selector": "friendsandfoes:wildfire",
+        "mob_profile": "elite_hostile",
+        "verified_exact_id": true
+      }
+    ],
+    "event_redirects": [
+      {
+        "selector": "minecraft:elder_guardian",
+        "event_profile": "elder_guardian",
+        "suppress_normal_mob_roll": true
+      },
+      {
+        "selector": "minecraft:warden",
+        "event_profile": "warden",
+        "suppress_normal_mob_roll": true
+      }
+    ],
+    "boss_redirects": [
+      {
+        "selector": "minecraft:wither",
+        "suppress_normal_mob_roll": true
+      },
+      {
+        "selector": "minecraft:ender_dragon",
+        "suppress_normal_mob_roll": true
+      }
+    ],
+    "namespace_default": [
+      {
+        "namespace": "friendsandfoes",
+        "mob_profile": "normal_hostile",
+        "condition": "server_classified_hostile_only",
+        "reason": "Non-hostile Friends&Foes entities never become core sources."
+      },
+      {
+        "namespace": "illagerinvasion",
+        "mob_profile": "special_hostile",
+        "condition": "server_classified_hostile_only",
+        "reason": "26.2.x content is combat-focused; individual elite promotions wait for verified registry IDs and measured difficulty."
+      }
+    ],
+    "namespace_exclusions": [
+      {
+        "namespace": "naturalist",
+        "reason": "Ordinary wildlife must not become a core farming route."
+      }
+    ],
+    "global_fallback": {
+      "condition": "server_classified_hostile",
+      "mob_profile": "normal_hostile"
+    }
+  },
+  "event_sources": {
+    "exact": [
+      {
+        "selector": "minecraft:raid_victory",
+        "event_profile": "raid_victory"
+      },
+      {
+        "selector": "minecraft:elder_guardian",
+        "event_profile": "elder_guardian"
+      },
+      {
+        "selector": "minecraft:warden",
+        "event_profile": "warden"
+      }
+    ]
+  },
+  "boss_sources": {
+    "exact": [
+      {
+        "selector": "minecraft:wither",
+        "reward_band": "boss_major"
+      },
+      {
+        "selector": "minecraft:ender_dragon",
+        "reward_band": "boss_pinnacle",
+        "repeat_policy": "pinnacle_repeat_weights"
+      }
+    ],
+    "namespace_default": [
+      {
+        "namespace": "chronodawn",
+        "reward_band": "boss_major",
+        "condition": "recognized_boss_encounter_only"
+      },
+      {
+        "namespace": "worldbosses",
+        "reward_band": "boss_major",
+        "condition": "recognized_boss_encounter_only"
+      },
+      {
+        "namespace": "mcendgame",
+        "reward_band": "boss_major",
+        "condition": "recognized_boss_encounter_only"
+      }
+    ],
+    "pending_exact_overrides": [
+      {
+        "mod_id": "mcendgame",
+        "display_name_hint": "Beastweaver",
+        "target_reward_band": "boss_pinnacle",
+        "active": false,
+        "reason": "Pinnacle candidate is documented, but an exact registry ID was not verified in this source-audit pass. Do not guess it."
+      }
+    ]
+  },
+  "density_and_duplication_rules": {
+    "apply_multiplier_to_core_roll_chance_not_item_count": true,
+    "max_one_additional_core_roll_per_natural_container": true,
+    "already_consumed_natural_loot_container_cannot_reseed": true,
+    "player_placed_or_copied_container_cannot_gain_natural_core_roll": true,
+    "high_density_modded_structures_should_prefer_multiplier_below_one": true,
+    "single_key_cache_may_use_multiplier_above_one": true
+  },
+  "verification_notes": {
+    "friendsandfoes": "Exact hostile IDs iceologer, illusioner, mauler, and wildfire were verified from the public FriendsAndFoesEntityTypes registration source during the 2026-10-24 audit.",
+    "illagerinvasion": "The 26.2.x branch and combat entity resource names were inspected, but exact registry registration IDs were not treated as verified; namespace fallback is intentional.",
+    "repurposed_structures": "Use namespace and semantic path-family matching instead of an exhaustive generated-variant list; exact variant IDs are deliberately not required for baseline resolution.",
+    "dungeons_and_taverns": "Use the baseline namespace plus risk-oriented path families and a density-reduced namespace default. Unknown variants remain dangerous_mid until measured.",
+    "boss_mods": "External boss namespaces use recognized-encounter adapters and boss_major defaults. No unverified exact boss registry IDs are invented."
+  }
+}
