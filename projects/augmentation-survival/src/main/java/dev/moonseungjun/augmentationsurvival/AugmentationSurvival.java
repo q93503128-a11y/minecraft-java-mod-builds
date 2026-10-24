@@ -9,6 +9,8 @@ import dev.moonseungjun.augmentationsurvival.core.CoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.CoreSourceResolver;
 import dev.moonseungjun.augmentationsurvival.core.FishingCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.StructureCoreRewardService;
+import dev.moonseungjun.augmentationsurvival.device.AugmentDeviceBlocks;
+import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenus;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
 import dev.moonseungjun.augmentationsurvival.threat.WorldThreatAttachments;
 import net.fabricmc.api.ModInitializer;
@@ -22,6 +24,8 @@ public final class AugmentationSurvival implements ModInitializer {
     @Override
     public void onInitialize() {
         AugmentCoreItems.initialize();
+        AugmentDeviceMenus.initialize();
+        AugmentDeviceBlocks.initialize();
         AugmentationAttachments.initialize();
         WorldThreatAttachments.initialize();
         AugmentCatalog.initialize();
