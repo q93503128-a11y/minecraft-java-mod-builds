@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.mixin.LivingEntityJumpPowerAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
@@ -139,11 +140,13 @@ public final class MovementAugmentService {
             return false;
         }
 
-        double jumpPower = player.getJumpPower() * MovementTuning.current().doubleJumpVerticalMultiplier();
+        float jumpPower = ((LivingEntityJumpPowerAccessor) player)
+                .augmentationSurvival$invokeGetJumpPower();
+        double vertical = jumpPower * MovementTuning.current().doubleJumpVerticalMultiplier();
         Vec3 movement = player.getDeltaMovement();
-        player.setDeltaMovement(movement.x, Math.max(movement.y, jumpPower), movement.z);
+        player.setDeltaMovement(movement.x, Math.max(movement.y, vertical), movement.z);
         player.resetFallDistance();
-        runtime.maxObservedFallDistance = 0.0F;
+        runtime.maxObservedFallDistance = 0.0D;
         runtime.airJumpAvailable = false;
         syncMotion(player);
         return true;
@@ -214,7 +217,7 @@ public final class MovementAugmentService {
                         && boundedLevel(state, MOMENTUM_SHIFT_ID) > 0) {
                     runtime.momentumUntilTick = now + tuning.momentumDurationTicks();
                 }
-                runtime.maxObservedFallDistance = 0.0F;
+                runtime.maxObservedFallDistance = 0.0D;
                 if (!runtime.wasResetContact && boundedLevel(state, DOUBLE_JUMP_ID) > 0) {
                     runtime.airJumpAvailable = true;
                 }
@@ -255,7 +258,7 @@ public final class MovementAugmentService {
 
         int nocturnal = boundedLevel(state, NOCTURNAL_ID);
         int sunAffinity = boundedLevel(state, SUN_AFFINITY_ID);
-        if (player.level().isDay()) {
+        if (isDaytime(player)) {
             bonus += tuning.sunAffinityMovementPerLevel() * sunAffinity;
         } else {
             bonus += tuning.nocturnalMovementPerLevel() * nocturnal;
@@ -295,6 +298,11 @@ public final class MovementAugmentService {
                 MovementTuning.current().stepUpAdditionalHeight(),
                 AttributeModifier.Operation.ADD_VALUE
         ));
+    }
+
+    private static boolean isDaytime(ServerPlayer player) {
+        long dayTime = Math.floorMod(player.level().getDayTime(), 24_000L);
+        return dayTime < 13_000L;
     }
 
     private static void clearRuntime(ServerPlayer player) {
@@ -341,7 +349,7 @@ public final class MovementAugmentService {
     private static final class RuntimeState {
         private int nonSprintingTicks;
         private long momentumUntilTick;
-        private float maxObservedFallDistance;
+        private double maxObservedFallDistance;
         private boolean airJumpAvailable;
         private boolean wasGrounded;
         private boolean wasResetContact;

@@ -19,7 +19,7 @@ public final class MovementInputClient {
             }
 
             boolean jumpDown = client.options.keyJump.isDown();
-            if (client.screen == null && jumpDown && !jumpWasDown) {
+            if (client.gui.screen() == null && jumpDown && !jumpWasDown) {
                 ClientPlayNetworking.send(new AirJumpRequestPayload(true));
             }
             jumpWasDown = jumpDown;

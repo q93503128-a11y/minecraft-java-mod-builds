@@ -5,6 +5,7 @@
     "RaidMixin",
     "CombatAugmentMixin",
     "MovementAugmentMixin",
+    "LivingEntityJumpPowerAccessor",
     "PlayerActionLockMixin",
     "ServerPlayerGameModeActionLockMixin"
   ],
