@@ -17,6 +17,20 @@ public final class AugmentationPlayerStateService {
         );
     }
 
+    public static boolean hasBossFirstKillReward(ServerPlayer player, String bossId) {
+        return state(player).hasBossFirstKillReward(bossId);
+    }
+
+    public static boolean markBossFirstKillRewardClaimed(ServerPlayer player, String bossId) {
+        AugmentationPlayerState before = state(player);
+        AugmentationPlayerState next = before.withBossFirstKillReward(bossId);
+        if (next.equals(before)) {
+            return false;
+        }
+        replace(player, next);
+        return true;
+    }
+
     public static AugmentationPlayerState update(
             ServerPlayer player,
             UnaryOperator<AugmentationPlayerState> operation
