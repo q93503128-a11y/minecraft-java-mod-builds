@@ -1,6 +1,8 @@
 package dev.moonseungjun.augmentationsurvival;
 
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
+import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardCatalog;
+import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.CoreDistributionCatalog;
 import dev.moonseungjun.augmentationsurvival.core.CoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.CoreSourceResolver;
@@ -21,7 +23,9 @@ public final class AugmentationSurvival implements ModInitializer {
         WorldThreatAttachments.initialize();
         CoreDistributionCatalog.initialize();
         CoreSourceResolver.initialize();
+        BossCoreRewardCatalog.initialize();
         CoreRewardService.initialize();
+        BossCoreRewardService.initialize();
         LOGGER.info("Augmentation Survival runtime spine initialized");
     }
 }
