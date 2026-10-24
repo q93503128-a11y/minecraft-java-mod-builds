@@ -1,6 +1,6 @@
 # Official Small Modpack Baseline — M0
 
-Date: 2026-10-23
+Date: 2026-10-24
 Minecraft: 26.2
 Loader: Fabric 0.19.5
 Java: 25
@@ -19,9 +19,12 @@ Java: 25
 | 야생동물·생태계 확장 | Naturalist | 2.0.6 | smoke verified candidate; warning tracked |
 | 농사·요리·생산 확장 | Farmer's Delight Refabricated | 26.2-3.6.22 | smoke verified candidate |
 | 근접 전투 모션·공격감 개선 | Better Combat | 3.2.2 | conditional candidate; smoke verified only |
+| 손에 든 발광 아이템 동적 조명 | LambDynamicLights | 4.12.4+26.2 | client-only pinned candidate; smoke verification required |
 | 시간 차원 + 제작형 보스 6종 | Chrono Dawn | 0.12.0 | smoke verified boss candidate |
 | 월드 제단/레이드 캐시/보스 차원 + 주요 보스 11종 | World Bosses | 2.0.2 | smoke verified boss candidate; visual warnings tracked |
 | 반복형 절차 던전 + 던전 보스/후반 보스 | MCEndgame | 1.7.0+26.2 | smoke verified boss candidate; progression overlap tracked |
+
+LambDynamicLights는 클라이언트 시각 편의 모드다. 횃불·랜턴 등 발광 아이템을 손에 들었을 때 주변을 동적으로 밝히지만 서버의 실제 block light, 몹 스폰 조건, 코어 보상 로직은 변경하지 않는다.
 
 ## 2. 주요 지원 라이브러리
 
@@ -37,6 +40,8 @@ Java: 25
 - Cloth Config API `26.2.155`
 - Architectury API `21.1.9`
 - Fabric Language Kotlin `1.14.0+kotlin.2.4.20`
+
+Fabric API는 Augmentation Survival 자체의 직접 구현 dependency이기도 하며 `0.160.0+26.2`로 명시적으로 고정한다.
 
 Modrinth Maven의 전이 dependency만 믿지 않고 실제 `fabric.mod.json`을 검사해 필요한 지원 라이브러리를 명시적으로 핀한다.
 
@@ -56,6 +61,9 @@ Modrinth Maven의 전이 dependency만 믿지 않고 실제 `fabric.mod.json`을
 
 ### Better Combat
 전투 체감 개선 후보. 증강의 공격 범위, 추가타, 광역 피해, 공속 변경과 실제 판정이 맞는지 플레이테스트가 필요하다.
+
+### LambDynamicLights
+동굴·야간 탐험의 시인성을 높인다. 클라이언트 전용 표현 효과이므로 적 성장, 실제 광원 레벨, 스폰 규칙과는 분리한다. RyoamicLights/Sodium Dynamic Lights 같은 다른 동적 조명 구현과 중복 설치하지 않는다.
 
 ## 4. 보스 콘텐츠 확장
 
@@ -98,9 +106,9 @@ Modrinth Maven의 전이 dependency만 믿지 않고 실제 `fabric.mod.json`을
 
 ## 5. 실제 JAR에서 확인한 연동 표면
 
-Run 5에서 총 22개 외부 JAR을 실제 resolve하고 Fabric metadata와 데이터 엔트리를 검사했다.
+Run 5에서 총 22개 외부 JAR을 실제 resolve하고 Fabric metadata와 데이터 엔트리를 검사했다. LambDynamicLights 추가 후 공식 pin은 23개이며, 새 23개 조합은 별도 smoke verification 대상이다.
 
-대표 결과:
+Run 5 대표 결과:
 
 - Terralith: loot 65 / structure 254 / biome 334
 - Repurposed Structures: loot 219 / structure 3725 / biome 187
@@ -179,7 +187,7 @@ World Bosses처럼 ARR인 모드는 JAR 수정/재배포를 하지 않는다. Ch
 
 ### Run 5 — GitHub Actions 39901741533
 
-보스 콘텐츠까지 확장한 22 JAR 기준:
+기존 22 JAR 기준:
 
 - TOOLCHAIN: PASS — Java 25 / Gradle 9.5.1 / Loom 1.17.20
 - BUILD: PASS
@@ -194,6 +202,7 @@ World Bosses처럼 ARR인 모드는 JAR 수정/재배포를 하지 않는다. Ch
 
 ## 10. 현재 추적할 비차단 문제
 
+- LambDynamicLights: 새 client-only pin. 23-artifact 조합의 client smoke에서 실제 dynamic-light 초기화 및 기존 렌더링 모드 충돌 여부 확인 필요.
 - Illager Invasion: Fabric에서 NeoForge 전용 `neoforge:acceptable_villager_distances` data-map을 무시한다. 실제 주민 감지거리 기능차는 플레이테스트 필요.
 - Naturalist: 선택적 Field Guide 클래스가 없을 때 mixin target-not-found 경고가 3개 발생한다. client smoke는 통과.
 - World Bosses: client resource load에서 `worldbreaker_*` 도구의 particle texture reference와 `varkhul_trophy`의 `minecraft:block/magma_block` 참조 경고가 발생했다. 실제 화면에서 깨지는지 시각 검수 필요.
@@ -204,12 +213,14 @@ World Bosses처럼 ARR인 모드는 JAR 수정/재배포를 하지 않는다. Ch
 ## 11. 현재 상태
 
 - VERSION/PIN RESEARCHED: YES
-- JAR METADATA/DATA REVIEWED: YES — 22 pinned artifacts
-- BUILD VERIFIED: YES — Run 5
-- JAR PRODUCED: YES — Run 5 artifact
-- PACK SERVER SMOKE TESTED: YES / PASS
-- PACK CLIENT SMOKE TESTED: YES / PASS
-- BOSS PACK SERVER/CLIENT CO-LOAD: YES / PASS
+- CURRENT PIN COUNT: 23 external artifacts
+- JAR METADATA/DATA REVIEWED: YES — previous 22-artifact baseline
+- BUILD VERIFIED: YES — previous Run 5 baseline
+- JAR PRODUCED: YES — previous Run 5 artifact
+- PACK SERVER SMOKE TESTED: YES / PASS — previous 22-artifact baseline
+- PACK CLIENT SMOKE TESTED: YES / PASS — previous 22-artifact baseline
+- LAMBDYNAMICLIGHTS 23-ARTIFACT SMOKE TESTED: NO
+- BOSS PACK SERVER/CLIENT CO-LOAD: YES / PASS — previous 22-artifact baseline
 - BOSS CORE REWARD CONTRACT ADDED: YES
 - CORE LOOT INTEGRATION IMPLEMENTED: NO
 - WORLDGEN DENSITY/VISUAL TESTED: NO

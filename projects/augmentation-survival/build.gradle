@@ -24,6 +24,7 @@ def pinnedPackArtifacts = [
         [name: 'Naturalist', coord: "maven.modrinth:F8BQNPWX:${project.naturalist_version_id}"],
         [name: "Farmer's Delight Refabricated", coord: "maven.modrinth:7vxePowz:${project.farmers_delight_version_id}"],
         [name: 'Better Combat', coord: "maven.modrinth:5sy6g3kz:${project.better_combat_version_id}"],
+        [name: 'LambDynamicLights', coord: "maven.modrinth:yBW8D80W:${project.lamb_dynamic_lights_version_id}"],
         [name: 'Chrono Dawn', coord: "curse.maven:chrono-dawn-1414198:${project.chronodawn_curse_file}"],
         [name: 'World Bosses', coord: "curse.maven:world-bosses-1545677:${project.world_bosses_curse_file}"],
         [name: 'MCEndgame', coord: "maven.modrinth:yJtKNlKW:${project.mcendgame_version_id}"],
