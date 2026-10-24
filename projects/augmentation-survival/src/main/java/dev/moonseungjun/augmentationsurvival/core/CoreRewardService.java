@@ -1,7 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.core;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
-import java.util.Set;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -10,17 +9,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.ItemStack;
 
-/** Server-authoritative first vertical slice for combat-sourced augmentation cores. */
+/** Server-authoritative combat-sourced augmentation-core rewards. */
 public final class CoreRewardService {
-    private static final Set<String> BASELINE_NORMAL_HOSTILES = Set.of(
-            "minecraft:zombie",
-            "minecraft:skeleton",
-            "minecraft:creeper",
-            "minecraft:spider"
-    );
-
     private CoreRewardService() {
     }
 
@@ -40,12 +33,23 @@ public final class CoreRewardService {
         }
 
         Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(killed.getType());
-        if (entityId == null || !BASELINE_NORMAL_HOSTILES.contains(entityId.toString())) {
+        if (entityId == null) {
             return;
         }
 
-        CoreDistributionCatalog.rollMobProfile("normal_hostile", level.getRandom())
-                .ifPresent(tier -> grantCore(player, tier));
+        CoreSourceResolver.HostileResolution resolution = CoreSourceResolver.resolveHostile(
+                entityId,
+                killed instanceof Enemy
+        );
+        switch (resolution.kind()) {
+            case NONE, BOSS_SUPPRESSED -> {
+                return;
+            }
+            case MOB -> CoreDistributionCatalog.rollMobProfile(resolution.profileId(), level.getRandom())
+                    .ifPresent(tier -> grantCore(player, tier, resolution.profileId()));
+            case EVENT -> CoreDistributionCatalog.rollEventProfile(resolution.profileId(), level.getRandom())
+                    .forEach(tier -> grantCore(player, tier, resolution.profileId()));
+        }
     }
 
     private static ServerPlayer resolvePlayer(Entity killer, DamageSource damageSource) {
@@ -56,15 +60,16 @@ public final class CoreRewardService {
         return sourceEntity instanceof ServerPlayer player ? player : null;
     }
 
-    private static void grantCore(ServerPlayer player, AugmentTier tier) {
+    private static void grantCore(ServerPlayer player, AugmentTier tier, String sourceProfile) {
         ItemStack stack = new ItemStack(AugmentCoreItems.item(tier));
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
         AugmentationSurvival.LOGGER.debug(
-                "Granted {} augment core to {} from baseline hostile reward",
+                "Granted {} augment core to {} from {}",
                 tier.id(),
-                player.getGameProfile().name()
+                player.getGameProfile().name(),
+                sourceProfile
         );
     }
 }
