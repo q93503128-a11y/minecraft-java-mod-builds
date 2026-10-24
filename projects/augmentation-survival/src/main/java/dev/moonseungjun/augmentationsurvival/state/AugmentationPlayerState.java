@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.state;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +49,14 @@ public record AugmentationPlayerState(
         if (activeSlots.size() > 10) {
             throw new IllegalArgumentException("activeSlots cannot exceed 10 entries");
         }
+        for (Map.Entry<String, Integer> entry : augmentLevels.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank()) {
+                throw new IllegalArgumentException("augmentLevels cannot contain a blank id");
+            }
+            if (entry.getValue() == null || entry.getValue() <= 0) {
+                throw new IllegalArgumentException("augmentLevels must contain positive levels");
+            }
+        }
         augmentLevels = Map.copyOf(augmentLevels);
         activeSlots = List.copyOf(activeSlots);
         cooldownReadyTicks = Map.copyOf(cooldownReadyTicks);
@@ -63,6 +72,32 @@ public record AugmentationPlayerState(
                 Map.of(),
                 List.of(),
                 List.of()
+        );
+    }
+
+    public int level(String augmentId) {
+        return augmentLevels.getOrDefault(augmentId, 0);
+    }
+
+    public AugmentationPlayerState withAugmentLevel(String augmentId, int level) {
+        if (augmentId == null || augmentId.isBlank()) {
+            throw new IllegalArgumentException("augmentId must not be blank");
+        }
+        if (level <= 0) {
+            throw new IllegalArgumentException("augment level must be positive");
+        }
+        if (level(augmentId) == level) {
+            return this;
+        }
+        Map<String, Integer> levels = new HashMap<>(augmentLevels);
+        levels.put(augmentId, level);
+        return new AugmentationPlayerState(
+                schemaVersion,
+                levels,
+                activeSlots,
+                cooldownReadyTicks,
+                stolenAuthorityBossIds,
+                bossFirstKillRewardIds
         );
     }
 
