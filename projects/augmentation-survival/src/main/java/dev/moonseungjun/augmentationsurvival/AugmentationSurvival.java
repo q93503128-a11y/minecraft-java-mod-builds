@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.CoreDistributionCatalog;
 import dev.moonseungjun.augmentationsurvival.core.CoreRewardService;
+import dev.moonseungjun.augmentationsurvival.core.CoreSourceResolver;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
 import dev.moonseungjun.augmentationsurvival.threat.WorldThreatAttachments;
 import net.fabricmc.api.ModInitializer;
@@ -19,6 +20,7 @@ public final class AugmentationSurvival implements ModInitializer {
         AugmentationAttachments.initialize();
         WorldThreatAttachments.initialize();
         CoreDistributionCatalog.initialize();
+        CoreSourceResolver.initialize();
         CoreRewardService.initialize();
         LOGGER.info("Augmentation Survival runtime spine initialized");
     }
