@@ -1,3 +1,9 @@
 {
-  "itemGroup.augmentation_survival": "Augmentation Survival"
+  "itemGroup.augmentation_survival": "Augmentation Survival",
+  "item.augmentation_survival.common_augment_core": "Common Augment Core",
+  "item.augmentation_survival.uncommon_augment_core": "Advanced Augment Core",
+  "item.augmentation_survival.rare_augment_core": "Rare Augment Core",
+  "item.augmentation_survival.epic_augment_core": "Heroic Augment Core",
+  "item.augmentation_survival.legendary_augment_core": "Legendary Augment Core",
+  "item.augmentation_survival.mythic_augment_core": "Mythic Augment Core"
 }
