@@ -112,6 +112,10 @@ public final class FantasyWorldRules {
     public static void tick(ServerPlayer player) {
         if (!insideRealm(player)) return;
 
+        // A completed capital may still be finishing authored apartment interiors. Retry without
+        // ever exposing a synthetic roof/platform fallback as the player's home.
+        LivingRealmWorldManager.retryPendingPlacement(player);
+
         // Hunger is not a combat timer here. Meals, inns and feasts are social/economic content.
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(20.0F);
@@ -201,10 +205,18 @@ public final class FantasyWorldRules {
         OriginProfile profile = OriginProfileManager.profile(player.getUUID()).orElse(null);
         if (realm == null || profile == null) return false;
 
+        // This coordinate exists only after the same authored upper-room route used for initial
+        // placement has completed once. It can be recovered from saved route state while its chunk
+        // is unloaded; the transient residence lease is refreshed before teleport.
+        BlockPos recovery = SafeResidenceLocator.authoredRecoveryTarget(
+                realm, profile.homelandId(), profile.residenceId());
+        if (recovery == null) {
+            LivingKingdoms.LOGGER.error(
+                    "Institutional recovery refused because no authored residence has ever completed player={}",
+                    player.getUUID());
+            return false;
+        }
         event.setCanceled(true);
-        BlockPos recovery = RealmSitePlanner.residencePosition(
-                realm, profile.homelandId(), profile.residenceId()
-        );
         long balance = RealmEconomyManager.account(player).silver();
         long charged = Math.min(balance, RECOVERY_FEE_SILVER);
         if (charged > 0L) RealmEconomyManager.spend(player, charged);

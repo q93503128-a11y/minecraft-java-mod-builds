@@ -7,12 +7,13 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/** Compact server-authoritative civic status for the always-visible fantasy HUD. */
+/** Compact server-authoritative civic status and clock sample for the always-visible fantasy HUD. */
 public record FantasyHudStatePayload(
         long silver,
         int renown,
         int wanted,
         String profession,
+        long realmTime,
         int grainIndex,
         int metalIndex,
         int herbIndex,
@@ -31,6 +32,8 @@ public record FantasyHudStatePayload(
             FantasyHudStatePayload::wanted,
             ByteBufCodecs.STRING_UTF8,
             FantasyHudStatePayload::profession,
+            ByteBufCodecs.VAR_LONG,
+            FantasyHudStatePayload::realmTime,
             ByteBufCodecs.VAR_INT,
             FantasyHudStatePayload::grainIndex,
             ByteBufCodecs.VAR_INT,
@@ -47,6 +50,7 @@ public record FantasyHudStatePayload(
         renown = Math.max(0, renown);
         wanted = Math.max(0, wanted);
         profession = profession == null || profession.isBlank() ? "미등록" : profession;
+        realmTime = Math.max(0L, realmTime);
         grainIndex = bounded(grainIndex);
         metalIndex = bounded(metalIndex);
         herbIndex = bounded(herbIndex);

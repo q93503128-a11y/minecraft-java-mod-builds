@@ -105,7 +105,7 @@ public final class FantasyHudClient {
     private static void drawWorldLine(GuiGraphicsExtractor graphics, Minecraft minecraft,
                                       FantasyHudStatePayload civic, int screenWidth) {
         if (screenWidth < 440) return;
-        long time = minecraft.level.getGameTime();
+        long time = ClientNetworkHandlers.hudRealmTime();
         long day = Math.floorDiv(time, 24_000L) + 1L;
         int hour = (int) Math.floorMod(time / 1_000L + 6L, 24L);
         int minute = (int) Math.floorMod(time, 1_000L) * 60 / 1_000;
