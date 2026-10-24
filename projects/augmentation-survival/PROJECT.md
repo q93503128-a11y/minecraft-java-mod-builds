@@ -11,23 +11,25 @@
 - Loader: `Fabric`
 - Loader version: `0.19.5`
 - Fabric API: `0.160.0+26.2`
-- Gradle: `9.5.1` wrapper baseline
+- Gradle: `9.5.1`
 - Build plugin: `Fabric Loom 1.17.20`
-- Final JAR: `augmentation-survival-0.1.0-alpha.1.jar` (bootstrap target; not release-ready)
+- Final JAR: `augmentation-survival-0.1.0-alpha.1.jar` (development target; not release-ready)
 - Existing-world compatibility: 가능한 한 유지하되 Terralith는 새 월드 기준. 월드젠 외부 모드 교체/제거는 별도 migration 계약 없이는 지원하지 않는다.
-- Required dependencies: Fabric API
+- Required dependency: Fabric API
 - Official pack candidate mods: `MODPACK_BASELINE.md` 참조
 - Forbidden bundled dependencies: 재배포 권한이 불명확한 모드/자산을 저장소 JAR에 직접 번들하지 않는다. 외부 모드는 원본 배포처를 참조하는 모드팩 의존성으로 관리한다.
-- Datagen task: bootstrap 단계 미구성
-- GameTest task: bootstrap 단계 미구성
+- Datagen task: 아직 미구성
+- GameTest task: 아직 미구성
 - Server smoke-test task: `runPackServer -PaugmentationPackRuntime=true`
-- Client smoke-test task: `runPackClient -PaugmentationPackRuntime=true` (수동/화면 검수 필요)
+- Client smoke-test task: `runPackClient -PaugmentationPackRuntime=true` + 실제 화면 검수
 
 ## 현재 상태
 
-`M0 PACK BOOTSTRAP / EXTERNAL COMPATIBILITY VERIFICATION`
+`M1 IMPLEMENTATION PREP / 146-AUGMENT DESIGN LOCK`
 
-기획 정본은 유지하면서 실제 Minecraft 26.2 Fabric 개발 골격과 외부 모드팩 dependency probe를 추가했다. 외부 모드가 한 런타임에서 실제로 동시 로딩되는지는 GitHub CI dedicated-server smoke test 결과로 판정한다.
+외부 모드팩 M0 부팅/의존성 검증은 이미 통과한 기준선이 있다. 현재는 신규 증강 제작을 멈추고 **146종 정본, 상호작용 V2, 최종 호환성 감사, 저장/네트워크/이벤트 구조, 첫 수직 슬라이스**를 잠근 구현 준비 단계다.
+
+현재 Java runtime은 bootstrap 수준이며 146종 증강 자체는 아직 구현되지 않았다.
 
 ## 프로젝트 정체성
 
@@ -42,47 +44,106 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - 높은 등급 증강도 엔더 드래곤 처치 이후에만 열지 않는다.
 - 특정 장소 하나가 특정 코어 등급 하나만 독점하지 않는다. 장소마다 여러 인접 등급의 코어가 서로 다른 확률로 나온다.
 - 외부 모드는 증강을 사용할 세계와 콘텐츠를 확장해야 하며, 별도 성장 시스템으로 증강과 경쟁하지 않는다.
+- 강한 증강 조합은 의도적으로 허용하고 무한/기하급수 재귀만 차단한다.
+- 적은 플레이어 성장을 1:1 상쇄하지 않고 세이브 전체 위협 단계로 부분 추격한다.
 
-## 정본 문서
+## 정본 우선순위
 
-1. `PROJECT.md`
-2. `GAME_DESIGN.md`
-3. `MODPACK_BASELINE.md`
-4. 저장소 공용 `AGENTS.md`
-5. 저장소 공용 `docs/BUILD_STANDARD.md`
-6. 저장소 공용 `docs/QUALITY_STANDARD.md`
+프로젝트 내부에서는 다음 순서를 사용한다.
 
-실제 source/resource와 최신 검증 결과가 과거 대화보다 우선한다.
+1. `AUGMENTS.md` — 현재 146종 로스터 정본
+2. `AUGMENT_PROPOSAL_HISTORY.md` — 과거 제안/중복 방지
+3. `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md` — 상호작용 V2
+4. `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`
+5. `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`
+6. `GAME_DESIGN.md`
+7. `PROJECT.md`
+8. `MODPACK_BASELINE.md`
+9. 실제 source/resource와 최신 검증 결과
+
+저장소 공용 `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`는 상위 공통 작업 계약으로 항상 함께 적용한다.
 
 ## 현재 확정된 핵심 규칙
 
 - 등급: `일반 → 고급 → 희귀 → 영웅 → 전설 → 신화`
+- 현재 확정 로스터: **146종**
+  - 일반 20
+  - 고급 27
+  - 희귀 30
+  - 영웅 40
+  - 전설 20
+  - 신화 9
+- 각 증강의 최대 레벨과 현재 효과는 `AUGMENTS.md`에 고정한다.
 - 등급별 증강 코어가 존재한다.
-- 증강 장치에 코어를 넣으면 같은 등급의 유효한 증강 후보 3개가 나오고 하나를 선택한다.
-- 증강은 1회 획득형과 레벨형을 모두 허용한다.
-- 이미 최대 레벨인 증강은 다시 후보에 나오지 않는다.
-- 특정 등급의 모든 증강을 최대치까지 획득했다면 그 등급 뽑기는 불가능하며 코어도 소비하지 않는다.
+- 증강 장치에 코어를 넣으면 같은 등급의 유효한 후보 3개를 제시한다.
+- 기본 선택은 1개, 신화 `두 번째 선택` 보유 시 서로 다른 2개를 한 transaction으로 획득한다.
+- 이미 최대 레벨인 증강은 후보 풀에서 제거한다.
+- 특정 등급 전체를 최대치까지 획득했다면 그 등급 뽑기는 불가능하며 코어도 소비하지 않는다.
 - 동일 등급 코어 3개를 바로 위 등급 코어 1개로 합성할 수 있다.
-- 코어 합성 기능은 강화 증강 장치에서 열린다.
-- 정확한 드랍 확률, 증강별 최대 레벨, 등급별 개수와 수치 밸런스는 아직 확정하지 않는다.
+- 코어 합성은 강화 증강 장치에서 제공한다.
+- 총 증강 보유 개수 제한은 없다.
+- 액티브는 일반 10칸 빠른 슬롯을 사용하고 `권능 탈취`는 별도 전용키 하나를 사용한다.
+- 월드 위협 단계는 지역/플레이어별이 아니라 **세이브 전체 공통 0~5**다.
+
+아직 고정하지 않은 것:
+
+- 코어 획득처별 정확한 등급 확률
+- 일부 증강의 세부 파라미터 (`탄도 장막`, `임시 발판`, `생명 연결`, `작아지기`, `벽치기`)
+- 위협 단계 수치 테이블의 최종 플레이테스트 값
+
+이 값들은 아키텍처 차단 요소가 아니며 data parameter로 관리한다.
 
 ## 외부 모드 연동 계약
 
-- 외부 모드 JAR 자체를 수정하는 방식보다 우리 모드의 loot/event/data 호환 레이어를 우선한다.
-- 외부 구조물 상자에는 원본 loot를 보존하면서 증강 코어 풀을 추가한다.
-- 외부 몹은 해당 모드의 loot table 또는 서버 권한 이벤트를 통해 코어 드랍을 추가한다.
-- 외부 바이옴은 biome tag/worldgen hook를 통해 코어 관련 구조물·자원·이벤트를 배치할 수 있다.
+- 외부 모드 JAR 자체를 수정하는 방식보다 우리 모드의 loot/event/data/profile/adapter 레이어를 우선한다.
+- 외부 구조물 상자에는 원본 loot를 보존하면서 증강 코어 pool을 추가한다.
+- 외부 몹은 loot table 또는 서버 권한 이벤트를 통해 코어 드랍을 추가한다.
 - `장소 = 단일 등급`이 아니라 `장소 = 여러 등급의 확률 분포`로 설계한다.
 - 호환 데이터는 가능한 한 data-driven으로 분리한다.
+- Better Combat은 하나의 서버 ROOT melee hit로 정규화한다.
+- Chrono Dawn / World Bosses / MCEndgame 보스는 control/reward/authority profile을 따로 둔다.
+- Farmer's Delight는 작물/음식/생산 adapter로 연결한다.
 
-## 다음 검증 게이트
+## 구현 시작 순서
 
-1. pinned 외부 모드/라이브러리 전부 dependency resolution
-2. 각 JAR의 `fabric.mod.json` 실제 depends 감사
-3. loot table / structure / biome 데이터 엔트리 인벤토리
-4. dedicated server 동시 로딩
-5. 구조물 중첩 밀도와 월드젠 충돌 확인
-6. Better Combat과 향후 공격 증강 판정 호환 테스트
-7. 실제 클라이언트 화면 플레이테스트
+세부 계획은 `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`를 따른다.
 
-빌드 성공과 실제 플레이 성공은 구분한다.
+1. Runtime spine: definition / behavior registry / persistent state / networking / provenance / ability engine
+2. Reference vertical slice: 스탯·회복·사망·이동·투사체·액티브·자원 최소 한 경로
+3. Core / device / 3-choice transaction / UI
+4. 일반·고급 bulk implementation
+5. 희귀·영웅 복잡 파이프라인
+6. 전설·신화 및 공유 저장/권능
+7. save-wide threat scaling
+8. 외부 모드 adapter
+9. HUD/VFX/animation/sound polish
+10. gameplay/performance/multiplayer validation
+
+146개를 한 번에 독립 하드코딩하지 않는다.
+
+## 현재 검증 상태
+
+기존 M0 pack 기준:
+
+- BUILD VERIFIED: YES
+- JAR PRODUCED: YES
+- 22/22 PACK ARTIFACT RESOLUTION: PASS
+- PACK SERVER SMOKE: PASS
+- PACK CLIENT SMOKE: PASS
+- BOSS PACK CO-LOAD: PASS
+
+현재 146종 설계/구현 준비 기준:
+
+- ROSTER LOCKED: YES
+- FINAL COMPATIBILITY AUDIT: YES
+- INTERACTION CONTRACT V2: YES
+- IMPLEMENTATION PLAN: YES
+- RUNTIME SPINE IMPLEMENTED: NO
+- CORE / DEVICE IMPLEMENTED: NO
+- AUGMENT RUNTIME IMPLEMENTED: NO
+- BETTER COMBAT GAMEPLAY TESTED: NO
+- BOSS GAMEPLAY TESTED: NO
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+이번 문서 패스는 docs-only이므로 새 build/CI를 실행하지 않는다.
