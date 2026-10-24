@@ -1,12 +1,25 @@
 package dev.moonseungjun.augmentationsurvival;
 
+import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
+import dev.moonseungjun.augmentationsurvival.core.CoreDistributionCatalog;
+import dev.moonseungjun.augmentationsurvival.core.CoreRewardService;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
+import dev.moonseungjun.augmentationsurvival.threat.WorldThreatAttachments;
 import net.fabricmc.api.ModInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AugmentationSurvival implements ModInitializer {
     public static final String MOD_ID = "augmentation_survival";
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     @Override
     public void onInitialize() {
-        System.out.println("[Augmentation Survival] bootstrap loaded");
+        AugmentCoreItems.initialize();
+        AugmentationAttachments.initialize();
+        WorldThreatAttachments.initialize();
+        CoreDistributionCatalog.initialize();
+        CoreRewardService.initialize();
+        LOGGER.info("Augmentation Survival runtime spine initialized");
     }
 }
