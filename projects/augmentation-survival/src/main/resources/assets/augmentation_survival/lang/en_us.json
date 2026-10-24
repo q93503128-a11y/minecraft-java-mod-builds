@@ -5,5 +5,9 @@
   "item.augmentation_survival.rare_augment_core": "Rare Augment Core",
   "item.augmentation_survival.epic_augment_core": "Heroic Augment Core",
   "item.augmentation_survival.legendary_augment_core": "Legendary Augment Core",
-  "item.augmentation_survival.mythic_augment_core": "Mythic Augment Core"
+  "item.augmentation_survival.mythic_augment_core": "Mythic Augment Core",
+  "block.augmentation_survival.augment_device": "Augment Device",
+  "block.augmentation_survival.advanced_augment_device": "Advanced Augment Device",
+  "container.augmentation_survival.augment_device": "Augment Device",
+  "container.augmentation_survival.advanced_augment_device": "Advanced Augment Device"
 }

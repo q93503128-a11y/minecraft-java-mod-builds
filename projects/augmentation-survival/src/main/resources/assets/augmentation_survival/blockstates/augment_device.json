@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "augmentation_survival:block/augment_device" }
+  }
+}

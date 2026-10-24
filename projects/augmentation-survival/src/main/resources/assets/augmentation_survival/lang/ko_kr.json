@@ -1,9 +1,13 @@
 {
-  "itemGroup.augmentation_survival": "증강 서바이벌",
+  "itemGroup.augmentation_survival": "증강 생존",
   "item.augmentation_survival.common_augment_core": "일반 증강 코어",
   "item.augmentation_survival.uncommon_augment_core": "고급 증강 코어",
   "item.augmentation_survival.rare_augment_core": "희귀 증강 코어",
   "item.augmentation_survival.epic_augment_core": "영웅 증강 코어",
   "item.augmentation_survival.legendary_augment_core": "전설 증강 코어",
-  "item.augmentation_survival.mythic_augment_core": "신화 증강 코어"
+  "item.augmentation_survival.mythic_augment_core": "신화 증강 코어",
+  "block.augmentation_survival.augment_device": "증강 장치",
+  "block.augmentation_survival.advanced_augment_device": "강화 증강 장치",
+  "container.augmentation_survival.augment_device": "증강 장치",
+  "container.augmentation_survival.advanced_augment_device": "강화 증강 장치"
 }

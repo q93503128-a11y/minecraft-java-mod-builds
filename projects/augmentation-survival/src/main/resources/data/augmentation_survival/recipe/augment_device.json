@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ICI",
+    "CFC",
+    "ICI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "C": "minecraft:copper_ingot",
+    "F": "minecraft:furnace"
+  },
+  "result": {
+    "id": "augmentation_survival:augment_device",
+    "count": 1
+  }
+}

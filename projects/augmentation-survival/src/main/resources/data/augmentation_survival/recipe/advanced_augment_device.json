@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IDI",
+    "GAG",
+    "IDI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "D": "minecraft:diamond",
+    "G": "minecraft:gold_ingot",
+    "A": "augmentation_survival:augment_device"
+  },
+  "result": {
+    "id": "augmentation_survival:advanced_augment_device",
+    "count": 1
+  }
+}

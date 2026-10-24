@@ -8,6 +8,9 @@
   "entrypoints": {
     "main": [
       "dev.moonseungjun.augmentationsurvival.AugmentationSurvival"
+    ],
+    "client": [
+      "dev.moonseungjun.augmentationsurvival.client.AugmentationSurvivalClient"
     ]
   },
   "mixins": [
