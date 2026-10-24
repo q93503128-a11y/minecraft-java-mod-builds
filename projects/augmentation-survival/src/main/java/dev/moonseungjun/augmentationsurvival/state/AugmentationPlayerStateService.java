@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.state;
 
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import java.util.Objects;
@@ -56,6 +57,7 @@ public final class AugmentationPlayerStateService {
         PlayerStatAugmentService.reconcile(player, next);
         MovementAugmentService.reconcile(player, next);
         SurvivalAugmentService.reconcile(player, next);
+        ConsumptionAugmentService.syncClient(player, next);
         return next;
     }
 }

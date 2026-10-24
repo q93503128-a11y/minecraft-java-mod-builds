@@ -18,9 +18,10 @@ public record AugmentationPlayerState(
         List<String> activeSlots,
         Map<String, Long> cooldownReadyTicks,
         List<String> stolenAuthorityBossIds,
-        List<String> bossFirstKillRewardIds
+        List<String> bossFirstKillRewardIds,
+        Map<String, Integer> persistentInts
 ) {
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = 2;
 
     public static final Codec<AugmentationPlayerState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.optionalFieldOf("schema_version", CURRENT_SCHEMA_VERSION)
@@ -39,7 +40,10 @@ public record AugmentationPlayerState(
                     .forGetter(AugmentationPlayerState::stolenAuthorityBossIds),
             Codec.STRING.listOf()
                     .optionalFieldOf("boss_first_kill_reward_ids", List.of())
-                    .forGetter(AugmentationPlayerState::bossFirstKillRewardIds)
+                    .forGetter(AugmentationPlayerState::bossFirstKillRewardIds),
+            Codec.unboundedMap(Codec.STRING, Codec.INT)
+                    .optionalFieldOf("persistent_ints", Map.of())
+                    .forGetter(AugmentationPlayerState::persistentInts)
     ).apply(instance, AugmentationPlayerState::new));
 
     public AugmentationPlayerState {
@@ -57,11 +61,20 @@ public record AugmentationPlayerState(
                 throw new IllegalArgumentException("augmentLevels must contain positive levels");
             }
         }
+        for (Map.Entry<String, Integer> entry : persistentInts.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank()) {
+                throw new IllegalArgumentException("persistentInts cannot contain a blank id");
+            }
+            if (entry.getValue() == null || entry.getValue() <= 0) {
+                throw new IllegalArgumentException("persistentInts must contain positive values");
+            }
+        }
         augmentLevels = Map.copyOf(augmentLevels);
         activeSlots = List.copyOf(activeSlots);
         cooldownReadyTicks = Map.copyOf(cooldownReadyTicks);
         stolenAuthorityBossIds = List.copyOf(stolenAuthorityBossIds);
         bossFirstKillRewardIds = List.copyOf(bossFirstKillRewardIds);
+        persistentInts = Map.copyOf(persistentInts);
     }
 
     public static AugmentationPlayerState initial() {
@@ -71,12 +84,45 @@ public record AugmentationPlayerState(
                 List.of(),
                 Map.of(),
                 List.of(),
-                List.of()
+                List.of(),
+                Map.of()
         );
     }
 
     public int level(String augmentId) {
         return augmentLevels.getOrDefault(augmentId, 0);
+    }
+
+    public int persistentInt(String key) {
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("persistent int key must not be blank");
+        }
+        return persistentInts.getOrDefault(key, 0);
+    }
+
+    public AugmentationPlayerState withPersistentInt(String key, int value) {
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("persistent int key must not be blank");
+        }
+        int normalized = Math.max(0, value);
+        if (persistentInt(key) == normalized) {
+            return this;
+        }
+        Map<String, Integer> values = new HashMap<>(persistentInts);
+        if (normalized == 0) {
+            values.remove(key);
+        } else {
+            values.put(key, normalized);
+        }
+        return new AugmentationPlayerState(
+                CURRENT_SCHEMA_VERSION,
+                augmentLevels,
+                activeSlots,
+                cooldownReadyTicks,
+                stolenAuthorityBossIds,
+                bossFirstKillRewardIds,
+                values
+        );
     }
 
     public AugmentationPlayerState withAugmentLevel(String augmentId, int level) {
@@ -97,7 +143,8 @@ public record AugmentationPlayerState(
                 activeSlots,
                 cooldownReadyTicks,
                 stolenAuthorityBossIds,
-                bossFirstKillRewardIds
+                bossFirstKillRewardIds,
+                persistentInts
         );
     }
 
@@ -130,7 +177,8 @@ public record AugmentationPlayerState(
                 activeSlots,
                 cooldowns,
                 stolenAuthorityBossIds,
-                bossFirstKillRewardIds
+                bossFirstKillRewardIds,
+                persistentInts
         );
     }
 
@@ -153,7 +201,8 @@ public record AugmentationPlayerState(
                 activeSlots,
                 cooldownReadyTicks,
                 stolenAuthorityBossIds,
-                claimed
+                claimed,
+                persistentInts
         );
     }
 }

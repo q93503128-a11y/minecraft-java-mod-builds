@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "hearty_meal": {
+    "saturation_bonus_by_level": [0.08, 0.16, 0.24]
+  },
+  "fishing_sense": {
+    "wait_reduction_by_level": [0.10, 0.20, 0.30]
+  },
+  "fast_eating": {
+    "reduction_per_level": 0.05
+  },
+  "treasure_fishing": {
+    "luck_equivalent_by_level": [1, 2, 3]
+  },
+  "twins": {
+    "extra_baby_chance_by_level": [0.10, 0.20, 0.30]
+  },
+  "eat_while_walking": {
+    "penalty_ease_by_level": [0.33, 0.66, 1.0]
+  },
+  "reserve_meal": {
+    "capacity_by_level": [4, 8, 12]
+  },
+  "abundance": {
+    "capture_radius": 2.25,
+    "max_item_age_ticks": 4,
+    "block_delay_ticks": 1,
+    "mob_delay_ticks": 2,
+    "fishing_delay_ticks": 1
+  }
+}

@@ -6,14 +6,22 @@
     "CombatAugmentMixin",
     "MovementAugmentMixin",
     "SurvivalPlayerMixin",
+    "PlayerConsumptionAugmentMixin",
+    "FoodPropertiesAugmentMixin",
     "FoodDataAugmentMixin",
+    "ItemStackConsumptionAugmentMixin",
     "ItemStackDurabilityAugmentMixin",
+    "FishingHookAugmentMixin",
+    "AnimalBreedingAugmentMixin",
     "LivingEntityJumpPowerAccessor",
     "AbstractArrowAugmentAccessor",
     "AbstractArrowAugmentMixin",
     "ProjectileWeaponItemAugmentMixin",
     "PlayerActionLockMixin",
     "ServerPlayerGameModeActionLockMixin"
+  ],
+  "client": [
+    "LocalPlayerConsumptionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
