@@ -42,7 +42,7 @@ public final class ReactiveCombatAugmentService {
     private static final String STRONG_MIND_ID = id("strong_mind");
     private static final String SHIELD_BURST_ID = id("shield_burst");
     private static final String RETRACE_ID = id("retrace");
-    private static final String INVULNERABILITY_ID = id("invulnerability");
+    private static final String INVULNERABILITY_ID = id("invincibility");
 
     private static final Map<UUID, RuntimeState> RUNTIME = new HashMap<>();
     private static final Set<Projectile> REFLECTED_PROJECTILES =
