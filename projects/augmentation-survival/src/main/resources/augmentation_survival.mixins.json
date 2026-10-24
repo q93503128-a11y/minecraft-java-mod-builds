@@ -6,6 +6,9 @@
     "CombatAugmentMixin",
     "MovementAugmentMixin",
     "LivingEntityJumpPowerAccessor",
+    "AbstractArrowAugmentAccessor",
+    "AbstractArrowAugmentMixin",
+    "ProjectileWeaponItemAugmentMixin",
     "PlayerActionLockMixin",
     "ServerPlayerGameModeActionLockMixin"
   ],

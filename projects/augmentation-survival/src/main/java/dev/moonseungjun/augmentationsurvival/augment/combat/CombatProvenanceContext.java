@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.augment.combat;
 
+import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
 import java.util.Objects;
 import java.util.function.Supplier;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,6 +22,10 @@ public final class CombatProvenanceContext {
         Context overridden = OVERRIDE.get();
         if (overridden != null) {
             return overridden.provenance();
+        }
+        CombatProvenance projectile = ProjectileAugmentService.provenance(source);
+        if (projectile != null) {
+            return projectile;
         }
         if (!(source.getEntity() instanceof ServerPlayer)) {
             return CombatProvenance.OTHER;
