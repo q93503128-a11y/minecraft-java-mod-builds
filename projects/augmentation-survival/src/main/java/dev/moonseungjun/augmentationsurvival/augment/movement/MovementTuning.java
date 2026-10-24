@@ -23,6 +23,7 @@ public final class MovementTuning {
         requireAugment("catch_breath");
         requireAugment("nocturnal");
         requireAugment("sun_affinity");
+        requireAugment("webbed_feet");
         requireAugment("step_up");
         requireAugment("long_jump");
         requireAugment("momentum_shift");
@@ -65,6 +66,7 @@ public final class MovementTuning {
         JsonObject catchBreath = requireObject(root, "catch_breath");
         JsonObject nocturnal = requireObject(root, "nocturnal");
         JsonObject sunAffinity = requireObject(root, "sun_affinity");
+        JsonObject webbedFeet = requireObject(root, "webbed_feet");
         JsonObject stepUp = requireObject(root, "step_up");
         JsonObject longJump = requireObject(root, "long_jump");
         JsonObject momentumShift = requireObject(root, "momentum_shift");
@@ -76,6 +78,7 @@ public final class MovementTuning {
                 requirePositiveInt(catchBreath, "idle_ticks"),
                 requirePositive(nocturnal, "movement_per_level"),
                 requirePositive(sunAffinity, "movement_per_level"),
+                requirePositive(webbedFeet, "movement_per_level"),
                 requirePositive(stepUp, "additional_height"),
                 requirePositive(longJump, "horizontal_bonus_per_level"),
                 requirePositive(momentumShift, "minimum_fall_distance"),
@@ -128,6 +131,7 @@ public final class MovementTuning {
             int catchBreathIdleTicks,
             double nocturnalMovementPerLevel,
             double sunAffinityMovementPerLevel,
+            double webbedFeetMovementPerLevel,
             double stepUpAdditionalHeight,
             double longJumpHorizontalBonusPerLevel,
             double momentumMinimumFallDistance,
