@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "modifiers": [
+    {
+      "augment_id": "sturdiness",
+      "attribute": "max_health",
+      "amount_per_level": 2.0,
+      "operation": "add_value"
+    },
+    {
+      "augment_id": "rapid_strikes",
+      "attribute": "attack_speed",
+      "amount_per_level": 0.04,
+      "operation": "add_multiplied_base"
+    }
+  ]
+}

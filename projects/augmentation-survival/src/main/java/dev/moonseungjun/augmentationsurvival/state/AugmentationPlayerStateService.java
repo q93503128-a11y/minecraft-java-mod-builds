@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.state;
 
+import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import net.minecraft.server.level.ServerPlayer;
@@ -50,6 +51,7 @@ public final class AugmentationPlayerStateService {
             return current;
         }
         player.setAttached(AugmentationAttachments.PLAYER_STATE, next);
+        PlayerStatAugmentService.reconcile(player, next);
         return next;
     }
 }
