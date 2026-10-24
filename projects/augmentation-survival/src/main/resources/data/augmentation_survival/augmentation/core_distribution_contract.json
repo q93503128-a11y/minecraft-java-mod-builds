@@ -1,48 +1,98 @@
 {
-  "schema_version": 1,
-  "status": "distribution-contract-only",
+  "schema_version": 2,
+  "status": "canonical-initial-implementation-baseline",
   "runtime_active": false,
-  "exact_weights_defined": false,
+  "exact_weights_defined": true,
   "design_rule": "A content source maps to a tier distribution, never to exactly one fixed tier.",
   "tiers": [
-    { "id": "common", "label_ko": "일반", "order": 1 },
-    { "id": "uncommon", "label_ko": "고급", "order": 2 },
-    { "id": "rare", "label_ko": "희귀", "order": 3 },
-    { "id": "epic", "label_ko": "영웅", "order": 4 },
-    { "id": "legendary", "label_ko": "전설", "order": 5 },
-    { "id": "mythic", "label_ko": "신화", "order": 6 }
+    { "id": "common", "label_ko": "일반", "order": 1, "upgrade_value_common": 1 },
+    { "id": "uncommon", "label_ko": "고급", "order": 2, "upgrade_value_common": 3 },
+    { "id": "rare", "label_ko": "희귀", "order": 3, "upgrade_value_common": 9 },
+    { "id": "epic", "label_ko": "영웅", "order": 4, "upgrade_value_common": 27 },
+    { "id": "legendary", "label_ko": "전설", "order": 5, "upgrade_value_common": 81 },
+    { "id": "mythic", "label_ko": "신화", "order": 6, "upgrade_value_common": 243 }
   ],
   "distribution_templates": [
     {
       "id": "routine_exploration",
-      "min_tier": "common",
-      "max_tier": "rare",
-      "intent": "Routine exploration can still produce a meaningful rare upside."
+      "core_roll_chance": 0.08,
+      "max_core_rolls": 1,
+      "weights": { "common": 0.84, "uncommon": 0.15, "rare": 0.01 },
+      "intent": "Routine exploration is a common/uncommon source with a small rare upside."
     },
     {
       "id": "dangerous_mid",
-      "min_tier": "uncommon",
-      "max_tier": "epic",
-      "intent": "Dangerous structures and encounters shift the distribution upward."
+      "core_roll_chance": 0.12,
+      "max_core_rolls": 1,
+      "weights": { "uncommon": 0.70, "rare": 0.25, "epic": 0.05 },
+      "intent": "Dangerous structures and encounters move progression into uncommon through epic."
     },
     {
       "id": "dangerous_high",
-      "min_tier": "rare",
-      "max_tier": "legendary",
-      "intent": "High-risk content can expose legendary cores before the Ender Dragon gate."
+      "core_roll_chance": 0.18,
+      "max_core_rolls": 1,
+      "weights": { "rare": 0.70, "epic": 0.25, "legendary": 0.05 },
+      "intent": "High-risk content directly exposes legendary cores without making them routine."
     },
     {
-      "id": "pinnacle",
-      "min_tier": "legendary",
-      "max_tier": "mythic",
-      "dominant_tier": "legendary",
-      "intent": "Top-end content is primarily legendary while mythic remains an uncommon upside."
+      "id": "pinnacle_cache",
+      "core_roll_chance": 0.35,
+      "max_core_rolls": 1,
+      "weights": { "legendary": 0.90, "mythic": 0.10 },
+      "intent": "Explicit top-end completion caches are legendary-first with a mythic upside."
     }
   ],
+  "mob_profiles": [
+    {
+      "id": "normal_hostile",
+      "core_roll_chance": 0.002,
+      "weights": { "common": 0.90, "uncommon": 0.10 },
+      "require_player_attributed_kill": true
+    },
+    {
+      "id": "special_hostile",
+      "core_roll_chance": 0.015,
+      "weights": { "common": 0.65, "uncommon": 0.30, "rare": 0.05 },
+      "require_player_attributed_kill": true
+    },
+    {
+      "id": "elite_hostile",
+      "core_roll_chance": 0.04,
+      "weights": { "uncommon": 0.65, "rare": 0.30, "epic": 0.05 },
+      "require_player_attributed_kill": true
+    }
+  ],
+  "event_profiles": [
+    {
+      "id": "raid_victory",
+      "guaranteed_core_count": 1,
+      "weights": { "uncommon": 0.65, "rare": 0.30, "epic": 0.05 },
+      "per_player_reward": true
+    },
+    {
+      "id": "elder_guardian",
+      "guaranteed_core_count": 1,
+      "weights": { "uncommon": 0.50, "rare": 0.45, "epic": 0.05 },
+      "per_player_reward": true
+    },
+    {
+      "id": "warden",
+      "guaranteed_core_count": 1,
+      "weights": { "rare": 0.65, "epic": 0.30, "legendary": 0.05 },
+      "per_player_reward": true
+    }
+  ],
+  "fishing_profile": {
+    "id": "treasure_fishing",
+    "trigger": "successful_treasure_category_catch",
+    "core_roll_chance": 0.12,
+    "weights": { "common": 0.70, "uncommon": 0.28, "rare": 0.02 },
+    "preserve_original_loot": true
+  },
   "candidate_source_families": [
     {
       "mod_id": "minecraft",
-      "roles": ["structure_chest", "mob_drop", "raid_or_boss", "exploration"]
+      "roles": ["structure_chest", "mob_drop", "raid_or_boss", "exploration", "fishing"]
     },
     {
       "mod_id": "terralith",
@@ -50,11 +100,13 @@
     },
     {
       "mod_id": "repurposed_structures",
-      "roles": ["structure_chest", "worldgen_exploration"]
+      "roles": ["structure_chest", "worldgen_exploration"],
+      "mapping_rule": "inherit comparable vanilla structure risk profile where practical"
     },
     {
       "mod_id": "mr_dungeons_andtaverns",
-      "roles": ["structure_chest", "worldgen_exploration"]
+      "roles": ["structure_chest", "worldgen_exploration"],
+      "mapping_rule": "small=routine, medium-combat=dangerous_mid, large/deep=dangerous_high; dense chest sets may use coreRollMultiplier below 1"
     },
     {
       "mod_id": "friendsandfoes",
@@ -67,12 +119,12 @@
     {
       "mod_id": "naturalist",
       "roles": ["biome_context", "wildlife_context"],
-      "note": "Wildlife is not automatically a core farm; this source primarily broadens exploration and non-combat play."
+      "note": "Ordinary wildlife is not a core drop source."
     },
     {
       "mod_id": "farmersdelight",
       "roles": ["survival_production_context"],
-      "note": "Production content supports non-combat augment value and is not a default core source."
+      "note": "Normal production does not directly create cores."
     },
     {
       "mod_id": "chronodawn",
@@ -87,12 +139,21 @@
       "roles": ["repeatable_dungeon_boss", "pinnacle_boss", "endgame_dungeon"]
     }
   ],
+  "source_adjustment_policy": {
+    "default_core_roll_multiplier": 1.0,
+    "single_key_cache_suggested_multiplier_range": [1.5, 2.5],
+    "dense_dungeon_suggested_multiplier_range": [0.5, 0.8],
+    "source_specific_value_is_data_driven": true
+  },
   "integration_policy": {
     "preserve_existing_loot": true,
     "server_authoritative_rewards": true,
     "better_combat_is_reward_source": false,
+    "looting_affects_core_rolls": false,
+    "fortune_affects_core_rolls": false,
+    "general_drop_multiplier_augments_affect_cores": false,
+    "companion_kills_create_normal_core_rolls": false,
     "boss_reward_details": "see boss_core_reward_contract.json",
-    "weight_policy": "unset_until_playtest",
-    "source_specific_assignments": "deferred_to_M1_integration_pass"
+    "design_details": "see CORE_ACQUISITION_DESIGN_2026-10-24.md"
   }
 }
