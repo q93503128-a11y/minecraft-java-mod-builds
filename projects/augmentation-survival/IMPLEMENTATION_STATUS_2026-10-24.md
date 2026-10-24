@@ -1,26 +1,24 @@
 # Augmentation Survival — Implementation Status
 
 Date: 2026-10-24
-Status: M1C FUNCTIONAL BASELINE COMPLETE / SHARED MOVEMENT+AERIAL RUNTIME IMPLEMENTED / PROJECTILE FLIGHT-SEGMENT NEXT
+Status: M1C FUNCTIONAL BASELINE COMPLETE / PROJECTILE SHOT-ACTION+FLIGHT-SEGMENT RUNTIME IMPLEMENTED / COMMON ACTIVE-ABILITY ENGINE NEXT
 
 ## Verified code checkpoint
 
-- Verified gameplay-code checkpoint: `446bf22d1de6517c70b71d36f864d2a31509eefa`
-- Main movement feature commit: `4b612d4799bbbd6bf91e5699a85f132a6eb6b6af` — `feat(augmentation-survival): build shared movement runtime`
-- 26.2 API adaptation: `9a72e89e5979a3fb5280edf7f9556ee48ed284e4` — `fix(augmentation-survival): align movement runtime with 26.2 API`
-- 26.2 world-clock adaptation: `2dd35f71d22a132737609ab9dab998805d97b825` — `fix(augmentation-survival): use 26.2 world clock API`
-- Final client input-edge guard: `446bf22d1de6517c70b71d36f864d2a31509eefa` — `fix(augmentation-survival): guard initial jump input edge`
-- GitHub Actions: `40072354505` / Build Augmentation Survival Pack #42
+- Verified gameplay-code checkpoint: `316f92a67ba7b7a5ecd5651e2fe122d5ac54f05b`
+- Main projectile feature commit: `7ed812cbc3fd4f73dfe1e2b3bd58790db68b37cf` — `feat(augmentation-survival): build projectile flight segment runtime`
+- 26.2 API adaptation: `316f92a67ba7b7a5ecd5651e2fe122d5ac54f05b` — `fix(augmentation-survival): use 26.2 direction vector API`
+- GitHub Actions: `40074027578` / Build Augmentation Survival Pack #44
 - Build and pinned-pack inspection: PASS
 - Pack dependency inspection: PASS — 23 pinned external artifacts
 - Runtime classpath verification: PASS — 150 files
 - Dedicated server smoke: PASS
 - Client boot smoke: PASS
 - Verification artifacts upload: PASS
-- Artifact: `augmentation-survival-pack-smoke-42`
-- Artifact ID: `12552215797`
-- Artifact ZIP SHA-256: `4bc0b680aa58beb4394dcdc36d5176e2c6d8a11998411836dd0f2d31b2a314ba`
-- Runtime initialization marker: `Loaded movement augment contract: shared conditional movement and aerial runtime`
+- Artifact: `augmentation-survival-pack-smoke-44`
+- Artifact ID: `12552780881`
+- Artifact ZIP SHA-256: `0463311e3211f75e27ba2c99479d3a399cfcc54c01536a4dc5cca437bfce6ba3`
+- Runtime initialization marker: `Loaded projectile augment contract: shared shot-action and flight-segment runtime`
 
 The documentation checkpoint after this code commit does not change Java gameplay code and must not be treated as a new gameplay verification target.
 
@@ -56,143 +54,141 @@ The documentation checkpoint after this code commit does not change Java gamepla
 
 - physical `증강 장치` workstation
 - physical `강화 증강 장치` workstation
-- recipes match `GAME_DESIGN.md`
 - server creates up to three valid same-tier candidates
 - max-level augments are removed from the candidate pool
 - if a tier is fully maxed, a draw cannot start and no core is consumed
 - opening/cancelling an offer does not consume a core
 - opaque server offer token validates the final transaction
-- one core is consumed only after the final selection validates
+- one core is consumed only after final selection validates
 - `두 번째 선택` commits two distinct offered augments in one transaction while consuming one core
-- successful selection persists the new augment level and updates the save-wide threat high-water score
-- advanced workstation supports 3:1 upward conversion
-- advanced workstation supports one conversion or bulk conversion
-- closing the workstation cancels an uncommitted offer without consuming a core
+- successful selection persists the new level and updates save-wide threat high-water
+- advanced workstation supports 3:1 upward conversion, one or bulk
 
 ### Functional client baseline
 
 - custom card-selection screen instead of a vanilla button list
-- six tier selectors
-- three candidate cards
-- card shows canonical Korean name, tier, active tag when applicable, current-to-next level, and max level
-- selected-card state is visible
+- six tier selectors and three candidate cards
+- cards show canonical Korean name, tier, active tag, current-to-next level and max level
 - advanced device has separate `증강 선택` / `코어 합성` modes
-- Korean and English item/device names exist
+- current UI is functional baseline, not final visual-quality pass
 
 ### Unconditional stat augment runtime
 
-- bundled `stat_modifier_contract.json` is the data-driven source for unconditional player attribute augments
-- persistent augment levels remain the source of truth; vanilla attribute modifiers are transient derived state
-- stat definitions sharing the same attribute and operation are summed before one deterministic modifier is applied
-- modifier identity is stable and `addOrUpdateTransientModifier` is used, preventing reconnect/state-update duplication by design
-- runtime reconciliation occurs on server-owned player-state replacement, player join, and respawn; no per-tick player scan is used
-- `강건함` (`sturdiness`) — +2 maximum health per level, max +10 at Lv.5
-- `속공` (`rapid_strikes`) — +4% attack speed per level, max +20% at Lv.5
-- `빠른 발` (`quick_feet`) — +3% movement speed per level, max +15% at Lv.5
-- `버티기` (`brace`) — +10% knockback resistance per level, max +50% at Lv.5
+- `stat_modifier_contract.json` is the data-driven source for unconditional player attributes
+- persistent augment levels are source of truth; vanilla attribute modifiers are transient derived state
+- shared attribute/operation definitions are summed into deterministic modifiers
+- reconciliation occurs on state replacement, join and respawn; no per-tick global scan
+- `강건함` — +2 maximum health per level, max +10
+- `속공` — +4% attack speed per level, max +20%
+- `빠른 발` — +3% movement speed per level, max +15%
+- `버티기` — +10% knockback resistance per level, max +50%
 - verified initialization: 4 definitions / 4 modifier groups
 
 ### Shared combat provenance / damage runtime
 
-- canonical provenance enum covers ROOT melee/projectile and derived projectile/chain/AOE/echo/path-echo/active/replay/authority/companion/reflected/special-percent-HP damage
-- `DELAYED_DAMAGE` provenance is explicit and carries the reserved post-mitigation installment amount
-- scoped server-thread provenance override prevents derived/replayed damage from accidentally becoming a new ROOT attack
-- ROOT melee and ROOT projectile outgoing damage are modified before vanilla armor/protection mitigation
-- post-armor/Protection augment reduction is applied before protection pools, vanilla absorption and HP
-- `날 선 감각` (`keen_edge`) — ROOT melee damage +4% per level, max +20%
-- `정확한 조준` (`precise_aim`) — ROOT projectile damage +4% per level, max +20%
-- `질긴 피부` (`tough_skin`) — general augment damage reduction 2% per level, max 10%
-- `가벼운 착지` (`light_landing`) — fall damage reduction 12% per level, max 60%
-- `튼튼한 폐` (`strong_lungs`) — drowning damage reduction 15% per level, max 45%
-- `마지막 힘` (`last_strength`) — at 30% HP or lower, outgoing ROOT damage +10% per level, max +30%
-
-### Timed combat / kill runtime
-
-- timed runtime state tracks only players with active combat effects instead of globally scanning all players/entities each tick
-- dynamic movement bonuses sharing the same stat axis are combined into one deterministic transient modifier
-- timed runtime is cleared on death/join/respawn and modifiers are removed with it
-- `연속 처치` (`kill_streak`) — hostile kill grants up to 3 refreshed 4-second stacks; each stack grants level-scaled movement and attack-speed bonuses
-- `다급한 발걸음` (`urgent_steps`) — successful incoming damage grants the level-scaled 3-second movement-speed window
+- canonical provenance covers ROOT melee/projectile and derived projectile/chain/AOE/echo/path-echo/active/replay/authority/companion/reflected/special-percent-HP/delayed damage
+- scoped server-thread provenance overrides block accidental ROOT recursion
+- ROOT melee/projectile outgoing bonuses occur before vanilla armor/Protection
+- augment incoming reductions occur after armor/Protection and before protection pools/absorption/HP
+- `날 선 감각` — ROOT melee damage +4% per level, max +20%
+- `정확한 조준` — ROOT projectile damage +4% per level, max +20%
+- `질긴 피부` — general augment damage reduction 2% per level, max 10%
+- `가벼운 착지` — fall reduction 12% per level, max 60%
+- `튼튼한 폐` — drowning reduction 15% per level, max 45%
+- `마지막 힘` — at 30% HP or lower, ROOT outgoing damage +10% per level, max +30%
+- `연속 처치` — hostile kill grants up to 3 refreshed 4-second movement/attack-speed stacks
+- `다급한 발걸음` — real incoming damage grants 3-second movement-speed window
 
 ### Protection / delayed-damage runtime
 
-- `ProtectionAugmentService` owns post-mitigation protection state without a global entity scan
-- implemented order at this stage is: ordinary augment reduction -> damage adaptation -> delayed split -> augment shield pool -> augment absorption pool -> vanilla absorption -> HP -> lethal protection
-- source-owned protection pools keep `SHIELD` and augment `ABSORPTION` identities separate instead of merging them into vanilla absorption hearts
-- this pool identity is preserved for later mechanics such as `보호막 폭발`
-- `피해 적응` (`damage_adaptation`) — after a real non-delayed hit, the same exact damage-type family is reduced by 10% / 20% / 30% for 6 seconds
-- `피해 지연` (`delayed_damage`) — 20% / 30% / 40% of post-mitigation damage is reserved and replayed as five installments every 2 seconds over 10 seconds
-- delayed installments carry explicit `DELAYED_DAMAGE` provenance
-- delayed installments skip armor defense, armor durability loss, Protection/resistance recalculation and delay splitting
-- delayed installments still enter current invulnerability/protection pools/vanilla absorption/HP/lethal protection instead of directly editing HP
-- if the player dies, pending delayed installments and transient protection pools are cleared
-- shield pool grant/replace API and data tuning for `보호막` exist, but the active trigger is deliberately not faked before the common active-ability engine exists
+- `ProtectionAugmentService` owns post-mitigation protection state without global entity scans
+- current order: ordinary augment reduction -> damage adaptation -> delayed split -> augment shield -> augment absorption -> vanilla absorption -> HP -> lethal protection
+- source-owned `SHIELD` and augment `ABSORPTION` remain separate identities
+- `피해 적응` — same exact damage-type family reduction 10% / 20% / 30% for 6 seconds
+- `피해 지연` — reserves 20% / 30% / 40% and replays five installments every 2 seconds over 10 seconds
+- delayed installments use explicit `DELAYED_DAMAGE` and do not re-run armor/Protection/delay splitting
+- `보호막` pool/tuning/API exists; active trigger waits for the common active-ability engine
 
 ### Healing runtime
 
 - augment-generated primary healing has one server-owned entry point
-- routed order is: `회복 증폭` -> actual HP gain -> `넘치는 회복` -> `회복 나눔`
-- natural hunger/saturation regeneration does not use this path
-- `흡혈` (`lifesteal`) — direct server-player hostile kill heals 1 / 2 / 3 HP through the common augment-heal path
-- `회복 증폭` (`healing_amplification`) — +10% / +20% / +30% on healing routed through the augment-generated non-natural heal service
-- `넘치는 회복` (`overflow_healing`) — excess routed healing becomes a source-owned augment absorption pool capped at 4 / 8 / 12 HP
-- `회복 나눔` (`healing_share`) — 15% / 30% / 45% of actual HP restored is shared within 8 blocks to allied entities and tamed animals owned by the player
-- shared healing may use the recipient player's own healing amplification
-- shared healing cannot create another overflow-healing pool or another healing-share recursion
-- dominated-companion ally integration remains pending because the domination runtime does not exist yet
+- routed order: `회복 증폭` -> actual HP gain -> `넘치는 회복` -> `회복 나눔`
+- `흡혈` — direct server-player hostile kill heals 1 / 2 / 3 HP through common heal path
+- `회복 증폭` — +10% / +20% / +30% on routed augment-generated non-natural healing
+- `넘치는 회복` — excess routed healing becomes augment absorption capped at 4 / 8 / 12 HP
+- `회복 나눔` — shares 15% / 30% / 45% of actual restored HP within 8 blocks to allies/player-owned tamed animals
+- share recursion and overflow recursion are blocked
 
 ### Lethal-protection chain
 
-- lethal behavior stays on the common vanilla/Fabric death path instead of creating independent fake deaths
-- implemented order is `한 번 버티기` -> vanilla held Totem of Undying -> `비상 토템` inventory totem -> `재림`
-- `한 번 버티기` (`last_stand`) — lethal damage becomes 1 HP, 1 second normal-damage protection, persisted 180-second cooldown
-- `비상 토템` (`emergency_totem`) — after vanilla hand-held death protection fails, one Totem of Undying in non-equipment inventory is consumed and the vanilla death-protection component/effects/stat/criterion path is reproduced
-- `재림` (`reincarnation`) — after earlier death protection fails, lethal damage enters a 3-second recovery stasis, persists a 180-second cooldown, blocks normal damage, disables attack/mining/item/block-use paths, damps velocity each server tick, then restores full maximum health
-- damage tagged to bypass invulnerability is not suppressed by `한 번 버티기` or `재림` normal-damage protection
+- common order: `한 번 버티기` -> vanilla held Totem -> `비상 토템` inventory totem -> `재림`
+- `한 번 버티기` — lethal damage becomes 1 HP, 1 second normal-damage protection, 180-second persisted cooldown
+- `비상 토템` — after held-totem protection fails, consumes one inventory Totem and reproduces vanilla death-protection component/effects/stat/criterion path
+- `재림` — 3-second recovery stasis, 180-second cooldown, normal-damage/action suppression, then full maximum health
 
 ### Shared movement / aerial runtime
 
-- bundled `movement_modifier_contract.json` owns the tunable values for the shared locomotion batch
-- only players who own movement augments requiring live state are tracked; there is no global player/entity scan
-- movement runtime is reconciled on augment-state replacement, join and respawn, and transient state is cleared on death
-- conditional movement bonuses in this runtime share one deterministic movement-speed modifier instead of stacking separate transient modifiers
-- `숨 고르기` (`catch_breath`) — after 60 ticks without sprinting, movement speed +10% / +20% / +30%
-- `야행성` (`nocturnal`) — nighttime movement-speed facet +5% / +10% / +15%; mining-speed facet is still pending
-- `햇빛 체질` (`sun_affinity`) — daytime movement-speed facet +4% / +8% / +12%; natural-regeneration interval facet is still pending
-- `성큼걸음` (`step_up`) — derived step-height modifier raises the normal player 0.6-block step height by +0.4 to the canonical 1-block step
-- `멀리뛰기` (`long_jump`) — a sprinting vanilla ground jump multiplies horizontal X/Z motion by 1.08 / 1.16 / 1.24 while preserving the vanilla Y jump
-- `관성 전환` (`momentum_shift`) — actual fall distance is tracked independently of fall-damage reduction; landing after at least 4 blocks grants +10% / +20% / +30% movement speed for 60 ticks
-- `두 번 점프` (`double_jump`) — one airborne extra jump uses the exact vanilla jump-power calculation, preserves horizontal velocity, resets fall distance and consumes one server-owned air-jump charge
-- the air-jump charge is restored after returning to ground, swimmable water or a climbable surface
-- the client only sends a jump-key request; spectator/flying/passenger/action-lock/contact/augment/charge eligibility is decided by the server
-- the client input edge remembers the previous ground/water/climb contact state so the initial ordinary jump press is not reinterpreted as an air jump when contact clears
-- `공중 연계` (`aerial_combo`) — a successful airborne hostile ROOT melee hit restores one air-jump charge; repeat hits and the same target are allowed because there is no internal cooldown
-- long jump is attached narrowly to the vanilla `jumpFromGround` boundary instead of replacing the player movement loop
-- the movement contract and new Mixins/network registration load in both full-pack dedicated-server and client smoke environments
+- `movement_modifier_contract.json` owns shared locomotion tuning
+- only relevant augment owners are tracked; no global player/entity scan
+- conditional movement bonuses share one deterministic movement-speed modifier
+- `숨 고르기` — after 60 ticks without sprinting, movement speed +10% / +20% / +30%
+- `야행성` — nighttime movement +5% / +10% / +15%; mining facet pending
+- `햇빛 체질` — daytime movement +4% / +8% / +12%; natural-regeneration interval facet pending
+- `성큼걸음` — normal player step height raised from 0.6 to canonical 1 block
+- `멀리뛰기` — sprinting vanilla ground jump multiplies horizontal motion by 1.08 / 1.16 / 1.24
+- `관성 전환` — actual fall distance >=4 blocks grants +10% / +20% / +30% movement for 60 ticks on landing
+- `두 번 점프` — server-owned one-charge airborne extra jump using vanilla jump-power calculation
+- ground/swimmable water/climbable contact recharges the air jump
+- client sends only jump intent; server decides eligibility/charge
+- `공중 연계` — successful airborne hostile ROOT melee hit restores one air-jump charge
+
+### Projectile shot-action / flight-segment runtime
+
+- new `projectile_modifier_contract.json` owns shared projectile tuning
+- physical arrow runtime state is attached directly to each `AbstractArrow`; no global projectile tick map or entity scan exists
+- `ThrownTrident` is intentionally excluded from arrow augmentation behavior
+- projectile identity records original owner, provenance, vanilla pierce level, augment snapshot, bounce count, current segment hits, tracking target and once-per-projectile chain state
+- ROOT physical arrows remain `ROOT_PROJECTILE`; `분산 사격` auxiliaries are `DERIVED_PROJECTILE`; an arrow whose owner changes away from the original player becomes `REFLECTED`
+- reflected arrows restore their vanilla pierce budget and stop using player-owned tracking/ricochet/chain behavior
+- a solid-block ricochet ends the current flight segment, clears segment hit identity and vanilla pierced-entity memory, restores the combined pierce budget, and begins a new segment
+- the same entity is blocked from repeated direct hits within one segment but may be hit again after a ricochet starts a new segment
+- vanilla block projectile callbacks and weapon block-hit enchantment effects are preserved when a ricochet replaces normal sticking
+- vanilla Piercing level and `관통 화살` levels combine into one physical pierce budget
+- `관통 화살` — +1 / +2 / +3 extra target budget; same-segment follow-up damage reduction 10% / 5% / 0% per prior successful direct hit
+- `추적 화살` — hostile target acquisition within 12 blocks and front 30° cone; steering capped at 2° / 3° / 4° per tick while preserving projectile speed; a new segment can reacquire targets
+- `도탄` — up to 1 / 2 / 3 solid-block ricochets; direct projectile damage gains +20% / +35% / +50% per bounce relative to projectile baseline
+- `연쇄 화살` — first valid physical hostile hit starts one lifetime chain sequence of up to 1 / 2 / 3 hops; each hop searches within 5 blocks; first chain uses the triggering hit amount and later hops multiply by 0.75; chain damage is `DERIVED_CHAIN`, not another physical projectile
+- `분산 사격` — fully charged bow or arrow-loaded crossbow adds 1 / 2 / 3 intangible auxiliary arrows at 60% projectile baseline damage; spread reaches up to 6° / 12° / 18°; no extra ammo or weapon-durability payment is created by the auxiliaries
+- `화살 아끼기` — 10% / 20% / 30% root-ammo non-consume roll for bow/crossbow arrows; Crossbow Multishot still receives one root ammo roll rather than one roll per Multishot projectile
+- auxiliary projectiles are spawned directly rather than replaying the shot action, preventing scatter recursion
+- each auxiliary physical projectile independently receives its own flight-segment state and can use compatible piercing/tracking/ricochet/chain effects
+- full-pack server and client smoke both initialize the projectile contract without our Mixin/Invoker fatal signatures
 
 ## Deliberately not claimed complete
 
 - The full 146-roster gameplay runtime is not complete.
-- `회복 증폭` currently applies to healing routed through the augment-generated heal service. It is not yet a global interceptor for every vanilla/external non-natural healing source.
-- `흡혈` currently proves direct player hostile-kill attribution. Owned derived/active damage attribution expands when those damage producers are implemented.
-- `회복 나눔` currently supports vanilla team/allied checks and player-owned tamed animals; future `지배` companions need an ally adapter when that runtime is implemented.
-- `보호막` has pool/tuning infrastructure but is not player-activatable yet because the common active-ability input/cooldown engine is not implemented.
-- custom augment shield/absorption pools do not yet have final HUD/presentation.
-- `재림` attack/mining/use actions are server-locked and velocity is suppressed during stasis, but strict positional packet immobility has not been gameplay-tested; do not claim a perfect freeze until real play confirms it.
-- `야행성` mining-speed facet is not implemented yet.
-- `햇빛 체질` natural-regeneration interval facet is not implemented yet.
-- `발 안 묶이기`, `물살 타기`, `매달리기`, `탄성 저장`, `물 위 달리기`, `속도 전환` and other collision/medium/physics-heavy movement mechanics are not part of this shared locomotion baseline yet.
-- `탄성 저장` has an actual-fall-distance trigger in canon, but the exact stored-distance-to-propulsion velocity mapping is not sufficiently specified; no arbitrary conversion was invented in this batch.
-- movement/aerial runtime is build/boot verified but has not been live-playtested for feel, input timing, packet synchronization, jump count or recharge behavior.
-- Projectile flight-segment runtime for penetration/homing/ricochet is not implemented yet.
+- `회복 증폭` is still limited to healing routed through the augment-generated heal service, not every external non-natural heal.
+- `흡혈` currently proves direct player hostile-kill attribution; broader owned-derived attribution remains future work.
+- `회복 나눔` still needs a future `지배` companion ally adapter.
+- `보호막` remains non-activatable until the common active engine exists.
+- custom augment protection pools do not yet have final HUD/presentation.
+- `재림` strict positional immobility has not been live-playtested.
+- `야행성` mining-speed facet and `햇빛 체질` natural-regeneration facet are pending.
+- collision/medium-heavy movement mechanics such as `발 안 묶이기`, `물살 타기`, `매달리기`, `탄성 저장`, `물 위 달리기`, `속도 전환` remain separate physics work.
+- `탄성 저장` still lacks a canonically specified stored-distance-to-propulsion mapping, so no arbitrary conversion has been invented.
+- movement/aerial runtime is build/boot verified but not live-playtested for feel/input/synchronization.
+- projectile runtime is build/boot verified but **not** live-playtested for actual bounce geometry, homing feel, target counts, chain targets/damage, ammo consumption, Multishot interaction or segment re-hit behavior.
+- modded projectile classes that do not inherit `AbstractArrow` are not automatically covered by this physical-arrow engine.
+- `ThrownTrident` is intentionally not treated as an arrow augment projectile.
+- projectile VFX/sound/readability polish is not implemented.
+- compilation currently reports a deprecation warning in `ProjectileAugmentService`; it does not fail build or smoke, but the deprecated call should be identified during a later API-cleanup pass rather than being described as resolved.
 - Common active-ability engine is not implemented yet.
-- Save-wide threat scaling has state/high-water observation but final live hostile stat application is not complete.
-- The current device block models inherit vanilla workstation models as a functional placeholder. Final model/texture/VFX/sound are not done.
-- The current card screen is a functional interaction baseline, not a final visual-quality pass.
-- CI proves compile/build, contract initialization, full-pack dedicated-server boot and full-pack client boot. It does **not** prove real combat numbers, movement feel, jump input correctness, installment timing, healing recipients or lethal ordering in a real player session.
-- Better Combat 3.2.2 co-loads and boots with the movement runtime, but movement/combat coexistence has not been playtested.
-- External boss reward gameplay is not playtested.
-- Multiplayer is not tested.
+- save-wide threat scaling has state/high-water observation but final live hostile stat application is not complete.
+- final device model/texture/VFX/sound and final UI visual pass are not done.
+- CI proves compile/build, contract initialization, full-pack dedicated-server boot and full-pack client boot. It does **not** prove live gameplay values or feel.
+- Better Combat 3.2.2 co-loads and boots, but actual combat coexistence is not playtested.
+- external boss reward gameplay is not playtested.
+- multiplayer is not tested.
 
 ## Implementation batching rule from this checkpoint
 
@@ -207,24 +203,26 @@ Use shared-system batches:
 
 ## Next implementation unit
 
-Next large batch: **projectile flight-segment runtime**.
+Next large batch: **common active-ability engine**.
 
 Primary anchors:
 
-1. establish one server-authoritative projectile identity / ownership / flight-segment runtime that preserves canonical combat provenance;
-2. connect `관통 화살`, `추적 화살`, `도탄` and every other already-canonical projectile augment that safely reuses that runtime in one batch;
-3. keep ROOT projectile hits distinct from derived ricochet/chain/secondary projectile effects so ROOT-only counters cannot recurse;
-4. preserve vanilla projectile behavior and external-mod coexistence; do not replace the entire projectile loop when narrow hooks are sufficient;
-5. collision-heavy movement mechanics omitted from the current movement batch may return later as their own physics unit rather than being hacked into the projectile work;
-6. after the projectile batch, build the common active-ability input/cooldown/charge engine and wire the already-prepared `보호막` plus compatible active augments through it.
+1. establish one server-authoritative active input / selected-slot / cooldown / charge / validation path instead of giving each active augment a private key handler;
+2. wire the already-prepared `보호막` trigger through that engine and connect every other canonical active augment that safely shares the same activation boundary in one batch;
+3. keep damage, resource consumption, cooldown completion and world/entity mutation server-authoritative;
+4. reserve the normal 10-slot active quick-selection contract and keep `권능 탈취` on its separate dedicated input as already specified by project canon;
+5. avoid global per-tick scans; only track active instances/timers that actually exist;
+6. do not fake unique mechanics whose targeting/world contracts are not yet sufficiently specified; leave those for the next shared subsystem rather than inventing behavior.
 
-Before treating the existing stat/combat/protection/healing/movement work as PLAYTESTED, verify a real player across stat application/reconnect/death, Better Combat cadence/damage, damage adaptation, delayed installments, overflow/share healing, lethal protection order, conditional movement, long jump, momentum landing, double-jump input/recharge and aerial-combo recharge.
+After the active engine, choose the next bulk unit from the remaining canonical mechanics by shared runtime boundary—resource/mining/farming/world interaction, collision-heavy movement physics, save-wide threat application, or other high-density system—rather than returning to isolated augments.
+
+Before treating the existing work as PLAYTESTED, verify a real player across stat application/reconnect/death, Better Combat cadence/damage, protection/healing/lethal order, conditional movement, double jump/aerial recharge, and the full projectile matrix including Piercing, Multishot, ricochet, tracking, chain, scatter and ammo saving.
 
 ## Validation labels
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `446bf22d1de6517c70b71d36f864d2a31509eefa`
-- JAR PRODUCED: YES — Actions run `40072354505`
+- BUILD VERIFIED: YES — `316f92a67ba7b7a5ecd5651e2fe122d5ac54f05b`
+- JAR PRODUCED: YES — Actions run `40074027578`
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS
@@ -232,6 +230,16 @@ Before treating the existing stat/combat/protection/healing/movement work as PLA
 - STAT CONTRACT INITIALIZATION: PASS — 4 definitions / 4 modifier groups
 - COMBAT/PROTECTION/HEAL/DEATH CONTRACT INITIALIZATION: PASS
 - MOVEMENT CONTRACT INITIALIZATION: PASS
+- PROJECTILE CONTRACT INITIALIZATION: PASS
+- PROJECTILE LIVE-PLAYER TESTED: NO
+- PIERCING LIVE VALUES TESTED: NO
+- CHAIN TARGETING/DAMAGE LIVE TESTED: NO
+- SCATTER SHOT LIVE TESTED: NO
+- ARROW SAVER LIVE AMMO TESTED: NO
+- TRACKING TURN/REACQUIRE LIVE TESTED: NO
+- RICOCHET REFLECTION/SEGMENT LIVE TESTED: NO
+- VANILLA PIERCING + AUGMENT COMBINATION LIVE TESTED: NO
+- CROSSBOW MULTISHOT + SCATTER LIVE TESTED: NO
 - MOVEMENT LIVE-PLAYER TESTED: NO
 - DOUBLE-JUMP INPUT/SYNC LIVE TESTED: NO
 - AERIAL-COMBO LIVE TESTED: NO
@@ -244,6 +252,6 @@ Before treating the existing stat/combat/protection/healing/movement work as PLA
 - DEVICE FLOW PLAYTESTED: NO
 - UI VISUAL REVIEW: NO
 - BETTER COMBAT GAMEPLAY TESTED: NO
-- BETTER COMBAT MOVEMENT COEXISTENCE PLAYTESTED: NO
+- BETTER COMBAT MOVEMENT/PROJECTILE COEXISTENCE PLAYTESTED: NO
 - EXTERNAL BOSS GAMEPLAY TESTED: NO
 - MULTIPLAYER TESTED: NO
