@@ -49,17 +49,18 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 
 ## 정본 우선순위
 
-프로젝트 내부에서는 다음 순서를 사용한다.
+프로젝트 내부 기본 우선순위:
 
-1. `AUGMENTS.md` — 현재 146종 로스터 정본
-2. `AUGMENT_PROPOSAL_HISTORY.md` — 과거 제안/중복 방지
-3. `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md` — 상호작용 V2
-4. `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`
-5. `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`
-6. `GAME_DESIGN.md`
-7. `PROJECT.md`
-8. `MODPACK_BASELINE.md`
-9. 실제 source/resource와 최신 검증 결과
+1. `AUGMENTS.md`
+2. `AUGMENT_PROPOSAL_HISTORY.md`
+3. `GAME_DESIGN.md`
+4. `PROJECT.md`
+5. `MODPACK_BASELINE.md`
+6. 실제 source/resource
+7. 최신 playtest feedback
+8. 과거 대화
+
+세부 구현 문서인 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`, `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`, `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`는 위 정본을 구체화한다. 충돌 시 위 기본 우선순위를 따른다.
 
 저장소 공용 `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`는 상위 공통 작업 계약으로 항상 함께 적용한다.
 
