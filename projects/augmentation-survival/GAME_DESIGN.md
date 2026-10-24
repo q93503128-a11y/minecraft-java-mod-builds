@@ -5,7 +5,7 @@
 Date: 2026-10-24
 Status: 146-AUGMENT DESIGN LOCK / IMPLEMENTATION PREP
 
-개별 증강의 정확한 현재 효과와 레벨은 `AUGMENTS.md`가 우선한다. 상호작용 계산은 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md` V2를 따른다.
+개별 증강의 정확한 현재 효과와 레벨은 `AUGMENTS.md`가 우선한다. 상호작용 계산은 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md` V2를 따른다. 코어 획득/확률/보스 보상은 `CORE_ACQUISITION_DESIGN_2026-10-24.md`를 따른다.
 
 ## 1. 한 줄 정의
 
@@ -181,25 +181,37 @@ I D I
 
 ### 7.2 획득 경로
 
+- 일반 코어 제작
 - 바닐라 구조물 상자
 - 바닐라 몹 / 특수 몹
-- 탐험 보상
-- 바이옴 콘텐츠
+- 레이드·엘리트·특수 적 보상
+- 낚시 보물
 - 외부 모드 구조물
 - 외부 모드 몹 / 보스
 - 코어 합성
-- 필요 시 별도 증강 관련 월드 콘텐츠
 
 코어 제작 하나에만 의존하지 않는다.
+
+초기 구현 확률은 `CORE_ACQUISITION_DESIGN_2026-10-24.md`에 정의한다.
+
+핵심 시작값:
+
+- routine 구조물 추가 roll 8%
+- dangerous_mid 12%
+- dangerous_high 18%
+- pinnacle_cache 35%
+- 일반 적대몹 player-attributed kill 0.20%
+- 보스는 등급별 core 1개 보장 + 플레이어별 최초 처치 bonus 1개
+
+Looting/Fortune/풍요/일반 드롭 복제 증강은 progression core를 증폭하지 않는다.
 
 ### 7.3 고등급 접근
 
 - 초반에도 운/위험 감수로 고급·희귀를 볼 수 있다.
 - 중반에는 희귀·영웅을 실제 목표로 삼을 수 있다.
 - 전설·신화도 엔더 드래곤 이후 전용이 아니다.
-- 합성을 적극 활용하면 직접 드랍보다 빠르게 상위 등급에 접근할 수 있다.
-
-정확한 획득처별 확률은 아직 미확정이다.
+- 전설 3개를 합성하면 신화 1개를 확정적으로 만들 수 있다.
+- 최고급 보스/캐시에서는 신화 코어가 낮은 확률로 직접 등장한다.
 
 ## 8. 바닐라 콘텐츠와 loot
 
@@ -216,12 +228,15 @@ I D I
 - 보루 잔해
 - 우드랜드 맨션
 - 고대 도시
-- 레이드 / 보스 / 특수 몹
+- 엔드 시티
+- Trial 계열 보상
+- 레이드 / Elder Guardian / Warden / Wither / Ender Dragon
 
 원칙:
 - 기존 loot를 통째로 교체하지 않는다.
 - 가능한 경우 기존 loot에 코어 pool을 추가한다.
 - 동일 장소에서 여러 등급이 나올 수 있다.
+- 마을 생활 상자처럼 지나치게 안전하고 밀집된 source는 기본 주력 코어 source로 만들지 않는다.
 
 ## 9. 액티브 UX
 
@@ -300,6 +315,16 @@ I D I
 - 외부 몹/보스는 loot/reward adapter와 threat/control profile 사용.
 - 외부 성장 시스템이 증강 핵심 루프를 무력화하면 공식 팩 포함을 재검토한다.
 
+코어 획득 기본 연결:
+
+- Terralith: 바이옴 자체 드랍 없음, 해당 바이옴 콘텐츠를 통해 획득
+- Repurposed Structures: 대응하는 vanilla 구조물 위험도 profile 상속 우선
+- Dungeons and Taverns: 소형 routine / 중형 dangerous_mid / 대형·심층 dangerous_high
+- Naturalist: 일반 야생동물 core drop 없음
+- Farmer's Delight: 일반 생산에서 직접 core 생성 없음
+- Chrono Dawn / World Bosses: 보스는 기본 boss_major에서 시작
+- MCEndgame: 고난도 던전 dangerous_high, 반복 보스 boss_major, 최종급 보스 pinnacle 후보
+
 ## 13. 현재 기술 스택
 
 이미 확정:
@@ -330,8 +355,8 @@ I D I
 현재 정본에서 의도적으로 남긴 것은 다음뿐이다.
 
 - 정식 게임명
-- 코어 획득처별 정확한 등급 확률
-- 구조물/몹별 세부 드랍률
+- 일부 구조물/외부 보스의 개별 risk/reward profile 세부 매핑
+- 코어 획득 확률의 최종 플레이테스트 튜닝 값
 - `탄도 장막` 주기/범위/회당 파괴 수
 - `임시 발판` 지속시간/쿨다운
 - `생명 연결` 연결 조건/대상 수/범위/지속/공유 비율
@@ -340,21 +365,22 @@ I D I
 - 위협 단계 최종 수치 튜닝
 - 최종 UI 미술 자산/세부 연출
 
-146종 목록/등급/최대 레벨 자체는 더 이상 미확정 항목이 아니다.
+146종 목록/등급/최대 레벨과 코어 획득 경제의 초기 구현 수치는 더 이상 미확정 항목이 아니다.
 
 ## 16. 다음 개발 순서
 
 `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`를 정본으로 사용한다.
 
 1. runtime spine
-2. reference vertical slice
-3. core/device/acquisition transaction
-4. 일반·고급 bulk
-5. 희귀·영웅 복잡 시스템
-6. 전설·신화
-7. world threat scaling
-8. external compat
-9. HUD/VFX/animation/sound
-10. playtest/performance/multiplayer
+2. core item / acquisition profile / loot-event reward layer
+3. core/device/3-choice transaction
+4. reference vertical slice
+5. 일반·고급 bulk
+6. 희귀·영웅 복잡 시스템
+7. 전설·신화
+8. world threat scaling
+9. external compat
+10. HUD/VFX/animation/sound
+11. playtest/performance/multiplayer
 
-현재는 신규 증강 기획 단계가 아니라 **구현 단계 진입 직전**이다.
+현재는 신규 증강 기획 단계가 아니라 **코어 경제까지 잠근 구현 단계 진입 직전**이다.
