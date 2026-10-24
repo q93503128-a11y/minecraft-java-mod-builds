@@ -24,6 +24,24 @@
       "attribute": "knockback_resistance",
       "amount_per_level": 0.10,
       "operation": "add_value"
+    },
+    {
+      "augment_id": "long_reach",
+      "attribute": "block_interaction_range",
+      "amount_per_level": 0.5,
+      "operation": "add_value"
+    },
+    {
+      "augment_id": "underwater_work",
+      "attribute": "submerged_mining_speed",
+      "amount_per_level": 0.16,
+      "operation": "add_value"
+    },
+    {
+      "augment_id": "terrain_resistance",
+      "attribute": "movement_efficiency",
+      "amount_per_level": 0.15,
+      "operation": "add_value"
     }
   ]
 }
