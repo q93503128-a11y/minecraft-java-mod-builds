@@ -8,9 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import net.minecraft.util.RandomSource;
@@ -57,6 +59,18 @@ public final class CoreDistributionCatalog {
             return Optional.empty();
         }
         return Optional.of(rollTier(profile.weights(), random));
+    }
+
+    public static List<AugmentTier> rollEventProfile(String profileId, RandomSource random) {
+        EventProfile profile = current().eventProfiles().get(profileId);
+        if (profile == null) {
+            throw new IllegalArgumentException("Unknown event core profile: " + profileId);
+        }
+        List<AugmentTier> result = new ArrayList<>(profile.guaranteedCoreCount());
+        for (int index = 0; index < profile.guaranteedCoreCount(); index++) {
+            result.add(rollTier(profile.weights(), random));
+        }
+        return List.copyOf(result);
     }
 
     private static AugmentTier rollTier(Map<AugmentTier, Double> weights, RandomSource random) {
