@@ -7,6 +7,10 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionServi
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning;
+import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityTuning;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementTuning;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
@@ -18,6 +22,7 @@ import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestSer
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.survival.DeathPreservationAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
@@ -71,13 +76,18 @@ public final class AugmentationSurvival implements ModInitializer {
         AbundanceService.initialize();
         CombatTuning.initialize();
         ExpansionTuning.initialize();
+        ReactiveCombatTuning.initialize();
         ProtectionAugmentService.initialize();
         ActiveAbilityService.initialize();
         CombatExpansionService.initialize();
         CombatAugmentService.initialize();
+        ReactiveCombatAugmentService.initialize();
+        DeathPreservationAugmentService.initialize();
         ActiveAbilityNetworking.initialize();
         MovementTuning.initialize();
+        MobilityUtilityTuning.initialize();
         MovementAugmentService.initialize();
+        MobilityUtilityAugmentService.initialize();
         MovementNetworking.initialize();
         ProjectileTuning.initialize();
         ProjectileAugmentService.initialize();

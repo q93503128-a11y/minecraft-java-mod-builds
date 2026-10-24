@@ -4,6 +4,8 @@
   "mixins": [
     "RaidMixin",
     "CombatAugmentMixin",
+    "LivingEntityReactiveAugmentMixin",
+    "PlayerDeathAugmentMixin",
     "MovementAugmentMixin",
     "SurvivalPlayerMixin",
     "PlayerConsumptionAugmentMixin",

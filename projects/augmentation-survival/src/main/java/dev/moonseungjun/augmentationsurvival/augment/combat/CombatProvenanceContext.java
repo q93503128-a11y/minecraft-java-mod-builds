@@ -23,6 +23,9 @@ public final class CombatProvenanceContext {
         if (overridden != null) {
             return overridden.provenance();
         }
+        if (ReactiveCombatAugmentService.isReflectedProjectile(source.getDirectEntity())) {
+            return CombatProvenance.REFLECTED;
+        }
         CombatProvenance projectile = ProjectileAugmentService.provenance(source);
         if (projectile != null) {
             return projectile;

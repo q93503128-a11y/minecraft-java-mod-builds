@@ -1,5 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.state;
 
+import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
@@ -57,6 +59,8 @@ public final class AugmentationPlayerStateService {
         player.setAttached(AugmentationAttachments.PLAYER_STATE, next);
         PlayerStatAugmentService.reconcile(player, next);
         MovementAugmentService.reconcile(player, next);
+        MobilityUtilityAugmentService.reconcile(player, next);
+        ReactiveCombatAugmentService.reconcile(player, next);
         SurvivalAugmentService.reconcile(player, next);
         ConsumptionAugmentService.syncClient(player, next);
         if (!current.augmentLevels().equals(next.augmentLevels())) {

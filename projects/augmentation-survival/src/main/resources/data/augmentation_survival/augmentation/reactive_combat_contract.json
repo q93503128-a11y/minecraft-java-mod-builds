@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "return_to_sender": {
+    "speed_scale": [0.60, 0.80, 1.00]
+  },
+  "status_reflect": {
+    "duration_fraction": 0.50
+  },
+  "strong_mind": {
+    "duration_reduction": [0.20, 0.40, 0.60]
+  },
+  "shield_burst": {
+    "radius": 4.0,
+    "damage_multiplier": [1.00, 1.50, 2.00],
+    "damage_cap": [12.0, 20.0, 30.0]
+  },
+  "retrace": {
+    "history_ticks": 40,
+    "damage_fraction": [0.50, 0.75, 1.00],
+    "cooldown_ticks": 100
+  },
+  "invulnerability": {
+    "interval_ticks": 200,
+    "duration_ticks": 60
+  }
+}

@@ -133,7 +133,7 @@ public final class ProtectionAugmentService {
                 + CombatTuning.current().damageAdaptationDurationTicks();
     }
 
-    /** Grants/replaces a distinct active shield pool. Active-input code will call this later. */
+    /** Grants/replaces a distinct active shield pool. */
     public static void grantShield(
             ServerPlayer player,
             String sourcePoolId,
@@ -147,7 +147,7 @@ public final class ProtectionAugmentService {
         long expiresAt = player.level().getGameTime() + durationTicks;
         runtime(player).pools.put(
                 poolKey(PoolKind.SHIELD, sourcePoolId),
-                new ProtectionPool(sourcePoolId, PoolKind.SHIELD, amount, expiresAt)
+                new ProtectionPool(sourcePoolId, PoolKind.SHIELD, amount, amount, expiresAt)
         );
     }
 
@@ -167,9 +167,18 @@ public final class ProtectionAugmentService {
         ProtectionPool existing = runtime.pools.get(key);
         float before = existing == null ? 0.0F : existing.amount;
         float next = Math.min(cap, before + amount);
+        float effectiveAmount = existing == null
+                ? next
+                : Math.max(existing.effectiveAmount, next);
         runtime.pools.put(
                 key,
-                new ProtectionPool(sourcePoolId, PoolKind.ABSORPTION, next, Long.MAX_VALUE)
+                new ProtectionPool(
+                        sourcePoolId,
+                        PoolKind.ABSORPTION,
+                        next,
+                        effectiveAmount,
+                        Long.MAX_VALUE
+                )
         );
         return Math.max(0.0F, next - before);
     }
@@ -192,13 +201,18 @@ public final class ProtectionAugmentService {
         if (runtime == null || !(damage > 0.0F)) {
             return damage;
         }
-        expirePools(runtime, now);
-        damage = consumeKind(runtime, PoolKind.SHIELD, damage);
-        damage = consumeKind(runtime, PoolKind.ABSORPTION, damage);
+        expirePools(player, runtime, now);
+        damage = consumeKind(player, runtime, PoolKind.SHIELD, damage);
+        damage = consumeKind(player, runtime, PoolKind.ABSORPTION, damage);
         return damage;
     }
 
-    private static float consumeKind(RuntimeState runtime, PoolKind kind, float damage) {
+    private static float consumeKind(
+            ServerPlayer player,
+            RuntimeState runtime,
+            PoolKind kind,
+            float damage
+    ) {
         if (!(damage > 0.0F)) {
             return 0.0F;
         }
@@ -213,6 +227,7 @@ public final class ProtectionAugmentService {
             damage -= consumed;
             if (!(pool.amount > 0.0F)) {
                 iterator.remove();
+                ReactiveCombatAugmentService.onProtectionPoolEnded(player, pool.effectiveAmount);
             }
         }
         return Math.max(0.0F, damage);
@@ -230,7 +245,7 @@ public final class ProtectionAugmentService {
 
             RuntimeState runtime = entry.getValue();
             long now = player.level().getGameTime();
-            expirePools(runtime, now);
+            expirePools(player, runtime, now);
             if (runtime.adaptationUntilTick > 0L && now >= runtime.adaptationUntilTick) {
                 runtime.adaptationUntilTick = 0L;
                 runtime.adaptationFamily = null;
@@ -266,8 +281,16 @@ public final class ProtectionAugmentService {
         }
     }
 
-    private static void expirePools(RuntimeState runtime, long now) {
-        runtime.pools.entrySet().removeIf(entry -> entry.getValue().expiresAtTick <= now);
+    private static void expirePools(ServerPlayer player, RuntimeState runtime, long now) {
+        Iterator<Map.Entry<String, ProtectionPool>> iterator = runtime.pools.entrySet().iterator();
+        while (iterator.hasNext()) {
+            ProtectionPool pool = iterator.next().getValue();
+            if (pool.expiresAtTick > now) {
+                continue;
+            }
+            iterator.remove();
+            ReactiveCombatAugmentService.onProtectionPoolEnded(player, pool.effectiveAmount);
+        }
     }
 
     private static void clearRuntime(ServerPlayer player) {
@@ -329,17 +352,20 @@ public final class ProtectionAugmentService {
         private final String sourcePoolId;
         private final PoolKind kind;
         private float amount;
+        private final float effectiveAmount;
         private final long expiresAtTick;
 
         private ProtectionPool(
                 String sourcePoolId,
                 PoolKind kind,
                 float amount,
+                float effectiveAmount,
                 long expiresAtTick
         ) {
             this.sourcePoolId = sourcePoolId;
             this.kind = kind;
             this.amount = amount;
+            this.effectiveAmount = effectiveAmount;
             this.expiresAtTick = expiresAtTick;
         }
     }
