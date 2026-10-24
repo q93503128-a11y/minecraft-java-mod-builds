@@ -25,23 +25,29 @@
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / COMBAT+MOVEMENT+PROJECTILE+ACTIVE+SURVIVAL SHARED RUNTIMES IMPLEMENTED / LOOT+FARMING BULK NEXT`
+`M1C CORE ECONOMY + DEVICE FUNCTIONAL BASELINE / COMBAT+MOVEMENT+PROJECTILE+ACTIVE+SURVIVAL+HARVEST+CONSUMPTION SHARED RUNTIMES IMPLEMENTED / THREAT APPLICATION BULK NEXT`
 
 외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성**까지 기능 기준선이 구현되어 있다.
 
-Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource 순으로 공통 런타임 경계를 확장했다.
+Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource → harvest/drop → consumption/fishing/breeding 순으로 공통 런타임 경계를 확장했다.
 
 현재 146종 기준 gameplay runtime 진행도는 다음과 같다.
 
-- 완전 구현: **69 / 146**
-- 부분 구현: **1 / 146** — `회복 증폭`
-- 완전 구현되지 않음: **77 / 146**
-- gameplay runtime 자체가 아직 없음: **76 / 146**
-- 최신 survival/resource batch 구현: **17종**
+- 완전 구현: **82 / 146**
+- 부분 구현: **4 / 146** — `회복 증폭`, `전리품 챙기기`, `보물 낚시`, `풍요`
+- 완전 구현되지 않음: **64 / 146**
+- gameplay runtime 자체가 아직 없음: **60 / 146**
+- 최신 consumption/fishing/breeding batch: **8종 touched** — 완전 구현 6, 부분 구현 2
 
 여기서 “완전 구현”은 canonical gameplay 효과의 runtime 구현을 뜻한다. 실제 플레이테스트, 최종 VFX/사운드/HUD/UI polish까지 끝났다는 뜻은 아니다.
 
-최신 survival/resource batch에서는 `광부의 손`, `벌목 요령`, `적게 먹기`, `물갈퀴`, `숨 오래 참기`, `추위 적응`, `긴 팔`, `물속 작업`, `발 안 묶이기`, `도구 관리`, `방어구 관리`, `밤눈`, `연속 채굴`, `자동 보충`, `회복력`을 새로 연결하고 기존 부분 구현이던 `야행성`의 야간 채굴속도 facet과 `햇빛 체질`의 주간 자연회복 간격 facet을 완료했다.
+survival/resource batch에서는 `광부의 손`, `벌목 요령`, `적게 먹기`, `물갈퀴`, `숨 오래 참기`, `추위 적응`, `긴 팔`, `물속 작업`, `발 안 묶이기`, `도구 관리`, `방어구 관리`, `밤눈`, `연속 채굴`, `자동 보충`, `회복력`을 연결하고 기존 부분 구현이던 `야행성`의 야간 채굴속도 facet과 `햇빛 체질`의 주간 자연회복 간격 facet을 완료했다.
+
+resource-harvest batch에서는 `풍작`, `씨앗 챙기기`, `한 조각 더`, `다시 심기`, `싹쓸이 수확`, `나무 베기`, `굴파기`를 완전 구현 baseline으로 연결했다. 자동 수확/벌목/굴파기는 raw block deletion이 아니라 서버 `destroyBlock` 경로를 재사용해 Fortune/Silk Touch, 도구 판정, block-break hook, 기존 내구도 절약과 조합되게 했다. `전리품 챙기기`는 일반 몹 item-bundle 복제 baseline까지 구현했지만 외부 보스/혼잡 드롭 provenance가 남아 부분 구현이다.
+
+최신 consumption/fishing/breeding batch에서는 `든든한 한 끼`, `낚시 감각`, `빨리 먹기`, `쌍둥이`, `먹으면서 걷기`, `비축 식사`를 완전 구현 baseline으로 연결했다. `보물 낚시`는 +1/+2/+3 vanilla fishing luck-equivalent를 사용하므로 canonical +2/+4/+6%p와 정확히 동일하지 않아 부분 구현이다. `풍요`는 block/mob/fishing의 최종 ordinary item stack을 한 번 복제하는 공통 baseline을 구현했지만 아직 spatial fresh-item capture이고 외부 progression/unique item provenance가 완전하지 않아 부분 구현이다. 코어는 `풍요` 복제 대상에서 제외한다.
+
+`비축 식사`의 작은 영구 수치를 위해 player state schema를 v2로 올리고 optional `persistent_ints` map을 추가했다. 기존 save field는 유지되고 새 field는 없으면 빈 map으로 decode한다. 섭취시간/사용 중 이동처럼 local prediction이 필요한 값만 작은 S2C snapshot으로 보내며 허기, 비축량, 낚시 결과, 번식 결과, drop duplication은 서버가 최종 결정한다.
 
 채굴속도 계열은 같은 스탯의 보너스를 합산한 뒤 한 번 적용하고, `긴 팔`, `물속 작업`, `발 안 묶이기`, `숨 오래 참기`는 가능한 범위에서 vanilla attribute를 재사용한다. 자연회복 계열은 별도 가짜 heal tick을 만들지 않고 vanilla natural-regeneration timer를 가속한다. 내구도 계열은 vanilla Unbreaking 앞의 durability-loss event 자체를 확률적으로 취소한다. `자동 보충`은 선택된 hotbar stack이 소진됐을 때 main inventory의 동일 item+components stack을 이동시킨다.
 
@@ -49,7 +55,7 @@ Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아�
 
 Projectile runtime은 `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`을 한 shot-action/flight-segment 엔진으로 처리하며 ROOT/derived/reflected provenance를 분리한다. Movement runtime은 `숨 고르기`, `야행성`, `햇빛 체질`, `물갈퀴`, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`를 포함한다.
 
-최신 gameplay checkpoint `1c9cae521727e9280b4ba0e42159916284e32205`는 Build Augmentation Survival Pack #47에서 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke를 모두 통과했다. Better Combat 3.2.2를 포함한 full pack 동시 부팅도 확인했다. 다만 실제 플레이어를 사용한 survival/resource 수치와 조작감, Better Combat cadence, projectile matrix, active input, multiplayer correctness는 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+최신 gameplay checkpoint `fb7c963a93ef721810512d3d4510195f1ae5fd1f`는 Build Augmentation Survival Pack #50에서 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke를 모두 통과했다. 서버는 92 mods, 클라이언트는 108 mods로 full-pack 부팅했고 Better Combat 3.2.2와 새 consumption/fishing contract 동시 로드도 확인했다. 다만 실제 플레이어를 사용한 음식/허기/낚시/번식/풍요 수치와 조작감, 기존 harvest matrix, Better Combat cadence, projectile matrix, active input, multiplayer correctness는 아직 플레이테스트하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
 
 ## 프로젝트 정체성
 
@@ -150,41 +156,44 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 
 현재 1~3의 기능 기준선과 4번의 주요 shared runtime vertical slice가 구현되어 있다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 **현재 공통 기반으로 구현 가능한 쉬운/중간 난도 증강을 먼저 전수 분류하고, 같은 runtime boundary에 맞는 것은 한 번에 전부 연결하는 대형 묶음**으로 진행한다. 최소 개수 목표보다 “현재 엔진으로 안전하게 구현 가능한 것을 남기지 않는다”를 batching 기준으로 삼는다.
 
-다음 bulk unit은 block-output / loot / farming 경계다. `풍작`, 씨앗/재파종, 추가 드롭, 수확 범위 등 compatible canonical augments를 전수 inventory한 뒤 Fortune/Silk Touch/Farmer's Delight 원본 동작을 보존하는 공통 출력 파이프라인으로 묶는다.
+다음 large system batch는 **save-wide threat live hostile scaling + elite/boss application boundary**다. 이미 저장되는 threat high-water를 실제 hostile HP/attack/movement/armor/knockback resistance에 연결하고, ordinary hostile / elite / boss coefficient를 data-driven하게 적용한다. spawn/load와 실제 stage 상승 경계에서만 reconcile하고 전역 매 tick scan은 만들지 않는다. Chrono Dawn / World Bosses / MCEndgame은 안전하게 식별 가능한 boss/elite profile부터 adapter로 연결하고 외부 AI/phase/loot는 보존한다.
 
 ## 현재 검증 상태
 
 검증된 최신 gameplay-code 체크포인트:
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `1c9cae521727e9280b4ba0e42159916284e32205`
-- JAR PRODUCED: YES
+- BUILD VERIFIED: YES — `fb7c963a93ef721810512d3d4510195f1ae5fd1f`
+- JAR PRODUCED: YES — Actions run `40081679446`
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS
 - PACK CLIENT SMOKE: PASS
+- CANONICAL AUGMENT CATALOG INITIALIZATION: PASS — 146 definitions
 - STAT CONTRACT INITIALIZATION: PASS — 7 definitions / 7 modifier groups
 - SURVIVAL CONTRACT INITIALIZATION: PASS
+- RESOURCE-HARVEST CONTRACT INITIALIZATION: PASS
+- CONSUMPTION/FISHING CONTRACT INITIALIZATION: PASS
 - COMBAT/PROTECTION/HEAL/DEATH CONTRACT INITIALIZATION: PASS
 - MOVEMENT CONTRACT INITIALIZATION: PASS
 - PROJECTILE CONTRACT INITIALIZATION: PASS
 - EXPANSION CONTRACT INITIALIZATION: PASS
-- GitHub Actions: `40078301895` / Build Augmentation Survival Pack #47
-- Verification artifact: `augmentation-survival-pack-smoke-47` / ID `12554605978`
-- Artifact ZIP SHA-256: `39a861e050b7b2054eb3469f1d97cf2b454ad48790466de2176ceb461a35781d`
+- GitHub Actions: `40081679446` / Build Augmentation Survival Pack #50
+- Verification artifact: `augmentation-survival-pack-smoke-50` / ID `12555731050`
+- Artifact ZIP SHA-256: `8908a66e3f83e3fc7746883d8abb7379f72f61ec7f7e9570a6888e0a2639d30c`
 
 현재 구현 범위:
 
 - ROSTER LOCKED: YES — 146
-- GAMEPLAY RUNTIME FULLY IMPLEMENTED: **69 / 146**
-- GAMEPLAY RUNTIME PARTIAL: **1 / 146** — `회복 증폭`
-- NOT FULLY IMPLEMENTED: **77 / 146**
-- NO GAMEPLAY RUNTIME YET: **76 / 146**
-- CURRENT BATCH COMPLETED: **17**
+- GAMEPLAY RUNTIME FULLY IMPLEMENTED: **82 / 146**
+- GAMEPLAY RUNTIME PARTIAL: **4 / 146** — `회복 증폭`, `전리품 챙기기`, `보물 낚시`, `풍요`
+- NOT FULLY IMPLEMENTED: **64 / 146**
+- NO GAMEPLAY RUNTIME YET: **60 / 146**
+- CURRENT BATCH TOUCHED: **8** — 6 full / 2 partial
 - FINAL COMPATIBILITY AUDIT: YES
 - INTERACTION CONTRACT V2: YES
 - CORE ACQUISITION LOOP: IMPLEMENTED BASELINE
-- PERSISTENT PLAYER AUGMENT STATE: IMPLEMENTED
+- PERSISTENT PLAYER AUGMENT STATE: IMPLEMENTED — schema v2 optional `persistent_ints`
 - SAVE-WIDE THREAT STATE: IMPLEMENTED / LIVE HOSTILE SCALING INCOMPLETE
 - CORE / DEVICE / 3-CHOICE TRANSACTION: IMPLEMENTED BASELINE
 - SECOND CHOICE ATOMIC 2-PICK: IMPLEMENTED
@@ -197,11 +206,17 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - COMMON ACTIVE-ABILITY ENGINE: IMPLEMENTED BASELINE
 - BROAD COMBAT EXPANSION RUNTIME: IMPLEMENTED BASELINE
 - SHARED SURVIVAL / RESOURCE RUNTIME: IMPLEMENTED BASELINE
+- RESOURCE-HARVEST / DERIVED BREAK RUNTIME: IMPLEMENTED BASELINE
+- CONSUMPTION / FISHING / BREEDING RUNTIME: IMPLEMENTED BASELINE
+- FINAL ORDINARY DROP `풍요` RUNTIME: PARTIAL BASELINE
 - `야행성`: COMPLETE GAMEPLAY RUNTIME / LIVE TEST PENDING
 - `햇빛 체질`: COMPLETE GAMEPLAY RUNTIME / LIVE TEST PENDING
-- `광부의 손`, `벌목 요령`, `적게 먹기`, `물갈퀴`, `숨 오래 참기`, `추위 적응`, `긴 팔`, `물속 작업`, `발 안 묶이기`, `도구 관리`, `방어구 관리`, `밤눈`, `연속 채굴`, `자동 보충`, `회복력`: IMPLEMENTED / LIVE TEST PENDING
-- DROP/FARMING OUTPUT SHARED ENGINE: NOT IMPLEMENTED
+- `풍작`, `씨앗 챙기기`, `한 조각 더`, `다시 심기`, `싹쓸이 수확`, `나무 베기`, `굴파기`: IMPLEMENTED / LIVE TEST PENDING
+- `든든한 한 끼`, `낚시 감각`, `빨리 먹기`, `쌍둥이`, `먹으면서 걷기`, `비축 식사`: IMPLEMENTED / LIVE TEST PENDING
 - FINAL DEVICE/ACTIVE/COMBAT/RESOURCE MODEL-TEXTURE-VFX-SOUND-HUD: NOT COMPLETE
+- CONSUMPTION/FISHING/BREEDING LIVE-PLAYER TESTED: NO
+- ABUNDANCE DROP MATRIX LIVE TESTED: NO
+- RESOURCE-HARVEST LIVE-PLAYER TESTED: NO
 - SURVIVAL/RESOURCE LIVE-PLAYER TESTED: NO
 - ACTIVE ENGINE LIVE-PLAYER TESTED: NO
 - PROJECTILE LIVE-PLAYER TESTED: NO
