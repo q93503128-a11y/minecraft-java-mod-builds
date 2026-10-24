@@ -37,6 +37,7 @@ public final class MovementAugmentService {
     private static final String CATCH_BREATH_ID = id("catch_breath");
     private static final String NOCTURNAL_ID = id("nocturnal");
     private static final String SUN_AFFINITY_ID = id("sun_affinity");
+    private static final String WEBBED_FEET_ID = id("webbed_feet");
     private static final String STEP_UP_ID = id("step_up");
     private static final String LONG_JUMP_ID = id("long_jump");
     private static final String MOMENTUM_SHIFT_ID = id("momentum_shift");
@@ -264,6 +265,11 @@ public final class MovementAugmentService {
             bonus += tuning.nocturnalMovementPerLevel() * nocturnal;
         }
 
+        int webbedFeet = boundedLevel(state, WEBBED_FEET_ID);
+        if (webbedFeet > 0 && player.isInWater()) {
+            bonus += tuning.webbedFeetMovementPerLevel() * webbedFeet;
+        }
+
         int momentum = boundedLevel(state, MOMENTUM_SHIFT_ID);
         if (momentum > 0 && runtime.momentumUntilTick > now) {
             bonus += tuning.momentumMovementPerLevel() * momentum;
@@ -321,6 +327,7 @@ public final class MovementAugmentService {
         return boundedLevel(state, CATCH_BREATH_ID) > 0
                 || boundedLevel(state, NOCTURNAL_ID) > 0
                 || boundedLevel(state, SUN_AFFINITY_ID) > 0
+                || boundedLevel(state, WEBBED_FEET_ID) > 0
                 || boundedLevel(state, MOMENTUM_SHIFT_ID) > 0
                 || boundedLevel(state, DOUBLE_JUMP_ID) > 0
                 || boundedLevel(state, AERIAL_COMBO_ID) > 0;
