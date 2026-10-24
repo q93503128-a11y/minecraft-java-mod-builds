@@ -29,6 +29,7 @@ import dev.moonseungjun.augmentationsurvival.core.CoreSourceResolver;
 import dev.moonseungjun.augmentationsurvival.core.FishingCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.StructureCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.device.AugmentDeviceBlocks;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenus;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
 import dev.moonseungjun.augmentationsurvival.network.ConsumptionNetworking;
@@ -55,6 +56,7 @@ public final class AugmentationSurvival implements ModInitializer {
         WorldThreatAttachments.initialize();
         ThreatEntityAttachments.initialize();
         AugmentCatalog.initialize();
+        EntityCompatibilityProfileService.initialize();
         EnemyScalingCatalog.initialize();
         ThreatScalingService.initialize();
         StatAugmentCatalog.initialize();

@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.threat;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.Objects;
@@ -24,6 +25,16 @@ public final class ThreatScalingService {
     private static final Identifier SPEED_MODIFIER = id("threat/movement_speed");
     private static final Identifier ARMOR_MODIFIER = id("threat/armor");
     private static final Identifier KNOCKBACK_MODIFIER = id("threat/knockback_resistance");
+    private static final EnemyScalingCatalog.Profile COMPATIBILITY_BOSS_PROFILE =
+            new EnemyScalingCatalog.Profile(
+                    "compatibility_boss",
+                    EnemyScalingCatalog.ScaleGroup.BOSS,
+                    1.0D,
+                    1.0D,
+                    1.0D,
+                    1.0D,
+                    1.0D
+            );
 
     private ThreatScalingService() {
     }
@@ -63,7 +74,7 @@ public final class ThreatScalingService {
     public static void reconcile(LivingEntity entity, ServerLevel level) {
         Objects.requireNonNull(entity, "entity");
         Objects.requireNonNull(level, "level");
-        EnemyScalingCatalog.Profile profile = EnemyScalingCatalog.resolveProfile(entity);
+        EnemyScalingCatalog.Profile profile = resolveProfile(entity);
         if (profile.scaleGroup() == EnemyScalingCatalog.ScaleGroup.EXCLUDED) {
             return;
         }
@@ -92,7 +103,7 @@ public final class ThreatScalingService {
         if (!(dealer instanceof LivingEntity living) || !(living.level() instanceof ServerLevel level)) {
             return damage;
         }
-        EnemyScalingCatalog.Profile profile = EnemyScalingCatalog.resolveProfile(living);
+        EnemyScalingCatalog.Profile profile = resolveProfile(living);
         if (profile.scaleGroup() == EnemyScalingCatalog.ScaleGroup.EXCLUDED) {
             return damage;
         }
@@ -117,6 +128,13 @@ public final class ThreatScalingService {
         return (float) Math.min(Float.MAX_VALUE, Math.max(0.0D, scaled));
     }
 
+    private static EnemyScalingCatalog.Profile resolveProfile(LivingEntity entity) {
+        if (EntityCompatibilityProfileService.isBoss(entity)) {
+            return COMPATIBILITY_BOSS_PROFILE;
+        }
+        return EnemyScalingCatalog.resolveProfile(entity);
+    }
+
     private static void refreshLoadedEntities(MinecraftServer server, int previousStage, int newStage) {
         int refreshed = 0;
         for (ServerLevel level : server.getAllLevels()) {
@@ -124,7 +142,7 @@ public final class ThreatScalingService {
                 if (!(entity instanceof LivingEntity living)) {
                     continue;
                 }
-                EnemyScalingCatalog.Profile profile = EnemyScalingCatalog.resolveProfile(living);
+                EnemyScalingCatalog.Profile profile = resolveProfile(living);
                 if (profile.scaleGroup() == EnemyScalingCatalog.ScaleGroup.EXCLUDED) {
                     continue;
                 }

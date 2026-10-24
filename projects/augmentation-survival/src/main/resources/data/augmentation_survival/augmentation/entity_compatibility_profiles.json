@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "status": "canonical-external-boss-integration-baseline",
+  "purpose": "Unify boss identity and control policy for threat scaling, boss-targeted augments and ordinary-loot exclusions without coupling identity to reward bands.",
+  "default_boss_control": {
+    "allow_pull": true,
+    "pull_multiplier": 0.30,
+    "allow_position_swap": true,
+    "allow_time_stop": true,
+    "allow_stun": true,
+    "allow_percent_hp_damage": true,
+    "allow_wall_impact": true,
+    "allow_dominate": false
+  },
+  "profiles": [
+    {"id":"vanilla_wither","selector":{"type":"entity","value":"minecraft:wither"},"profile":{"boss":true}},
+    {"id":"vanilla_ender_dragon","selector":{"type":"entity","value":"minecraft:ender_dragon"},"profile":{"boss":true}},
+
+    {"id":"chronodawn_time_guardian","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:time_guardian"},"profile":{"boss":true}},
+    {"id":"chronodawn_chronos_warden","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:chronos_warden"},"profile":{"boss":true}},
+    {"id":"chronodawn_clockwork_colossus","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:clockwork_colossus"},"profile":{"boss":true}},
+    {"id":"chronodawn_entropy_keeper","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:entropy_keeper"},"profile":{"boss":true}},
+    {"id":"chronodawn_temporal_phantom","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:temporal_phantom"},"profile":{"boss":true}},
+    {"id":"chronodawn_time_tyrant","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:time_tyrant"},"profile":{"boss":true}},
+
+    {"id":"worldbosses_sylvaron","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["sylvaron","verdant"]},"profile":{"boss":true}},
+    {"id":"worldbosses_aureon","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["aureon","storm"]},"profile":{"boss":true}},
+    {"id":"worldbosses_nekhraz","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["nekhraz","dune"]},"profile":{"boss":true}},
+    {"id":"worldbosses_varkhul","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["varkhul","infernal"]},"profile":{"boss":true}},
+    {"id":"worldbosses_morvath","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["morvath","soul"]},"profile":{"boss":true}},
+    {"id":"worldbosses_elyndra","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["elyndra","void"]},"profile":{"boss":true}},
+    {"id":"worldbosses_astrael","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["astrael","primordial"]},"profile":{"boss":true}},
+    {"id":"worldbosses_shadow_king","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["shadow_king","shadowking","umbral"]},"profile":{"boss":true}},
+    {"id":"worldbosses_dragon_mother","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["dragon_mother","dragonmother","dragon"]},"profile":{"boss":true}},
+    {"id":"worldbosses_storm_griffin","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["storm_griffin","stormgriffin","griffin"]},"profile":{"boss":true}},
+    {"id":"worldbosses_shadow_weaver","required_mod":"worldbosses","selector":{"type":"entity_path_tokens","namespace":"worldbosses","tokens":["shadow_weaver","shadowweaver","weaver"]},"profile":{"boss":true}}
+  ],
+  "dynamic_adapters": [
+    {
+      "id": "mcendgame_dungeon_boss",
+      "required_mod": "mcendgame",
+      "accessor_class": "de.fuballer.mcendgame.main.accessor.MobEntityDungeonBossAccessor",
+      "boolean_method": "mcendgame$isDungeonBoss",
+      "profile": {"boss": true}
+    }
+  ],
+  "reward_separation": {
+    "boss_identity_implies_core_reward": false,
+    "reason": "Boss identity is shared by combat/control/threat/loot exclusion. Core reward bands remain explicitly authored in boss_core_reward_contract.json."
+  }
+}

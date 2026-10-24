@@ -3,7 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.combat;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
-import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardCatalog;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.Comparator;
@@ -13,8 +13,6 @@ import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -175,7 +173,9 @@ public final class CombatExpansionService {
             DamageSource source
     ) {
         removeTargetRuntime(killed.getUUID());
-        if (!(killer instanceof ServerPlayer player) || !(killed instanceof Enemy)) {
+        boolean configuredBoss = isConfiguredBoss(killed);
+        if (!(killer instanceof ServerPlayer player)
+                || (!(killed instanceof Enemy) && !configuredBoss)) {
             return;
         }
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
@@ -186,7 +186,7 @@ public final class CombatExpansionService {
             int cycle = boundedLevel(state, COMBAT_CYCLE_ID);
             if (cycle > 0) {
                 int reduction = 20 * cycle;
-                if (isConfiguredBoss(killed)) {
+                if (configuredBoss) {
                     reduction *= 5;
                 }
                 ActiveAbilityService.reduceSupportedCooldowns(player, reduction);
@@ -223,9 +223,9 @@ public final class CombatExpansionService {
         }
     }
 
+    /** Shared boss identity wrapper retained for callers in resource/active systems. */
     public static boolean isConfiguredBoss(LivingEntity entity) {
-        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-        return entityId != null && BossCoreRewardCatalog.exactAssignment(entityId).isPresent();
+        return EntityCompatibilityProfileService.isBoss(entity);
     }
 
     private static void triggerChainExplosion(
