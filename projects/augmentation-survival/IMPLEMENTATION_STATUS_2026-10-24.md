@@ -1,53 +1,80 @@
 # Augmentation Survival — Implementation Status
 
 Date: 2026-10-24
-Status: M1C FUNCTIONAL BASELINE / 110-OF-146 GAMEPLAY RUNTIME / SPECIAL TEMPORAL + MYTHIC ACTIVE PASS VERIFIED
+Status: M1C FUNCTIONAL BASELINE / 116-OF-146 GAMEPLAY RUNTIME / ADVANCED ACTIVE + INTERACT PASS VERIFIED
 
 ## 146-roster implementation count
 
 The count below measures whether the canonical gameplay effect has a runtime implementation. It does **not** mean final VFX/UI polish or live playtesting is complete.
 
-- Fully implemented gameplay runtime: **110 / 146**
+- Fully implemented gameplay runtime: **116 / 146**
 - Partially implemented: **4 / 146** — `회복 증폭`, `전리품 챙기기`, `보물 낚시`, `풍요`
-- Not fully implemented: **36 / 146**
-- No gameplay runtime yet: **32 / 146**
-- **This verified batch adds 3 new fully implemented gameplay runtimes.**
-- Newly implemented: `귀환`, `시간 정지`, `천벌`
+- Not fully implemented: **30 / 146**
+- No gameplay runtime yet: **26 / 146**
+- **This verified batch adds 6 new fully implemented gameplay runtimes.**
+- Newly implemented: `되감기`, `시간 가속`, `연장전`, `방패 던지기`, `흥정`, `매달리기`
 - Partially implemented this batch: **0**
-- Existing implementation reclassified complete after source-consumer audit: **1** — `피해 적응`
-- Shared systems materially extended: special active routing, concentration cancellation, hostile control state, projectile freeze state, status-timer freeze, boss control-policy enforcement, and `SPECIAL_PERCENT_HP` damage.
+- Shared systems materially extended: historical player snapshots, advanced non-mythic cooldown/charge handling, sustained-active instance extension, local-client temporal prediction, owned-projectile acceleration, manual-active replay scheduling, villager final-price adjustment, and server-authoritative mantle collision.
 
-The previous 106-runtime checkpoint understated the implementation count by one: `피해 적응` was already fully consumed by `ProtectionAugmentService` and `CombatTuning` before this batch. It records the actual non-delayed incoming damage family, keeps the canonical six-second adaptation window and applies the level-scaled 10% / 20% / 30% reduction before delayed-damage/protection-pool handling. It is therefore moved from the stale no-runtime inventory into the fully implemented count without claiming new code for it.
+The earlier 106-runtime checkpoint understated the implementation count by one: `피해 적응` was already fully consumed by `ProtectionAugmentService` and `CombatTuning`. That correction remains part of the 116 total; it was a source-consumer reclassification, not new gameplay code.
 
 `회복 증폭`, `전리품 챙기기`, `보물 낚시`, `풍요` retain their previously documented partial limitations.
 
 ## Verified code checkpoint
 
-- Verified gameplay-code checkpoint: `37050798f139981d10f38dc8932f911a4a3db385`
-- Primary feature commit: `37050798f139981d10f38dc8932f911a4a3db385` — `feat(augmentation-survival): implement special temporal and mythic actives`
-- GitHub Actions: `40101411961` / Build Augmentation Survival Pack #66
+- Verified gameplay-code checkpoint: `90dc31611f7922def7a990bd6e22fad53ed10d03`
+- Primary feature commit: `0bc871775f39c878994b5d96eee449fbb5346e6a` — `feat(augmentation-survival): implement advanced active batch`
+- 26.2 API-alignment commit: `90dc31611f7922def7a990bd6e22fad53ed10d03` — `fix(augmentation-survival): align 26.2 advanced active APIs`
+- GitHub Actions: `40105597775` / Build Augmentation Survival Pack #68
 - Build and pinned-pack inspection: PASS
 - Pack dependency inspection: PASS — 23 pinned external artifacts
 - Runtime classpath verification: PASS — 150 files
 - Dedicated server smoke: PASS — 92 mods
 - Client boot smoke: PASS — 108 mods
 - Verification artifacts upload: PASS
-- Artifact: `augmentation-survival-pack-smoke-66`
-- Artifact ID: `12563216792`
-- Artifact ZIP size: 681410 bytes
-- Artifact ZIP SHA-256: `c8ea2ab5dbbc7bf139db8fa3798fdb40439c3302dfedc4787fd64c6f1c3427d9`
+- Artifact: `augmentation-survival-pack-smoke-68`
+- Artifact ID: `12564219425`
+- Artifact ZIP size: 731401 bytes
+- Artifact ZIP SHA-256: `da91b27936073e27aa8908b7e039aa69ce1ce1a772eb7a2cf18ffaec97103917`
 - Canonical augment catalog initialization: PASS — 146 definitions
 - Entity compatibility contract initialization: PASS — 8 exact selectors / 11 token selectors / 1 dynamic adapter
 - Enemy scaling contract initialization: PASS — 9 stages / 4 native exact profiles / 0 namespace profiles
 - Stat / survival / harvest / consumption / combat / expansion / movement / projectile / reactive / utility contracts: BUILD + FULL-PACK BOOT VERIFIED
 - Advanced utility contract: BUILD + FULL-PACK BOOT VERIFIED
 - Special active contract and custom damage type: BUILD + FULL-PACK BOOT VERIFIED
+- Advanced active contract: BUILD + FULL-PACK BOOT VERIFIED
 
-Build #66 compiled the new server APIs, loaded both new Mixin targets, loaded the custom `augmentation_survival:divine_punishment` damage type and its armor-bypass tag, reached dedicated-server ready state with the full pack and completed the client smoke test. No corrective gameplay commit was required after `37050798f139981d10f38dc8932f911a4a3db385`.
+Build #67 failed during compile only because the first feature commit used two stale Minecraft 26.2 API boundaries: the Villager package and direct `ServerPlayer.getServer()`. The corrective commit changed only those API boundaries. Build #68 then passed compile, pinned-pack inspection, dedicated-server smoke, client smoke and artifact upload. No gameplay semantics were removed to obtain the green build.
 
 Documentation commits after this checkpoint do not change Java gameplay code and must not be treated as new gameplay verification targets.
 
-## Newly verified special temporal / mythic active pass
+## Newly verified advanced active / interact pass
+
+### `되감기`
+
+The server keeps a short rolling history for players who own the augment. Activation restores the snapshot at or immediately before eight seconds ago: dimension/position, velocity, HP, absorption, hunger, saturation, oxygen, fire time and status effects. Inventory, XP, durability, world state, mobs, drops and cooldown state are not rewound. The sixty-second base cooldown participates in `능력 가속`, sequential `이중 충전` and `전투 순환`; the cooldown is committed only after a successful rewind. `재연` is deliberately excluded because this is a teleport/state-restore active rather than a replay-safe combat action.
+
+### `시간 가속`
+
+Activation begins a three-second concentration channel. Movement, dimension change, attack, block-breaking input, item use or actual unblocked damage cancels the channel without spending cooldown. Successful completion starts the twenty-second sustained effect: movement speed, attack speed and block-break speed +60%, item-use speed ×1.4 and common owned-projectile launch speed ×1.4. Server state is mirrored to the local client for use-duration prediction. Its forty-five-second base cooldown participates in ability haste, sequential double charge and combat cycle; it is not replayed.
+
+### `연장전`
+
+A ROOT-direct hostile kill extends currently running eligible manual non-mythic sustained-active instances by one second; configured bosses extend them by four seconds. Each manual-use instance is capped at +50% of its base duration. The current bridge covers `시간 가속` and manual `광폭화`; replay-created Berserk instances are intentionally excluded. Extended Berserk preserves its outgoing-damage, incoming-damage and attack-speed semantics during only the added tail window.
+
+### `방패 던지기`
+
+With a shield and weapon in opposite hands, the active snapshots the weapon-side raw melee attack basis and deals 60% / 80% / 100% of that value across 2 / 3 / 4 hostile targets at 12 / 16 / 20 block range. The primary target is aim/LOS selected, then the chain continues to nearest eligible targets. Base cooldowns are 8 / 7 / 6 seconds and participate in ability haste, sequential double charge and combat cycle. `재연` repeats the attack after the canonical delay at the existing replay efficiency without spending another charge or recursively replaying. The implementation does not copy Better Combat's current combo-frame multiplier.
+
+### `흥정`
+
+After vanilla Villager reputation/demand pricing has rebuilt the offer, the server applies the augment's 10% / 20% / 30% discount to final emerald cost with a minimum cost of one emerald.
+
+### `매달리기`
+
+The server detects an airborne horizontal collision, verifies a one-block-up/forward destination AABB is collision-free, then performs the mantle movement and clears fall distance. Water, climbable, passenger, flying, spectator and action-locked states are excluded. Collision remains server-authoritative.
+
+## Prior verified special temporal / mythic active pass retained
 
 ### `귀환`
 
@@ -99,15 +126,15 @@ Activation uses the canonical 32-block radius and sixty-second cooldown. It appl
 
 ### Movement / projectile / active
 
-- shared movement/aerial runtime including `숨 고르기`, `야행성`, `햇빛 체질`, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`, `물갈퀴`, `발 안 묶이기`, `물살 타기`, `기수`, `물 위 달리기`, `나무타기`
+- shared movement/aerial runtime including `숨 고르기`, `야행성`, `햇빛 체질`, `성큼걸음`, `멀리뛰기`, `관성 전환`, `두 번 점프`, `공중 연계`, `물갈퀴`, `발 안 묶이기`, `물살 타기`, `기수`, `물 위 달리기`, `나무타기`, `매달리기`
 - shared projectile shot-action / flight-segment runtime for `화살 아끼기`, `관통 화살`, `연쇄 화살`, `분산 사격`, `추적 화살`, `도탄`, plus `집중 조준`
 - common 10-slot active runtime with server-authoritative ownership/cooldown/charge/target/result validation
-- supported ordinary cooldown actives: `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`
+- supported ordinary cooldown actives include `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`, `방패 던지기`, `되감기`, `시간 가속`
 - supported toggles: `위협 억제`, `순간 채굴`
 - one-use death active: `사망 지점 귀환`
 - no-cooldown concentration active: `귀환`
 - mythic standalone actives: `시간 정지`, `천벌`
-- active meta runtime: `능력 가속`, `이중 충전`, `재연`, `전투 순환`
+- active meta runtime: `능력 가속`, `이중 충전`, `재연`, `전투 순환`, `연장전`
 
 ### Survival / resource / harvest / consumption / utility
 
@@ -115,7 +142,7 @@ Activation uses the canonical 32-block radius and sixty-second cooldown. It appl
 - `적게 먹기`, `숨 오래 참기`, `추위 적응`, `밤눈`, `회복력`
 - `풍작`, `씨앗 챙기기`, `한 조각 더`, `다시 심기`, `싹쓸이 수확`, `나무 베기`, `굴파기`
 - `든든한 한 끼`, `낚시 감각`, `빨리 먹기`, `쌍둥이`, `먹으면서 걷기`, `비축 식사`
-- `줍는 손`, `방패잡이`, `연료 절약`, `빠른 양조`, `경험 보존`, `소지품 보존`
+- `줍는 손`, `방패잡이`, `연료 절약`, `빠른 양조`, `경험 보존`, `소지품 보존`, `흥정`
 - item/enchantment utility includes `진주 숙련`, `휴대 수류`
 - `전리품 챙기기`, `보물 낚시`, `풍요` retain functional partial baselines
 
@@ -125,7 +152,7 @@ The existing save-wide 0–8 threat runtime remains active. Stage rises reconcil
 
 `entity_compatibility_profiles.json` remains the shared boss identity/control-policy contract. Native exact identities include Wither, Ender Dragon and six Chrono Dawn bosses. Pinned World Bosses resolves 11 token profiles to exact live registry IDs. MCEndgame uses its dynamic dungeon-boss accessor. Boss identity remains separate from boss-core reward assignment.
 
-Existing consumers now include boss threat scaling, `우두머리 사냥`, `전투 순환`, normal-mob-only loot exclusions, boss pull handling, `위협 억제`, generic boss-origin status handling, `시간 정지` and `천벌` control/percent-HP policy.
+Existing consumers now include boss threat scaling, `우두머리 사냥`, `전투 순환`, `연장전`, normal-mob-only loot exclusions, boss pull handling, `위협 억제`, generic boss-origin status handling, `시간 정지` and `천벌` control/percent-HP policy.
 
 ## Partial augments still open
 
@@ -136,15 +163,18 @@ Existing consumers now include boss threat scaling, `우두머리 사냥`, `전�
 
 `손재주` remains unimplemented because its non-combat gathering whitelist is not fixed. `물약 확산` remains blocked because the canonical text says “주변” without a fixed radius. `탄성 저장` still lacks a canonical block-distance-to-propulsion mapping. Other still-underspecified mechanics such as `탄도 장막`, `임시 발판`, `생명 연결`, `작아지기`, `벽치기` must not receive invented values.
 
-`되감기` is also deliberately not claimed complete: its own 60-second active cooldown is specified, but as an eligible non-mythic cooldown active it must participate correctly in `능력 가속`, sequential `이중 충전` and `전투 순환`. Implementing it as an isolated one-cooldown button would violate the interaction contract.
-
 ## Deliberately not claimed complete
 
-- Full roster gameplay completion is **110 / 146**, not 146 / 146.
-- The new three-augment pass is build/full-pack boot verified but **not live-player playtested**.
-- `귀환` needs actual movement/attack/use/damage interruption and cross-dimension respawn-point validation in a player session.
-- `시간 정지` needs live validation of AI restoration, effect-timer pausing, overlapping stun interactions and hostile projectile resume behavior. Exotic external projectiles that do not subclass the common Minecraft `Projectile` path are not yet proven compatible.
-- `천벌` needs live boss-phase/invulnerability validation and real external-boss encounters for percent-HP/stun policy.
+- Full roster gameplay completion is **116 / 146**, not 146 / 146.
+- The new six-augment pass is build/full-pack boot verified but **not live-player playtested**.
+- `되감기` needs live validation of the exact eight-second restore feel, cross-dimension restore, effect restoration and sequential double-charge ordering.
+- `시간 가속` needs live validation of the concentration-cancel matrix, local-client item-use timing, projectile-speed feel and additive positive-stat interaction.
+- `연장전` needs live validation of extension caps, overlapping Berserk instances and configured-boss kill extensions.
+- `방패 던지기` needs live aim/chain validation, Better Combat interaction, replay behavior and presentation/VFX polish.
+- `흥정` needs live reputation/demand/reopen/restock/trade-cost edge-case validation.
+- `매달리기` needs live validation on irregular/modded ledges and under latency/collision edge cases.
+- `귀환`, `시간 정지` and `천벌` retain their previous live-test gaps.
+- Exotic external projectiles that do not subclass the common Minecraft `Projectile` path are not yet proven compatible with the temporal projectile hooks.
 - External boss encounters, threat stage progression, Farmer's Delight compatibility and broad combat/resource matrices remain live-test pending.
 - Final device/active/combat/resource/threat VFX, sound, models, HUD and UI visual polish are not complete.
 - The pre-existing `ProjectileAugmentService` deprecated-API warning remains non-fatal.
@@ -165,27 +195,33 @@ For every next batch:
 
 ## Next implementation direction
 
-The corrected remaining no-runtime set is now **32**. Recompute those 32 from the locked roster and actual runtime consumers before coding. Prefer the densest fixed-semantics subsystem that can remain server-authoritative. A strong next target is the non-mythic active-duration/cooldown family (`연장전`, `되감기` and any other eligible active that can correctly share the existing charge/cooldown engine), or a world/interact subsystem with several fixed entries. Do not fill missing parameters by inference.
+The corrected remaining no-runtime set is now **26**. Recompute those 26 from the locked roster and actual runtime consumers before coding. Prefer the densest fixed-semantics world/interact subsystem that can remain server-authoritative — for example scanner/inventory/interact entries such as `광석 눈썰미`, `주머니`, `상자 찾기`, `위험 감지`, `원격 창고` where the actual 26.2 hooks can be shared safely. Do not fill missing parameters by inference, and keep the explicitly blocked parameter-contract entries untouched until canon changes.
 
 ## Validation labels
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `37050798f139981d10f38dc8932f911a4a3db385`
-- JAR PRODUCED: YES — Actions run `40101411961`
+- BUILD VERIFIED: YES — `90dc31611f7922def7a990bd6e22fad53ed10d03`
+- JAR PRODUCED: YES — Actions run `40105597775`
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS — 92 mods
 - PACK CLIENT SMOKE: PASS — 108 mods
-- VERIFICATION ARTIFACT: `augmentation-survival-pack-smoke-66` / ID `12563216792`
-- VERIFICATION ARTIFACT SHA-256: `c8ea2ab5dbbc7bf139db8fa3798fdb40439c3302dfedc4787fd64c6f1c3427d9`
+- VERIFICATION ARTIFACT: `augmentation-survival-pack-smoke-68` / ID `12564219425`
+- VERIFICATION ARTIFACT SHA-256: `da91b27936073e27aa8908b7e039aa69ce1ce1a772eb7a2cf18ffaec97103917`
 - CANONICAL AUGMENT CATALOG INITIALIZATION: PASS — 146 definitions
 - ENTITY COMPATIBILITY CONTRACT INITIALIZATION: PASS — 8 exact / 11 token / 1 dynamic
 - WORLD BOSSES LIVE REGISTRY PROFILE BINDING: PASS — 11 / 11
 - MCENDGAME DYNAMIC BOSS ADAPTER BINDING: PASS — 1 / 1
 - CHRONO DAWN EXACT BOSS PROFILE DEFINITIONS: PASS — 6
 - ENEMY SCALING CONTRACT INITIALIZATION: PASS — 9 stages / 4 native exact profiles / 0 namespace profiles
-- SPECIAL TEMPORAL / MYTHIC ACTIVE RUNTIME: BUILD/BOOT VERIFIED
-- NEW 3-AUGMENT BATCH LIVE-PLAYER TESTED: NO
+- ADVANCED ACTIVE / BARGAINING / MANTLE RUNTIME: BUILD/BOOT VERIFIED
+- NEW 6-AUGMENT BATCH LIVE-PLAYER TESTED: NO
+- REWIND LIVE-PLAYER TESTED: NO
+- TIME-ACCELERATION LIVE-PLAYER TESTED: NO
+- OVERTIME LIVE-PLAYER TESTED: NO
+- SHIELD-THROW LIVE-PLAYER TESTED: NO
+- BARGAINING LIVE-PLAYER TESTED: NO
+- MANTLE LIVE-PLAYER TESTED: NO
 - RETURN-HOME LIVE-PLAYER TESTED: NO
 - TIME-STOP LIVE-PLAYER TESTED: NO
 - DIVINE-PUNISHMENT LIVE-PLAYER TESTED: NO
@@ -199,4 +235,5 @@ The corrected remaining no-runtime set is now **32**. Recompute those 32 from th
 - DEVICE FLOW PLAYTESTED: NO
 - UI VISUAL REVIEW: NO
 - BETTER COMBAT GAMEPLAY TESTED: NO
+- PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
