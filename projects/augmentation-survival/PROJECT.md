@@ -25,11 +25,11 @@
 
 ## 현재 상태
 
-`M1 IMPLEMENTATION PREP / 146-AUGMENT DESIGN LOCK`
+`M1 IMPLEMENTATION PREP / 146-AUGMENT + CORE ECONOMY DESIGN LOCK`
 
-외부 모드팩 M0 부팅/의존성 검증은 이미 통과한 기준선이 있다. 현재는 신규 증강 제작을 멈추고 **146종 정본, 상호작용 V2, 최종 호환성 감사, 저장/네트워크/이벤트 구조, 첫 수직 슬라이스**를 잠근 구현 준비 단계다.
+외부 모드팩 M0 부팅/의존성 검증은 이미 통과한 기준선이 있다. 현재는 신규 증강 제작을 멈추고 **146종 정본, 상호작용 V2, 코어 획득 경제, 최종 호환성 감사, 저장/네트워크/이벤트 구조, 첫 수직 슬라이스**를 잠근 구현 준비 단계다.
 
-현재 Java runtime은 bootstrap 수준이며 146종 증강 자체는 아직 구현되지 않았다.
+현재 Java runtime은 bootstrap 수준이며 146종 증강과 코어 획득 시스템 자체는 아직 구현되지 않았다.
 
 ## 프로젝트 정체성
 
@@ -46,6 +46,7 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - 외부 모드는 증강을 사용할 세계와 콘텐츠를 확장해야 하며, 별도 성장 시스템으로 증강과 경쟁하지 않는다.
 - 강한 증강 조합은 의도적으로 허용하고 무한/기하급수 재귀만 차단한다.
 - 적은 플레이어 성장을 1:1 상쇄하지 않고 세이브 전체 위협 단계로 부분 추격한다.
+- 코어는 제작/탐험/전투/낚시/보스/합성으로 분산 획득하며 한 경로가 전체 경제를 독점하지 않는다.
 
 ## 정본 우선순위
 
@@ -60,7 +61,7 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 7. 최신 playtest feedback
 8. 과거 대화
 
-세부 구현 문서인 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`, `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`, `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`는 위 정본을 구체화한다. 충돌 시 위 기본 우선순위를 따른다.
+세부 구현 문서인 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`, `CORE_ACQUISITION_DESIGN_2026-10-24.md`, `AUGMENT_FINAL_COMPATIBILITY_AUDIT_2026-10-24.md`, `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`는 위 정본을 구체화한다. 충돌 시 위 기본 우선순위를 따른다.
 
 저장소 공용 `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md`는 상위 공통 작업 계약으로 항상 함께 적용한다.
 
@@ -82,17 +83,23 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - 특정 등급 전체를 최대치까지 획득했다면 그 등급 뽑기는 불가능하며 코어도 소비하지 않는다.
 - 동일 등급 코어 3개를 바로 위 등급 코어 1개로 합성할 수 있다.
 - 코어 합성은 강화 증강 장치에서 제공한다.
+- 일반 코어는 레드스톤/자수정/구리 레시피로 확정 제작 가능하다.
+- 자연 구조물은 기존 loot를 유지하면서 위험도별 추가 core roll을 가진다.
+- 일반 적대몹은 매우 낮은 확률의 저등급 core roll만 가지며 Looting/풍요 등으로 코어를 복제하지 않는다.
+- 정식 보스는 코어 보상을 보장하고 플레이어별 최초 처치에는 추가 코어 1개를 지급한다.
+- 신화 직접 획득은 pinnacle 콘텐츠에서만 낮은 확률로 허용하며 전설 3:1 합성으로도 확정 접근 가능하다.
 - 총 증강 보유 개수 제한은 없다.
 - 액티브는 일반 10칸 빠른 슬롯을 사용하고 `권능 탈취`는 별도 전용키 하나를 사용한다.
 - 월드 위협 단계는 지역/플레이어별이 아니라 **세이브 전체 공통 0~5**다.
 
 아직 고정하지 않은 것:
 
-- 코어 획득처별 정확한 등급 확률
+- 일부 구조물/외부 보스의 개별 risk/reward profile 세부 매핑
 - 일부 증강의 세부 파라미터 (`탄도 장막`, `임시 발판`, `생명 연결`, `작아지기`, `벽치기`)
 - 위협 단계 수치 테이블의 최종 플레이테스트 값
+- 코어 획득 확률의 최종 플레이테스트 튜닝 값
 
-이 값들은 아키텍처 차단 요소가 아니며 data parameter로 관리한다.
+현재 코어 획득 확률은 구현 가능한 초기 기준값으로 고정하고 실제 플레이테스트에서 조정한다.
 
 ## 외부 모드 연동 계약
 
@@ -110,15 +117,16 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 세부 계획은 `DEVELOPMENT_IMPLEMENTATION_PLAN_2026-10-24.md`를 따른다.
 
 1. Runtime spine: definition / behavior registry / persistent state / networking / provenance / ability engine
-2. Reference vertical slice: 스탯·회복·사망·이동·투사체·액티브·자원 최소 한 경로
+2. Core item / acquisition profile / loot-event reward layer
 3. Core / device / 3-choice transaction / UI
-4. 일반·고급 bulk implementation
-5. 희귀·영웅 복잡 파이프라인
-6. 전설·신화 및 공유 저장/권능
-7. save-wide threat scaling
-8. 외부 모드 adapter
-9. HUD/VFX/animation/sound polish
-10. gameplay/performance/multiplayer validation
+4. Reference vertical slice: 스탯·회복·사망·이동·투사체·액티브·자원 최소 한 경로
+5. 일반·고급 bulk implementation
+6. 희귀·영웅 복잡 파이프라인
+7. 전설·신화 및 공유 저장/권능
+8. save-wide threat scaling
+9. 외부 모드 adapter 확장
+10. HUD/VFX/animation/sound polish
+11. gameplay/performance/multiplayer validation
 
 146개를 한 번에 독립 하드코딩하지 않는다.
 
@@ -133,11 +141,13 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - PACK CLIENT SMOKE: PASS
 - BOSS PACK CO-LOAD: PASS
 
-현재 146종 설계/구현 준비 기준:
+현재 설계/구현 준비 기준:
 
-- ROSTER LOCKED: YES
+- ROSTER LOCKED: YES — 146
 - FINAL COMPATIBILITY AUDIT: YES
 - INTERACTION CONTRACT V2: YES
+- CORE ACQUISITION LOOP DESIGNED: YES
+- INITIAL CORE WEIGHTS DEFINED: YES
 - IMPLEMENTATION PLAN: YES
 - RUNTIME SPINE IMPLEMENTED: NO
 - CORE / DEVICE IMPLEMENTED: NO
@@ -147,4 +157,4 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 
-이번 문서 패스는 docs-only이므로 새 build/CI를 실행하지 않는다.
+이번 패스는 docs/data-contract only이므로 새 build/CI를 실행하지 않는다.
