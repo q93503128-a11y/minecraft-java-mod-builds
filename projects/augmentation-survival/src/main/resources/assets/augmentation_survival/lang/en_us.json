@@ -9,5 +9,7 @@
   "block.augmentation_survival.augment_device": "Augment Device",
   "block.augmentation_survival.advanced_augment_device": "Advanced Augment Device",
   "container.augmentation_survival.augment_device": "Augment Device",
-  "container.augmentation_survival.advanced_augment_device": "Advanced Augment Device"
+  "container.augmentation_survival.advanced_augment_device": "Advanced Augment Device",
+  "key.category.augmentation_survival.augmentation": "Augmentation",
+  "key.augmentation_survival.active_mode": "Augment Skill Mode"
 }

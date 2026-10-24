@@ -21,7 +21,7 @@ public final class AugmentHealingService {
 
     /**
      * Applies a primary non-natural heal using the canonical order:
-     * amplification -> actual HP -> overflow absorption -> healing share.
+     * amplification -> actual HP -> overflow absorption -> healing share -> heal-trigger effects.
      */
     public static float healPrimary(ServerPlayer player, float baseAmount) {
         if (!(baseAmount > 0.0F) || !Float.isFinite(baseAmount) || player.isDeadOrDying()) {
@@ -52,10 +52,13 @@ public final class AugmentHealingService {
         if (shareLevel > 0 && actualHp > 0.0F) {
             shareActualHealing(player, actualHp, shareLevel);
         }
+        if (actualHp > 0.0F) {
+            CombatExpansionService.onPrimaryHealing(player, actualHp);
+        }
         return actualHp;
     }
 
-    /** Shared heals may use the recipient's amplification, but never overflow or share again. */
+    /** Shared heals may use the recipient's amplification, but never overflow/share/heal waves again. */
     public static float healShared(LivingEntity target, float baseAmount) {
         if (!(baseAmount > 0.0F) || !Float.isFinite(baseAmount) || target.isDeadOrDying()) {
             return 0.0F;
@@ -96,7 +99,8 @@ public final class AugmentHealingService {
         }
     }
 
-    private static boolean isHealingAlly(ServerPlayer source, LivingEntity candidate) {
+    /** Shared ally predicate for healing-oriented active abilities. */
+    public static boolean isHealingAlly(ServerPlayer source, LivingEntity candidate) {
         if (source.isAlliedTo(candidate)) {
             return true;
         }

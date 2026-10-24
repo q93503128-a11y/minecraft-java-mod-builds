@@ -1,8 +1,11 @@
 package dev.moonseungjun.augmentationsurvival;
 
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementTuning;
@@ -20,6 +23,7 @@ import dev.moonseungjun.augmentationsurvival.core.FishingCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.StructureCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.device.AugmentDeviceBlocks;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenus;
+import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
 import dev.moonseungjun.augmentationsurvival.network.MovementNetworking;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
 import dev.moonseungjun.augmentationsurvival.threat.WorldThreatAttachments;
@@ -42,8 +46,12 @@ public final class AugmentationSurvival implements ModInitializer {
         StatAugmentCatalog.initialize();
         PlayerStatAugmentService.initialize();
         CombatTuning.initialize();
+        ExpansionTuning.initialize();
         ProtectionAugmentService.initialize();
+        ActiveAbilityService.initialize();
+        CombatExpansionService.initialize();
         CombatAugmentService.initialize();
+        ActiveAbilityNetworking.initialize();
         MovementTuning.initialize();
         MovementAugmentService.initialize();
         MovementNetworking.initialize();

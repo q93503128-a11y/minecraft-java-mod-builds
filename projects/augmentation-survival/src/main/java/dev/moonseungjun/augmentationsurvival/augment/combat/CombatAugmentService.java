@@ -110,7 +110,8 @@ public final class CombatAugmentService {
                 && attacker.getHealth() / attacker.getMaxHealth() <= tuning.lastStrengthHealthThreshold()) {
             bonus += tuning.lastStrengthPerLevel() * boundedLevel(state, LAST_STRENGTH_ID);
         }
-        return safeScale(damage, 1.0D + bonus);
+        float scaled = safeScale(damage, 1.0D + bonus);
+        return CombatExpansionService.modifyOutgoingDamage(target, source, scaled);
     }
 
     /** Applies augment damage layers after vanilla armor/Protection and before vanilla absorption. */
@@ -119,7 +120,7 @@ public final class CombatAugmentService {
             return damage;
         }
         if (!(victim instanceof ServerPlayer player) || !(damage > 0.0F) || !Float.isFinite(damage)) {
-            return damage;
+            return CombatExpansionService.modifyFinalTakenDamage(victim, source, damage);
         }
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
@@ -137,6 +138,7 @@ public final class CombatAugmentService {
             multiplier *= 1.0D - tuning.strongLungsPerLevel() * boundedLevel(state, STRONG_LUNGS_ID);
         }
         float reduced = safeScale(damage, Math.max(0.0D, multiplier));
+        reduced = CombatExpansionService.modifyFinalTakenDamage(player, source, reduced);
         return ProtectionAugmentService.modifyAfterReductions(player, source, reduced);
     }
 
@@ -233,6 +235,8 @@ public final class CombatAugmentService {
             float damageTaken,
             boolean blocked
     ) {
+        CombatExpansionService.afterDamage(entity, source, baseDamageTaken, damageTaken, blocked);
+
         if (!(entity instanceof ServerPlayer player)) {
             return;
         }
@@ -264,6 +268,7 @@ public final class CombatAugmentService {
             LivingEntity killedEntity,
             DamageSource damageSource
     ) {
+        CombatExpansionService.afterKill(level, entity, killedEntity, damageSource);
         if (!(entity instanceof ServerPlayer player) || !(killedEntity instanceof Enemy)) {
             return;
         }

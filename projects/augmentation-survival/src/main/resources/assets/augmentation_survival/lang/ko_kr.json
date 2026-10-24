@@ -9,5 +9,7 @@
   "block.augmentation_survival.augment_device": "증강 장치",
   "block.augmentation_survival.advanced_augment_device": "강화 증강 장치",
   "container.augmentation_survival.augment_device": "증강 장치",
-  "container.augmentation_survival.advanced_augment_device": "강화 증강 장치"
+  "container.augmentation_survival.advanced_augment_device": "강화 증강 장치",
+  "key.category.augmentation_survival.augmentation": "증강",
+  "key.augmentation_survival.active_mode": "증강 스킬 모드"
 }

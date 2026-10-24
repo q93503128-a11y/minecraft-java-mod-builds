@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "active": {
+    "cleanse": {"cooldown_ticks": 900},
+    "pull": {"radius": [6.0, 8.0, 10.0], "cooldown_ticks": [200, 160, 120], "pull_speed": 1.15, "boss_scalar": 0.30},
+    "swap": {"range": 24.0, "cooldown_ticks": 160},
+    "shield": {"cooldown_ticks": [480, 400, 320]},
+    "berserk": {"duration_ticks": 160, "damage_bonus": [0.30, 0.45, 0.60], "attack_speed_bonus": [0.20, 0.30, 0.40], "incoming_damage_bonus": 0.25, "cooldown_ticks": [600, 540, 480]},
+    "healing_wave": {"radius": 8.0, "heal_fraction": [0.20, 0.30, 0.40], "cooldown_ticks": [600, 500, 400]},
+    "ability_haste": {"cooldown_reduction": 0.25},
+    "replay": {"delay_ticks": 30, "efficiency": 0.50}
+  },
+  "combat": {
+    "chain_explosion": {"radius": [2.5, 3.0, 3.5], "max_health_fraction": [0.20, 0.30, 0.40], "damage_cap": [12.0, 18.0, 24.0]},
+    "lightning": {"trigger_hits": [4, 3, 2], "radius": 7.0, "target_count": [2, 3, 4], "damage_fraction": [0.50, 0.65, 0.80]},
+    "echo_strike": {"trigger_hits": [3, 3, 2], "damage_fraction": [0.50, 0.75, 1.00]},
+    "weakness_mark": {"required_hits": 3, "window_ticks": 100, "duration_ticks": 120, "damage_bonus": [0.08, 0.12, 0.16]},
+    "speed_conversion": {"damage_per_movement_percent": [0.004, 0.006, 0.008], "damage_cap": [0.20, 0.30, 0.40], "sprint_bonus_exclusion": 0.30},
+    "heavy_strike": {"max_health_fraction": [0.05, 0.075, 0.10], "cooldown_ticks": 80},
+    "life_wave": {"radius": 4.0, "damage_multiplier": [1.0, 1.5, 2.0], "damage_cap": [10.0, 15.0, 20.0]},
+    "brawl": {"radius": 8.0, "max_targets": 5, "damage_per_enemy": [0.03, 0.05, 0.07], "reduction_per_enemy": [0.02, 0.03, 0.04]},
+    "glass_cannon": {"health_multiplier": [0.60, 0.80, 1.00], "damage_bonus": [0.60, 0.80, 1.00]},
+    "boss_hunter": {"damage_bonus": [0.08, 0.16, 0.24]}
+  }
+}
