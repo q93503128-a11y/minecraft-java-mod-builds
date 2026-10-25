@@ -48,6 +48,11 @@ When a source mechanic does not fit Minecraft literally, preserve its purpose an
 - Inventory capacity should grow through a mix of automatic milestone/level progression and extra System quest, special reward, or expansion-item rewards. Neither path should be the only source; exact pacing and caps are tuned later.
 - Replace the vanilla heart HUD with a System-style HP bar. MP and fatigue are separate System resources.
 - Keep hunger as an ordinary survival/life resource, but do not let food dominate RPG combat recovery. Combat healing should primarily come from System potions, skills, level-up recovery and other RPG mechanics; vanilla-style food spam/natural regeneration should be reduced or suppressed during active combat where needed.
+- Keep Minecraft crafting meaningful for survival, construction, tools, gate-detector progression, and mana-crystal/essence-stone crafting or upgrades.
+- Keep the System Store as a separate RPG economy using System Gold, not emeralds. It primarily supplies potions, consumables, selected System items/keys, and broadly useful baseline combat gear rather than replacing crafting or dungeon drops.
+- Dungeon and boss drops remain the main source of rare or distinctive combat equipment; crafting/upgrading is used to improve or transform equipment with dungeon materials where appropriate.
+- System Store stock can expand with Player progression instead of exposing the entire catalog from the start.
+- Villager trade remains emerald-based and separate from System Gold.
 - Minecraft death is not permadeath; content-specific failure rules are used for gates, System quests and the Penalty Zone.
 - The Penalty Zone must never soft-lock a player.
 - Daily quests use a separate System-time cadence rather than Minecraft's 20-minute day so they do not become constant chores.
@@ -102,16 +107,15 @@ The later return to the Double Dungeon remains important because the contrast be
 Work through these slowly; do not lock them all at once.
 
 1. Exact pacing and final cap for inventory-capacity expansion.
-2. System store vs Minecraft crafting and trading.
-3. Vanilla gear vs System gear and equipment slots.
-4. Player EXP vs vanilla experience.
-5. Exact E-S rank thresholds and whether rank is level-derived or a broader combat rating.
-6. Gate spawn frequency, spacing, persistence and activation.
-7. Daily quest cadence and compressed exercise/run implementation.
-8. Skill acquisition, proficiency, level-up and evolution rules.
-9. Shadow extraction probability, retry/pity rules, storage, resurrection/recovery, rank growth and commands.
-10. Dungeon Break timing and world-safety constraints.
-11. Multiplayer ownership, rewards, party EXP and duplicate named shadows.
-12. Mana-crystal / essence-stone economy and crafting sinks.
-13. Dungeon roster coverage across E-S ranks.
-14. Loader/version/dependency selection after current 26.x ecosystem verification.
+2. Vanilla gear vs System gear and equipment slots.
+3. Player EXP vs vanilla experience.
+4. Exact E-S rank thresholds and whether rank is level-derived or a broader combat rating.
+5. Gate spawn frequency, spacing, persistence and activation.
+6. Daily quest cadence and compressed exercise/run implementation.
+7. Skill acquisition, proficiency, level-up and evolution rules.
+8. Shadow extraction probability, retry/pity rules, storage, resurrection/recovery, rank growth and commands.
+9. Dungeon Break timing and world-safety constraints.
+10. Multiplayer ownership, rewards, party EXP and duplicate named shadows.
+11. Mana-crystal / essence-stone economy and crafting sinks.
+12. Dungeon roster coverage across E-S ranks.
+13. Loader/version/dependency selection after current 26.x ecosystem verification.
