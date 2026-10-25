@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.SweepingEnhancementService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.FocusedAimAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
@@ -43,7 +44,12 @@ abstract class CombatAugmentMixin {
                         source,
                         threatScaled
                 );
-        return AdvancedUtilityAugmentService.modifyRootOutgoingDamage(source, modified);
+        float advanced = AdvancedUtilityAugmentService.modifyRootOutgoingDamage(source, modified);
+        return SweepingEnhancementService.modifyBetterCombatOutgoingDamage(
+                (LivingEntity) (Object) this,
+                source,
+                advanced
+        );
     }
 
     /** Reduces only the armor/toughness inputs for ROOT direct attacks with Armor Pierce. */

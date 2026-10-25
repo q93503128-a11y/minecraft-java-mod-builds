@@ -8,60 +8,57 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/** Server-owned scanner snapshot. Ore level is sent for local visual scanning; target results are authoritative. */
+/** Server-owned scanner snapshot plus small owner-only augment presentation state. */
 public record PerceptionStatePayload(
         int oreSenseLevel,
         boolean enchantRefreshOwned,
+        int sweepingEnhancementLevel,
         List<Long> chestPositions,
         List<Integer> dangerEntityIds,
         List<Long> reviveMarkerPositions
 ) implements CustomPacketPayload {
-    public static final Type<PerceptionStatePayload> TYPE = new Type<>(
-            Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "perception_state")
-    );
+    public static final Type<PerceptionStatePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "perception_state"));
     private static final int MAX_BLOCK_MARKERS = 512;
     private static final int MAX_ENTITY_MARKERS = 256;
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PerceptionStatePayload> CODEC = new StreamCodec<>() {
-        @Override
-        public PerceptionStatePayload decode(RegistryFriendlyByteBuf buffer) {
+        @Override public PerceptionStatePayload decode(RegistryFriendlyByteBuf buffer) {
             int oreLevel = buffer.readVarInt();
             boolean enchantRefresh = buffer.readBoolean();
+            int sweepingLevel = buffer.readVarInt();
             int chestCount = Math.min(MAX_BLOCK_MARKERS, Math.max(0, buffer.readVarInt()));
             List<Long> chests = new ArrayList<>(chestCount);
-            for (int index = 0; index < chestCount; index++) chests.add(buffer.readLong());
+            for (int i = 0; i < chestCount; i++) chests.add(buffer.readLong());
             int dangerCount = Math.min(MAX_ENTITY_MARKERS, Math.max(0, buffer.readVarInt()));
             List<Integer> danger = new ArrayList<>(dangerCount);
-            for (int index = 0; index < dangerCount; index++) danger.add(buffer.readVarInt());
+            for (int i = 0; i < dangerCount; i++) danger.add(buffer.readVarInt());
             int reviveCount = Math.min(MAX_BLOCK_MARKERS, Math.max(0, buffer.readVarInt()));
             List<Long> revive = new ArrayList<>(reviveCount);
-            for (int index = 0; index < reviveCount; index++) revive.add(buffer.readLong());
-            return new PerceptionStatePayload(oreLevel, enchantRefresh, chests, danger, revive);
+            for (int i = 0; i < reviveCount; i++) revive.add(buffer.readLong());
+            return new PerceptionStatePayload(oreLevel, enchantRefresh, sweepingLevel, chests, danger, revive);
         }
-
-        @Override
-        public void encode(RegistryFriendlyByteBuf buffer, PerceptionStatePayload value) {
+        @Override public void encode(RegistryFriendlyByteBuf buffer, PerceptionStatePayload value) {
             buffer.writeVarInt(value.oreSenseLevel());
             buffer.writeBoolean(value.enchantRefreshOwned());
+            buffer.writeVarInt(value.sweepingEnhancementLevel());
             int chestCount = Math.min(MAX_BLOCK_MARKERS, value.chestPositions().size());
             buffer.writeVarInt(chestCount);
-            for (int index = 0; index < chestCount; index++) buffer.writeLong(value.chestPositions().get(index));
+            for (int i = 0; i < chestCount; i++) buffer.writeLong(value.chestPositions().get(i));
             int dangerCount = Math.min(MAX_ENTITY_MARKERS, value.dangerEntityIds().size());
             buffer.writeVarInt(dangerCount);
-            for (int index = 0; index < dangerCount; index++) buffer.writeVarInt(value.dangerEntityIds().get(index));
+            for (int i = 0; i < dangerCount; i++) buffer.writeVarInt(value.dangerEntityIds().get(i));
             int reviveCount = Math.min(MAX_BLOCK_MARKERS, value.reviveMarkerPositions().size());
             buffer.writeVarInt(reviveCount);
-            for (int index = 0; index < reviveCount; index++) buffer.writeLong(value.reviveMarkerPositions().get(index));
+            for (int i = 0; i < reviveCount; i++) buffer.writeLong(value.reviveMarkerPositions().get(i));
         }
     };
 
     public PerceptionStatePayload {
         oreSenseLevel = Math.max(0, Math.min(3, oreSenseLevel));
+        sweepingEnhancementLevel = Math.max(0, Math.min(3, sweepingEnhancementLevel));
         chestPositions = List.copyOf(chestPositions);
         dangerEntityIds = List.copyOf(dangerEntityIds);
         reviveMarkerPositions = List.copyOf(reviveMarkerPositions);
     }
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

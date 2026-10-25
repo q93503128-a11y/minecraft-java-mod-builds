@@ -48,6 +48,9 @@
     "EntityCompanionAllyMixin",
     "LivingEntityCompanionDeathMixin",
     "LivingEntityCompanionFriendlyFireMixin",
+    "PlayerSweepingEnhancementMixin",
+    "BetterCombatPlayerAttackHelperMixin",
+    "BetterCombatTargetHelperMixin",
     "ItemCombinerMenuAccessor",
     "AnvilForbiddenMagicMixin",
     "EnchantmentMenuAugmentAccessor",
@@ -57,9 +60,8 @@
   "client": [
     "LocalPlayerConsumptionMixin",
     "ClientPhaseShiftCollisionMixin",
-    "EntityRendererPerceptionMixin"
+    "EntityRendererPerceptionMixin",
+    "BetterCombatTargetFinderMixin"
   ],
-  "injectors": {
-    "defaultRequire": 1
-  }
+  "injectors": { "defaultRequire": 1 }
 }

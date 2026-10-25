@@ -27,14 +27,14 @@ public final class ClientPerceptionState {
     private static final VoxelShape UNIT_SHAPE = Shapes.block();
     private static int oreSenseLevel;
     private static boolean enchantRefreshOwned;
+    private static int sweepingEnhancementLevel;
     private static List<BlockPos> chestPositions = List.of();
     private static Set<Integer> dangerEntityIds = Set.of();
     private static List<BlockPos> reviveMarkerPositions = List.of();
     private static List<BlockPos> exposedOrePositions = List.of();
     private static int oreScanTicks;
 
-    private ClientPerceptionState() {
-    }
+    private ClientPerceptionState() { }
 
     public static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -47,12 +47,14 @@ public final class ClientPerceptionState {
     public static void apply(
             int oreLevel,
             boolean enchantRefresh,
+            int sweepingLevel,
             List<Long> chests,
             List<Integer> dangerIds,
             List<Long> reviveMarkers
     ) {
         oreSenseLevel = Math.max(0, Math.min(3, oreLevel));
         enchantRefreshOwned = enchantRefresh;
+        sweepingEnhancementLevel = Math.max(0, Math.min(3, sweepingLevel));
         chestPositions = chests.stream().map(BlockPos::of).toList();
         dangerEntityIds = Set.copyOf(dangerIds);
         reviveMarkerPositions = reviveMarkers.stream().map(BlockPos::of).toList();
@@ -62,10 +64,12 @@ public final class ClientPerceptionState {
     public static boolean isDangerEntity(int entityId) { return dangerEntityIds.contains(entityId); }
     public static int dangerOutlineColor() { return RED; }
     public static boolean enchantRefreshOwned() { return enchantRefreshOwned; }
+    public static int sweepingEnhancementLevel() { return sweepingEnhancementLevel; }
 
     public static void clear() {
         oreSenseLevel = 0;
         enchantRefreshOwned = false;
+        sweepingEnhancementLevel = 0;
         chestPositions = List.of();
         dangerEntityIds = Set.of();
         reviveMarkerPositions = List.of();
@@ -117,14 +121,7 @@ public final class ClientPerceptionState {
         for (BlockPos pos : positions) {
             stack.pushPose();
             stack.translate(pos.getX() - camera.x, pos.getY() - camera.y, pos.getZ() - camera.z);
-            context.submitNodeCollector().submitShapeOutline(
-                    stack,
-                    UNIT_SHAPE,
-                    RenderTypes.linesTranslucent(),
-                    color,
-                    1.0F,
-                    true
-            );
+            context.submitNodeCollector().submitShapeOutline(stack, UNIT_SHAPE, RenderTypes.linesTranslucent(), color, 1.0F, true);
             stack.popPose();
         }
     }

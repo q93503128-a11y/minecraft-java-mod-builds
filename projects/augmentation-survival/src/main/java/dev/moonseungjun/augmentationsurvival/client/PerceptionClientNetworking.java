@@ -5,8 +5,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 public final class PerceptionClientNetworking {
-    private PerceptionClientNetworking() {
-    }
+    private PerceptionClientNetworking() { }
 
     public static void initialize() {
         ClientPlayNetworking.registerGlobalReceiver(
@@ -14,6 +13,7 @@ public final class PerceptionClientNetworking {
                 (payload, context) -> ClientPerceptionState.apply(
                         payload.oreSenseLevel(),
                         payload.enchantRefreshOwned(),
+                        payload.sweepingEnhancementLevel(),
                         payload.chestPositions(),
                         payload.dangerEntityIds(),
                         payload.reviveMarkerPositions()
