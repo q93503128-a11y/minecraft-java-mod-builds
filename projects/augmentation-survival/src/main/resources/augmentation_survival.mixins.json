@@ -11,6 +11,7 @@
     "ProjectileTimeAccelerationMixin",
     "PlayerShieldGripMixin",
     "PlayerDeathAugmentMixin",
+    "InventoryPocketAugmentMixin",
     "MovementAugmentMixin",
     "ServerPlayerMantleMixin",
     "SurvivalPlayerMixin",

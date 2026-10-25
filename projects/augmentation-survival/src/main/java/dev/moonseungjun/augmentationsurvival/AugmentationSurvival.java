@@ -38,6 +38,8 @@ import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestSer
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.storage.StorageAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.storage.StorageWorldAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.survival.DeathPreservationAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
@@ -57,9 +59,11 @@ import dev.moonseungjun.augmentationsurvival.core.StructureCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.device.AugmentDeviceBlocks;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenus;
+import dev.moonseungjun.augmentationsurvival.menu.AugmentStorageMenus;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
 import dev.moonseungjun.augmentationsurvival.network.ConsumptionNetworking;
 import dev.moonseungjun.augmentationsurvival.network.MovementNetworking;
+import dev.moonseungjun.augmentationsurvival.network.StorageNetworking;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
 import dev.moonseungjun.augmentationsurvival.threat.EnemyScalingCatalog;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatEntityAttachments;
@@ -77,12 +81,14 @@ public final class AugmentationSurvival implements ModInitializer {
     public void onInitialize() {
         AugmentCoreItems.initialize();
         AugmentDeviceMenus.initialize();
+        AugmentStorageMenus.initialize();
         AugmentDeviceBlocks.initialize();
         AugmentationAttachments.initialize();
         WorldThreatAttachments.initialize();
         ThreatEntityAttachments.initialize();
         CompanionEntityAttachments.initialize();
         DominationWorldAttachments.initialize();
+        StorageWorldAttachments.initialize();
         AugmentCatalog.initialize();
         EntityCompatibilityProfileService.initialize();
         EnemyScalingCatalog.initialize();
@@ -116,6 +122,7 @@ public final class AugmentationSurvival implements ModInitializer {
         CompanionAugmentService.initialize();
         ReviveAugmentService.initialize();
         PerceptionAugmentService.initialize();
+        StorageAugmentService.initialize();
         AdvancedWorldAugmentService.initialize();
         ActiveAbilityRouter.initialize();
         CombatExpansionService.initialize();
@@ -125,6 +132,7 @@ public final class AugmentationSurvival implements ModInitializer {
         UtilityAugmentService.initialize();
         AdvancedUtilityAugmentService.initialize();
         ActiveAbilityNetworking.initialize();
+        StorageNetworking.initialize();
         MovementTuning.initialize();
         MobilityUtilityTuning.initialize();
         MovementAugmentService.initialize();

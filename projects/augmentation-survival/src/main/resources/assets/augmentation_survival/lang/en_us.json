@@ -10,6 +10,19 @@
   "block.augmentation_survival.advanced_augment_device": "Advanced Augment Device",
   "container.augmentation_survival.augment_device": "Augment Device",
   "container.augmentation_survival.advanced_augment_device": "Advanced Augment Device",
+  "container.augmentation_survival.storage": "Augment Storage",
   "key.category.augmentation_survival.augmentation": "Augmentation",
-  "key.augmentation_survival.active_mode": "Augment Skill Mode"
+  "key.augmentation_survival.active_mode": "Augment Skill Mode",
+  "key.augmentation_survival.storage": "Open Augment Storage",
+  "message.augmentation_survival.storage.no_access": "You do not have an augment storage to open.",
+  "message.augmentation_survival.storage.invite_self": "You cannot share Remote Storage with yourself.",
+  "message.augmentation_survival.storage.remote_required": "Both players must own Remote Storage to share it.",
+  "message.augmentation_survival.storage.already_shared": "You are already in the same Remote Storage group.",
+  "message.augmentation_survival.storage.group_merge_blocked": "Two existing shared groups cannot be merged at once. Leave one group first.",
+  "message.augmentation_survival.storage.invite_sent": "Remote Storage sharing request sent to %s.",
+  "message.augmentation_survival.storage.invite_received": "%s invited you to share Remote Storage. Use /augmentstorage accept to accept.",
+  "message.augmentation_survival.storage.no_invite": "There is no Remote Storage sharing request to accept.",
+  "message.augmentation_survival.storage.shared": "Remote Storage sharing is now connected.",
+  "message.augmentation_survival.storage.not_shared": "You are not currently in a shared Remote Storage group.",
+  "message.augmentation_survival.storage.left_group": "You left the Remote Storage group. Your personal 27-slot segment remains intact."
 }
