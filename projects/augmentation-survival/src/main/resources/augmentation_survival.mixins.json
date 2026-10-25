@@ -43,7 +43,6 @@
     "PhaseShiftPlayerActionMixin",
     "PhaseShiftGameModeActionMixin",
     "PlayerGigantificationKnockbackMixin",
-    "CompanionSpecialActiveFilterMixin",
     "EntityCompanionAllyMixin",
     "LivingEntityCompanionDeathMixin",
     "LivingEntityCompanionFriendlyFireMixin",
