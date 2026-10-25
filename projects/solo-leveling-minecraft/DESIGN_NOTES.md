@@ -21,3 +21,11 @@ Use this file for confirmed design decisions that are too detailed for the proje
 - Bad RNG must not make a named shadow permanently unobtainable.
 - Named encounters can recur.
 - Igris in the job-change sequence: first two extraction attempts fail, third attempt succeeds for source-faithful presentation without forcing a repeat of the entire job-change dungeon.
+
+## Experience
+
+- Player EXP and vanilla Minecraft experience are separate systems.
+- Player EXP drives System level progression and comes primarily from relevant combat, dungeon clears, bosses, and System quests.
+- Vanilla XP remains for vanilla mechanics such as enchanting and anvils; it does not increase Player Level.
+- Enemies far below the player's effective strength should grant sharply reduced or negligible Player EXP so trivial farming does not dominate progression.
+- Vanilla enchanting may remain useful early, but it is not required to remain competitive with late-game System/dungeon equipment.
