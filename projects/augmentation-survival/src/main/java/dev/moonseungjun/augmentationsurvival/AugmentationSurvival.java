@@ -60,6 +60,7 @@ import dev.moonseungjun.augmentationsurvival.augment.utility.TamingAugmentServic
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
+import dev.moonseungjun.augmentationsurvival.core.AugmentCreativeTabs;
 import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardCatalog;
 import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.CoreDistributionCatalog;
@@ -96,6 +97,7 @@ public final class AugmentationSurvival implements ModInitializer {
         AugmentDeviceMenus.initialize();
         AugmentStorageMenus.initialize();
         AugmentDeviceBlocks.initialize();
+        AugmentCreativeTabs.initialize();
         SpatialGateBlocks.initialize();
         TemporaryPlatformBlocks.initialize();
         AugmentationAttachments.initialize();
