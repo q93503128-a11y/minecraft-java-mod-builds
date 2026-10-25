@@ -2,7 +2,7 @@
 
 Date: 2026-10-25
 Supersedes: `IMPLEMENTATION_STATUS_2026-10-24.md`
-Status: M1C FUNCTIONAL BASELINE / 135-OF-146 GAMEPLAY RUNTIME / ABUNDANCE EXACT-DROP BOUNDARIES VERIFIED
+Status: M1C FUNCTIONAL BASELINE / 135-OF-146 GAMEPLAY RUNTIME / CLONE PRESENTATION CHECKPOINT VERIFIED
 
 ## 146-roster implementation count
 
@@ -12,77 +12,56 @@ This count measures whether the canonical gameplay effect has a runtime implemen
 - Partially implemented: **1 / 146** — `분신`
 - Not fully implemented: **11 / 146**
 - No gameplay runtime yet: **10 / 146**
-- This pass advances **`풍요` to FULL** and reconciles **`휩쓸기 강화` as already FULL** from its earlier verified runtime.
+- `풍요` is FULL and `휩쓸기 강화` remains FULL from its earlier verified runtime.
 
-The previous status count was stale in two places. `휩쓸기 강화` already had its vanilla sweep expansion and Better Combat adapter runtime implemented and full-pack smoke-verified in Build #81, so it must not remain in the no-runtime set. `분신` gained a real custom entity/server-AI runtime after the previous status checkpoint, but its current presentation still uses a fixed Steve humanoid renderer and does not yet reproduce the owner's skin/equipment presentation, so it is tracked as PARTIAL rather than FULL.
-
-## Newly verified FULL runtime
-
-### `마법 공명`
-
-Runtime enchantment-effect calculations see the stored enchantment level as actual level +1 / +2 / +3 according to augment level without rewriting the item enchantment data. The elevated level may exceed vanilla maximums. Vanilla enchantments are eligible by default; external enchantments remain opt-in through an explicit safe allow-list.
-
-The 26.2 runtime boundaries include direct equipment enchantment queries, equipment attribute modifier collection, combat/armor modifiers, mining/Fortune context, durability/XP-repair helpers, projectile count/spread, fishing enchant effects, crossbow and trident consumers.
-
-### `길들이기 요령`
-
-Actual species-specific taming probability boundaries are modified rather than applying a generic post-success reroll. Wolf, cat and nautilus use their real `tryToTame` zero-roll boundary; parrot uses the tame roll inside `mobInteract`; horse-family taming uses the shared `RunAroundLikeCrazyGoal` temper/max-temper check.
-
-The probability transform preserves each species' original rule while multiplying final success probability by ×1.25 / ×1.50 / ×2.00, capped at 100%.
-
-### `보물 낚시`
-
-The previous generic luck-equivalent approximation has been removed. The runtime now computes the vanilla 26.2 fishing selection probability using the current fishing luck and open-water condition, then applies an extra pre-roll so the final treasure probability is exactly the canonical **+2 / +4 / +6 percentage points**.
-
-A successful correction runs the vanilla `FISHING_TREASURE` loot table itself, so treasure contents remain vanilla/datapack-defined. This stays separate from `낚시 감각`, `풍요`, player luck and Luck of the Sea.
+## Verified FULL runtime notes
 
 ### `전리품 챙기기`
 
-The former next-tick death-position item scan has been removed. `LivingEntity.dropFromLootTable` now wraps only the killed entity's final entity-loot-table `Consumer<ItemStack>`, so one canonical **5% / 10% / 15%** roll duplicates that exact loot-table bundle.
-
-This closes the provenance issue: nearby drops, another mob's drops, equipment drops and unrelated custom death drops cannot be captured accidentally. Player victims, dominated companions, configured bosses and augment cores remain excluded.
+`LivingEntity.dropFromLootTable` wraps only the killed entity's final entity-loot-table `Consumer<ItemStack>`. One canonical **5% / 10% / 15%** roll duplicates that exact loot-table bundle. Nearby drops, another mob's drops, equipment drops and unrelated custom death drops cannot be captured accidentally. Player victims, dominated companions, configured bosses and augment cores remain excluded.
 
 ### `풍요`
 
-The former delayed position scan is removed. `풍요` now duplicates the exact final compatible ordinary-drop stack at the producer boundary rather than finding nearby `ItemEntity` objects after the fact.
+`풍요` duplicates the exact final compatible ordinary-drop stack at the producer boundary rather than scanning nearby `ItemEntity` objects.
 
-- Direct mining / direct harvest: the server player owning the active `destroyBlock` call is tracked, and eligible final stacks emitted through `Block.popResource` are copied exactly once. `ResourceHarvestService`-marked derived breaks such as additional tree-felling, tunneling and sweeping-harvest breaks are excluded so the canonical direct-action boundary is preserved.
-- Fishing: the actual final fishing loot list is duplicated after the existing treasure-selection correction. The fishing loot table is not re-rolled.
-- Normal-mob direct kill: the killed entity's exact final loot-table `Consumer<ItemStack>` is wrapped. Root-direct player provenance is required; player victims, dominated companions and configured bosses are excluded.
-- Ordinary-drop eligibility excludes augment cores, explicit `augmentation_survival:abundance_excluded` tagged items, non-stackable/damageable equipment and stacks carrying custom data/name/lore. The empty exclusion tag is a data-driven extension point for compatible progression or unique rewards.
-
-This removes nearby-drop contamination and preserves the already-computed final stack itself. Third-party content that bypasses the normal block/fishing/entity-loot producer boundaries still requires an explicit compatibility adapter rather than being silently guessed.
-
-## Existing verified FULL runtime clarification
+- Direct mining / direct harvest: final stacks emitted through `Block.popResource` are duplicated for the server player owning the active direct `destroyBlock` call. Derived ResourceHarvestService breaks are excluded.
+- Fishing: the actual final fishing loot list is duplicated without re-rolling the fishing loot table.
+- Normal-mob direct kill: the killed entity's exact final loot-table consumer is wrapped and root-direct player provenance is required.
+- Cores, explicit `augmentation_survival:abundance_excluded` entries, non-stackable/damageable equipment and custom-data/name/lore stacks remain excluded.
 
 ### `휩쓸기 강화`
 
-`휩쓸기 강화` is not a remaining no-runtime augment. Its runtime was already implemented before this status pass and full-pack smoke-verified in Build #81.
+This augment is not in the remaining no-runtime set. Vanilla sweep expansion and the optional Better Combat 3.2.2 adapter were already implemented and full-pack smoke-verified in Build #81. Live combat feel and multiplayer behavior remain untested.
 
-- Vanilla: only an already-valid vanilla sweep is expanded; non-sweep attacks do not gain a new arbitrary AoE. Horizontal candidate range is increased by +0.5 / +1.0 / +1.5 and secondary sweep damage is multiplied by ×1.25 / ×1.50 / ×1.75.
-- Better Combat 3.2.2: optional/reflection-based adapter expands client target selection and server range/angle validation, revalidates secondary geometry server-side, preserves direct-vs-secondary classification and applies the same secondary damage multiplier.
-- Canonical angle bonus remains +20° / +40° / +60°.
+## `분신` presentation/runtime checkpoint
 
-Live combat feel and multiplayer behavior are still not playtested; that does not make the gameplay runtime absent.
+The clone continues to use the registered custom `CombatCloneEntity`, server-owned autonomous melee AI, 20-second lifetime, activation-time 50% max-health snapshot, 60% attack-damage snapshot, 60-second base cooldown, ally checks and non-player-root damage provenance.
+
+This pass removes the fixed-Steve-only presentation limitation in two concrete ways:
+
+- On activation, the clone snapshots the owner's main hand, off hand, head, chest, legs and feet equipment as copied stacks. The copied presentation gear has zero drop chance and the clone still cannot pick up loot, so it cannot become an item-duplication path.
+- On the client, the renderer resolves the owner's current `PlayerSkin` from the connection/player-info skin cache and uses that body texture. Offline/unavailable profile resolution falls back deterministically to the UUID-derived default player skin rather than a single fixed Steve texture.
+- Humanoid armor and held-item render layers are installed, so the snapshotted armor and hand items are visible on the clone.
+- Owner handedness is snapshotted for the clone body.
+
+`분신` remains **PARTIAL**, not FULL. The current body renderer still uses the wide player humanoid model and does not yet reproduce the full player-avatar presentation contract such as slim-arm model selection and all player outer-layer/customisation toggles. Its combat read also still needs actual gameplay inspection. No claim of visual completion is made from smoke testing alone.
 
 ## Verified gameplay checkpoint
 
-- Gameplay-code checkpoint: `c315f2d110005e151f683997f1de65fa8a33bfe2`
-- Commit: `fix(augmentation-survival): bind abundance to exact final drops`
-- Includes the preceding custom clone/server-AI runtime present at `51ea6ce660a8f8b5390bdc2f91fc602abadd5f50`
-- GitHub Actions: `40162348266` / Build Augmentation Survival Pack #96
+- Gameplay-code checkpoint: `3dbfbf3076eb13e246b5c5554c7a32c50299a163`
+- Commit: `fix(augmentation-survival): use explicit clone equipment slots`
+- Presentation commits in this batch: `b80926f3c1c6e34501e6f0bbb021a4561bc99a00`, `edc477ba70a6d6680c59c2b66e9201e850d2f48e`, `3dbfbf3076eb13e246b5c5554c7a32c50299a163`
+- GitHub Actions: `40163466675` / Build Augmentation Survival Pack #100
 - Build and pinned-pack inspection: **PASS**
-- Pack dependency inspection: **PASS — 23 pinned external artifacts**
-- Runtime classpath verification: **PASS — 150 files**
-- Dedicated server smoke: **PASS — 92 mods**
-- Client boot smoke: **PASS — 108 mods**
+- Dedicated server smoke: **PASS**
+- Client boot smoke: **PASS**
 - Verification artifact upload: **PASS**
-- Artifact: `augmentation-survival-pack-smoke-96`
-- Artifact ID: `12587231044`
-- Artifact ZIP size: `974619` bytes
-- Artifact ZIP SHA-256: `bf503703598a64499a9f634842bc1a6bf037c6f7c8e51f6dd1f1af74adf5079d`
+- Artifact: `augmentation-survival-pack-smoke-100`
+- Artifact ID: `12587765316`
+- Artifact ZIP size: `977422` bytes
+- Artifact ZIP SHA-256: `9cd0309571560bdd52c4049997fd019cddfef841327c0be33fd883bf3a51179c`
 
-The headless client reported expected environment-only narrator/audio warnings (`flite` / ALSA/OpenAL) and existing external-mod translation/texture warnings, but no fatal augmentation/mixin startup signature occurred and the client remained healthy through the smoke timeout. The dedicated server reached ready state and the client reached the expected renderer/resource initialization markers.
+Build #99 failed before runtime smoke because the first equipment-snapshot implementation called a nonexistent Minecraft 26.2 `EquipmentSlot.isForHumanoidArmor()` method. This was a code/API regression, not a workflow/environment issue. The fix replaced that assumption with an explicit six-slot presentation list. Build #100 then passed build, server smoke and client smoke; the failed run was not blindly rerun.
 
 ## Remaining implementation set
 
@@ -97,9 +76,7 @@ These remain large systems and must not be reduced to temporary commands or gene
 
 - `분신`
 
-Current clone runtime is real rather than a zombie/armor-stand shell: it uses a registered custom `CombatCloneEntity`, server-owned autonomous targeting/melee AI, 20-second lifetime, activation-time 50% max-health snapshot, 60% attack-damage snapshot, 60-second cooldown, owner/companion ally checks and companion damage provenance so clone damage does not count as the player's root direct hit.
-
-It remains PARTIAL because the current client renderer is still a fixed Steve humanoid baseline and does not yet reproduce the owner's actual skin/equipment presentation. Its combat snapshot/presentation must also be reviewed against the full intended player combat read before the augment is promoted to FULL. Build #95 and the later Build #96 prove pack startup/build compatibility, not visual or combat playtest quality.
+Remaining presentation work is principally player-model fidelity (wide/slim and player-specific outer-layer state) plus actual combat/visual playtest. The functional server entity, AI, lifetime, health/damage snapshots, cooldown and reward-provenance boundaries already exist.
 
 ### Explicitly underspecified / blocked — 8
 
@@ -118,12 +95,10 @@ Do not invent values for these until canon fixes the missing boundaries:
 
 - CODE REVIEWED: **YES**
 - TESTED: **NO — workflow test task is `NO-SOURCE`; no dedicated automated gameplay test was executed**
-- BUILD VERIFIED: **YES — `c315f2d110005e151f683997f1de65fa8a33bfe2`**
+- BUILD VERIFIED: **YES — `3dbfbf3076eb13e246b5c5554c7a32c50299a163`**
 - JAR PRODUCED: **YES**
-- PACK DEPENDENCY INSPECTION: **PASS — 23**
-- RUNTIME CLASSPATH: **PASS — 150 files**
-- DEDICATED SERVER SMOKE: **PASS — 92 mods**
-- CLIENT BOOT SMOKE: **PASS — 108 mods**
+- DEDICATED SERVER SMOKE: **PASS**
+- CLIENT BOOT SMOKE: **PASS**
 - LIVE GAMEPLAY TESTED: **NO**
 - STATISTICAL PROBABILITY PLAYTESTED: **NO**
 - MULTIPLAYER TESTED: **NO**
