@@ -9,6 +9,8 @@ import net.minecraft.network.chat.Component;
 /** Small in-context refresh control for Enchant Refresh owners. */
 public final class EnchantmentRefreshClient {
     private static final int REFRESH_BUTTON_ID = 3;
+    private static final int IMAGE_WIDTH = 176;
+    private static final int IMAGE_HEIGHT = 166;
 
     private EnchantmentRefreshClient() {
     }
@@ -19,8 +21,10 @@ public final class EnchantmentRefreshClient {
                     || !ClientPerceptionState.enchantRefreshOwned()) {
                 return;
             }
-            int x = enchantmentScreen.getLeftPos() + enchantmentScreen.getImageWidth() - 54;
-            int y = enchantmentScreen.getTopPos() + 5;
+            int left = (scaledWidth - IMAGE_WIDTH) / 2;
+            int top = (scaledHeight - IMAGE_HEIGHT) / 2;
+            int x = left + IMAGE_WIDTH - 54;
+            int y = top + 5;
             Button button = Button.builder(Component.literal("새로고침"), ignored -> {
                         if (client.gameMode != null) {
                             client.gameMode.handleInventoryButtonClick(

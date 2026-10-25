@@ -10,13 +10,13 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.ShapeRenderer;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** Client-only presentation cache for server-authoritative perception snapshots plus bounded ore scanning. */
 public final class ClientPerceptionState {
@@ -24,7 +24,7 @@ public final class ClientPerceptionState {
     private static final int GOLD = 0xFFFFC857;
     private static final int RED = 0xFFFF4A4A;
     private static final int REVIVE = 0xFFE6F2FF;
-    private static final AABB UNIT_BOX = new AABB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D, 1.0D);
+    private static final VoxelShape UNIT_SHAPE = Shapes.block();
     private static int oreSenseLevel;
     private static boolean enchantRefreshOwned;
     private static List<BlockPos> chestPositions = List.of();
@@ -117,18 +117,13 @@ public final class ClientPerceptionState {
         for (BlockPos pos : positions) {
             stack.pushPose();
             stack.translate(pos.getX() - camera.x, pos.getY() - camera.y, pos.getZ() - camera.z);
-            context.submitNodeCollector().submitCustomGeometry(
+            context.submitNodeCollector().submitShapeOutline(
                     stack,
+                    UNIT_SHAPE,
                     RenderTypes.linesTranslucent(),
-                    (pose, consumer) -> ShapeRenderer.renderLineBox(
-                            pose,
-                            consumer,
-                            UNIT_BOX,
-                            ((color >> 16) & 0xFF) / 255.0F,
-                            ((color >> 8) & 0xFF) / 255.0F,
-                            (color & 0xFF) / 255.0F,
-                            ((color >>> 24) & 0xFF) / 255.0F
-                    )
+                    color,
+                    1.0F,
+                    true
             );
             stack.popPose();
         }
