@@ -8,7 +8,7 @@
 - 모든 모드는 `projects/<project-slug>/` 아래에서 분리한다.
 - 2026-07-31 이전에 저장되어 있던 Countryside Days, Wildbound, 기존 Village Guardians 소스·로그·워크플로는 폐기했다.
 - 폐기된 프로젝트의 코드나 설계를 새 작업의 기준으로 사용하지 않는다.
-- 현재 게임 프로젝트는 **Village Guardians(마을지키기)**, **Countryside Days(시골식당)**, **Living Kingdoms(살아있는 왕국)**다.
+- 현재 게임 프로젝트는 **Village Guardians(마을지키기)**, **Countryside Days(시골식당)**, **Living Kingdoms(살아있는 왕국)**, **Solo Leveling-style Minecraft RPG(기획 중)**다.
 - 별도 게임이 아닌 재사용 실험 공간으로 **테스트(`projects/test/`)**를 운영한다.
 
 ## 활성 프로젝트
@@ -37,6 +37,15 @@
 - 설계된 대륙과 왕국에서 주민, 낚시꾼, 장인, 학자, 상인, 방랑자, 부족민, 전사, 영웅과 통치자 등 무엇이든 되어 살아가는 대형 판타지 세계 시뮬레이션 RPG
 - 종족·출신 세력·사회 배경·시작 거주지를 분리한 초기 출신 카탈로그와 세계 설계 문서가 구현되어 있다.
 - 아직 Gradle wrapper, 영구 저장, 캐릭터 생성 UI와 실제 빌드 검증이 남아 있으므로 실행 가능한 JAR은 없다.
+
+### Solo Leveling-style Minecraft RPG
+
+- 경로: [`projects/solo-leveling-minecraft/`](./projects/solo-leveling-minecraft/)
+- 현재 상태: 기획 중
+- 나 혼자만 레벨업 웹툰의 System, 레벨업, 게이트/던전, 스킬 성장, 전직, 그림자 군단의 경험을 Minecraft Java 문법으로 환원하는 RPG 프로젝트
+- 원작 웹툰을 최우선 기준으로 하고, 애니는 모션/연출 참고, 공식 게임은 보조 참고로만 사용한다.
+- 현재는 프로젝트 정본과 설계 기록만 있으며 Minecraft/Java/Loader 세부 버전과 실제 코드 골격은 아직 확정하지 않았다.
+- 실제 빌드·게임 실행 검증 전이므로 실행 가능한 JAR은 없다.
 
 ## 실험 프로젝트
 
@@ -73,6 +82,7 @@ minecraft-java-mod-builds/
 │  ├─ village-guardians/
 │  ├─ countryside-days/
 │  ├─ living-kingdoms/
+│  ├─ solo-leveling-minecraft/
 │  └─ test/
 ├─ docs/
 │  ├─ BUILD_STANDARD.md
