@@ -1,43 +1,44 @@
 # Augmentation Survival — Implementation Status
 
 Date: 2026-10-25
-Status: M1C FUNCTIONAL BASELINE / 127-OF-146 GAMEPLAY RUNTIME / PERCEPTION + COMPANION + HEALING + ENCHANT PASS VERIFIED
+Status: M1C FUNCTIONAL BASELINE / 129-OF-146 GAMEPLAY RUNTIME / INVENTORY + STORAGE PASS VERIFIED
 
 ## 146-roster implementation count
 
 The count below measures whether the canonical gameplay effect has a runtime implementation. It does **not** mean final VFX/UI polish or live playtesting is complete.
 
-- Fully implemented gameplay runtime: **127 / 146**
+- Fully implemented gameplay runtime: **129 / 146**
 - Partially implemented: **3 / 146** — `전리품 챙기기`, `보물 낚시`, `풍요`
-- Not fully implemented: **19 / 146**
-- No gameplay runtime yet: **16 / 146**
-- **This combined source pass advances 8 augments to FULL compared with the prior documented 119-runtime checkpoint.**
-- Current-source FULL reclassification / prior-main completion: `지배`, `영역 가속`
-- Newly implemented in the current gameplay batch: `광석 눈썰미`, `상자 찾기`, `위험 감지`, `소생`, `마법 새로고침`
-- Partial -> FULL completion: `회복 증폭`
+- Not fully implemented: **17 / 146**
+- No gameplay runtime yet: **14 / 146**
+- Latest inventory/storage batch advances **2 augments to FULL**: `주머니`, `원격 창고`.
+- The prior combined source pass advanced 8 augments to FULL compared with the earlier documented 119-runtime checkpoint.
+- Prior current-source FULL reclassification / prior-main completion: `지배`, `영역 가속`
+- Prior gameplay batch additions: `광석 눈썰미`, `상자 찾기`, `위험 감지`, `소생`, `마법 새로고침`
+- Prior Partial -> FULL completion: `회복 증폭`
 - Newly partial: **0**
-- Shared systems materially extended: normalized companion hostility, area-acceleration machine/growth routing, server-authoritative perception snapshots, bounded client ore scanning, entity/block outline presentation, permanent-companion death snapshot/revival, external non-natural healing interception, and enchant-table refresh transaction/UI.
+- Shared systems materially extended by the latest pass: save-wide persistent augmentation storage, inventory-overflow routing, inventory-like pocket death handling, UUID-bound remote segments, server-authoritative shared group composition, offline segment access, concurrent menu synchronization, portable storage menu/networking and rebindable input.
 
 The earlier 106-runtime checkpoint understated the implementation count by one: `피해 적응` was already fully consumed by `ProtectionAugmentService` and `CombatTuning`. That correction remains part of the total; it was a source-consumer reclassification, not new gameplay code.
 
 ## Verified code checkpoint
 
-- Verified gameplay-code checkpoint: `952ccf0e82ff2126da97d3d50f8005e253477363`
-- Prior-main subsystem commit: `9106253660a4bbb826b353468c59ade94a67d037` — `feat(augmentation-survival): normalize domination hostility and add area acceleration`
-- Prior-main cleanup commit: `9b2319a0b2ea0cea3a64409c938eb1f05fe4044f` — `fix(augmentation-survival): remove obsolete domination filter mixin`
-- Primary feature commit: `33af5d1b69aa0ef7ac39052218057283d5f76fb5` — `feat(augmentation-survival): implement perception revive healing and enchant refresh batch`
-- Minecraft 26.2 client-API alignment: `952ccf0e82ff2126da97d3d50f8005e253477363` — `fix(augmentation-survival): align 26.2 perception and enchantment client APIs`
-- GitHub Actions: `40151151557` / Build Augmentation Survival Pack #76
+- Verified gameplay-code checkpoint: `777f04c0f707f5b7255262ca11873805dfa4e41d`
+- Sustained revive-focus correction: `51d072c68d76a63dfa636e9c72fd03d16a53c360` — `fix(augmentation-survival): require sustained revive focus`
+- Storage feature commit: `ec651cdbf937e58416988e50d67bb0996d3aa364` — `feat(augmentation-survival): add pockets and remote storage runtime`
+- Minecraft 26.2 storage API alignment: `4cb4ea4dee9f4bc13787b8ca72b31ded9d9a0620` — `fix(augmentation-survival): align storage runtime with 26.2 APIs`
+- Client key-category correction: `777f04c0f707f5b7255262ca11873805dfa4e41d` — `fix(augmentation-survival): reuse augmentation key category`
+- GitHub Actions: `40153395848` / Build Augmentation Survival Pack #80
 - Build and pinned-pack inspection: PASS
 - Pack dependency inspection: PASS — 23 pinned external artifacts
 - Runtime classpath verification: PASS — 150 files
 - Dedicated server smoke: PASS — 92 mods
 - Client boot smoke: PASS — 108 mods
 - Verification artifacts upload: PASS
-- Artifact: `augmentation-survival-pack-smoke-76`
-- Artifact ID: `12582606783`
-- Artifact ZIP size: 862779 bytes
-- Artifact ZIP SHA-256: `51adb1defd47de53af5b33e7985372ae67277c1eeade5e7c1a41959710922c6f`
+- Artifact: `augmentation-survival-pack-smoke-80`
+- Artifact ID: `12584170120`
+- Artifact ZIP size: 913787 bytes
+- Artifact ZIP SHA-256: `2dbeccbe6b4c7d697a93eba10950e8d9a40f97dfec883b46184bca6869041141`
 - Canonical augment catalog initialization: PASS — 146 definitions
 - Entity compatibility contract initialization: PASS — 8 exact selectors / 11 token selectors / 1 dynamic adapter
 - Enemy scaling contract initialization: PASS — 9 stages / 4 native exact profiles / 0 namespace profiles
@@ -47,12 +48,29 @@ The earlier 106-runtime checkpoint understated the implementation count by one: 
 - Advanced active contract: BUILD + FULL-PACK BOOT VERIFIED
 - Advanced world/control contract: BUILD + FULL-PACK BOOT VERIFIED
 - Area acceleration / companion hostility / perception / revive / external-heal / enchant-refresh contracts: BUILD + FULL-PACK BOOT VERIFIED
+- Pockets / Remote Storage persistence, menu, networking and shared-segment contract: BUILD + FULL-PACK BOOT VERIFIED
 
-Build #75 failed during compile because the first client presentation draft used two stale Minecraft 26.2 boundaries: removed `ShapeRenderer` usage and container-screen position getters not present in the project's mapped `EnchantmentScreen`. No gameplay feature was removed. The corrective commit switched block highlighting to the 26.2 submit-node shape-outline path and placed the enchant refresh control from the screen-init dimensions. Build #76 then passed compile, pinned-pack inspection, dedicated-server smoke, client boot and artifact upload.
+Build #78 failed at compile because the first storage pass used two stale Minecraft/Fabric 26.2 boundaries: `ServerPlayerEvents` from the wrong package and removed `ServerPlayer.displayClientMessage`. The corrective commit switched disconnect handling to `ServerPlayConnectionEvents.DISCONNECT` and player messages to `sendSystemMessage`. Build #79 then passed compile/pack and dedicated-server smoke but failed client boot because `StorageInputClient` attempted to register the already-existing `augmentation_survival:augmentation` key category a second time. The final correction reuses the existing category from `ActiveAbilityInputClient`; Build #80 then passed compile, pinned-pack inspection, dedicated-server smoke, client boot and artifact upload.
 
 Documentation commits after this checkpoint do not change Java gameplay code and must not be treated as new gameplay verification targets.
 
-## Newly verified perception / companion / healing / enchant pass
+## Newly verified inventory / storage pass
+
+### `주머니` — FULL runtime
+
+The augment provides the canonical +3 / +6 / +9 additional carry slots by unlocking the first 3 / 6 / 9 positions of a persistent nine-slot pocket segment. Normal vanilla inventory insertion is allowed to run first; only actual overflow is routed into unlocked pocket slots, so ordinary inventory behavior is not replaced. The segment is accessible through the portable augmentation-storage menu and is server authoritative.
+
+Pocket contents behave like extra carried inventory on actual death: they drop when normal inventory would drop, while vanilla `keepInventory` or the implemented `소지품 보존` contract preserves them. Logout, dimension movement and ordinary menu close do not clear the segment.
+
+### `원격 창고` — FULL runtime
+
+Each holder owns one persistent UUID-bound 27-slot remote segment. A solo holder therefore has exactly 27 remote slots. A shared group never copies or merges item stacks into a synthetic inventory; instead the server concatenates the canonical 27-slot segments of group members, giving `27 × shared-holder count` capacity while preserving each member's ownership boundary.
+
+The save-wide Overworld attachment stores both remote segments and group membership, so an offline member's segment remains part of the shared view. Leaving a group only removes membership and preserves the leaving player's personal 27-slot segment. Concurrent viewers operate on the same server-side segment containers, and mutations are broadcast to open menus referencing those segments rather than editing detached client copies.
+
+The portable storage screen is opened by a rebindable storage key and a server-validated C2S request. Sharing is server-authoritative through invite / accept / leave transactions; invites expire and are discarded when their issuing/receiving connection leaves. Existing multi-member groups cannot be merged atomically into another multi-member group, avoiding ambiguous ownership transfer. The current command-backed group-management surface is a functional runtime baseline; final dedicated sharing UX remains a visual/interaction polish task rather than a missing storage rule.
+
+## Previously verified perception / companion / healing / enchant pass
 
 ### `광석 눈썰미` — FULL runtime
 
@@ -68,7 +86,7 @@ Every half second the server resolves hostile living entities inside the canonic
 
 ### `소생` — FULL runtime
 
-When a permanent tamed or dominated companion actually dies within twenty blocks of an online owner who owns the augment, the server snapshots the entity state before normal death cleanup and keeps a twenty-second revive marker. The active selects a looked-at marker and runs the canonical three-second focus window. Successful completion recreates the original entity type/state at a collision-safe nearby position with 50% maximum HP. Persistent domination ownership is serialized with the entity snapshot, and the domination occupancy/loaded-companion tracking is restored after revival.
+When a permanent tamed or dominated companion actually dies within twenty blocks of an online owner who owns the augment, the server snapshots the entity state before normal death cleanup and keeps a twenty-second revive marker. The active selects a looked-at marker and runs the canonical three-second focus window. The focus must remain on the marker for the whole concentration; looking away, leaving range/dimension, marker expiry or player death cancels it without spending the cooldown. Successful completion recreates the original entity type/state at a collision-safe nearby position with 50% maximum HP. Persistent domination ownership is serialized with the entity snapshot, and the domination occupancy/loaded-companion tracking is restored after revival.
 
 The successful-use base cooldown is 120 seconds and participates in `능력 가속`, sequential `이중 충전` and `전투 순환`. Failed/cancelled focus does not spend the cooldown. The marker excludes the player and temporary clone path by construction. `재연` is excluded because resurrection is not replay-safe.
 
@@ -132,6 +150,7 @@ The anvil keeps normal item/enchantment applicability rules but relaxes mutual e
 - persistent server-owned player augment state with schema-v2 optional `persistent_ints`
 - persistent per-augment cooldown-ready ticks
 - save-wide threat high-water state
+- save-wide persistent augmentation storage with UUID-bound pocket/remote segments
 - strict 146-entry canonical runtime catalog
 - six core tiers and data-driven core acquisition/source profiles
 - structure, hostile, raid, fishing and vanilla-boss core reward baselines
@@ -174,6 +193,7 @@ The anvil keeps normal item/enchantment applicability rules but relaxes mutual e
 - perception utility includes `광석 눈썰미`, `상자 찾기`, `위험 감지`
 - item/enchantment utility includes `진주 숙련`, `휴대 수류`, `금단의 마법`, `마법 새로고침`
 - companion runtime includes permanent `지배` ownership plus `소생` death marker/revival
+- storage runtime includes `주머니` and UUID-bound/shared `원격 창고`
 - `전리품 챙기기`, `보물 낚시`, `풍요` retain functional partial baselines
 
 ## Partial augments still open
@@ -186,17 +206,18 @@ The anvil keeps normal item/enchantment applicability rules but relaxes mutual e
 
 ## Deliberately not claimed complete
 
-- Full roster gameplay completion is **127 / 146**, not 146 / 146.
-- This combined eight-augment advancement is build/full-pack boot verified but **not live-player playtested**.
+- Full roster gameplay completion is **129 / 146**, not 146 / 146.
+- `주머니` / `원격 창고` are build/full-pack boot verified but **not live-player playtested**; live validation still needs pickup overflow, death/keep behavior, save/reload, group join/leave, offline member access, concurrent two-player editing, paging and visual review.
+- The prior combined eight-augment advancement is build/full-pack boot verified but **not live-player playtested**.
 - `광석 눈썰미` / `상자 찾기` / `위험 감지` need in-game visual validation for outline visibility, clutter and modded-content coverage.
-- `소생` needs live validation of marker selection, three-second focus feel, save/load ownership restoration, irregular collision-safe revival and double-charge/combat-cycle ordering.
+- `소생` needs live validation of marker selection, sustained three-second focus feel, save/load ownership restoration, irregular collision-safe revival and double-charge/combat-cycle ordering.
 - `회복 증폭` needs a live heal matrix across food natural regeneration exclusion, potions, beacon/external-mod healing, overflow and healing-share recursion guards.
 - `마법 새로고침` needs live enchantment-table validation for exact XP-point cost, lapis consumption, candidate regeneration and repeated use.
 - `영역 가속` needs live validation across crops, saplings, animals, furnace-family machines, brewing and modded machine compatibility.
 - `지배` needs AI/owner-offline/death/save-reload and multiplayer authority testing despite selector normalization being complete.
 - `위상 이동`, `거대화` and `금단의 마법` retain their prior live-test gaps.
 - Prior active, projectile, movement, threat and external-boss live-test gaps remain.
-- Final device/active/combat/resource/threat VFX, sound, models, HUD and UI visual polish are not complete.
+- Final device/active/combat/resource/threat/storage VFX, sound, models, HUD and UI visual polish are not complete.
 - The pre-existing `ProjectileAugmentService` deprecated-API warning remains non-fatal.
 - Multiplayer is not tested.
 
@@ -215,19 +236,21 @@ For every next batch:
 
 ## Next implementation direction
 
-The remaining no-runtime set is now **16**. Recompute those 16 from the locked roster and actual runtime consumers before coding. The remaining fixed-semantics items are increasingly system-heavy, so prefer one shared subsystem that can consume several at once — inventory/storage (`주머니`, `원격 창고`), enchantment calculation (`마법 공명`), companion/entity systems (`분신`), world-network/authority systems (`공간 연결`, `권능 탈취`) — while keeping the eight explicitly underspecified/blocked mechanics untouched. `길들이기 요령` must cover the real species-specific tame-probability boundaries rather than faking a generic post-success roll.
+The remaining no-runtime set is now **14**. Eight remain explicitly underspecified/blocked and must not receive invented values: `손재주`, `물약 확산`, `탄성 저장`, `탄도 장막`, `임시 발판`, `생명 연결`, `작아지기`, `벽치기`.
+
+The six remaining fixed-semantics no-runtime augments are `마법 공명`, `분신`, `공간 연결`, `권능 탈취`, `길들이기 요령`, `휩쓸기 강화`. Recompute these against actual source consumers before the next coding pass. They are increasingly system-specific: enchantment calculation (`마법 공명`), companion/entity systems (`분신`), world-network/authority systems (`공간 연결`, `권능 탈취`), species-specific tame-probability boundaries (`길들이기 요령`), and existing sweep/multi-hit integration (`휩쓸기 강화`). Do not fake `길들이기 요령` with a generic post-success roll.
 
 ## Validation labels
 
 - CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `952ccf0e82ff2126da97d3d50f8005e253477363`
-- JAR PRODUCED: YES — Actions run `40151151557`
+- BUILD VERIFIED: YES — `777f04c0f707f5b7255262ca11873805dfa4e41d`
+- JAR PRODUCED: YES — Actions run `40153395848`
 - PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
 - PACK RUNTIME CLASSPATH: PASS — 150 files
 - PACK SERVER SMOKE: PASS — 92 mods
 - PACK CLIENT SMOKE: PASS — 108 mods
-- VERIFICATION ARTIFACT: `augmentation-survival-pack-smoke-76` / ID `12582606783`
-- VERIFICATION ARTIFACT SHA-256: `51adb1defd47de53af5b33e7985372ae67277c1eeade5e7c1a41959710922c6f`
+- VERIFICATION ARTIFACT: `augmentation-survival-pack-smoke-80` / ID `12584170120`
+- VERIFICATION ARTIFACT SHA-256: `2dbeccbe6b4c7d697a93eba10950e8d9a40f97dfec883b46184bca6869041141`
 - CANONICAL AUGMENT CATALOG INITIALIZATION: PASS — 146 definitions
 - ENTITY COMPATIBILITY CONTRACT INITIALIZATION: PASS — 8 exact / 11 token / 1 dynamic
 - WORLD BOSSES LIVE REGISTRY PROFILE BINDING: PASS — 11 / 11
@@ -236,7 +259,8 @@ The remaining no-runtime set is now **16**. Recompute those 16 from the locked r
 - ENEMY SCALING CONTRACT INITIALIZATION: PASS — 9 stages / 4 native exact profiles / 0 namespace profiles
 - DOMINATION + AREA-ACCELERATION RUNTIME: BUILD/BOOT VERIFIED
 - PERCEPTION / REVIVE / EXTERNAL-HEAL / ENCHANT-REFRESH RUNTIME: BUILD/BOOT VERIFIED
-- NEW COMBINED 8-AUGMENT ADVANCEMENT LIVE-PLAYER TESTED: NO
+- POCKETS / REMOTE STORAGE RUNTIME: BUILD/BOOT VERIFIED
+- NEW STORAGE BATCH LIVE-PLAYER TESTED: NO
 - PERCEPTION VISUALS LIVE-PLAYER TESTED: NO
 - REVIVE LIVE-PLAYER TESTED: NO
 - HEALING-AMPLIFICATION LIVE-PLAYER TESTED: NO
