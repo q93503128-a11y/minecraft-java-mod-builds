@@ -25,6 +25,7 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         EnchantmentRefreshClient.initialize();
         MovementInputClient.initialize();
         ActiveAbilityInputClient.initialize();
+        AuthorityTheftInputClient.initialize();
         StorageInputClient.initialize();
         SpatialLinkClientNetworking.initialize();
         SpatialLinkInputClient.initialize();
