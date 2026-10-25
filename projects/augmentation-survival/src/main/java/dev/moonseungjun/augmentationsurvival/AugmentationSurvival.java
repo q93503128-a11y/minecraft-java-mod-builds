@@ -16,6 +16,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.PhaseStateNetworking
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporalStateNetworking;
+import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformBlocks;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
@@ -96,6 +97,7 @@ public final class AugmentationSurvival implements ModInitializer {
         AugmentStorageMenus.initialize();
         AugmentDeviceBlocks.initialize();
         SpatialGateBlocks.initialize();
+        TemporaryPlatformBlocks.initialize();
         AugmentationAttachments.initialize();
         WorldThreatAttachments.initialize();
         ThreatEntityAttachments.initialize();
