@@ -50,8 +50,6 @@ jobs:
           latest='run-pack-server/logs/latest.log'
           rm -f "$console" "$latest"
 
-          # Start in its own process group so a successful smoke can stop immediately
-          # instead of paying the old fixed 180-second timeout on every commit.
           setsid ./gradlew --no-daemon runPackServer \
             -PaugmentationPackRuntime=true --stacktrace \
             >"$console" 2>&1 &
@@ -74,8 +72,6 @@ jobs:
             sleep 2
           done
 
-          # Keep a short post-ready soak so startup-success is not mistaken for
-          # immediate post-start failure, then terminate the entire Gradle/game group.
           if [[ $ready -eq 1 ]]; then
             sleep 5
           fi
@@ -124,8 +120,6 @@ jobs:
           latest='run-pack-client/logs/latest.log'
           rm -f "$console" "$latest"
 
-          # The old smoke always waited the full 120 seconds. Detect a real client
-          # initialization marker, soak briefly, then stop the isolated process group.
           setsid xvfb-run -a -s '-screen 0 1280x720x24' \
             ./gradlew --no-daemon runPackClient \
               -PaugmentationPackRuntime=true --stacktrace \
@@ -185,6 +179,10 @@ jobs:
 
           echo 'AUGMENT_PACK_CLIENT_SMOKE_PASS'
 
+      - name: Build verified Modrinth pack
+        run: |
+          python3 tools/build_verified_mrpack.py
+
       - name: Upload verification reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -193,5 +191,6 @@ jobs:
           path: |
             projects/augmentation-survival/build/reports/modpack/**
             projects/augmentation-survival/build/libs/*.jar
+            projects/augmentation-survival/build/distributions/**
           if-no-files-found: warn
           retention-days: 14
