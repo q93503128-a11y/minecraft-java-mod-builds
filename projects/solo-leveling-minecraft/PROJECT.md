@@ -53,6 +53,11 @@ When a source mechanic does not fit Minecraft literally, preserve its purpose an
 - Dungeon and boss drops remain the main source of rare or distinctive combat equipment; crafting/upgrading is used to improve or transform equipment with dungeon materials where appropriate.
 - System Store stock can expand with Player progression instead of exposing the entire catalog from the start.
 - Villager trade remains emerald-based and separate from System Gold.
+- Vanilla weapons and armor remain useful during early survival and as temporary/back-up equipment, but they are **not** a long-term parallel endgame progression track.
+- System/dungeon equipment eventually outscales vanilla gear by a large margin, matching the source's large early-to-late power gap. Do not artificially buff netherite to remain competitive with late-game System equipment.
+- Vanilla and System gear use the same physical hand/armor equipment slots rather than duplicate parallel slot sets.
+- System/dungeon equipment may provide HP, MP, stats, skill interactions, and unique effects in addition to ordinary attack/defense values.
+- Equipment appearance may be hidden/toggled while retaining stats where appropriate to preserve the source's presentation; held weapons should normally remain visible.
 - Minecraft death is not permadeath; content-specific failure rules are used for gates, System quests and the Penalty Zone.
 - The Penalty Zone must never soft-lock a player.
 - Daily quests use a separate System-time cadence rather than Minecraft's 20-minute day so they do not become constant chores.
@@ -107,15 +112,14 @@ The later return to the Double Dungeon remains important because the contrast be
 Work through these slowly; do not lock them all at once.
 
 1. Exact pacing and final cap for inventory-capacity expansion.
-2. Vanilla gear vs System gear and equipment slots.
-3. Player EXP vs vanilla experience.
-4. Exact E-S rank thresholds and whether rank is level-derived or a broader combat rating.
-5. Gate spawn frequency, spacing, persistence and activation.
-6. Daily quest cadence and compressed exercise/run implementation.
-7. Skill acquisition, proficiency, level-up and evolution rules.
-8. Shadow extraction probability, retry/pity rules, storage, resurrection/recovery, rank growth and commands.
-9. Dungeon Break timing and world-safety constraints.
-10. Multiplayer ownership, rewards, party EXP and duplicate named shadows.
-11. Mana-crystal / essence-stone economy and crafting sinks.
-12. Dungeon roster coverage across E-S ranks.
-13. Loader/version/dependency selection after current 26.x ecosystem verification.
+2. Player EXP vs vanilla experience.
+3. Exact E-S rank thresholds and whether rank is level-derived or a broader combat rating.
+4. Gate spawn frequency, spacing, persistence and activation.
+5. Daily quest cadence and compressed exercise/run implementation.
+6. Skill acquisition, proficiency, level-up and evolution rules.
+7. Shadow extraction probability, retry/pity rules, storage, resurrection/recovery, rank growth and commands.
+8. Dungeon Break timing and world-safety constraints.
+9. Multiplayer ownership, rewards, party EXP and duplicate named shadows.
+10. Mana-crystal / essence-stone economy and crafting sinks.
+11. Dungeon roster coverage across E-S ranks.
+12. Loader/version/dependency selection after current 26.x ecosystem verification.
