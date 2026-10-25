@@ -62,6 +62,18 @@ public final class CombatCloneEntity extends PathfinderMob {
         return ownerId;
     }
 
+    public boolean isCloneAlly(Entity other) {
+        if (other == null || ownerId == null) return false;
+        if (other.getUUID().equals(ownerId)) return true;
+        if (other instanceof CombatCloneEntity clone && ownerId.equals(clone.ownerId)) return true;
+        if (CompanionAugmentService.isOwnedBy(other, ownerId)) return true;
+        if (other instanceof TamableAnimal tamable && tamable.isTame()) {
+            LivingEntity owner = tamable.getOwner();
+            return owner != null && ownerId.equals(owner.getUUID());
+        }
+        return false;
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -96,20 +108,6 @@ public final class CombatCloneEntity extends PathfinderMob {
         );
         candidates.sort(Comparator.comparingDouble(this::distanceToSqr));
         return candidates.isEmpty() ? null : candidates.getFirst();
-    }
-
-    @Override
-    public boolean isAlliedTo(Entity other) {
-        if (super.isAlliedTo(other)) return true;
-        if (ownerId == null) return false;
-        if (other.getUUID().equals(ownerId)) return true;
-        if (other instanceof CombatCloneEntity clone && ownerId.equals(clone.ownerId)) return true;
-        if (CompanionAugmentService.isOwnedBy(other, ownerId)) return true;
-        if (other instanceof TamableAnimal tamable && tamable.isTame()) {
-            LivingEntity owner = tamable.getOwner();
-            return owner != null && ownerId.equals(owner.getUUID());
-        }
-        return false;
     }
 
     @Override
