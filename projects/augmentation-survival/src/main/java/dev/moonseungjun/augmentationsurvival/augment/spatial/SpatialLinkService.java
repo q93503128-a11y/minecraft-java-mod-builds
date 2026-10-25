@@ -2,7 +2,9 @@ package dev.moonseungjun.augmentationsurvival.augment.spatial;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -14,12 +16,16 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
 /** Server-authoritative permanent gate registry and cross-dimension travel boundary. */
 public final class SpatialLinkService {
     public static final String SPATIAL_LINK_ID = id("spatial_link");
+    private static final double COMPANION_TRANSFER_RADIUS = 12.0D;
 
     private SpatialLinkService() { }
 
@@ -123,9 +129,13 @@ public final class SpatialLinkService {
         ServerLevel target = server.getLevel(dimension);
         if (target == null) return false;
 
+        ServerLevel source = player.level();
+        Entity travelRoot = player.getRootVehicle();
+        Set<Entity> companions = collectNearbyCompanions(player, source, travelRoot);
+
         BlockPos registered = BlockPos.containing(gate.x(), gate.y(), gate.z());
         target.getChunkAt(registered);
-        BlockPos safe = findSafePosition(target, player, registered);
+        BlockPos safe = findSafePosition(target, travelRoot, registered);
         if (safe == null) {
             player.sendSystemMessage(Component.translatable("message.augmentation_survival.spatial_link.blocked"));
             return false;
@@ -134,8 +144,20 @@ public final class SpatialLinkService {
         double x = safe.getX() + 0.5D;
         double y = safe.getY();
         double z = safe.getZ() + 0.5D;
-        player.stopRiding();
-        return player.teleportTo(target, x, y, z, Set.of(), gate.yaw(), gate.pitch(), true);
+        boolean moved;
+        if (travelRoot != player) {
+            travelRoot.teleportTo(target, x, y, z, Set.of(), gate.yaw(), gate.pitch(), true);
+            moved = player.level() == target;
+            if (!moved) {
+                moved = player.teleportTo(target, x, y, z, Set.of(), gate.yaw(), gate.pitch(), true);
+            }
+        } else {
+            moved = player.teleportTo(target, x, y, z, Set.of(), gate.yaw(), gate.pitch(), true);
+        }
+        if (!moved) return false;
+
+        transferCompanions(companions, target, safe, player.getUUID());
+        return true;
     }
 
     public static boolean teleportDefault(ServerPlayer player) {
@@ -156,6 +178,50 @@ public final class SpatialLinkService {
         return gate != null && gate.owner().equals(player.getUUID().toString());
     }
 
+    private static Set<Entity> collectNearbyCompanions(ServerPlayer player, ServerLevel source, Entity travelRoot) {
+        UUID ownerId = player.getUUID();
+        LinkedHashSet<Entity> result = new LinkedHashSet<>();
+        AABB search = player.getBoundingBox().inflate(COMPANION_TRANSFER_RADIUS);
+        for (LivingEntity entity : source.getEntitiesOfClass(LivingEntity.class, search, candidate -> !candidate.isDeadOrDying())) {
+            if (entity == player || entity == travelRoot || entity.isPassengerOfSameVehicle(player)) continue;
+            boolean dominated = CompanionAugmentService.isOwnedBy(entity, ownerId);
+            boolean tamed = entity instanceof TamableAnimal tamable
+                    && tamable.isTame()
+                    && tamable.getOwner() != null
+                    && ownerId.equals(tamable.getOwner().getUUID());
+            if (dominated || tamed) result.add(entity.getRootVehicle());
+        }
+        result.remove(travelRoot);
+        return Set.copyOf(result);
+    }
+
+    private static void transferCompanions(Set<Entity> companions, ServerLevel target, BlockPos playerDestination, UUID ownerId) {
+        int index = 0;
+        for (Entity companion : companions) {
+            if (companion.isRemoved()) continue;
+            double angle = index++ * 2.399963229728653D;
+            int radius = 2 + (index / 5);
+            BlockPos preferred = playerDestination.offset(
+                    (int) Math.round(Math.cos(angle) * radius),
+                    0,
+                    (int) Math.round(Math.sin(angle) * radius)
+            );
+            BlockPos safe = findSafePosition(target, companion, preferred);
+            if (safe == null) continue;
+            target.getChunkAt(safe);
+            companion.teleportTo(
+                    target,
+                    safe.getX() + 0.5D,
+                    safe.getY(),
+                    safe.getZ() + 0.5D,
+                    Set.of(),
+                    companion.getYRot(),
+                    companion.getXRot(),
+                    true
+            );
+        }
+    }
+
     private static int ownedGateCount(ServerPlayer player) {
         String owner = player.getUUID().toString();
         int count = 0;
@@ -165,17 +231,17 @@ public final class SpatialLinkService {
         return count;
     }
 
-    private static BlockPos findSafePosition(ServerLevel level, ServerPlayer player, BlockPos origin) {
+    private static BlockPos findSafePosition(ServerLevel level, Entity entity, BlockPos origin) {
         for (int offset = 0; offset <= 4; offset++) {
             for (int direction : offset == 0 ? new int[]{0} : new int[]{offset, -offset}) {
                 BlockPos candidate = origin.offset(0, direction, 0);
                 if (candidate.getY() < level.getMinY() || candidate.getY() >= level.getMaxY() - 2) continue;
-                AABB moved = player.getBoundingBox().move(
-                        candidate.getX() + 0.5D - player.getX(),
-                        candidate.getY() - player.getY(),
-                        candidate.getZ() + 0.5D - player.getZ()
+                AABB moved = entity.getBoundingBox().move(
+                        candidate.getX() + 0.5D - entity.getX(),
+                        candidate.getY() - entity.getY(),
+                        candidate.getZ() + 0.5D - entity.getZ()
                 );
-                if (level.noCollision(player, moved)) return candidate;
+                if (level.noCollision(entity, moved)) return candidate;
             }
         }
         return null;
