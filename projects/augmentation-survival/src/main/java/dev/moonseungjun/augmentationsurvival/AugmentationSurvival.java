@@ -7,6 +7,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmen
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldTuning;
+import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationService;
 import dev.moonseungjun.augmentationsurvival.augment.active.DeathReturnAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.PhaseStateNetworking;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
@@ -109,6 +110,7 @@ public final class AugmentationSurvival implements ModInitializer {
         DeathReturnAugmentService.initialize();
         SpecialActiveAugmentService.initialize();
         AdvancedActiveAugmentService.initialize();
+        AreaAccelerationService.initialize();
         CompanionAugmentService.initialize();
         AdvancedWorldAugmentService.initialize();
         ActiveAbilityRouter.initialize();

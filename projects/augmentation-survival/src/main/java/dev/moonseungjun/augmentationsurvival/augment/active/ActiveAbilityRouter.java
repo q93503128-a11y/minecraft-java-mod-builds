@@ -23,6 +23,7 @@ public final class ActiveAbilityRouter {
     private static final String PHASE_SHIFT_ID = id("phase_shift");
     private static final String DOMINATION_ID = id("domination");
     private static final String GIGANTIFICATION_ID = id("gigantification");
+    private static final String AREA_ACCELERATION_ID = id("area_acceleration");
     private static final String TIME_STOP_ID = id("time_stop");
     private static final String DIVINE_PUNISHMENT_ID = id("divine_punishment");
     private static final String THREAT_TOGGLE_KEY = "active_toggle/threat_suppression";
@@ -35,7 +36,7 @@ public final class ActiveAbilityRouter {
             id("cleanse"), id("pull"), id("swap"), id("shield"), id("berserk"), id("healing_wave"),
             SHIELD_THROW_ID, REWIND_ID, TIME_ACCELERATION_ID, PHASE_SHIFT_ID,
             THREAT_SUPPRESSION_ID, INSTANT_MINING_ID, DEATH_RETURN_ID, RETURN_HOME_ID,
-            DOMINATION_ID, GIGANTIFICATION_ID, TIME_STOP_ID, DIVINE_PUNISHMENT_ID
+            DOMINATION_ID, GIGANTIFICATION_ID, AREA_ACCELERATION_ID, TIME_STOP_ID, DIVINE_PUNISHMENT_ID
     );
 
     private ActiveAbilityRouter() {
@@ -45,7 +46,7 @@ public final class ActiveAbilityRouter {
         for (String augmentId : new String[]{
                 THREAT_SUPPRESSION_ID, INSTANT_MINING_ID, DEATH_RETURN_ID, RETURN_HOME_ID,
                 REWIND_ID, TIME_ACCELERATION_ID, SHIELD_THROW_ID, PHASE_SHIFT_ID,
-                DOMINATION_ID, GIGANTIFICATION_ID, TIME_STOP_ID, DIVINE_PUNISHMENT_ID
+                DOMINATION_ID, GIGANTIFICATION_ID, AREA_ACCELERATION_ID, TIME_STOP_ID, DIVINE_PUNISHMENT_ID
         }) {
             AugmentCatalog.require(augmentId);
         }
@@ -80,6 +81,9 @@ public final class ActiveAbilityRouter {
                 || abilityId.equals(DOMINATION_ID)
                 || abilityId.equals(GIGANTIFICATION_ID)) {
             return AdvancedWorldAugmentService.tryUse(player, abilityId);
+        }
+        if (abilityId.equals(AREA_ACCELERATION_ID)) {
+            return AreaAccelerationService.tryUse(player);
         }
         if (abilityId.equals(RETURN_HOME_ID)
                 || abilityId.equals(TIME_STOP_ID)

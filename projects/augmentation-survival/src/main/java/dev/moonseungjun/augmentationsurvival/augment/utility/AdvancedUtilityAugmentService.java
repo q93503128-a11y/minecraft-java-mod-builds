@@ -3,7 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.utility;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
-import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashSet;
@@ -30,18 +30,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Server-authoritative bridge for the advanced passive/utility batch.
- *
- * <p>The service deliberately reuses existing ROOT provenance, persistent player state and vanilla
- * item/enchantment boundaries instead of creating parallel combat or movement engines.</p>
- */
+/** Server-authoritative bridge for the advanced passive/utility batch. */
 public final class AdvancedUtilityAugmentService {
     private static final String ARMOR_PIERCE_ID = id("armor_pierce");
     private static final String HUNT_RECORD_ID = id("hunt_record");
@@ -95,7 +89,6 @@ public final class AdvancedUtilityAugmentService {
         }
     }
 
-    /** Multiplier applied to the armor and armor-toughness inputs of vanilla CombatRules. */
     public static double armorEffectivenessMultiplier(DamageSource source) {
         if (!(source.getEntity() instanceof ServerPlayer attacker)
                 || !CombatProvenanceContext.resolve(source).isRootDirect()) {
@@ -112,7 +105,6 @@ public final class AdvancedUtilityAugmentService {
         );
     }
 
-    /** Adds the permanent Hunt Record ROOT-direct bonus after the existing direct-damage pipeline. */
     public static float modifyRootOutgoingDamage(DamageSource source, float damage) {
         if (!(damage > 0.0F) || !Float.isFinite(damage)
                 || !(source.getEntity() instanceof ServerPlayer attacker)
@@ -132,7 +124,6 @@ public final class AdvancedUtilityAugmentService {
         return safeScale(damage, multiplier);
     }
 
-    /** Pearl self-damage reduction runs before augment protection pools consume the hit. */
     public static float modifyIncomingBeforeProtection(
             LivingEntity victim,
             DamageSource source,
@@ -168,7 +159,6 @@ public final class AdvancedUtilityAugmentService {
         return Math.max(0, (int) Math.round(vanillaTicks * (1.0D - reduction)));
     }
 
-    /** True only for the dry portable-Riptide substitution; natural wet use never consumes water. */
     public static boolean canUsePortableRiptide(ServerPlayer player, ItemStack trident) {
         if (player.isInWaterOrRain()
                 || player.getOffhandItem().isEmpty()
@@ -196,7 +186,7 @@ public final class AdvancedUtilityAugmentService {
             DamageSource source
     ) {
         if (!(killer instanceof ServerPlayer player)
-                || (!(killed instanceof Enemy) && !EntityCompatibilityProfileService.isBoss(killed))
+                || !CompanionAugmentService.isHostileEntity(killed)
                 || !CombatProvenanceContext.resolve(source).isRootDirect()) {
             return;
         }

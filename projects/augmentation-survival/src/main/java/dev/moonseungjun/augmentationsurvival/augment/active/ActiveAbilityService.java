@@ -8,6 +8,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionServi
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -291,9 +291,7 @@ public final class ActiveAbilityService {
         List<LivingEntity> targets = player.level().getEntitiesOfClass(
                 LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
-                candidate -> candidate instanceof Enemy
-                        && candidate != player
-                        && !candidate.isDeadOrDying()
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
                         && player.distanceToSqr(candidate) <= radiusSquared
         );
         if (targets.isEmpty()) {

@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -25,7 +26,6 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.AABB;
@@ -123,9 +123,7 @@ public final class SpecialActiveAugmentService {
         for (LivingEntity target : level.getEntitiesOfClass(
                 LivingEntity.class,
                 bounds,
-                candidate -> candidate != player
-                        && !candidate.isDeadOrDying()
-                        && isHostileTarget(candidate)
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
                         && player.distanceToSqr(candidate) <= radiusSquared
                         && EntityCompatibilityProfileService.allowTimeStop(candidate)
         )) {
@@ -159,9 +157,7 @@ public final class SpecialActiveAugmentService {
         for (LivingEntity target : level.getEntitiesOfClass(
                 LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
-                candidate -> candidate != player
-                        && !candidate.isDeadOrDying()
-                        && isHostileTarget(candidate)
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
                         && player.distanceToSqr(candidate) <= radiusSquared
         )) {
             boolean boss = EntityCompatibilityProfileService.isBoss(target);
@@ -320,14 +316,8 @@ public final class SpecialActiveAugmentService {
         if (!(projectile.getOwner() instanceof LivingEntity owner)) {
             return false;
         }
-        return owner != player
-                && !player.isAlliedTo(owner)
-                && isHostileTarget(owner)
+        return CompanionAugmentService.isHostileTarget(player, owner)
                 && EntityCompatibilityProfileService.allowTimeStop(owner);
-    }
-
-    private static boolean isHostileTarget(LivingEntity entity) {
-        return entity instanceof Enemy || EntityCompatibilityProfileService.isBoss(entity);
     }
 
     private static boolean cooldownReady(

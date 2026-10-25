@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.augment.combat;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileRuntimeCarrier;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileRuntimeState;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
@@ -29,7 +30,6 @@ import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.phys.AABB;
@@ -166,8 +166,7 @@ public final class ReactiveCombatAugmentService {
         for (LivingEntity target : player.level().getEntitiesOfClass(
                 LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
-                candidate -> isHostileTarget(candidate)
-                        && !candidate.isDeadOrDying()
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
                         && player.distanceToSqr(candidate) <= radiusSquared
         )) {
             applyDerivedDamage(player, target, damage, CombatProvenance.DERIVED_AOE);
@@ -191,10 +190,9 @@ public final class ReactiveCombatAugmentService {
         if (entity instanceof ServerPlayer player && blocked) {
             tryReturnProjectile(player, source);
         }
-        if (blocked || !(damageTaken > 0.0F) || !isHostileTarget(entity)) {
-            return;
-        }
-        if (!(source.getEntity() instanceof ServerPlayer attacker)
+        if (blocked || !(damageTaken > 0.0F)
+                || !(source.getEntity() instanceof ServerPlayer attacker)
+                || !CompanionAugmentService.isHostileTarget(attacker, entity)
                 || CombatProvenanceContext.resolve(source) != CombatProvenance.ROOT_MELEE
                 || attacker.getAttackStrengthScale(0.5F) < 0.90F) {
             return;
@@ -282,8 +280,7 @@ public final class ReactiveCombatAugmentService {
         for (LivingEntity candidate : owner.level().getEntitiesOfClass(
                 LivingEntity.class,
                 search,
-                target -> isHostileTarget(target)
-                        && !target.isDeadOrDying()
+                target -> CompanionAugmentService.isHostileTarget(owner, target)
                         && !hitIds.contains(target.getId())
         )) {
             double collisionRadius = Math.max(
@@ -394,18 +391,15 @@ public final class ReactiveCombatAugmentService {
         if (!(source instanceof LivingEntity living) || source == victim || victim.isAlliedTo(source)) {
             return false;
         }
-        return source instanceof Enemy
-                || source instanceof ServerPlayer
-                || EntityCompatibilityProfileService.isBoss(living);
+        if (source instanceof ServerPlayer) {
+            return true;
+        }
+        return CompanionAugmentService.isHostileTarget(victim, living);
     }
 
     private static boolean isBossSource(Entity source) {
         return source instanceof LivingEntity living
                 && EntityCompatibilityProfileService.isBoss(living);
-    }
-
-    private static boolean isHostileTarget(LivingEntity target) {
-        return target instanceof Enemy || EntityCompatibilityProfileService.isBoss(target);
     }
 
     private static void applyDerivedDamage(

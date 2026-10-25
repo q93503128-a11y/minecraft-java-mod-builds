@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.resource;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -87,6 +88,7 @@ public final class AbundanceService {
     ) {
         if (!(killer instanceof ServerPlayer player)
                 || killed instanceof Player
+                || CompanionAugmentService.isDominated(killed)
                 || CombatExpansionService.isConfiguredBoss(killed)
                 || !hasAbundance(player)) {
             return;

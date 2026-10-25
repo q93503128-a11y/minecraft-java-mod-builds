@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.mixin.AbstractArrowAugmentAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -16,7 +17,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
@@ -215,9 +215,7 @@ public final class ProjectileAugmentService {
         List<LivingEntity> candidates = arrow.level().getEntitiesOfClass(
                 LivingEntity.class,
                 search,
-                candidate -> candidate instanceof Enemy
-                        && candidate.isAlive()
-                        && candidate != arrow.getOwner()
+                candidate -> CompanionAugmentService.isHostileTarget(arrow.getOwner(), candidate)
                         && !runtime.hasHitInCurrentSegment(candidate.getId())
         );
 
@@ -285,7 +283,6 @@ public final class ProjectileAugmentService {
     ) {
         if (blocked
                 || !(damageTaken > 0.0F)
-                || !(entity instanceof Enemy)
                 || !(source.getDirectEntity() instanceof AbstractArrow arrow)) {
             return;
         }
@@ -296,6 +293,7 @@ public final class ProjectileAugmentService {
                 || runtime.chainUsed()
                 || runtime.segmentHitCount() != 0
                 || !(arrow.getOwner() instanceof ServerPlayer owner)
+                || !CompanionAugmentService.isHostileTarget(owner, entity)
                 || !ownerStillMatches(arrow, runtime)
                 || !(entity.level() instanceof ServerLevel level)) {
             return;
@@ -310,7 +308,7 @@ public final class ProjectileAugmentService {
         double range = ProjectileTuning.current().chainRange();
 
         for (int hop = 0; hop < runtime.chainLevel(); hop++) {
-            LivingEntity next = nearestChainTarget(level, anchor, visited, range);
+            LivingEntity next = nearestChainTarget(level, owner, anchor, visited, range);
             if (next == null) {
                 break;
             }
@@ -333,6 +331,7 @@ public final class ProjectileAugmentService {
 
     private static LivingEntity nearestChainTarget(
             ServerLevel level,
+            ServerPlayer owner,
             LivingEntity anchor,
             Set<Integer> visited,
             double range
@@ -342,7 +341,8 @@ public final class ProjectileAugmentService {
         for (LivingEntity candidate : level.getEntitiesOfClass(
                 LivingEntity.class,
                 anchor.getBoundingBox().inflate(range),
-                entity -> entity instanceof Enemy && entity.isAlive() && !visited.contains(entity.getId())
+                entity -> CompanionAugmentService.isHostileTarget(owner, entity)
+                        && !visited.contains(entity.getId())
         )) {
             double distance = anchor.distanceToSqr(candidate);
             if (distance <= range * range && distance < best) {

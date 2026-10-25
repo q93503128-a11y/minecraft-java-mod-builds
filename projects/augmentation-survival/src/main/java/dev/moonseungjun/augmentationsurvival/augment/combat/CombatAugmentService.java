@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.augment.combat;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
@@ -25,7 +26,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.DeathProtection;
@@ -81,7 +81,6 @@ public final class CombatAugmentService {
         ServerTickEvents.END_SERVER_TICK.register(CombatAugmentService::tickRuntime);
     }
 
-    /** Applies root attacker bonuses before vanilla armor/protection mitigation. */
     public static float modifyOutgoingDamage(LivingEntity target, DamageSource source, float damage) {
         if (!(damage > 0.0F) || !Float.isFinite(damage)) {
             return damage;
@@ -114,7 +113,6 @@ public final class CombatAugmentService {
         return CombatExpansionService.modifyOutgoingDamage(target, source, scaled);
     }
 
-    /** Applies augment damage layers after vanilla armor/Protection and before vanilla absorption. */
     public static float modifyPostMitigationDamage(LivingEntity victim, DamageSource source, float damage) {
         if (CombatProvenanceContext.isDelayedDamage()) {
             return damage;
@@ -142,7 +140,6 @@ public final class CombatAugmentService {
         return ProtectionAugmentService.modifyAfterReductions(player, source, reduced);
     }
 
-    /** Called after vanilla hand-held death protection failed. */
     public static boolean tryPostVanillaDeathProtection(
             LivingEntity entity,
             DamageSource source
@@ -202,7 +199,6 @@ public final class CombatAugmentService {
         return source.typeHolder().is(DamageTypeTags.BYPASSES_INVULNERABILITY);
     }
 
-    /** Last stand deliberately runs before vanilla hand-held totem processing. */
     private static boolean allowDeath(LivingEntity entity, DamageSource source, float amount) {
         if (!(entity instanceof ServerPlayer player)) {
             return true;
@@ -269,7 +265,8 @@ public final class CombatAugmentService {
             DamageSource damageSource
     ) {
         CombatExpansionService.afterKill(level, entity, killedEntity, damageSource);
-        if (!(entity instanceof ServerPlayer player) || !(killedEntity instanceof Enemy)) {
+        if (!(entity instanceof ServerPlayer player)
+                || !CompanionAugmentService.isHostileEntity(killedEntity)) {
             return;
         }
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);

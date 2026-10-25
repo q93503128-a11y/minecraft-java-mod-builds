@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.core;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -28,7 +29,7 @@ public final class CoreRewardService {
             DamageSource damageSource
     ) {
         ServerPlayer player = resolvePlayer(killer, damageSource);
-        if (player == null) {
+        if (player == null || CompanionAugmentService.isDominated(killed)) {
             return;
         }
 

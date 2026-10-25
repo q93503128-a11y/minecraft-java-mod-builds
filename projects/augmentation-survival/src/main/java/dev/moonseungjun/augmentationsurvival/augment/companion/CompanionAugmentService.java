@@ -27,7 +27,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.Vec3;
 
-/** Server-owned permanent companion runtime for Domination. */
+/** Server-owned permanent companion runtime for Domination and shared hostile classification. */
 public final class CompanionAugmentService {
     private static final String DOMINATION_ID = id("domination");
     private static final Map<UUID, Mob> LOADED_DOMINATED = new HashMap<>();
@@ -117,6 +117,20 @@ public final class CompanionAugmentService {
         return false;
     }
 
+    /** Stable hostile classification. Dead dominated companions remain tagged until entity removal. */
+    public static boolean isHostileEntity(LivingEntity candidate) {
+        return !isDominated(candidate)
+                && (candidate instanceof Enemy || EntityCompatibilityProfileService.isBoss(candidate));
+    }
+
+    /** Player/companion-facing target predicate used by every augmentation target selector. */
+    public static boolean isHostileTarget(Entity source, LivingEntity candidate) {
+        return candidate != source
+                && !candidate.isDeadOrDying()
+                && isHostileEntity(candidate)
+                && (source == null || (!areAllied(source, candidate) && !source.isAlliedTo(candidate)));
+    }
+
     /** Called from the shared LivingEntity death boundary; owner need not be online. */
     public static void onActualDeath(LivingEntity entity) {
         Optional<UUID> owner = ownerId(entity);
@@ -124,7 +138,8 @@ public final class CompanionAugmentService {
             return;
         }
         LOADED_DOMINATED.remove(entity.getUUID());
-        entity.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.initial());
+        // Preserve the ownership marker on the dead entity until removal so downstream kill/reward
+        // listeners can still classify it as a companion rather than a hostile reward source.
         MinecraftServer server = level.getServer();
         setWorldState(server, worldState(server).withDelta(owner.get(), -1));
     }
@@ -144,11 +159,11 @@ public final class CompanionAugmentService {
                 continue;
             }
             LivingEntity target = mob.getTarget();
-            if (target != null && (areAllied(mob, target) || target.isDeadOrDying())) {
+            if (target != null && !isHostileTarget(mob, target)) {
                 mob.setTarget(null);
                 target = null;
             }
-            if (target == null || !isHostileCandidate(mob, target)) {
+            if (target == null) {
                 LivingEntity next = findNearestHostile(mob, owner.get());
                 if (next != null) {
                     mob.setTarget(next);
@@ -163,18 +178,11 @@ public final class CompanionAugmentService {
                 LivingEntity.class,
                 companion.getBoundingBox().inflate(range),
                 candidate -> candidate != companion
-                        && !candidate.isDeadOrDying()
                         && !isOwnedBy(candidate, ownerId)
-                        && isHostileCandidate(companion, candidate)
+                        && isHostileTarget(companion, candidate)
         );
         candidates.sort(Comparator.comparingDouble(companion::distanceToSqr));
         return candidates.isEmpty() ? null : candidates.getFirst();
-    }
-
-    private static boolean isHostileCandidate(Mob companion, LivingEntity candidate) {
-        return !areAllied(companion, candidate)
-                && !isDominated(candidate)
-                && (candidate instanceof Enemy || EntityCompatibilityProfileService.isBoss(candidate));
     }
 
     private static Mob findLookTarget(ServerPlayer player, double range) {

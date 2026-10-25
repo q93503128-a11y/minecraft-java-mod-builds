@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -37,7 +38,6 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
@@ -278,7 +278,7 @@ public final class AdvancedActiveAugmentService {
 
     private static void afterKill(ServerLevel level, Entity killer, LivingEntity killed, DamageSource source) {
         if (!(killer instanceof ServerPlayer player)
-                || (!(killed instanceof Enemy) && !EntityCompatibilityProfileService.isBoss(killed))
+                || !CompanionAugmentService.isHostileEntity(killed)
                 || !CombatProvenanceContext.resolve(source).isRootDirect()) return;
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         boolean boss = EntityCompatibilityProfileService.isBoss(killed);
@@ -467,8 +467,7 @@ public final class AdvancedActiveAugmentService {
         double rangeSquared = range * range;
         List<LivingEntity> candidates = player.level().getEntitiesOfClass(
                 LivingEntity.class, player.getBoundingBox().inflate(range),
-                candidate -> candidate != player && !candidate.isDeadOrDying()
-                        && (candidate instanceof Enemy || EntityCompatibilityProfileService.isBoss(candidate))
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
                         && player.distanceToSqr(candidate) <= rangeSquared && player.hasLineOfSight(candidate));
         if (candidates.isEmpty()) return List.of();
 

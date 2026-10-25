@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.combat;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -21,7 +22,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
 
 /** Broad combat batch built on the existing provenance/damage/healing boundaries. */
 public final class CombatExpansionService {
@@ -175,7 +175,7 @@ public final class CombatExpansionService {
         removeTargetRuntime(killed.getUUID());
         boolean configuredBoss = isConfiguredBoss(killed);
         if (!(killer instanceof ServerPlayer player)
-                || (!(killed instanceof Enemy) && !configuredBoss)) {
+                || !CompanionAugmentService.isHostileEntity(killed)) {
             return;
         }
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
@@ -214,8 +214,7 @@ public final class CombatExpansionService {
         List<LivingEntity> targets = player.level().getEntitiesOfClass(
                 LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
-                candidate -> candidate instanceof Enemy
-                        && !candidate.isDeadOrDying()
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
                         && player.distanceToSqr(candidate) <= radiusSquared
         );
         for (LivingEntity target : targets) {
@@ -249,8 +248,7 @@ public final class CombatExpansionService {
                 LivingEntity.class,
                 killed.getBoundingBox().inflate(radius),
                 candidate -> candidate != killed
-                        && candidate instanceof Enemy
-                        && !candidate.isDeadOrDying()
+                        && CompanionAugmentService.isHostileTarget(player, candidate)
                         && killed.distanceToSqr(candidate) <= radiusSquared
         );
         for (LivingEntity target : targets) {
@@ -282,8 +280,7 @@ public final class CombatExpansionService {
                 LivingEntity.class,
                 primaryTarget.getBoundingBox().inflate(radius),
                 candidate -> candidate != primaryTarget
-                        && candidate instanceof Enemy
-                        && !candidate.isDeadOrDying()
+                        && CompanionAugmentService.isHostileTarget(attacker, candidate)
                         && primaryTarget.distanceToSqr(candidate) <= radiusSquared
         );
         candidates.sort(Comparator.comparingDouble(primaryTarget::distanceToSqr));
@@ -397,8 +394,7 @@ public final class CombatExpansionService {
         for (LivingEntity candidate : player.level().getEntitiesOfClass(
                 LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
-                candidate -> candidate instanceof Enemy
-                        && !candidate.isDeadOrDying()
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
                         && player.distanceToSqr(candidate) <= radiusSquared
         )) {
             count++;

@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.resource;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -47,14 +48,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Server-authoritative resource and farming runtime.
- *
- * <p>Root block destruction stays on the vanilla/Fabric path. Secondary tree/tunnel/sweep breaks
- * re-enter {@link net.minecraft.server.level.ServerPlayerGameMode#destroyBlock(BlockPos)} so normal
- * tool checks, Fortune/Silk Touch, stats and durability hooks remain intact. A thread-local mode only
- * prevents geometric recursion and lets other augment hooks distinguish root from derived breaks.</p>
- */
+/** Server-authoritative resource and farming runtime. */
 public final class ResourceHarvestService {
     private static final String BUMPER_CROP_ID = id("bumper_crop");
     private static final String SEED_SAVER_ID = id("seed_saver");
@@ -100,7 +94,6 @@ public final class ResourceHarvestService {
         );
     }
 
-    /** Used by root-only counters such as continuous mining. */
     public static boolean isDerivedBreak() {
         return DERIVED_BREAK_MODE.get() != DerivedBreakMode.NONE;
     }
@@ -128,11 +121,9 @@ public final class ResourceHarvestService {
         }
 
         applyOreBonus(level, player, pos, state, baseDrops, augments);
-
         if (mode != DerivedBreakMode.NONE) {
             return;
         }
-
         if (matureCrop) {
             triggerSweepingHarvest(level, player, pos, state, crop, augments);
         }
@@ -331,11 +322,7 @@ public final class ResourceHarvestService {
         }
     }
 
-    private static void applyTunnelingDurabilityRefund(
-            ServerPlayer player,
-            Item originalItem,
-            int beforeDamage
-    ) {
+    private static void applyTunnelingDurabilityRefund(ServerPlayer player, Item originalItem, int beforeDamage) {
         if (originalItem == null) {
             return;
         }
@@ -362,14 +349,10 @@ public final class ResourceHarvestService {
         }
     }
 
-    private static void afterKill(
-            ServerLevel level,
-            Entity killer,
-            LivingEntity killed,
-            DamageSource source
-    ) {
+    private static void afterKill(ServerLevel level, Entity killer, LivingEntity killed, DamageSource source) {
         if (!(killer instanceof ServerPlayer player)
                 || killed instanceof Player
+                || CompanionAugmentService.isDominated(killed)
                 || CombatExpansionService.isConfiguredBoss(killed)) {
             return;
         }
