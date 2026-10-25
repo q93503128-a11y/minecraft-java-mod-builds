@@ -245,7 +245,6 @@ public final class SpatialLinkService {
     }
 
     private static BlockPos findAnchorPosition(ServerLevel level, BlockPos origin) {
-        if (level.getBlockState(origin).isAir()) return origin.immutable();
         for (int radius = 1; radius <= 2; radius++) {
             for (int x = -radius; x <= radius; x++) {
                 for (int z = -radius; z <= radius; z++) {
