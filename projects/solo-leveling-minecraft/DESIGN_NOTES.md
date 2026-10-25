@@ -164,3 +164,38 @@ Use this file for confirmed design decisions that are too detailed for the proje
 - Mandatory progression must not depend on an unbounded low-probability roll. Story/progression boxes can use controlled candidate pools or guaranteed required contents.
 - Source-inspired one-time hidden conditions, such as over-completing a Daily routine and revealing an unusual reward choice, are desirable discovery content when they do not become repeatable chores.
 - Reward resolution, stat-point grants, keys, and progression state are server-authoritative.
+
+## Combat feel and accessibility
+
+- Combat should feel fast, skillful, and visually precise without requiring high mechanical execution from every player. The target experience is that an average or even weak action-game player can feel highly competent.
+- Do not achieve accessibility by making visible attack ranges dishonest. Keep visible attack coverage and real hit detection closely aligned.
+- Use generous input buffering, sensible combo queues, forgiving cancel windows, light target magnetism/aim correction, short melee approach correction where appropriate, and latency-aware server validation instead of demanding frame-perfect inputs.
+- Dodge/dash timing should be readable and forgiving enough to reward intent, not just exact-frame reactions.
+- Enemy telegraphs should be clear enough to react to while still looking dangerous and cinematic.
+- Avoid long player stun-lock chains and excessive loss of control. Failure should usually come from bad decisions or severe power disparity, not from one missed input leading to several seconds of helplessness.
+- Assist behavior must remain subtle enough that the player attributes success to their own action rather than feeling the game is playing itself.
+
+## Core combat structure
+
+- Replace vanilla click-trading as the primary RPG combat loop with authored weapon animations, combos, skills, movement, dodge/dash, and appropriate guarding.
+- The combat tempo itself scales with progression: early combat is more deliberate and readable; late combat supports extremely fast approach, chaining, repositioning, area attacks, and high-mobility skill use.
+- Hit reactions, hit-stop, sound, VFX, camera response, and animation timing are treated as core combat feedback, not optional polish.
+- Damage, hit confirmation, resource use, cooldowns, and authoritative movement/state changes are server-decided; client effects predict/present them without becoming authoritative.
+
+## Weapon families and dual wielding
+
+- Players are not locked out of major weapon families by class. Core families may include daggers, one-handed swords, great weapons, spears, axes, bows, magic/special weapons, and later Monarch-related weapons.
+- Dual wielding is a real combat mode for suitable weapon families, especially daggers and selected one-handed weapons. It changes animation, combo structure, tempo, and skill interactions rather than simply doubling damage.
+- Physically implausible combinations such as dual greatswords are not required merely for consistency.
+- Bow draw/charge time benefits from Agility so ranged combat remains viable and visibly accelerates with growth.
+- Ruler's Hand / Ruler's Authority later extends weapon control beyond the two physical hand slots through telekinetic weapon manipulation.
+
+## Damage, defense, and scaling
+
+- Do not level-scale ordinary enemies to the player. A low-rank enemy remains low rank and should eventually become trivial as the Player grows.
+- Basic damage derives from authored weapon performance, relevant permanent stats, skill coefficients, and equipment effects.
+- Defense should use a diminishing-return structure rather than unrestricted flat subtraction so very large late-game values remain stable and tunable.
+- Large power gaps must be felt directly: much weaker enemies die quickly, peers sustain normal fights, and much stronger enemies are genuinely dangerous while resisting weak attacks.
+- Boss difficulty must not be created primarily by multiplying HP into a damage sponge. Patterns, movement, defense/stagger behavior, phases, special abilities, summons, arena control, and readable high-impact attacks carry most of the encounter identity.
+- Multiplayer boss scaling may increase survivability and stagger resistance with party size, but should not naively multiply outgoing damage by player count.
+- Previously dangerous bosses are allowed to become trivial later. Do not preserve old content as permanently equal-level encounters at the expense of progression fantasy.
