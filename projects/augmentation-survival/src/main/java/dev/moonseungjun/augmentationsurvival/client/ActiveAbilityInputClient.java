@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.client.screen.ActiveLoadoutScreen;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityRequestPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -16,35 +17,33 @@ public final class ActiveAbilityInputClient {
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "augmentation")
     );
     private static final KeyMapping MODE_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.augmentation_survival.active_mode",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_LEFT_ALT,
-            CATEGORY
+            "key.augmentation_survival.active_mode", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY
+    ));
+    private static final KeyMapping LOADOUT_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.augmentation_survival.active_loadout", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, CATEGORY
     ));
     private static final int[] SLOT_KEYS = {
-            InputConstants.KEY_1,
-            InputConstants.KEY_2,
-            InputConstants.KEY_3,
-            InputConstants.KEY_4,
-            InputConstants.KEY_5,
-            InputConstants.KEY_6,
-            InputConstants.KEY_7,
-            InputConstants.KEY_8,
-            InputConstants.KEY_9,
-            InputConstants.KEY_0
+            InputConstants.KEY_1, InputConstants.KEY_2, InputConstants.KEY_3, InputConstants.KEY_4,
+            InputConstants.KEY_5, InputConstants.KEY_6, InputConstants.KEY_7, InputConstants.KEY_8,
+            InputConstants.KEY_9, InputConstants.KEY_0
     };
     private static final boolean[] SLOT_WAS_DOWN = new boolean[SLOT_KEYS.length];
+    private static boolean loadoutWasDown;
 
-    private ActiveAbilityInputClient() {
-    }
+    private ActiveAbilityInputClient() { }
 
     public static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            boolean loadoutDown = client.player != null && LOADOUT_KEY.isDown();
+            if (client.player != null && client.gui.screen() == null && loadoutDown && !loadoutWasDown) {
+                client.gui.setScreen(new ActiveLoadoutScreen());
+            }
+            loadoutWasDown = loadoutDown;
+
             if (client.player == null || client.gui.screen() != null) {
                 reset(client);
                 return;
             }
-
             boolean modeDown = MODE_KEY.isDown();
             for (int index = 0; index < SLOT_KEYS.length; index++) {
                 boolean down = InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
@@ -58,8 +57,7 @@ public final class ActiveAbilityInputClient {
 
     private static void reset(net.minecraft.client.Minecraft client) {
         for (int index = 0; index < SLOT_KEYS.length; index++) {
-            SLOT_WAS_DOWN[index] = client.player != null
-                    && InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
+            SLOT_WAS_DOWN[index] = client.player != null && InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
         }
     }
 }
