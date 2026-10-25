@@ -1,6 +1,3 @@
 {
-  "model": {
-    "type": "minecraft:model",
-    "model": "minecraft:item/diamond"
-  }
+  "model": {"type": "minecraft:model", "model": "augmentation_survival:item/rare_augment_core"}
 }

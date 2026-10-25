@@ -5,21 +5,8 @@
   "name": "Augmentation Survival",
   "description": "Build permanent augments through exploration, combat, crafting, and escalating survival threats.",
   "environment": "*",
-  "entrypoints": {
-    "main": [
-      "dev.moonseungjun.augmentationsurvival.AugmentationSurvival"
-    ],
-    "client": [
-      "dev.moonseungjun.augmentationsurvival.client.AugmentationSurvivalClient"
-    ]
-  },
-  "mixins": [
-    "augmentation_survival.mixins.json"
-  ],
-  "depends": {
-    "fabricloader": ">=0.19.5",
-    "minecraft": "=26.2",
-    "java": ">=25",
-    "fabric-api": "*"
-  }
+  "entrypoints": {"main":["dev.moonseungjun.augmentationsurvival.AugmentationSurvival"],"client":["dev.moonseungjun.augmentationsurvival.client.AugmentationSurvivalClient"]},
+  "mixins": ["augmentation_survival.mixins.json"],
+  "jars": [{"file":"META-INF/jars/augmentation-survival-korean-overrides.jar"}],
+  "depends": {"fabricloader":">=0.19.5","minecraft":"=26.2","java":">=25","fabric-api":"*"}
 }
