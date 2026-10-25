@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -24,7 +24,7 @@ public final class EnchantmentResonanceService {
     private static final String RESONANCE_ID = AugmentationSurvival.MOD_ID + ":enchantment_resonance";
     private static final ThreadLocal<Deque<Optional<ServerPlayer>>> ACTORS =
             ThreadLocal.withInitial(ArrayDeque::new);
-    private static final Set<ResourceLocation> SAFE_EXTERNAL = new HashSet<>();
+    private static final Set<Identifier> SAFE_EXTERNAL = new HashSet<>();
 
     private EnchantmentResonanceService() {
     }
@@ -34,7 +34,7 @@ public final class EnchantmentResonanceService {
     }
 
     /** External enchantments remain opt-in; vanilla enchantments are always eligible. */
-    public static void allowExternal(ResourceLocation enchantmentId) {
+    public static void allowExternal(Identifier enchantmentId) {
         if (!"minecraft".equals(enchantmentId.getNamespace())) {
             SAFE_EXTERNAL.add(enchantmentId);
         }
@@ -105,7 +105,7 @@ public final class EnchantmentResonanceService {
 
     private static boolean isAllowed(Holder<Enchantment> enchantment) {
         return enchantment.unwrapKey().map(key -> {
-            ResourceLocation id = key.location();
+            Identifier id = key.identifier();
             return "minecraft".equals(id.getNamespace()) || SAFE_EXTERNAL.contains(id);
         }).orElse(false);
     }

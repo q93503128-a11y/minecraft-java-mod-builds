@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.augment.utility.EnchantmentResonanceService;
+import java.util.function.Consumer;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -8,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -19,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
-/** Raises runtime enchantment levels without rewriting the item's stored enchantments. */
+/** Raises runtime enchantment levels without rewriting stored enchantments. */
 @Mixin(EnchantmentHelper.class)
 abstract class EnchantmentResonanceMixin {
     @ModifyArgs(
@@ -110,14 +112,10 @@ abstract class EnchantmentResonanceMixin {
     }
 
     @Inject(
-            method = {
-                    "processProjectileCount(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;I)I",
-                    "getFishingLuckBonus(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;)I",
-                    "getTridentReturnToOwnerAcceleration(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;)I"
-            },
+            method = "processProjectileCount(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;I)I",
             at = @At("HEAD")
     )
-    private static void augmentationSurvival$pushEntityItemInt(
+    private static void augmentationSurvival$pushProjectileCount(
             ServerLevel level,
             ItemStack stack,
             Entity entity,
@@ -128,14 +126,10 @@ abstract class EnchantmentResonanceMixin {
     }
 
     @Inject(
-            method = {
-                    "processProjectileCount(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;I)I",
-                    "getFishingLuckBonus(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;)I",
-                    "getTridentReturnToOwnerAcceleration(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;)I"
-            },
+            method = "processProjectileCount(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;I)I",
             at = @At("RETURN")
     )
-    private static void augmentationSurvival$popEntityItemInt(
+    private static void augmentationSurvival$popProjectileCount(
             ServerLevel level,
             ItemStack stack,
             Entity entity,
@@ -145,14 +139,51 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.popActor();
     }
 
+    @Inject(method = "getFishingLuckBonus", at = @At("HEAD"))
+    private static void augmentationSurvival$pushFishingLuck(
+            ServerLevel level,
+            ItemStack stack,
+            Entity entity,
+            CallbackInfoReturnable<Integer> cir
+    ) {
+        EnchantmentResonanceService.pushRelevantActor(level, stack, entity);
+    }
+
+    @Inject(method = "getFishingLuckBonus", at = @At("RETURN"))
+    private static void augmentationSurvival$popFishingLuck(
+            ServerLevel level,
+            ItemStack stack,
+            Entity entity,
+            CallbackInfoReturnable<Integer> cir
+    ) {
+        EnchantmentResonanceService.popActor();
+    }
+
+    @Inject(method = "getTridentReturnToOwnerAcceleration", at = @At("HEAD"))
+    private static void augmentationSurvival$pushTridentReturn(
+            ServerLevel level,
+            ItemStack stack,
+            Entity entity,
+            CallbackInfoReturnable<Integer> cir
+    ) {
+        EnchantmentResonanceService.pushRelevantActor(level, stack, entity);
+    }
+
+    @Inject(method = "getTridentReturnToOwnerAcceleration", at = @At("RETURN"))
+    private static void augmentationSurvival$popTridentReturn(
+            ServerLevel level,
+            ItemStack stack,
+            Entity entity,
+            CallbackInfoReturnable<Integer> cir
+    ) {
+        EnchantmentResonanceService.popActor();
+    }
+
     @Inject(
-            method = {
-                    "processProjectileSpread(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;F)F",
-                    "getFishingTimeReduction(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;)F"
-            },
+            method = "processProjectileSpread(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;F)F",
             at = @At("HEAD")
     )
-    private static void augmentationSurvival$pushEntityItemFloat(
+    private static void augmentationSurvival$pushProjectileSpread(
             ServerLevel level,
             ItemStack stack,
             Entity entity,
@@ -163,13 +194,10 @@ abstract class EnchantmentResonanceMixin {
     }
 
     @Inject(
-            method = {
-                    "processProjectileSpread(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;F)F",
-                    "getFishingTimeReduction(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;)F"
-            },
+            method = "processProjectileSpread(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/Entity;F)F",
             at = @At("RETURN")
     )
-    private static void augmentationSurvival$popEntityItemFloat(
+    private static void augmentationSurvival$popProjectileSpread(
             ServerLevel level,
             ItemStack stack,
             Entity entity,
@@ -179,10 +207,27 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.popActor();
     }
 
-    @Inject(
-            method = "modifyCrossbowChargingTime(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;F)F",
-            at = @At("HEAD")
-    )
+    @Inject(method = "getFishingTimeReduction", at = @At("HEAD"))
+    private static void augmentationSurvival$pushFishingTime(
+            ServerLevel level,
+            ItemStack stack,
+            Entity entity,
+            CallbackInfoReturnable<Float> cir
+    ) {
+        EnchantmentResonanceService.pushRelevantActor(level, stack, entity);
+    }
+
+    @Inject(method = "getFishingTimeReduction", at = @At("RETURN"))
+    private static void augmentationSurvival$popFishingTime(
+            ServerLevel level,
+            ItemStack stack,
+            Entity entity,
+            CallbackInfoReturnable<Float> cir
+    ) {
+        EnchantmentResonanceService.popActor();
+    }
+
+    @Inject(method = "modifyCrossbowChargingTime", at = @At("HEAD"))
     private static void augmentationSurvival$pushCrossbowOwner(
             ItemStack stack,
             LivingEntity owner,
@@ -192,10 +237,7 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.pushActor(owner);
     }
 
-    @Inject(
-            method = "modifyCrossbowChargingTime(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;F)F",
-            at = @At("RETURN")
-    )
+    @Inject(method = "modifyCrossbowChargingTime", at = @At("RETURN"))
     private static void augmentationSurvival$popCrossbowOwner(
             ItemStack stack,
             LivingEntity owner,
@@ -205,10 +247,7 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.popActor();
     }
 
-    @Inject(
-            method = "getTridentSpinAttackStrength(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)F",
-            at = @At("HEAD")
-    )
+    @Inject(method = "getTridentSpinAttackStrength", at = @At("HEAD"))
     private static void augmentationSurvival$pushTridentSpinOwner(
             ItemStack stack,
             LivingEntity owner,
@@ -217,10 +256,7 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.pushActor(owner);
     }
 
-    @Inject(
-            method = "getTridentSpinAttackStrength(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)F",
-            at = @At("RETURN")
-    )
+    @Inject(method = "getTridentSpinAttackStrength", at = @At("RETURN"))
     private static void augmentationSurvival$popTridentSpinOwner(
             ItemStack stack,
             LivingEntity owner,
@@ -263,10 +299,7 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.popActor();
     }
 
-    @Inject(
-            method = "processAmmoUse(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;I)I",
-            at = @At("HEAD")
-    )
+    @Inject(method = "processAmmoUse", at = @At("HEAD"))
     private static void augmentationSurvival$pushAmmoWeaponOwner(
             ServerLevel level,
             ItemStack weapon,
@@ -277,10 +310,7 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.pushItemOwner(level, weapon);
     }
 
-    @Inject(
-            method = "processAmmoUse(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;I)I",
-            at = @At("RETURN")
-    )
+    @Inject(method = "processAmmoUse", at = @At("RETURN"))
     private static void augmentationSurvival$popAmmoWeaponOwner(
             ServerLevel level,
             ItemStack weapon,
@@ -291,10 +321,7 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.popActor();
     }
 
-    @Inject(
-            method = "getPiercingCount(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)I",
-            at = @At("HEAD")
-    )
+    @Inject(method = "getPiercingCount", at = @At("HEAD"))
     private static void augmentationSurvival$pushPiercingWeaponOwner(
             ServerLevel level,
             ItemStack weapon,
@@ -304,10 +331,7 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.pushItemOwner(level, weapon);
     }
 
-    @Inject(
-            method = "getPiercingCount(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)I",
-            at = @At("RETURN")
-    )
+    @Inject(method = "getPiercingCount", at = @At("RETURN"))
     private static void augmentationSurvival$popPiercingWeaponOwner(
             ServerLevel level,
             ItemStack weapon,
@@ -317,15 +341,12 @@ abstract class EnchantmentResonanceMixin {
         EnchantmentResonanceService.popActor();
     }
 
-    @Inject(
-            method = "onProjectileSpawned",
-            at = @At("HEAD")
-    )
+    @Inject(method = "onProjectileSpawned", at = @At("HEAD"))
     private static void augmentationSurvival$pushProjectileOwner(
             ServerLevel level,
             ItemStack weapon,
             Projectile projectile,
-            java.util.function.Consumer<?> onBreak,
+            Consumer<Item> onBreak,
             CallbackInfo ci
     ) {
         EnchantmentResonanceService.pushRelevantActor(level, weapon, projectile);
@@ -336,7 +357,7 @@ abstract class EnchantmentResonanceMixin {
             ServerLevel level,
             ItemStack weapon,
             Projectile projectile,
-            java.util.function.Consumer<?> onBreak,
+            Consumer<Item> onBreak,
             CallbackInfo ci
     ) {
         EnchantmentResonanceService.popActor();
