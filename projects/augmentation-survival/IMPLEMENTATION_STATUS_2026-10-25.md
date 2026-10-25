@@ -2,7 +2,7 @@
 
 Date: 2026-10-25
 Supersedes: `IMPLEMENTATION_STATUS_2026-10-24.md`
-Status: **146-OF-146 FULL GAMEPLAY RUNTIME / FINAL-EIGHT CHECKPOINT VERIFIED**
+Status: **146-OF-146 FULL GAMEPLAY RUNTIME / FINAL CHECKPOINT VERIFIED**
 
 ## 146-roster implementation count
 
@@ -13,7 +13,7 @@ This count measures whether each canonical augment has a gameplay runtime implem
 - No gameplay runtime: **0 / 146**
 - Not fully implemented: **0 / 146**
 
-The previous `138 / 146` status was held back by stale documentation that incorrectly described the final eight as unresolved. The implementation now has runtime coverage for all eight and the old blocked classification is retired.
+The previous `138 / 146` status was held back by stale documentation that described the final eight as unresolved. Runtime coverage now exists for all eight and the old blocked classification is retired.
 
 ## Final eight — verified runtime coverage
 
@@ -62,6 +62,7 @@ The previous `138 / 146` status was held back by stale documentation that incorr
 - Base cooldown: **8 seconds**.
 - Landing on a tracked platform cancels fall damage only; actual fall distance remains observable to `관성 전환` / `탄성 저장`.
 - Exact placed positions are server-tracked and removed on expiry only when the temporary platform block is still present.
+- Uses the dedicated system-only `augmentation_survival:temporary_platform` block rather than a harvestable vanilla block. It has no item form, is not a player resource source, and uses a dedicated blockstate/model presentation.
 - Integrates with the existing non-Mythic active rules instead of inventing a second cooldown system:
   - `능력 가속`
   - `이중 충전`
@@ -100,7 +101,7 @@ The previous `138 / 146` status was held back by stale documentation that incorr
 
 ## Shared final-eight data contract
 
-`src/main/resources/data/augmentation_survival/augmentation/final_augment_contract.json` now owns the repeatedly tuneable boundaries for the final eight. Runtime code validates the contract at startup through `FinalAugmentTuning`.
+`src/main/resources/data/augmentation_survival/augmentation/final_augment_contract.json` owns the repeatedly tuneable boundaries for the final eight. Runtime code validates the contract at startup through `FinalAugmentTuning`.
 
 This avoids burying balance/feel constants across independent services and allows later playtest tuning without redesigning the effects.
 
@@ -127,25 +128,26 @@ This avoids burying balance/feel constants across independent services and allow
 
 These remain FULL from their earlier verified checkpoints. Their producer-boundary drop contracts and optional Better Combat sweep adapter were not removed or reduced by the final-eight batch.
 
-## Final-eight verification checkpoint
+## Final verified gameplay checkpoint
 
-- Gameplay-code checkpoint: `202ac8cd8119e0353273a88b0ea407e87291d2cc`
-- Final gameplay fix: `fix(augmentation-survival): hook potion diffusion at 26.2 consumption boundary`
-- GitHub Actions: `40171679262` / Build Augmentation Survival Pack **#142**
+- Gameplay-code checkpoint: `d272934ff086fbea1cae266444bb029649b044b6`
+- Final gameplay commit: `feat(augmentation-survival): finalize temporary platform registry runtime`
+- GitHub Actions: `40172108227` / Build Augmentation Survival Pack **#143**
 - Build and pinned-pack inspection: **PASS**
 - Dedicated server smoke: **PASS**
 - Client boot smoke: **PASS**
 - Verification artifact upload: **PASS**
-- Artifact: `augmentation-survival-pack-smoke-142`
-- Artifact ID: `12590247465`
-- Artifact ZIP size: `1118758` bytes
-- Artifact ZIP SHA-256: `536bb116d802ba353f06e3d52eab483d30df280465b4b568d525d92eb574f6e7`
+- Artifact: `augmentation-survival-pack-smoke-143`
+- Artifact ID: `12590348111`
+- Artifact ZIP size: `1121498` bytes
+- Artifact ZIP SHA-256: `0281bcb36f54801bae3ff1dd91ca95182334dbb34e93517a2135b72c5e05ff38`
 
 ### Failed checkpoints read and corrected
 
 - Build #140 failed during compile on Minecraft 26.2 API differences: corrected instant-effect spelling, the 26.2 dye-indexed stained-glass registry family and the existing replay-tuning owner.
 - Build #141 then compiled successfully but failed dedicated-server startup because Minecraft 26.2 no longer executes drinking through `PotionItem.finishUsingItem`. The first real server failure was a Mixin target error. The hook was moved to the verified 26.2 `LivingEntity.completeUsingItem` consumption boundary.
-- Build #142 is the authoritative final gameplay checkpoint for this batch and passed the complete pack verification path.
+- Build #142 passed the complete pack path for the eight gameplay runtimes.
+- After #142, the temporary platform presentation was finished as a dedicated system block rather than a harvestable vanilla stained-glass block. Because this introduced a real registry boundary, the current HEAD was verified again. Build #143 passed build/pack inspection, dedicated-server smoke and client boot smoke.
 
 ## Current implementation set
 
@@ -157,7 +159,7 @@ Future work is therefore no longer “implement the missing augment roster.” R
 
 - CODE REVIEWED: **YES**
 - TESTED: **NO — Gradle test is `NO-SOURCE`; no dedicated automated gameplay test suite was executed for these eight behaviors**
-- BUILD VERIFIED: **YES — `202ac8cd8119e0353273a88b0ea407e87291d2cc`**
+- BUILD VERIFIED: **YES — `d272934ff086fbea1cae266444bb029649b044b6`**
 - JAR PRODUCED: **YES**
 - DEDICATED SERVER SMOKE: **PASS**
 - CLIENT BOOT SMOKE: **PASS**
