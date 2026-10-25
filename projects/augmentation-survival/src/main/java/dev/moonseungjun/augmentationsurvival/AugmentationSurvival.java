@@ -23,6 +23,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.companion.DominationWorldAttachments;
+import dev.moonseungjun.augmentationsurvival.augment.companion.ReviveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityTuning;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
@@ -42,6 +43,7 @@ import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentSer
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.PerceptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
@@ -112,6 +114,8 @@ public final class AugmentationSurvival implements ModInitializer {
         AdvancedActiveAugmentService.initialize();
         AreaAccelerationService.initialize();
         CompanionAugmentService.initialize();
+        ReviveAugmentService.initialize();
+        PerceptionAugmentService.initialize();
         AdvancedWorldAugmentService.initialize();
         ActiveAbilityRouter.initialize();
         CombatExpansionService.initialize();

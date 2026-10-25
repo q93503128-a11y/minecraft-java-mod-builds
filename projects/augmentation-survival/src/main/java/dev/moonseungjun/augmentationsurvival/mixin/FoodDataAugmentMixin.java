@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.combat.AugmentHealingService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,19 +20,15 @@ public abstract class FoodDataAugmentMixin {
     @Unique private int augmentationSurvival$foodBeforeTick;
 
     @Inject(method = "tick", at = @At("HEAD"))
-    private void augmentationSurvival$beforeFoodTick(
-            ServerPlayer player,
-            CallbackInfo ci
-    ) {
+    private void augmentationSurvival$beforeFoodTick(ServerPlayer player, CallbackInfo ci) {
+        AugmentHealingService.beginNaturalHealingContext();
         augmentationSurvival$foodBeforeTick = foodLevel;
         tickTimer += SurvivalAugmentService.consumeExtraNaturalRegenTimerTicks(player, foodLevel);
     }
 
     @Inject(method = "tick", at = @At("TAIL"))
-    private void augmentationSurvival$consumeReserveBeforeVisibleHunger(
-            ServerPlayer player,
-            CallbackInfo ci
-    ) {
+    private void augmentationSurvival$consumeReserveBeforeVisibleHunger(ServerPlayer player, CallbackInfo ci) {
+        AugmentHealingService.endNaturalHealingContext();
         foodLevel = ConsumptionAugmentService.restoreFoodFromReserve(
                 player,
                 augmentationSurvival$foodBeforeTick,

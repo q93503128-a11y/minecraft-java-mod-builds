@@ -8,6 +8,7 @@ import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugment
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.PerceptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -20,10 +21,7 @@ public final class AugmentationPlayerStateService {
 
     public static AugmentationPlayerState state(ServerPlayer player) {
         Objects.requireNonNull(player, "player");
-        return player.getAttachedOrSet(
-                AugmentationAttachments.PLAYER_STATE,
-                AugmentationPlayerState.initial()
-        );
+        return player.getAttachedOrSet(AugmentationAttachments.PLAYER_STATE, AugmentationPlayerState.initial());
     }
 
     public static boolean hasBossFirstKillReward(ServerPlayer player, String bossId) {
@@ -33,31 +31,21 @@ public final class AugmentationPlayerStateService {
     public static boolean markBossFirstKillRewardClaimed(ServerPlayer player, String bossId) {
         AugmentationPlayerState before = state(player);
         AugmentationPlayerState next = before.withBossFirstKillReward(bossId);
-        if (next.equals(before)) {
-            return false;
-        }
+        if (next.equals(before)) return false;
         replace(player, next);
         return true;
     }
 
-    public static AugmentationPlayerState update(
-            ServerPlayer player,
-            UnaryOperator<AugmentationPlayerState> operation
-    ) {
+    public static AugmentationPlayerState update(ServerPlayer player, UnaryOperator<AugmentationPlayerState> operation) {
         Objects.requireNonNull(operation, "operation");
         return replace(player, operation.apply(state(player)));
     }
 
-    public static AugmentationPlayerState replace(
-            ServerPlayer player,
-            AugmentationPlayerState next
-    ) {
+    public static AugmentationPlayerState replace(ServerPlayer player, AugmentationPlayerState next) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(next, "next");
         AugmentationPlayerState current = state(player);
-        if (current.equals(next)) {
-            return current;
-        }
+        if (current.equals(next)) return current;
         player.setAttached(AugmentationAttachments.PLAYER_STATE, next);
         PlayerStatAugmentService.reconcile(player, next);
         MovementAugmentService.reconcile(player, next);
@@ -68,6 +56,7 @@ public final class AugmentationPlayerStateService {
         AdvancedActiveAugmentService.reconcile(player, next);
         ConsumptionAugmentService.syncClient(player, next);
         if (!current.augmentLevels().equals(next.augmentLevels())) {
+            PerceptionAugmentService.syncNow(player);
             ThreatScalingService.observePlayerPower(player, next);
         }
         return next;

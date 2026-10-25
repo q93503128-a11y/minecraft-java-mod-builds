@@ -5,6 +5,7 @@
     "RaidMixin",
     "CombatAugmentMixin",
     "LivingEntityReactiveAugmentMixin",
+    "LivingEntityHealingAugmentMixin",
     "MobEffectTimeStopMixin",
     "ProjectileTimeStopMixin",
     "ProjectileTimeAccelerationMixin",
@@ -47,11 +48,15 @@
     "LivingEntityCompanionDeathMixin",
     "LivingEntityCompanionFriendlyFireMixin",
     "ItemCombinerMenuAccessor",
-    "AnvilForbiddenMagicMixin"
+    "AnvilForbiddenMagicMixin",
+    "EnchantmentMenuAugmentAccessor",
+    "PlayerEnchantSeedAccessor",
+    "EnchantmentMenuRefreshMixin"
   ],
   "client": [
     "LocalPlayerConsumptionMixin",
-    "ClientPhaseShiftCollisionMixin"
+    "ClientPhaseShiftCollisionMixin",
+    "EntityRendererPerceptionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -51,22 +51,13 @@ public final class CompanionAugmentService {
     public static boolean tryDominate(ServerPlayer player) {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         int level = boundedLevel(state, DOMINATION_ID);
-        if (level <= 0) {
-            return false;
-        }
+        if (level <= 0) return false;
         MinecraftServer server = player.level().getServer();
         DominationWorldState worldState = worldState(server);
-        if (worldState.occupied(player.getUUID()) >= AdvancedWorldTuning.current().dominationCap(level)) {
-            return false;
-        }
+        if (worldState.occupied(player.getUUID()) >= AdvancedWorldTuning.current().dominationCap(level)) return false;
         Mob target = findLookTarget(player, AdvancedWorldTuning.current().dominationRange());
-        if (target == null) {
-            return false;
-        }
-        target.setAttached(
-                CompanionEntityAttachments.ENTITY_STATE,
-                CompanionEntityState.dominatedBy(player.getUUID())
-        );
+        if (target == null) return false;
+        target.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.dominatedBy(player.getUUID()));
         target.setPersistenceRequired();
         target.setTarget(null);
         LOADED_DOMINATED.put(target.getUUID(), target);
@@ -75,9 +66,7 @@ public final class CompanionAugmentService {
     }
 
     public static boolean isDominated(Entity entity) {
-        if (!(entity instanceof LivingEntity)) {
-            return false;
-        }
+        if (!(entity instanceof LivingEntity)) return false;
         CompanionEntityState state = entity.getAttached(CompanionEntityAttachments.ENTITY_STATE);
         return state != null && state.ownerId().isPresent();
     }
@@ -92,20 +81,12 @@ public final class CompanionAugmentService {
     }
 
     public static boolean areAllied(Entity first, Entity second) {
-        if (first == second) {
-            return true;
-        }
+        if (first == second) return true;
         Optional<UUID> firstOwner = ownerId(first);
         Optional<UUID> secondOwner = ownerId(second);
-        if (firstOwner.isPresent() && secondOwner.isPresent() && firstOwner.get().equals(secondOwner.get())) {
-            return true;
-        }
-        if (first instanceof ServerPlayer player && secondOwner.map(player.getUUID()::equals).orElse(false)) {
-            return true;
-        }
-        if (second instanceof ServerPlayer player && firstOwner.map(player.getUUID()::equals).orElse(false)) {
-            return true;
-        }
+        if (firstOwner.isPresent() && secondOwner.isPresent() && firstOwner.get().equals(secondOwner.get())) return true;
+        if (first instanceof ServerPlayer player && secondOwner.map(player.getUUID()::equals).orElse(false)) return true;
+        if (second instanceof ServerPlayer player && firstOwner.map(player.getUUID()::equals).orElse(false)) return true;
         if (firstOwner.isPresent() && second instanceof TamableAnimal tamable && tamable.isTame()) {
             LivingEntity owner = tamable.getOwner();
             return owner != null && owner.getUUID().equals(firstOwner.get());
@@ -117,13 +98,10 @@ public final class CompanionAugmentService {
         return false;
     }
 
-    /** Stable hostile classification. Dead dominated companions remain tagged until entity removal. */
     public static boolean isHostileEntity(LivingEntity candidate) {
-        return !isDominated(candidate)
-                && (candidate instanceof Enemy || EntityCompatibilityProfileService.isBoss(candidate));
+        return !isDominated(candidate) && (candidate instanceof Enemy || EntityCompatibilityProfileService.isBoss(candidate));
     }
 
-    /** Player/companion-facing target predicate used by every augmentation target selector. */
     public static boolean isHostileTarget(Entity source, LivingEntity candidate) {
         return candidate != source
                 && !candidate.isDeadOrDying()
@@ -134,14 +112,21 @@ public final class CompanionAugmentService {
     /** Called from the shared LivingEntity death boundary; owner need not be online. */
     public static void onActualDeath(LivingEntity entity) {
         Optional<UUID> owner = ownerId(entity);
-        if (owner.isEmpty() || !(entity.level() instanceof ServerLevel level)) {
-            return;
-        }
+        if (owner.isEmpty() || !(entity.level() instanceof ServerLevel level)) return;
         LOADED_DOMINATED.remove(entity.getUUID());
-        // Preserve the ownership marker on the dead entity until removal so downstream kill/reward
-        // listeners can still classify it as a companion rather than a hostile reward source.
         MinecraftServer server = level.getServer();
         setWorldState(server, worldState(server).withDelta(owner.get(), -1));
+    }
+
+    /** Reclaims the domination occupancy slot and AI tracking after a successful permanent-companion revive. */
+    public static void onRevivedCompanion(Mob mob) {
+        Optional<UUID> owner = ownerId(mob);
+        if (owner.isEmpty() || !(mob.level() instanceof ServerLevel level)) return;
+        mob.setPersistenceRequired();
+        mob.setTarget(null);
+        LOADED_DOMINATED.put(mob.getUUID(), mob);
+        MinecraftServer server = level.getServer();
+        setWorldState(server, worldState(server).withDelta(owner.get(), 1));
     }
 
     private static void tickDominatedCompanions(MinecraftServer server) {
@@ -150,14 +135,10 @@ public final class CompanionAugmentService {
                 LOADED_DOMINATED.remove(mob.getUUID());
                 continue;
             }
-            if (!isDominated(mob) || mob.isDeadOrDying()) {
-                continue;
-            }
+            if (!isDominated(mob) || mob.isDeadOrDying()) continue;
             mob.setPersistenceRequired();
             Optional<UUID> owner = ownerId(mob);
-            if (owner.isEmpty()) {
-                continue;
-            }
+            if (owner.isEmpty()) continue;
             LivingEntity target = mob.getTarget();
             if (target != null && !isHostileTarget(mob, target)) {
                 mob.setTarget(null);
@@ -165,9 +146,7 @@ public final class CompanionAugmentService {
             }
             if (target == null) {
                 LivingEntity next = findNearestHostile(mob, owner.get());
-                if (next != null) {
-                    mob.setTarget(next);
-                }
+                if (next != null) mob.setTarget(next);
             }
         }
     }
@@ -177,9 +156,7 @@ public final class CompanionAugmentService {
         List<LivingEntity> candidates = companion.level().getEntitiesOfClass(
                 LivingEntity.class,
                 companion.getBoundingBox().inflate(range),
-                candidate -> candidate != companion
-                        && !isOwnedBy(candidate, ownerId)
-                        && isHostileTarget(companion, candidate)
+                candidate -> candidate != companion && !isOwnedBy(candidate, ownerId) && isHostileTarget(companion, candidate)
         );
         candidates.sort(Comparator.comparingDouble(companion::distanceToSqr));
         return candidates.isEmpty() ? null : candidates.getFirst();
@@ -206,14 +183,10 @@ public final class CompanionAugmentService {
         for (Mob candidate : nearby) {
             Vec3 toTarget = candidate.getBoundingBox().getCenter().subtract(eye);
             double along = toTarget.dot(look);
-            if (!(along > 0.0D) || along > range) {
-                continue;
-            }
+            if (!(along > 0.0D) || along > range) continue;
             double perpendicularSq = Math.max(0.0D, toTarget.lengthSqr() - along * along);
             double aimRadius = Math.max(0.75D, candidate.getBbWidth() * 0.75D);
-            if (perpendicularSq > aimRadius * aimRadius) {
-                continue;
-            }
+            if (perpendicularSq > aimRadius * aimRadius) continue;
             double score = perpendicularSq + along * 1.0E-4D;
             if (score < bestScore) {
                 bestScore = score;
@@ -224,10 +197,7 @@ public final class CompanionAugmentService {
     }
 
     private static DominationWorldState worldState(MinecraftServer server) {
-        return server.overworld().getAttachedOrSet(
-                DominationWorldAttachments.STATE,
-                DominationWorldState.initial()
-        );
+        return server.overworld().getAttachedOrSet(DominationWorldAttachments.STATE, DominationWorldState.initial());
     }
 
     private static void setWorldState(MinecraftServer server, DominationWorldState state) {
@@ -239,7 +209,5 @@ public final class CompanionAugmentService {
         return level <= 0 ? 0 : Math.min(level, AugmentCatalog.require(augmentId).maxLevel());
     }
 
-    private static String id(String path) {
-        return AugmentationSurvival.MOD_ID + ":" + path;
-    }
+    private static String id(String path) { return AugmentationSurvival.MOD_ID + ":" + path; }
 }
