@@ -7,12 +7,12 @@ import dev.moonseungjun.augmentationsurvival.augment.companion.ReviveAugmentServ
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Unified active-slot router. Cooldown actives stay in their shared engines; special modes route here. */
+/** Server-authoritative 10-slot active augment router and loadout authority. */
 public final class ActiveAbilityRouter {
     private static final String THREAT_SUPPRESSION_ID = id("threat_suppression");
     private static final String INSTANT_MINING_ID = id("instant_mining");
@@ -43,26 +43,21 @@ public final class ActiveAbilityRouter {
             RETURN_HOME_ID, DOMINATION_ID, GIGANTIFICATION_ID, AREA_ACCELERATION_ID, REVIVE_ID,
             TIME_STOP_ID, DIVINE_PUNISHMENT_ID
     );
+    private static final Set<String> ALL_SUPPORTED = Set.copyOf(ALL_ORDER);
 
-    private ActiveAbilityRouter() {
-    }
+    private ActiveAbilityRouter() { }
 
     public static void initialize() {
         CloneActiveService.initialize();
-        for (String augmentId : new String[]{
-                THREAT_SUPPRESSION_ID, INSTANT_MINING_ID, DEATH_RETURN_ID, RETURN_HOME_ID,
-                REWIND_ID, TIME_ACCELERATION_ID, CLONE_ID, SHIELD_THROW_ID, TEMPORARY_PLATFORM_ID,
-                PHASE_SHIFT_ID, DOMINATION_ID, GIGANTIFICATION_ID, AREA_ACCELERATION_ID, REVIVE_ID,
-                TIME_STOP_ID, DIVINE_PUNISHMENT_ID
-        }) AugmentCatalog.require(augmentId);
+        for (String augmentId : ALL_ORDER) AugmentCatalog.require(augmentId);
     }
 
     public static boolean tryUseSlot(ServerPlayer player, int slotIndex) {
         if (slotIndex < 0 || slotIndex >= 10 || player.isDeadOrDying() || CombatAugmentService.isActionLocked(player)) return false;
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        List<String> resolved = resolveSlots(state, ALL_ORDER);
-        if (slotIndex >= resolved.size()) return false;
-        String abilityId = resolved.get(slotIndex);
+        List<String> slots = resolvedSlots(state);
+        String abilityId = slots.get(slotIndex);
+        if (abilityId.isBlank()) return false;
         if (abilityId.equals(THREAT_SUPPRESSION_ID)) return toggle(player, state, THREAT_SUPPRESSION_ID, THREAT_TOGGLE_KEY);
         if (abilityId.equals(INSTANT_MINING_ID)) return toggle(player, state, INSTANT_MINING_ID, INSTANT_MINING_TOGGLE_KEY);
         if (abilityId.equals(DEATH_RETURN_ID)) return DeathReturnAugmentService.tryUse(player);
@@ -79,9 +74,65 @@ public final class ActiveAbilityRouter {
         if (abilityId.equals(RETURN_HOME_ID) || abilityId.equals(TIME_STOP_ID) || abilityId.equals(DIVINE_PUNISHMENT_ID)) {
             return SpecialActiveAugmentService.tryUse(player, abilityId);
         }
-        List<String> legacy = resolveSlots(state, LEGACY_ORDER);
-        int legacySlot = legacy.indexOf(abilityId);
+        int legacySlot = legacyResolved(state).indexOf(abilityId);
         return legacySlot >= 0 && ActiveAbilityService.tryUseSlot(player, legacySlot);
+    }
+
+    public static List<String> supportedIds() { return ALL_ORDER; }
+
+    public static List<String> ownedActiveIds(AugmentationPlayerState state) {
+        List<String> owned = new ArrayList<>();
+        for (String id : ALL_ORDER) if (boundedLevel(state, id) > 0) owned.add(id);
+        return List.copyOf(owned);
+    }
+
+    public static List<String> resolvedSlots(AugmentationPlayerState state) {
+        List<String> result = new ArrayList<>(10);
+        for (int i = 0; i < 10; i++) result.add("");
+        if (state.activeSlots().isEmpty()) {
+            int index = 0;
+            for (String id : ALL_ORDER) {
+                if (boundedLevel(state, id) > 0 && index < 10) result.set(index++, id);
+            }
+            return result;
+        }
+        Set<String> used = new HashSet<>();
+        for (int i = 0; i < Math.min(10, state.activeSlots().size()); i++) {
+            String id = state.activeSlots().get(i);
+            if (id != null && ALL_SUPPORTED.contains(id) && boundedLevel(state, id) > 0 && used.add(id)) result.set(i, id);
+        }
+        return result;
+    }
+
+    public static boolean assignSlot(ServerPlayer player, int slot, String augmentId) {
+        if (slot < 0 || slot >= 10 || augmentId == null || !ALL_SUPPORTED.contains(augmentId)) return false;
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        if (boundedLevel(state, augmentId) <= 0) return false;
+        List<String> slots = new ArrayList<>(resolvedSlots(state));
+        for (int i = 0; i < slots.size(); i++) if (augmentId.equals(slots.get(i))) slots.set(i, "");
+        slots.set(slot, augmentId);
+        AugmentationPlayerStateService.replace(player, state.withActiveSlots(slots));
+        return true;
+    }
+
+    public static boolean clearSlot(ServerPlayer player, int slot) {
+        if (slot < 0 || slot >= 10) return false;
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        List<String> slots = new ArrayList<>(resolvedSlots(state));
+        slots.set(slot, "");
+        AugmentationPlayerStateService.replace(player, state.withActiveSlots(slots));
+        return true;
+    }
+
+    public static boolean swapSlots(ServerPlayer player, int first, int second) {
+        if (first < 0 || first >= 10 || second < 0 || second >= 10 || first == second) return false;
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        List<String> slots = new ArrayList<>(resolvedSlots(state));
+        String value = slots.get(first);
+        slots.set(first, slots.get(second));
+        slots.set(second, value);
+        AugmentationPlayerStateService.replace(player, state.withActiveSlots(slots));
+        return true;
     }
 
     public static boolean isThreatSuppressionEnabled(ServerPlayer player) {
@@ -101,12 +152,10 @@ public final class ActiveAbilityRouter {
         return true;
     }
 
-    private static List<String> resolveSlots(AugmentationPlayerState state, List<String> supportedOrder) {
-        Set<String> supported = Set.copyOf(supportedOrder);
-        LinkedHashSet<String> resolved = new LinkedHashSet<>();
-        for (String configured : state.activeSlots()) if (supported.contains(configured) && boundedLevel(state, configured) > 0) resolved.add(configured);
-        for (String fallback : supportedOrder) if (boundedLevel(state, fallback) > 0) resolved.add(fallback);
-        return new ArrayList<>(resolved);
+    private static List<String> legacyResolved(AugmentationPlayerState state) {
+        List<String> resolved = new ArrayList<>();
+        for (String id : LEGACY_ORDER) if (boundedLevel(state, id) > 0) resolved.add(id);
+        return resolved;
     }
 
     private static int boundedLevel(AugmentationPlayerState state, String augmentId) {
