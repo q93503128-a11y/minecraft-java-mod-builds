@@ -16,6 +16,7 @@ import java.util.Set;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.PowerParticleOption;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -211,7 +212,7 @@ public final class AuthorityTheftService {
             hurt(player, enemy, scaledDamage(player, 0.8D, 7.0D));
         }
         player.level().playSound(null, player.blockPosition(), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.PLAYERS, 0.75F, 1.2F);
-        particles(player, ParticleTypes.DRAGON_BREATH, 120, 8.0D);
+        particles(player, PowerParticleOption.create(ParticleTypes.DRAGON_BREATH, 1.0F), 120, 8.0D);
     }
 
     /** Time Guardian: blink pressure + temporal distortion AoE + slowed primary target. */
@@ -513,7 +514,7 @@ public final class AuthorityTheftService {
             hurt(player, enemy, scaledDamage(player, multiplier, 8.0D));
             pushAway(player, enemy, 1.0D, 0.4D);
         }
-        player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.9F, 0.9F);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.9F, 0.9F);
         particles(player, ParticleTypes.CRIT, 120, 6.0D);
     }
 
