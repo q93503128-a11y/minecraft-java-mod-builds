@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.companion;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -95,7 +96,7 @@ public final class CombatCloneEntity extends PathfinderMob {
     private void copyPresentationSnapshot(ServerPlayer owner) {
         for (EquipmentSlot slot : PRESENTATION_SLOTS) {
             ItemStack equipped = owner.getItemBySlot(slot);
-            setItemSlot(slot, equipped.isEmpty() ? ItemStack.EMPTY : equipped.copy());
+            setItemSlot(slot, presentationCopy(equipped));
             setDropChance(slot, 0.0F);
         }
         setLeftHanded(owner.getMainArm() == HumanoidArm.LEFT);
@@ -104,6 +105,17 @@ public final class CombatCloneEntity extends PathfinderMob {
             if (owner.isModelPartShown(part)) modelParts |= part.getMask();
         }
         entityData.set(MODEL_PARTS, modelParts);
+    }
+
+    /** Keeps the item model/glint but prevents copied equipment from changing the fixed combat snapshot. */
+    private static ItemStack presentationCopy(ItemStack source) {
+        if (source.isEmpty()) return ItemStack.EMPTY;
+        boolean glint = source.hasFoil();
+        ItemStack copy = source.copy();
+        copy.remove(DataComponents.ATTRIBUTE_MODIFIERS);
+        copy.remove(DataComponents.ENCHANTMENTS);
+        if (glint) copy.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        return copy;
     }
 
     public UUID ownerId() {
