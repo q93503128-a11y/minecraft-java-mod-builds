@@ -2,184 +2,162 @@
 
 Date: 2026-10-25
 Supersedes: `IMPLEMENTATION_STATUS_2026-10-24.md`
-Status: M1C FUNCTIONAL BASELINE / 138-OF-146 FULL GAMEPLAY RUNTIME / AUTHORITY THEFT BOSS-COVERAGE CHECKPOINT VERIFIED
+Status: **146-OF-146 FULL GAMEPLAY RUNTIME / FINAL-EIGHT CHECKPOINT VERIFIED**
 
 ## 146-roster implementation count
 
-This count measures whether the canonical gameplay effect has a runtime implementation. It does **not** mean final VFX/UI/audio polish or live gameplay testing is complete.
+This count measures whether each canonical augment has a gameplay runtime implementation. It does **not** mean final VFX/UI/audio polish or live gameplay testing is complete.
 
-- Fully implemented gameplay runtime: **138 / 146**
+- Fully implemented gameplay runtime: **146 / 146**
 - Partially implemented: **0 / 146**
-- Not fully implemented: **8 / 146**
-- No gameplay runtime yet: **8 / 146**
-- `공간 연결` and `권능 탈취` are now FULL for canonical gameplay runtime coverage.
-- `분신`, `풍요` and `휩쓸기 강화` remain FULL.
+- No gameplay runtime: **0 / 146**
+- Not fully implemented: **0 / 146**
 
-## Verified FULL runtime notes
+The previous `138 / 146` status was held back by stale documentation that incorrectly described the final eight as unresolved. The implementation now has runtime coverage for all eight and the old blocked classification is retired.
 
-### `전리품 챙기기`
+## Final eight — verified runtime coverage
 
-`LivingEntity.dropFromLootTable` wraps only the killed entity's final entity-loot-table `Consumer<ItemStack>`. One canonical **5% / 10% / 15%** roll duplicates that exact loot-table bundle. Nearby drops, another mob's drops, equipment drops and unrelated custom death drops cannot be captured accidentally. Player victims, dominated companions, configured bosses and augment cores remain excluded.
+### `손재주` (`dexterity`) — FULL
 
-### `풍요`
+- Server-side direct block-break boundary.
+- Applies only to the data-driven `augmentation_survival:dexterity_gathering` whitelist tag.
+- Eligible non-combat gathering drops receive exactly one additional stackable drop at **10% / 20% / 30%**.
+- The whitelist is data-driven so compatible gatherables can be extended without changing Java code.
 
-`풍요` duplicates the exact final compatible ordinary-drop stack at the producer boundary rather than scanning nearby `ItemEntity` objects.
+### `물약 확산` (`potion_diffusion`) — FULL
 
-- Direct mining / direct harvest: final stacks emitted through `Block.popResource` are duplicated for the server player owning the active direct `destroyBlock` call. Derived ResourceHarvestService breaks are excluded.
-- Fishing: the actual final fishing loot list is duplicated without re-rolling the fishing loot table.
-- Normal-mob direct kill: the killed entity's exact final loot-table consumer is wrapped and root-direct player provenance is required.
-- Cores, explicit `augmentation_survival:abundance_excluded` entries, non-stackable/damageable equipment and custom-data/name/lore stacks remain excluded.
+- Hooks the Minecraft 26.2 `LivingEntity.completeUsingItem` consumable boundary rather than the removed old `PotionItem.finishUsingItem` path.
+- Only a directly consumed stack carrying `POTION_CONTENTS` can start diffusion.
+- Only beneficial effects are copied.
+- Radius: **8 blocks**.
+- Continuous effect duration: **25% / 40% / 55%** of the source duration.
+- Instant beneficial effect magnitude: **25% / 40% / 55%**.
+- Valid recipients are allied players/teams plus player-owned or dominated combat companions.
+- Copied effects do not recurse because diffusion is only triggered by the direct item-consumption boundary.
 
-### `휩쓸기 강화`
+### `탄성 저장` (`elastic_storage`) — FULL
 
-Vanilla sweep expansion and the optional Better Combat 3.2.2 adapter were already implemented and full-pack smoke-verified in Build #81. Live combat feel and multiplayer behavior remain untested.
+- Tracks actual server fall distance rather than post-mitigation fall damage.
+- A real fall of at least **4 blocks** stores the fall for **3 seconds**.
+- The next ordinary ground jump consumes the stored value.
+- Level coefficients return **30% / 60% / 100%** of the stored fall-force conversion.
+- Water/climb interruptions clear the current fall observation rather than fabricating a landing.
+- The velocity conversion is data-driven in `final_augment_contract.json` so physical feel can be tuned without changing the gameplay contract.
+- Landing on `임시 발판` still records the actual fall before fall damage is cancelled, preserving the intended interaction.
+
+### `탄도 장막` (`ballistic_barrier`) — FULL
+
+- Server-owned periodic projectile scan only; no every-tick full-radius scan.
+- Radius: **6 blocks**.
+- Pulse interval: **3.0 / 2.5 / 2.0 seconds**.
+- Destroys at most **1 / 2 / 3** nearest hostile projectiles per pulse.
+- Projectile hostility is based on the owner relationship. Player/allied/reflected projectiles are not destroyed as hostile shots.
+- Includes restrained shield-block feedback when a projectile is intercepted.
+
+### `임시 발판` (`temporary_platform`) — FULL
+
+- Registered in the shared active-slot router.
+- Creates a **3×3** temporary platform beneath the player without replacing occupied world blocks.
+- Base duration: **6 seconds**.
+- Base cooldown: **8 seconds**.
+- Landing on a tracked platform cancels fall damage only; actual fall distance remains observable to `관성 전환` / `탄성 저장`.
+- Exact placed positions are server-tracked and removed on expiry only when the temporary platform block is still present.
+- Integrates with the existing non-Mythic active rules instead of inventing a second cooldown system:
+  - `능력 가속`
+  - `이중 충전`
+  - `전투 순환`
+  - `연장전`
+  - `재연`
+
+### `생명 연결` (`life_link`) — FULL
+
+- A valid root-direct hit creates one current link group for that player.
+- Group = directly hit hostile plus nearest compatible hostiles, maximum **4 total**.
+- Link radius: **8 blocks**.
+- Duration: **6 seconds**.
+- When any linked target takes compatible damage, **40%** of that actual damage is copied to the other living linked targets.
+- Shared damage runs under dedicated `CombatProvenance.LIFE_LINK`, so it cannot recursively re-share itself or satisfy root-direct kill requirements.
+- `SPECIAL_PERCENT_HP` damage is explicitly excluded from sharing, preserving the `천벌` contract.
+
+### `작아지기` (`shrink`) — FULL
+
+- Holding crouch for the configured short hold changes the player's actual `SCALE` attribute to **50%** and refreshes dimensions.
+- The default data contract currently uses a **1.0-second / 20-tick** hold boundary.
+- Visual size, collision box and combat hitbox therefore use the same underlying Minecraft scale.
+- Releasing crouch attempts to restore normal size.
+- If the restored hitbox would collide, the player remains safely shrunk instead of suffocating inside blocks.
+- `거대화` and `작아지기` are prevented from persisting as stacked scale modifiers; entering gigantification removes the shrink modifier and performs a nearby vertical safety correction when required.
+
+### `벽치기` (`wall_slam`) — FULL
+
+- A root-direct melee hit records one server-owned knockback collision window for that target.
+- Only the player who created that qualifying knockback owns the window.
+- Horizontal solid-block collision within the window consumes it once.
+- Additional damage is **30% / 60% / 100%** of the originating direct attack reference damage.
+- The default data contract currently uses a **1.0-second / 20-tick** collision window and a small minimum horizontal-motion threshold to reject stationary/environmental contacts.
+- Derived wall damage is non-root provenance and cannot create another wall-slam event.
+- Increased knockback such as `거대화` naturally improves the chance of reaching a wall without creating a special-case duplicate damage path.
+
+## Shared final-eight data contract
+
+`src/main/resources/data/augmentation_survival/augmentation/final_augment_contract.json` now owns the repeatedly tuneable boundaries for the final eight. Runtime code validates the contract at startup through `FinalAugmentTuning`.
+
+This avoids burying balance/feel constants across independent services and allows later playtest tuning without redesigning the effects.
+
+## Other major FULL runtime checkpoints retained
 
 ### `분신`
 
-`분신` has the canonical gameplay runtime rather than the earlier partial attack-attribute approximation.
-
-- Registered custom `CombatCloneEntity`; no zombie or armor-stand shell.
-- Server-owned autonomous hostile-target melee AI.
-- 20-second lifetime, activation-time 50% max-health snapshot and 60-second base cooldown.
-- Activation-time offensive snapshot includes the player's current attack attribute plus the project's target-independent outgoing combat package used by `keen_edge`, `last_strength`, `speed_conversion`, `brawl`, `glass_cannon` and the currently active Berserk bonus before applying the canonical 60% clone multiplier.
-- Target-dependent future-enemy conditions are deliberately not frozen into the activation snapshot.
-- Copied hand/armor stacks are presentation copies: functional attribute modifiers and enchantments are removed from the clone copy while visual glint can be retained, preventing double application of combat stats.
-- Owner UUID and player-model-part mask are synchronized; actual owner skin lookup, wide/slim `PlayerModel` selection, hat/jacket/sleeve/pants toggles, visible equipment and handedness are retained.
-- Equipment drop chance is zero and item pickup is disabled.
-- Clone damage provenance remains non-player-root, so clone combat cannot satisfy root-direct kill requirements such as boss-first-kill or authority theft.
+- Custom `CombatCloneEntity`, server AI, 20-second lifetime, 50% activation max-health snapshot, 60% combat snapshot, 60-second cooldown.
+- Actual owner skin/model-parts, slim/wide model selection, visible presentation-only equipment and handedness.
+- Clone damage remains non-player-root, so it cannot satisfy direct-kill progression or authority-theft requirements.
 
 ### `공간 연결`
 
-`공간 연결` has both the persistent server-owned network and a world-readable permanent gate object.
-
-- Multiple permanent gates with stable IDs and save-wide persistent Fabric attachment state.
-- Unlimited-distance and cross-dimension travel.
-- Personal gates plus explicit per-player sharing/revocation.
-- Naming, search, favorites and per-player default destination.
-- Dedicated rebindable `K` key and server-authoritative snapshot/action protocol.
-- Search-first control screen with own/shared distinction, favorite/default markers, pagination and register/rename/delete/share/revoke/default/teleport workflows.
-- Destination chunk loading and collision-safe landing; obstructed destinations fail rather than forcing entities into blocks.
-- Root-vehicle/passenger transfer plus nearby dominated and player-tamed companion transfer with individual safe-placement checks.
-- Registering creates an actual `augmentation_survival:spatial_gate` world anchor beside the player rather than replacing the occupied block.
-- The anchor uses a dedicated multi-element world model with dark frame, amethyst pylons and luminous core and is system-created rather than exposed as a normal placeable item.
-- Right-clicking the gate opens the Spatial Link network.
-- Gate deletion removes the physical anchor; travel can restore a missing saved anchor when its saved block is clear.
-- Registration, deletion and travel have portal/beacon/teleport feedback.
-
-`공간 연결` is **FULL for canonical gameplay runtime coverage**. Physical model quality, teleport feel, UI composition, mount/companion behavior and multiplayer permissions still require real playtesting.
+- Persistent multi-gate network, cross-dimension travel, personal/shared permissions, naming/search/favorites/default destination, physical world anchors and server-authoritative UI protocol.
+- Root vehicle/passengers and compatible nearby companions transfer with safe-placement checks.
 
 ### `권능 탈취`
 
-`권능 탈취` now covers every boss identity authored by the current compatibility profile and the pinned boss-content dependencies, so the Mythic runtime is no longer partial.
+- Stable first-direct-kill authority unlocks, dedicated authority key, one 120-second global release cooldown and sequential release of every stolen package.
+- Current supported packages: **24** = Vanilla 2 + Chrono Dawn 6 + World Bosses 11 + pinned MCEndgame 1.7.0+26.2 bosses 5.
+- Authority damage is non-root `AUTHORITY` provenance and cannot recursively steal new authority.
 
-Core runtime:
+### `풍요` / `전리품 챙기기` / `휩쓸기 강화`
 
-- Exact root-direct player kill provenance is required.
-- The first supported direct boss kill permanently adds a stable authority ID to `stolen_authority_boss_ids`; repeated kills do not duplicate it.
-- Dedicated rebindable `J` key; authorities do not consume any of the ten normal active slots.
-- One activation releases **all currently stolen supported boss packages in sequence**.
-- One overall 120-second server-owned cooldown is applied after a successful release.
-- Authority damage runs under `CombatProvenance.AUTHORITY`, so stolen-power damage cannot recursively satisfy root-direct boss-kill or authority-theft requirements.
-- Damage analogs reuse the project's combat snapshot boundary instead of introducing a separate unscaled damage progression path.
+These remain FULL from their earlier verified checkpoints. Their producer-boundary drop contracts and optional Better Combat sweep adapter were not removed or reduced by the final-eight batch.
 
-Current supported package coverage: **24 boss packages**.
+## Final-eight verification checkpoint
 
-#### Vanilla — 2
-
-- Wither — three-target Wither pressure, close detonation and regeneration pulse.
-- Ender Dragon — charge/knockback pressure and dragon-breath frontal cone.
-
-#### Chrono Dawn — 6
-
-- Time Guardian
-- Chronos Warden
-- Clockwork Colossus
-- Temporal Phantom
-- Entropy Keeper
-- Time Tyrant
-
-These packages mirror the inspected pinned 26.2 boss identities: temporal slow/blink/AoE pressure, stone stance/ground slam, overcharge/repair/gear pressure/shockwave, phase/warp/blink/temporary echoes, decay/rot/burst and Time Tyrant stop/acceleration/AoE/reversal-style recovery.
-
-#### World Bosses — 11
-
-- Sylvaron — root/spore pressure
-- Aureon — Thunder Cage/storm pressure
-- Nekhraz — sandstorm/burrow pressure
-- Varkhul — Infernal Chains/Flame Prison pressure
-- Morvath — Fear Pulse/Soul Drain
-- Elyndra — void tether/rift pressure
-- Astrael — Primordial Chains/elemental shift/Cataclysm Nova
-- Shadow King — soul bolt/Shadow Step/shadow-warrior/darkness pressure
-- Dragon Mother — fire breath/tail sweep/aerial-fire/brood pressure
-- Storm Griffin — Wing Gust/lightning pressure
-- Shadow Weaver — binding threads/clones/puppet-style pressure/protective veil
-
-#### MCEndgame 1.7.0+26.2 — 5
-
-The pinned MCEndgame release was inspected directly. Its authored dungeon boss pool is Arachne, Bonecrusher, Elf Duelist, Beakburn and Beastweaver. The compatibility layer still uses MCEndgame's runtime `mcendgame$isDungeonBoss` accessor as the boss gate, but Authority Theft now resolves the killed entity's registry ID into a stable per-boss authority package rather than storing one generic MCEndgame ID.
-
-- Arachne — web-shot pressure, source three-pull hook behavior and 4x3 frontal melee sweep identity.
-- Bonecrusher — teleport pressure, unblockable slam and spin pressure.
-- Elf Duelist — rapid blade chain/backflip motion plus the source 50% projectile-deflection behavior with the inspected 100-degree threshold.
-- Beakburn — pounce, Wind Burst, 70-degree Flame Breath and source-style fire-geyser field.
-- Beastweaver — beast swipe, elephant stomp, vine/control pressure, wolf-pack echoes and rhino-charge pressure; summoned player analog echoes use the inspected wolf health/damage identity.
-
-The MCEndgame package mapping is based on release commit `fb562d8ae1562b266908e556e1cba3573b5b1d7f` (`Release 1.7.0`) corresponding to the project's pinned 26.2 generation, not the later 26.3 port.
-
-`권능 탈취` is therefore **FULL for canonical gameplay runtime coverage**. This does not claim exact original boss-entity replication, final VFX/audio polish, or live combat feel; these are player-usable authority analogs preserving the inspected boss identities and major combat boundaries.
-
-## Verified gameplay checkpoint
-
-- Gameplay-code checkpoint: `0c87eb22fa4fb581008db0408a0fe94d8617c9c7`
-- Feature commit: `4bacef6a6673cdb5e679ca897f42dbe0c5e5b8a3` — `feat(augmentation-survival): complete authority boss package coverage`
-- Final gameplay fix: `0c87eb22fa4fb581008db0408a0fe94d8617c9c7` — `fix(augmentation-survival): align authority effects with 26.2 APIs`
-- GitHub Actions: `40169415333` / Build Augmentation Survival Pack #139
+- Gameplay-code checkpoint: `202ac8cd8119e0353273a88b0ea407e87291d2cc`
+- Final gameplay fix: `fix(augmentation-survival): hook potion diffusion at 26.2 consumption boundary`
+- GitHub Actions: `40171679262` / Build Augmentation Survival Pack **#142**
 - Build and pinned-pack inspection: **PASS**
 - Dedicated server smoke: **PASS**
 - Client boot smoke: **PASS**
 - Verification artifact upload: **PASS**
-- Artifact: `augmentation-survival-pack-smoke-139`
-- Artifact ID: `12588997703`
-- Artifact ZIP size: `1068027` bytes
-- Artifact ZIP SHA-256: `38957ef89b32963ec9136e871d81714e0bed9e7d59b3b46cb73436c5448dac03`
+- Artifact: `augmentation-survival-pack-smoke-142`
+- Artifact ID: `12590247465`
+- Artifact ZIP size: `1118758` bytes
+- Artifact ZIP SHA-256: `536bb116d802ba353f06e3d52eab483d30df280465b4b568d525d92eb574f6e7`
 
-Build #138 failed during compile on two Minecraft 26.2 API type boundaries: `DRAGON_BREATH` requires a `PowerParticleOption`, and `GENERIC_EXPLODE` is a registry holder requiring `.value()` at this call site. The first real failure was read from the job log, both issues were fixed together, and Build #139 passed the complete pack verification path.
+### Failed checkpoints read and corrected
 
-## CI latency correction
+- Build #140 failed during compile on Minecraft 26.2 API differences: corrected instant-effect spelling, the 26.2 dye-indexed stained-glass registry family and the existing replay-tuning owner.
+- Build #141 then compiled successfully but failed dedicated-server startup because Minecraft 26.2 no longer executes drinking through `PotionItem.finishUsingItem`. The first real server failure was a Mixin target error. The hook was moved to the verified 26.2 `LivingEntity.completeUsingItem` consumption boundary.
+- Build #142 is the authoritative final gameplay checkpoint for this batch and passed the complete pack verification path.
 
-The smoke workflow optimization from `71a54560e18cd60dd1b3f572c1d6d332845f0c07` is now **workflow-runtime verified by Build #139**.
+## Current implementation set
 
-- Server smoke watches the existing fatal signatures and readiness markers, keeps a short post-ready soak, and terminates the isolated game process group after readiness.
-- Client smoke likewise exits after a real client-initialization marker and short soak.
-- The original 180s/120s values remain startup deadlines rather than mandatory waits.
-- Future implementation batches should use one meaningful gameplay checkpoint for CI rather than repeatedly triggering the full pack smoke for tiny edits.
+There are **no remaining NO-RUNTIME or PARTIAL augments in the 146-entry roster**.
 
-## Remaining implementation set
-
-### Partial — 0
-
-There are no remaining partially implemented augments in the 146-entry roster.
-
-### Explicitly underspecified / blocked — 8
-
-These are the only remaining no-runtime augments. Their missing canonical boundaries must be fixed before implementation; do not invent values merely to increase the completion count.
-
-- `손재주` — gathering whitelist
-- `물약 확산` — radius
-- `탄성 저장` — block distance → propulsion mapping
-- `탄도 장막` — period / range / per-cycle projectile-destruction count
-- `임시 발판` — duration / cooldown
-- `생명 연결` — auto-link conditions / target count / range / duration / share ratio
-- `작아지기` — crouch hold duration
-- `벽치기` — collision time / criteria
-
-Once those eight boundaries are canonically fixed, they can be implemented as one large batch rather than one augment per checkpoint.
+Future work is therefore no longer “implement the missing augment roster.” Remaining work is quality work: actual playtesting, balance tuning, VFX/audio/UI refinement, edge-case validation and multiplayer verification.
 
 ## Validation labels
 
 - CODE REVIEWED: **YES**
-- TESTED: **NO — no dedicated automated gameplay test suite exists for this checkpoint**
-- BUILD VERIFIED: **YES — `0c87eb22fa4fb581008db0408a0fe94d8617c9c7`**
+- TESTED: **NO — Gradle test is `NO-SOURCE`; no dedicated automated gameplay test suite was executed for these eight behaviors**
+- BUILD VERIFIED: **YES — `202ac8cd8119e0353273a88b0ea407e87291d2cc`**
 - JAR PRODUCED: **YES**
 - DEDICATED SERVER SMOKE: **PASS**
 - CLIENT BOOT SMOKE: **PASS**
