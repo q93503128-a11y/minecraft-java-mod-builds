@@ -20,6 +20,7 @@ public final class ActiveAbilityRouter {
     private static final String RETURN_HOME_ID = id("return_home");
     private static final String REWIND_ID = id("rewind");
     private static final String TIME_ACCELERATION_ID = id("time_acceleration");
+    private static final String CLONE_ID = CloneActiveService.CLONE_ID;
     private static final String SHIELD_THROW_ID = id("shield_throw");
     private static final String PHASE_SHIFT_ID = id("phase_shift");
     private static final String DOMINATION_ID = id("domination");
@@ -36,7 +37,7 @@ public final class ActiveAbilityRouter {
     );
     private static final List<String> ALL_ORDER = List.of(
             id("cleanse"), id("pull"), id("swap"), id("shield"), id("berserk"), id("healing_wave"),
-            SHIELD_THROW_ID, REWIND_ID, TIME_ACCELERATION_ID, PHASE_SHIFT_ID,
+            SHIELD_THROW_ID, REWIND_ID, TIME_ACCELERATION_ID, CLONE_ID, PHASE_SHIFT_ID,
             THREAT_SUPPRESSION_ID, INSTANT_MINING_ID, DEATH_RETURN_ID, RETURN_HOME_ID,
             DOMINATION_ID, GIGANTIFICATION_ID, AREA_ACCELERATION_ID, REVIVE_ID,
             TIME_STOP_ID, DIVINE_PUNISHMENT_ID
@@ -46,9 +47,10 @@ public final class ActiveAbilityRouter {
     }
 
     public static void initialize() {
+        CloneActiveService.initialize();
         for (String augmentId : new String[]{
                 THREAT_SUPPRESSION_ID, INSTANT_MINING_ID, DEATH_RETURN_ID, RETURN_HOME_ID,
-                REWIND_ID, TIME_ACCELERATION_ID, SHIELD_THROW_ID, PHASE_SHIFT_ID,
+                REWIND_ID, TIME_ACCELERATION_ID, CLONE_ID, SHIELD_THROW_ID, PHASE_SHIFT_ID,
                 DOMINATION_ID, GIGANTIFICATION_ID, AREA_ACCELERATION_ID, REVIVE_ID,
                 TIME_STOP_ID, DIVINE_PUNISHMENT_ID
         }) AugmentCatalog.require(augmentId);
@@ -63,6 +65,7 @@ public final class ActiveAbilityRouter {
         if (abilityId.equals(THREAT_SUPPRESSION_ID)) return toggle(player, state, THREAT_SUPPRESSION_ID, THREAT_TOGGLE_KEY);
         if (abilityId.equals(INSTANT_MINING_ID)) return toggle(player, state, INSTANT_MINING_ID, INSTANT_MINING_TOGGLE_KEY);
         if (abilityId.equals(DEATH_RETURN_ID)) return DeathReturnAugmentService.tryUse(player);
+        if (abilityId.equals(CLONE_ID)) return CloneActiveService.tryUse(player);
         if (abilityId.equals(REWIND_ID) || abilityId.equals(TIME_ACCELERATION_ID) || abilityId.equals(SHIELD_THROW_ID)) {
             return AdvancedActiveAugmentService.tryUse(player, abilityId);
         }
