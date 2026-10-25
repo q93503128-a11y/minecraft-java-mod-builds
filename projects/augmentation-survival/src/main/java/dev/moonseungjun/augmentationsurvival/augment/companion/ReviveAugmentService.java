@@ -189,7 +189,15 @@ public final class ReviveAugmentService {
         return marker.ownerId.equals(player.getUUID())
                 && marker.expiresAtTick > player.level().getGameTime()
                 && marker.dimension.equals(player.level().dimension().identifier().toString())
-                && player.position().distanceToSqr(marker.position) <= RANGE_SQUARED;
+                && player.position().distanceToSqr(marker.position) <= RANGE_SQUARED
+                && hasFocusedView(player, marker);
+    }
+
+    private static boolean hasFocusedView(ServerPlayer player, ReviveMarker marker) {
+        Vec3 toMarker = marker.position.add(0.0D, 0.6D, 0.0D).subtract(player.getEyePosition());
+        double distance = toMarker.length();
+        if (distance <= 1.0E-5D) return true;
+        return player.getLookAngle().normalize().dot(toMarker.scale(1.0D / distance)) >= MIN_LOOK_DOT;
     }
 
     private static Optional<UUID> permanentOwner(LivingEntity entity) {
