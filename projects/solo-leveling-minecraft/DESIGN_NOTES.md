@@ -50,6 +50,14 @@ Use this file for confirmed design decisions that are too detailed for the proje
 - Gate density must be capped and spatially separated so the world does not become saturated; multiplayer may scale the active/world cap modestly with player count.
 - Gate detectors are intended to make locating and identifying Gates part of Minecraft exploration rather than exposing every Gate globally by default.
 
+## Gate appearance and measurement
+
+- Ordinary Gate rank is not encoded by a fixed E-S color palette. Normal Gates use the source-like blue/cyan dimensional-rift language.
+- Red is reserved for the special Red Gate state/type rather than being a normal rank color.
+- Gate size may trend larger at higher rank, but size is not the authoritative rank measurement and cannot be used as a reliable formula.
+- Gate rank is determined through mana output/System measurement. Small but dangerous Gates and large but lower-than-expected Gates remain possible.
+- The detector/measuring system exists partly because visual size/color alone must not reveal exact rank.
+
 ## Daily Quest
 
 - Preserve the source-facing routine: 100 push-ups, 100 sit-ups, 100 squats, and a displayed 10 km run target.
@@ -99,3 +107,29 @@ Use this file for confirmed design decisions that are too detailed for the proje
 - Named-shadow extraction is personal to each eligible Player. Multiple Players may each own their own copy of the same named shadow in multiplayer.
 - One Player may not stack duplicate copies of the same unique named shadow simply by repeatedly farming that boss.
 - All authoritative reward, extraction, and ownership state is server-side.
+
+## Mana crystals and essence stones
+
+- Mana Crystals are dungeon-mined materials, not a currency replacement. They are relatively common dungeon resources used for repeatable crafting/upgrading sinks such as ordinary System equipment improvement, potions, detector progression, and other scalable recipes.
+- Essence Stones come primarily from magic beasts, elites, and bosses. Higher-grade monsters can yield better stones or higher-value variants.
+- Essence Stones are reserved more heavily for rare equipment, higher-tier upgrades, special effects, and advanced System crafting.
+- System Gold remains the purchase currency; Mana Crystals and Essence Stones remain physical crafting materials.
+- Equipment upgrading should generally avoid destructive failure that deletes the item. Resource cost, progression requirements, and recipe rarity are preferred over gear-destruction RNG.
+- Suitable dungeons may include optional mining side rooms/veins so players choose between rushing combat and spending time gathering resources.
+
+## Dungeon roster structure
+
+- Do not permanently bind an entire species to exactly one Gate rank. Species can have stronger variants, elites, champions, commanders, and boss forms.
+- Canon/source monsters have first priority, followed by compatible Ragnarok additions, redesigned Minecraft dungeon variants, then classic myth/fantasy creatures if coverage is still insufficient.
+- Each dungeon should have a coherent faction/ecology/theme rather than mixing random unrelated mobs solely to fill a rank table.
+- Gate rank describes the dungeon's overall danger, not a guarantee that every individual monster inside has that same exact rank.
+- Named/source bosses are verified individually before final rank assignment because secondary sources and adaptations may disagree.
+
+## Gate detection and exploration
+
+- Gate detection is a craftable exploration system that replaces the omitted Hunter Association measurement layer.
+- A basic detector gives nearby Gate presence, approximate direction, and signal strength without exposing exact coordinates or guaranteed exact rank.
+- An advanced detector may provide direction, distance, measured Gate rank, and stability/activation information while still avoiding a global all-Gates world map.
+- Detector progression should connect vanilla materials/redstone with dungeon Mana Crystals, Essence Stones, and selected dungeon components.
+- Discovery flow remains exploratory: detect a signal, move through the Overworld, locate the Gate, measure/inspect it, then decide whether to enter.
+- Special states such as Red Gate behavior can invalidate or complicate an apparently ordinary measurement; exact rank reading must not imply complete knowledge of every internal danger.
