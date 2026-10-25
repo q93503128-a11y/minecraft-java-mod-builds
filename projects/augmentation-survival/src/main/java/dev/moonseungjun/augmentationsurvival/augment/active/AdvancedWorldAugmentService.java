@@ -60,8 +60,15 @@ public final class AdvancedWorldAugmentService {
         }) {
             AugmentCatalog.require(augmentId);
         }
-        ServerPlayerEvents.JOIN.register(AdvancedWorldAugmentService::clearPlayerRuntime);
-        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> clearPlayerRuntime(newPlayer));
+        ServerPlayerEvents.JOIN.register(player -> {
+            clearPlayerRuntime(player);
+            PhaseStateNetworking.send(player, false);
+        });
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            clearPlayerRuntime(newPlayer);
+            PhaseStateNetworking.send(newPlayer, false);
+        });
+        ServerPlayerEvents.LEAVE.register(AdvancedWorldAugmentService::clearPlayerRuntime);
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(AdvancedWorldAugmentService::afterKill);
         ServerTickEvents.END_SERVER_TICK.register(AdvancedWorldAugmentService::tickRuntime);
     }
@@ -143,6 +150,7 @@ public final class AdvancedWorldAugmentService {
                 duration * AdvancedActiveTuning.current().overtimeMaximumExtensionFraction()
         );
         PHASE.put(player.getUUID(), new PhaseState(player.position(), baseEnd, maxEnd));
+        PhaseStateNetworking.send(player, true);
         commitReservation(player, reservation);
         return true;
     }
@@ -318,12 +326,18 @@ public final class AdvancedWorldAugmentService {
         while (iterator.hasNext()) {
             Map.Entry<UUID, PhaseState> entry = iterator.next();
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            if (player == null || player.isDeadOrDying()) {
+            if (player == null) {
+                iterator.remove();
+                continue;
+            }
+            if (player.isDeadOrDying()) {
+                PhaseStateNetworking.send(player, false);
                 iterator.remove();
                 continue;
             }
             if (player.level().getGameTime() >= entry.getValue().endTick) {
                 correctPhaseExit(player);
+                PhaseStateNetworking.send(player, false);
                 iterator.remove();
             }
         }

@@ -13,6 +13,7 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         MenuScreens.register(AugmentDeviceMenus.ADVANCED, AugmentDeviceScreen::new);
         ConsumptionClientNetworking.initialize();
         TemporalClientNetworking.initialize();
+        PhaseClientNetworking.initialize();
         MovementInputClient.initialize();
         ActiveAbilityInputClient.initialize();
     }

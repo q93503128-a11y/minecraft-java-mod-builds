@@ -47,7 +47,8 @@
     "AnvilForbiddenMagicMixin"
   ],
   "client": [
-    "LocalPlayerConsumptionMixin"
+    "LocalPlayerConsumptionMixin",
+    "ClientPhaseShiftCollisionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

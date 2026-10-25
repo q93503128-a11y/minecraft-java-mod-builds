@@ -6,10 +6,15 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldTuning;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -25,12 +30,21 @@ import net.minecraft.world.phys.Vec3;
 /** Server-owned permanent companion runtime for Domination. */
 public final class CompanionAugmentService {
     private static final String DOMINATION_ID = id("domination");
+    private static final Map<UUID, Mob> LOADED_DOMINATED = new HashMap<>();
 
     private CompanionAugmentService() {
     }
 
     public static void initialize() {
         AugmentCatalog.require(DOMINATION_ID);
+        ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+            if (entity instanceof Mob mob && isDominated(mob)) {
+                mob.setPersistenceRequired();
+                LOADED_DOMINATED.put(mob.getUUID(), mob);
+            }
+        });
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> LOADED_DOMINATED.remove(entity.getUUID()));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> LOADED_DOMINATED.clear());
         ServerTickEvents.END_SERVER_TICK.register(CompanionAugmentService::tickDominatedCompanions);
     }
 
@@ -55,6 +69,7 @@ public final class CompanionAugmentService {
         );
         target.setPersistenceRequired();
         target.setTarget(null);
+        LOADED_DOMINATED.put(target.getUUID(), target);
         setWorldState(server, worldState.withDelta(player.getUUID(), 1));
         return true;
     }
@@ -108,32 +123,35 @@ public final class CompanionAugmentService {
         if (owner.isEmpty() || !(entity.level() instanceof ServerLevel level)) {
             return;
         }
+        LOADED_DOMINATED.remove(entity.getUUID());
         entity.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.initial());
         MinecraftServer server = level.getServer();
         setWorldState(server, worldState(server).withDelta(owner.get(), -1));
     }
 
     private static void tickDominatedCompanions(MinecraftServer server) {
-        for (ServerLevel level : server.getAllLevels()) {
-            for (Entity entity : level.getAllEntities()) {
-                if (!(entity instanceof Mob mob) || !isDominated(mob) || mob.isDeadOrDying()) {
-                    continue;
-                }
-                mob.setPersistenceRequired();
-                Optional<UUID> owner = ownerId(mob);
-                if (owner.isEmpty()) {
-                    continue;
-                }
-                LivingEntity target = mob.getTarget();
-                if (target != null && (areAllied(mob, target) || target.isDeadOrDying())) {
-                    mob.setTarget(null);
-                    target = null;
-                }
-                if (target == null || !isHostileCandidate(mob, target)) {
-                    LivingEntity next = findNearestHostile(mob, owner.get());
-                    if (next != null) {
-                        mob.setTarget(next);
-                    }
+        for (Mob mob : new ArrayList<>(LOADED_DOMINATED.values())) {
+            if (mob.isRemoved()) {
+                LOADED_DOMINATED.remove(mob.getUUID());
+                continue;
+            }
+            if (!isDominated(mob) || mob.isDeadOrDying()) {
+                continue;
+            }
+            mob.setPersistenceRequired();
+            Optional<UUID> owner = ownerId(mob);
+            if (owner.isEmpty()) {
+                continue;
+            }
+            LivingEntity target = mob.getTarget();
+            if (target != null && (areAllied(mob, target) || target.isDeadOrDying())) {
+                mob.setTarget(null);
+                target = null;
+            }
+            if (target == null || !isHostileCandidate(mob, target)) {
+                LivingEntity next = findNearestHostile(mob, owner.get());
+                if (next != null) {
+                    mob.setTarget(next);
                 }
             }
         }
