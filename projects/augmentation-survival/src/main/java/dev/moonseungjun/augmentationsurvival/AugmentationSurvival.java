@@ -36,6 +36,8 @@ import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugment
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
+import dev.moonseungjun.augmentationsurvival.augment.spatial.SpatialLinkService;
+import dev.moonseungjun.augmentationsurvival.augment.spatial.SpatialLinkWorldAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.storage.StorageAugmentService;
@@ -65,6 +67,7 @@ import dev.moonseungjun.augmentationsurvival.menu.AugmentStorageMenus;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
 import dev.moonseungjun.augmentationsurvival.network.ConsumptionNetworking;
 import dev.moonseungjun.augmentationsurvival.network.MovementNetworking;
+import dev.moonseungjun.augmentationsurvival.network.SpatialLinkNetworking;
 import dev.moonseungjun.augmentationsurvival.network.StorageNetworking;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
 import dev.moonseungjun.augmentationsurvival.threat.EnemyScalingCatalog;
@@ -91,7 +94,9 @@ public final class AugmentationSurvival implements ModInitializer {
         CompanionEntityAttachments.initialize();
         DominationWorldAttachments.initialize();
         StorageWorldAttachments.initialize();
+        SpatialLinkWorldAttachments.initialize();
         AugmentCatalog.initialize();
+        SpatialLinkService.initialize();
         EntityCompatibilityProfileService.initialize();
         EnemyScalingCatalog.initialize();
         ThreatScalingService.initialize();
@@ -137,6 +142,7 @@ public final class AugmentationSurvival implements ModInitializer {
         AdvancedUtilityAugmentService.initialize();
         ActiveAbilityNetworking.initialize();
         StorageNetworking.initialize();
+        SpatialLinkNetworking.initialize();
         MovementTuning.initialize();
         MobilityUtilityTuning.initialize();
         MovementAugmentService.initialize();
