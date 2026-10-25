@@ -25,6 +25,15 @@ import net.minecraft.world.level.storage.ValueOutput;
 
 /** Temporary server-AI combat body created by the Clone augment. */
 public final class CombatCloneEntity extends PathfinderMob {
+    private static final List<EquipmentSlot> PRESENTATION_SLOTS = List.of(
+            EquipmentSlot.MAINHAND,
+            EquipmentSlot.OFFHAND,
+            EquipmentSlot.FEET,
+            EquipmentSlot.LEGS,
+            EquipmentSlot.CHEST,
+            EquipmentSlot.HEAD
+    );
+
     private UUID ownerId;
     private int remainingTicks;
 
@@ -63,8 +72,7 @@ public final class CombatCloneEntity extends PathfinderMob {
     }
 
     private void copyPresentationSnapshot(ServerPlayer owner) {
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (!slot.isForHumanoidArmor() && slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) continue;
+        for (EquipmentSlot slot : PRESENTATION_SLOTS) {
             ItemStack equipped = owner.getItemBySlot(slot);
             setItemSlot(slot, equipped.isEmpty() ? ItemStack.EMPTY : equipped.copy());
             setDropChance(slot, 0.0F);
@@ -145,7 +153,7 @@ public final class CombatCloneEntity extends PathfinderMob {
         remainingTicks = input.getInt("clone_remaining_ticks").orElse(0);
         this.xpReward = 0;
         setCanPickUpLoot(false);
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
+        for (EquipmentSlot slot : PRESENTATION_SLOTS) {
             setDropChance(slot, 0.0F);
         }
     }
