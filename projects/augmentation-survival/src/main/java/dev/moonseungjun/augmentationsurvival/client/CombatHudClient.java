@@ -28,7 +28,7 @@ public final class CombatHudClient {
 
     private static void extract(GuiGraphicsExtractor g, net.minecraft.client.DeltaTracker delta) {
         Minecraft client = Minecraft.getInstance();
-        if (client.player == null || client.options.hideGui) return;
+        if (client.player == null) return;
         int sw = client.getWindow().getGuiScaledWidth();
         int sh = client.getWindow().getGuiScaledHeight();
         drawHealth(g, client, sw / 2 - 112, sh - 94);
