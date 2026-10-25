@@ -89,6 +89,169 @@ jobs:
           print(f'WORLD_BOSSES_LOCALIZATION_CAPTURE_PASS keys={len(parsed)} file={output}')
           PY
 
+      - name: Audit external Korean localization
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/reports/modpack
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import re
+          import zipfile
+
+          cache = pathlib.Path.home() / '.gradle' / 'caches'
+          report_dir = pathlib.Path('build/reports/modpack')
+          project_assets = pathlib.Path('build/resources/main/assets')
+          inventory_path = report_dir / 'pack-artifact-inventory.txt'
+          if not inventory_path.exists():
+              raise SystemExit('pack-artifact-inventory.txt is missing')
+
+          expected_files = []
+          for line in inventory_path.read_text(encoding='utf-8').splitlines():
+              if line.startswith('file='):
+                  expected_files.append(line.split('\t', 1)[0][5:])
+          if not expected_files:
+              raise SystemExit('No pinned artifact names found in pack inventory')
+
+          cache_by_name = {}
+          for jar in cache.rglob('*.jar'):
+              if jar.name in expected_files and jar.name not in cache_by_name:
+                  cache_by_name[jar.name] = jar
+          missing_jars = sorted(set(expected_files) - set(cache_by_name))
+          if missing_jars:
+              raise SystemExit(f'Pinned jars not found in Gradle cache: {missing_jars}')
+
+          def read_json_bytes(raw, origin):
+              try:
+                  value = json.loads(raw.decode('utf-8'))
+              except Exception as exc:
+                  raise SystemExit(f'Invalid lang JSON {origin}: {exc}') from exc
+              if not isinstance(value, dict):
+                  raise SystemExit(f'Lang JSON is not an object: {origin}')
+              return {str(k): str(v) for k, v in value.items()}
+
+          def project_override(namespace):
+              path = project_assets / namespace / 'lang' / 'ko_kr.json'
+              if not path.exists():
+                  return {}
+              return read_json_bytes(path.read_bytes(), path)
+
+          rows = []
+          missing_payload = {}
+          hardcoded = []
+          printable = re.compile(rb'[ -~]{8,}')
+          user_words = re.compile(
+              r'(?i)(tooltip|press |right.?click|left.?click|page |details|ability|abilities|offering|shrine|boss|'
+              r'quest|guide|journal|codex|inventory|config|setting|warning|requires?|cannot|cooldown|damage|health|'
+              r'attack|defen[cs]e|biome|structure|spawn|item|block|entity)'
+          )
+
+          for file_name in expected_files:
+              jar = cache_by_name[file_name]
+              with zipfile.ZipFile(jar) as archive:
+                  names = set(archive.namelist())
+                  mod_id = '(unknown)'
+                  version = '(unknown)'
+                  if 'fabric.mod.json' in names:
+                      try:
+                          metadata = json.loads(archive.read('fabric.mod.json'))
+                          mod_id = str(metadata.get('id', mod_id))
+                          version = str(metadata.get('version', version))
+                      except Exception:
+                          pass
+
+                  english_paths = sorted(
+                      name for name in names
+                      if re.fullmatch(r'assets/[^/]+/lang/en_us\.json', name)
+                  )
+                  if not english_paths:
+                      rows.append({
+                          'file': file_name,
+                          'mod_id': mod_id,
+                          'version': version,
+                          'namespace': '',
+                          'english': 0,
+                          'jar_korean': 0,
+                          'override_korean': 0,
+                          'effective_missing': 0,
+                          'classification': 'NO_EN_US',
+                      })
+                  for en_path in english_paths:
+                      namespace = en_path.split('/')[1]
+                      ko_path = f'assets/{namespace}/lang/ko_kr.json'
+                      english = read_json_bytes(archive.read(en_path), f'{file_name}!/{en_path}')
+                      jar_korean = read_json_bytes(archive.read(ko_path), f'{file_name}!/{ko_path}') if ko_path in names else {}
+                      override = project_override(namespace)
+                      effective = dict(jar_korean)
+                      effective.update(override)
+                      missing_keys = sorted(key for key in english if key not in effective)
+                      if not missing_keys:
+                          classification = 'A_COMPLETE'
+                      elif jar_korean or override:
+                          classification = 'B_PARTIAL'
+                      else:
+                          classification = 'C_NO_KOREAN'
+                      rows.append({
+                          'file': file_name,
+                          'mod_id': mod_id,
+                          'version': version,
+                          'namespace': namespace,
+                          'english': len(english),
+                          'jar_korean': len(jar_korean),
+                          'override_korean': len(override),
+                          'effective_missing': len(missing_keys),
+                          'classification': classification,
+                      })
+                      if missing_keys:
+                          missing_payload[f'{mod_id}:{namespace}'] = {
+                              'file': file_name,
+                              'version': version,
+                              'namespace': namespace,
+                              'missing': {key: english[key] for key in missing_keys},
+                          }
+
+                  # Constant-pool heuristic for strings that bypass lang files. This is a candidate list,
+                  # not proof that the text is rendered to players.
+                  for class_name in sorted(name for name in names if name.endswith('.class')):
+                      raw = archive.read(class_name)
+                      candidates = []
+                      for match in printable.findall(raw):
+                          try:
+                              text = match.decode('ascii')
+                          except UnicodeDecodeError:
+                              continue
+                          if len(text) > 180 or '/' in text or '$' in text or '.' in text:
+                              continue
+                          if user_words.search(text) and re.search(r'[A-Za-z]{3}', text):
+                              candidates.append(text)
+                      for text in sorted(set(candidates))[:30]:
+                          hardcoded.append({
+                              'mod_id': mod_id,
+                              'file': file_name,
+                              'class': class_name,
+                              'text': text,
+                          })
+
+          rows.sort(key=lambda row: (row['mod_id'], row['namespace'], row['file']))
+          summary = report_dir / 'external-localization-summary.tsv'
+          header = ['file', 'mod_id', 'version', 'namespace', 'english', 'jar_korean', 'override_korean', 'effective_missing', 'classification']
+          summary.write_text(
+              '\t'.join(header) + '\n' + '\n'.join('\t'.join(str(row[col]) for col in header) for row in rows) + '\n',
+              encoding='utf-8',
+          )
+          (report_dir / 'external-localization-missing.json').write_text(
+              json.dumps(missing_payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
+          )
+          (report_dir / 'external-hardcoded-string-candidates.json').write_text(
+              json.dumps(hardcoded, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
+          )
+
+          total_english = sum(row['english'] for row in rows)
+          total_missing = sum(row['effective_missing'] for row in rows)
+          print(f'EXTERNAL_LOCALIZATION_AUDIT_PASS namespaces={len(rows)} english={total_english} missing={total_missing} hardcoded_candidates={len(hardcoded)}')
+          PY
+
       - name: Dedicated server smoke test
         shell: bash
         run: |
