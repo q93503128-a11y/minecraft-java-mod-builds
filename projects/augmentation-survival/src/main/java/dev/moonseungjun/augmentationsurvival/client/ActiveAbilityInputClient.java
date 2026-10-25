@@ -12,7 +12,7 @@ import org.lwjgl.glfw.GLFW;
 
 /** Hold the augment skill-mode key and press 1..0 to request active slots 1..10. */
 public final class ActiveAbilityInputClient {
-    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+    static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "augmentation")
     );
     private static final KeyMapping MODE_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
