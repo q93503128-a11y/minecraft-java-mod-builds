@@ -2,8 +2,6 @@ package dev.moonseungjun.augmentationsurvival.augment.resource;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
-import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
-import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -19,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -32,11 +29,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -53,7 +46,6 @@ public final class ResourceHarvestService {
     private static final String BUMPER_CROP_ID = id("bumper_crop");
     private static final String SEED_SAVER_ID = id("seed_saver");
     private static final String EXTRA_PIECE_ID = id("extra_piece");
-    private static final String LOOT_SCOOP_ID = id("loot_scoop");
     private static final String REPLANT_ID = id("replant");
     private static final String SWEEPING_HARVEST_ID = id("sweeping_harvest");
     private static final String TREE_FELLING_ID = id("tree_felling");
@@ -63,8 +55,6 @@ public final class ResourceHarvestService {
             ThreadLocal.withInitial(() -> DerivedBreakMode.NONE);
     private static final Map<UUID, BreakSnapshot> BREAK_SNAPSHOTS = new HashMap<>();
     private static final List<PendingReplant> PENDING_REPLANTS = new ArrayList<>();
-    private static final List<PendingLootCopy> PENDING_LOOT_COPIES = new ArrayList<>();
-    private static final Map<UUID, Long> GENERATED_LOOT_EXCLUSIONS = new HashMap<>();
     private static final Map<UUID, Double> TUNNEL_DURABILITY_REFUND_CREDIT = new HashMap<>();
     private static final Map<Block, Item> PLANTING_ITEM_CACHE = new IdentityHashMap<>();
 
@@ -86,7 +76,6 @@ public final class ResourceHarvestService {
                 afterBlockBreak(serverLevel, serverPlayer, pos, state, blockEntity);
             }
         });
-        ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(ResourceHarvestService::afterKill);
         ServerTickEvents.END_SERVER_TICK.register(ResourceHarvestService::tickPending);
         ServerPlayerEvents.JOIN.register(ResourceHarvestService::clearPlayerTransient);
         ServerPlayerEvents.AFTER_RESPAWN.register(
@@ -349,33 +338,8 @@ public final class ResourceHarvestService {
         }
     }
 
-    private static void afterKill(ServerLevel level, Entity killer, LivingEntity killed, DamageSource source) {
-        if (!(killer instanceof ServerPlayer player)
-                || killed instanceof Player
-                || CompanionAugmentService.isDominated(killed)
-                || CombatExpansionService.isConfiguredBoss(killed)) {
-            return;
-        }
-        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        int augmentLevel = boundedLevel(state, LOOT_SCOOP_ID);
-        if (augmentLevel <= 0
-                || player.getRandom().nextDouble()
-                >= ResourceHarvestTuning.current().lootScoopChancePerLevel() * augmentLevel) {
-            return;
-        }
-        PENDING_LOOT_COPIES.add(new PendingLootCopy(
-                level.dimension(),
-                killed.position(),
-                player.getUUID(),
-                level.getGameTime() + 1L
-        ));
-    }
-
     private static void tickPending(MinecraftServer server) {
         tickReplants(server);
-        tickLootCopies(server);
-        long now = server.overworld().getGameTime();
-        GENERATED_LOOT_EXCLUSIONS.entrySet().removeIf(entry -> entry.getValue() < now);
     }
 
     private static void tickReplants(MinecraftServer server) {
@@ -394,51 +358,6 @@ public final class ResourceHarvestService {
                 continue;
             }
             level.setBlock(pending.pos(), pending.replantedState(), Block.UPDATE_ALL);
-        }
-    }
-
-    private static void tickLootCopies(MinecraftServer server) {
-        Set<UUID> claimedThisTick = new HashSet<>();
-        Iterator<PendingLootCopy> iterator = PENDING_LOOT_COPIES.iterator();
-        while (iterator.hasNext()) {
-            PendingLootCopy pending = iterator.next();
-            ServerLevel level = server.getLevel(pending.dimension());
-            if (level == null || level.getGameTime() < pending.readyTick()) {
-                continue;
-            }
-            iterator.remove();
-            double radius = ResourceHarvestTuning.current().lootCaptureRadius();
-            AABB box = new AABB(
-                    pending.position().x - radius,
-                    pending.position().y - radius,
-                    pending.position().z - radius,
-                    pending.position().x + radius,
-                    pending.position().y + radius,
-                    pending.position().z + radius
-            );
-            List<ItemEntity> items = level.getEntitiesOfClass(
-                    ItemEntity.class,
-                    box,
-                    item -> item.tickCount <= ResourceHarvestTuning.current().lootMaxItemAgeTicks()
-                            && !GENERATED_LOOT_EXCLUSIONS.containsKey(item.getUUID())
-                            && !isCore(item.getItem())
-            );
-            for (ItemEntity item : items) {
-                if (!claimedThisTick.add(item.getUUID()) || item.getItem().isEmpty()) {
-                    continue;
-                }
-                ItemEntity copy = new ItemEntity(
-                        level,
-                        item.getX(),
-                        item.getY(),
-                        item.getZ(),
-                        item.getItem().copy()
-                );
-                copy.setDeltaMovement(item.getDeltaMovement());
-                if (level.addFreshEntity(copy)) {
-                    GENERATED_LOOT_EXCLUSIONS.put(copy.getUUID(), level.getGameTime() + 5L);
-                }
-            }
         }
     }
 
@@ -597,14 +516,6 @@ public final class ResourceHarvestService {
             UUID playerId,
             long readyTick,
             boolean forcedBySweep
-    ) {
-    }
-
-    private record PendingLootCopy(
-            ResourceKey<Level> dimension,
-            Vec3 position,
-            UUID playerId,
-            long readyTick
     ) {
     }
 }
