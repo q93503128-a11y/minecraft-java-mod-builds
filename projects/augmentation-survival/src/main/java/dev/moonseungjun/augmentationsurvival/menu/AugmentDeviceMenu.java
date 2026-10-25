@@ -19,13 +19,7 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Server-backed menu state for the augmentation workstations.
- *
- * <p>The menu intentionally keeps progression cores in the player's inventory. Choosing a tier is
- * the UI equivalent of inserting one core; the server only removes it when the final selection
- * commits successfully.</p>
- */
+/** Server-backed menu state for the portable augmentation devices. */
 public final class AugmentDeviceMenu extends AbstractContainerMenu {
     public static final int STATUS_IDLE = 0;
     public static final int STATUS_READY = 1;
@@ -36,51 +30,24 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     public static final int STATUS_UPGRADED = 6;
     public static final int STATUS_NOT_ENOUGH_CORES = 7;
 
-    private static final int DATA_STATUS = 0;
-    private static final int DATA_TIER = 1;
-    private static final int DATA_CANDIDATE_0 = 2;
-    private static final int DATA_CANDIDATE_1 = 3;
-    private static final int DATA_CANDIDATE_2 = 4;
-    private static final int DATA_SELECTION_COUNT = 5;
-    private static final int DATA_SELECTED_MASK = 6;
-    private static final int DATA_LAST_OUTPUT_COUNT = 7;
-    private static final int DATA_CURRENT_LEVEL_0 = 8;
-    private static final int DATA_CURRENT_LEVEL_1 = 9;
-    private static final int DATA_CURRENT_LEVEL_2 = 10;
-    private static final int DATA_COUNT = 11;
-
-    private static final int BUTTON_BEGIN_TIER = 0;
-    private static final int BUTTON_SELECT_CANDIDATE = 100;
-    private static final int BUTTON_UPGRADE_ONE = 200;
-    private static final int BUTTON_UPGRADE_ALL = 220;
+    private static final int DATA_STATUS = 0, DATA_TIER = 1, DATA_CANDIDATE_0 = 2,
+            DATA_CANDIDATE_1 = 3, DATA_CANDIDATE_2 = 4, DATA_SELECTION_COUNT = 5,
+            DATA_SELECTED_MASK = 6, DATA_LAST_OUTPUT_COUNT = 7, DATA_CURRENT_LEVEL_0 = 8,
+            DATA_CURRENT_LEVEL_1 = 9, DATA_CURRENT_LEVEL_2 = 10, DATA_COUNT = 11;
+    private static final int BUTTON_BEGIN_TIER = 0, BUTTON_SELECT_CANDIDATE = 100,
+            BUTTON_UPGRADE_ONE = 200, BUTTON_UPGRADE_ALL = 220;
 
     private final ContainerLevelAccess access;
     private final ContainerData data;
     private final boolean advanced;
     private String pendingToken;
 
-    public AugmentDeviceMenu(
-            int containerId,
-            Inventory inventory,
-            ContainerLevelAccess access,
-            boolean advanced
-    ) {
-        this(
-                containerId,
-                inventory,
-                access,
-                advanced,
-                new SimpleContainerData(DATA_COUNT)
-        );
+    public AugmentDeviceMenu(int containerId, Inventory inventory, ContainerLevelAccess access, boolean advanced) {
+        this(containerId, inventory, access, advanced, new SimpleContainerData(DATA_COUNT));
     }
 
-    private AugmentDeviceMenu(
-            int containerId,
-            Inventory inventory,
-            ContainerLevelAccess access,
-            boolean advanced,
-            ContainerData data
-    ) {
+    private AugmentDeviceMenu(int containerId, Inventory inventory, ContainerLevelAccess access,
+                              boolean advanced, ContainerData data) {
         super(advanced ? AugmentDeviceMenus.ADVANCED : AugmentDeviceMenus.BASIC, containerId);
         this.access = access;
         this.advanced = advanced;
@@ -91,50 +58,31 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     }
 
     public static AugmentDeviceMenu clientBasic(int containerId, Inventory inventory) {
-        return new AugmentDeviceMenu(
-                containerId,
-                inventory,
-                ContainerLevelAccess.NULL,
-                false
-        );
+        return new AugmentDeviceMenu(containerId, inventory, ContainerLevelAccess.NULL, false);
     }
 
     public static AugmentDeviceMenu clientAdvanced(int containerId, Inventory inventory) {
-        return new AugmentDeviceMenu(
-                containerId,
-                inventory,
-                ContainerLevelAccess.NULL,
-                true
-        );
+        return new AugmentDeviceMenu(containerId, inventory, ContainerLevelAccess.NULL, true);
     }
 
     @Override
     public boolean clickMenuButton(Player player, int buttonId) {
-        if (!isRecognizedButton(buttonId)) {
-            return false;
-        }
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return true;
-        }
-
-        if (buttonId >= BUTTON_BEGIN_TIER
-                && buttonId < BUTTON_BEGIN_TIER + AugmentTier.values().length) {
+        if (!isRecognizedButton(buttonId)) return false;
+        if (!(player instanceof ServerPlayer serverPlayer)) return true;
+        if (buttonId >= BUTTON_BEGIN_TIER && buttonId < BUTTON_BEGIN_TIER + AugmentTier.values().length) {
             beginOffer(serverPlayer, AugmentTier.values()[buttonId - BUTTON_BEGIN_TIER]);
             return true;
         }
-        if (buttonId >= BUTTON_SELECT_CANDIDATE
-                && buttonId < BUTTON_SELECT_CANDIDATE + 3) {
+        if (buttonId >= BUTTON_SELECT_CANDIDATE && buttonId < BUTTON_SELECT_CANDIDATE + 3) {
             selectCandidate(serverPlayer, buttonId - BUTTON_SELECT_CANDIDATE);
             return true;
         }
-        if (advanced
-                && buttonId >= BUTTON_UPGRADE_ONE
+        if (advanced && buttonId >= BUTTON_UPGRADE_ONE
                 && buttonId < BUTTON_UPGRADE_ONE + AugmentTier.values().length - 1) {
             upgrade(serverPlayer, AugmentTier.values()[buttonId - BUTTON_UPGRADE_ONE], false);
             return true;
         }
-        if (advanced
-                && buttonId >= BUTTON_UPGRADE_ALL
+        if (advanced && buttonId >= BUTTON_UPGRADE_ALL
                 && buttonId < BUTTON_UPGRADE_ALL + AugmentTier.values().length - 1) {
             upgrade(serverPlayer, AugmentTier.values()[buttonId - BUTTON_UPGRADE_ALL], true);
             return true;
@@ -143,28 +91,29 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     }
 
     private void beginOffer(ServerPlayer player, AugmentTier tier) {
-        if (pendingToken != null) {
-            AugmentOfferService.cancelOffer(player, pendingToken);
-            pendingToken = null;
-        }
         AugmentOfferService.BeginResult result = AugmentOfferService.beginOffer(player, tier);
         resetViewState();
-        data.set(DATA_TIER, tier.ordinal());
-
         switch (result.status()) {
             case READY -> {
                 pendingToken = result.token();
+                data.set(DATA_TIER, result.tier().ordinal());
                 data.set(DATA_STATUS, STATUS_READY);
                 data.set(DATA_SELECTION_COUNT, result.selectionCount());
-                AugmentationPlayerState playerState = AugmentationPlayerStateService.state(player);
+                AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
                 for (int index = 0; index < result.candidateIds().size() && index < 3; index++) {
                     String candidateId = result.candidateIds().get(index);
                     data.set(DATA_CANDIDATE_0 + index, AugmentCatalog.indexOf(candidateId));
-                    data.set(DATA_CURRENT_LEVEL_0 + index, playerState.level(candidateId));
+                    data.set(DATA_CURRENT_LEVEL_0 + index, state.level(candidateId));
                 }
             }
-            case NO_CORE -> data.set(DATA_STATUS, STATUS_NO_CORE);
-            case FULLY_MAXED -> data.set(DATA_STATUS, STATUS_FULLY_MAXED);
+            case NO_CORE -> {
+                data.set(DATA_TIER, tier.ordinal());
+                data.set(DATA_STATUS, STATUS_NO_CORE);
+            }
+            case FULLY_MAXED -> {
+                data.set(DATA_TIER, tier.ordinal());
+                data.set(DATA_STATUS, STATUS_FULLY_MAXED);
+            }
         }
         broadcastChanges();
     }
@@ -181,7 +130,6 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
             broadcastChanges();
             return;
         }
-
         int mask = data.get(DATA_SELECTED_MASK);
         int bit = 1 << candidateSlot;
         if ((mask & bit) != 0) {
@@ -191,29 +139,18 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         }
         mask |= bit;
         data.set(DATA_SELECTED_MASK, mask);
-
         int required = data.get(DATA_SELECTION_COUNT);
         if (Integer.bitCount(mask) < required) {
             broadcastChanges();
             return;
         }
-
         List<String> selected = new ArrayList<>(required);
         for (int index = 0; index < 3; index++) {
-            if ((mask & (1 << index)) == 0) {
-                continue;
-            }
-            int selectedCatalogIndex = data.get(DATA_CANDIDATE_0 + index);
-            if (selectedCatalogIndex >= 0) {
-                selected.add(AugmentCatalog.definitionAt(selectedCatalogIndex).id());
-            }
+            if ((mask & (1 << index)) == 0) continue;
+            int selectedIndex = data.get(DATA_CANDIDATE_0 + index);
+            if (selectedIndex >= 0) selected.add(AugmentCatalog.definitionAt(selectedIndex).id());
         }
-
-        AugmentOfferService.CommitResult result = AugmentOfferService.commitOffer(
-                player,
-                pendingToken,
-                selected
-        );
+        AugmentOfferService.CommitResult result = AugmentOfferService.commitOffer(player, pendingToken, selected);
         if (result.status() == AugmentOfferService.CommitStatus.SUCCESS) {
             pendingToken = null;
             data.set(DATA_STATUS, STATUS_ACQUIRED);
@@ -224,9 +161,10 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     }
 
     private void upgrade(ServerPlayer player, AugmentTier sourceTier, boolean all) {
-        if (pendingToken != null) {
-            AugmentOfferService.cancelOffer(player, pendingToken);
-            pendingToken = null;
+        if (pendingToken != null || AugmentOfferService.hasPendingOffer(player)) {
+            data.set(DATA_STATUS, STATUS_INVALID);
+            broadcastChanges();
+            return;
         }
         CoreUpgradeService.UpgradeResult result = all
                 ? CoreUpgradeService.upgradeAll(player, sourceTier)
@@ -234,31 +172,17 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         resetViewState();
         data.set(DATA_TIER, sourceTier.ordinal());
         data.set(DATA_LAST_OUTPUT_COUNT, result.outputCount());
-        data.set(
-                DATA_STATUS,
-                result.status() == CoreUpgradeService.UpgradeStatus.SUCCESS
-                        ? STATUS_UPGRADED
-                        : STATUS_NOT_ENOUGH_CORES
-        );
+        data.set(DATA_STATUS, result.status() == CoreUpgradeService.UpgradeStatus.SUCCESS
+                ? STATUS_UPGRADED : STATUS_NOT_ENOUGH_CORES);
         broadcastChanges();
     }
 
     private boolean isRecognizedButton(int buttonId) {
-        if (buttonId >= BUTTON_BEGIN_TIER
-                && buttonId < BUTTON_BEGIN_TIER + AugmentTier.values().length) {
-            return true;
-        }
-        if (buttonId >= BUTTON_SELECT_CANDIDATE
-                && buttonId < BUTTON_SELECT_CANDIDATE + 3) {
-            return true;
-        }
-        if (!advanced) {
-            return false;
-        }
-        return (buttonId >= BUTTON_UPGRADE_ONE
-                && buttonId < BUTTON_UPGRADE_ONE + AugmentTier.values().length - 1)
-                || (buttonId >= BUTTON_UPGRADE_ALL
-                && buttonId < BUTTON_UPGRADE_ALL + AugmentTier.values().length - 1);
+        if (buttonId >= BUTTON_BEGIN_TIER && buttonId < BUTTON_BEGIN_TIER + AugmentTier.values().length) return true;
+        if (buttonId >= BUTTON_SELECT_CANDIDATE && buttonId < BUTTON_SELECT_CANDIDATE + 3) return true;
+        if (!advanced) return false;
+        return (buttonId >= BUTTON_UPGRADE_ONE && buttonId < BUTTON_UPGRADE_ONE + AugmentTier.values().length - 1)
+                || (buttonId >= BUTTON_UPGRADE_ALL && buttonId < BUTTON_UPGRADE_ALL + AugmentTier.values().length - 1);
     }
 
     private void resetViewState() {
@@ -275,86 +199,43 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         data.set(DATA_CURRENT_LEVEL_2, 0);
     }
 
-    @Override
-    public ItemStack quickMoveStack(Player player, int slotIndex) {
-        return ItemStack.EMPTY;
-    }
+    @Override public ItemStack quickMoveStack(Player player, int slotIndex) { return ItemStack.EMPTY; }
 
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(
-                access,
-                player,
-                advanced
-                        ? AugmentDeviceBlocks.ADVANCED_AUGMENT_DEVICE
-                        : AugmentDeviceBlocks.AUGMENT_DEVICE
-        );
+        return stillValid(access, player, advanced
+                ? AugmentDeviceBlocks.ADVANCED_AUGMENT_DEVICE : AugmentDeviceBlocks.AUGMENT_DEVICE);
     }
 
     @Override
     public void removed(Player player) {
-        if (player instanceof ServerPlayer serverPlayer && pendingToken != null) {
-            AugmentOfferService.cancelOffer(serverPlayer, pendingToken);
-            pendingToken = null;
-        }
+        pendingToken = null;
         super.removed(player);
     }
 
-    public boolean advanced() {
-        return advanced;
-    }
-
-    public int status() {
-        return data.get(DATA_STATUS);
-    }
-
-    public int tierOrdinal() {
-        return data.get(DATA_TIER);
-    }
-
-    public int selectionCount() {
-        return data.get(DATA_SELECTION_COUNT);
-    }
-
-    public int selectedMask() {
-        return data.get(DATA_SELECTED_MASK);
-    }
-
-    public int lastOutputCount() {
-        return data.get(DATA_LAST_OUTPUT_COUNT);
-    }
+    public boolean advanced() { return advanced; }
+    public int status() { return data.get(DATA_STATUS); }
+    public int tierOrdinal() { return data.get(DATA_TIER); }
+    public int selectionCount() { return data.get(DATA_SELECTION_COUNT); }
+    public int selectedMask() { return data.get(DATA_SELECTED_MASK); }
+    public int lastOutputCount() { return data.get(DATA_LAST_OUTPUT_COUNT); }
 
     public AugmentDefinition candidate(int slot) {
-        if (slot < 0 || slot >= 3) {
-            throw new IllegalArgumentException("Candidate slot out of range: " + slot);
-        }
+        if (slot < 0 || slot >= 3) throw new IllegalArgumentException("Candidate slot out of range: " + slot);
         int index = data.get(DATA_CANDIDATE_0 + slot);
         return index < 0 ? null : AugmentCatalog.definitionAt(index);
     }
 
     public int currentLevel(int slot) {
-        if (slot < 0 || slot >= 3) {
-            throw new IllegalArgumentException("Candidate slot out of range: " + slot);
-        }
+        if (slot < 0 || slot >= 3) throw new IllegalArgumentException("Candidate slot out of range: " + slot);
         return data.get(DATA_CURRENT_LEVEL_0 + slot);
     }
 
-    public static int beginButtonId(AugmentTier tier) {
-        return BUTTON_BEGIN_TIER + tier.ordinal();
-    }
-
+    public static int beginButtonId(AugmentTier tier) { return BUTTON_BEGIN_TIER + tier.ordinal(); }
     public static int candidateButtonId(int slot) {
-        if (slot < 0 || slot >= 3) {
-            throw new IllegalArgumentException("Candidate slot out of range: " + slot);
-        }
+        if (slot < 0 || slot >= 3) throw new IllegalArgumentException("Candidate slot out of range: " + slot);
         return BUTTON_SELECT_CANDIDATE + slot;
     }
-
-    public static int upgradeOneButtonId(AugmentTier tier) {
-        return BUTTON_UPGRADE_ONE + tier.ordinal();
-    }
-
-    public static int upgradeAllButtonId(AugmentTier tier) {
-        return BUTTON_UPGRADE_ALL + tier.ordinal();
-    }
+    public static int upgradeOneButtonId(AugmentTier tier) { return BUTTON_UPGRADE_ONE + tier.ordinal(); }
+    public static int upgradeAllButtonId(AugmentTier tier) { return BUTTON_UPGRADE_ALL + tier.ordinal(); }
 }
