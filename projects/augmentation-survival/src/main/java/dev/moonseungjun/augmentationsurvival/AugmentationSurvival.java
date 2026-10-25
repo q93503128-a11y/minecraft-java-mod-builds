@@ -76,6 +76,7 @@ import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
 import dev.moonseungjun.augmentationsurvival.network.AuthorityTheftNetworking;
 import dev.moonseungjun.augmentationsurvival.network.ConsumptionNetworking;
 import dev.moonseungjun.augmentationsurvival.network.MovementNetworking;
+import dev.moonseungjun.augmentationsurvival.network.ProtectionHudNetworking;
 import dev.moonseungjun.augmentationsurvival.network.SpatialLinkNetworking;
 import dev.moonseungjun.augmentationsurvival.network.StorageNetworking;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationAttachments;
@@ -135,6 +136,7 @@ public final class AugmentationSurvival implements ModInitializer {
         TemporalStateNetworking.initialize();
         PhaseStateNetworking.initialize();
         ProtectionAugmentService.initialize();
+        ProtectionHudNetworking.initialize();
         ActiveAbilityService.initialize();
         TemporaryPlatformService.initialize();
         DeathReturnAugmentService.initialize();

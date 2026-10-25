@@ -38,9 +38,34 @@ public final class AugmentPresentationCatalog {
             current = entries;
         }
         Entry entry = current.get(definition.canonicalNameKo());
-        if (entry != null) return entry;
+        if (entry != null) return playerFacingOverride(definition, entry);
         return new Entry(displayName(definition.canonicalNameKo()), Kind.PASSIVE,
                 "효과 설명을 불러오지 못했습니다.", "효과 설명을 불러오지 못했습니다.");
+    }
+
+    /**
+     * Small UX corrections for legacy canon rows whose old label no longer matches the live
+     * interaction contract. Runtime authority still comes from the actual augment services.
+     */
+    private static Entry playerFacingOverride(AugmentDefinition definition, Entry source) {
+        String id = definition.id();
+        if (id.endsWith(":instant_mining")) {
+            return new Entry(
+                    "순간 채굴",
+                    Kind.PASSIVE,
+                    "보유 중, 현재 도구로 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
+                    "별도 조작 없이 항상 적용됩니다. 현재 도구로 정상 수확 가능한 직접 채굴 블록을 한 틱에 파괴하며, 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다."
+            );
+        }
+        if (id.endsWith(":pockets")) {
+            return new Entry(
+                    source.displayName(),
+                    Kind.PASSIVE,
+                    "획득 즉시 증강 저장소의 개인 슬롯이 +3 / +6 / +9칸 늘어납니다.",
+                    "별도 아이템을 제작하지 않습니다. 획득 즉시 적용되며 B키로 증강 저장소를 열어 개인 주머니 슬롯을 사용합니다. Lv.1 / 2 / 3에서 +3 / +6 / +9칸이 열립니다."
+            );
+        }
+        return source;
     }
 
     private static Map<String, Entry> load() {

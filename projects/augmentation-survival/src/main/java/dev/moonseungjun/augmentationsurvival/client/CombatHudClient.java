@@ -19,6 +19,9 @@ public final class CombatHudClient {
     private static final int RED_HI = 0xFFFF8E98;
     private static final int ABSORB = 0xFFF3C84B;
     private static final int ABSORB_HI = 0xFFFFE79A;
+    private static final int SHIELD_DARK = 0xFF174B66;
+    private static final int SHIELD = 0xFF3DA9DA;
+    private static final int SHIELD_HI = 0xFF9BE7FF;
 
     private CombatHudClient() { }
 
@@ -35,16 +38,20 @@ public final class CombatHudClient {
         int sw = client.getWindow().getGuiScaledWidth();
         int sh = client.getWindow().getGuiScaledHeight();
         drawHealth(g, client, sw / 2 - 91, sh - 40);
-        if (ActiveAbilityInputClient.isModeDown()) drawSkills(g, client, sw / 2 - 91, sh - 67);
+        if (ActiveAbilityInputClient.isModeDown()) drawSkills(g, client, sw / 2 - 91, sh - 88);
     }
 
     private static void drawHealth(GuiGraphicsExtractor g, Minecraft client, int x, int y) {
         int w = 81, h = 9, inner = w - 4;
         float max = Math.max(1.0F, client.player.getMaxHealth());
         float hp = Math.max(0.0F, Math.min(max, client.player.getHealth()));
-        float absorption = Math.max(0.0F, client.player.getAbsorptionAmount());
+        float vanillaAbsorption = Math.max(0.0F, client.player.getAbsorptionAmount());
+        float augmentAbsorption = Math.max(0.0F, ClientProtectionHudState.augmentAbsorption());
+        float absorption = vanillaAbsorption + augmentAbsorption;
         int hpFill = Math.max(0, Math.min(inner, Math.round(inner * hp / max)));
         int absorbFill = Math.max(0, Math.min(inner, Math.round(inner * absorption / max)));
+
+        drawShield(g, client, x, y - 6, w);
 
         g.fill(x, y, x + w, y + h, TRACK);
         g.outline(x, y, w, h, 0xFF313940);
@@ -61,6 +68,21 @@ public final class CombatHudClient {
         }
         String value = compact(hp) + " / " + compact(max);
         g.text(client.font, value, x + w / 2 - client.font.width(value) / 2, y + 1, TEXT, true);
+    }
+
+    private static void drawShield(GuiGraphicsExtractor g, Minecraft client, int x, int y, int w) {
+        float shield = ClientProtectionHudState.shield();
+        float cap = ClientProtectionHudState.shieldCapacity();
+        if (!(shield > 0.0F) || !(cap > 0.0F)) return;
+        int inner = w - 4;
+        int fill = Math.max(1, Math.min(inner, Math.round(inner * shield / cap)));
+        g.fill(x, y, x + w, y + 4, TRACK);
+        g.outline(x, y, w, 4, 0xFF28566B);
+        g.fill(x + 2, y + 1, x + w - 2, y + 3, SHIELD_DARK);
+        g.fill(x + 2, y + 1, x + 2 + fill, y + 3, SHIELD);
+        if (fill > 3) g.fill(x + 3, y + 1, x + 1 + fill, y + 2, SHIELD_HI);
+        String value = "보호막 " + compact(shield) + " / " + compact(cap);
+        g.text(client.font, value, x, y - 9, SHIELD_HI, true);
     }
 
     private static void drawLiquidCrest(GuiGraphicsExtractor g, int x, int y, int width, int color) {
