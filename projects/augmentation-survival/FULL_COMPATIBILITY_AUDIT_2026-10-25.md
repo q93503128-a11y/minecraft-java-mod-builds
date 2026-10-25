@@ -1,8 +1,8 @@
 # Augmentation Survival — Full Compatibility Audit
 
 Date: 2026-10-25
-Scope: full 146-augment runtime + pinned 23-artifact external pack + distributable local pack
-Status: **FULL TECHNICAL AUDIT COMPLETE / BUILD 146 VERIFIED**
+Scope: full 146-augment runtime + pinned 23-artifact external pack + local `.mrpack` + first user live-boot feedback
+Status: **FULL TECHNICAL AUDIT COMPLETE / BUILD 150 VERIFIED**
 
 ## Runtime roster
 
@@ -10,7 +10,7 @@ Status: **FULL TECHNICAL AUDIT COMPLETE / BUILD 146 VERIFIED**
 - PARTIAL: **0 / 146**
 - NO RUNTIME: **0 / 146**
 
-This count means canonical gameplay runtime coverage. It does not claim human gameplay feel, final VFX/UI/audio polish, statistical balance validation, world-generation visual review, or multiplayer validation.
+This count means canonical gameplay runtime coverage. It does not claim human gameplay feel, final VFX/UI/audio polish, statistical balance validation, world-generation visual review, boss encounter validation, or multiplayer validation.
 
 ## Static audit coverage
 
@@ -34,7 +34,49 @@ Checked:
 - player save codec retains optional/default fields used for backwards-compatible decoding;
 - built project JAR contains runtime classes/resources and no Java source or internal design documents.
 
-## Runtime corrections discovered by this audit
+## Progression item visibility verification
+
+The first user live boot exposed a usability gap: progression objects were registered but were not all conveniently visible in creative inventory.
+
+Verified registry state:
+
+- six augmentation cores are real registered `Item`s: Common, Uncommon, Rare, Epic, Legendary and Mythic;
+- `augment_device` and `advanced_augment_device` are real registered `Block`s with registered `BlockItem`s;
+- recipes exist for the common core, basic augmentation device and advanced augmentation device;
+- normal core acquisition remains driven by the project reward/drop systems rather than creative inventory.
+
+Correction:
+
+- added and initialized the `Augmentation Survival` creative tab;
+- the tab exposes all six cores plus both augmentation devices for testing/admin use.
+
+## World Bosses Korean compatibility
+
+The user live boot also exposed that the external `World Bosses 2.0.2` Boss Codex was English-only in the installed pack.
+
+The project now ships a compatibility localization overlay for the exact pinned World Bosses build.
+
+Verification contract:
+
+- pinned World Bosses `en_us.json`: **789 keys**;
+- merged Korean compatibility localization: **789 keys**;
+- missing keys: **0**;
+- stale/extra keys: **0**;
+- printf-style format-token mismatches: **0**;
+- build output canonical path: `assets/worldbosses/lang/ko_kr.json`;
+- `check` fails if the pinned external localization contract drifts.
+
+Coverage includes the Boss Codex, Realm Codex, items, blocks, entities, rituals, raid caches, advancements, boss messages, Worldbreaker/Shadowbreaker equipment and the Worldbreaker Realm progression text.
+
+## User log follow-up
+
+The supplied live-run log contained 9,996 repeated entries of the same Minecraft 26.2 world-generation diagnostic:
+
+`Detected unsafe terrain read during worldgen ... step: minecraft:spawn`
+
+No separate Augmentation Survival exception, registry failure, Mixin transformation failure, or crash signature was present in that supplied log. This diagnostic is tracked separately from augmentation runtime correctness and is not being hidden or suppressed by this mod.
+
+## Runtime corrections discovered by the technical audit
 
 ### Dexterity final-drop boundary
 
@@ -63,24 +105,25 @@ Corrected behavior:
 
 ## Final full-pack verification
 
-Final verified commit:
+Final verified gameplay/resource commit:
 
-`c04a0273918aaecac57c7fce0a4085ff17c56a73`
+`a1bd68ac10cfae46f2e085b68fc8fcf16654603a`
 
 GitHub Actions:
 
 - Workflow: `Build Augmentation Survival Pack`
-- Run number: **#146**
-- Run ID: `40174073009`
-- Artifact: `augmentation-survival-pack-smoke-146`
-- Artifact ID: `12590903610`
-- Artifact ZIP size: `1,892,151` bytes
-- Artifact ZIP SHA-256: `f348f4f7833837db8bd67296b13f624935aca5df3f491ff0d8b190dbc885047b`
+- Run number: **#150**
+- Run ID: `40177388198`
+- Artifact: `augmentation-survival-pack-smoke-150`
+- Artifact ID: `12592723018`
+- Artifact ZIP size: `2,023,635` bytes
+- Artifact ZIP SHA-256: `a2ac6b6277d11bab6717f6392d84d6bb52ade5fdda345630e3d77657739b78f2`
 
 Results:
 
 - toolchain verification: **PASS**
 - clean build: **PASS**
+- World Bosses Korean key/format contract: **PASS — 789 / 789**
 - pinned 23-artifact inspection: **PASS**
 - runtime classpath verification: **PASS**
 - dedicated server smoke: **PASS**
@@ -88,25 +131,27 @@ Results:
 - local `.mrpack` assembly/self-check: **PASS**
 - verification artifact upload: **PASS**
 
-Final project JAR SHA-256:
+Final project JAR:
 
-`3539651024a595251a07279cebc76d5ffdf3e36171edaf4cf7528d8c43e0f5d7`
+- bytes: `896148`
+- SHA-256: `67f8cbfd7357ec079019c69c3f4169ce0f32b64cfa779297c036f4a59e915f60`
 
 Generated local `.mrpack`:
 
 - file: `augmentation-survival-0.1.0-alpha.1.mrpack`
-- bytes: `766907`
-- SHA-256: `a7b0cd9454ff761674165b2b542b65133868d04e521fd7838424460ae85710db`
+- bytes: `812022`
+- SHA-256: `88b830769a5a7e4677e65418d1234affc92a6002bdc2dfd87e0745e2289cdc38`
 - external manifest files: 24, including Fabric API
 - embedded third-party JARs: 0
 - embedded project JAR: 1
+- embedded project JAR independently re-opened and verified to contain World Bosses Korean **789 / 789** key parity
 - MCEndgame override: `sendAnalytics=false`
 
-The `.mrpack` is intended for local/private import. Some pinned dependencies are referenced through Maven/CurseMaven download domains; Modrinth's public upload validator only permits its documented upload-domain allow-list, so this file is not claimed to be ready for public Modrinth project publication without converting those download references. A separate Windows fallback installer can download the same exact pins and verify SHA-512 values when a launcher restricts those local-pack URLs.
+The `.mrpack` is intended for local/private import. Some pinned dependencies are referenced through Maven/CurseMaven download domains; it is not claimed to be ready for public Modrinth project publication without converting unsupported public-upload download references.
 
 ## External-pack compatibility observations
 
-The final smoke still logs several non-fatal warnings. They are retained here instead of being hidden:
+The smoke still logs several non-fatal warnings. They are retained here instead of being hidden:
 
 - Forge Config API Port, Friends&Foes and LambDynamicLights recommend Mod Menu; Friends&Foes also recommends YACL. These are recommendations, not required dependencies.
 - Resourceful Lib and Farmer's Delight emit environment-specific client-target Mixin warnings during dedicated-server startup but do not prevent the server from reaching ready state.
@@ -120,22 +165,23 @@ No final server/client log matched the workflow fatal signatures. The dedicated 
 
 ## Distribution policy
 
-Third-party JARs whose redistribution permission is not established are not copied into the deliverable. World Bosses is All Rights Reserved and remains an externally fetched exact dependency rather than an embedded file. The local pack contains the verified project JAR and project-owned configuration overrides only, while external dependencies are fetched from their pinned source repositories.
+Third-party JARs whose redistribution permission is not established are not copied into the deliverable. World Bosses remains an externally fetched exact dependency rather than an embedded file. The local pack contains the verified project JAR and project-owned compatibility/configuration overrides only, while external dependencies are fetched from their pinned source repositories.
 
 ## Final validation labels
 
 - CODE REVIEWED: **YES**
 - TESTED: **NO — Gradle `test` is `NO-SOURCE`; no dedicated automated gameplay suite was executed**
-- BUILD VERIFIED: **YES — `c04a0273918aaecac57c7fce0a4085ff17c56a73`**
+- BUILD VERIFIED: **YES — `a1bd68ac10cfae46f2e085b68fc8fcf16654603a`**
 - JAR PRODUCED: **YES**
+- WORLD BOSSES KOREAN CONTRACT: **PASS — 789 / 789**
 - PACK DEPENDENCY INSPECTION: **PASS**
 - DEDICATED SERVER SMOKE: **PASS**
 - CLIENT BOOT SMOKE: **PASS**
 - LOCAL MRPACK STRUCTURE/HASH VERIFY: **PASS**
-- LIVE GAMEPLAY TESTED: **NO**
+- LIVE GAMEPLAY TESTED: **PARTIAL USER BOOT/SCREEN FEEDBACK ONLY — not a systematic gameplay pass**
 - WORLDGEN/VISUAL PLAYTESTED: **NO**
 - BOSS GAMEPLAY TESTED: **NO**
 - BETTER COMBAT LIVE INTERACTION TESTED: **NO**
 - MULTIPLAYER TESTED: **NO**
 
-Technical build/load compatibility is verified. Human gameplay, balance, visual/audio quality, worldgen feel, boss encounter quality and multiplayer behavior remain separate playtest gates and must not be represented as completed by this audit.
+Technical build/load compatibility and localization contract are verified. Human gameplay, balance, final visual/audio quality, worldgen feel, boss encounter quality and multiplayer behavior remain separate playtest gates and must not be represented as completed by this audit.
