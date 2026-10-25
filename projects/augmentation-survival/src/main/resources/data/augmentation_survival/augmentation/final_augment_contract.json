@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "dexterity": {
+    "bonus_chance_per_level": 0.10
+  },
+  "potion_diffusion": {
+    "radius": 8.0,
+    "effect_fraction_by_level": [0.25, 0.40, 0.55]
+  },
+  "elastic_storage": {
+    "minimum_fall_distance": 4.0,
+    "storage_ticks": 60,
+    "return_fraction_by_level": [0.30, 0.60, 1.00],
+    "vertical_velocity_per_fall_block": 0.045,
+    "maximum_vertical_bonus": 1.20
+  },
+  "ballistic_barrier": {
+    "radius": 6.0,
+    "interval_ticks_by_level": [60, 50, 40],
+    "destroy_count_by_level": [1, 2, 3]
+  },
+  "temporary_platform": {
+    "duration_ticks": 120,
+    "cooldown_ticks": 160,
+    "radius": 1
+  },
+  "life_link": {
+    "radius": 8.0,
+    "max_targets": 4,
+    "duration_ticks": 120,
+    "shared_damage_fraction": 0.40
+  },
+  "shrink": {
+    "crouch_hold_ticks": 20,
+    "scale_multiplier": 0.50
+  },
+  "wall_slam": {
+    "collision_window_ticks": 20,
+    "damage_fraction_by_level": [0.30, 0.60, 1.00],
+    "minimum_horizontal_speed_squared": 0.0025
+  }
+}
