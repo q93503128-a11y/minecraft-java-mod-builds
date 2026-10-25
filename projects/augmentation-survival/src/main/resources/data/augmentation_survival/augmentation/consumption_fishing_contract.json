@@ -10,7 +10,7 @@
     "reduction_per_level": 0.05
   },
   "treasure_fishing": {
-    "luck_equivalent_by_level": [1, 2, 3]
+    "absolute_chance_bonus_by_level": [0.02, 0.04, 0.06]
   },
   "twins": {
     "extra_baby_chance_by_level": [0.10, 0.20, 0.30]

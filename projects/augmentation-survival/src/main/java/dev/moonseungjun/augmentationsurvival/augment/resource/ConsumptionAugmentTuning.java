@@ -3,7 +3,6 @@ package dev.moonseungjun.augmentationsurvival.augment.resource;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -47,7 +46,7 @@ public final class ConsumptionAugmentTuning {
                         doubleArray(object(root, "hearty_meal"), "saturation_bonus_by_level", 3),
                         doubleArray(object(root, "fishing_sense"), "wait_reduction_by_level", 3),
                         fraction(object(root, "fast_eating"), "reduction_per_level"),
-                        intArray(object(root, "treasure_fishing"), "luck_equivalent_by_level", 3),
+                        doubleArray(object(root, "treasure_fishing"), "absolute_chance_bonus_by_level", 3),
                         doubleArray(object(root, "twins"), "extra_baby_chance_by_level", 3),
                         doubleArray(object(root, "eat_while_walking"), "penalty_ease_by_level", 3),
                         intArray(object(root, "reserve_meal"), "capacity_by_level", 3),
@@ -149,7 +148,7 @@ public final class ConsumptionAugmentTuning {
             double[] heartySaturationBonusByLevel,
             double[] fishingWaitReductionByLevel,
             double fastEatingReductionPerLevel,
-            int[] treasureLuckEquivalentByLevel,
+            double[] treasureChanceBonusByLevel,
             double[] twinsChanceByLevel,
             double[] eatWhileWalkingEaseByLevel,
             int[] reserveCapacityByLevel,
@@ -162,7 +161,7 @@ public final class ConsumptionAugmentTuning {
         public Snapshot {
             heartySaturationBonusByLevel = heartySaturationBonusByLevel.clone();
             fishingWaitReductionByLevel = fishingWaitReductionByLevel.clone();
-            treasureLuckEquivalentByLevel = treasureLuckEquivalentByLevel.clone();
+            treasureChanceBonusByLevel = treasureChanceBonusByLevel.clone();
             twinsChanceByLevel = twinsChanceByLevel.clone();
             eatWhileWalkingEaseByLevel = eatWhileWalkingEaseByLevel.clone();
             reserveCapacityByLevel = reserveCapacityByLevel.clone();
@@ -176,8 +175,8 @@ public final class ConsumptionAugmentTuning {
             return at(fishingWaitReductionByLevel, level);
         }
 
-        public int treasureLuckBonus(int level) {
-            return at(treasureLuckEquivalentByLevel, level);
+        public double treasureChanceBonus(int level) {
+            return at(treasureChanceBonusByLevel, level);
         }
 
         public double twinsChance(int level) {

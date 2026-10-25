@@ -21,7 +21,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 
 /** Effective-level boundary for the Magic Resonance augment. */
 public final class EnchantmentResonanceService {
-    private static final String RESONANCE_ID = AugmentationSurvival.MOD_ID + ":enchantment_resonance";
+    private static final String RESONANCE_ID = AugmentationSurvival.MOD_ID + ":enchant_resonance";
     private static final ThreadLocal<Deque<Optional<ServerPlayer>>> ACTORS =
             ThreadLocal.withInitial(ArrayDeque::new);
     private static final Set<Identifier> SAFE_EXTERNAL = new HashSet<>();

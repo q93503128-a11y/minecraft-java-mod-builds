@@ -2,43 +2,37 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.augment.resource.AbundanceService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.resource.TreasureFishingService;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.BuiltInLootTables;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Server-owned fishing timing, treasure bias and abundance scheduling. */
+/** Server-owned fishing timing, exact treasure chance and abundance scheduling. */
 @Mixin(FishingHook.class)
 public abstract class FishingHookAugmentMixin {
     @Shadow private int timeUntilLured;
     @Shadow private int nibble;
-    @Shadow @Final @Mutable private int luck;
+    @Shadow private boolean openWater;
+    @Shadow @Final private int luck;
 
     @Unique private int augmentationSurvival$beforeLured;
     @Unique private double augmentationSurvival$lureCredit;
     @Unique private boolean augmentationSurvival$hadNibble;
-
-    @Inject(method = "<init>(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/level/Level;II)V", at = @At("TAIL"))
-    private void augmentationSurvival$augmentTreasureLuck(
-            Player player,
-            net.minecraft.world.level.Level level,
-            int luck,
-            int lureSpeed,
-            CallbackInfo ci
-    ) {
-        if (player instanceof ServerPlayer serverPlayer) {
-            this.luck += ConsumptionAugmentService.treasureFishingLuckBonus(serverPlayer);
-        }
-    }
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void augmentationSurvival$captureLureTimer(CallbackInfo ci) {
@@ -67,6 +61,35 @@ public abstract class FishingHookAugmentMixin {
         int applied = Math.min(extra, timeUntilLured);
         timeUntilLured -= applied;
         augmentationSurvival$lureCredit -= applied;
+    }
+
+    @Redirect(
+            method = "retrieve",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/storage/loot/LootTable;getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"
+            )
+    )
+    private ObjectArrayList<ItemStack> augmentationSurvival$exactTreasureChance(
+            LootTable rootFishingTable,
+            LootParams params,
+            ItemStack rod
+    ) {
+        Player owner = ((FishingHook) (Object) this).getPlayerOwner();
+        if (owner instanceof ServerPlayer player
+                && TreasureFishingService.shouldForceTreasure(
+                        player,
+                        (float) this.luck + player.getLuck(),
+                        this.openWater,
+                        player.getRandom()
+                )) {
+            ServerLevel level = (ServerLevel) ((FishingHook) (Object) this).level();
+            LootTable treasureTable = level.getServer()
+                    .reloadableRegistries()
+                    .getLootTable(BuiltInLootTables.FISHING_TREASURE);
+            return treasureTable.getRandomItems(params);
+        }
+        return rootFishingTable.getRandomItems(params);
     }
 
     @Inject(method = "retrieve", at = @At("HEAD"))

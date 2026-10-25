@@ -144,10 +144,7 @@ public final class ConsumptionAugmentService {
         }
     }
 
-    /**
-     * Restores hunger lost by vanilla exhaustion from the reserve before the visible food bar falls.
-     * Called after FoodData.tick so saturation and vanilla exhaustion accounting remain untouched.
-     */
+    /** Restores hunger lost by vanilla exhaustion from the reserve before the visible food bar falls. */
     public static int restoreFoodFromReserve(ServerPlayer player, int beforeFoodLevel, int afterFoodLevel) {
         if (afterFoodLevel >= beforeFoodLevel) {
             return afterFoodLevel;
@@ -183,13 +180,9 @@ public final class ConsumptionAugmentService {
         return level <= 0 ? 0.0D : ConsumptionAugmentTuning.current().fishingWaitReduction(level);
     }
 
-    /**
-     * Vanilla fishing luck-equivalent baseline for the explicit treasure chance augment.
-     * This remains intentionally separate from abundance quantity duplication.
-     */
-    public static int treasureFishingLuckBonus(ServerPlayer player) {
+    public static double treasureFishingChanceBonus(ServerPlayer player) {
         int level = boundedLevel(AugmentationPlayerStateService.state(player), TREASURE_FISHING_ID);
-        return level <= 0 ? 0 : ConsumptionAugmentTuning.current().treasureLuckBonus(level);
+        return level <= 0 ? 0.0D : ConsumptionAugmentTuning.current().treasureChanceBonus(level);
     }
 
     public static ServerPlayer breedingActor(Animal first, Animal second) {

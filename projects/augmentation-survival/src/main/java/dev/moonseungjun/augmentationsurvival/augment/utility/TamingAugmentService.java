@@ -10,7 +10,7 @@ import net.minecraft.world.entity.player.Player;
 
 /** Server-authoritative probability transforms for real vanilla taming rolls. */
 public final class TamingAugmentService {
-    private static final String TAMING_KNOWHOW_ID = AugmentationSurvival.MOD_ID + ":taming_knowhow";
+    private static final String TAMING_KNOWHOW_ID = AugmentationSurvival.MOD_ID + ":taming_knack";
     private static final double[] MULTIPLIERS = {1.0D, 1.25D, 1.50D, 2.00D};
 
     private TamingAugmentService() {
