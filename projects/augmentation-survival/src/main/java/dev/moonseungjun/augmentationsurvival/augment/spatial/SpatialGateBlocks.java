@@ -20,7 +20,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-/** Physical, no-collision anchor that represents a permanent Spatial Link gate in the world. */
+/** Physical anchor that represents a permanent Spatial Link gate in the world. */
 public final class SpatialGateBlocks {
     private static final ResourceKey<Block> SPATIAL_GATE_KEY = ResourceKey.create(
             Registries.BLOCK,
@@ -32,7 +32,6 @@ public final class SpatialGateBlocks {
             SPATIAL_GATE_KEY,
             new SpatialGateBlock(BlockBehaviour.Properties.of()
                     .setId(SPATIAL_GATE_KEY)
-                    .noCollission()
                     .noOcclusion()
                     .strength(-1.0F, 3_600_000.0F)
                     .lightLevel(state -> 10)
