@@ -1,3 +1,4 @@
+import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 plugins {
@@ -124,10 +125,44 @@ dependencies {
     }
 }
 
+def worldBossesKoreanShards = {
+    fileTree('src/main/resources/assets') {
+        include 'augmentation_survival_wb_ko_*/lang/ko_kr.json'
+    }.files.toList().sort { a, b -> a.path <=> b.path }
+}
+
+def mergedWorldBossesKorean = {
+    def merged = new LinkedHashMap<String, String>()
+    worldBossesKoreanShards().each { shard ->
+        def parsed = new JsonSlurper().parse(shard)
+        if (!(parsed instanceof Map)) {
+            throw new GradleException("World Bosses Korean shard is not an object: ${shard}")
+        }
+        parsed.each { key, value ->
+            if (merged.containsKey(String.valueOf(key))) {
+                throw new GradleException("Duplicate World Bosses Korean key '${key}' in ${shard}")
+            }
+            merged[String.valueOf(key)] = String.valueOf(value)
+        }
+    }
+    merged
+}
+
 processResources {
     inputs.property 'version', project.version
+    inputs.files(worldBossesKoreanShards())
     filesMatching('fabric.mod.json') {
         expand 'version': project.version
+    }
+    doLast {
+        def merged = mergedWorldBossesKorean()
+        if (merged.size() != 789) {
+            throw new GradleException("Expected 789 World Bosses Korean keys, found ${merged.size()}")
+        }
+        def target = layout.buildDirectory.file('resources/main/assets/worldbosses/lang/ko_kr.json').get().asFile
+        target.parentFile.mkdirs()
+        target.setText(JsonOutput.prettyPrint(JsonOutput.toJson(merged)) + System.lineSeparator(), 'UTF-8')
+        println "WORLD_BOSSES_KOREAN_MERGE_PASS keys=${merged.size()} target=${target}"
     }
 }
 
@@ -138,6 +173,63 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     options.release = 25
+}
+
+tasks.register('verifyWorldBossesKorean') {
+    group = 'verification'
+    description = 'Verify Korean World Bosses localization exactly covers the pinned World Bosses English contract.'
+    doLast {
+        def merged = mergedWorldBossesKorean()
+        def worldBossesJar = configurations.packProbe.resolve().find { file ->
+            try {
+                def zip = new java.util.zip.ZipFile(file)
+                try {
+                    def entry = zip.getEntry('fabric.mod.json')
+                    if (entry == null) return false
+                    def meta = new JsonSlurper().parseText(zip.getInputStream(entry).getText('UTF-8'))
+                    return String.valueOf(meta.id) == 'worldbosses'
+                } finally {
+                    zip.close()
+                }
+            } catch (Exception ignored) {
+                return false
+            }
+        }
+        if (worldBossesJar == null) {
+            throw new GradleException('Pinned World Bosses jar was not found in packProbe')
+        }
+        def zip = new java.util.zip.ZipFile(worldBossesJar)
+        try {
+            def englishEntry = zip.getEntry('assets/worldbosses/lang/en_us.json')
+            if (englishEntry == null) {
+                throw new GradleException("Pinned World Bosses jar lacks assets/worldbosses/lang/en_us.json: ${worldBossesJar.name}")
+            }
+            def english = new JsonSlurper().parseText(zip.getInputStream(englishEntry).getText('UTF-8'))
+            if (!(english instanceof Map)) {
+                throw new GradleException('Pinned World Bosses en_us localization is not an object')
+            }
+            def missing = english.keySet().findAll { !merged.containsKey(String.valueOf(it)) }.sort()
+            def stale = merged.keySet().findAll { !english.containsKey(String.valueOf(it)) }.sort()
+            if (!missing.isEmpty() || !stale.isEmpty()) {
+                throw new GradleException("World Bosses Korean key drift: missing=${missing}, stale=${stale}")
+            }
+            def tokenPattern = ~/%(?:\d+\$)?[sdif]/
+            english.each { key, value ->
+                def sourceTokens = (String.valueOf(value) =~ tokenPattern).findAll()
+                def targetTokens = (String.valueOf(merged[String.valueOf(key)]) =~ tokenPattern).findAll()
+                if (sourceTokens != targetTokens) {
+                    throw new GradleException("World Bosses Korean format-token mismatch for ${key}: ${sourceTokens} != ${targetTokens}")
+                }
+            }
+            println "WORLD_BOSSES_KOREAN_CONTRACT_PASS keys=${merged.size()} source=${worldBossesJar.name}"
+        } finally {
+            zip.close()
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyWorldBossesKorean')
 }
 
 tasks.register('inspectPackDependencies') {
