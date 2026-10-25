@@ -11,7 +11,6 @@ import net.minecraft.resources.Identifier;
 /** Compact combat HUD: readable health bar plus the ten server-owned active slots. */
 public final class CombatHudClient {
     private static final int DARK = 0xD90A0E12;
-    private static final int METAL = 0xFF46535E;
     private static final int METAL_LIGHT = 0xFF98A7B2;
     private static final int TEXT = 0xFFEAF1F5;
     private static final int MUTED = 0xFF86939C;
@@ -45,7 +44,7 @@ public final class CombatHudClient {
         g.outline(x, y, w, h, 0xFF27313A);
         g.fill(x + 2, y + 2, x + w - 2, y + h - 2, HP_DARK);
         if (fill > 0) g.fill(x + 2, y + 2, x + 2 + fill, y + h - 2, HP);
-        g.fill(x + 3, y + 2, x + Math.max(3, 2 + fill), y + 3, 0xFFFF9AA3);
+        if (fill > 2) g.fill(x + 3, y + 2, x + 2 + fill, y + 3, 0xFFFF9AA3);
         String value = Math.round(hp) + " / " + Math.round(max);
         g.text(client.font, value, x + w / 2 - client.font.width(value) / 2, y + 2, TEXT, true);
     }
@@ -70,10 +69,10 @@ public final class CombatHudClient {
             }
         }
         g.text(client.font, "ALT", x - 25, y + 7, MUTED, false);
-        g.text(client.font, "K 편성", x + 10 * 24 + 5, y + 7, MUTED, false);
+        g.text(client.font, "K 편성", x + 245, y + 7, MUTED, false);
     }
 
-    static void drawSigil(GuiGraphicsExtractor g, String id, int x, int y, int size, int color) {
+    public static void drawSigil(GuiGraphicsExtractor g, String id, int x, int y, int size, int color) {
         int hash = id.hashCode();
         int cell = Math.max(1, size / 5);
         for (int row = 0; row < 5; row++) {
@@ -92,12 +91,11 @@ public final class CombatHudClient {
         }
     }
 
-    static String shortName(String id) {
+    public static String shortName(String id) {
         if (id == null || id.isBlank()) return "빈 슬롯";
         try {
             AugmentDefinition d = AugmentCatalog.require(id);
-            String raw = d.canonicalNameKo();
-            return raw.replace(" (액티브 · 토글)", "").replace(" (액티브)", "");
+            return d.canonicalNameKo().replace(" (액티브 · 토글)", "").replace(" (액티브)", "");
         } catch (RuntimeException ignored) {
             int colon = id.indexOf(':');
             return colon >= 0 ? id.substring(colon + 1) : id;
