@@ -1,6 +1,8 @@
 package dev.moonseungjun.augmentationsurvival;
 
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentRuntimeService;
+import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmentService;
@@ -14,6 +16,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.PhaseStateNetworking
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporalStateNetworking;
+import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
@@ -35,6 +38,7 @@ import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileTuning
 import dev.moonseungjun.augmentationsurvival.augment.resource.AbundanceService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentTuning;
+import dev.moonseungjun.augmentationsurvival.augment.resource.DexterityService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
 import dev.moonseungjun.augmentationsurvival.augment.spatial.SpatialGateBlocks;
@@ -100,6 +104,7 @@ public final class AugmentationSurvival implements ModInitializer {
         StorageWorldAttachments.initialize();
         SpatialLinkWorldAttachments.initialize();
         AugmentCatalog.initialize();
+        FinalAugmentTuning.initialize();
         SpatialLinkService.initialize();
         EntityCompatibilityProfileService.initialize();
         EnemyScalingCatalog.initialize();
@@ -112,6 +117,7 @@ public final class AugmentationSurvival implements ModInitializer {
         PlayerStatAugmentService.initialize();
         SurvivalAugmentService.initialize();
         ResourceHarvestService.initialize();
+        DexterityService.initialize();
         ConsumptionAugmentService.initialize();
         AbundanceService.initialize();
         CombatTuning.initialize();
@@ -126,6 +132,7 @@ public final class AugmentationSurvival implements ModInitializer {
         PhaseStateNetworking.initialize();
         ProtectionAugmentService.initialize();
         ActiveAbilityService.initialize();
+        TemporaryPlatformService.initialize();
         DeathReturnAugmentService.initialize();
         SpecialActiveAugmentService.initialize();
         AdvancedActiveAugmentService.initialize();
@@ -137,6 +144,7 @@ public final class AugmentationSurvival implements ModInitializer {
         EnchantmentResonanceService.initialize();
         TamingAugmentService.initialize();
         AdvancedWorldAugmentService.initialize();
+        FinalAugmentRuntimeService.initialize();
         AuthorityTheftService.initialize();
         ActiveAbilityRouter.initialize();
         CombatExpansionService.initialize();
