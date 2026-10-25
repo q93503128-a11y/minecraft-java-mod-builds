@@ -133,3 +133,34 @@ Use this file for confirmed design decisions that are too detailed for the proje
 - Detector progression should connect vanilla materials/redstone with dungeon Mana Crystals, Essence Stones, and selected dungeon components.
 - Discovery flow remains exploratory: detect a signal, move through the Overworld, locate the Gate, measure/inspect it, then decide whether to enter.
 - Special states such as Red Gate behavior can invalidate or complicate an apparently ordinary measurement; exact rank reading must not imply complete knowledge of every internal danger.
+
+## Equipment rank and drops
+
+- System/dungeon combat equipment uses the source-like `E / D / C / B / A / S` rank language instead of adding a separate generic Common/Rare/Epic/Legendary ladder.
+- Exceptional late-game items may be unmeasurable or use a special unknown/exception presentation rather than inventing `S+ / SS / SSS` tiers.
+- Avoid turning equipment into a random-affix loot treadmill. Important weapons and armor should have authored identities, predictable core stats, and source-appropriate unique effects.
+- Generic monsters primarily supply materials and occasional ordinary gear; elites improve material/gear quality; bosses are the primary source of unique equipment, Rune Stones, and signature crafting components.
+- System Store gear remains broadly useful baseline equipment; dungeon/boss drops provide the distinctive upper end.
+- Duplicate equipment can be sold for System Gold or dismantled for a partial return of appropriate materials rather than becoming pure trash.
+- Equipment rank is communicated mainly through its letter rank and System presentation; avoid unnecessary rainbow-rarity coloring that conflicts with the source-like UI language.
+
+## Player stats and level-up
+
+- Core permanent stats are Strength, Stamina, Agility, Intelligence, and Sense/Perception.
+- Strength primarily drives physical attack output and strength-oriented weapon/skill scaling.
+- Stamina primarily drives maximum HP, durability/survivability, and appropriate fatigue/endurance interactions.
+- Agility drives movement/combat mobility, attack handling speed where appropriate, dodge/dash-style recovery or cooldown reduction, and bow draw/charge-time reduction. Avoid replacing player skill with a large automatic dodge chance.
+- Intelligence primarily drives maximum MP and mana-dependent abilities; after the shadow job unlocks it becomes especially valuable for shadow regeneration and sustained army use.
+- Sense/Perception supports enemy detection, threat awareness, accuracy/precision, hidden or stealthy target recognition, and appropriate weak-point/critical interactions.
+- Level-ups provide broad baseline stat growth so every level feels meaningful; additional freely allocated stat points are earned through System rewards such as Daily Quests and selected milestones.
+- Stat growth is not given a small artificial cap. The early-to-late power gap should become very large, matching the intended progression fantasy.
+
+## Quest rewards and Random Boxes
+
+- Daily Quest completion grants the source-like reward package together rather than forcing a choice: full condition recovery, free stat points, and one Random Box.
+- Quest families may include Daily, Penalty/Survival, Main, Urgent/Emergency, Job Change, Collection, Hidden, and context-triggered System quests.
+- Random Boxes are gameplay rewards only, never monetized loot boxes.
+- Ordinary Random Boxes can contain System Gold, potions/consumables, Mana Crystals/Essence Stones, equipment, dungeon keys, and selected special items.
+- Mandatory progression must not depend on an unbounded low-probability roll. Story/progression boxes can use controlled candidate pools or guaranteed required contents.
+- Source-inspired one-time hidden conditions, such as over-completing a Daily routine and revealing an unusual reward choice, are desirable discovery content when they do not become repeatable chores.
+- Reward resolution, stat-point grants, keys, and progression state are server-authoritative.
