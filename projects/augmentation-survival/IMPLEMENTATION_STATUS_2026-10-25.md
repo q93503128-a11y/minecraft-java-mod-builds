@@ -2,18 +2,18 @@
 
 Date: 2026-10-25
 Supersedes: `IMPLEMENTATION_STATUS_2026-10-24.md`
-Status: M1C FUNCTIONAL BASELINE / 136-OF-146 FULL GAMEPLAY RUNTIME / SPATIAL LINK + AUTHORITY THEFT ACTIVE
+Status: M1C FUNCTIONAL BASELINE / 137-OF-146 FULL GAMEPLAY RUNTIME / PHYSICAL SPATIAL GATES + 17 AUTHORITY PACKAGES
 
 ## 146-roster implementation count
 
 This count measures whether the canonical gameplay effect has a runtime implementation. It does **not** mean final VFX/UI/audio polish or live gameplay testing is complete.
 
-- Fully implemented gameplay runtime: **136 / 146**
-- Partially implemented: **2 / 146** — `공간 연결`, `권능 탈취`
-- Not fully implemented: **10 / 146**
+- Fully implemented gameplay runtime: **137 / 146**
+- Partially implemented: **1 / 146** — `권능 탈취`
+- Not fully implemented: **9 / 146**
 - No gameplay runtime yet: **8 / 146**
-- `분신` moved from PARTIAL to FULL in this checkpoint.
-- `풍요` is FULL and `휩쓸기 강화` remains FULL from its earlier verified runtime.
+- `공간 연결` moved from PARTIAL to FULL in this checkpoint.
+- `분신`, `풍요` and `휩쓸기 강화` remain FULL.
 
 ## Verified FULL runtime notes
 
@@ -36,12 +36,12 @@ This augment is not in the remaining no-runtime set. Vanilla sweep expansion and
 
 ### `분신`
 
-`분신` now has the canonical gameplay runtime rather than the earlier partial attack-attribute approximation.
+`분신` has the canonical gameplay runtime rather than the earlier partial attack-attribute approximation.
 
 - Registered custom `CombatCloneEntity`; no zombie or armor-stand shell.
 - Server-owned autonomous hostile-target melee AI.
 - 20-second lifetime, activation-time 50% max-health snapshot and 60-second base cooldown.
-- Activation-time offensive snapshot now includes the player's current attack attribute plus the project's target-independent outgoing combat package used by `keen_edge`, `last_strength`, `speed_conversion`, `brawl`, `glass_cannon` and the currently active Berserk bonus before applying the canonical 60% clone multiplier.
+- Activation-time offensive snapshot includes the player's current attack attribute plus the project's target-independent outgoing combat package used by `keen_edge`, `last_strength`, `speed_conversion`, `brawl`, `glass_cannon` and the currently active Berserk bonus before applying the canonical 60% clone multiplier.
 - Target-dependent future-enemy conditions are deliberately not frozen into the activation snapshot.
 - Copied hand/armor stacks are presentation copies: functional attribute modifiers and enchantments are removed from the clone copy while visual glint can be retained. This prevents the displayed weapon/armor from re-applying combat stats on top of the fixed snapshot.
 - Owner UUID and player-model-part mask are synchronized; actual owner skin lookup, wide/slim `PlayerModel` selection, hat/jacket/sleeve/pants toggles, visible equipment and handedness are retained.
@@ -50,67 +50,110 @@ This augment is not in the remaining no-runtime set. Vanilla sweep expansion and
 
 This FULL label is for canonical gameplay runtime coverage. Owner-skin fidelity, animation/combat feel and visual quality still require a real client playtest; no visual-playtest claim is made from smoke testing.
 
-## `공간 연결` — PARTIAL major runtime
+### `공간 연결`
 
-`공간 연결` now has a real persistent server-owned network rather than a temporary command placeholder.
+`공간 연결` now has both the persistent server-owned network and an actual world-readable permanent gate object.
 
-Implemented in this checkpoint:
+Runtime coverage:
 
-- Multiple permanent saved destinations with stable IDs.
-- Save-wide persistent Fabric attachment stored on the server.
-- Unlimited-distance and cross-dimension destination lookup.
-- Personal gates plus explicit per-player sharing/revocation.
-- Gate naming, search, favorites and per-player default destination.
-- Dedicated rebindable `K` key and client/server snapshot protocol.
-- Search-first dedicated control screen with own/shared distinction, favorite/default markers, pagination, register/rename/delete/share/revoke/default/teleport actions and separate registration/rename workflows.
-- Server authority for every mutation and teleport action.
-- Destination chunk loading and collision-safe vertical landing search; obstructed destinations fail instead of forcing the player into blocks.
-- Mount transfer attempts the full root-vehicle passenger graph first.
-- Nearby dominated companions and player-owned tame companions are carried across dimensions and placed around the destination with individual collision checks.
+- Multiple permanent gates with stable IDs and save-wide persistent Fabric attachment state.
+- Unlimited-distance and cross-dimension travel.
+- Personal gates plus explicit per-player sharing and revocation.
+- Naming, search, favorites and per-player default destination.
+- Dedicated rebindable `K` key and server-authoritative client/server snapshot/action protocol.
+- Search-first control screen with own/shared distinction, favorite/default markers, pagination and register/rename/delete/share/revoke/default/teleport workflows.
+- Destination chunk loading and collision-safe landing search; obstructed destinations fail rather than forcing entities into blocks.
+- Root-vehicle/passenger transfer plus nearby dominated and player-tamed companion transfer with individual safe-placement checks.
+- Registering a gate now creates an actual `augmentation_survival:spatial_gate` world anchor beside the player rather than replacing the player's occupied block.
+- The physical anchor has a dedicated multi-element world model using a dark frame, amethyst pylons and luminous core; it is system-created rather than exposed as a normal placeable item.
+- Right-clicking the physical gate opens the same server-authoritative Spatial Link network.
+- Gate deletion removes the matching physical anchor. If a saved destination anchor is missing and its saved block is clear, travel restores the anchor.
+- Registration, deletion and travel have portal/beacon/teleport presentation feedback.
 
-`공간 연결` remains **PARTIAL** because the permanent network currently represents gates as saved world locations and a control surface rather than a finished in-world gate object/presentation. A physical/world-readable gate treatment and actual UI/teleport/mount/companion playtest are still required before calling the system visually and experientially complete.
+`공간 연결` is therefore **FULL for canonical gameplay runtime coverage**. The physical model, teleport feel, UI composition, mount/companion behavior and multiplayer permissions still require real playtesting before final visual/UX polish can be considered complete.
 
-## `권능 탈취` — PARTIAL source-backed runtime
+## `권능 탈취` — PARTIAL, 17 fixed boss packages implemented
 
-`권능 탈취` now has a dedicated Mythic runtime instead of being no-runtime.
+The dedicated Mythic authority channel remains separate from the ten normal active slots and uses one 120-second server-owned release cooldown.
 
-Implemented in this checkpoint:
+Core runtime:
 
 - Exact root-direct player kill provenance is required.
-- Supported boss identity is resolved through the existing compatibility-profile layer.
-- The first supported direct boss kill permanently appends that boss authority to the player's existing `stolen_authority_boss_ids` save field; repeated kills do not duplicate it.
-- Dedicated rebindable `J` key; the authority channel does not occupy any of the ten normal active slots.
-- One activation releases **all currently stolen supported boss packages in sequence**.
-- One overall 120-second server-owned cooldown is applied after a successful release.
-- Current source-backed package coverage includes all six pinned Chrono Dawn boss identities: Time Guardian, Chronos Warden, Clockwork Colossus, Temporal Phantom, Entropy Keeper and Time Tyrant.
-- The player analogs are based on the actual Chrono Dawn 26.2 boss implementations inspected for this checkpoint: temporal slow/blink/AoE pressure, Warden stone-stance/ground-slam pressure, Colossus overcharge/repair/gear-strike/shockwave, Phantom phase/warp/blink/two temporary combat echoes, Entropy decay/rot/burst and Tyrant time-stop/acceleration/AoE/reversal-style recovery.
+- Supported boss identity resolves through the existing compatibility-profile layer.
+- The first supported direct boss kill permanently adds that authority to `stolen_authority_boss_ids`; repeated kills do not duplicate it.
+- Dedicated rebindable `J` key.
+- One activation releases every currently stolen supported boss package in sequence.
+- Authority-package damage now executes under `CombatProvenance.AUTHORITY`, so stolen-power damage cannot recursively satisfy root-direct boss-kill or authority-theft requirements.
 
-`권능 탈취` remains **PARTIAL**, not FULL. The pinned World Bosses 26.2 dependency and MCEndgame boss packages still need their real combat implementations inspected deeply enough to reproduce their powers without inventing generic replacements. World Bosses identity detection already exists, but unsupported identities are deliberately not stolen yet. The Chrono Dawn player analogs also require live VFX/combat-feel review.
+Current fixed-package coverage: **17 bosses**.
+
+### Chrono Dawn — 6
+
+- Time Guardian
+- Chronos Warden
+- Clockwork Colossus
+- Temporal Phantom
+- Entropy Keeper
+- Time Tyrant
+
+These packages continue to mirror the inspected 26.2 boss identities: temporal slow/blink/AoE pressure, stone stance/ground slam, overcharge/repair/gear pressure/shockwave, phase/warp/blink/temporary echoes, decay/rot/burst and Time Tyrant's stop/acceleration/AoE/reversal-style recovery.
+
+### World Bosses — 11
+
+- Sylvaron — root/spore pressure
+- Aureon — Thunder Cage/storm pressure
+- Nekhraz — sandstorm/burrow pressure
+- Varkhul — Infernal Chains/Flame Prison pressure
+- Morvath — Fear Pulse/Soul Drain
+- Elyndra — void tether/rift pressure
+- Astrael — Primordial Chains/elemental shift/Cataclysm Nova
+- Shadow King — soul bolt/Shadow Step/shadow-warrior/darkness pressure
+- Dragon Mother — fire breath/tail sweep/aerial-fire/brood pressure
+- Storm Griffin — Wing Gust/lightning pressure
+- Shadow Weaver — binding threads/clones/puppet-style pressure/protective veil
+
+The World Bosses player packages preserve the documented boss identities rather than collapsing them into one generic damage burst. Exact numeric/JAR-level fidelity and live VFX/combat-feel validation are not claimed yet.
+
+### Why `권능 탈취` remains PARTIAL
+
+Pinned MCEndgame does not expose one fixed boss class or one authored boss ability package. Its source marks arbitrary `Mob` instances as dungeon bosses and then enhances them dynamically. The inspected MCEndgame source defines progression per previously killed dungeon boss as **+25% loot, -10% damage taken and +5% damage dealt**. Because the actual dungeon boss can be a different underlying mob, a faithful stolen package needs a persistent dynamic combat snapshot/translation rather than a fabricated generic spell. That dynamic MCEndgame authority representation remains the final major runtime gap.
 
 ## Verified gameplay checkpoint
 
-- Gameplay-code checkpoint: `c20282429542395655176dc31996a1fd66e05022`
-- Final gameplay commit: `feat(augmentation-survival): localize authority theft fallback`
-- GitHub Actions: `40166912027` / Build Augmentation Survival Pack #129
+- Gameplay-code checkpoint: `3066907ead902e48af72bc2ac30081b94752888d`
+- Final gameplay commit: `fix(augmentation-survival): place spatial anchors beside players`
+- GitHub Actions: `40168014824` / Build Augmentation Survival Pack #137
 - Build and pinned-pack inspection: **PASS**
 - Dedicated server smoke: **PASS**
 - Client boot smoke: **PASS**
 - Verification artifact upload: **PASS**
-- Artifact: `augmentation-survival-pack-smoke-129`
-- Artifact ID: `12588753501`
-- Artifact ZIP size: `1050898` bytes
-- Artifact ZIP SHA-256: `3c26e6df1743f0b173e129e17467bedd6f7a29296f60fbd4064ddbc689b6428e`
+- Artifact: `augmentation-survival-pack-smoke-137`
+- Artifact ID: `12589555475`
+- Artifact ZIP size: `1062511` bytes
+- Artifact ZIP SHA-256: `35b6f05538880d651d59dfd37b7f8699626cc2f4dc0271171b84a14c99686314`
 
-Major gameplay commits in this checkpoint include the clone combat snapshot/presentation isolation, persistent Spatial Link state/service/network/UI/mount-and-companion transfer, permanent Authority Theft save mutation, dedicated authority networking/input and the six Chrono Dawn authority packages. Intermediate push-triggered runs are not used as the final verification checkpoint; Build #129 is the authoritative full-pack result for this batch.
+Build #135 failed during compile because Minecraft 26.2 does not expose `BlockBehaviour.Properties.noCollission()`. The first real failure was read from the job log, the unsupported property was removed, and the subsequent build path compiled. Build #137 is the authoritative final gameplay checkpoint for this batch and passed build, dedicated-server smoke and client-boot smoke.
+
+## CI latency correction
+
+The old pack-smoke workflow intentionally waited the entire 180-second server timeout and entire 120-second client timeout even after readiness had already been proven. Tooling commit `71a54560e18cd60dd1b3f572c1d6d332845f0c07` changes future runs to:
+
+- poll for the same fatal signatures and readiness markers,
+- keep a short post-ready soak,
+- terminate the isolated game process group after readiness,
+- retain the original 180s/120s values only as startup deadlines rather than mandatory waits.
+
+That tooling commit used `[skip ci]`; Build #137 still used the previous deliberately slow smoke implementation. The optimized workflow must therefore be considered **CODE REVIEWED, NOT YET WORKFLOW-RUNTIME VERIFIED** until the next meaningful gameplay checkpoint uses it.
+
+Future Augmentation Survival batches should also use `[skip ci]` on intermediate file commits and allow only the final meaningful checkpoint commit to trigger the pack smoke workflow.
 
 ## Remaining implementation set
 
-### Partial — 2
+### Partial — 1
 
-- `공간 연결`
-  - Finish physical/world-readable gate presentation and real gameplay/UX validation.
 - `권능 탈취`
-  - Inspect and reproduce the pinned World Bosses and MCEndgame boss power packages without generic fabrication; then perform live combat/VFX validation.
+  - Add a faithful persistent MCEndgame dynamic-boss combat snapshot/translation instead of inventing a generic fixed spell.
+  - Then perform live combat/VFX validation across Chrono Dawn, World Bosses and MCEndgame packages.
 
 ### Explicitly underspecified / blocked — 8
 
@@ -129,7 +172,7 @@ Do not invent values for these until canon fixes the missing boundaries:
 
 - CODE REVIEWED: **YES**
 - TESTED: **NO — workflow test task is `NO-SOURCE`; no dedicated automated gameplay test was executed**
-- BUILD VERIFIED: **YES — `c20282429542395655176dc31996a1fd66e05022`**
+- BUILD VERIFIED: **YES — `3066907ead902e48af72bc2ac30081b94752888d`**
 - JAR PRODUCED: **YES**
 - DEDICATED SERVER SMOKE: **PASS**
 - CLIENT BOOT SMOKE: **PASS**
@@ -137,4 +180,4 @@ Do not invent values for these until canon fixes the missing boundaries:
 - STATISTICAL PROBABILITY PLAYTESTED: **NO**
 - MULTIPLAYER TESTED: **NO**
 
-Documentation commits after the gameplay checkpoint are docs-only and must not be treated as a separately build-verified gameplay SHA.
+Documentation and CI-only commits after the gameplay checkpoint are not separately gameplay-build-verified SHAs.
