@@ -66,13 +66,15 @@ jobs:
 
           cp run-pack-server/logs/latest.log build/reports/modpack/pack-server-latest.log
 
-          if grep -Eqi 'Mod resolution encountered an incompatible mod set|Could not execute entrypoint|Exception in server tick loop|Failed to start the minecraft server|Encountered an unexpected exception' run-pack-server/logs/latest.log; then
+          if grep -Eqi 'Mod resolution encountered an incompatible mod set|Could not execute entrypoint|Exception in server tick loop|Failed to start the minecraft server|Encountered an unexpected exception' \
+              run-pack-server/logs/latest.log build/reports/modpack/pack-server-console.log; then
             echo 'Fatal pack-load signature found in server log'
             tail -n 250 run-pack-server/logs/latest.log
             exit 1
           fi
 
-          if ! grep -Eqi 'Done \(|For help, type' run-pack-server/logs/latest.log; then
+          if ! grep -Eqi 'Done \(|For help, type' \
+              run-pack-server/logs/latest.log build/reports/modpack/pack-server-console.log; then
             echo 'Server never reached ready state before timeout'
             tail -n 250 run-pack-server/logs/latest.log
             exit 1
