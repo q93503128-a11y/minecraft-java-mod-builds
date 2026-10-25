@@ -10,9 +10,12 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemInstance;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -69,6 +72,15 @@ abstract class EnchantmentResonanceMixin {
             CallbackInfoReturnable<Integer> cir
     ) {
         cir.setReturnValue(EnchantmentResonanceService.effectiveLevel(owner, enchantment, cir.getReturnValueI()));
+    }
+
+    @Inject(method = "getItemEnchantmentLevel", at = @At("RETURN"), cancellable = true)
+    private static void augmentationSurvival$raiseContextualItemLevel(
+            Holder<Enchantment> enchantment,
+            ItemInstance item,
+            CallbackInfoReturnable<Integer> cir
+    ) {
+        cir.setReturnValue(EnchantmentResonanceService.effectiveLevel(enchantment, cir.getReturnValueI()));
     }
 
     @Inject(
@@ -357,6 +369,36 @@ abstract class EnchantmentResonanceMixin {
             ServerLevel level,
             ItemStack weapon,
             Projectile projectile,
+            Consumer<Item> onBreak,
+            CallbackInfo ci
+    ) {
+        EnchantmentResonanceService.popActor();
+    }
+
+    @Inject(method = "onHitBlock", at = @At("HEAD"))
+    private static void augmentationSurvival$pushBlockHitOwner(
+            ServerLevel level,
+            ItemStack weapon,
+            LivingEntity owner,
+            Entity entity,
+            EquipmentSlot slot,
+            Vec3 hitLocation,
+            BlockState hitBlock,
+            Consumer<Item> onBreak,
+            CallbackInfo ci
+    ) {
+        EnchantmentResonanceService.pushRelevantActor(level, weapon, owner != null ? owner : entity);
+    }
+
+    @Inject(method = "onHitBlock", at = @At("RETURN"))
+    private static void augmentationSurvival$popBlockHitOwner(
+            ServerLevel level,
+            ItemStack weapon,
+            LivingEntity owner,
+            Entity entity,
+            EquipmentSlot slot,
+            Vec3 hitLocation,
+            BlockState hitBlock,
             Consumer<Item> onBreak,
             CallbackInfo ci
     ) {
