@@ -71,3 +71,31 @@ Use this file for confirmed design decisions that are too detailed for the proje
 - Job skills such as Shadow Extraction, Shadow Storage, Shadow Exchange, and Monarch's Domain may share job/progression growth where that better matches the source.
 - Examples such as mobility, dagger throwing, and Ruler's Hand / Ruler's Authority should preserve source-style progression instead of being flattened into unrelated menu unlocks.
 - Server authority decides skill acquisition, level/proficiency changes, cooldowns, resource costs, and success; animation/VFX remain presentation layers.
+
+## Shadow army behavior
+
+- Shadow extraction itself does not consume MP by default; stronger targets and time since death can affect success chance.
+- Generic extraction attempts are limited per corpse rather than infinitely spammable. Named shadows use special anti-frustration handling where needed; Igris follows the fixed three-attempt sequence already defined.
+- Shadow storage, ordinary summon, and recall do not consume MP by default.
+- A shadow destroyed in combat is not permanently lost. Re-forming/reviving destroyed shadows consumes MP; if MP is insufficient, that shadow returns to storage/inactive state until it can be summoned again.
+- Shadow soldiers gain meaningful combat growth and may rise in rank where appropriate. Named shadows preserve distinct roles and abilities instead of becoming generic stat blocks.
+- Early shadow capacity is meaningfully limited, then expands through progression into dozens, hundreds, and eventually army-scale numbers. Exact numeric caps are a later balance task.
+- Performance solutions must preserve the visible army fantasy through controller AI, grouping, LOD, aggregation, and selective simulation rather than imposing a tiny party cap.
+
+## Dungeon Break
+
+- A Gate that has not been reasonably discovered/activated does not advance toward Dungeon Break.
+- Once activated, an uncleared Gate eventually breaks if neglected long enough; exact timing is tuned by rank and play flow later.
+- Dungeon Break releases surviving dungeon monsters and eventually the boss into the Overworld.
+- Break timers do not progress while the relevant server/world is offline. Players should not return to unavoidable destruction caused solely by offline time.
+- Dungeon Break monsters are strongly constrained from terrain/build destruction. Combat can feel destructive without allowing ordinary raids to erase player builds.
+- Higher-rank Breaks are combat disasters, not griefing systems.
+
+## Multiplayer rewards and shadow ownership
+
+- Normal Gates are shared cooperative spaces, but important progression rewards should avoid winner-takes-all ownership.
+- Player EXP, quest completion, and most dungeon/boss reward rolls are resolved per eligible player or contribution state.
+- Mana-crystal veins remain physical world resources and can therefore be shared/contested unless a later mining rule says otherwise.
+- Named-shadow extraction is personal to each eligible Player. Multiple Players may each own their own copy of the same named shadow in multiplayer.
+- One Player may not stack duplicate copies of the same unique named shadow simply by repeatedly farming that boss.
+- All authoritative reward, extraction, and ownership state is server-side.
