@@ -40,7 +40,7 @@ DOWNLOADS: dict[str, str] = {
     "G1hIVOrD-SmfwDCLg.jar": "https://api.modrinth.com/maven/maven/modrinth/G1hIVOrD/SmfwDCLg/G1hIVOrD-SmfwDCLg.jar",
     "QAGBst4M-KU5rZUAR.jar": "https://api.modrinth.com/maven/maven/modrinth/QAGBst4M/KU5rZUAR/QAGBst4M-KU5rZUAR.jar",
     "ohNO6lps-rSd3GiG8.jar": "https://api.modrinth.com/maven/maven/modrinth/ohNO6lps/rSd3GiG8/ohNO6lps-rSd3GiG8.jar",
-    "codAaoxh-3uBvRFE9w.jar": "https://api.modrinth.com/maven/maven/modrinth/codAaoxh/3uBvRFE9w/codAaoxh-3uBvRFE9w.jar",
+    "codAaoxh-3uBvRFE9.jar": "https://api.modrinth.com/maven/maven/modrinth/codAaoxh/3uBvRFE9/codAaoxh-3uBvRFE9.jar",
     "multiloaderdataextensions-fabric-26.2.0.jar": "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/fuzs/multiloaderdataextensions/multiloaderdataextensions-fabric/26.2.0/multiloaderdataextensions-fabric-26.2.0.jar",
     "8BmcQJ2H-7gaQHok7.jar": "https://api.modrinth.com/maven/maven/modrinth/8BmcQJ2H/7gaQHok7/8BmcQJ2H-7gaQHok7.jar",
     "ha1mEyJS-Hq1CwB9w.jar": "https://api.modrinth.com/maven/maven/modrinth/ha1mEyJS/Hq1CwB9w/ha1mEyJS-Hq1CwB9w.jar",
@@ -86,7 +86,6 @@ def find_cached(filename: str) -> Path:
             matches.extend(path for path in root.rglob(filename) if path.is_file())
     if not matches:
         fail(f"resolved artifact not found in Gradle cache: {filename}")
-    # Identical Maven artifacts can appear in multiple cache views; choose the largest non-empty copy.
     matches.sort(key=lambda path: path.stat().st_size, reverse=True)
     if matches[0].stat().st_size <= 0:
         fail(f"empty cached artifact: {filename}")
@@ -165,7 +164,6 @@ def build() -> Path:
             "MCEndgame analytics is disabled by the included config override.\n",
         )
 
-    # Self-verify the complete pack structure and every manifest hash against the exact resolved files.
     with zipfile.ZipFile(output) as archive:
         names = archive.namelist()
         if names.count("modrinth.index.json") != 1 or own_arc not in names or analytics_arc not in names:
