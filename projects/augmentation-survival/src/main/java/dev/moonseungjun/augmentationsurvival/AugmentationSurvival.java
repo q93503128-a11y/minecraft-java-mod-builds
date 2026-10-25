@@ -37,6 +37,7 @@ import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugment
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
+import dev.moonseungjun.augmentationsurvival.augment.spatial.SpatialGateBlocks;
 import dev.moonseungjun.augmentationsurvival.augment.spatial.SpatialLinkService;
 import dev.moonseungjun.augmentationsurvival.augment.spatial.SpatialLinkWorldAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
@@ -90,6 +91,7 @@ public final class AugmentationSurvival implements ModInitializer {
         AugmentDeviceMenus.initialize();
         AugmentStorageMenus.initialize();
         AugmentDeviceBlocks.initialize();
+        SpatialGateBlocks.initialize();
         AugmentationAttachments.initialize();
         WorldThreatAttachments.initialize();
         ThreatEntityAttachments.initialize();
