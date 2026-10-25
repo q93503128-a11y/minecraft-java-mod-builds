@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.state;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,27 +48,15 @@ public record AugmentationPlayerState(
     ).apply(instance, AugmentationPlayerState::new));
 
     public AugmentationPlayerState {
-        if (schemaVersion <= 0) {
-            throw new IllegalArgumentException("schemaVersion must be positive");
-        }
-        if (activeSlots.size() > 10) {
-            throw new IllegalArgumentException("activeSlots cannot exceed 10 entries");
-        }
+        if (schemaVersion <= 0) throw new IllegalArgumentException("schemaVersion must be positive");
+        if (activeSlots.size() > 10) throw new IllegalArgumentException("activeSlots cannot exceed 10 entries");
         for (Map.Entry<String, Integer> entry : augmentLevels.entrySet()) {
-            if (entry.getKey() == null || entry.getKey().isBlank()) {
-                throw new IllegalArgumentException("augmentLevels cannot contain a blank id");
-            }
-            if (entry.getValue() == null || entry.getValue() <= 0) {
-                throw new IllegalArgumentException("augmentLevels must contain positive levels");
-            }
+            if (entry.getKey() == null || entry.getKey().isBlank()) throw new IllegalArgumentException("augmentLevels cannot contain a blank id");
+            if (entry.getValue() == null || entry.getValue() <= 0) throw new IllegalArgumentException("augmentLevels must contain positive levels");
         }
         for (Map.Entry<String, Integer> entry : persistentInts.entrySet()) {
-            if (entry.getKey() == null || entry.getKey().isBlank()) {
-                throw new IllegalArgumentException("persistentInts cannot contain a blank id");
-            }
-            if (entry.getValue() == null || entry.getValue() <= 0) {
-                throw new IllegalArgumentException("persistentInts must contain positive values");
-            }
+            if (entry.getKey() == null || entry.getKey().isBlank()) throw new IllegalArgumentException("persistentInts cannot contain a blank id");
+            if (entry.getValue() == null || entry.getValue() <= 0) throw new IllegalArgumentException("persistentInts must contain positive values");
         }
         augmentLevels = Map.copyOf(augmentLevels);
         activeSlots = List.copyOf(activeSlots);
@@ -78,15 +67,7 @@ public record AugmentationPlayerState(
     }
 
     public static AugmentationPlayerState initial() {
-        return new AugmentationPlayerState(
-                CURRENT_SCHEMA_VERSION,
-                Map.of(),
-                List.of(),
-                Map.of(),
-                List.of(),
-                List.of(),
-                Map.of()
-        );
+        return new AugmentationPlayerState(CURRENT_SCHEMA_VERSION, Map.of(), List.of(), Map.of(), List.of(), List.of(), Map.of());
     }
 
     public int level(String augmentId) {
@@ -94,92 +75,56 @@ public record AugmentationPlayerState(
     }
 
     public int persistentInt(String key) {
-        if (key == null || key.isBlank()) {
-            throw new IllegalArgumentException("persistent int key must not be blank");
-        }
+        if (key == null || key.isBlank()) throw new IllegalArgumentException("persistent int key must not be blank");
         return persistentInts.getOrDefault(key, 0);
     }
 
     public AugmentationPlayerState withPersistentInt(String key, int value) {
-        if (key == null || key.isBlank()) {
-            throw new IllegalArgumentException("persistent int key must not be blank");
-        }
+        if (key == null || key.isBlank()) throw new IllegalArgumentException("persistent int key must not be blank");
         int normalized = Math.max(0, value);
-        if (persistentInt(key) == normalized) {
-            return this;
-        }
+        if (persistentInt(key) == normalized) return this;
         Map<String, Integer> values = new HashMap<>(persistentInts);
-        if (normalized == 0) {
-            values.remove(key);
-        } else {
-            values.put(key, normalized);
-        }
-        return new AugmentationPlayerState(
-                CURRENT_SCHEMA_VERSION,
-                augmentLevels,
-                activeSlots,
-                cooldownReadyTicks,
-                stolenAuthorityBossIds,
-                bossFirstKillRewardIds,
-                values
-        );
+        if (normalized == 0) values.remove(key); else values.put(key, normalized);
+        return new AugmentationPlayerState(CURRENT_SCHEMA_VERSION, augmentLevels, activeSlots, cooldownReadyTicks,
+                stolenAuthorityBossIds, bossFirstKillRewardIds, values);
     }
 
     public AugmentationPlayerState withAugmentLevel(String augmentId, int level) {
-        if (augmentId == null || augmentId.isBlank()) {
-            throw new IllegalArgumentException("augmentId must not be blank");
-        }
-        if (level <= 0) {
-            throw new IllegalArgumentException("augment level must be positive");
-        }
-        if (level(augmentId) == level) {
-            return this;
-        }
+        if (augmentId == null || augmentId.isBlank()) throw new IllegalArgumentException("augmentId must not be blank");
+        if (level <= 0) throw new IllegalArgumentException("augment level must be positive");
+        if (level(augmentId) == level) return this;
         Map<String, Integer> levels = new HashMap<>(augmentLevels);
         levels.put(augmentId, level);
-        return new AugmentationPlayerState(
-                schemaVersion,
-                levels,
-                activeSlots,
-                cooldownReadyTicks,
-                stolenAuthorityBossIds,
-                bossFirstKillRewardIds,
-                persistentInts
-        );
+        return new AugmentationPlayerState(schemaVersion, levels, activeSlots, cooldownReadyTicks,
+                stolenAuthorityBossIds, bossFirstKillRewardIds, persistentInts);
     }
 
     public long cooldownReadyTick(String augmentId) {
-        if (augmentId == null || augmentId.isBlank()) {
-            throw new IllegalArgumentException("augmentId must not be blank");
-        }
+        if (augmentId == null || augmentId.isBlank()) throw new IllegalArgumentException("augmentId must not be blank");
         return cooldownReadyTicks.getOrDefault(augmentId, 0L);
     }
 
     public AugmentationPlayerState withCooldownReadyTick(String augmentId, long readyTick) {
-        if (augmentId == null || augmentId.isBlank()) {
-            throw new IllegalArgumentException("augmentId must not be blank");
-        }
-        if (readyTick < 0L) {
-            throw new IllegalArgumentException("readyTick cannot be negative");
-        }
-        if (cooldownReadyTick(augmentId) == readyTick) {
-            return this;
-        }
+        if (augmentId == null || augmentId.isBlank()) throw new IllegalArgumentException("augmentId must not be blank");
+        if (readyTick < 0L) throw new IllegalArgumentException("readyTick cannot be negative");
+        if (cooldownReadyTick(augmentId) == readyTick) return this;
         Map<String, Long> cooldowns = new HashMap<>(cooldownReadyTicks);
-        if (readyTick == 0L) {
-            cooldowns.remove(augmentId);
-        } else {
-            cooldowns.put(augmentId, readyTick);
-        }
-        return new AugmentationPlayerState(
-                schemaVersion,
-                augmentLevels,
-                activeSlots,
-                cooldowns,
-                stolenAuthorityBossIds,
-                bossFirstKillRewardIds,
-                persistentInts
-        );
+        if (readyTick == 0L) cooldowns.remove(augmentId); else cooldowns.put(augmentId, readyTick);
+        return new AugmentationPlayerState(schemaVersion, augmentLevels, activeSlots, cooldowns,
+                stolenAuthorityBossIds, bossFirstKillRewardIds, persistentInts);
+    }
+
+    public boolean hasStolenAuthority(String bossId) {
+        return bossId != null && stolenAuthorityBossIds.contains(bossId);
+    }
+
+    public AugmentationPlayerState withStolenAuthority(String bossId) {
+        if (bossId == null || bossId.isBlank()) throw new IllegalArgumentException("bossId must not be blank");
+        if (hasStolenAuthority(bossId)) return this;
+        ArrayList<String> stolen = new ArrayList<>(stolenAuthorityBossIds);
+        stolen.add(bossId);
+        return new AugmentationPlayerState(schemaVersion, augmentLevels, activeSlots, cooldownReadyTicks,
+                stolen, bossFirstKillRewardIds, persistentInts);
     }
 
     public boolean hasBossFirstKillReward(String bossId) {
@@ -187,22 +132,11 @@ public record AugmentationPlayerState(
     }
 
     public AugmentationPlayerState withBossFirstKillReward(String bossId) {
-        if (bossId == null || bossId.isBlank()) {
-            throw new IllegalArgumentException("bossId must not be blank");
-        }
-        if (hasBossFirstKillReward(bossId)) {
-            return this;
-        }
-        java.util.ArrayList<String> claimed = new java.util.ArrayList<>(bossFirstKillRewardIds);
+        if (bossId == null || bossId.isBlank()) throw new IllegalArgumentException("bossId must not be blank");
+        if (hasBossFirstKillReward(bossId)) return this;
+        ArrayList<String> claimed = new ArrayList<>(bossFirstKillRewardIds);
         claimed.add(bossId);
-        return new AugmentationPlayerState(
-                schemaVersion,
-                augmentLevels,
-                activeSlots,
-                cooldownReadyTicks,
-                stolenAuthorityBossIds,
-                claimed,
-                persistentInts
-        );
+        return new AugmentationPlayerState(schemaVersion, augmentLevels, activeSlots, cooldownReadyTicks,
+                stolenAuthorityBossIds, claimed, persistentInts);
     }
 }
