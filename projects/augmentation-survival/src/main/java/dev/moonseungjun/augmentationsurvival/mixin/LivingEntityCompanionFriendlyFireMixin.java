@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.active.CloneActiveService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -10,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Dominated companions and their owner/allies cannot damage one another through normal hurtServer. */
+/** Permanent companions and temporary clones cannot damage their owner/allies through normal hurtServer. */
 @Mixin(LivingEntity.class)
 abstract class LivingEntityCompanionFriendlyFireMixin {
     @Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
-    private void augmentationSurvival$dominatedFriendlyFire(
+    private void augmentationSurvival$companionFriendlyFire(
             ServerLevel level,
             DamageSource source,
             float amount,
@@ -22,7 +23,10 @@ abstract class LivingEntityCompanionFriendlyFireMixin {
     ) {
         LivingEntity self = (LivingEntity) (Object) this;
         Entity dealer = source.getEntity();
-        if (dealer != null && CompanionAugmentService.areAllied(dealer, self)) {
+        if (dealer != null && (
+                CompanionAugmentService.areAllied(dealer, self)
+                        || CloneActiveService.areCloneAllies(dealer, self)
+        )) {
             cir.setReturnValue(false);
         }
     }
