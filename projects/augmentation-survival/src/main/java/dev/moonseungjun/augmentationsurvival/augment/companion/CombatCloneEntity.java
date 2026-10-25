@@ -7,6 +7,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.TamableAnimal;
@@ -16,6 +18,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -53,9 +56,20 @@ public final class CombatCloneEntity extends PathfinderMob {
         AttributeInstance attackAttribute = getAttribute(Attributes.ATTACK_DAMAGE);
         if (maxHealthAttribute != null) maxHealthAttribute.setBaseValue(Math.max(1.0D, maxHealth));
         if (attackAttribute != null) attackAttribute.setBaseValue(Math.max(0.0D, attackDamage));
+        copyPresentationSnapshot(owner);
         setHealth(getMaxHealth());
         setPersistenceRequired();
         setCanPickUpLoot(false);
+    }
+
+    private void copyPresentationSnapshot(ServerPlayer owner) {
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (!slot.isForHumanoidArmor() && slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) continue;
+            ItemStack equipped = owner.getItemBySlot(slot);
+            setItemSlot(slot, equipped.isEmpty() ? ItemStack.EMPTY : equipped.copy());
+            setDropChance(slot, 0.0F);
+        }
+        setLeftHanded(owner.getMainArm() == HumanoidArm.LEFT);
     }
 
     public UUID ownerId() {
@@ -131,5 +145,8 @@ public final class CombatCloneEntity extends PathfinderMob {
         remainingTicks = input.getInt("clone_remaining_ticks").orElse(0);
         this.xpReward = 0;
         setCanPickUpLoot(false);
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            setDropChance(slot, 0.0F);
+        }
     }
 }
