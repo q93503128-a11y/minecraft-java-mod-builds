@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:leaves",
+    "#minecraft:flowers",
+    "minecraft:bamboo",
+    "minecraft:sugar_cane",
+    "minecraft:cactus",
+    "minecraft:brown_mushroom",
+    "minecraft:red_mushroom",
+    "minecraft:vine",
+    "minecraft:glow_lichen",
+    "minecraft:kelp",
+    "minecraft:kelp_plant",
+    "minecraft:seagrass",
+    "minecraft:tall_seagrass",
+    "minecraft:sweet_berry_bush",
+    "minecraft:cocoa"
+  ]
+}
