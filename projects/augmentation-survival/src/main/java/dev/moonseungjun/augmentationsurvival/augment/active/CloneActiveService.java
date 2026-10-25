@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.augment.active;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CloneCombatSnapshot;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
@@ -18,7 +19,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.Vec3;
 
 /** Server-authoritative activation, cooldown and snapshot boundary for Clone. */
@@ -62,7 +62,7 @@ public final class CloneActiveService {
         if (!(owner.level() instanceof ServerLevel level)) return false;
         CombatCloneEntity clone = new CombatCloneEntity(CloneEntityTypes.COMBAT_CLONE, level);
         float maxHealth = Math.max(1.0F, owner.getMaxHealth() * (float) HEALTH_MULTIPLIER);
-        double damage = Math.max(0.0D, owner.getAttributeValue(Attributes.ATTACK_DAMAGE) * DAMAGE_MULTIPLIER);
+        double damage = Math.max(0.0D, CloneCombatSnapshot.meleeDamage(owner) * DAMAGE_MULTIPLIER);
         clone.configure(owner, maxHealth, damage, DURATION_TICKS);
 
         Vec3 look = owner.getLookAngle();
