@@ -68,7 +68,10 @@
     "AnvilForbiddenMagicMixin",
     "EnchantmentMenuAugmentAccessor",
     "PlayerEnchantSeedAccessor",
-    "EnchantmentMenuRefreshMixin"
+    "EnchantmentMenuRefreshMixin",
+    "ProtectionRuntimeAccessor",
+    "ProtectionRuntimeStateAccessor",
+    "ProtectionPoolAccessor"
   ],
   "client": [
     "LocalPlayerConsumptionMixin",
