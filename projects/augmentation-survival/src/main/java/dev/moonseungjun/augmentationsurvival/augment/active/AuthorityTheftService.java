@@ -16,7 +16,9 @@ import java.util.Set;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -24,6 +26,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -35,6 +38,12 @@ public final class AuthorityTheftService {
     public static final String AUTHORITY_THEFT_ID = id("authority_theft");
     private static final String COOLDOWN_KEY = AUTHORITY_THEFT_ID + "#release";
     private static final int COOLDOWN_TICKS = 120 * 20;
+    private static final String MCENDGAME_DYNAMIC_PROFILE = "mcendgame_dungeon_boss";
+
+    private static final Set<String> VANILLA_PACKAGES = Set.of(
+            "vanilla_wither",
+            "vanilla_ender_dragon"
+    );
 
     private static final Set<String> CHRONO_DAWN_PACKAGES = Set.of(
             "chronodawn_time_guardian",
@@ -59,6 +68,14 @@ public final class AuthorityTheftService {
             "worldbosses_shadow_weaver"
     );
 
+    private static final Set<String> MCENDGAME_PACKAGES = Set.of(
+            "mcendgame_arachne",
+            "mcendgame_bonecrusher",
+            "mcendgame_elf_duelist",
+            "mcendgame_beakburn",
+            "mcendgame_beastweaver"
+    );
+
     private AuthorityTheftService() { }
 
     public static void initialize() {
@@ -77,9 +94,11 @@ public final class AuthorityTheftService {
         if (AugmentationPlayerStateService.state(player).level(AUTHORITY_THEFT_ID) <= 0) return;
         if (!CombatProvenanceContext.resolve(source).isRootDirect()) return;
         EntityCompatibilityProfileService.resolve(killed).ifPresent(profile -> {
-            if (!profile.boss() || !supports(profile.id())) return;
+            if (!profile.boss()) return;
+            String packageId = resolvePackageId(profile.id(), killed);
+            if (packageId == null || !supports(packageId)) return;
             AugmentationPlayerState before = AugmentationPlayerStateService.state(player);
-            AugmentationPlayerState next = before.withStolenAuthority(profile.id());
+            AugmentationPlayerState next = before.withStolenAuthority(packageId);
             if (next.equals(before)) return;
             AugmentationPlayerStateService.replace(player, next);
             player.sendSystemMessage(Component.translatable(
@@ -87,6 +106,20 @@ public final class AuthorityTheftService {
                     killed.getDisplayName()
             ));
         });
+    }
+
+    private static String resolvePackageId(String profileId, LivingEntity killed) {
+        if (!MCENDGAME_DYNAMIC_PROFILE.equals(profileId)) return profileId;
+        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(killed.getType());
+        if (entityId == null || !"mcendgame".equals(entityId.getNamespace())) return null;
+        return switch (entityId.getPath()) {
+            case "arachne" -> "mcendgame_arachne";
+            case "bonecrusher" -> "mcendgame_bonecrusher";
+            case "elf_duelist" -> "mcendgame_elf_duelist";
+            case "beakburn" -> "mcendgame_beakburn";
+            case "beastweaver" -> "mcendgame_beastweaver";
+            default -> null;
+        };
     }
 
     public static boolean tryRelease(ServerPlayer player) {
@@ -113,11 +146,16 @@ public final class AuthorityTheftService {
     }
 
     public static boolean supports(String bossId) {
-        return CHRONO_DAWN_PACKAGES.contains(bossId) || WORLD_BOSSES_PACKAGES.contains(bossId);
+        return VANILLA_PACKAGES.contains(bossId)
+                || CHRONO_DAWN_PACKAGES.contains(bossId)
+                || WORLD_BOSSES_PACKAGES.contains(bossId)
+                || MCENDGAME_PACKAGES.contains(bossId);
     }
 
     private static boolean releasePackage(ServerPlayer player, String bossId) {
         return switch (bossId) {
+            case "vanilla_wither" -> { releaseWither(player); yield true; }
+            case "vanilla_ender_dragon" -> { releaseEnderDragon(player); yield true; }
             case "chronodawn_time_guardian" -> { releaseTimeGuardian(player); yield true; }
             case "chronodawn_chronos_warden" -> { releaseChronosWarden(player); yield true; }
             case "chronodawn_clockwork_colossus" -> { releaseClockworkColossus(player); yield true; }
@@ -135,8 +173,45 @@ public final class AuthorityTheftService {
             case "worldbosses_dragon_mother" -> { releaseDragonMother(player); yield true; }
             case "worldbosses_storm_griffin" -> { releaseStormGriffin(player); yield true; }
             case "worldbosses_shadow_weaver" -> { releaseShadowWeaver(player); yield true; }
+            case "mcendgame_arachne" -> { releaseArachne(player); yield true; }
+            case "mcendgame_bonecrusher" -> { releaseBonecrusher(player); yield true; }
+            case "mcendgame_elf_duelist" -> { releaseElfDuelist(player); yield true; }
+            case "mcendgame_beakburn" -> { releaseBeakburn(player); yield true; }
+            case "mcendgame_beastweaver" -> { releaseBeastweaver(player); yield true; }
             default -> false;
         };
+    }
+
+    /** Vanilla Wither: three-target wither pressure, close detonation and one native regeneration pulse. */
+    private static void releaseWither(ServerPlayer player) {
+        List<LivingEntity> targets = hostiles(player, 24.0D).stream()
+                .sorted((left, right) -> Double.compare(player.distanceToSqr(left), player.distanceToSqr(right)))
+                .limit(3)
+                .toList();
+        for (LivingEntity target : targets) {
+            hurt(player, target, scaledDamage(player, 0.85D, 8.0D));
+            target.addEffect(new MobEffectInstance(MobEffects.WITHER, 160, 1));
+        }
+        for (LivingEntity enemy : hostiles(player, 5.0D)) {
+            hurt(player, enemy, scaledDamage(player, 0.45D, 4.0D));
+            pushAway(player, enemy, 0.8D, 0.25D);
+        }
+        player.heal(1.0F);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.WITHER_SHOOT, SoundSource.PLAYERS, 0.9F, 0.8F);
+        particles(player, ParticleTypes.SOUL, 110, 6.0D);
+    }
+
+    /** Vanilla Ender Dragon: charge knockback followed by a dragon-breath cone. */
+    private static void releaseEnderDragon(ServerPlayer player) {
+        for (LivingEntity enemy : hostiles(player, 6.0D)) {
+            hurt(player, enemy, scaledDamage(player, 0.65D, 6.0D));
+            pushAway(player, enemy, 1.6D, 0.65D);
+        }
+        for (LivingEntity enemy : hostilesInCone(player, 12.0D, 70.0D)) {
+            hurt(player, enemy, scaledDamage(player, 0.8D, 7.0D));
+        }
+        player.level().playSound(null, player.blockPosition(), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.PLAYERS, 0.75F, 1.2F);
+        particles(player, ParticleTypes.DRAGON_BREATH, 120, 8.0D);
     }
 
     /** Time Guardian: blink pressure + temporal distortion AoE + slowed primary target. */
@@ -404,6 +479,128 @@ public final class AuthorityTheftService {
         }
         particles(player, ParticleTypes.PORTAL, 120, 8.0D);
         particles(player, ParticleTypes.ELECTRIC_SPARK, 70, 8.0D);
+    }
+
+    /** MCEndgame Arachne: web shot, three-pull hook bind and the 4x3 frontal melee sweep. */
+    private static void releaseArachne(ServerPlayer player) {
+        LivingEntity primary = nearestHostile(player, 15.0D);
+        if (primary != null) {
+            hurt(player, primary, scaledDamage(player, 0.75D, 3.0D));
+            primary.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 45, 4));
+            pullToward(player, primary, 1.0D);
+        }
+        Vec3 look = flatLook(player);
+        for (LivingEntity enemy : hostiles(player, 4.5D)) {
+            Vec3 offset = enemy.position().subtract(player.position());
+            double forward = offset.dot(look);
+            double lateral = Math.abs(offset.x * -look.z + offset.z * look.x);
+            if (forward < 0.0D || forward > 4.0D || lateral > 1.5D) continue;
+            hurt(player, enemy, scaledDamage(player, 1.1D, 4.0D));
+            enemy.push(look.x * 1.5D, 0.2D, look.z * 1.5D);
+        }
+        player.level().playSound(null, player.blockPosition(), SoundEvents.SPIDER_AMBIENT, SoundSource.PLAYERS, 0.7F, 0.8F);
+        particles(player, ParticleTypes.WHITE_SMOKE, 70, 5.0D);
+    }
+
+    /** MCEndgame Bonecrusher: teleport press, unblockable slam and full-body spin pressure. */
+    private static void releaseBonecrusher(ServerPlayer player) {
+        LivingEntity primary = nearestHostile(player, 50.0D);
+        if (primary != null && player.distanceToSqr(primary) >= 36.0D) {
+            blinkBehind(player, primary, 2.0D);
+        }
+        for (LivingEntity enemy : hostiles(player, 6.0D)) {
+            double multiplier = player.distanceToSqr(enemy) <= 16.0D ? 2.5D : 1.5D;
+            hurt(player, enemy, scaledDamage(player, multiplier, 8.0D));
+            pushAway(player, enemy, 1.0D, 0.4D);
+        }
+        player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.9F, 0.9F);
+        particles(player, ParticleTypes.CRIT, 120, 6.0D);
+    }
+
+    /** MCEndgame Elf Duelist: rapid blade chain, leap/backflip motion and source 50%/100-degree projectile reversal. */
+    private static void releaseElfDuelist(ServerPlayer player) {
+        deflectDuelistProjectiles(player);
+        LivingEntity primary = nearestHostile(player, 10.0D);
+        if (primary != null) {
+            hurt(player, primary, scaledDamage(player, 1.5D, 6.0D));
+        }
+        for (LivingEntity enemy : hostiles(player, 3.5D)) {
+            hurt(player, enemy, scaledDamage(player, 0.5D, 2.0D));
+        }
+        Vec3 back = flatLook(player).scale(-0.8D);
+        player.push(back.x, 0.35D, back.z);
+        particles(player, ParticleTypes.SWEEP_ATTACK, 72, 3.5D);
+    }
+
+    /** MCEndgame Beakburn: pounce, wind burst, 70-degree flame breath and 15-block fire-geyser field. */
+    private static void releaseBeakburn(ServerPlayer player) {
+        LivingEntity primary = nearestHostile(player, 12.0D);
+        if (primary != null) hurt(player, primary, scaledDamage(player, 0.55D, 3.0D));
+        for (LivingEntity enemy : hostiles(player, 12.0D)) {
+            pushAway(player, enemy, 1.0D, 0.35D);
+        }
+        for (LivingEntity enemy : hostilesInCone(player, 8.0D, 70.0D)) {
+            hurt(player, enemy, scaledDamage(player, 0.5D, 3.0D));
+            enemy.igniteForSeconds(3.0F);
+        }
+        for (LivingEntity enemy : hostiles(player, 15.0D)) {
+            if (player.getRandom().nextDouble() > 0.07D) continue;
+            hurt(player, enemy, scaledDamage(player, 0.75D, 5.0D));
+            enemy.igniteForSeconds(4.0F);
+        }
+        particles(player, ParticleTypes.FLAME, 130, 10.0D);
+    }
+
+    /** MCEndgame Beastweaver: beast swipe, elephant stomp, vine control, wolf pack and rhino-charge pressure. */
+    private static void releaseBeastweaver(ServerPlayer player) {
+        for (LivingEntity enemy : hostiles(player, 3.25D)) {
+            hurt(player, enemy, scaledDamage(player, 0.75D, 4.0D));
+        }
+        for (LivingEntity enemy : hostiles(player, 9.0D)) {
+            hurt(player, enemy, scaledDamage(player, 2.0D, 10.0D));
+            pushAway(player, enemy, 2.5D, 0.55D);
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 95, 3));
+        }
+        LivingEntity chargeTarget = nearestHostile(player, 50.0D);
+        if (chargeTarget != null && player.distanceToSqr(chargeTarget) >= 100.0D) {
+            hurt(player, chargeTarget, scaledDamage(player, 1.25D, 7.0D));
+            pushAway(player, chargeTarget, 3.0D, 0.3D);
+        }
+        spawnAuthorityEchoes(player, 3, 20.0F, 6.0D, 15 * 20);
+        player.addEffect(new MobEffectInstance(MobEffects.SPEED, 100, 0));
+        player.level().playSound(null, player.blockPosition(), SoundEvents.RAVAGER_AMBIENT, SoundSource.PLAYERS, 0.8F, 0.9F);
+        particles(player, ParticleTypes.SPORE_BLOSSOM_AIR, 130, 9.0D);
+    }
+
+    private static int deflectDuelistProjectiles(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return 0;
+        Vec3 facing = flatLook(player);
+        double minimumDot = Math.cos(Math.toRadians(100.0D));
+        int reflected = 0;
+        for (Projectile projectile : level.getEntitiesOfClass(
+                Projectile.class,
+                player.getBoundingBox().inflate(10.0D),
+                candidate -> candidate.isAlive() && candidate.getOwner() != player)) {
+            Vec3 offset = projectile.position().subtract(player.position());
+            Vec3 horizontal = new Vec3(offset.x, 0.0D, offset.z);
+            if (horizontal.lengthSqr() < 1.0E-6D) continue;
+            if (facing.dot(horizontal.normalize()) < minimumDot) continue;
+            if (player.getRandom().nextDouble() > 0.5D) continue;
+            projectile.setOwner(player);
+            projectile.setDeltaMovement(projectile.getDeltaMovement().scale(-1.0D));
+            reflected++;
+        }
+        return reflected;
+    }
+
+    private static List<LivingEntity> hostilesInCone(ServerPlayer player, double radius, double angleDegrees) {
+        Vec3 look = flatLook(player);
+        double minimumDot = Math.cos(Math.toRadians(angleDegrees * 0.5D));
+        return hostiles(player, radius).stream().filter(enemy -> {
+            Vec3 offset = enemy.position().subtract(player.position());
+            Vec3 flat = new Vec3(offset.x, 0.0D, offset.z);
+            return flat.lengthSqr() > 1.0E-6D && look.dot(flat.normalize()) >= minimumDot;
+        }).toList();
     }
 
     private static void spawnAuthorityEchoes(ServerPlayer owner, int count, float health, double damage, int durationTicks) {
