@@ -16,7 +16,7 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
@@ -49,8 +49,8 @@ public final class StorageAugmentService {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayer player) handleActualPlayerDeath(player);
         });
-        ServerPlayerEvents.LEAVE.register(player -> {
-            UUID leaving = player.getUUID();
+        ServerPlayConnectionEvents.DISCONNECT.register((listener, server) -> {
+            UUID leaving = listener.player.getUUID();
             PENDING_INVITES.remove(leaving);
             PENDING_INVITES.entrySet().removeIf(entry -> entry.getValue().inviterId.equals(leaving));
         });
@@ -134,7 +134,7 @@ public final class StorageAugmentService {
 
     public static boolean openStorage(ServerPlayer player) {
         if (!hasAnyStorage(player) || player.isDeadOrDying()) {
-            player.displayClientMessage(Component.translatable("message.augmentation_survival.storage.no_access"), true);
+            player.sendSystemMessage(Component.translatable("message.augmentation_survival.storage.no_access"));
             return false;
         }
         player.openMenu(new SimpleMenuProvider(
@@ -172,10 +172,10 @@ public final class StorageAugmentService {
         }
         long expires = player.level().getServer().overworld().getGameTime() + INVITE_LIFETIME_TICKS;
         PENDING_INVITES.put(target.getUUID(), new PendingInvite(player.getUUID(), expires));
-        player.displayClientMessage(Component.translatable(
-                "message.augmentation_survival.storage.invite_sent", target.getScoreboardName()), false);
-        target.displayClientMessage(Component.translatable(
-                "message.augmentation_survival.storage.invite_received", player.getScoreboardName()), false);
+        player.sendSystemMessage(Component.translatable(
+                "message.augmentation_survival.storage.invite_sent", target.getScoreboardName()));
+        target.sendSystemMessage(Component.translatable(
+                "message.augmentation_survival.storage.invite_received", player.getScoreboardName()));
         return true;
     }
 
@@ -203,8 +203,8 @@ public final class StorageAugmentService {
                 .orElseGet(() -> UUID.randomUUID().toString());
         setWorldState(server, state.mergeGroups(invite.inviterId, player.getUUID(), groupId));
         closeMenusFor(affected);
-        player.displayClientMessage(Component.translatable("message.augmentation_survival.storage.shared"), false);
-        if (inviter != null) inviter.displayClientMessage(Component.translatable("message.augmentation_survival.storage.shared"), false);
+        player.sendSystemMessage(Component.translatable("message.augmentation_survival.storage.shared"));
+        if (inviter != null) inviter.sendSystemMessage(Component.translatable("message.augmentation_survival.storage.shared"));
         return true;
     }
 
@@ -217,12 +217,12 @@ public final class StorageAugmentService {
         Set<UUID> affected = new HashSet<>(state.members(player.getUUID()));
         setWorldState(server, state.leaveGroup(player.getUUID()));
         closeMenusFor(affected);
-        player.displayClientMessage(Component.translatable("message.augmentation_survival.storage.left_group"), false);
+        player.sendSystemMessage(Component.translatable("message.augmentation_survival.storage.left_group"));
         return true;
     }
 
     private static boolean fail(ServerPlayer player, String key) {
-        player.displayClientMessage(Component.translatable(key), false);
+        player.sendSystemMessage(Component.translatable(key));
         return false;
     }
 
