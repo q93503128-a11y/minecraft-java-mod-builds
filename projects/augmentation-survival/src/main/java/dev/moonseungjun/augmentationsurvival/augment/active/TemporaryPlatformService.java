@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -26,6 +27,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -41,7 +43,8 @@ public final class TemporaryPlatformService {
     private static final String OVERTIME_ID = id("overtime");
     private static final String REPLAY_ID = id("replay");
 
-    private static final BlockState PLATFORM_STATE = Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState();
+    private static final Block PLATFORM_BLOCK = Blocks.STAINED_GLASS.pick(DyeColor.LIGHT_BLUE);
+    private static final BlockState PLATFORM_STATE = PLATFORM_BLOCK.defaultBlockState();
     private static final Map<PlatformKey, PlatformRecord> PLATFORMS = new HashMap<>();
     private static final Map<UUID, List<ReplayAction>> REPLAYS = new HashMap<>();
 
@@ -82,8 +85,8 @@ public final class TemporaryPlatformService {
         if (boundedLevel(latest, REPLAY_ID) > 0) {
             REPLAYS.computeIfAbsent(player.getUUID(), ignored -> new ArrayList<>()).add(
                     new ReplayAction(
-                            player.level().getGameTime() + AdvancedActiveTuning.current().replayDelayTicks(),
-                            AdvancedActiveTuning.current().replayEfficiency()
+                            player.level().getGameTime() + ExpansionTuning.current().replayDelayTicks(),
+                            ExpansionTuning.current().replayEfficiency()
                     )
             );
         }
@@ -151,7 +154,7 @@ public final class TemporaryPlatformService {
                 PlatformKey key = new PlatformKey(level.dimension(), new BlockPos(x, y, z));
                 PlatformRecord record = PLATFORMS.get(key);
                 if (record != null && record.expiresAtTick >= now
-                        && level.getBlockState(key.pos()).is(Blocks.LIGHT_BLUE_STAINED_GLASS)) {
+                        && level.getBlockState(key.pos()).is(PLATFORM_BLOCK)) {
                     return true;
                 }
             }
@@ -164,8 +167,7 @@ public final class TemporaryPlatformService {
         int cooldown = FinalAugmentTuning.current().temporaryPlatformCooldownTicks();
         if (boundedLevel(state, ABILITY_HASTE_ID) > 0) {
             cooldown = Math.max(1, (int) Math.round(
-                    cooldown * (1.0D - dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning.current()
-                            .abilityHasteReduction())
+                    cooldown * (1.0D - ExpansionTuning.current().abilityHasteReduction())
             ));
         }
         if (boundedLevel(state, DOUBLE_CHARGE_ID) <= 0) {
@@ -278,7 +280,7 @@ public final class TemporaryPlatformService {
             if (level == null || level.getGameTime() < entry.getValue().expiresAtTick) {
                 continue;
             }
-            if (level.getBlockState(key.pos()).is(Blocks.LIGHT_BLUE_STAINED_GLASS)) {
+            if (level.getBlockState(key.pos()).is(PLATFORM_BLOCK)) {
                 level.removeBlock(key.pos(), false);
             }
             iterator.remove();
