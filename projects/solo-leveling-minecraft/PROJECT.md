@@ -44,7 +44,8 @@ When a source mechanic does not fit Minecraft literally, preserve its purpose an
 - Nether and End are not required for core progression.
 - Vanilla survival remains the ordinary-world layer; the System and gates provide the RPG layer.
 - Keep a **single real Minecraft player inventory** rather than separate vanilla/System inventories by default.
-- Re-theme/redesign the inventory screen in the System visual language. If capacity becomes restrictive, prefer System-driven capacity/slot expansion over a second parallel inventory.
+- Re-theme/redesign the inventory screen in the System visual language.
+- Inventory capacity should grow through a mix of automatic milestone/level progression and extra System quest, special reward, or expansion-item rewards. Neither path should be the only source; exact pacing and caps are tuned later.
 - Replace the vanilla heart HUD with a System-style HP bar. MP and fatigue are separate System resources.
 - Keep hunger as an ordinary survival/life resource, but do not let food dominate RPG combat recovery. Combat healing should primarily come from System potions, skills, level-up recovery and other RPG mechanics; vanilla-style food spam/natural regeneration should be reduced or suppressed during active combat where needed.
 - Minecraft death is not permadeath; content-specific failure rules are used for gates, System quests and the Penalty Zone.
@@ -100,7 +101,7 @@ The later return to the Double Dungeon remains important because the contrast be
 
 Work through these slowly; do not lock them all at once.
 
-1. Exact inventory-capacity expansion rules.
+1. Exact pacing and final cap for inventory-capacity expansion.
 2. System store vs Minecraft crafting and trading.
 3. Vanilla gear vs System gear and equipment slots.
 4. Player EXP vs vanilla experience.
