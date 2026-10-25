@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentRuntimeService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,6 +16,7 @@ public abstract class MovementAugmentMixin {
     private void augmentationSurvival$afterGroundJump(CallbackInfo ci) {
         if ((Object) this instanceof ServerPlayer player) {
             MovementAugmentService.afterGroundJump(player);
+            FinalAugmentRuntimeService.afterGroundJump(player);
         }
     }
 }
