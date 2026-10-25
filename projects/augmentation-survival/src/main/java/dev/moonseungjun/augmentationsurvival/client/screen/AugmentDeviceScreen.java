@@ -30,6 +30,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     private static final int TEXT = 0xFFF3F6F8, MUTED = 0xFF909CA3, FAINT = 0xFF616B71;
     private static final int GOOD = 0xFF79D496, BAD = 0xFFE67F86;
     private static final int CARD_W = 194, CARD_H = 226, CARD_GAP = 15;
+    private static final int OWNED_PER_PAGE = 18;
 
     private View view = View.SELECT;
     private int ownedPage;
@@ -56,9 +57,9 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         syncReveal();
         int mx = mouseX - leftPos, my = mouseY - topPos;
-        boolean offer = menu.status() == AugmentDeviceMenu.STATUS_READY || menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED;
-        g.text(font, offer ? "증강 동조" : title.getString(), 14, 11, TEXT, false);
-        if (offer) {
+        boolean choosing = menu.status() == AugmentDeviceMenu.STATUS_READY;
+        g.text(font, choosing ? "증강 동조" : title.getString(), 14, 11, TEXT, false);
+        if (choosing) {
             drawOffer(g, mx, my);
             return;
         }
@@ -85,10 +86,16 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             int x = startX + tier.ordinal() * (cellW + gap);
             drawTierChoice(g, x, y, cellW, 112, tier, mx, my);
         }
-        centered(g, "이미 획득한 증강은 상단의 ‘보유 증강’에서 확인할 수 있습니다.", W / 2, 240, FAINT);
-        if (menu.status() == AugmentDeviceMenu.STATUS_NO_CORE) centered(g, "선택한 등급의 코어가 없습니다.", W / 2, 266, BAD);
-        else if (menu.status() == AugmentDeviceMenu.STATUS_FULLY_MAXED) centered(g, "이 등급의 증강을 모두 완성했습니다.", W / 2, 266, GOOD);
-        else if (menu.status() == AugmentDeviceMenu.STATUS_INVALID) centered(g, "진행 중인 동조를 먼저 완료하세요.", W / 2, 266, BAD);
+        centered(g, "획득한 증강과 현재 레벨은 ‘보유 증강’에서 확인할 수 있습니다.", W / 2, 240, FAINT);
+        String state = switch (menu.status()) {
+            case AugmentDeviceMenu.STATUS_NO_CORE -> "선택한 등급의 코어가 없습니다.";
+            case AugmentDeviceMenu.STATUS_FULLY_MAXED -> "이 등급의 증강을 모두 완성했습니다.";
+            case AugmentDeviceMenu.STATUS_ACQUIRED -> "동조 완료 · 획득 정보가 보유 증강에 반영되었습니다.";
+            case AugmentDeviceMenu.STATUS_INVALID -> "진행 중인 동조를 먼저 완료하세요.";
+            default -> "";
+        };
+        if (!state.isBlank()) centered(g, state, W / 2, 266,
+                menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED ? GOOD : BAD);
     }
 
     private void drawTierChoice(GuiGraphicsExtractor g, int x, int y, int w, int h, AugmentTier tier, int mx, int my) {
@@ -108,7 +115,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     private void drawOffer(GuiGraphicsExtractor g, int mx, int my) {
         AugmentTier selectedTier = menu.tierOrdinal() >= 0 ? AugmentTier.values()[menu.tierOrdinal()] : AugmentTier.COMMON;
         g.text(font, tierLabel(selectedTier) + " 코어", 14, 37, tierColor(selectedTier), false);
-        String hint = menu.selectionCount() == 2 ? "두 가지 증강을 선택" : "한 가지 증강을 선택";
+        String hint = menu.selectionCount() == 2 ? "서로 다른 증강 두 개를 선택" : "한 가지 증강을 선택";
         g.text(font, hint, W - 14 - font.width(hint), 37, MUTED, false);
         int y = 60;
         for (int slot = 0; slot < 3; slot++) {
@@ -118,16 +125,17 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             drawAugmentCard(g, x, y, CARD_W, CARD_H, slot, d, mx, my);
         }
         AugmentDefinition hover = hoveredCandidate(mx, my, y);
-        if (hover != null && shiftDown()) drawDetailedStrip(g, hover, 16, H - 45, W - 32, menu.currentLevel(candidateSlotFor(hover)));
-        else centered(g, hover != null ? "Shift: 정확한 수치 보기" : statusLine(), W / 2, H - 22,
-                menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED ? GOOD : MUTED);
+        if (hover != null && shiftDown()) {
+            drawDetailedStrip(g, hover, 16, H - 45, W - 32, menu.currentLevel(candidateSlotFor(hover)));
+        } else {
+            centered(g, hover != null ? "Shift: 정확한 수치 보기" : statusLine(), W / 2, H - 22, MUTED);
+        }
     }
 
     private void drawAugmentCard(GuiGraphicsExtractor g, int x, int y, int w, int h, int slot,
                                  AugmentDefinition d, int mx, int my) {
         double reveal = revealProgress(slot);
-        int dy = (int) Math.round((1.0 - reveal) * 12.0);
-        y += dy;
+        y += (int) Math.round((1.0 - reveal) * 12.0);
         boolean hover = inside(mx, my, x, y, w, h);
         boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
         int color = tierColor(d.tier());
@@ -139,7 +147,8 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         g.fill(x + 1, y + 6, x + w - 1, y + 31, tint(0xFF11171C, color, 10));
         g.text(font, tierLabel(d.tier()), x + 10, y + 13, color, false);
         String kind = p.kind().label();
-        g.text(font, kind, x + w - 10 - font.width(kind), y + 13, p.kind() == AugmentPresentationCatalog.Kind.PASSIVE ? MUTED : 0xFFF0D47A, false);
+        g.text(font, kind, x + w - 10 - font.width(kind), y + 13,
+                p.kind() == AugmentPresentationCatalog.Kind.PASSIVE ? MUTED : 0xFFF0D47A, false);
 
         g.fill(x + w / 2 - 25, y + 43, x + w / 2 + 25, y + 93, 0xFF0D1318);
         if (hover) g.outline(x + w / 2 - 25, y + 43, 50, 50, shade(color, 0.75));
@@ -161,18 +170,16 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     }
 
     private void drawOwned(GuiGraphicsExtractor g, int mx, int my) {
-        List<AugmentDefinition> owned = new ArrayList<>();
-        for (String id : ClientAugmentProgressState.levels().keySet()) {
-            try { owned.add(AugmentCatalog.require(id)); } catch (RuntimeException ignored) { }
-        }
-        owned.sort(Comparator.comparing((AugmentDefinition d) -> d.tier().ordinal())
-                .thenComparing(d -> AugmentPresentationCatalog.get(d).displayName()));
+        List<AugmentDefinition> owned = ownedDefinitions();
+        int pages = Math.max(1, (owned.size() + OWNED_PER_PAGE - 1) / OWNED_PER_PAGE);
+        ownedPage = Math.max(0, Math.min(ownedPage, pages - 1));
         g.text(font, "보유 증강 " + owned.size() + " / 146", 18, 48, TEXT, false);
-        g.text(font, "마우스를 올려 설명 확인 · Shift: 정확한 수치", W - 18 - font.width("마우스를 올려 설명 확인 · Shift: 정확한 수치"), 48, MUTED, false);
+        String help = "마우스: 설명 · Shift: 정확한 수치";
+        g.text(font, help, W - 18 - font.width(help), 48, MUTED, false);
         hoveredOwnedId = "";
-        int perPage = 18, pages = Math.max(1, (owned.size() + perPage - 1) / perPage);
-        ownedPage = Math.min(ownedPage, pages - 1);
-        int start = ownedPage * perPage, end = Math.min(owned.size(), start + perPage);
+
+        int start = ownedPage * OWNED_PER_PAGE;
+        int end = Math.min(owned.size(), start + OWNED_PER_PAGE);
         int startX = 18, startY = 68, cellW = 202, cellH = 31, gapX = 8, gapY = 5;
         for (int i = start; i < end; i++) {
             int local = i - start, col = local % 3, row = local / 3;
@@ -180,11 +187,12 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             drawOwnedCell(g, startX + col * (cellW + gapX), startY + row * (cellH + gapY), cellW, cellH, d, mx, my);
         }
         if (owned.isEmpty()) centered(g, "아직 획득한 증강이 없습니다.", W / 2, 150, MUTED);
-        if (pages > 1) centered(g, "‹   " + (ownedPage + 1) + " / " + pages + "   ›", W / 2, 289, MUTED);
+        if (pages > 1) drawPager(g, W / 2, 289, ownedPage, pages, mx, my);
         if (!hoveredOwnedId.isBlank()) {
             AugmentDefinition d = AugmentCatalog.require(hoveredOwnedId);
-            if (shiftDown()) drawDetailedStrip(g, d, 18, H - 45, W - 36, ClientAugmentProgressState.level(d.id()));
-            else drawSummaryStrip(g, d, 18, H - 45, W - 36, ClientAugmentProgressState.level(d.id()));
+            int level = ClientAugmentProgressState.level(d.id());
+            if (shiftDown()) drawDetailedStrip(g, d, 18, H - 45, W - 36, level);
+            else drawSummaryStrip(g, d, 18, H - 45, W - 36, level);
         }
     }
 
@@ -199,8 +207,18 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int level = ClientAugmentProgressState.level(d.id());
         g.text(font, "Lv." + level + "/" + d.maxLevel(), x + 29, y + 18, MUTED, false);
         String kind = p.kind().label();
-        g.text(font, kind, x + w - 8 - font.width(kind), y + 11, p.kind() == AugmentPresentationCatalog.Kind.PASSIVE ? FAINT : 0xFFE8CF78, false);
+        g.text(font, kind, x + w - 8 - font.width(kind), y + 11,
+                p.kind() == AugmentPresentationCatalog.Kind.PASSIVE ? FAINT : 0xFFE8CF78, false);
         if (hover) hoveredOwnedId = d.id();
+    }
+
+    private void drawPager(GuiGraphicsExtractor g, int centerX, int y, int page, int pages, int mx, int my) {
+        boolean left = page > 0 && inside(mx, my, centerX - 58, y - 5, 28, 20);
+        boolean right = page + 1 < pages && inside(mx, my, centerX + 30, y - 5, 28, 20);
+        g.text(font, "‹", centerX - 50, y, left ? TEXT : FAINT, false);
+        String state = (page + 1) + " / " + pages;
+        centered(g, state, centerX, y, MUTED);
+        g.text(font, "›", centerX + 42, y, right ? TEXT : FAINT, false);
     }
 
     private void drawSynthesis(GuiGraphicsExtractor g, int mx, int my) {
@@ -265,12 +283,10 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() != 0) return super.mouseClicked(event, doubleClick);
         double x = event.x() - leftPos, y = event.y() - topPos;
-        boolean offer = menu.status() == AugmentDeviceMenu.STATUS_READY;
-        if (offer) {
-            int cardY = 60;
+        if (menu.status() == AugmentDeviceMenu.STATUS_READY) {
             for (int slot = 0; slot < 3; slot++) {
                 int cx = 24 + slot * (CARD_W + CARD_GAP);
-                if (menu.candidate(slot) != null && inside(x, y, cx, cardY, CARD_W, CARD_H)) {
+                if (menu.candidate(slot) != null && inside(x, y, cx, 60, CARD_W, CARD_H)) {
                     playClick(1.05F + slot * 0.04F);
                     return send(AugmentDeviceMenu.candidateButtonId(slot));
                 }
@@ -289,6 +305,19 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
                     playClick(0.92F + tier.ordinal() * 0.04F);
                     return send(AugmentDeviceMenu.beginButtonId(tier));
                 }
+            }
+        } else if (view == View.OWNED) {
+            List<AugmentDefinition> owned = ownedDefinitions();
+            int pages = Math.max(1, (owned.size() + OWNED_PER_PAGE - 1) / OWNED_PER_PAGE);
+            if (inside(x, y, W / 2 - 58, 284, 28, 20) && ownedPage > 0) {
+                ownedPage--;
+                playClick(0.96F);
+                return true;
+            }
+            if (inside(x, y, W / 2 + 30, 284, 28, 20) && ownedPage + 1 < pages) {
+                ownedPage++;
+                playClick(1.04F);
+                return true;
             }
         } else if (view == View.SYNTHESIS && menu.advanced()) {
             for (int i = 0; i < AugmentTier.values().length - 1; i++) {
@@ -328,6 +357,15 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         return 1.0 - inv * inv * inv;
     }
 
+    private List<AugmentDefinition> ownedDefinitions() {
+        List<AugmentDefinition> owned = new ArrayList<>();
+        for (String id : ClientAugmentProgressState.levels().keySet()) {
+            try { owned.add(AugmentCatalog.require(id)); } catch (RuntimeException ignored) { }
+        }
+        owned.sort(Comparator.comparing((AugmentDefinition d) -> d.tier().ordinal())
+                .thenComparing(d -> AugmentPresentationCatalog.get(d).displayName()));
+        return owned;
+    }
     private AugmentDefinition hoveredCandidate(int mx, int my, int y) {
         for (int slot = 0; slot < 3; slot++) {
             AugmentDefinition d = menu.candidate(slot);
@@ -340,11 +378,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         return 0;
     }
     private String statusLine() {
-        return switch (menu.status()) {
-            case AugmentDeviceMenu.STATUS_ACQUIRED -> "동조 완료";
-            case AugmentDeviceMenu.STATUS_INVALID -> "선택을 완료할 수 없습니다.";
-            default -> menu.selectionCount() == 2 ? "서로 다른 증강 두 개를 선택하세요" : "원하는 증강을 선택하세요";
-        };
+        return menu.selectionCount() == 2 ? "서로 다른 증강 두 개를 선택하세요" : "원하는 증강을 선택하세요";
     }
     private int coreCount(AugmentTier tier) {
         if (minecraft == null || minecraft.player == null) return 0;
@@ -389,19 +423,19 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         return x >= l && x < l + w && y >= t && y < t + h;
     }
     private static int brighten(int color, int amount) {
-        int r = Math.min(255, ((color >> 16) & 255) + amount), g = Math.min(255, ((color >> 8) & 255) + amount), b = Math.min(255, (color & 255) + amount);
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
+        int r = Math.min(255, ((color >> 16) & 255) + amount), gg = Math.min(255, ((color >> 8) & 255) + amount), b = Math.min(255, (color & 255) + amount);
+        return 0xFF000000 | (r << 16) | (gg << 8) | b;
     }
     private static int shade(int color, double factor) {
-        int r = (int) (((color >> 16) & 255) * factor), g = (int) (((color >> 8) & 255) * factor), b = (int) ((color & 255) * factor);
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
+        int r = (int) (((color >> 16) & 255) * factor), gg = (int) (((color >> 8) & 255) * factor), b = (int) ((color & 255) * factor);
+        return 0xFF000000 | (r << 16) | (gg << 8) | b;
     }
     private static int tint(int base, int color, int percent) {
         int inv = 100 - percent;
         int r = (((base >> 16) & 255) * inv + ((color >> 16) & 255) * percent) / 100;
-        int g = (((base >> 8) & 255) * inv + ((color >> 8) & 255) * percent) / 100;
+        int gg = (((base >> 8) & 255) * inv + ((color >> 8) & 255) * percent) / 100;
         int b = ((base & 255) * inv + (color & 255) * percent) / 100;
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
+        return 0xFF000000 | (r << 16) | (gg << 8) | b;
     }
     private static int tierColor(AugmentTier tier) {
         return switch (tier) {
