@@ -10,7 +10,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 
-/** Client registration for augmentation screens and shared input runtimes. */
+/** Client registration for augmentation screens, HUD and shared input runtimes. */
 public final class AugmentationSurvivalClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
@@ -18,6 +18,8 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         MenuScreens.register(AugmentDeviceMenus.ADVANCED, AugmentDeviceScreen::new);
         MenuScreens.register(AugmentStorageMenus.STORAGE, AugmentStorageScreen::new);
         EntityRenderers.register(CloneEntityTypes.COMBAT_CLONE, CombatCloneRenderer::new);
+        ActiveLoadoutClientNetworking.initialize();
+        CombatHudClient.initialize();
         ConsumptionClientNetworking.initialize();
         TemporalClientNetworking.initialize();
         PhaseClientNetworking.initialize();
