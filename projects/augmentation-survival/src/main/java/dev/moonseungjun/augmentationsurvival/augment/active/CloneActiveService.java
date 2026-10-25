@@ -146,12 +146,18 @@ public final class CloneActiveService {
     }
 
     public static boolean areCloneAllies(Entity first, Entity second) {
-        CombatCloneEntity clone = first instanceof CombatCloneEntity value
-                ? value
-                : second instanceof CombatCloneEntity value ? value : null;
-        if (clone == null || clone.ownerId() == null) return false;
-        Entity other = clone == first ? second : first;
-        return clone.isAlliedTo(other);
+        CombatCloneEntity clone;
+        Entity other;
+        if (first instanceof CombatCloneEntity firstClone) {
+            clone = firstClone;
+            other = second;
+        } else if (second instanceof CombatCloneEntity secondClone) {
+            clone = secondClone;
+            other = first;
+        } else {
+            return false;
+        }
+        return clone.ownerId() != null && clone.isCloneAlly(other);
     }
 
     private static int boundedLevel(AugmentationPlayerState state, String augmentId) {
