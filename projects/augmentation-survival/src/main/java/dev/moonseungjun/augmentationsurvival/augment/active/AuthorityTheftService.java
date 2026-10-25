@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.active;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CloneCombatSnapshot;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CloneEntityTypes;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CombatCloneEntity;
@@ -44,6 +45,20 @@ public final class AuthorityTheftService {
             "chronodawn_time_tyrant"
     );
 
+    private static final Set<String> WORLD_BOSSES_PACKAGES = Set.of(
+            "worldbosses_sylvaron",
+            "worldbosses_aureon",
+            "worldbosses_nekhraz",
+            "worldbosses_varkhul",
+            "worldbosses_morvath",
+            "worldbosses_elyndra",
+            "worldbosses_astrael",
+            "worldbosses_shadow_king",
+            "worldbosses_dragon_mother",
+            "worldbosses_storm_griffin",
+            "worldbosses_shadow_weaver"
+    );
+
     private AuthorityTheftService() { }
 
     public static void initialize() {
@@ -52,7 +67,12 @@ public final class AuthorityTheftService {
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(AuthorityTheftService::afterKill);
     }
 
-    private static void afterKill(ServerLevel level, net.minecraft.world.entity.Entity killer, LivingEntity killed, net.minecraft.world.damagesource.DamageSource source) {
+    private static void afterKill(
+            ServerLevel level,
+            net.minecraft.world.entity.Entity killer,
+            LivingEntity killed,
+            net.minecraft.world.damagesource.DamageSource source
+    ) {
         if (!(killer instanceof ServerPlayer player)) return;
         if (AugmentationPlayerStateService.state(player).level(AUTHORITY_THEFT_ID) <= 0) return;
         if (!CombatProvenanceContext.resolve(source).isRootDirect()) return;
@@ -93,7 +113,7 @@ public final class AuthorityTheftService {
     }
 
     public static boolean supports(String bossId) {
-        return CHRONO_DAWN_PACKAGES.contains(bossId);
+        return CHRONO_DAWN_PACKAGES.contains(bossId) || WORLD_BOSSES_PACKAGES.contains(bossId);
     }
 
     private static boolean releasePackage(ServerPlayer player, String bossId) {
@@ -104,6 +124,17 @@ public final class AuthorityTheftService {
             case "chronodawn_temporal_phantom" -> { releaseTemporalPhantom(player); yield true; }
             case "chronodawn_entropy_keeper" -> { releaseEntropyKeeper(player); yield true; }
             case "chronodawn_time_tyrant" -> { releaseTimeTyrant(player); yield true; }
+            case "worldbosses_sylvaron" -> { releaseSylvaron(player); yield true; }
+            case "worldbosses_aureon" -> { releaseAureon(player); yield true; }
+            case "worldbosses_nekhraz" -> { releaseNekhraz(player); yield true; }
+            case "worldbosses_varkhul" -> { releaseVarkhul(player); yield true; }
+            case "worldbosses_morvath" -> { releaseMorvath(player); yield true; }
+            case "worldbosses_elyndra" -> { releaseElyndra(player); yield true; }
+            case "worldbosses_astrael" -> { releaseAstrael(player); yield true; }
+            case "worldbosses_shadow_king" -> { releaseShadowKing(player); yield true; }
+            case "worldbosses_dragon_mother" -> { releaseDragonMother(player); yield true; }
+            case "worldbosses_storm_griffin" -> { releaseStormGriffin(player); yield true; }
+            case "worldbosses_shadow_weaver" -> { releaseShadowWeaver(player); yield true; }
             default -> false;
         };
     }
@@ -129,11 +160,7 @@ public final class AuthorityTheftService {
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 100, 3));
         for (LivingEntity enemy : hostiles(player, 4.0D)) {
             hurt(player, enemy, 2.0F);
-            Vec3 away = enemy.position().subtract(player.position());
-            if (away.horizontalDistanceSqr() > 1.0E-5D) {
-                Vec3 normalized = new Vec3(away.x, 0.0D, away.z).normalize();
-                enemy.push(normalized.x * 1.15D, 0.45D, normalized.z * 1.15D);
-            }
+            pushAway(player, enemy, 1.15D, 0.45D);
         }
         LivingEntity primary = nearestHostile(player, 5.0D);
         if (primary != null) primary.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 1));
@@ -170,7 +197,7 @@ public final class AuthorityTheftService {
             target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 0));
             if (blinkBehind(player, target, 6.0D)) hurt(player, target, 8.0F);
         }
-        spawnPhantomEchoes(player);
+        spawnAuthorityEchoes(player, 2, 20.0F, 4.0D, 15 * 20);
         particles(player, ParticleTypes.PORTAL, 60, 3.0D);
     }
 
@@ -212,13 +239,182 @@ public final class AuthorityTheftService {
         particles(player, ParticleTypes.PORTAL, 100, 5.0D);
     }
 
-    private static void spawnPhantomEchoes(ServerPlayer owner) {
+    /** Sylvaron: root bind, spore pressure and a short nature-fortification pulse. */
+    private static void releaseSylvaron(ServerPlayer player) {
+        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 0));
+        for (LivingEntity enemy : hostiles(player, 7.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 3));
+            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 0));
+            enemy.addEffect(new MobEffectInstance(MobEffects.POISON, 80, 0));
+            hurt(player, enemy, scaledDamage(player, 0.45D, 3.0D));
+        }
+        particles(player, ParticleTypes.WITCH, 72, 7.0D);
+    }
+
+    /** Aureon: thunder cage around nearby enemies and a concentrated storm strike. */
+    private static void releaseAureon(ServerPlayer player) {
+        LivingEntity primary = nearestHostile(player, 18.0D);
+        if (primary != null) hurt(player, primary, scaledDamage(player, 1.25D, 10.0D));
+        for (LivingEntity enemy : hostiles(player, 7.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 2));
+            enemy.addEffect(new MobEffectInstance(MobEffects.GLOWING, 100, 0));
+            hurt(player, enemy, scaledDamage(player, 0.55D, 4.0D));
+        }
+        particles(player, ParticleTypes.ELECTRIC_SPARK, 96, 7.0D);
+    }
+
+    /** Nekhraz: sandstorm impairment followed by a burrow-style strike on the primary target. */
+    private static void releaseNekhraz(ServerPlayer player) {
+        for (LivingEntity enemy : hostiles(player, 8.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 1));
+        }
+        LivingEntity target = nearestHostile(player, 18.0D);
+        if (target != null && blinkBehind(player, target, 2.5D)) {
+            hurt(player, target, scaledDamage(player, 1.15D, 9.0D));
+            target.push(0.0D, 0.55D, 0.0D);
+        }
+        particles(player, ParticleTypes.WITCH, 76, 8.0D);
+    }
+
+    /** Varkhul: infernal chains and a flame-prison burst. */
+    private static void releaseVarkhul(ServerPlayer player) {
+        LivingEntity primary = nearestHostile(player, 16.0D);
+        if (primary != null) {
+            primary.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 4));
+            primary.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
+        }
+        for (LivingEntity enemy : hostiles(player, 6.0D)) {
+            enemy.igniteForSeconds(6.0F);
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 2));
+            hurt(player, enemy, scaledDamage(player, 0.7D, 6.0D));
+        }
+        particles(player, ParticleTypes.FLAME, 90, 6.0D);
+    }
+
+    /** Morvath: fear pulse plus soul drain converted into player healing. */
+    private static void releaseMorvath(ServerPlayer player) {
+        for (LivingEntity enemy : hostiles(player, 8.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0));
+            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 1));
+            pushAway(player, enemy, 0.75D, 0.15D);
+        }
+        LivingEntity target = nearestHostile(player, 16.0D);
+        if (target != null) {
+            float damage = scaledDamage(player, 0.9D, 7.0D);
+            hurt(player, target, damage);
+            player.heal(Math.min(player.getMaxHealth() * 0.15F, damage * 0.5F));
+        }
+        particles(player, ParticleTypes.SOUL, 86, 8.0D);
+    }
+
+    /** Elyndra: void tether pulls enemies inward before a rift burst launches them. */
+    private static void releaseElyndra(ServerPlayer player) {
+        for (LivingEntity enemy : hostiles(player, 9.0D)) {
+            pullToward(player, enemy, 0.8D);
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 1));
+            hurt(player, enemy, scaledDamage(player, 0.5D, 4.0D));
+            enemy.push(0.0D, 0.45D, 0.0D);
+        }
+        particles(player, ParticleTypes.PORTAL, 110, 9.0D);
+    }
+
+    /** Astrael: primordial chains, elemental shift and Cataclysm Nova. */
+    private static void releaseAstrael(ServerPlayer player) {
+        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 120, 1));
+        player.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 1));
+        player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 120, 0));
+        for (LivingEntity enemy : hostiles(player, 9.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 3));
+            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
+            hurt(player, enemy, scaledDamage(player, 1.0D, 9.0D));
+            pushAway(player, enemy, 1.1D, 0.35D);
+        }
+        particles(player, ParticleTypes.ELECTRIC_SPARK, 120, 9.0D);
+        particles(player, ParticleTypes.PORTAL, 80, 9.0D);
+    }
+
+    /** Shadow King: soul bolt, shadow step, raised shadow warriors and darkness nova. */
+    private static void releaseShadowKing(ServerPlayer player) {
+        LivingEntity target = nearestHostile(player, 20.0D);
+        if (target != null) {
+            hurt(player, target, scaledDamage(player, 1.0D, 8.0D));
+            blinkBehind(player, target, 4.0D);
+        }
+        for (LivingEntity enemy : hostiles(player, 7.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0));
+            hurt(player, enemy, scaledDamage(player, 0.5D, 4.0D));
+        }
+        spawnAuthorityEchoes(player, 2, 18.0F, 4.0D, 12 * 20);
+        particles(player, ParticleTypes.SOUL, 96, 7.0D);
+    }
+
+    /** Dragon Mother: fire breath cone, tail sweep, aerial fireball pressure and brood echoes. */
+    private static void releaseDragonMother(ServerPlayer player) {
+        Vec3 look = flatLook(player);
+        for (LivingEntity enemy : hostiles(player, 10.0D)) {
+            Vec3 offset = enemy.position().subtract(player.position());
+            double forward = offset.dot(look);
+            if (forward >= 0.0D && forward <= 10.0D) {
+                double lateral = Math.abs(offset.x * -look.z + offset.z * look.x);
+                if (lateral <= Math.max(1.5D, forward * 0.45D)) {
+                    enemy.igniteForSeconds(5.0F);
+                    hurt(player, enemy, scaledDamage(player, 0.8D, 6.0D));
+                }
+            }
+            if (player.distanceToSqr(enemy) <= 16.0D) {
+                pushAway(player, enemy, 1.25D, 0.35D);
+            }
+        }
+        LivingEntity target = nearestHostile(player, 20.0D);
+        if (target != null) {
+            target.igniteForSeconds(7.0F);
+            hurt(player, target, scaledDamage(player, 1.0D, 8.0D));
+        }
+        spawnAuthorityEchoes(player, 2, 14.0F, 3.5D, 10 * 20);
+        particles(player, ParticleTypes.FLAME, 110, 8.0D);
+    }
+
+    /** Storm Griffin: wing gust plus lightning pressure on marked nearby enemies. */
+    private static void releaseStormGriffin(ServerPlayer player) {
+        for (LivingEntity enemy : hostiles(player, 9.0D)) {
+            pushAway(player, enemy, 1.65D, 0.55D);
+            enemy.addEffect(new MobEffectInstance(MobEffects.GLOWING, 100, 0));
+            hurt(player, enemy, scaledDamage(player, 0.75D, 6.0D));
+        }
+        LivingEntity target = nearestHostile(player, 18.0D);
+        if (target != null) hurt(player, target, scaledDamage(player, 1.2D, 10.0D));
+        particles(player, ParticleTypes.ELECTRIC_SPARK, 120, 9.0D);
+    }
+
+    /** Shadow Weaver: binding threads, shadow clones, puppet powers and a short protective veil. */
+    private static void releaseShadowWeaver(ServerPlayer player) {
+        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 2));
+        for (LivingEntity enemy : hostiles(player, 8.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 4));
+            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 1));
+            hurt(player, enemy, scaledDamage(player, 0.55D, 4.0D));
+        }
+        spawnAuthorityEchoes(player, 3, 16.0F, 4.0D, 12 * 20);
+        LivingEntity target = nearestHostile(player, 18.0D);
+        if (target != null) {
+            target.igniteForSeconds(4.0F);
+            hurt(player, target, scaledDamage(player, 1.1D, 9.0D));
+            target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
+        }
+        particles(player, ParticleTypes.PORTAL, 120, 8.0D);
+        particles(player, ParticleTypes.ELECTRIC_SPARK, 70, 8.0D);
+    }
+
+    private static void spawnAuthorityEchoes(ServerPlayer owner, int count, float health, double damage, int durationTicks) {
         if (!(owner.level() instanceof ServerLevel level)) return;
-        Vec3 side = new Vec3(-flatLook(owner).z, 0.0D, flatLook(owner).x);
-        for (int i = 0; i < 2; i++) {
+        Vec3 look = flatLook(owner);
+        Vec3 side = new Vec3(-look.z, 0.0D, look.x);
+        for (int i = 0; i < count; i++) {
             CombatCloneEntity clone = new CombatCloneEntity(CloneEntityTypes.COMBAT_CLONE, level);
-            clone.configure(owner, 20.0F, 4.0D, 15 * 20);
-            Vec3 pos = owner.position().add(side.scale(i == 0 ? 2.5D : -2.5D));
+            clone.configure(owner, health, damage, durationTicks);
+            double sideOffset = (i - (count - 1) * 0.5D) * 2.4D;
+            Vec3 pos = owner.position().add(side.scale(sideOffset)).subtract(look.scale(1.2D));
             clone.snapTo(pos.x, pos.y, pos.z);
             if (level.noCollision(clone, clone.getBoundingBox())) level.addFreshEntity(clone);
         }
@@ -226,8 +422,10 @@ public final class AuthorityTheftService {
 
     private static boolean blinkBehind(ServerPlayer player, LivingEntity target, double distance) {
         if (!(player.level() instanceof ServerLevel level)) return false;
-        Vec3 look = target.getLookAngle();
-        Vec3 desired = target.position().subtract(new Vec3(look.x, 0.0D, look.z).normalize().scale(distance));
+        Vec3 targetLook = target.getLookAngle();
+        Vec3 flatTargetLook = new Vec3(targetLook.x, 0.0D, targetLook.z);
+        if (flatTargetLook.lengthSqr() < 1.0E-6D) flatTargetLook = new Vec3(0.0D, 0.0D, 1.0D);
+        Vec3 desired = target.position().subtract(flatTargetLook.normalize().scale(distance));
         BlockPos base = BlockPos.containing(desired);
         for (int offset = 0; offset <= 3; offset++) {
             for (int yOffset : offset == 0 ? new int[]{0} : new int[]{offset, -offset}) {
@@ -270,11 +468,30 @@ public final class AuthorityTheftService {
 
     private static void hurt(ServerPlayer player, LivingEntity target, float damage) {
         if (!(player.level() instanceof ServerLevel level) || damage <= 0.0F) return;
-        target.hurtServer(level, player.damageSources().playerAttack(player), damage);
+        CombatProvenanceContext.runAs(
+                CombatProvenance.AUTHORITY,
+                () -> target.hurtServer(level, player.damageSources().playerAttack(player), damage)
+        );
     }
 
     private static float scaledDamage(ServerPlayer player, double multiplier, double floor) {
         return (float) Math.max(floor, CloneCombatSnapshot.meleeDamage(player) * multiplier);
+    }
+
+    private static void pushAway(ServerPlayer player, LivingEntity enemy, double strength, double vertical) {
+        Vec3 away = enemy.position().subtract(player.position());
+        Vec3 flat = new Vec3(away.x, 0.0D, away.z);
+        if (flat.lengthSqr() < 1.0E-6D) flat = new Vec3(0.0D, 0.0D, 1.0D);
+        flat = flat.normalize();
+        enemy.push(flat.x * strength, vertical, flat.z * strength);
+    }
+
+    private static void pullToward(ServerPlayer player, LivingEntity enemy, double strength) {
+        Vec3 toward = player.position().subtract(enemy.position());
+        Vec3 flat = new Vec3(toward.x, 0.0D, toward.z);
+        if (flat.lengthSqr() < 1.0E-6D) return;
+        flat = flat.normalize();
+        enemy.push(flat.x * strength, 0.12D, flat.z * strength);
     }
 
     private static Vec3 flatLook(ServerPlayer player) {
