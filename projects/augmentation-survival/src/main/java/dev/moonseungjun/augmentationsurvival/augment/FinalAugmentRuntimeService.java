@@ -109,8 +109,8 @@ public final class FinalAugmentRuntimeService {
                 continue;
             }
             for (LivingEntity ally : allies) {
-                if (sourceEffect.getEffect().value().isInstantenous()) {
-                    sourceEffect.getEffect().value().applyInstantenousEffect(
+                if (sourceEffect.getEffect().value().isInstantaneous()) {
+                    sourceEffect.getEffect().value().applyInstantaneousEffect(
                             level,
                             player,
                             player,
