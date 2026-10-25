@@ -18,5 +18,6 @@ public final class ActiveLoadoutClientNetworking {
         );
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ClientActiveLoadoutState.clear());
         AugmentProgressClientNetworking.initialize();
+        ProtectionHudClientNetworking.initialize();
     }
 }
