@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.resource.AbundanceService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.LootScoopService;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceKey;
@@ -26,11 +27,18 @@ abstract class LivingEntityLootScoopMixin {
             boolean playerKilled,
             ResourceKey<LootTable> lootTable
     ) {
-        return LootScoopService.wrapDeathLoot(
-                (LivingEntity) (Object) this,
+        LivingEntity victim = (LivingEntity) (Object) this;
+        Consumer<ItemStack> abundance = AbundanceService.wrapDirectMobLoot(
+                victim,
                 source,
                 playerKilled,
                 original
+        );
+        return LootScoopService.wrapDeathLoot(
+                victim,
+                source,
+                playerKilled,
+                abundance
         );
     }
 }

@@ -20,19 +20,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Server-owned fishing timing, exact treasure chance and abundance scheduling. */
+/** Server-owned fishing timing, exact treasure chance and exact final-result abundance duplication. */
 @Mixin(FishingHook.class)
 public abstract class FishingHookAugmentMixin {
     @Shadow private int timeUntilLured;
-    @Shadow private int nibble;
     @Shadow private boolean openWater;
     @Shadow @Final private int luck;
 
     @Unique private int augmentationSurvival$beforeLured;
     @Unique private double augmentationSurvival$lureCredit;
-    @Unique private boolean augmentationSurvival$hadNibble;
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void augmentationSurvival$captureLureTimer(CallbackInfo ci) {
@@ -70,13 +67,15 @@ public abstract class FishingHookAugmentMixin {
                     target = "Lnet/minecraft/world/level/storage/loot/LootTable;getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"
             )
     )
-    private ObjectArrayList<ItemStack> augmentationSurvival$exactTreasureChance(
+    private ObjectArrayList<ItemStack> augmentationSurvival$exactTreasureAndAbundance(
             LootTable rootFishingTable,
             LootParams params,
             ItemStack rod
     ) {
         Player owner = ((FishingHook) (Object) this).getPlayerOwner();
-        if (owner instanceof ServerPlayer player
+        ServerPlayer player = owner instanceof ServerPlayer serverPlayer ? serverPlayer : null;
+        ObjectArrayList<ItemStack> result;
+        if (player != null
                 && TreasureFishingService.shouldForceTreasure(
                         player,
                         (float) this.luck + player.getLuck(),
@@ -87,31 +86,10 @@ public abstract class FishingHookAugmentMixin {
             LootTable treasureTable = level.getServer()
                     .reloadableRegistries()
                     .getLootTable(BuiltInLootTables.FISHING_TREASURE);
-            return treasureTable.getRandomItems(params);
+            result = treasureTable.getRandomItems(params);
+        } else {
+            result = rootFishingTable.getRandomItems(params);
         }
-        return rootFishingTable.getRandomItems(params);
-    }
-
-    @Inject(method = "retrieve", at = @At("HEAD"))
-    private void augmentationSurvival$captureFishingResult(
-            ItemStack rod,
-            CallbackInfoReturnable<Integer> cir
-    ) {
-        augmentationSurvival$hadNibble = nibble > 0;
-    }
-
-    @Inject(method = "retrieve", at = @At("TAIL"))
-    private void augmentationSurvival$scheduleFishingAbundance(
-            ItemStack rod,
-            CallbackInfoReturnable<Integer> cir
-    ) {
-        if (!augmentationSurvival$hadNibble) {
-            return;
-        }
-        Player owner = ((FishingHook) (Object) this).getPlayerOwner();
-        if (owner instanceof ServerPlayer player) {
-            AbundanceService.scheduleFishing(player, ((FishingHook) (Object) this).position());
-        }
-        augmentationSurvival$hadNibble = false;
+        return player == null ? result : AbundanceService.applyFishingResult(player, result);
     }
 }

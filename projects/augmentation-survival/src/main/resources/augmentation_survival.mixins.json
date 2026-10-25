@@ -20,6 +20,7 @@
     "InstantMiningPlayerMixin",
     "WaterRunLivingEntityMixin",
     "AbstractFurnaceUtilityMixin",
+    "BlockAbundanceMixin",
     "AreaAccelerationFurnaceMixin",
     "AreaAccelerationRandomTickMixin",
     "AreaAccelerationAgeableMobMixin",

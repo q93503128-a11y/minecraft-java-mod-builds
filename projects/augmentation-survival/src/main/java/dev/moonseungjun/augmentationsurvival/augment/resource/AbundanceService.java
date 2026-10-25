@@ -3,177 +3,160 @@ package dev.moonseungjun.augmentationsurvival.augment.resource;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.function.Consumer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.block.Block;
 
-/**
- * Final ordinary-drop multiplier for the Mythic abundance augment.
- *
- * <p>Copies are delayed until compatible vanilla/mod and augmentation-added drops have entered the
- * world, then each eligible fresh stack is claimed exactly once. This preserves Fortune/Looting and
- * the harvest runtime's extra-output ordering without re-running loot tables.</p>
- */
+/** Exact final ordinary-drop multiplier for the Mythic Abundance augment. */
 public final class AbundanceService {
     private static final String ABUNDANCE_ID = id("abundance");
-    private static final List<PendingCapture> PENDING = new ArrayList<>();
-    private static final Map<UUID, Long> GENERATED = new HashMap<>();
-    private static final Map<UUID, Long> CLAIMED = new HashMap<>();
+    public static final TagKey<Item> ABUNDANCE_EXCLUDED = TagKey.create(
+            Registries.ITEM,
+            Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "abundance_excluded")
+    );
+
+    private static final ThreadLocal<Deque<ServerPlayer>> MINING_ACTORS =
+            ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<Boolean> DUPLICATING_BLOCK_DROP =
+            ThreadLocal.withInitial(() -> false);
 
     private AbundanceService() {
     }
 
     public static void initialize() {
         AugmentCatalog.require(ABUNDANCE_ID);
-        PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
-            if (world instanceof ServerLevel level
-                    && player instanceof ServerPlayer serverPlayer
-                    && hasAbundance(serverPlayer)) {
-                schedule(
-                        level,
-                        serverPlayer,
-                        Vec3.atCenterOf(pos),
-                        ConsumptionAugmentTuning.current().abundanceBlockDelayTicks()
-                );
-            }
-        });
-        ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(AbundanceService::afterKill);
-        ServerTickEvents.END_SERVER_TICK.register(AbundanceService::tick);
-    }
-
-    public static void scheduleFishing(ServerPlayer player, Vec3 hookPosition) {
-        if (!(player.level() instanceof ServerLevel level) || !hasAbundance(player)) {
-            return;
-        }
-        schedule(
-                level,
-                player,
-                hookPosition,
-                ConsumptionAugmentTuning.current().abundanceFishingDelayTicks()
+        AugmentationSurvival.LOGGER.info(
+                "Loaded abundance contract: exact direct block, fishing and normal-mob final-drop duplication"
         );
     }
 
-    private static void afterKill(
-            ServerLevel level,
-            Entity killer,
-            LivingEntity killed,
-            DamageSource source
+    /**
+     * Tracks the server player whose direct destroyBlock call currently owns block-drop emission.
+     * A stack is used because derived harvest helpers can nest destroyBlock calls on the same server thread.
+     */
+    public static void pushMiningActor(ServerPlayer player) {
+        MINING_ACTORS.get().push(player);
+    }
+
+    public static void popMiningActor() {
+        Deque<ServerPlayer> actors = MINING_ACTORS.get();
+        if (!actors.isEmpty()) {
+            actors.pop();
+        }
+        if (actors.isEmpty()) {
+            MINING_ACTORS.remove();
+        }
+    }
+
+    /**
+     * Called at Block.popResource, after the block loot result and compatible direct-harvest additions
+     * have already been calculated. Derived tree-felling/tunneling/sweeping-harvest breaks are not direct
+     * player harvests and therefore do not receive another Abundance copy.
+     */
+    public static void duplicateDirectBlockDrop(Level level, BlockPos pos, ItemStack stack) {
+        if (Boolean.TRUE.equals(DUPLICATING_BLOCK_DROP.get())
+                || !(level instanceof ServerLevel serverLevel)
+                || ResourceHarvestService.isDerivedBreak()
+                || !eligibleOrdinaryDrop(stack)) {
+            return;
+        }
+
+        Deque<ServerPlayer> actors = MINING_ACTORS.get();
+        if (actors.isEmpty()) {
+            return;
+        }
+        ServerPlayer player = actors.peek();
+        if (player.level() != serverLevel || !hasAbundance(player)) {
+            return;
+        }
+
+        DUPLICATING_BLOCK_DROP.set(true);
+        try {
+            Block.popResource(level, pos, stack.copy());
+        } finally {
+            DUPLICATING_BLOCK_DROP.remove();
+        }
+    }
+
+    /**
+     * Multiplies only the exact final fishing loot-list entries. Loot tables are not re-rolled.
+     */
+    public static ObjectArrayList<ItemStack> applyFishingResult(
+            ServerPlayer player,
+            ObjectArrayList<ItemStack> drops
     ) {
-        if (!(killer instanceof ServerPlayer player)
-                || killed instanceof Player
-                || CompanionAugmentService.isDominated(killed)
-                || CombatExpansionService.isConfiguredBoss(killed)
+        if (!hasAbundance(player) || drops.isEmpty()) {
+            return drops;
+        }
+        int originalSize = drops.size();
+        for (int index = 0; index < originalSize; index++) {
+            ItemStack stack = drops.get(index);
+            if (eligibleOrdinaryDrop(stack)) {
+                drops.add(stack.copy());
+            }
+        }
+        return drops;
+    }
+
+    /**
+     * Wraps only a directly killed normal mob's final loot-table consumer. This shares the same exact
+     * provenance boundary as Loot Scoop, so nearby entities/items and equipment/custom death drops are
+     * never captured by position.
+     */
+    public static Consumer<ItemStack> wrapDirectMobLoot(
+            LivingEntity victim,
+            DamageSource source,
+            boolean playerKilled,
+            Consumer<ItemStack> downstream
+    ) {
+        if (!playerKilled
+                || victim instanceof Player
+                || CompanionAugmentService.isDominated(victim)
+                || CombatExpansionService.isConfiguredBoss(victim)
+                || !(source.getEntity() instanceof ServerPlayer player)
+                || !CombatProvenanceContext.resolve(source).isRootDirect()
                 || !hasAbundance(player)) {
-            return;
-        }
-        schedule(
-                level,
-                player,
-                killed.position(),
-                ConsumptionAugmentTuning.current().abundanceMobDelayTicks()
-        );
-    }
-
-    private static void schedule(ServerLevel level, ServerPlayer player, Vec3 position, int delay) {
-        PENDING.add(new PendingCapture(
-                level.dimension(),
-                position,
-                player.getUUID(),
-                level.getGameTime() + Math.max(1, delay)
-        ));
-    }
-
-    private static void tick(MinecraftServer server) {
-        Iterator<PendingCapture> iterator = PENDING.iterator();
-        while (iterator.hasNext()) {
-            PendingCapture pending = iterator.next();
-            ServerLevel level = server.getLevel(pending.dimension());
-            if (level == null || level.getGameTime() < pending.readyTick()) {
-                continue;
-            }
-            iterator.remove();
-            capture(level, pending);
+            return downstream;
         }
 
-        long now = server.overworld().getGameTime();
-        GENERATED.entrySet().removeIf(entry -> entry.getValue() < now);
-        CLAIMED.entrySet().removeIf(entry -> entry.getValue() < now);
+        return stack -> {
+            downstream.accept(stack);
+            if (eligibleOrdinaryDrop(stack)) {
+                downstream.accept(stack.copy());
+            }
+        };
     }
 
-    private static void capture(ServerLevel level, PendingCapture pending) {
-        double radius = ConsumptionAugmentTuning.current().abundanceCaptureRadius();
-        AABB box = new AABB(
-                pending.position().x - radius,
-                pending.position().y - radius,
-                pending.position().z - radius,
-                pending.position().x + radius,
-                pending.position().y + radius,
-                pending.position().z + radius
-        );
-        List<ItemEntity> items = level.getEntitiesOfClass(
-                ItemEntity.class,
-                box,
-                item -> item.tickCount <= ConsumptionAugmentTuning.current().abundanceMaxItemAgeTicks()
-                        && !GENERATED.containsKey(item.getUUID())
-                        && !CLAIMED.containsKey(item.getUUID())
-                        && eligible(item.getItem())
-        );
-        Set<UUID> capturedNow = new HashSet<>();
-        for (ItemEntity item : items) {
-            if (!capturedNow.add(item.getUUID())) {
-                continue;
-            }
-            ItemStack stack = item.getItem();
-            if (!eligible(stack)) {
-                continue;
-            }
-            CLAIMED.put(item.getUUID(), level.getGameTime() + 8L);
-            ItemEntity duplicate = new ItemEntity(
-                    level,
-                    item.getX(),
-                    item.getY(),
-                    item.getZ(),
-                    stack.copy()
-            );
-            duplicate.setDeltaMovement(item.getDeltaMovement());
-            if (level.addFreshEntity(duplicate)) {
-                GENERATED.put(duplicate.getUUID(), level.getGameTime() + 8L);
-            }
-        }
-    }
-
-    private static boolean eligible(ItemStack stack) {
-        if (stack.isEmpty()
+    public static boolean eligibleOrdinaryDrop(ItemStack stack) {
+        if (stack == null
+                || stack.isEmpty()
                 || stack.getMaxStackSize() <= 1
                 || stack.isDamageableItem()
+                || stack.is(ABUNDANCE_EXCLUDED)
                 || stack.get(DataComponents.CUSTOM_DATA) != null
+                || stack.get(DataComponents.CUSTOM_NAME) != null
+                || stack.get(DataComponents.LORE) != null
                 || isCore(stack)) {
             return false;
         }
@@ -191,18 +174,14 @@ public final class AbundanceService {
 
     private static boolean hasAbundance(ServerPlayer player) {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        return state.level(ABUNDANCE_ID) > 0;
+        int level = Math.max(0, Math.min(
+                state.level(ABUNDANCE_ID),
+                AugmentCatalog.require(ABUNDANCE_ID).maxLevel()
+        ));
+        return level > 0;
     }
 
     private static String id(String path) {
         return AugmentationSurvival.MOD_ID + ":" + path;
-    }
-
-    private record PendingCapture(
-            ResourceKey<Level> dimension,
-            Vec3 position,
-            UUID playerId,
-            long readyTick
-    ) {
     }
 }
