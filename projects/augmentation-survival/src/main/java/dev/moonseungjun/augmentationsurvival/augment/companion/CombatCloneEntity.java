@@ -2,7 +2,11 @@ package dev.moonseungjun.augmentationsurvival.augment.companion;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -18,6 +22,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
@@ -33,6 +38,15 @@ public final class CombatCloneEntity extends PathfinderMob {
             EquipmentSlot.CHEST,
             EquipmentSlot.HEAD
     );
+    private static final EntityDataAccessor<Optional<UUID>> OWNER_ID = SynchedEntityData.defineId(
+            CombatCloneEntity.class,
+            EntityDataSerializers.OPTIONAL_UUID
+    );
+    private static final EntityDataAccessor<Integer> MODEL_PARTS = SynchedEntityData.defineId(
+            CombatCloneEntity.class,
+            EntityDataSerializers.INT
+    );
+    private static final int ALL_MODEL_PARTS = allModelPartsMask();
 
     private UUID ownerId;
     private int remainingTicks;
@@ -52,6 +66,13 @@ public final class CombatCloneEntity extends PathfinderMob {
     }
 
     @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(OWNER_ID, Optional.empty());
+        builder.define(MODEL_PARTS, ALL_MODEL_PARTS);
+    }
+
+    @Override
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0D, true));
@@ -60,6 +81,7 @@ public final class CombatCloneEntity extends PathfinderMob {
 
     public void configure(ServerPlayer owner, float maxHealth, double attackDamage, int durationTicks) {
         ownerId = owner.getUUID();
+        entityData.set(OWNER_ID, Optional.of(ownerId));
         remainingTicks = durationTicks;
         AttributeInstance maxHealthAttribute = getAttribute(Attributes.MAX_HEALTH);
         AttributeInstance attackAttribute = getAttribute(Attributes.ATTACK_DAMAGE);
@@ -78,20 +100,30 @@ public final class CombatCloneEntity extends PathfinderMob {
             setDropChance(slot, 0.0F);
         }
         setLeftHanded(owner.getMainArm() == HumanoidArm.LEFT);
+        int modelParts = 0;
+        for (PlayerModelPart part : PlayerModelPart.values()) {
+            if (owner.isModelPartShown(part)) modelParts |= part.getMask();
+        }
+        entityData.set(MODEL_PARTS, modelParts);
     }
 
     public UUID ownerId() {
-        return ownerId;
+        return entityData.get(OWNER_ID).orElse(ownerId);
+    }
+
+    public boolean modelPartShown(PlayerModelPart part) {
+        return (entityData.get(MODEL_PARTS) & part.getMask()) != 0;
     }
 
     public boolean isCloneAlly(Entity other) {
-        if (other == null || ownerId == null) return false;
-        if (other.getUUID().equals(ownerId)) return true;
-        if (other instanceof CombatCloneEntity clone && ownerId.equals(clone.ownerId)) return true;
-        if (CompanionAugmentService.isOwnedBy(other, ownerId)) return true;
+        UUID resolvedOwner = ownerId();
+        if (other == null || resolvedOwner == null) return false;
+        if (other.getUUID().equals(resolvedOwner)) return true;
+        if (other instanceof CombatCloneEntity clone && resolvedOwner.equals(clone.ownerId())) return true;
+        if (CompanionAugmentService.isOwnedBy(other, resolvedOwner)) return true;
         if (other instanceof TamableAnimal tamable && tamable.isTame()) {
             LivingEntity owner = tamable.getOwner();
-            return owner != null && ownerId.equals(owner.getUUID());
+            return owner != null && resolvedOwner.equals(owner.getUUID());
         }
         return false;
     }
@@ -100,12 +132,13 @@ public final class CombatCloneEntity extends PathfinderMob {
     public void tick() {
         super.tick();
         if (!(level() instanceof ServerLevel level)) return;
-        if (remainingTicks <= 0 || ownerId == null) {
+        UUID resolvedOwner = ownerId();
+        if (remainingTicks <= 0 || resolvedOwner == null) {
             discard();
             return;
         }
         remainingTicks--;
-        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(resolvedOwner);
         if (owner == null || owner.isDeadOrDying() || owner.level() != level) {
             discard();
             return;
@@ -135,8 +168,10 @@ public final class CombatCloneEntity extends PathfinderMob {
     @Override
     protected void addAdditionalSaveData(ValueOutput output) {
         super.addAdditionalSaveData(output);
-        if (ownerId != null) output.putString("clone_owner", ownerId.toString());
+        UUID resolvedOwner = ownerId();
+        if (resolvedOwner != null) output.putString("clone_owner", resolvedOwner.toString());
         output.putInt("clone_remaining_ticks", remainingTicks);
+        output.putInt("clone_model_parts", entityData.get(MODEL_PARTS));
     }
 
     @Override
@@ -150,11 +185,19 @@ public final class CombatCloneEntity extends PathfinderMob {
                 ownerId = null;
             }
         });
+        entityData.set(OWNER_ID, Optional.ofNullable(ownerId));
+        entityData.set(MODEL_PARTS, input.getInt("clone_model_parts").orElse(ALL_MODEL_PARTS));
         remainingTicks = input.getInt("clone_remaining_ticks").orElse(0);
         this.xpReward = 0;
         setCanPickUpLoot(false);
         for (EquipmentSlot slot : PRESENTATION_SLOTS) {
             setDropChance(slot, 0.0F);
         }
+    }
+
+    private static int allModelPartsMask() {
+        int mask = 0;
+        for (PlayerModelPart part : PlayerModelPart.values()) mask |= part.getMask();
+        return mask;
     }
 }
