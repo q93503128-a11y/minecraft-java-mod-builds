@@ -147,26 +147,42 @@ def build() -> Path:
         },
     }
 
+    terralith_config = {
+        "config_version": 1,
+        "modules": {
+            "custom_structures": True,
+            "fog_tweaks": True,
+            "intro_message": False,
+            "recipe_changes": False,
+            "skylands": True,
+            "terrain_slabs": True,
+            "vanilla_stone_gen": False,
+        },
+    }
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     output = OUT_DIR / f"augmentation-survival-{MOD_VERSION}.mrpack"
     own_arc = f"overrides/mods/{own_jar.name}"
     analytics_arc = "overrides/config/mcendgame.json"
+    terralith_arc = "overrides/config/terralith.json"
     readme_arc = "overrides/AUGMENTATION_SURVIVAL_PACK.txt"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         archive.writestr("modrinth.index.json", json.dumps(index, ensure_ascii=False, indent=2) + "\n")
         archive.write(own_jar, own_arc)
         archive.writestr(analytics_arc, json.dumps({"sendAnalytics": False}, indent=2) + "\n")
+        archive.writestr(terralith_arc, json.dumps(terralith_config, indent=2) + "\n")
         archive.writestr(
             readme_arc,
             "Augmentation Survival\n"
             f"Minecraft {MC_VERSION} / Fabric Loader {LOADER_VERSION}\n"
             "External mods are downloaded from their pinned source repositories by the launcher.\n"
-            "MCEndgame analytics is disabled by the included config override.\n",
+            "MCEndgame analytics is disabled by the included config override.\n"
+            "Terralith's first-world intro message is disabled by the included config override.\n",
         )
 
     with zipfile.ZipFile(output) as archive:
         names = archive.namelist()
-        if names.count("modrinth.index.json") != 1 or own_arc not in names or analytics_arc not in names:
+        if (names.count("modrinth.index.json") != 1 or own_arc not in names or analytics_arc not in names or terralith_arc not in names:
             fail("required mrpack entries are missing")
         third_party_overrides = [
             name for name in names
@@ -179,6 +195,9 @@ def build() -> Path:
             fail("invalid Modrinth index structure or dependency count")
         if json.loads(archive.read(analytics_arc)).get("sendAnalytics") is not False:
             fail("MCEndgame analytics override is not disabled")
+        terralith = json.loads(archive.read(terralith_arc))
+        if terralith.get("modules", {}).get("intro_message") is not False:
+            fail("Terralith intro message override is not disabled")
         if hashlib.sha256(archive.read(own_arc)).hexdigest() != digest(own_jar, "sha256"):
             fail("embedded project jar hash mismatch")
 
@@ -193,7 +212,8 @@ def build() -> Path:
         "external_files=24\n"
         "embedded_third_party_jars=0\n"
         f"embedded_project_jar={own_jar.name}\n"
-        "mcendgame_sendAnalytics=false\n",
+        "mcendgame_sendAnalytics=false\n"
+        "terralith_intro_message=false\n",
         encoding="utf-8",
     )
     print(report.read_text(encoding="utf-8"), end="")
