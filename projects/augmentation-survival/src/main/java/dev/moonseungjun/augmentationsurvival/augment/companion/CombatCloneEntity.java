@@ -2,7 +2,6 @@ package dev.moonseungjun.augmentationsurvival.augment.companion;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -38,9 +37,9 @@ public final class CombatCloneEntity extends PathfinderMob {
             EquipmentSlot.CHEST,
             EquipmentSlot.HEAD
     );
-    private static final EntityDataAccessor<Optional<UUID>> OWNER_ID = SynchedEntityData.defineId(
+    private static final EntityDataAccessor<String> OWNER_ID = SynchedEntityData.defineId(
             CombatCloneEntity.class,
-            EntityDataSerializers.OPTIONAL_UUID
+            EntityDataSerializers.STRING
     );
     private static final EntityDataAccessor<Integer> MODEL_PARTS = SynchedEntityData.defineId(
             CombatCloneEntity.class,
@@ -68,7 +67,7 @@ public final class CombatCloneEntity extends PathfinderMob {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(OWNER_ID, Optional.empty());
+        builder.define(OWNER_ID, "");
         builder.define(MODEL_PARTS, ALL_MODEL_PARTS);
     }
 
@@ -81,7 +80,7 @@ public final class CombatCloneEntity extends PathfinderMob {
 
     public void configure(ServerPlayer owner, float maxHealth, double attackDamage, int durationTicks) {
         ownerId = owner.getUUID();
-        entityData.set(OWNER_ID, Optional.of(ownerId));
+        entityData.set(OWNER_ID, ownerId.toString());
         remainingTicks = durationTicks;
         AttributeInstance maxHealthAttribute = getAttribute(Attributes.MAX_HEALTH);
         AttributeInstance attackAttribute = getAttribute(Attributes.ATTACK_DAMAGE);
@@ -108,7 +107,15 @@ public final class CombatCloneEntity extends PathfinderMob {
     }
 
     public UUID ownerId() {
-        return entityData.get(OWNER_ID).orElse(ownerId);
+        String syncedOwnerId = entityData.get(OWNER_ID);
+        if (!syncedOwnerId.isEmpty()) {
+            try {
+                return UUID.fromString(syncedOwnerId);
+            } catch (IllegalArgumentException ignored) {
+                // Fall back to the server-side field below.
+            }
+        }
+        return ownerId;
     }
 
     public boolean modelPartShown(PlayerModelPart part) {
@@ -185,7 +192,7 @@ public final class CombatCloneEntity extends PathfinderMob {
                 ownerId = null;
             }
         });
-        entityData.set(OWNER_ID, Optional.ofNullable(ownerId));
+        entityData.set(OWNER_ID, ownerId == null ? "" : ownerId.toString());
         entityData.set(MODEL_PARTS, input.getInt("clone_model_parts").orElse(ALL_MODEL_PARTS));
         remainingTicks = input.getInt("clone_remaining_ticks").orElse(0);
         this.xpReward = 0;
