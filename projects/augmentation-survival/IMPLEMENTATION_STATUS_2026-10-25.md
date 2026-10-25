@@ -2,16 +2,17 @@
 
 Date: 2026-10-25
 Supersedes: `IMPLEMENTATION_STATUS_2026-10-24.md`
-Status: M1C FUNCTIONAL BASELINE / 135-OF-146 GAMEPLAY RUNTIME / CLONE AVATAR-SYNC CHECKPOINT VERIFIED
+Status: M1C FUNCTIONAL BASELINE / 136-OF-146 FULL GAMEPLAY RUNTIME / SPATIAL LINK + AUTHORITY THEFT ACTIVE
 
 ## 146-roster implementation count
 
 This count measures whether the canonical gameplay effect has a runtime implementation. It does **not** mean final VFX/UI/audio polish or live gameplay testing is complete.
 
-- Fully implemented gameplay runtime: **135 / 146**
-- Partially implemented: **1 / 146** — `분신`
-- Not fully implemented: **11 / 146**
-- No gameplay runtime yet: **10 / 146**
+- Fully implemented gameplay runtime: **136 / 146**
+- Partially implemented: **2 / 146** — `공간 연결`, `권능 탈취`
+- Not fully implemented: **10 / 146**
+- No gameplay runtime yet: **8 / 146**
+- `분신` moved from PARTIAL to FULL in this checkpoint.
 - `풍요` is FULL and `휩쓸기 강화` remains FULL from its earlier verified runtime.
 
 ## Verified FULL runtime notes
@@ -33,53 +34,83 @@ This count measures whether the canonical gameplay effect has a runtime implemen
 
 This augment is not in the remaining no-runtime set. Vanilla sweep expansion and the optional Better Combat 3.2.2 adapter were already implemented and full-pack smoke-verified in Build #81. Live combat feel and multiplayer behavior remain untested.
 
-## `분신` presentation/runtime checkpoint
+### `분신`
 
-The clone continues to use the registered custom `CombatCloneEntity`, server-owned autonomous melee AI, 20-second lifetime, activation-time 50% max-health snapshot, 60% attack-damage snapshot, 60-second base cooldown, ally checks and non-player-root damage provenance.
+`분신` now has the canonical gameplay runtime rather than the earlier partial attack-attribute approximation.
 
-The player-avatar presentation path is now materially stronger than the previous fixed-wide baseline:
+- Registered custom `CombatCloneEntity`; no zombie or armor-stand shell.
+- Server-owned autonomous hostile-target melee AI.
+- 20-second lifetime, activation-time 50% max-health snapshot and 60-second base cooldown.
+- Activation-time offensive snapshot now includes the player's current attack attribute plus the project's target-independent outgoing combat package used by `keen_edge`, `last_strength`, `speed_conversion`, `brawl`, `glass_cannon` and the currently active Berserk bonus before applying the canonical 60% clone multiplier.
+- Target-dependent future-enemy conditions are deliberately not frozen into the activation snapshot.
+- Copied hand/armor stacks are presentation copies: functional attribute modifiers and enchantments are removed from the clone copy while visual glint can be retained. This prevents the displayed weapon/armor from re-applying combat stats on top of the fixed snapshot.
+- Owner UUID and player-model-part mask are synchronized; actual owner skin lookup, wide/slim `PlayerModel` selection, hat/jacket/sleeve/pants toggles, visible equipment and handedness are retained.
+- Equipment drop chance remains zero and item pickup remains disabled.
+- Clone damage provenance remains non-player-root, so clone combat cannot satisfy root-direct kill requirements such as boss-first-kill or authority theft.
 
-- On activation, the clone snapshots the owner's main hand, off hand, head, chest, legs and feet equipment as copied stacks. The copied presentation gear has zero drop chance and the clone still cannot pick up loot, so it cannot become an item-duplication path.
-- Owner UUID is now carried through `SynchedEntityData`, so the client clone no longer depends on a server-only plain field when resolving the owner's skin.
-- The owner's enabled player-model-part bitmask is snapshotted and synchronized. Hat, jacket, left/right sleeves and left/right pants layers follow the activation-time owner settings.
-- The renderer resolves the owner's `PlayerSkin` from the client connection/player-info skin cache, with deterministic UUID-derived default-skin fallback if unavailable.
-- Both wide and slim `PlayerModel` bodies are baked. The clone selects the body model from the resolved `PlayerSkin.model()` value rather than forcing every owner onto the wide model.
-- Humanoid armor and held-item render layers remain installed, and owner handedness is snapshotted.
-- Cape presentation is intentionally not claimed as reproduced yet.
+This FULL label is for canonical gameplay runtime coverage. Owner-skin fidelity, animation/combat feel and visual quality still require a real client playtest; no visual-playtest claim is made from smoke testing.
 
-`분신` remains **PARTIAL**, not FULL. The largest remaining correctness gate is now the combat snapshot contract: the current 60% damage snapshot still derives from the owner's `Attributes.ATTACK_DAMAGE` value rather than a proven full player combat-power package across the project's combat integrations. In addition, no live visual/combat playtest has yet verified the owner skin, slim/wide body, outer layers, equipment pose and melee feel in an actual client session. Smoke testing proves startup/runtime compatibility, not visual completion.
+## `공간 연결` — PARTIAL major runtime
+
+`공간 연결` now has a real persistent server-owned network rather than a temporary command placeholder.
+
+Implemented in this checkpoint:
+
+- Multiple permanent saved destinations with stable IDs.
+- Save-wide persistent Fabric attachment stored on the server.
+- Unlimited-distance and cross-dimension destination lookup.
+- Personal gates plus explicit per-player sharing/revocation.
+- Gate naming, search, favorites and per-player default destination.
+- Dedicated rebindable `K` key and client/server snapshot protocol.
+- Search-first dedicated control screen with own/shared distinction, favorite/default markers, pagination, register/rename/delete/share/revoke/default/teleport actions and separate registration/rename workflows.
+- Server authority for every mutation and teleport action.
+- Destination chunk loading and collision-safe vertical landing search; obstructed destinations fail instead of forcing the player into blocks.
+- Mount transfer attempts the full root-vehicle passenger graph first.
+- Nearby dominated companions and player-owned tame companions are carried across dimensions and placed around the destination with individual collision checks.
+
+`공간 연결` remains **PARTIAL** because the permanent network currently represents gates as saved world locations and a control surface rather than a finished in-world gate object/presentation. A physical/world-readable gate treatment and actual UI/teleport/mount/companion playtest are still required before calling the system visually and experientially complete.
+
+## `권능 탈취` — PARTIAL source-backed runtime
+
+`권능 탈취` now has a dedicated Mythic runtime instead of being no-runtime.
+
+Implemented in this checkpoint:
+
+- Exact root-direct player kill provenance is required.
+- Supported boss identity is resolved through the existing compatibility-profile layer.
+- The first supported direct boss kill permanently appends that boss authority to the player's existing `stolen_authority_boss_ids` save field; repeated kills do not duplicate it.
+- Dedicated rebindable `J` key; the authority channel does not occupy any of the ten normal active slots.
+- One activation releases **all currently stolen supported boss packages in sequence**.
+- One overall 120-second server-owned cooldown is applied after a successful release.
+- Current source-backed package coverage includes all six pinned Chrono Dawn boss identities: Time Guardian, Chronos Warden, Clockwork Colossus, Temporal Phantom, Entropy Keeper and Time Tyrant.
+- The player analogs are based on the actual Chrono Dawn 26.2 boss implementations inspected for this checkpoint: temporal slow/blink/AoE pressure, Warden stone-stance/ground-slam pressure, Colossus overcharge/repair/gear-strike/shockwave, Phantom phase/warp/blink/two temporary combat echoes, Entropy decay/rot/burst and Tyrant time-stop/acceleration/AoE/reversal-style recovery.
+
+`권능 탈취` remains **PARTIAL**, not FULL. The pinned World Bosses 26.2 dependency and MCEndgame boss packages still need their real combat implementations inspected deeply enough to reproduce their powers without inventing generic replacements. World Bosses identity detection already exists, but unsupported identities are deliberately not stolen yet. The Chrono Dawn player analogs also require live VFX/combat-feel review.
 
 ## Verified gameplay checkpoint
 
-- Gameplay-code checkpoint: `6d05cd589d25be3d8fe4953946e2c1831581af0d`
-- Commit: `fix(augmentation-survival): serialize clone owner id`
-- Avatar-sync/render commits in this batch: `1f9f72998411a49e87a7c66ae2a2dc1190390fb2`, `15dc778a0b7e6ce268b55950cbcc383b881a1035`, `6d05cd589d25be3d8fe4953946e2c1831581af0d`
-- GitHub Actions: `40164608397` / Build Augmentation Survival Pack #102
+- Gameplay-code checkpoint: `c20282429542395655176dc31996a1fd66e05022`
+- Final gameplay commit: `feat(augmentation-survival): localize authority theft fallback`
+- GitHub Actions: `40166912027` / Build Augmentation Survival Pack #129
 - Build and pinned-pack inspection: **PASS**
 - Dedicated server smoke: **PASS**
 - Client boot smoke: **PASS**
 - Verification artifact upload: **PASS**
-- Artifact: `augmentation-survival-pack-smoke-102`
-- Artifact ID: `12587886602`
-- Artifact ZIP size: `979209` bytes
-- Artifact ZIP SHA-256: `b64dcb4d814627f94c0f0e57305bacc983429c308871b950a822f600f93afb4d`
+- Artifact: `augmentation-survival-pack-smoke-129`
+- Artifact ID: `12588753501`
+- Artifact ZIP size: `1050898` bytes
+- Artifact ZIP SHA-256: `3c26e6df1743f0b173e129e17467bedd6f7a29296f60fbd4064ddbc689b6428e`
 
-Build #101 failed at compile before runtime smoke because Minecraft 26.2 does not expose `EntityDataSerializers.OPTIONAL_UUID`. This was a code/API regression, not a workflow/environment issue. The first real failure was read from the job log and fixed by synchronizing the UUID as a validated string through the available `STRING` serializer. Build #102 then passed build, dedicated-server smoke and client-boot smoke; the failed run was not blindly repeated.
+Major gameplay commits in this checkpoint include the clone combat snapshot/presentation isolation, persistent Spatial Link state/service/network/UI/mount-and-companion transfer, permanent Authority Theft save mutation, dedicated authority networking/input and the six Chrono Dawn authority packages. Intermediate push-triggered runs are not used as the final verification checkpoint; Build #129 is the authoritative full-pack result for this batch.
 
 ## Remaining implementation set
 
-### Fixed-semantics no-runtime — 2
+### Partial — 2
 
 - `공간 연결`
+  - Finish physical/world-readable gate presentation and real gameplay/UX validation.
 - `권능 탈취`
-
-These remain large systems and must not be reduced to temporary commands or generic fake boss powers.
-
-### Partial — 1
-
-- `분신`
-
-The major owner-avatar presentation gap is now closed at runtime: owner identity is synchronized, actual skin lookup is available client-side, wide/slim player bodies are selected, player outer-layer toggles are snapshotted, and equipment/handedness presentation is retained. Remaining FULL gates are the full combat-power snapshot contract and actual visual/combat playtest; cape/slim-armor edge fidelity can be reviewed during that visual pass rather than being assumed from startup smoke.
+  - Inspect and reproduce the pinned World Bosses and MCEndgame boss power packages without generic fabrication; then perform live combat/VFX validation.
 
 ### Explicitly underspecified / blocked — 8
 
@@ -98,7 +129,7 @@ Do not invent values for these until canon fixes the missing boundaries:
 
 - CODE REVIEWED: **YES**
 - TESTED: **NO — workflow test task is `NO-SOURCE`; no dedicated automated gameplay test was executed**
-- BUILD VERIFIED: **YES — `6d05cd589d25be3d8fe4953946e2c1831581af0d`**
+- BUILD VERIFIED: **YES — `c20282429542395655176dc31996a1fd66e05022`**
 - JAR PRODUCED: **YES**
 - DEDICATED SERVER SMOKE: **PASS**
 - CLIENT BOOT SMOKE: **PASS**
