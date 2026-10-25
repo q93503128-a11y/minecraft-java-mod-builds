@@ -2,7 +2,7 @@
 
 Date: 2026-10-25
 Supersedes: `IMPLEMENTATION_STATUS_2026-10-24.md`
-Status: M1C FUNCTIONAL BASELINE / 135-OF-146 GAMEPLAY RUNTIME / CLONE PRESENTATION CHECKPOINT VERIFIED
+Status: M1C FUNCTIONAL BASELINE / 135-OF-146 GAMEPLAY RUNTIME / CLONE AVATAR-SYNC CHECKPOINT VERIFIED
 
 ## 146-roster implementation count
 
@@ -37,31 +37,34 @@ This augment is not in the remaining no-runtime set. Vanilla sweep expansion and
 
 The clone continues to use the registered custom `CombatCloneEntity`, server-owned autonomous melee AI, 20-second lifetime, activation-time 50% max-health snapshot, 60% attack-damage snapshot, 60-second base cooldown, ally checks and non-player-root damage provenance.
 
-This pass removes the fixed-Steve-only presentation limitation in two concrete ways:
+The player-avatar presentation path is now materially stronger than the previous fixed-wide baseline:
 
 - On activation, the clone snapshots the owner's main hand, off hand, head, chest, legs and feet equipment as copied stacks. The copied presentation gear has zero drop chance and the clone still cannot pick up loot, so it cannot become an item-duplication path.
-- On the client, the renderer resolves the owner's current `PlayerSkin` from the connection/player-info skin cache and uses that body texture. Offline/unavailable profile resolution falls back deterministically to the UUID-derived default player skin rather than a single fixed Steve texture.
-- Humanoid armor and held-item render layers are installed, so the snapshotted armor and hand items are visible on the clone.
-- Owner handedness is snapshotted for the clone body.
+- Owner UUID is now carried through `SynchedEntityData`, so the client clone no longer depends on a server-only plain field when resolving the owner's skin.
+- The owner's enabled player-model-part bitmask is snapshotted and synchronized. Hat, jacket, left/right sleeves and left/right pants layers follow the activation-time owner settings.
+- The renderer resolves the owner's `PlayerSkin` from the client connection/player-info skin cache, with deterministic UUID-derived default-skin fallback if unavailable.
+- Both wide and slim `PlayerModel` bodies are baked. The clone selects the body model from the resolved `PlayerSkin.model()` value rather than forcing every owner onto the wide model.
+- Humanoid armor and held-item render layers remain installed, and owner handedness is snapshotted.
+- Cape presentation is intentionally not claimed as reproduced yet.
 
-`분신` remains **PARTIAL**, not FULL. The current body renderer still uses the wide player humanoid model and does not yet reproduce the full player-avatar presentation contract such as slim-arm model selection and all player outer-layer/customisation toggles. Its combat read also still needs actual gameplay inspection. No claim of visual completion is made from smoke testing alone.
+`분신` remains **PARTIAL**, not FULL. The largest remaining correctness gate is now the combat snapshot contract: the current 60% damage snapshot still derives from the owner's `Attributes.ATTACK_DAMAGE` value rather than a proven full player combat-power package across the project's combat integrations. In addition, no live visual/combat playtest has yet verified the owner skin, slim/wide body, outer layers, equipment pose and melee feel in an actual client session. Smoke testing proves startup/runtime compatibility, not visual completion.
 
 ## Verified gameplay checkpoint
 
-- Gameplay-code checkpoint: `3dbfbf3076eb13e246b5c5554c7a32c50299a163`
-- Commit: `fix(augmentation-survival): use explicit clone equipment slots`
-- Presentation commits in this batch: `b80926f3c1c6e34501e6f0bbb021a4561bc99a00`, `edc477ba70a6d6680c59c2b66e9201e850d2f48e`, `3dbfbf3076eb13e246b5c5554c7a32c50299a163`
-- GitHub Actions: `40163466675` / Build Augmentation Survival Pack #100
+- Gameplay-code checkpoint: `6d05cd589d25be3d8fe4953946e2c1831581af0d`
+- Commit: `fix(augmentation-survival): serialize clone owner id`
+- Avatar-sync/render commits in this batch: `1f9f72998411a49e87a7c66ae2a2dc1190390fb2`, `15dc778a0b7e6ce268b55950cbcc383b881a1035`, `6d05cd589d25be3d8fe4953946e2c1831581af0d`
+- GitHub Actions: `40164608397` / Build Augmentation Survival Pack #102
 - Build and pinned-pack inspection: **PASS**
 - Dedicated server smoke: **PASS**
 - Client boot smoke: **PASS**
 - Verification artifact upload: **PASS**
-- Artifact: `augmentation-survival-pack-smoke-100`
-- Artifact ID: `12587765316`
-- Artifact ZIP size: `977422` bytes
-- Artifact ZIP SHA-256: `9cd0309571560bdd52c4049997fd019cddfef841327c0be33fd883bf3a51179c`
+- Artifact: `augmentation-survival-pack-smoke-102`
+- Artifact ID: `12587886602`
+- Artifact ZIP size: `979209` bytes
+- Artifact ZIP SHA-256: `b64dcb4d814627f94c0f0e57305bacc983429c308871b950a822f600f93afb4d`
 
-Build #99 failed before runtime smoke because the first equipment-snapshot implementation called a nonexistent Minecraft 26.2 `EquipmentSlot.isForHumanoidArmor()` method. This was a code/API regression, not a workflow/environment issue. The fix replaced that assumption with an explicit six-slot presentation list. Build #100 then passed build, server smoke and client smoke; the failed run was not blindly rerun.
+Build #101 failed at compile before runtime smoke because Minecraft 26.2 does not expose `EntityDataSerializers.OPTIONAL_UUID`. This was a code/API regression, not a workflow/environment issue. The first real failure was read from the job log and fixed by synchronizing the UUID as a validated string through the available `STRING` serializer. Build #102 then passed build, dedicated-server smoke and client-boot smoke; the failed run was not blindly repeated.
 
 ## Remaining implementation set
 
@@ -76,7 +79,7 @@ These remain large systems and must not be reduced to temporary commands or gene
 
 - `분신`
 
-Remaining presentation work is principally player-model fidelity (wide/slim and player-specific outer-layer state) plus actual combat/visual playtest. The functional server entity, AI, lifetime, health/damage snapshots, cooldown and reward-provenance boundaries already exist.
+The major owner-avatar presentation gap is now closed at runtime: owner identity is synchronized, actual skin lookup is available client-side, wide/slim player bodies are selected, player outer-layer toggles are snapshotted, and equipment/handedness presentation is retained. Remaining FULL gates are the full combat-power snapshot contract and actual visual/combat playtest; cape/slim-armor edge fidelity can be reviewed during that visual pass rather than being assumed from startup smoke.
 
 ### Explicitly underspecified / blocked — 8
 
@@ -95,7 +98,7 @@ Do not invent values for these until canon fixes the missing boundaries:
 
 - CODE REVIEWED: **YES**
 - TESTED: **NO — workflow test task is `NO-SOURCE`; no dedicated automated gameplay test was executed**
-- BUILD VERIFIED: **YES — `3dbfbf3076eb13e246b5c5554c7a32c50299a163`**
+- BUILD VERIFIED: **YES — `6d05cd589d25be3d8fe4953946e2c1831581af0d`**
 - JAR PRODUCED: **YES**
 - DEDICATED SERVER SMOKE: **PASS**
 - CLIENT BOOT SMOKE: **PASS**
