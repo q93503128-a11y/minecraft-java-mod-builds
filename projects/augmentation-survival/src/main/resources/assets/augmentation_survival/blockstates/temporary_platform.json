@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "augmentation_survival:block/temporary_platform" }
+  }
+}
