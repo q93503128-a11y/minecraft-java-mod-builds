@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldAugment
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
@@ -176,16 +177,18 @@ public final class FinalAugmentRuntimeService {
                 buildLifeLink(attacker, target);
             }
             int wallLevel = boundedLevel(state, WALL_SLAM_ID);
-            if (wallLevel > 0 && provenance == CombatProvenance.ROOT_MELEE
+            if (wallLevel > 0
+                    && provenance == CombatProvenance.ROOT_MELEE
                     && baseDamageTaken > 0.0F
-                    && target.getDeltaMovement().horizontalDistanceSqr()
-                    >= FinalAugmentTuning.current().wallSlamMinimumHorizontalSpeedSquared()) {
+                    && EntityCompatibilityProfileService.allowWallImpact(target)) {
+                long now = target.level().getGameTime();
                 WALL_SLAMS.put(target.getUUID(), new WallSlamWindow(
                         target,
                         attacker.getUUID(),
                         wallLevel,
                         baseDamageTaken,
-                        target.level().getGameTime() + FinalAugmentTuning.current().wallSlamCollisionWindowTicks()
+                        now,
+                        now + FinalAugmentTuning.current().wallSlamCollisionWindowTicks()
                 ));
             }
         }
@@ -435,6 +438,23 @@ public final class FinalAugmentRuntimeService {
         return CompanionAugmentService.isHostileTarget(player, livingOwner);
     }
 
+    /**
+     * Arms a pending wall-slam only from a real LivingEntity knockback call in the same game tick as
+     * the qualifying direct melee hit. This runs after vanilla/compatible combat has applied motion,
+     * avoiding the old pre-knockback AFTER_DAMAGE timing race.
+     */
+    public static void noteWallSlamKnockback(LivingEntity target) {
+        WallSlamWindow window = WALL_SLAMS.get(target.getUUID());
+        if (window == null
+                || window.target != target
+                || window.createdAtTick != target.level().getGameTime()
+                || target.getDeltaMovement().horizontalDistanceSqr()
+                < FinalAugmentTuning.current().wallSlamMinimumHorizontalSpeedSquared()) {
+            return;
+        }
+        window.knockbackObserved = true;
+    }
+
     private static void tickWallSlams(MinecraftServer server) {
         Iterator<Map.Entry<UUID, WallSlamWindow>> iterator = WALL_SLAMS.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -445,7 +465,7 @@ public final class FinalAugmentRuntimeService {
                 iterator.remove();
                 continue;
             }
-            if (!target.horizontalCollision) {
+            if (!window.knockbackObserved || !target.horizontalCollision) {
                 continue;
             }
             ServerPlayer owner = server.getPlayerList().getPlayer(window.ownerId);
@@ -516,12 +536,29 @@ public final class FinalAugmentRuntimeService {
     ) {
     }
 
-    private record WallSlamWindow(
-            LivingEntity target,
-            UUID ownerId,
-            int level,
-            float referenceDamage,
-            long expiresAtTick
-    ) {
+    private static final class WallSlamWindow {
+        private final LivingEntity target;
+        private final UUID ownerId;
+        private final int level;
+        private final float referenceDamage;
+        private final long createdAtTick;
+        private final long expiresAtTick;
+        private boolean knockbackObserved;
+
+        private WallSlamWindow(
+                LivingEntity target,
+                UUID ownerId,
+                int level,
+                float referenceDamage,
+                long createdAtTick,
+                long expiresAtTick
+        ) {
+            this.target = target;
+            this.ownerId = ownerId;
+            this.level = level;
+            this.referenceDamage = referenceDamage;
+            this.createdAtTick = createdAtTick;
+            this.expiresAtTick = expiresAtTick;
+        }
     }
 }
