@@ -1,423 +1,305 @@
 package dev.moonseungjun.augmentationsurvival.client.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentPresentationCatalog;
+import dev.moonseungjun.augmentationsurvival.client.AugmentIconClient;
+import dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenu;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import org.lwjgl.glfw.GLFW;
 
-/** Tier lobby -> dedicated three-card draw -> synthesis, all backed by server menu state. */
+/** Focused augment selection/collection/synthesis UI. Gameplay state remains server-authoritative. */
 public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDeviceMenu> {
-    private static final int W = 560, H = 326;
-    private static final int BG = 0xFF090E13, PANEL = 0xFF111820, HOVER = 0xFF263640, SELECTED = 0xFF1F3844;
-    private static final int METAL_DARK = 0xFF202A32, METAL = 0xFF51616E, METAL_LIGHT = 0xFFA9BBC7;
-    private static final int GLASS = 0xFF070B0F, GLASS_TOP = 0xFF101820;
-    private static final int TEXT = 0xFFF3F7FA, MUTED = 0xFFA5B0B8, FAINT = 0xFF707C85;
-    private static final int GOOD = 0xFF8ED9A0, BAD = 0xFFE58C8C, ACTIVE = 0xFFF0D58A;
-    private static final int DRAW_X = 16, DRAW_GAP = 16, CARD_W = 165, CARD_H = 218, CARD_Y = 67;
+    private static final int W = 660, H = 338;
+    private static final int BG = 0xF20A0E12, SURFACE = 0xFF11171C, SURFACE_HI = 0xFF172027;
+    private static final int LINE = 0xFF37434B, LINE_HI = 0xFF8797A1;
+    private static final int TEXT = 0xFFF3F6F8, MUTED = 0xFF909CA3, FAINT = 0xFF616B71;
+    private static final int GOOD = 0xFF79D496, BAD = 0xFFE67F86;
+    private static final int CARD_W = 194, CARD_H = 226, CARD_GAP = 15;
 
-    private final Inventory playerInventory;
-    private boolean upgradeMode;
-    private int upgradeTierCursor;
-    private int observedStatus = Integer.MIN_VALUE, observedMask = -1, observedTier = Integer.MIN_VALUE;
-    private int observedCandidateKey = Integer.MIN_VALUE, selectPulseSlot = -1;
-    private long revealStarted = Long.MIN_VALUE, acquireStarted = Long.MIN_VALUE, selectPulseStarted = Long.MIN_VALUE;
-    private long synthesisStarted = Long.MIN_VALUE;
-    private AugmentTier synthesisFrom = AugmentTier.COMMON;
-    private boolean synthesisAll;
+    private View view = View.SELECT;
+    private int ownedPage;
+    private int synthesisTier;
+    private long revealStarted = Long.MIN_VALUE;
+    private int observedCandidateKey = Integer.MIN_VALUE;
+    private String hoveredOwnedId = "";
 
     public AugmentDeviceScreen(AugmentDeviceMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, W, H);
-        this.playerInventory = inventory;
-    }
-
-    private boolean drawPhase() {
-        return menu.status() == AugmentDeviceMenu.STATUS_READY || menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED;
     }
 
     @Override
     public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
         int l = leftPos, t = topPos;
-        g.fill(l + 7, t + 8, l + imageWidth + 7, t + imageHeight + 8, 0x78000000);
-        g.fill(l - 3, t - 3, l + imageWidth + 3, t + imageHeight + 3, 0xFF05090C);
-        g.outline(l - 2, t - 2, imageWidth + 4, imageHeight + 4, 0xFF31404B);
-        g.fill(l, t, l + imageWidth, t + imageHeight, BG);
-        g.outline(l, t, imageWidth, imageHeight, METAL);
-        g.fill(l + 2, t + 2, l + imageWidth - 2, t + 31, 0xFF111B23);
-        g.fill(l + 3, t + 3, l + imageWidth - 3, t + 4, 0xFF93A6B3);
-        g.fill(l + 3, t + 30, l + imageWidth - 3, t + 31, 0xFF3B4A55);
+        g.fill(0, 0, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight(), 0x8B000000);
+        g.fill(l, t, l + W, t + H, BG);
+        g.outline(l, t, W, H, 0xFF4A5760);
+        g.fill(l + 1, t + 1, l + W - 1, t + 31, 0xFF151D23);
+        g.fill(l + 2, t + 2, l + W - 2, t + 3, 0xFF83939D);
     }
 
     @Override
     protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
-        syncPresentationState();
+        syncReveal();
         int mx = mouseX - leftPos, my = mouseY - topPos;
-        String page = drawPhase() ? "증강 동조" : upgradeMode ? "코어 정제" : "코어 선택";
-        g.text(font, page, 16, 11, TEXT, false);
-        if (drawPhase()) {
-            AugmentTier tier = selectedTier();
-            String right = tier == null ? "" : tierLabel(tier) + " 코어";
-            g.text(font, right, imageWidth - 16 - font.width(right), 11,
-                    tier == null ? MUTED : brighten(tierColor(tier), 55), false);
-            drawDrawPage(g, mx, my);
+        boolean offer = menu.status() == AugmentDeviceMenu.STATUS_READY || menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED;
+        g.text(font, offer ? "증강 동조" : title.getString(), 14, 11, TEXT, false);
+        if (offer) {
+            drawOffer(g, mx, my);
             return;
         }
-        if (menu.advanced()) drawTabs(g, mx, my);
-        if (upgradeMode && menu.advanced()) drawUpgrade(g, mx, my);
-        else drawTierLobby(g, mx, my);
+        drawTabs(g, mx, my);
+        switch (view) {
+            case SELECT -> drawTierSelect(g, mx, my);
+            case OWNED -> drawOwned(g, mx, my);
+            case SYNTHESIS -> drawSynthesis(g, mx, my);
+        }
     }
 
     private void drawTabs(GuiGraphicsExtractor g, int mx, int my) {
-        drawTab(g, 16, 40, 112, "증강 동조", !upgradeMode, mx, my);
-        drawTab(g, 136, 40, 112, "코어 정제", upgradeMode, mx, my);
+        int x = 226;
+        drawTab(g, x, 9, 72, "동조", view == View.SELECT, mx, my);
+        drawTab(g, x + 76, 9, 88, "보유 증강", view == View.OWNED, mx, my);
+        if (menu.advanced()) drawTab(g, x + 168, 9, 88, "코어 합성", view == View.SYNTHESIS, mx, my);
     }
 
-    private void drawTierLobby(GuiGraphicsExtractor g, int mx, int my) {
-        int top = menu.advanced() ? 72 : 48;
-        centered(g, "동조할 코어의 등급을 선택하세요", imageWidth / 2, top, TEXT);
-        centered(g, "선택하면 코어 하나에 고정된 세 가지 증강이 공개됩니다.", imageWidth / 2, top + 15, MUTED);
-        centered(g, "공개된 후보는 화면을 닫아도 다시 굴러가지 않습니다.", imageWidth / 2, top + 29, FAINT);
-        int gridY = top + 51;
+    private void drawTierSelect(GuiGraphicsExtractor g, int mx, int my) {
+        centered(g, "동조할 코어 등급을 선택하세요", W / 2, 53, TEXT);
+        centered(g, "코어 하나가 세 후보를 고정합니다 · 화면을 닫아도 후보는 바뀌지 않습니다", W / 2, 70, MUTED);
+        int startX = 25, y = 103, cellW = 94, gap = 10;
         for (AugmentTier tier : AugmentTier.values()) {
-            int i = tier.ordinal();
-            drawTierPedestal(g, 18 + (i % 3) * 178, gridY + (i / 3) * 83, 166, 69, tier, mx, my);
+            int x = startX + tier.ordinal() * (cellW + gap);
+            drawTierChoice(g, x, y, cellW, 112, tier, mx, my);
         }
-        if (menu.status() == AugmentDeviceMenu.STATUS_NO_CORE || menu.status() == AugmentDeviceMenu.STATUS_FULLY_MAXED
-                || menu.status() == AugmentDeviceMenu.STATUS_INVALID) {
-            centered(g, statusText(menu.status()), imageWidth / 2, H - 19, statusColor(menu.status()));
-        } else {
-            centered(g, "코어는 증강을 확정할 때 1개 소모됩니다.", imageWidth / 2, H - 19, FAINT);
-        }
+        centered(g, "이미 획득한 증강은 상단의 ‘보유 증강’에서 확인할 수 있습니다.", W / 2, 240, FAINT);
+        if (menu.status() == AugmentDeviceMenu.STATUS_NO_CORE) centered(g, "선택한 등급의 코어가 없습니다.", W / 2, 266, BAD);
+        else if (menu.status() == AugmentDeviceMenu.STATUS_FULLY_MAXED) centered(g, "이 등급의 증강을 모두 완성했습니다.", W / 2, 266, GOOD);
+        else if (menu.status() == AugmentDeviceMenu.STATUS_INVALID) centered(g, "진행 중인 동조를 먼저 완료하세요.", W / 2, 266, BAD);
     }
 
-    private void drawTierPedestal(GuiGraphicsExtractor g, int x, int y, int w, int h, AugmentTier tier, int mx, int my) {
+    private void drawTierChoice(GuiGraphicsExtractor g, int x, int y, int w, int h, AugmentTier tier, int mx, int my) {
         boolean hover = inside(mx, my, x, y, w, h);
-        int c = tierColor(tier), hi = brighten(c, 68);
-        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, alpha(c, hover ? 58 : 24));
-        g.fill(x, y, x + w, y + h, METAL_DARK);
-        g.outline(x, y, w, h, hover ? hi : shade(c, 0.72));
-        g.fill(x + 3, y + 3, x + w - 3, y + h - 3, hover ? tint(PANEL, c, 12) : GLASS);
-        g.fill(x + 4, y + 4, x + w - 4, y + 10, tint(GLASS_TOP, c, 16));
-        g.fill(x + 5, y + 4, x + w - 5, y + 5, alpha(hi, hover ? 130 : 58));
-        int wx = x + 13, wy = y + 15;
-        g.fill(wx, wy, wx + 42, wy + 42, 0xFF05090D);
-        g.outline(wx, wy, 42, 42, hover ? hi : shade(c, 0.62));
-        g.item(new ItemStack(AugmentCoreItems.item(tier)), wx + 13, wy + 13);
-        g.text(font, tierLabel(tier), x + 68, y + 15, hover ? TEXT : brighten(c, 42), false);
-        int count = countCore(tier);
-        g.text(font, "보유  " + count, x + 68, y + 33, count > 0 ? MUTED : BAD, false);
-        String action = count > 0 ? "동조 시작  ›" : "코어 필요";
-        g.text(font, action, x + w - 12 - font.width(action), y + 49, hover && count > 0 ? hi : FAINT, false);
-        drawCornerBrackets(g, x, y, w, h, hi, c, tier.ordinal());
+        int color = tierColor(tier);
+        g.fill(x, y, x + w, y + h, hover ? SURFACE_HI : SURFACE);
+        g.fill(x, y, x + w, y + 2, color);
+        if (hover) g.outline(x, y, w, h, brighten(color, 36));
+        g.item(new ItemStack(AugmentCoreItems.item(tier)), x + w / 2 - 8, y + 21);
+        centered(g, tierLabel(tier), x + w / 2, y + 48, hover ? TEXT : 0xFFD3DADF);
+        int count = coreCount(tier);
+        centered(g, "보유 " + count, x + w / 2, y + 66, count > 0 ? MUTED : BAD);
+        centered(g, count > 0 ? "동조 시작" : "코어 필요", x + w / 2, y + 89, count > 0 ? color : FAINT);
+        if (hover && count > 0) g.fill(x + 17, y + h - 6, x + w - 17, y + h - 4, color);
     }
 
-    private void drawDrawPage(GuiGraphicsExtractor g, int mx, int my) {
+    private void drawOffer(GuiGraphicsExtractor g, int mx, int my) {
+        AugmentTier selectedTier = menu.tierOrdinal() >= 0 ? AugmentTier.values()[menu.tierOrdinal()] : AugmentTier.COMMON;
+        g.text(font, tierLabel(selectedTier) + " 코어", 14, 37, tierColor(selectedTier), false);
+        String hint = menu.selectionCount() == 2 ? "두 가지 증강을 선택" : "한 가지 증강을 선택";
+        g.text(font, hint, W - 14 - font.width(hint), 37, MUTED, false);
+        int y = 60;
         for (int slot = 0; slot < 3; slot++) {
             AugmentDefinition d = menu.candidate(slot);
             if (d == null) continue;
-            double reveal = revealProgress(slot);
-            if (reveal <= 0.03) {
-                drawChargingCard(g, slot, d.tier());
-                continue;
-            }
-            int offsetY = (int) Math.round((1.0 - easeOut(reveal)) * 24.0);
-            drawCard(g, slot, CARD_Y + offsetY, mx, my, reveal);
-            if (reveal < 1.0) drawRevealSweep(g, slot, CARD_Y + offsetY, d.tier(), reveal);
+            int x = 24 + slot * (CARD_W + CARD_GAP);
+            drawAugmentCard(g, x, y, CARD_W, CARD_H, slot, d, mx, my);
         }
-        if (menu.status() == AugmentDeviceMenu.STATUS_READY) {
-            centered(g, menu.selectionCount() == 2 ? "두 개를 선택하세요 · 후보는 이미 고정되었습니다"
-                    : "하나를 선택하세요 · 후보는 이미 고정되었습니다", imageWidth / 2, H - 20, MUTED);
-        } else {
-            drawAcquisitionBurst(g);
-            centered(g, "동조 완료", imageWidth / 2, H - 20, GOOD);
-        }
+        AugmentDefinition hover = hoveredCandidate(mx, my, y);
+        if (hover != null && shiftDown()) drawDetailedStrip(g, hover, 16, H - 45, W - 32, menu.currentLevel(candidateSlotFor(hover)));
+        else centered(g, hover != null ? "Shift: 정확한 수치 보기" : statusLine(), W / 2, H - 22,
+                menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED ? GOOD : MUTED);
     }
 
-    private void drawCard(GuiGraphicsExtractor g, int slot, int y, int mx, int my, double reveal) {
-        AugmentDefinition d = menu.candidate(slot);
-        int x = cardX(slot), c = tierColor(d.tier());
+    private void drawAugmentCard(GuiGraphicsExtractor g, int x, int y, int w, int h, int slot,
+                                 AugmentDefinition d, int mx, int my) {
+        double reveal = revealProgress(slot);
+        int dy = (int) Math.round((1.0 - reveal) * 12.0);
+        y += dy;
+        boolean hover = inside(mx, my, x, y, w, h);
         boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
-        boolean hover = inside(mx, my, x, y, CARD_W, CARD_H);
-        int pulse = selectPulseSlot == slot ? (int) Math.round((1.0 - progress(selectPulseStarted, 340)) * 92.0) : 0;
-        drawAugmentFrame(g, x, y, CARD_W, CARD_H, d.tier(), selected, hover, pulse);
-        String raw = d.canonicalNameKo();
-        boolean active = raw.contains("(액티브");
-        if (reveal > 0.18) {
-            drawTinyTag(g, x + 10, y + 10, tierLabel(d.tier()), c);
-            String type = active ? "액티브" : "패시브";
-            int tw = font.width(type) + 12;
-            drawTinyTag(g, x + CARD_W - tw - 10, y + 10, type, active ? ACTIVE : MUTED);
+        int color = tierColor(d.tier());
+        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
+
+        g.fill(x, y, x + w, y + h, 0xFF080C10);
+        g.outline(x, y, w, h, selected ? brighten(color, 54) : hover ? color : 0xFF3A444A);
+        g.fill(x + 1, y + 1, x + w - 1, y + 5, color);
+        g.fill(x + 1, y + 6, x + w - 1, y + 31, tint(0xFF11171C, color, 10));
+        g.text(font, tierLabel(d.tier()), x + 10, y + 13, color, false);
+        String kind = p.kind().label();
+        g.text(font, kind, x + w - 10 - font.width(kind), y + 13, p.kind() == AugmentPresentationCatalog.Kind.PASSIVE ? MUTED : 0xFFF0D47A, false);
+
+        g.fill(x + w / 2 - 25, y + 43, x + w / 2 + 25, y + 93, 0xFF0D1318);
+        if (hover) g.outline(x + w / 2 - 25, y + 43, 50, 50, shade(color, 0.75));
+        g.item(AugmentIconClient.stackFor(d.id(), d.tier()), x + w / 2 - 8, y + 60);
+        centered(g, p.displayName(), x + w / 2, y + 104, TEXT);
+
+        List<String> lines = wrap(p.summary(), w - 26);
+        for (int i = 0; i < Math.min(5, lines.size()); i++) {
+            centered(g, lines.get(i), x + w / 2, y + 128 + i * 11, 0xFFC5CDD2);
         }
-        if (reveal > 0.28) drawAugmentSigil(g, d.id(), x + CARD_W / 2, y + 80, 54, brighten(c, 80), selected || hover);
-        if (reveal > 0.48) {
-            centered(g, cleanName(raw), x + CARD_W / 2, y + 126, TEXT);
-            g.fill(x + 22, y + 145, x + CARD_W - 22, y + 146, alpha(c, 84));
-            int nowLevel = menu.currentLevel(slot), next = Math.min(nowLevel + 1, d.maxLevel());
-            centered(g, nowLevel <= 0 ? "획득 시 Lv." + next : "Lv." + nowLevel + "  →  Lv." + next,
-                    x + CARD_W / 2, y + 158, MUTED);
-            centered(g, "최대 Lv." + d.maxLevel(), x + CARD_W / 2, y + 175, FAINT);
-            if (selected) centered(g, "선택됨", x + CARD_W / 2, y + 197, brighten(c, 95));
-            else if (hover) centered(g, "선택하기", x + CARD_W / 2, y + 197, brighten(c, 65));
-        }
-        if (menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED) {
-            double p = progress(acquireStarted, 760);
-            if (!selected) g.fill(x + 5, y + 5, x + CARD_W - 5, y + CARD_H - 5,
-                    alpha(0xFF000000, (int) (174 * (1.0 - p * 0.28))));
-            else if (p < 1.0) {
-                int spread = 2 + (int) Math.round(p * 15), a = (int) Math.round((1.0 - p) * 210);
-                g.outline(x - spread, y - spread, CARD_W + spread * 2, CARD_H + spread * 2,
-                        alpha(brighten(c, 105), a));
-            }
-        }
+        int now = menu.currentLevel(slot), next = Math.min(now + 1, d.maxLevel());
+        g.fill(x + 12, y + h - 37, x + w - 12, y + h - 36, 0xFF2B343A);
+        String level = now == 0 ? "획득 Lv." + next : "Lv." + now + " → " + next;
+        g.text(font, level, x + 12, y + h - 26, MUTED, false);
+        String max = "최대 " + d.maxLevel();
+        g.text(font, max, x + w - 12 - font.width(max), y + h - 26, FAINT, false);
+        if (selected) centered(g, "선택됨", x + w / 2, y + h - 12, brighten(color, 65));
+        else if (hover) centered(g, "클릭하여 선택", x + w / 2, y + h - 12, color);
     }
 
-    private void drawAugmentFrame(GuiGraphicsExtractor g, int x, int y, int w, int h, AugmentTier tier,
-                                  boolean selected, boolean hover, int pulse) {
-        int c = tierColor(tier), hi = brighten(c, tier.ordinal() >= 3 ? 98 : 66), lo = shade(c, 0.42);
-        int glow = Math.min(225, (selected ? 130 : hover ? 82 : 42 + tier.ordinal() * 6) + pulse);
-        g.outline(x - 4, y - 4, w + 8, h + 8, alpha(c, Math.max(18, glow / 4)));
-        g.outline(x - 3, y - 3, w + 6, h + 6, alpha(c, Math.max(24, glow / 3)));
-        g.outline(x - 2, y - 2, w + 4, h + 4, alpha(hi, glow / 2));
-        g.fill(x, y, x + w, y + h, 0xFF05080B);
-        g.outline(x, y, w, h, lo);
-        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, c);
-        g.fill(x + 4, y + 4, x + w - 4, y + h - 4, METAL_DARK);
-        g.outline(x + 4, y + 4, w - 8, h - 8, hi);
-        g.fill(x + 7, y + 7, x + w - 7, y + h - 7,
-                selected ? tint(SELECTED, c, 18) : hover ? tint(HOVER, c, 9) : GLASS);
-        g.fill(x + 8, y + 8, x + w - 8, y + 20, tint(GLASS_TOP, c, 10));
-        g.fill(x + 10, y + 8, x + w - 10, y + 9, alpha(hi, selected ? 145 : hover ? 105 : 54));
-        cutCorners(g, x, y, w, h);
-        drawCornerBrackets(g, x, y, w, h, hi, c, tier.ordinal());
-        if (tier.ordinal() >= AugmentTier.LEGENDARY.ordinal()) {
-            g.outline(x + 9, y + 9, w - 18, h - 18, alpha(brighten(c, 100), hover || selected ? 98 : 52));
+    private void drawOwned(GuiGraphicsExtractor g, int mx, int my) {
+        List<AugmentDefinition> owned = new ArrayList<>();
+        for (String id : ClientAugmentProgressState.levels().keySet()) {
+            try { owned.add(AugmentCatalog.require(id)); } catch (RuntimeException ignored) { }
+        }
+        owned.sort(Comparator.comparing((AugmentDefinition d) -> d.tier().ordinal())
+                .thenComparing(d -> AugmentPresentationCatalog.get(d).displayName()));
+        g.text(font, "보유 증강 " + owned.size() + " / 146", 18, 48, TEXT, false);
+        g.text(font, "마우스를 올려 설명 확인 · Shift: 정확한 수치", W - 18 - font.width("마우스를 올려 설명 확인 · Shift: 정확한 수치"), 48, MUTED, false);
+        hoveredOwnedId = "";
+        int perPage = 18, pages = Math.max(1, (owned.size() + perPage - 1) / perPage);
+        ownedPage = Math.min(ownedPage, pages - 1);
+        int start = ownedPage * perPage, end = Math.min(owned.size(), start + perPage);
+        int startX = 18, startY = 68, cellW = 202, cellH = 31, gapX = 8, gapY = 5;
+        for (int i = start; i < end; i++) {
+            int local = i - start, col = local % 3, row = local / 3;
+            AugmentDefinition d = owned.get(i);
+            drawOwnedCell(g, startX + col * (cellW + gapX), startY + row * (cellH + gapY), cellW, cellH, d, mx, my);
+        }
+        if (owned.isEmpty()) centered(g, "아직 획득한 증강이 없습니다.", W / 2, 150, MUTED);
+        if (pages > 1) centered(g, "‹   " + (ownedPage + 1) + " / " + pages + "   ›", W / 2, 289, MUTED);
+        if (!hoveredOwnedId.isBlank()) {
+            AugmentDefinition d = AugmentCatalog.require(hoveredOwnedId);
+            if (shiftDown()) drawDetailedStrip(g, d, 18, H - 45, W - 36, ClientAugmentProgressState.level(d.id()));
+            else drawSummaryStrip(g, d, 18, H - 45, W - 36, ClientAugmentProgressState.level(d.id()));
         }
     }
 
-    private void cutCorners(GuiGraphicsExtractor g, int x, int y, int w, int h) {
-        g.fill(x, y, x + 4, y + 1, BG); g.fill(x, y, x + 1, y + 4, BG);
-        g.fill(x + w - 4, y, x + w, y + 1, BG); g.fill(x + w - 1, y, x + w, y + 4, BG);
-        g.fill(x, y + h - 1, x + 4, y + h, BG); g.fill(x, y + h - 4, x + 1, y + h, BG);
-        g.fill(x + w - 4, y + h - 1, x + w, y + h, BG); g.fill(x + w - 1, y + h - 4, x + w, y + h, BG);
+    private void drawOwnedCell(GuiGraphicsExtractor g, int x, int y, int w, int h, AugmentDefinition d, int mx, int my) {
+        boolean hover = inside(mx, my, x, y, w, h);
+        int color = tierColor(d.tier());
+        g.fill(x, y, x + w, y + h, hover ? SURFACE_HI : SURFACE);
+        g.fill(x, y, x + 2, y + h, color);
+        g.item(AugmentIconClient.stackFor(d.id(), d.tier()), x + 7, y + 8);
+        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
+        g.text(font, clip(p.displayName(), w - 72), x + 29, y + 6, hover ? TEXT : 0xFFD3DADE, false);
+        int level = ClientAugmentProgressState.level(d.id());
+        g.text(font, "Lv." + level + "/" + d.maxLevel(), x + 29, y + 18, MUTED, false);
+        String kind = p.kind().label();
+        g.text(font, kind, x + w - 8 - font.width(kind), y + 11, p.kind() == AugmentPresentationCatalog.Kind.PASSIVE ? FAINT : 0xFFE8CF78, false);
+        if (hover) hoveredOwnedId = d.id();
     }
 
-    private void drawCornerBrackets(GuiGraphicsExtractor g, int x, int y, int w, int h, int hi, int c, int tierIndex) {
-        int len = tierIndex >= 4 ? 11 : 8;
-        int x0 = x + 5, x1 = x + w - 6, y0 = y + 5, y1 = y + h - 6;
-        g.fill(x0, y0, x0 + len, y0 + 1, hi); g.fill(x0, y0, x0 + 1, y0 + len, hi);
-        g.fill(x1 - len + 1, y0, x1 + 1, y0 + 1, hi); g.fill(x1, y0, x1 + 1, y0 + len, hi);
-        int low = shade(c, 0.68);
-        g.fill(x0, y1, x0 + len, y1 + 1, low); g.fill(x0, y1 - len + 1, x0 + 1, y1 + 1, low);
-        g.fill(x1 - len + 1, y1, x1 + 1, y1 + 1, low); g.fill(x1, y1 - len + 1, x1 + 1, y1 + 1, low);
-    }
-
-    private void drawTinyTag(GuiGraphicsExtractor g, int x, int y, String text, int accent) {
-        int w = font.width(text) + 12;
-        g.fill(x, y, x + w, y + 13, 0xD905090D);
-        g.outline(x, y, w, 13, shade(accent, 0.78));
-        g.fill(x + 2, y + 2, x + w - 2, y + 4, alpha(brighten(accent, 60), 66));
-        g.text(font, text, x + 6, y + 3, brighten(accent, 46), false);
-    }
-
-    private void drawAugmentSigil(GuiGraphicsExtractor g, String id, int cx, int cy, int size, int color, boolean bright) {
-        int hash = id.hashCode(), half = size / 2, cell = 6;
-        g.fill(cx - half, cy - half, cx + half, cy + half, 0xFF05090D);
-        g.outline(cx - half, cy - half, size, size, alpha(color, bright ? 150 : 86));
-        g.outline(cx - half + 5, cy - half + 5, size - 10, size - 10, alpha(color, bright ? 102 : 54));
-        for (int row = 0; row < 5; row++) {
-            for (int col = 0; col < 3; col++) {
-                int bit = row * 3 + col;
-                if (((hash >>> bit) & 1) == 0 && !(row == 2 && col == 2)) continue;
-                int px = cx - 15 + col * cell, py = cy - 15 + row * cell;
-                g.fill(px, py, px + cell - 1, py + cell - 1, color);
-                int mirrorX = cx + 15 - (col + 1) * cell;
-                g.fill(mirrorX, py, mirrorX + cell - 1, py + cell - 1, color);
-            }
-        }
-        g.fill(cx - 2, cy - 2, cx + 2, cy + 2, brighten(color, 90));
-        if (bright) g.outline(cx - half - 3, cy - half - 3, size + 6, size + 6, alpha(brighten(color, 90), 62));
-    }
-
-    private void drawChargingCard(GuiGraphicsExtractor g, int slot, AugmentTier tier) {
-        int x = cardX(slot), c = tierColor(tier), wave = (int) ((now() / 16L + slot * 31L) % (CARD_H - 30));
-        g.fill(x - 2, CARD_Y - 2, x + CARD_W + 2, CARD_Y + CARD_H + 2, 0xFF101820);
-        g.outline(x - 2, CARD_Y - 2, CARD_W + 4, CARD_H + 4, alpha(c, 88));
-        g.fill(x + 4, CARD_Y + 4, x + CARD_W - 4, CARD_Y + CARD_H - 4, GLASS);
-        g.fill(x + 12, CARD_Y + 15 + wave, x + CARD_W - 12, CARD_Y + 17 + wave, alpha(brighten(c, 80), 80));
-        centered(g, "동조 중", x + CARD_W / 2, CARD_Y + CARD_H / 2, brighten(c, 55));
-    }
-
-    private void drawRevealSweep(GuiGraphicsExtractor g, int slot, int y, AugmentTier tier, double p) {
-        int x = cardX(slot), beamY = y + 10 + (int) Math.round((CARD_H - 20) * p);
-        int a = (int) Math.round(175 * (1.0 - Math.abs(0.5 - p)));
-        g.fill(x + 10, beamY, x + CARD_W - 10, beamY + 2, alpha(brighten(tierColor(tier), 100), a));
-    }
-
-    private void drawAcquisitionBurst(GuiGraphicsExtractor g) {
-        double p = progress(acquireStarted, 760);
-        if (p >= 1.0) return;
-        int c = selectedTierColor(), center = imageWidth / 2, spread = (int) Math.round(28 * p);
-        int a = (int) Math.round(170 * (1.0 - p)), ray = 28 + (int) Math.round(78 * p);
-        g.outline(DRAW_X - spread, CARD_Y + 52 - spread / 3,
-                CARD_W * 3 + DRAW_GAP * 2 + spread * 2, 104 + spread * 2 / 3, alpha(brighten(c, 100), a));
-        g.fill(center - ray, CARD_Y + 103, center + ray, CARD_Y + 105, alpha(brighten(c, 110), a));
-    }
-
-    private void drawUpgrade(GuiGraphicsExtractor g, int mx, int my) {
-        centered(g, "정제할 코어 등급을 고르세요", imageWidth / 2, 76, MUTED);
+    private void drawSynthesis(GuiGraphicsExtractor g, int mx, int my) {
+        centered(g, "같은 등급 코어 3개를 다음 등급 코어 1개로 정제합니다.", W / 2, 54, MUTED);
+        int y = 77;
         for (int i = 0; i < AugmentTier.values().length - 1; i++) {
             AugmentTier tier = AugmentTier.values()[i];
-            int x = 72 + i * 84;
-            boolean selected = upgradeTierCursor == i, hover = inside(mx, my, x, 89, 76, 19);
-            drawUpgradeTierChip(g, x, 89, 76, tier, selected, hover);
-            centered(g, tierLabel(tier), x + 38, 95, selected ? TEXT : MUTED);
+            int x = 109 + i * 89;
+            boolean selected = synthesisTier == i, hover = inside(mx, my, x, y, 78, 28);
+            g.fill(x, y, x + 78, y + 28, selected || hover ? SURFACE_HI : SURFACE);
+            g.fill(x, y + 26, x + 78, y + 28, selected ? tierColor(tier) : 0xFF343D43);
+            centered(g, tierLabel(tier), x + 39, y + 9, selected ? TEXT : MUTED);
         }
-        AugmentTier from = AugmentTier.values()[Math.max(0, Math.min(upgradeTierCursor, AugmentTier.values().length - 2))];
+        AugmentTier from = AugmentTier.values()[synthesisTier];
         AugmentTier to = from.next().orElse(AugmentTier.MYTHIC);
-        drawSynthesisChamber(g, from, to, mx, my);
-        String footer = menu.status() == AugmentDeviceMenu.STATUS_UPGRADED ? "코어 정제 완료 ×" + Math.max(1, menu.lastOutputCount())
-                : menu.status() == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES ? "합성할 코어가 부족합니다"
-                : menu.status() == AugmentDeviceMenu.STATUS_INVALID ? "진행 중인 증강 선택을 먼저 완료하세요"
-                : "같은 등급 코어 3개 → 다음 등급 코어 1개";
-        centered(g, footer, imageWidth / 2, H - 18,
-                menu.status() == AugmentDeviceMenu.STATUS_UPGRADED ? GOOD
-                        : (menu.status() == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES || menu.status() == AugmentDeviceMenu.STATUS_INVALID) ? BAD : FAINT);
-        drawSynthesisBurst(g);
+        int cy = 163;
+        for (int i = 0; i < 3; i++) g.item(new ItemStack(AugmentCoreItems.item(from)), 174 + i * 23, cy);
+        g.text(font, "×3", 241, cy + 5, MUTED, false);
+        centered(g, "→", W / 2, cy + 5, tierColor(to));
+        g.item(new ItemStack(AugmentCoreItems.item(to)), 411, cy);
+        g.text(font, "×1", 433, cy + 5, MUTED, false);
+        centered(g, tierLabel(from) + "  →  " + tierLabel(to), W / 2, 196, TEXT);
+        centered(g, "보유 " + coreCount(from), W / 2, 214, coreCount(from) >= 3 ? MUTED : BAD);
+        drawButton(g, 237, 242, 82, 26, "1회 정제", mx, my);
+        drawButton(g, 341, 242, 82, 26, "모두 정제", mx, my);
+        if (menu.status() == AugmentDeviceMenu.STATUS_UPGRADED) centered(g, "정제 완료 ×" + Math.max(1, menu.lastOutputCount()), W / 2, 289, GOOD);
+        else if (menu.status() == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES) centered(g, "코어가 부족합니다.", W / 2, 289, BAD);
     }
 
-    private void drawUpgradeTierChip(GuiGraphicsExtractor g, int x, int y, int w, AugmentTier tier, boolean selected, boolean hover) {
-        int c = tierColor(tier);
-        g.fill(x, y, x + w, y + 19, METAL_DARK);
-        g.outline(x, y, w, 19, selected ? brighten(c, 62) : hover ? brighten(c, 22) : METAL);
-        g.fill(x + 2, y + 2, x + w - 2, y + 17, selected ? tint(SELECTED, c, 24) : hover ? HOVER : PANEL);
-        if (selected) g.fill(x + 9, y + 16, x + w - 9, y + 18, c);
+    private void drawSummaryStrip(GuiGraphicsExtractor g, AugmentDefinition d, int x, int y, int w, int level) {
+        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
+        g.fill(x, y, x + w, y + 34, 0xE30D1216);
+        g.fill(x, y, x + 3, y + 34, tierColor(d.tier()));
+        g.text(font, p.displayName() + "  Lv." + level, x + 11, y + 6, TEXT, false);
+        g.text(font, clip(p.summary(), w - 22), x + 11, y + 19, 0xFFC7D0D5, false);
     }
 
-    private void drawSynthesisChamber(GuiGraphicsExtractor g, AugmentTier from, AugmentTier to, int mx, int my) {
-        int chamberX = 70, chamberY = 126, chamberW = 420, chamberH = 108, toColor = tierColor(to);
-        g.fill(chamberX, chamberY, chamberX + chamberW, chamberY + chamberH, METAL_DARK);
-        g.outline(chamberX, chamberY, chamberW, chamberH, METAL);
-        g.fill(chamberX + 3, chamberY + 3, chamberX + chamberW - 3, chamberY + chamberH - 3, GLASS);
-        drawCoreWell(g, 89, 142, 133, 73, tierColor(from), "입력", from, true);
-        drawCoreWell(g, 338, 142, 133, 73, toColor, "결과", to, false);
-        int cy = 178, wave = (int) ((now() / 24L) % 82L);
-        g.fill(228, cy, 332, cy + 2, 0xFF1C2831);
-        g.fill(234 + wave, cy, Math.min(332, 241 + wave), cy + 2, alpha(brighten(toColor, 70), 130));
-        g.outline(267, 157, 27, 40, alpha(toColor, 78));
-        centered(g, "◆", 281, 173, brighten(toColor, 70));
-        drawAction(g, 188, 250, 86, "1회 정제", mx, my);
-        drawAction(g, 286, 250, 86, "모두 정제", mx, my);
-    }
-
-    private void drawCoreWell(GuiGraphicsExtractor g, int x, int y, int w, int h, int accent, String label, AugmentTier tier, boolean input) {
-        g.fill(x, y, x + w, y + h, 0xFF070B0F);
-        g.outline(x, y, w, h, shade(accent, 0.68));
-        centered(g, label, x + w / 2, y + 7, brighten(accent, 55));
-        if (input) {
-            g.item(new ItemStack(AugmentCoreItems.item(tier)), x + 33, y + 31);
-            g.item(new ItemStack(AugmentCoreItems.item(tier)), x + 57, y + 24);
-            g.item(new ItemStack(AugmentCoreItems.item(tier)), x + 81, y + 31);
-            centered(g, tierLabel(tier) + " ×3", x + w / 2, y + 57, MUTED);
-        } else {
-            g.item(new ItemStack(AugmentCoreItems.item(tier)), x + 58, y + 29);
-            centered(g, tierLabel(tier) + " ×1", x + w / 2, y + 57, MUTED);
-        }
-    }
-
-    private void drawSynthesisBurst(GuiGraphicsExtractor g) {
-        double p = progress(synthesisStarted, 880);
-        if (p >= 1.0) return;
-        int fromColor = tierColor(synthesisFrom);
-        AugmentTier toTier = synthesisFrom.next().orElse(AugmentTier.MYTHIC);
-        int toColor = tierColor(toTier);
-        boolean confirmed = menu.status() == AugmentDeviceMenu.STATUS_UPGRADED;
-        if (!confirmed || p < 0.52) {
-            double q = easeInOut(Math.min(1.0, p / 0.52));
-            int[][] start = {{126, 177}, {150, 169}, {174, 177}};
-            for (int[] s : start) g.item(new ItemStack(AugmentCoreItems.item(synthesisFrom)), lerp(s[0], 273, q), lerp(s[1], 169, q));
-            int radius = 8 + (int) Math.round(q * 18);
-            g.outline(281 - radius, 177 - radius, radius * 2, radius * 2, alpha(brighten(fromColor, 80), (int) (90 + 120 * q)));
-            return;
-        }
-        double q = easeOut((p - 0.52) / 0.48);
-        int x = lerp(273, 390, q), radius = 25 - (int) Math.round(q * 13);
-        g.outline(281 - radius, 177 - radius, radius * 2, radius * 2, alpha(brighten(toColor, 100), (int) (210 * (1.0 - q))));
-        g.item(new ItemStack(AugmentCoreItems.item(toTier)), x, 169);
-        if (q > 0.62) centered(g, synthesisAll ? "연속 정제 완료" : "정제 완료", 407, 197, brighten(toColor, 70));
+    private void drawDetailedStrip(GuiGraphicsExtractor g, AugmentDefinition d, int x, int y, int w, int level) {
+        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
+        g.fill(x, y - 16, x + w, y + 36, 0xF20B1014);
+        g.fill(x, y - 16, x + 3, y + 36, tierColor(d.tier()));
+        g.text(font, p.displayName() + "  Lv." + level + "/" + d.maxLevel(), x + 11, y - 10, TEXT, false);
+        List<String> lines = wrap(p.detail(), w - 22);
+        for (int i = 0; i < Math.min(3, lines.size()); i++) g.text(font, lines.get(i), x + 11, y + 3 + i * 10, 0xFFD2D9DD, false);
     }
 
     private void drawTab(GuiGraphicsExtractor g, int x, int y, int w, String text, boolean active, int mx, int my) {
-        boolean hover = inside(mx, my, x, y, w, 19);
-        g.fill(x, y, x + w, y + 19, METAL_DARK);
-        g.outline(x, y, w, 19, active ? 0xFFCAD7E1 : hover ? 0xFF7F909E : METAL);
-        g.fill(x + 2, y + 2, x + w - 2, y + 17, active ? SELECTED : hover ? HOVER : PANEL);
-        if (active) g.fill(x + 10, y + 16, x + w - 10, y + 18, 0xFFB8CAD7);
-        centered(g, text, x + w / 2, y + 6, active ? TEXT : MUTED);
+        boolean hover = inside(mx, my, x, y, w, 20);
+        int color = active ? 0xFFC7D3D9 : hover ? LINE_HI : MUTED;
+        g.text(font, text, x + (w - font.width(text)) / 2, y + 5, color, false);
+        if (active) g.fill(x + 10, y + 18, x + w - 10, y + 20, 0xFF8FA3AE);
     }
 
-    private void drawAction(GuiGraphicsExtractor g, int x, int y, int w, String text, int mx, int my) {
-        boolean hover = inside(mx, my, x, y, w, 19);
-        g.fill(x, y, x + w, y + 19, METAL_DARK);
-        g.outline(x, y, w, 19, hover ? METAL_LIGHT : METAL);
-        g.fill(x + 2, y + 2, x + w - 2, y + 17, hover ? HOVER : PANEL);
-        centered(g, text, x + w / 2, y + 6, hover ? TEXT : MUTED);
+    private void drawButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, int mx, int my) {
+        boolean hover = inside(mx, my, x, y, w, h);
+        g.fill(x, y, x + w, y + h, hover ? SURFACE_HI : SURFACE);
+        g.outline(x, y, w, h, hover ? LINE_HI : LINE);
+        centered(g, text, x + w / 2, y + 9, hover ? TEXT : MUTED);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() != 0) return super.mouseClicked(event, doubleClick);
         double x = event.x() - leftPos, y = event.y() - topPos;
-        if (drawPhase()) {
-            if (menu.status() == AugmentDeviceMenu.STATUS_READY) {
-                for (int slot = 0; slot < 3; slot++) {
-                    if (menu.candidate(slot) != null && inside(x, y, cardX(slot), CARD_Y, CARD_W, CARD_H)) {
-                        selectPulseSlot = slot;
-                        selectPulseStarted = now();
-                        playUi(SoundEvents.UI_BUTTON_CLICK.value(), 1.16F + slot * 0.05F);
-                        return send(AugmentDeviceMenu.candidateButtonId(slot));
-                    }
+        boolean offer = menu.status() == AugmentDeviceMenu.STATUS_READY;
+        if (offer) {
+            int cardY = 60;
+            for (int slot = 0; slot < 3; slot++) {
+                int cx = 24 + slot * (CARD_W + CARD_GAP);
+                if (menu.candidate(slot) != null && inside(x, y, cx, cardY, CARD_W, CARD_H)) {
+                    playClick(1.05F + slot * 0.04F);
+                    return send(AugmentDeviceMenu.candidateButtonId(slot));
                 }
             }
-            return super.mouseClicked(event, doubleClick);
+            return true;
         }
-        if (menu.advanced()) {
-            if (inside(x, y, 16, 40, 112, 19)) { upgradeMode = false; playUi(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F); return true; }
-            if (inside(x, y, 136, 40, 112, 19)) { upgradeMode = true; playUi(SoundEvents.UI_BUTTON_CLICK.value(), 1.08F); return true; }
-        }
-        if (upgradeMode && menu.advanced()) {
+        if (inside(x, y, 226, 9, 72, 20)) { view = View.SELECT; playClick(1.0F); return true; }
+        if (inside(x, y, 302, 9, 88, 20)) { view = View.OWNED; playClick(1.04F); return true; }
+        if (menu.advanced() && inside(x, y, 394, 9, 88, 20)) { view = View.SYNTHESIS; playClick(1.08F); return true; }
+
+        if (view == View.SELECT) {
+            int startX = 25, yy = 103, cellW = 94, gap = 10;
+            for (AugmentTier tier : AugmentTier.values()) {
+                int xx = startX + tier.ordinal() * (cellW + gap);
+                if (inside(x, y, xx, yy, cellW, 112) && coreCount(tier) > 0) {
+                    playClick(0.92F + tier.ordinal() * 0.04F);
+                    return send(AugmentDeviceMenu.beginButtonId(tier));
+                }
+            }
+        } else if (view == View.SYNTHESIS && menu.advanced()) {
             for (int i = 0; i < AugmentTier.values().length - 1; i++) {
-                int tx = 72 + i * 84;
-                if (inside(x, y, tx, 89, 76, 19)) { upgradeTierCursor = i; playUi(SoundEvents.UI_BUTTON_CLICK.value(), 0.96F + i * 0.05F); return true; }
+                int xx = 109 + i * 89;
+                if (inside(x, y, xx, 77, 78, 28)) { synthesisTier = i; playClick(0.95F + i * 0.05F); return true; }
             }
-            AugmentTier tier = AugmentTier.values()[upgradeTierCursor];
-            if (inside(x, y, 188, 250, 86, 19)) { beginSynthesisFeedback(tier, false); return send(AugmentDeviceMenu.upgradeOneButtonId(tier)); }
-            if (inside(x, y, 286, 250, 86, 19)) { beginSynthesisFeedback(tier, true); return send(AugmentDeviceMenu.upgradeAllButtonId(tier)); }
-            return super.mouseClicked(event, doubleClick);
-        }
-        int top = menu.advanced() ? 72 : 48, gridY = top + 51;
-        for (AugmentTier tier : AugmentTier.values()) {
-            int i = tier.ordinal(), tx = 18 + (i % 3) * 178, ty = gridY + (i / 3) * 83;
-            if (inside(x, y, tx, ty, 166, 69)) {
-                playUi(SoundEvents.UI_BUTTON_CLICK.value(), 0.92F + tier.ordinal() * 0.04F);
-                return send(AugmentDeviceMenu.beginButtonId(tier));
-            }
+            AugmentTier tier = AugmentTier.values()[synthesisTier];
+            if (inside(x, y, 237, 242, 82, 26)) return send(AugmentDeviceMenu.upgradeOneButtonId(tier));
+            if (inside(x, y, 341, 242, 82, 26)) return send(AugmentDeviceMenu.upgradeAllButtonId(tier));
         }
         return super.mouseClicked(event, doubleClick);
-    }
-
-    private void beginSynthesisFeedback(AugmentTier tier, boolean all) {
-        synthesisFrom = tier;
-        synthesisAll = all;
-        synthesisStarted = now();
-        playUi(SoundEvents.AMETHYST_BLOCK_CHIME, all ? 0.88F : 1.02F);
     }
 
     private boolean send(int id) {
@@ -427,108 +309,111 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         return true;
     }
 
-    private void syncPresentationState() {
-        int status = menu.status(), mask = menu.selectedMask(), tier = menu.tierOrdinal(), key = candidateKey();
-        if (observedStatus == Integer.MIN_VALUE) {
-            observedStatus = status; observedMask = mask; observedTier = tier; observedCandidateKey = key; return;
-        }
-        if (status == AugmentDeviceMenu.STATUS_READY && (observedStatus != status || observedTier != tier || observedCandidateKey != key)) {
-            revealStarted = now();
-            playUi(SoundEvents.AMETHYST_BLOCK_CHIME, 1.10F + Math.max(0, tier) * 0.04F);
-        }
-        if (status == AugmentDeviceMenu.STATUS_ACQUIRED && observedStatus != status) {
-            acquireStarted = now(); playUi(SoundEvents.PLAYER_LEVELUP, 1.18F);
-        } else if (status == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES && observedStatus != status) {
-            synthesisStarted = Long.MIN_VALUE; playUi(SoundEvents.UI_BUTTON_CLICK.value(), 0.58F);
-        }
-        if (mask != observedMask && status == AugmentDeviceMenu.STATUS_READY) {
-            int added = mask & ~observedMask;
-            if (added != 0) { selectPulseSlot = Integer.numberOfTrailingZeros(added); selectPulseStarted = now(); }
-        }
-        if (status == AugmentDeviceMenu.STATUS_UPGRADED && observedStatus != status) {
-            if (tier >= 0 && tier < AugmentTier.values().length - 1) { synthesisFrom = AugmentTier.values()[tier]; upgradeTierCursor = tier; }
-            synthesisStarted = now(); playUi(SoundEvents.AMETHYST_BLOCK_CHIME, 1.34F);
-        }
-        observedStatus = status; observedMask = mask; observedTier = tier; observedCandidateKey = key;
-    }
-
-    private int candidateKey() {
+    private void syncReveal() {
         int key = 17;
-        for (int i = 0; i < 3; i++) { AugmentDefinition d = menu.candidate(i); key = 31 * key + (d == null ? 0 : d.id().hashCode()); }
-        return key;
+        for (int i = 0; i < 3; i++) {
+            AugmentDefinition d = menu.candidate(i);
+            key = 31 * key + (d == null ? 0 : d.id().hashCode());
+        }
+        if (key != observedCandidateKey && menu.status() == AugmentDeviceMenu.STATUS_READY) revealStarted = System.currentTimeMillis();
+        observedCandidateKey = key;
     }
 
-    private int countCore(AugmentTier tier) {
+    private double revealProgress(int slot) {
+        if (revealStarted == Long.MIN_VALUE) return 1.0;
+        long age = System.currentTimeMillis() - revealStarted - slot * 90L;
+        if (age <= 0) return 0.0;
+        double p = Math.max(0.0, Math.min(1.0, age / 260.0));
+        double inv = 1.0 - p;
+        return 1.0 - inv * inv * inv;
+    }
+
+    private AugmentDefinition hoveredCandidate(int mx, int my, int y) {
+        for (int slot = 0; slot < 3; slot++) {
+            AugmentDefinition d = menu.candidate(slot);
+            if (d != null && inside(mx, my, 24 + slot * (CARD_W + CARD_GAP), y, CARD_W, CARD_H)) return d;
+        }
+        return null;
+    }
+    private int candidateSlotFor(AugmentDefinition definition) {
+        for (int i = 0; i < 3; i++) if (definition.equals(menu.candidate(i))) return i;
+        return 0;
+    }
+    private String statusLine() {
+        return switch (menu.status()) {
+            case AugmentDeviceMenu.STATUS_ACQUIRED -> "동조 완료";
+            case AugmentDeviceMenu.STATUS_INVALID -> "선택을 완료할 수 없습니다.";
+            default -> menu.selectionCount() == 2 ? "서로 다른 증강 두 개를 선택하세요" : "원하는 증강을 선택하세요";
+        };
+    }
+    private int coreCount(AugmentTier tier) {
+        if (minecraft == null || minecraft.player == null) return 0;
         int count = 0;
-        for (int i = 0; i < playerInventory.getContainerSize(); i++) {
-            ItemStack stack = playerInventory.getItem(i);
+        for (int i = 0; i < minecraft.player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = minecraft.player.getInventory().getItem(i);
             if (!stack.isEmpty() && stack.is(AugmentCoreItems.item(tier))) count += stack.getCount();
         }
         return count;
     }
-
-    private void playUi(SoundEvent sound, float pitch) {
-        if (minecraft != null) minecraft.getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch));
+    private boolean shiftDown() {
+        return minecraft != null && (InputConstants.isKeyDown(minecraft.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
+                || InputConstants.isKeyDown(minecraft.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT));
     }
-    private double revealProgress(int slot) {
-        if (revealStarted == Long.MIN_VALUE) return 1.0;
-        long age = now() - revealStarted - slot * 105L;
-        return age <= 0 ? 0.0 : clamp01(age / 330.0);
+    private void playClick(float pitch) {
+        if (minecraft != null) minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), pitch));
     }
-    private AugmentTier selectedTier() {
-        int tier = menu.tierOrdinal();
-        return tier < 0 || tier >= AugmentTier.values().length ? null : AugmentTier.values()[tier];
+    private List<String> wrap(String value, int maxWidth) {
+        ArrayList<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : value.split(" ")) {
+            String candidate = line.length() == 0 ? word : line + " " + word;
+            if (font.width(candidate) <= maxWidth) line = new StringBuilder(candidate);
+            else {
+                if (line.length() > 0) lines.add(line.toString());
+                line = new StringBuilder(word);
+            }
+        }
+        if (line.length() > 0) lines.add(line.toString());
+        return lines;
     }
-    private int selectedTierColor() { AugmentTier tier = selectedTier(); return tier == null ? METAL_LIGHT : tierColor(tier); }
-    private static String cleanName(String raw) { return raw.replace(" (액티브 · 토글)", "").replace(" (액티브)", ""); }
-    private static long now() { return System.currentTimeMillis(); }
-    private static double progress(long start, long duration) { return start == Long.MIN_VALUE ? 1.0 : clamp01((now() - start) / (double) duration); }
-    private static double easeOut(double p) { p = clamp01(p); double inv = 1.0 - p; return 1.0 - inv * inv * inv; }
-    private static double easeInOut(double p) { p = clamp01(p); return p < 0.5 ? 2.0 * p * p : 1.0 - Math.pow(-2.0 * p + 2.0, 2.0) / 2.0; }
-    private static double clamp01(double v) { return Math.max(0.0, Math.min(1.0, v)); }
-    private static int lerp(int a, int b, double p) { return (int) Math.round(a + (b - a) * clamp01(p)); }
-    private static int cardX(int slot) { return DRAW_X + slot * (CARD_W + DRAW_GAP); }
-    private void centered(GuiGraphicsExtractor g, String s, int x, int y, int color) { g.text(font, s, x - font.width(s) / 2, y, color, false); }
-    private static boolean inside(double x, double y, int l, int t, int w, int h) { return x >= l && x < l + w && y >= t && y < t + h; }
-    private static int alpha(int argb, int a) { return (clamp(a) << 24) | (argb & 0x00FFFFFF); }
-    private static int brighten(int argb, int amount) {
-        int r = clamp(((argb >> 16) & 0xFF) + amount), g = clamp(((argb >> 8) & 0xFF) + amount), b = clamp((argb & 0xFF) + amount);
+    private String clip(String value, int maxWidth) {
+        if (font.width(value) <= maxWidth) return value;
+        String result = value;
+        while (result.length() > 1 && font.width(result + "…") > maxWidth) result = result.substring(0, result.length() - 1);
+        return result + "…";
+    }
+    private void centered(GuiGraphicsExtractor g, String value, int x, int y, int color) {
+        g.text(font, value, x - font.width(value) / 2, y, color, false);
+    }
+    private static boolean inside(double x, double y, int l, int t, int w, int h) {
+        return x >= l && x < l + w && y >= t && y < t + h;
+    }
+    private static int brighten(int color, int amount) {
+        int r = Math.min(255, ((color >> 16) & 255) + amount), g = Math.min(255, ((color >> 8) & 255) + amount), b = Math.min(255, (color & 255) + amount);
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
-    private static int shade(int argb, double f) {
-        int r = clamp((int) (((argb >> 16) & 0xFF) * f)), g = clamp((int) (((argb >> 8) & 0xFF) * f)), b = clamp((int) ((argb & 0xFF) * f));
+    private static int shade(int color, double factor) {
+        int r = (int) (((color >> 16) & 255) * factor), g = (int) (((color >> 8) & 255) * factor), b = (int) ((color & 255) * factor);
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
-    private static int tint(int base, int tint, int p) {
-        int inv = 100 - p;
-        int r = (((base >> 16) & 0xFF) * inv + ((tint >> 16) & 0xFF) * p) / 100;
-        int g = (((base >> 8) & 0xFF) * inv + ((tint >> 8) & 0xFF) * p) / 100;
-        int b = ((base & 0xFF) * inv + (tint & 0xFF) * p) / 100;
+    private static int tint(int base, int color, int percent) {
+        int inv = 100 - percent;
+        int r = (((base >> 16) & 255) * inv + ((color >> 16) & 255) * percent) / 100;
+        int g = (((base >> 8) & 255) * inv + ((color >> 8) & 255) * percent) / 100;
+        int b = ((base & 255) * inv + (color & 255) * percent) / 100;
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
-    private static int clamp(int v) { return Math.max(0, Math.min(255, v)); }
-    private static String tierLabel(AugmentTier t) {
-        return switch (t) { case COMMON -> "일반"; case UNCOMMON -> "고급"; case RARE -> "희귀"; case EPIC -> "영웅"; case LEGENDARY -> "전설"; case MYTHIC -> "신화"; };
-    }
-    private static int tierColor(AugmentTier t) {
-        return switch (t) { case COMMON -> 0xFFC6CCD3; case UNCOMMON -> 0xFF55D28B; case RARE -> 0xFF4A9FF2; case EPIC -> 0xFFB35FE3; case LEGENDARY -> 0xFFF0B33F; case MYTHIC -> 0xFFEC4E78; };
-    }
-    private static String statusText(int s) {
-        return switch (s) {
-            case AugmentDeviceMenu.STATUS_NO_CORE -> "선택한 등급의 코어가 없습니다";
-            case AugmentDeviceMenu.STATUS_FULLY_MAXED -> "이 등급의 모든 증강을 완성했습니다";
-            case AugmentDeviceMenu.STATUS_ACQUIRED -> "증강을 획득했습니다";
-            case AugmentDeviceMenu.STATUS_INVALID -> "진행 중인 선택을 먼저 완료하거나 다시 시도하세요";
-            case AugmentDeviceMenu.STATUS_UPGRADED -> "코어 정제가 완료되었습니다";
-            case AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES -> "합성할 코어가 부족합니다";
-            default -> "증강 코어를 선택하세요";
+    private static int tierColor(AugmentTier tier) {
+        return switch (tier) {
+            case COMMON -> 0xFFB8BEC5; case UNCOMMON -> 0xFF4FC77F; case RARE -> 0xFF4394E4;
+            case EPIC -> 0xFFAA58D4; case LEGENDARY -> 0xFFE4A934; case MYTHIC -> 0xFFE54C76;
         };
     }
-    private static int statusColor(int s) {
-        return switch (s) {
-            case AugmentDeviceMenu.STATUS_ACQUIRED, AugmentDeviceMenu.STATUS_UPGRADED -> GOOD;
-            case AugmentDeviceMenu.STATUS_NO_CORE, AugmentDeviceMenu.STATUS_INVALID, AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES -> BAD;
-            default -> MUTED;
+    private static String tierLabel(AugmentTier tier) {
+        return switch (tier) {
+            case COMMON -> "일반"; case UNCOMMON -> "고급"; case RARE -> "희귀";
+            case EPIC -> "영웅"; case LEGENDARY -> "전설"; case MYTHIC -> "신화";
         };
     }
+    private enum View { SELECT, OWNED, SYNTHESIS }
 }

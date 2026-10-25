@@ -74,7 +74,8 @@
     "LocalPlayerConsumptionMixin",
     "ClientPhaseShiftCollisionMixin",
     "EntityRendererPerceptionMixin",
-    "BetterCombatTargetFinderMixin"
+    "BetterCombatTargetFinderMixin",
+    "ClientHudHealthMixin"
   ],
   "injectors": { "defaultRequire": 1 }
 }

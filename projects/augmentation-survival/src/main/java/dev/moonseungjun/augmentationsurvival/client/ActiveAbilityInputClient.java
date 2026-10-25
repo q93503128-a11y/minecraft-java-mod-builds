@@ -55,6 +55,10 @@ public final class ActiveAbilityInputClient {
         });
     }
 
+    public static boolean isModeDown() {
+        return MODE_KEY.isDown();
+    }
+
     private static void reset(net.minecraft.client.Minecraft client) {
         for (int index = 0; index < SLOT_KEYS.length; index++) {
             SLOT_WAS_DOWN[index] = client.player != null && InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);

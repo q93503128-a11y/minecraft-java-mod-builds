@@ -9,7 +9,7 @@ import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentServi
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.PerceptionAugmentService;
-import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
+import dev.moonseungjun.augmentationsurvival.network.AugmentProgressNetworking;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -24,7 +24,9 @@ public final class AugmentationPlayerStateService {
         return player.getAttachedOrSet(AugmentationAttachments.PLAYER_STATE, AugmentationPlayerState.initial());
     }
 
-    public static boolean hasBossFirstKillReward(ServerPlayer player, String bossId) { return state(player).hasBossFirstKillReward(bossId); }
+    public static boolean hasBossFirstKillReward(ServerPlayer player, String bossId) {
+        return state(player).hasBossFirstKillReward(bossId);
+    }
 
     public static boolean markBossFirstKillRewardClaimed(ServerPlayer player, String bossId) {
         AugmentationPlayerState before = state(player);
@@ -53,10 +55,10 @@ public final class AugmentationPlayerStateService {
         AdvancedUtilityAugmentService.reconcile(player, next);
         AdvancedActiveAugmentService.reconcile(player, next);
         ConsumptionAugmentService.syncClient(player, next);
-        ActiveAbilityNetworking.syncNow(player);
         if (!current.augmentLevels().equals(next.augmentLevels())) {
             PerceptionAugmentService.syncNow(player);
             ThreatScalingService.observePlayerPower(player, next);
+            AugmentProgressNetworking.syncNow(player);
         }
         return next;
     }

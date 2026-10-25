@@ -41,6 +41,7 @@ public final class ActiveAbilityNetworking {
         );
         ServerPlayerEvents.JOIN.register(ActiveAbilityNetworking::syncNow);
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> syncNow(newPlayer));
+        AugmentProgressNetworking.initialize();
     }
 
     public static void syncNow(ServerPlayer player) {
