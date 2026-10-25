@@ -40,6 +40,55 @@ jobs:
           ./gradlew --no-daemon clean build inspectPackDependencies verifyPackRuntimeClasspath \
             -PaugmentationPackRuntime=true --stacktrace
 
+      - name: Capture World Bosses localization contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/reports/modpack
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import zipfile
+
+          cache = pathlib.Path.home() / '.gradle' / 'caches'
+          output = pathlib.Path('build/reports/modpack/worldbosses-en_us.json')
+          source_report = pathlib.Path('build/reports/modpack/worldbosses-localization-source.txt')
+          matched = []
+          for jar in cache.rglob('*.jar'):
+              try:
+                  with zipfile.ZipFile(jar) as archive:
+                      names = set(archive.namelist())
+                      if 'fabric.mod.json' not in names:
+                          continue
+                      metadata = json.loads(archive.read('fabric.mod.json'))
+                      if metadata.get('id') != 'worldbosses':
+                          continue
+                      lang_path = 'assets/worldbosses/lang/en_us.json'
+                      if lang_path not in names:
+                          raise SystemExit(f'World Bosses jar lacks {lang_path}: {jar}')
+                      output.write_bytes(archive.read(lang_path))
+                      languages = sorted(
+                          name for name in names
+                          if name.startswith('assets/worldbosses/lang/') and name.endswith('.json')
+                      )
+                      source_report.write_text(
+                          'jar=' + str(jar) + '\n'
+                          + 'version=' + str(metadata.get('version')) + '\n'
+                          + '\n'.join(languages) + '\n',
+                          encoding='utf-8',
+                      )
+                      matched.append(jar)
+                      break
+              except (zipfile.BadZipFile, UnicodeDecodeError, json.JSONDecodeError, KeyError):
+                  continue
+          if not matched:
+              raise SystemExit('Unable to locate pinned World Bosses jar in Gradle cache')
+          parsed = json.loads(output.read_text(encoding='utf-8'))
+          if not isinstance(parsed, dict) or not parsed:
+              raise SystemExit('World Bosses en_us localization is empty or invalid')
+          print(f'WORLD_BOSSES_LOCALIZATION_CAPTURE_PASS keys={len(parsed)} file={output}')
+          PY
+
       - name: Dedicated server smoke test
         shell: bash
         run: |
