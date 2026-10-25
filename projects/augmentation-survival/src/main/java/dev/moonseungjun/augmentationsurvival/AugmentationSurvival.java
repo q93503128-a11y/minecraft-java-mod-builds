@@ -45,7 +45,9 @@ import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentSer
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.EnchantmentResonanceService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.PerceptionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.TamingAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentTuning;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
@@ -123,6 +125,8 @@ public final class AugmentationSurvival implements ModInitializer {
         ReviveAugmentService.initialize();
         PerceptionAugmentService.initialize();
         StorageAugmentService.initialize();
+        EnchantmentResonanceService.initialize();
+        TamingAugmentService.initialize();
         AdvancedWorldAugmentService.initialize();
         ActiveAbilityRouter.initialize();
         CombatExpansionService.initialize();
