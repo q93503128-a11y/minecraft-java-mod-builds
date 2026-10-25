@@ -40,6 +40,7 @@ public final class ActiveAbilityNetworking {
                 }
         );
         ServerPlayerEvents.JOIN.register(ActiveAbilityNetworking::syncNow);
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> syncNow(newPlayer));
     }
 
     public static void syncNow(ServerPlayer player) {
