@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -16,6 +17,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.TamableAnimal;
@@ -48,21 +51,29 @@ public final class SpatialLinkService {
 
     public static boolean registerCurrentLocation(ServerPlayer player, String requestedName) {
         if (!hasAccess(player) || player.isDeadOrDying()) return false;
+        ServerLevel level = player.level();
+        SpatialLinkWorldState current = state(level.getServer());
+        BlockPos anchor = findAnchorPosition(level, player.blockPosition());
+        if (anchor == null || gateExistsNear(current, level, anchor)) return false;
+
+        if (!level.setBlockAndUpdate(anchor, SpatialGateBlocks.SPATIAL_GATE.defaultBlockState())) return false;
+
         String name = normalizeName(requestedName, "공간문 " + (ownedGateCount(player) + 1));
         String gateId = UUID.randomUUID().toString();
         SpatialLinkWorldState.GateRecord gate = new SpatialLinkWorldState.GateRecord(
                 gateId,
                 player.getUUID().toString(),
                 name,
-                player.level().dimension().identifier().toString(),
-                player.getX(),
-                player.getY(),
-                player.getZ(),
+                level.dimension().identifier().toString(),
+                anchor.getX() + 0.5D,
+                anchor.getY(),
+                anchor.getZ() + 0.5D,
                 player.getYRot(),
                 player.getXRot(),
                 List.of()
         );
-        setState(player.level().getServer(), state(player.level().getServer()).withGate(gate));
+        setState(level.getServer(), current.withGate(gate));
+        gateEffect(level, anchor, 36, 0.7F, 1.45F);
         return true;
     }
 
@@ -78,11 +89,14 @@ public final class SpatialLinkService {
 
     public static boolean delete(ServerPlayer player, String gateId) {
         if (!hasAccess(player)) return false;
-        SpatialLinkWorldState current = state(player.level().getServer());
-        if (!current.gates().containsKey(gateId)) return false;
+        MinecraftServer server = player.level().getServer();
+        SpatialLinkWorldState current = state(server);
+        SpatialLinkWorldState.GateRecord gate = current.gates().get(gateId);
+        if (gate == null || !gate.owner().equals(player.getUUID().toString())) return false;
         SpatialLinkWorldState next = current.withoutGate(player.getUUID(), gateId);
         if (next.equals(current)) return false;
-        setState(player.level().getServer(), next);
+        setState(server, next);
+        removePhysicalAnchor(server, gate);
         return true;
     }
 
@@ -135,11 +149,16 @@ public final class SpatialLinkService {
 
         BlockPos registered = BlockPos.containing(gate.x(), gate.y(), gate.z());
         target.getChunkAt(registered);
+        restoreAnchorIfMissing(target, registered);
         BlockPos safe = findSafePosition(target, travelRoot, registered);
         if (safe == null) {
             player.sendSystemMessage(Component.translatable("message.augmentation_survival.spatial_link.blocked"));
             return false;
         }
+
+        source.sendParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 0.9D, player.getZ(),
+                50, 0.7D, 1.0D, 0.7D, 0.16D);
+        source.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.8F, 0.75F);
 
         double x = safe.getX() + 0.5D;
         double y = safe.getY();
@@ -156,7 +175,10 @@ public final class SpatialLinkService {
         }
         if (!moved) return false;
 
-        transferCompanions(companions, target, safe, player.getUUID());
+        transferCompanions(companions, target, safe);
+        target.sendParticles(ParticleTypes.REVERSE_PORTAL, x, y + 0.9D, z,
+                65, 0.75D, 1.0D, 0.75D, 0.18D);
+        target.playSound(null, safe, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.9F, 1.25F);
         return true;
     }
 
@@ -195,7 +217,7 @@ public final class SpatialLinkService {
         return Set.copyOf(result);
     }
 
-    private static void transferCompanions(Set<Entity> companions, ServerLevel target, BlockPos playerDestination, UUID ownerId) {
+    private static void transferCompanions(Set<Entity> companions, ServerLevel target, BlockPos playerDestination) {
         int index = 0;
         for (Entity companion : companions) {
             if (companion.isRemoved()) continue;
@@ -220,6 +242,64 @@ public final class SpatialLinkService {
                     true
             );
         }
+    }
+
+    private static BlockPos findAnchorPosition(ServerLevel level, BlockPos origin) {
+        if (level.getBlockState(origin).isAir()) return origin.immutable();
+        for (int radius = 1; radius <= 2; radius++) {
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (Math.max(Math.abs(x), Math.abs(z)) != radius) continue;
+                    BlockPos candidate = origin.offset(x, 0, z);
+                    if (level.getBlockState(candidate).isAir()) return candidate.immutable();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean gateExistsNear(SpatialLinkWorldState state, ServerLevel level, BlockPos anchor) {
+        String dimension = level.dimension().identifier().toString();
+        for (SpatialLinkWorldState.GateRecord gate : state.gates().values()) {
+            if (!gate.dimension().equals(dimension)) continue;
+            BlockPos existing = BlockPos.containing(gate.x(), gate.y(), gate.z());
+            if (Math.abs(existing.getX() - anchor.getX()) <= 1
+                    && Math.abs(existing.getY() - anchor.getY()) <= 1
+                    && Math.abs(existing.getZ() - anchor.getZ()) <= 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void restoreAnchorIfMissing(ServerLevel level, BlockPos anchor) {
+        if (level.getBlockState(anchor).isAir()) {
+            level.setBlockAndUpdate(anchor, SpatialGateBlocks.SPATIAL_GATE.defaultBlockState());
+        }
+    }
+
+    private static void removePhysicalAnchor(MinecraftServer server, SpatialLinkWorldState.GateRecord gate) {
+        Identifier dimensionId;
+        try {
+            dimensionId = Identifier.parse(gate.dimension());
+        } catch (RuntimeException invalid) {
+            return;
+        }
+        ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimensionId));
+        if (level == null) return;
+        BlockPos anchor = BlockPos.containing(gate.x(), gate.y(), gate.z());
+        level.getChunkAt(anchor);
+        if (level.getBlockState(anchor).is(SpatialGateBlocks.SPATIAL_GATE)) {
+            gateEffect(level, anchor, 28, 0.55F, 0.8F);
+            level.removeBlock(anchor, false);
+        }
+    }
+
+    private static void gateEffect(ServerLevel level, BlockPos pos, int particles, float volume, float pitch) {
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL,
+                pos.getX() + 0.5D, pos.getY() + 0.65D, pos.getZ() + 0.5D,
+                particles, 0.35D, 0.45D, 0.35D, 0.08D);
+        level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, volume, pitch);
     }
 
     private static int ownedGateCount(ServerPlayer player) {
