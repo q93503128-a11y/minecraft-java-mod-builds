@@ -7,12 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Persistent server-owned player state.
- *
- * <p>The schema intentionally stores stable string IDs so later augment definitions can remain
- * data-driven without save migrations for every roster edit.</p>
- */
+/** Persistent server-owned player state. */
 public record AugmentationPlayerState(
         int schemaVersion,
         Map<String, Integer> augmentLevels,
@@ -25,26 +20,13 @@ public record AugmentationPlayerState(
     public static final int CURRENT_SCHEMA_VERSION = 2;
 
     public static final Codec<AugmentationPlayerState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.INT.optionalFieldOf("schema_version", CURRENT_SCHEMA_VERSION)
-                    .forGetter(AugmentationPlayerState::schemaVersion),
-            Codec.unboundedMap(Codec.STRING, Codec.INT)
-                    .optionalFieldOf("augment_levels", Map.of())
-                    .forGetter(AugmentationPlayerState::augmentLevels),
-            Codec.STRING.listOf()
-                    .optionalFieldOf("active_slots", List.of())
-                    .forGetter(AugmentationPlayerState::activeSlots),
-            Codec.unboundedMap(Codec.STRING, Codec.LONG)
-                    .optionalFieldOf("cooldown_ready_ticks", Map.of())
-                    .forGetter(AugmentationPlayerState::cooldownReadyTicks),
-            Codec.STRING.listOf()
-                    .optionalFieldOf("stolen_authority_boss_ids", List.of())
-                    .forGetter(AugmentationPlayerState::stolenAuthorityBossIds),
-            Codec.STRING.listOf()
-                    .optionalFieldOf("boss_first_kill_reward_ids", List.of())
-                    .forGetter(AugmentationPlayerState::bossFirstKillRewardIds),
-            Codec.unboundedMap(Codec.STRING, Codec.INT)
-                    .optionalFieldOf("persistent_ints", Map.of())
-                    .forGetter(AugmentationPlayerState::persistentInts)
+            Codec.INT.optionalFieldOf("schema_version", CURRENT_SCHEMA_VERSION).forGetter(AugmentationPlayerState::schemaVersion),
+            Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("augment_levels", Map.of()).forGetter(AugmentationPlayerState::augmentLevels),
+            Codec.STRING.listOf().optionalFieldOf("active_slots", List.of()).forGetter(AugmentationPlayerState::activeSlots),
+            Codec.unboundedMap(Codec.STRING, Codec.LONG).optionalFieldOf("cooldown_ready_ticks", Map.of()).forGetter(AugmentationPlayerState::cooldownReadyTicks),
+            Codec.STRING.listOf().optionalFieldOf("stolen_authority_boss_ids", List.of()).forGetter(AugmentationPlayerState::stolenAuthorityBossIds),
+            Codec.STRING.listOf().optionalFieldOf("boss_first_kill_reward_ids", List.of()).forGetter(AugmentationPlayerState::bossFirstKillRewardIds),
+            Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("persistent_ints", Map.of()).forGetter(AugmentationPlayerState::persistentInts)
     ).apply(instance, AugmentationPlayerState::new));
 
     public AugmentationPlayerState {
@@ -70,9 +52,7 @@ public record AugmentationPlayerState(
         return new AugmentationPlayerState(CURRENT_SCHEMA_VERSION, Map.of(), List.of(), Map.of(), List.of(), List.of(), Map.of());
     }
 
-    public int level(String augmentId) {
-        return augmentLevels.getOrDefault(augmentId, 0);
-    }
+    public int level(String augmentId) { return augmentLevels.getOrDefault(augmentId, 0); }
 
     public int persistentInt(String key) {
         if (key == null || key.isBlank()) throw new IllegalArgumentException("persistent int key must not be blank");
@@ -99,6 +79,17 @@ public record AugmentationPlayerState(
                 stolenAuthorityBossIds, bossFirstKillRewardIds, persistentInts);
     }
 
+    public AugmentationPlayerState withActiveSlots(List<String> slots) {
+        if (slots == null) throw new IllegalArgumentException("slots must not be null");
+        if (slots.size() > 10) throw new IllegalArgumentException("active slots cannot exceed 10 entries");
+        List<String> normalized = new ArrayList<>(10);
+        for (int i = 0; i < slots.size(); i++) normalized.add(slots.get(i) == null ? "" : slots.get(i));
+        while (normalized.size() < 10) normalized.add("");
+        if (activeSlots.equals(normalized)) return this;
+        return new AugmentationPlayerState(schemaVersion, augmentLevels, normalized, cooldownReadyTicks,
+                stolenAuthorityBossIds, bossFirstKillRewardIds, persistentInts);
+    }
+
     public long cooldownReadyTick(String augmentId) {
         if (augmentId == null || augmentId.isBlank()) throw new IllegalArgumentException("augmentId must not be blank");
         return cooldownReadyTicks.getOrDefault(augmentId, 0L);
@@ -114,9 +105,7 @@ public record AugmentationPlayerState(
                 stolenAuthorityBossIds, bossFirstKillRewardIds, persistentInts);
     }
 
-    public boolean hasStolenAuthority(String bossId) {
-        return bossId != null && stolenAuthorityBossIds.contains(bossId);
-    }
+    public boolean hasStolenAuthority(String bossId) { return bossId != null && stolenAuthorityBossIds.contains(bossId); }
 
     public AugmentationPlayerState withStolenAuthority(String bossId) {
         if (bossId == null || bossId.isBlank()) throw new IllegalArgumentException("bossId must not be blank");
@@ -127,9 +116,7 @@ public record AugmentationPlayerState(
                 stolen, bossFirstKillRewardIds, persistentInts);
     }
 
-    public boolean hasBossFirstKillReward(String bossId) {
-        return bossFirstKillRewardIds.contains(bossId);
-    }
+    public boolean hasBossFirstKillReward(String bossId) { return bossFirstKillRewardIds.contains(bossId); }
 
     public AugmentationPlayerState withBossFirstKillReward(String bossId) {
         if (bossId == null || bossId.isBlank()) throw new IllegalArgumentException("bossId must not be blank");
