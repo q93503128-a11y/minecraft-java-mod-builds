@@ -15,11 +15,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Portable augment device screen.
- *
- * <p>Presentation intentionally uses dark glass, beveled metal and tier light rather than flat
- * vanilla-style buttons. Motion is client-only: server menu state still owns all acquisition and
- * synthesis results.</p>
+ * Portable augment device presentation.
+ * Server menu state remains authoritative; reveal, selection and synthesis motion are client-only.
  */
 public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDeviceMenu> {
     private static final int W = 380, H = 236;
@@ -94,7 +91,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int cardY = menu.advanced() ? 88 : 67;
         boolean ready = menu.status() == AugmentDeviceMenu.STATUS_READY
                 || menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED;
-
         for (int slot = 0; slot < 3; slot++) {
             AugmentDefinition candidate = ready ? menu.candidate(slot) : null;
             if (candidate == null) {
@@ -164,7 +160,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             centered(g, name, x + CARD_W / 2, y + 42, TEXT);
             drawBadge(g, x + 30, y + 55, 52, 13, tierLabel(d.tier()), tier, true);
             drawBadge(g, x + 29, y + 72, 54, 12, active ? "액티브" : "상시 효과", active ? ACTIVE : MUTED, false);
-
             int now = menu.currentLevel(slot), next = Math.min(now + 1, d.maxLevel());
             centered(g, now == 0 ? "획득  Lv." + next : "Lv." + now + "  →  " + next,
                     x + CARD_W / 2, y + 88, MUTED);
@@ -195,7 +190,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int lo = shade(c, 0.46);
         int surface = selected ? tint(SELECTED, c, 18) : hover ? tint(HOVER, c, 10) : GLASS;
         int glow = Math.min(220, (selected ? 118 : hover ? 72 : 36 + tier.ordinal() * 4) + pulse);
-
         g.outline(x - 3, y - 3, w + 6, h + 6, alpha(c, Math.max(18, glow / 3)));
         g.outline(x - 2, y - 2, w + 4, h + 4, alpha(c, Math.max(24, glow / 2)));
         g.outline(x - 1, y - 1, w + 2, h + 2, alpha(hi, glow));
@@ -236,12 +230,11 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     }
 
     private void drawChargingCard(GuiGraphicsExtractor g, int slot, int y, AugmentTier tier) {
-        int x = cardX(slot);
-        int c = tierColor(tier);
+        int x = cardX(slot), c = tierColor(tier);
         g.fill(x - 1, y - 1, x + CARD_W + 1, y + CARD_H + 1, 0xFF111820);
         g.outline(x - 1, y - 1, CARD_W + 2, CARD_H + 2, alpha(c, 80));
         g.fill(x + 3, y + 3, x + CARD_W - 3, y + CARD_H - 3, GLASS);
-        int wave = (int) ((System.currentTimeMillis() / 18L + slot * 19L) % (CARD_H - 16));
+        int wave = (int) ((now() / 18L + slot * 19L) % (CARD_H - 16));
         g.fill(x + 8, y + 8 + wave, x + CARD_W - 8, y + 9 + wave, alpha(brighten(c, 70), 70));
         centered(g, "동조 중", x + CARD_W / 2, y + 56, alpha(brighten(c, 60), 180));
     }
@@ -284,7 +277,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
 
     private void drawUpgrade(GuiGraphicsExtractor g, int mx, int my) {
         centered(g, "정제할 코어 등급을 고르세요.", imageWidth / 2, 61, MUTED);
-
         for (int i = 0; i < AugmentTier.values().length - 1; i++) {
             AugmentTier tier = AugmentTier.values()[i];
             int x = 20 + i * 68;
@@ -297,7 +289,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         AugmentTier from = AugmentTier.values()[Math.max(0, Math.min(upgradeTierCursor, AugmentTier.values().length - 2))];
         AugmentTier to = from.next().orElse(AugmentTier.MYTHIC);
         drawSynthesisChamber(g, from, to, mx, my);
-
         if (menu.status() == AugmentDeviceMenu.STATUS_UPGRADED) {
             centered(g, "코어 정제 완료 ×" + Math.max(1, menu.lastOutputCount()), imageWidth / 2, H - 14, GOOD);
         } else if (menu.status() == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES) {
@@ -305,7 +296,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         } else {
             centered(g, "같은 등급 코어 3개 → 다음 등급 코어 1개", imageWidth / 2, H - 14, FAINT);
         }
-
         drawSynthesisBurst(g);
     }
 
@@ -323,23 +313,21 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
 
     private void drawSynthesisChamber(GuiGraphicsExtractor g, AugmentTier from, AugmentTier to, int mx, int my) {
         int chamberX = 22, chamberY = 96, chamberW = 336, chamberH = 78;
-        int fromColor = tierColor(from), toColor = tierColor(to);
+        int toColor = tierColor(to);
         g.fill(chamberX, chamberY, chamberX + chamberW, chamberY + chamberH, METAL_DARK);
         g.outline(chamberX, chamberY, chamberW, chamberH, METAL);
         g.fill(chamberX + 2, chamberY + 2, chamberX + chamberW - 2, chamberY + chamberH - 2, GLASS);
         g.fill(chamberX + 3, chamberY + 3, chamberX + chamberW - 3, chamberY + 9, GLASS_TOP);
-
-        drawCoreWell(g, 39, 105, 108, 58, fromColor, "입력", from, true);
+        drawCoreWell(g, 39, 105, 108, 58, tierColor(from), "입력", from, true);
         drawCoreWell(g, 233, 105, 108, 58, toColor, "결과", to, false);
 
         int cy = 134;
-        int wave = (int) ((System.currentTimeMillis() / 24L) % 54L);
+        int wave = (int) ((now() / 24L) % 54L);
         g.fill(151, cy, 229, cy + 2, 0xFF1C2831);
         g.fill(157 + wave, cy, Math.min(229, 163 + wave), cy + 2, alpha(brighten(toColor, 70), 130));
         g.outline(178, 119, 24, 30, alpha(toColor, 78));
         g.outline(181, 122, 18, 24, alpha(brighten(toColor, 55), 108));
         centered(g, "◆", 190, 130, brighten(toColor, 70));
-
         drawAction(g, 106, 183, 78, "1회 정제", mx, my);
         drawAction(g, 196, 183, 78, "모두 정제", mx, my);
     }
@@ -353,7 +341,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         g.fill(x + 2, y + 2, x + w - 2, y + 8, tint(GLASS_TOP, accent, 14));
         g.fill(x + 3, y + 3, x + w - 3, y + 4, alpha(brighten(accent, 70), 74));
         centered(g, label, x + w / 2, y + 6, brighten(accent, 55));
-
         if (input) {
             g.item(new ItemStack(AugmentCoreItems.item(tier)), x + 27, y + 25);
             g.item(new ItemStack(AugmentCoreItems.item(tier)), x + 47, y + 19);
@@ -374,29 +361,27 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int toColor = tierColor(toTier);
         g.fill(24, 98, 356, 174, alpha(0xFF05080C, (int) (130 * (1.0 - Math.min(1.0, p * 1.7)))));
 
-        if (p < 0.52) {
-            double q = easeInOut(p / 0.52);
+        boolean confirmed = menu.status() == AugmentDeviceMenu.STATUS_UPGRADED;
+        if (!confirmed || p < 0.52) {
+            double q = easeInOut(Math.min(1.0, p / 0.52));
             int[][] start = {{66, 130}, {86, 122}, {106, 130}};
             for (int[] s : start) {
-                int x = lerp(s[0], 182, q);
-                int y = lerp(s[1], 126, q);
+                int x = lerp(s[0], 182, q), y = lerp(s[1], 126, q);
                 g.item(new ItemStack(AugmentCoreItems.item(synthesisFrom)), x, y);
             }
             int radius = 8 + (int) Math.round(q * 15);
             g.outline(190 - radius, 134 - radius, radius * 2, radius * 2,
                     alpha(brighten(fromColor, 80), (int) (90 + 120 * q)));
-        } else {
-            double q = easeOut((p - 0.52) / 0.48);
-            int x = lerp(182, 279, q);
-            int y = lerp(126, 126, q);
-            int radius = 22 - (int) Math.round(q * 11);
-            g.outline(190 - radius, 134 - radius, radius * 2, radius * 2,
-                    alpha(brighten(toColor, 100), (int) (210 * (1.0 - q))));
-            g.item(new ItemStack(AugmentCoreItems.item(toTier)), x, y);
-            if (q > 0.62) {
-                centered(g, synthesisAll ? "연속 정제 완료" : "정제 완료", 287, 151, brighten(toColor, 70));
-            }
+            return;
         }
+
+        double q = easeOut((p - 0.52) / 0.48);
+        int x = lerp(182, 279, q);
+        int radius = 22 - (int) Math.round(q * 11);
+        g.outline(190 - radius, 134 - radius, radius * 2, radius * 2,
+                alpha(brighten(toColor, 100), (int) (210 * (1.0 - q))));
+        g.item(new ItemStack(AugmentCoreItems.item(toTier)), x, 126);
+        if (q > 0.62) centered(g, synthesisAll ? "연속 정제 완료" : "정제 완료", 287, 151, brighten(toColor, 70));
     }
 
     private void drawTab(GuiGraphicsExtractor g, int x, int y, int w, String text, boolean active, int mx, int my) {
@@ -426,12 +411,12 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         if (menu.advanced()) {
             if (inside(x, y, 14, 37, 104, 18)) {
                 upgradeMode = false;
-                playUi(SoundEvents.UI_BUTTON_CLICK, 1.0F);
+                playUi(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F);
                 return true;
             }
             if (inside(x, y, 124, 37, 104, 18)) {
                 upgradeMode = true;
-                playUi(SoundEvents.UI_BUTTON_CLICK, 1.08F);
+                playUi(SoundEvents.UI_BUTTON_CLICK.value(), 1.08F);
                 return true;
             }
         }
@@ -441,11 +426,10 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
                 int tx = 20 + i * 68;
                 if (inside(x, y, tx, 71, 62, 18)) {
                     upgradeTierCursor = i;
-                    playUi(SoundEvents.UI_BUTTON_CLICK, 0.96F + i * 0.05F);
+                    playUi(SoundEvents.UI_BUTTON_CLICK.value(), 0.96F + i * 0.05F);
                     return true;
                 }
             }
-
             AugmentTier tier = AugmentTier.values()[upgradeTierCursor];
             if (inside(x, y, 106, 183, 78, 17)) {
                 beginSynthesisFeedback(tier, false);
@@ -462,7 +446,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         for (AugmentTier tier : AugmentTier.values()) {
             int tx = 16 + tier.ordinal() * 58;
             if (inside(x, y, tx, tierY, 54, 19)) {
-                playUi(SoundEvents.UI_BUTTON_CLICK, 0.90F + tier.ordinal() * 0.05F);
+                playUi(SoundEvents.UI_BUTTON_CLICK.value(), 0.90F + tier.ordinal() * 0.05F);
                 return send(AugmentDeviceMenu.beginButtonId(tier));
             }
         }
@@ -473,7 +457,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
                 if (menu.candidate(slot) != null && inside(x, y, cardX(slot), cardY, CARD_W, CARD_H)) {
                     selectPulseSlot = slot;
                     selectPulseStarted = now();
-                    playUi(SoundEvents.UI_BUTTON_CLICK, 1.18F + slot * 0.05F);
+                    playUi(SoundEvents.UI_BUTTON_CLICK.value(), 1.18F + slot * 0.05F);
                     return send(AugmentDeviceMenu.candidateButtonId(slot));
                 }
             }
@@ -496,11 +480,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     }
 
     private void syncPresentationState() {
-        int status = menu.status();
-        int mask = menu.selectedMask();
-        int tier = menu.tierOrdinal();
-        int candidateKey = candidateKey();
-
+        int status = menu.status(), mask = menu.selectedMask(), tier = menu.tierOrdinal(), candidateKey = candidateKey();
         if (observedStatus == Integer.MIN_VALUE) {
             observedStatus = status;
             observedMask = mask;
@@ -514,14 +494,13 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             revealStarted = now();
             playUi(SoundEvents.AMETHYST_BLOCK_CHIME, 1.10F + Math.max(0, tier) * 0.04F);
         }
-
         if (status == AugmentDeviceMenu.STATUS_ACQUIRED && observedStatus != status) {
             acquireStarted = now();
             playUi(SoundEvents.PLAYER_LEVELUP, 1.18F);
         } else if (status == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES && observedStatus != status) {
-            playUi(SoundEvents.UI_BUTTON_CLICK, 0.58F);
+            synthesisStarted = Long.MIN_VALUE;
+            playUi(SoundEvents.UI_BUTTON_CLICK.value(), 0.58F);
         }
-
         if (mask != observedMask && status == AugmentDeviceMenu.STATUS_READY) {
             int added = mask & ~observedMask;
             if (added != 0) {
@@ -529,7 +508,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
                 selectPulseStarted = now();
             }
         }
-
         if (status == AugmentDeviceMenu.STATUS_UPGRADED && observedStatus != status) {
             if (tier >= 0 && tier < AugmentTier.values().length - 1) {
                 synthesisFrom = AugmentTier.values()[tier];
@@ -538,7 +516,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             synthesisStarted = now();
             playUi(SoundEvents.AMETHYST_BLOCK_CHIME, 1.34F);
         }
-
         observedStatus = status;
         observedMask = mask;
         observedTier = tier;
@@ -555,9 +532,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     }
 
     private void playUi(SoundEvent sound, float pitch) {
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch));
-        }
+        if (minecraft != null) minecraft.getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch));
     }
 
     private double revealProgress(int slot) {
