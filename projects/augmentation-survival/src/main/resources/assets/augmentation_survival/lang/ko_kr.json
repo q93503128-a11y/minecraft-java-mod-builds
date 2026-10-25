@@ -14,6 +14,7 @@
   "screen.augmentation_survival.spatial_link": "공간 연결",
   "key.category.augmentation_survival.augmentation": "증강",
   "key.augmentation_survival.active_mode": "증강 스킬 모드",
+  "key.augmentation_survival.authority_theft": "권능 해방",
   "key.augmentation_survival.storage": "증강 저장소 열기",
   "key.augmentation_survival.spatial_link": "공간 연결 열기",
   "message.augmentation_survival.storage.no_access": "사용할 수 있는 증강 저장소가 없습니다.",
@@ -28,5 +29,6 @@
   "message.augmentation_survival.storage.not_shared": "현재 공유 중인 원격 창고 그룹이 없습니다.",
   "message.augmentation_survival.storage.left_group": "원격 창고 공유 그룹에서 나왔습니다. 개인 27칸 저장분은 그대로 유지됩니다.",
   "message.augmentation_survival.spatial_link.no_access": "공간 연결 증강이 필요합니다.",
-  "message.augmentation_survival.spatial_link.blocked": "목적지 공간이 막혀 있어 이동할 수 없습니다."
+  "message.augmentation_survival.spatial_link.blocked": "목적지 공간이 막혀 있어 이동할 수 없습니다.",
+  "message.augmentation_survival.authority_theft.stolen": "%s의 권능을 탈취했습니다."
 }
