@@ -65,37 +65,25 @@ loom {
 
 repositories {
     mavenCentral()
-
     maven {
         name = 'Modrinth'
         url = 'https://api.modrinth.com/maven'
-        content {
-            includeGroup 'maven.modrinth'
-        }
+        content { includeGroup 'maven.modrinth' }
     }
-
     maven {
         name = 'CurseMaven'
         url = 'https://cursemaven.com'
-        content {
-            includeGroup 'curse.maven'
-        }
+        content { includeGroup 'curse.maven' }
     }
-
     maven {
         name = 'Shedaniel'
         url = 'https://maven.shedaniel.me/'
-        content {
-            includeGroup 'me.shedaniel.cloth'
-        }
+        content { includeGroup 'me.shedaniel.cloth' }
     }
-
     maven {
         name = 'FuzssModResources'
         url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
-        content {
-            includeGroup 'fuzs.multiloaderdataextensions'
-        }
+        content { includeGroup 'fuzs.multiloaderdataextensions' }
     }
 }
 
@@ -114,13 +102,9 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     pinnedPackArtifacts.each { spec ->
-        add('packProbe', spec.coord) {
-            transitive = false
-        }
+        add('packProbe', spec.coord) { transitive = false }
         if (packRuntimeEnabled) {
-            add('localRuntime', spec.coord) {
-                transitive = false
-            }
+            add('localRuntime', spec.coord) { transitive = false }
         }
     }
 }
@@ -148,12 +132,58 @@ def mergedWorldBossesKorean = {
     merged
 }
 
+def externalKoreanPayloadChunks = {
+    fileTree('src/external-lang') {
+        include 'external-ko-kr.b64.*'
+    }.files.toList().sort { a, b -> a.name <=> b.name }
+}
+
+def externalKoreanNamespaces = [
+        'bettercombat', 'chronodawn', 'dnt', 'farmersdelight', 'forgeconfigapiport',
+        'friendsandfoes', 'illagerinvasion', 'mcendgame', 'midnightlib', 'naturalist',
+        'repurposed_structures'
+] as Set
+
+def materializeExternalKorean = {
+    def chunks = externalKoreanPayloadChunks()
+    if (chunks.size() != 8) {
+        throw new GradleException("Expected 8 external Korean payload chunks, found ${chunks.size()}")
+    }
+    def encoded = new StringBuilder()
+    chunks.each { encoded.append(it.getText('UTF-8').trim()) }
+    def bytes = java.util.Base64.getDecoder().decode(encoded.toString())
+    def input = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(bytes))
+    def found = new LinkedHashSet<String>()
+    try {
+        java.util.zip.ZipEntry entry
+        while ((entry = input.nextEntry) != null) {
+            if (entry.isDirectory()) continue
+            def parts = entry.name.split('/')
+            if (parts.length != 4 || parts[0] != 'assets' || parts[2] != 'lang' || parts[3] != 'ko_kr.json') {
+                throw new GradleException("Unexpected external Korean payload entry: ${entry.name}")
+            }
+            def namespace = parts[1]
+            if (!externalKoreanNamespaces.contains(namespace) || !found.add(namespace)) {
+                throw new GradleException("Invalid or duplicate external Korean namespace: ${namespace}")
+            }
+            def target = layout.buildDirectory.file("resources/main/${entry.name}").get().asFile
+            target.parentFile.mkdirs()
+            target.withOutputStream { output -> input.transferTo(output) }
+        }
+    } finally {
+        input.close()
+    }
+    if (found != externalKoreanNamespaces) {
+        throw new GradleException("External Korean namespace drift: expected=${externalKoreanNamespaces}, found=${found}")
+    }
+    println "EXTERNAL_KOREAN_MATERIALIZE_PASS namespaces=${found.size()}"
+}
+
 processResources {
     inputs.property 'version', project.version
     inputs.files(worldBossesKoreanShards())
-    filesMatching('fabric.mod.json') {
-        expand 'version': project.version
-    }
+    inputs.files(externalKoreanPayloadChunks())
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
     doLast {
         def merged = mergedWorldBossesKorean()
         if (merged.size() != 789) {
@@ -163,6 +193,7 @@ processResources {
         target.parentFile.mkdirs()
         target.setText(JsonOutput.prettyPrint(JsonOutput.toJson(merged)) + System.lineSeparator(), 'UTF-8')
         println "WORLD_BOSSES_KOREAN_MERGE_PASS keys=${merged.size()} target=${target}"
+        materializeExternalKorean()
     }
 }
 
@@ -171,9 +202,7 @@ java {
     withSourcesJar()
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.release = 25
-}
+tasks.withType(JavaCompile).configureEach { options.release = 25 }
 
 tasks.register('verifyWorldBossesKorean') {
     group = 'verification'
@@ -188,127 +217,72 @@ tasks.register('verifyWorldBossesKorean') {
                     if (entry == null) return false
                     def meta = new JsonSlurper().parseText(zip.getInputStream(entry).getText('UTF-8'))
                     return String.valueOf(meta.id) == 'worldbosses'
-                } finally {
-                    zip.close()
-                }
-            } catch (Exception ignored) {
-                return false
-            }
+                } finally { zip.close() }
+            } catch (Exception ignored) { return false }
         }
-        if (worldBossesJar == null) {
-            throw new GradleException('Pinned World Bosses jar was not found in packProbe')
-        }
+        if (worldBossesJar == null) throw new GradleException('Pinned World Bosses jar was not found in packProbe')
         def zip = new java.util.zip.ZipFile(worldBossesJar)
         try {
             def englishEntry = zip.getEntry('assets/worldbosses/lang/en_us.json')
-            if (englishEntry == null) {
-                throw new GradleException("Pinned World Bosses jar lacks assets/worldbosses/lang/en_us.json: ${worldBossesJar.name}")
-            }
+            if (englishEntry == null) throw new GradleException("Pinned World Bosses jar lacks assets/worldbosses/lang/en_us.json: ${worldBossesJar.name}")
             def english = new JsonSlurper().parseText(zip.getInputStream(englishEntry).getText('UTF-8'))
-            if (!(english instanceof Map)) {
-                throw new GradleException('Pinned World Bosses en_us localization is not an object')
-            }
+            if (!(english instanceof Map)) throw new GradleException('Pinned World Bosses en_us localization is not an object')
             def missing = english.keySet().findAll { !merged.containsKey(String.valueOf(it)) }.sort()
             def stale = merged.keySet().findAll { !english.containsKey(String.valueOf(it)) }.sort()
-            if (!missing.isEmpty() || !stale.isEmpty()) {
-                throw new GradleException("World Bosses Korean key drift: missing=${missing}, stale=${stale}")
-            }
+            if (!missing.isEmpty() || !stale.isEmpty()) throw new GradleException("World Bosses Korean key drift: missing=${missing}, stale=${stale}")
             def tokenPattern = ~/%(?:\d+\$)?[sdif]/
             english.each { key, value ->
                 def sourceTokens = (String.valueOf(value) =~ tokenPattern).findAll()
                 def targetTokens = (String.valueOf(merged[String.valueOf(key)]) =~ tokenPattern).findAll()
-                if (sourceTokens != targetTokens) {
-                    throw new GradleException("World Bosses Korean format-token mismatch for ${key}: ${sourceTokens} != ${targetTokens}")
-                }
+                if (sourceTokens != targetTokens) throw new GradleException("World Bosses Korean format-token mismatch for ${key}: ${sourceTokens} != ${targetTokens}")
             }
             println "WORLD_BOSSES_KOREAN_CONTRACT_PASS keys=${merged.size()} source=${worldBossesJar.name}"
-        } finally {
-            zip.close()
-        }
+        } finally { zip.close() }
     }
 }
 
-tasks.named('check') {
-    dependsOn tasks.named('verifyWorldBossesKorean')
-}
+tasks.named('check') { dependsOn tasks.named('verifyWorldBossesKorean') }
 
 tasks.register('inspectPackDependencies') {
     group = 'verification'
     description = 'Resolve pinned pack jars, inspect Fabric metadata, and inventory loot/worldgen data available for augmentation integration.'
-
     doLast {
         def resolved = configurations.packProbe.resolve().toList().sort { a, b -> a.name <=> b.name }
         if (resolved.size() != pinnedPackArtifacts.size()) {
             throw new GradleException("Expected ${pinnedPackArtifacts.size()} pack artifacts, resolved ${resolved.size()}: ${resolved*.name}")
         }
-
         def report = layout.buildDirectory.file('reports/modpack/pack-artifact-inventory.txt').get().asFile
         report.parentFile.mkdirs()
         report.text = ''
-
         def ids = [:]
         resolved.each { file ->
-            if (!file.isFile() || file.length() <= 0L) {
-                throw new GradleException("Pack artifact missing or empty: ${file}")
-            }
-
+            if (!file.isFile() || file.length() <= 0L) throw new GradleException("Pack artifact missing or empty: ${file}")
             def zip = new java.util.zip.ZipFile(file)
             try {
                 def entries = Collections.list(zip.entries()).collect { it.name }
                 def fabricEntry = zip.getEntry('fabric.mod.json')
-                def id = '(no-fabric-metadata)'
-                def versionValue = '(unknown)'
-                def environment = '(unknown)'
-                def depends = '(none declared)'
-
+                def id = '(no-fabric-metadata)', versionValue = '(unknown)', environment = '(unknown)', depends = '(none declared)'
                 if (fabricEntry != null) {
                     def meta = new JsonSlurper().parseText(zip.getInputStream(fabricEntry).getText('UTF-8'))
                     id = String.valueOf(meta.id)
                     versionValue = String.valueOf(meta.version)
                     environment = String.valueOf(meta.environment)
-                    depends = meta.depends instanceof Map
-                            ? meta.depends.collect { key, value -> "${key}=${value}" }.sort().join(', ')
-                            : String.valueOf(meta.depends)
-                    if (ids.containsKey(id)) {
-                        throw new GradleException("Duplicate Fabric mod id '${id}' in ${ids[id]} and ${file.name}")
-                    }
+                    depends = meta.depends instanceof Map ? meta.depends.collect { key, value -> "${key}=${value}" }.sort().join(', ') : String.valueOf(meta.depends)
+                    if (ids.containsKey(id)) throw new GradleException("Duplicate Fabric mod id '${id}' in ${ids[id]} and ${file.name}")
                     ids[id] = file.name
                 }
-
                 def loot = entries.findAll { it.contains('/loot_table/') || it.contains('/loot_tables/') }
-                def structures = entries.findAll {
-                    it.contains('/worldgen/structure/') || it.contains('/worldgen/structure_set/') || it.contains('/structure/')
-                }
-                def biomes = entries.findAll {
-                    it.contains('/worldgen/biome/') || it.contains('/tags/worldgen/biome/')
-                }
+                def structures = entries.findAll { it.contains('/worldgen/structure/') || it.contains('/worldgen/structure_set/') || it.contains('/structure/') }
+                def biomes = entries.findAll { it.contains('/worldgen/biome/') || it.contains('/tags/worldgen/biome/') }
                 def recipes = entries.findAll { it.contains('/recipe/') || it.contains('/recipes/') }
-
-                def line = [
-                        "file=${file.name}",
-                        "bytes=${file.length()}",
-                        "id=${id}",
-                        "version=${versionValue}",
-                        "environment=${environment}",
-                        "depends=${depends}",
-                        "lootEntries=${loot.size()}",
-                        "structureEntries=${structures.size()}",
-                        "biomeEntries=${biomes.size()}",
-                        "recipeEntries=${recipes.size()}"
-                ].join('\t')
+                def line = ["file=${file.name}", "bytes=${file.length()}", "id=${id}", "version=${versionValue}", "environment=${environment}", "depends=${depends}", "lootEntries=${loot.size()}", "structureEntries=${structures.size()}", "biomeEntries=${biomes.size()}", "recipeEntries=${recipes.size()}"].join('\t')
                 println "AUGMENT_PACK_ARTIFACT ${line}"
                 report << line << System.lineSeparator()
-
                 [loot: loot, structures: structures, biomes: biomes].each { kind, values ->
-                    values.take(12).each { value ->
-                        report << "  ${kind}: ${value}" << System.lineSeparator()
-                    }
+                    values.take(12).each { value -> report << "  ${kind}: ${value}" << System.lineSeparator() }
                 }
-            } finally {
-                zip.close()
-            }
+            } finally { zip.close() }
         }
-
         println "AUGMENT_PACK_INSPECTION_PASS count=${resolved.size()} report=${report}"
     }
 }
@@ -317,13 +291,9 @@ tasks.register('verifyPackRuntimeClasspath') {
     group = 'verification'
     description = 'Resolve the Loom development runtime with the official pack enabled.'
     doLast {
-        if (!packRuntimeEnabled) {
-            throw new GradleException('Run with -PaugmentationPackRuntime=true')
-        }
+        if (!packRuntimeEnabled) throw new GradleException('Run with -PaugmentationPackRuntime=true')
         def files = configurations.runtimeClasspath.resolve()
-        if (files.isEmpty()) {
-            throw new GradleException('Runtime classpath resolved empty')
-        }
+        if (files.isEmpty()) throw new GradleException('Runtime classpath resolved empty')
         println "AUGMENT_PACK_RUNTIME_CLASSPATH_PASS files=${files.size()}"
     }
 }
