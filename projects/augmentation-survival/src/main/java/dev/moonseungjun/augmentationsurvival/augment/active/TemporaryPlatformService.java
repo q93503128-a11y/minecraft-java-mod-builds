@@ -27,10 +27,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
@@ -43,7 +41,7 @@ public final class TemporaryPlatformService {
     private static final String OVERTIME_ID = id("overtime");
     private static final String REPLAY_ID = id("replay");
 
-    private static final Block PLATFORM_BLOCK = Blocks.STAINED_GLASS.pick(DyeColor.LIGHT_BLUE);
+    private static final Block PLATFORM_BLOCK = TemporaryPlatformBlocks.TEMPORARY_PLATFORM;
     private static final BlockState PLATFORM_STATE = PLATFORM_BLOCK.defaultBlockState();
     private static final Map<PlatformKey, PlatformRecord> PLATFORMS = new HashMap<>();
     private static final Map<UUID, List<ReplayAction>> REPLAYS = new HashMap<>();
