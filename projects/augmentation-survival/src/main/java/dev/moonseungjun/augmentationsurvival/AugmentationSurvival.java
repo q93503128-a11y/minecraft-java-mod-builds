@@ -8,6 +8,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveTuning
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationService;
+import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityTheftService;
 import dev.moonseungjun.augmentationsurvival.augment.active.DeathReturnAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.PhaseStateNetworking;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
@@ -65,6 +66,7 @@ import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProf
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenus;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentStorageMenus;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
+import dev.moonseungjun.augmentationsurvival.network.AuthorityTheftNetworking;
 import dev.moonseungjun.augmentationsurvival.network.ConsumptionNetworking;
 import dev.moonseungjun.augmentationsurvival.network.MovementNetworking;
 import dev.moonseungjun.augmentationsurvival.network.SpatialLinkNetworking;
@@ -133,6 +135,7 @@ public final class AugmentationSurvival implements ModInitializer {
         EnchantmentResonanceService.initialize();
         TamingAugmentService.initialize();
         AdvancedWorldAugmentService.initialize();
+        AuthorityTheftService.initialize();
         ActiveAbilityRouter.initialize();
         CombatExpansionService.initialize();
         CombatAugmentService.initialize();
@@ -141,6 +144,7 @@ public final class AugmentationSurvival implements ModInitializer {
         UtilityAugmentService.initialize();
         AdvancedUtilityAugmentService.initialize();
         ActiveAbilityNetworking.initialize();
+        AuthorityTheftNetworking.initialize();
         StorageNetworking.initialize();
         SpatialLinkNetworking.initialize();
         MovementTuning.initialize();
