@@ -14,6 +14,7 @@
   "screen.augmentation_survival.spatial_link": "Spatial Link",
   "key.category.augmentation_survival.augmentation": "Augmentation",
   "key.augmentation_survival.active_mode": "Augment Skill Mode",
+  "key.augmentation_survival.authority_theft": "Release Stolen Authority",
   "key.augmentation_survival.storage": "Open Augment Storage",
   "key.augmentation_survival.spatial_link": "Open Spatial Link",
   "message.augmentation_survival.storage.no_access": "You do not have an augment storage to open.",
@@ -28,5 +29,6 @@
   "message.augmentation_survival.storage.not_shared": "You are not currently in a shared Remote Storage group.",
   "message.augmentation_survival.storage.left_group": "You left the Remote Storage group. Your personal 27-slot segment remains intact.",
   "message.augmentation_survival.spatial_link.no_access": "The Spatial Link augment is required.",
-  "message.augmentation_survival.spatial_link.blocked": "The destination is obstructed and cannot be entered safely."
+  "message.augmentation_survival.spatial_link.blocked": "The destination is obstructed and cannot be entered safely.",
+  "message.augmentation_survival.authority_theft.stolen": "Stole %s's authority."
 }
