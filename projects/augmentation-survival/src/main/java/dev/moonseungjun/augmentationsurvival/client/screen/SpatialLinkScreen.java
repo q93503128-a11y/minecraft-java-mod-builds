@@ -33,6 +33,7 @@ public final class SpatialLinkScreen extends Screen {
     private int leftPos;
     private int topPos;
     private EditBox searchBox;
+    private EditBox registerNameBox;
     private EditBox nameBox;
     private EditBox shareBox;
     private Button teleportButton;
@@ -63,7 +64,7 @@ public final class SpatialLinkScreen extends Screen {
         leftPos = (width - PANEL_WIDTH) / 2;
         topPos = (height - PANEL_HEIGHT) / 2;
 
-        searchBox = new EditBox(font, leftPos + 16, topPos + 38, 218, 20, Component.literal("검색"));
+        searchBox = new EditBox(font, leftPos + 16, topPos + 38, 132, 20, Component.literal("검색"));
         searchBox.setMaxLength(40);
         searchBox.setResponder(value -> {
             query = value;
@@ -73,16 +74,21 @@ public final class SpatialLinkScreen extends Screen {
         });
         addRenderableWidget(searchBox);
 
-        addRenderableWidget(Button.builder(Component.literal("현재 위치 등록"), button -> {
-            String name = nameBox == null ? "" : nameBox.getValue();
+        registerNameBox = new EditBox(font, leftPos + 154, topPos + 38, 94, 20, Component.literal("새 공간문 이름"));
+        registerNameBox.setMaxLength(32);
+        addRenderableWidget(registerNameBox);
+
+        addRenderableWidget(Button.builder(Component.literal("위치 등록"), button -> {
+            String name = registerNameBox.getValue();
             send(SpatialLinkActionPayload.Action.REGISTER, "", name);
-        }).bounds(leftPos + 242, topPos + 38, 112, 20).build());
+            registerNameBox.setValue("");
+        }).bounds(leftPos + 252, topPos + 38, 72, 20).build());
 
-        addRenderableWidget(Button.builder(Component.literal("기본 목적지 이동"), button ->
+        addRenderableWidget(Button.builder(Component.literal("기본 이동"), button ->
                 send(SpatialLinkActionPayload.Action.TELEPORT_DEFAULT, "", ""))
-                .bounds(leftPos + 358, topPos + 38, 46, 20).build());
+                .bounds(leftPos + 328, topPos + 38, 76, 20).build());
 
-        nameBox = new EditBox(font, leftPos + 280, topPos + 96, 124, 20, Component.literal("공간문 이름"));
+        nameBox = new EditBox(font, leftPos + 280, topPos + 96, 124, 20, Component.literal("선택한 공간문 이름"));
         nameBox.setMaxLength(32);
         addRenderableWidget(nameBox);
 
@@ -110,8 +116,7 @@ public final class SpatialLinkScreen extends Screen {
         }).bounds(leftPos + 244, topPos + 220, 24, 20).build());
 
         ensureSelection();
-        SpatialLinkSnapshotPayload.GateView selected = selected();
-        if (selected != null && selected.owner()) nameBox.setValue(selected.name());
+        syncSelectedNameField();
         updateControls();
     }
 
@@ -183,9 +188,7 @@ public final class SpatialLinkScreen extends Screen {
                 selected.owner() ? ACCENT : SHARED, false);
         String coords = (int) Math.floor(selected.x()) + ", " + (int) Math.floor(selected.y()) + ", " + (int) Math.floor(selected.z());
         graphics.text(font, coords, leftPos + 280, topPos + 84, MUTED, false);
-        if (!selected.owner()) {
-            graphics.text(font, selected.name(), leftPos + 280, topPos + 101, TEXT, false);
-        }
+        if (!selected.owner()) graphics.text(font, selected.name(), leftPos + 280, topPos + 101, TEXT, false);
         graphics.text(font, "공유 대상", leftPos + 280, topPos + 173, MUTED, false);
     }
 
@@ -201,9 +204,8 @@ public final class SpatialLinkScreen extends Screen {
                 if (index >= filtered.size()) break;
                 int y = topPos + 68 + row * 24;
                 if (inside(mx, my, leftPos + 16, y, 252, 20)) {
-                    SpatialLinkSnapshotPayload.GateView gate = filtered.get(index);
-                    selectedId = gate.id();
-                    if (gate.owner() && nameBox != null) nameBox.setValue(gate.name());
+                    selectedId = filtered.get(index).id();
+                    syncSelectedNameField();
                     updateControls();
                     return true;
                 }
@@ -234,6 +236,12 @@ public final class SpatialLinkScreen extends Screen {
         if (!visible) selectedId = filtered.get(page * ROWS_PER_PAGE).id();
     }
 
+    private void syncSelectedNameField() {
+        if (nameBox == null) return;
+        SpatialLinkSnapshotPayload.GateView selected = selected();
+        nameBox.setValue(selected != null && selected.owner() ? selected.name() : "");
+    }
+
     private void updateControls() {
         SpatialLinkSnapshotPayload.GateView selected = selected();
         boolean has = selected != null;
@@ -241,11 +249,11 @@ public final class SpatialLinkScreen extends Screen {
         if (teleportButton != null) teleportButton.active = has;
         if (favoriteButton != null) favoriteButton.active = has;
         if (defaultButton != null) defaultButton.active = has;
-        if (renameButton != null) renameButton.active = owner;
+        if (renameButton != null) renameButton.active = owner && nameBox != null && !nameBox.getValue().isBlank();
         if (deleteButton != null) deleteButton.active = owner;
         if (shareButton != null) shareButton.active = owner && shareBox != null && !shareBox.getValue().isBlank();
         if (unshareButton != null) unshareButton.active = owner && shareBox != null && !shareBox.getValue().isBlank();
-        if (nameBox != null) nameBox.active = owner || !has;
+        if (nameBox != null) nameBox.active = owner;
         if (shareBox != null) shareBox.active = owner;
         if (previousButton != null) previousButton.active = page > 0;
         if (nextButton != null) nextButton.active = page + 1 < pageCount();
