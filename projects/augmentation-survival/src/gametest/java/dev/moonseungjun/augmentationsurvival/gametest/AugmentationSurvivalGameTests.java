@@ -13,7 +13,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -116,7 +116,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
 
     @GameTest
     public void vanillaBossCompatibilityProfileIsBound(GameTestHelper helper) {
-        var wither = helper.spawnMob(EntityType.WITHER, 1, 2, 1).withNoFreeWill().spawn();
+        var wither = helper.spawnMob(EntityTypes.WITHER, 1, 2, 1).withNoFreeWill().spawn();
         require(EntityCompatibilityProfileService.isBoss(wither), "wither is missing the shared boss compatibility profile");
         helper.succeed();
     }
