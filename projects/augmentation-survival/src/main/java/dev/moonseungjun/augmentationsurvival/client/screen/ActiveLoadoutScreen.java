@@ -387,7 +387,9 @@ public final class ActiveLoadoutScreen extends Screen {
         int quickLabelY = y + 38;
         int slotGap = w >= 620 ? 5 : w >= 430 ? 4 : w >= 300 ? 2 : 1;
         int slotBudget = Math.max(1, w - 28);
-        int slotW = Math.min(49, Math.max(16, (slotBudget - slotGap * 9) / 10));
+        int rawSlotW = Math.max(1, (slotBudget - slotGap * 9) / 10);
+        int slotW = Math.min(49, Math.max(10, rawSlotW));
+        if (slotW * 10 + slotGap * 9 > slotBudget) slotW = rawSlotW;
         int slotH = compact ? Math.max(26, Math.min(36, h / 7)) : 48;
         int slotTotal = slotW * 10 + slotGap * 9;
         int slotStartX = x + (w - slotTotal) / 2;
