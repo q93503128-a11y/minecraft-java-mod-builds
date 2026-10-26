@@ -79,7 +79,8 @@
     "EntityRendererPerceptionMixin",
     "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin",
-    "AugmentDeviceCardPresentationMixin"
+    "AugmentDeviceUiRescueMixin",
+    "ActiveLoadoutUiRescueMixin"
   ],
   "injectors": {
     "defaultRequire": 1
