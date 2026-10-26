@@ -10,6 +10,7 @@ import java.util.List;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -88,10 +89,16 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         int beforeTotems = player.getInventory().countItem(Items.TOTEM_OF_UNDYING);
         long now = player.level().getGameTime();
 
-        helper.hurt(player, player.damageSources().generic(), player.getMaxHealth() * 20.0F);
+        require(player.hurtServer(
+                        (ServerLevel) player.level(),
+                        player.damageSources().generic(),
+                        player.getMaxHealth() * 20.0F
+                ),
+                "real server damage path rejected the lethal hit before death protection");
 
         require(!player.isDeadOrDying(), "last stand allowed a real death");
-        require(player.getHealth() == 1.0F, "last stand did not stop lethal damage at 1 HP");
+        require(player.getHealth() == 1.0F,
+                "last stand did not stop lethal damage at 1 HP; health=" + player.getHealth());
         require(player.getInventory().countItem(Items.TOTEM_OF_UNDYING) == beforeTotems,
                 "emergency totem was consumed before last stand");
         require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand")) > now,
