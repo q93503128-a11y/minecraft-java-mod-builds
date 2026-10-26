@@ -9,6 +9,7 @@
     "LastStandDeathProtectionMixin",
     "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin",
+    "ServerPlayerInvulnerabilityMixin",
     "StatusReflectRecursionGuardMixin",
     "LivingEntityHealingAugmentMixin",
     "LivingEntityEnchantmentResonanceMixin",
