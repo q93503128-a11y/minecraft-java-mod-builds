@@ -217,7 +217,7 @@ public final class AugmentGuidebookScreen extends Screen {
         return x >= left && x < left + width && y >= top && y < top + height;
     }
 
-    private static ItemStack[] grid(net.minecraft.world.item.ItemLike... items) {
+    private static ItemStack[] grid(net.minecraft.world.level.ItemLike... items) {
         ItemStack[] stacks = new ItemStack[9];
         for (int i = 0; i < stacks.length; i++) {
             stacks[i] = i < items.length && items[i] != null ? new ItemStack(items[i]) : ItemStack.EMPTY;
