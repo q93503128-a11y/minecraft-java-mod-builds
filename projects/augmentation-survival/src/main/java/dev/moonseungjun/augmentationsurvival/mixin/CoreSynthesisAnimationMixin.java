@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Adds a short material-convergence -> flash -> result reveal to successful core synthesis. */
 @Mixin(value = AugmentDeviceScreen.class, priority = 1350)
@@ -24,7 +25,6 @@ public abstract class CoreSynthesisAnimationMixin extends AbstractContainerScree
 
     @Shadow private int synthesisTier;
 
-    @Unique private int augmentationSurvival$previousStatus = Integer.MIN_VALUE;
     @Unique private long augmentationSurvival$synthesisStarted = Long.MIN_VALUE;
     @Unique private int augmentationSurvival$animatedTier;
     @Unique private int augmentationSurvival$animatedOutputs = 1;
@@ -39,6 +39,35 @@ public abstract class CoreSynthesisAnimationMixin extends AbstractContainerScree
         super(menu, inventory, title, imageWidth, imageHeight);
     }
 
+    /**
+     * A synthesis click is already gated by the screen's core-count check before send() is called.
+     * Restarting here means every valid click restarts the feedback immediately, even when the
+     * server status remains STATUS_UPGRADED across consecutive crafts.
+     */
+    @Inject(method = "send", at = @At("HEAD"))
+    private void augmentationSurvival$restartOnSynthesisClick(
+            int buttonId,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        int oneStart = AugmentDeviceMenu.upgradeOneButtonId(AugmentTier.COMMON);
+        int oneEnd = AugmentDeviceMenu.upgradeOneButtonId(AugmentTier.LEGENDARY);
+        int allStart = AugmentDeviceMenu.upgradeAllButtonId(AugmentTier.COMMON);
+        int allEnd = AugmentDeviceMenu.upgradeAllButtonId(AugmentTier.LEGENDARY);
+
+        int tier = -1;
+        if (buttonId >= oneStart && buttonId <= oneEnd) {
+            tier = buttonId - oneStart;
+        } else if (buttonId >= allStart && buttonId <= allEnd) {
+            tier = buttonId - allStart;
+        }
+        if (tier < 0) return;
+
+        augmentationSurvival$synthesisStarted = System.currentTimeMillis();
+        augmentationSurvival$animatedTier = Math.max(0,
+                Math.min(tier, AugmentTier.values().length - 2));
+        augmentationSurvival$animatedOutputs = 1;
+    }
+
     @Inject(method = "drawSynthesis", at = @At("TAIL"))
     private void augmentationSurvival$animateSynthesis(
             GuiGraphicsExtractor g,
@@ -46,17 +75,15 @@ public abstract class CoreSynthesisAnimationMixin extends AbstractContainerScree
             int mouseY,
             CallbackInfo ci
     ) {
-        int status = menu.status();
-        if (status == AugmentDeviceMenu.STATUS_UPGRADED
-                && augmentationSurvival$previousStatus != AugmentDeviceMenu.STATUS_UPGRADED) {
-            augmentationSurvival$synthesisStarted = System.currentTimeMillis();
-            augmentationSurvival$animatedTier = Math.max(0,
-                    Math.min(synthesisTier, AugmentTier.values().length - 2));
+        if (augmentationSurvival$synthesisStarted == Long.MIN_VALUE) return;
+
+        // Once the server sync for this craft arrives, use its real output count. The animation
+        // itself has already restarted on the click, so repeated STATUS_UPGRADED values are fine.
+        if (menu.status() == AugmentDeviceMenu.STATUS_UPGRADED
+                && menu.tierOrdinal() == augmentationSurvival$animatedTier) {
             augmentationSurvival$animatedOutputs = Math.max(1, menu.lastOutputCount());
         }
-        augmentationSurvival$previousStatus = status;
 
-        if (augmentationSurvival$synthesisStarted == Long.MIN_VALUE) return;
         long age = System.currentTimeMillis() - augmentationSurvival$synthesisStarted;
         if (age < 0 || age > 960L) {
             augmentationSurvival$synthesisStarted = Long.MIN_VALUE;
