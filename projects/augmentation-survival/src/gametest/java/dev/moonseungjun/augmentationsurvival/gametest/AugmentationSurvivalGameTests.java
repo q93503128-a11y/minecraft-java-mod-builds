@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
@@ -129,7 +130,8 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
     }
 
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
         player.setHealth(player.getMaxHealth());
         return player;
     }
@@ -144,6 +146,13 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        method.invoke(this, helper);
+        try {
+            method.invoke(this, helper);
+        } catch (InvocationTargetException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof RuntimeException runtimeException) throw runtimeException;
+            if (cause instanceof Error error) throw error;
+            throw exception;
+        }
     }
 }
