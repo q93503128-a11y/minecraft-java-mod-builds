@@ -12,6 +12,7 @@
       "dev.moonseungjun.augmentationsurvival.gametest.ActiveInteractionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.HealingInteractionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ProtectionInteractionGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.DominationBehaviorGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.AugmentationSurvivalGameTests"
     ]
   },

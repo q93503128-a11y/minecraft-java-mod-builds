@@ -84,7 +84,11 @@
     "EnchantmentMenuRefreshMixin",
     "ProtectionRuntimeAccessor",
     "ProtectionRuntimeStateAccessor",
-    "ProtectionPoolAccessor"
+    "ProtectionPoolAccessor",
+    "PassivePresentationBootstrapMixin",
+    "CombatPassivePresentationMixin",
+    "ReactivePassivePresentationMixin",
+    "ExpansionPassivePresentationMixin"
   ],
   "client": [
     "LocalPlayerConsumptionMixin",
