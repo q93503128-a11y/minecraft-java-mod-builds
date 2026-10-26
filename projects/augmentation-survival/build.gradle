@@ -297,3 +297,13 @@ tasks.register('verifyPackRuntimeClasspath') {
         println "AUGMENT_PACK_RUNTIME_CLASSPATH_PASS files=${files.size()}"
     }
 }
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "augmentation_survival_gametest"
+        enableGameTests = true
+        enableClientGameTests = false
+        eula = true
+    }
+}
