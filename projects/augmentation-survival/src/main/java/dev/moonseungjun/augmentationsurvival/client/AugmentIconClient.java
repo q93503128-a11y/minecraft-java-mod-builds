@@ -19,7 +19,7 @@ public final class AugmentIconClient {
             case "berserk", "divine_punishment" -> new ItemStack(Items.DIAMOND_SWORD);
             case "healing_wave", "revive", "death_return" -> new ItemStack(Items.GOLDEN_APPLE);
             case "temporary_platform" -> new ItemStack(Items.SCAFFOLDING);
-            case "rewind", "time_acceleration", "time_stop", "area_acceleration" -> new ItemStack(Items.CLOCK);
+            case "rewind", "time_acceleration", "time_stop", "area_acceleration", "candidate_reroll" -> new ItemStack(Items.CLOCK);
             case "clone", "domination" -> new ItemStack(Items.ARMOR_STAND);
             case "instant_mining" -> new ItemStack(Items.DIAMOND_PICKAXE);
             case "gigantification" -> new ItemStack(Items.HEAVY_CORE);

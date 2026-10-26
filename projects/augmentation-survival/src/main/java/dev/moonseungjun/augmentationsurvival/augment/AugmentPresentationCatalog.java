@@ -24,6 +24,7 @@ public final class AugmentPresentationCatalog {
     public static void initialize() {
         Map<String, Entry> loaded = load();
         for (AugmentDefinition definition : AugmentCatalog.allDefinitions()) {
+            if (definition.id().equals(AugmentCatalog.REROLL_ID)) continue;
             if (!loaded.containsKey(definition.canonicalNameKo())) {
                 throw new IllegalStateException("Missing player-facing augment text for " + definition.canonicalNameKo());
             }
@@ -32,6 +33,14 @@ public final class AugmentPresentationCatalog {
     }
 
     public static Entry get(AugmentDefinition definition) {
+        if (definition.id().equals(AugmentCatalog.REROLL_ID)) {
+            return new Entry(
+                    "재추첨",
+                    Kind.PASSIVE,
+                    "코어 뽑기마다 후보 카드 하나를 1 / 2 / 3회 새 후보로 바꿀 수 있습니다.",
+                    "Lv.1 / 2 / 3에서 코어 뽑기마다 재추첨 1 / 2 / 3회를 얻습니다. 한 번 사용할 때 선택한 카드 한 장만 같은 등급의 새 후보로 바뀌며 다른 두 카드는 유지됩니다. 현재 표시된 다른 후보와는 중복되지 않습니다."
+            );
+        }
         Map<String, Entry> current = entries;
         if (current == null) {
             initialize();

@@ -18,16 +18,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Validated runtime snapshot of the locked 146-augment roster. */
+/** Validated runtime snapshot of the locked 147-augment roster. */
 public final class AugmentCatalog {
     public static final String SECOND_CHOICE_ID = AugmentationSurvival.MOD_ID + ":second_choice";
+    public static final String REROLL_ID = AugmentationSurvival.MOD_ID + ":candidate_reroll";
     private static final String RESOURCE_PATH =
             "data/augmentation_survival/augmentation/augment_catalog.json";
-    private static final int EXPECTED_TOTAL = 146;
+    private static final int EXPECTED_TOTAL = 147;
     private static final Map<AugmentTier, Integer> CANONICAL_COUNTS = Map.of(
             AugmentTier.COMMON, 20,
             AugmentTier.UNCOMMON, 27,
-            AugmentTier.RARE, 30,
+            AugmentTier.RARE, 31,
             AugmentTier.EPIC, 40,
             AugmentTier.LEGENDARY, 20,
             AugmentTier.MYTHIC, 9
@@ -185,6 +186,9 @@ public final class AugmentCatalog {
 
         if (!byId.containsKey(SECOND_CHOICE_ID)) {
             throw new IllegalStateException("Canonical second-choice augment is missing from catalog");
+        }
+        if (!byId.containsKey(REROLL_ID)) {
+            throw new IllegalStateException("Canonical reroll augment is missing from catalog");
         }
 
         return new Snapshot(

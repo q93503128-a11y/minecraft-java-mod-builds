@@ -22,7 +22,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-/** Server-authoritative augment draw/selection transaction. */
+/** Server-authoritative augment draw, single-card reroll, and selection transaction. */
 public final class AugmentOfferService {
     private static final int OFFER_LIFETIME_TICKS = 20 * 60 * 30;
     private static final int TARGET_CANDIDATE_COUNT = 3;
@@ -40,7 +40,7 @@ public final class AugmentOfferService {
             if (server.getTickCount() <= existing.expiresAtTick() && hasCore(player, existing.tier())) {
                 return BeginResult.ready(
                         existing.token(), existing.tier(), existing.candidateIds(),
-                        existing.selectionCount(), existing.expiresAtTick()
+                        existing.selectionCount(), existing.rerollsRemaining(), existing.expiresAtTick()
                 );
             }
             PENDING.remove(player.getUUID(), existing);
@@ -49,10 +49,7 @@ public final class AugmentOfferService {
         if (!hasCore(player, requestedTier)) return BeginResult.noCore();
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        List<AugmentDefinition> eligible = new ArrayList<>();
-        for (AugmentDefinition definition : AugmentCatalog.definitions(requestedTier)) {
-            if (!definition.isMaxed(state.level(definition.id()))) eligible.add(definition);
-        }
+        List<AugmentDefinition> eligible = eligibleCandidates(state, requestedTier);
         if (eligible.isEmpty()) return BeginResult.fullyMaxed();
 
         shuffle(eligible, player.getRandom());
@@ -61,11 +58,78 @@ public final class AugmentOfferService {
                 .map(AugmentDefinition::id).toList();
         int selectionCount = state.level(AugmentCatalog.SECOND_CHOICE_ID) > 0
                 ? Math.min(2, candidateCount) : 1;
+        int rerolls = Math.max(0, Math.min(3, state.level(AugmentCatalog.REROLL_ID)));
         String token = UUID.randomUUID().toString();
         int expiresAtTick = server.getTickCount() + OFFER_LIFETIME_TICKS;
-        PendingOffer pending = new PendingOffer(token, requestedTier, candidateIds, selectionCount, expiresAtTick);
+        PendingOffer pending = new PendingOffer(
+                token,
+                requestedTier,
+                candidateIds,
+                selectionCount,
+                rerolls,
+                expiresAtTick,
+                new LinkedHashSet<>(candidateIds)
+        );
         PENDING.put(player.getUUID(), pending);
-        return BeginResult.ready(token, requestedTier, candidateIds, selectionCount, expiresAtTick);
+        return BeginResult.ready(token, requestedTier, candidateIds, selectionCount, rerolls, expiresAtTick);
+    }
+
+    public static RerollResult rerollCandidate(ServerPlayer player, String token, int slot) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(token, "token");
+        if (slot < 0 || slot >= TARGET_CANDIDATE_COUNT) {
+            return RerollResult.invalid(RerollStatus.INVALID_SLOT);
+        }
+
+        MinecraftServer server = requireServer(player);
+        PendingOffer pending = PENDING.get(player.getUUID());
+        if (pending == null || !pending.token().equals(token)) {
+            return RerollResult.invalid(RerollStatus.INVALID_TOKEN);
+        }
+        if (server.getTickCount() > pending.expiresAtTick()) {
+            PENDING.remove(player.getUUID(), pending);
+            return RerollResult.invalid(RerollStatus.EXPIRED);
+        }
+        if (!hasCore(player, pending.tier())) {
+            return RerollResult.invalid(RerollStatus.NO_CORE);
+        }
+        if (pending.rerollsRemaining() <= 0) {
+            return RerollResult.invalid(RerollStatus.NO_REROLLS);
+        }
+        if (slot >= pending.candidateIds().size()) {
+            return RerollResult.invalid(RerollStatus.INVALID_SLOT);
+        }
+
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        Set<String> current = new HashSet<>(pending.candidateIds());
+        List<AugmentDefinition> replacements = rerollPool(
+                state, pending.tier(), current, pending.seenIds(), true
+        );
+        if (replacements.isEmpty()) {
+            replacements = rerollPool(state, pending.tier(), current, pending.seenIds(), false);
+        }
+        if (replacements.isEmpty()) {
+            return RerollResult.invalid(RerollStatus.NO_REPLACEMENT);
+        }
+
+        shuffle(replacements, player.getRandom());
+        String replacementId = replacements.get(0).id();
+        ArrayList<String> nextCandidates = new ArrayList<>(pending.candidateIds());
+        nextCandidates.set(slot, replacementId);
+        LinkedHashSet<String> nextSeen = new LinkedHashSet<>(pending.seenIds());
+        nextSeen.add(replacementId);
+        int remaining = pending.rerollsRemaining() - 1;
+        PendingOffer next = new PendingOffer(
+                pending.token(),
+                pending.tier(),
+                nextCandidates,
+                pending.selectionCount(),
+                remaining,
+                pending.expiresAtTick(),
+                nextSeen
+        );
+        PENDING.put(player.getUUID(), next);
+        return new RerollResult(RerollStatus.SUCCESS, replacementId, remaining);
     }
 
     public static CommitResult commitOffer(ServerPlayer player, String token, List<String> selectedIds) {
@@ -169,6 +233,31 @@ public final class AugmentOfferService {
         return true;
     }
 
+    private static List<AugmentDefinition> eligibleCandidates(AugmentationPlayerState state, AugmentTier tier) {
+        ArrayList<AugmentDefinition> eligible = new ArrayList<>();
+        for (AugmentDefinition definition : AugmentCatalog.definitions(tier)) {
+            if (!definition.isMaxed(state.level(definition.id()))) eligible.add(definition);
+        }
+        return eligible;
+    }
+
+    private static List<AugmentDefinition> rerollPool(
+            AugmentationPlayerState state,
+            AugmentTier tier,
+            Set<String> currentCandidates,
+            Set<String> seenIds,
+            boolean unseenOnly
+    ) {
+        ArrayList<AugmentDefinition> eligible = new ArrayList<>();
+        for (AugmentDefinition definition : AugmentCatalog.definitions(tier)) {
+            if (definition.isMaxed(state.level(definition.id()))) continue;
+            if (currentCandidates.contains(definition.id())) continue;
+            if (unseenOnly && seenIds.contains(definition.id())) continue;
+            eligible.add(definition);
+        }
+        return eligible;
+    }
+
     private static void shuffle(List<AugmentDefinition> definitions, RandomSource random) {
         for (int index = definitions.size() - 1; index > 0; index--) {
             int swapIndex = random.nextInt(index + 1);
@@ -185,18 +274,50 @@ public final class AugmentOfferService {
     }
 
     public enum BeginStatus { READY, NO_CORE, FULLY_MAXED }
+    public enum RerollStatus { SUCCESS, INVALID_TOKEN, INVALID_SLOT, EXPIRED, NO_CORE, NO_REROLLS, NO_REPLACEMENT }
     public enum CommitStatus {
         SUCCESS, INVALID_TOKEN, EXPIRED, INVALID_SELECTION_COUNT, DUPLICATE_SELECTION,
         NOT_OFFERED, NO_CORE, UNKNOWN_AUGMENT, WRONG_TIER, ALREADY_MAXED
     }
 
-    public record BeginResult(BeginStatus status, String token, AugmentTier tier,
-                              List<String> candidateIds, int selectionCount, int expiresAtTick) {
-        private static BeginResult noCore() { return new BeginResult(BeginStatus.NO_CORE, null, null, List.of(), 0, 0); }
-        private static BeginResult fullyMaxed() { return new BeginResult(BeginStatus.FULLY_MAXED, null, null, List.of(), 0, 0); }
-        private static BeginResult ready(String token, AugmentTier tier, List<String> candidateIds,
-                                         int selectionCount, int expiresAtTick) {
-            return new BeginResult(BeginStatus.READY, token, tier, List.copyOf(candidateIds), selectionCount, expiresAtTick);
+    public record BeginResult(
+            BeginStatus status,
+            String token,
+            AugmentTier tier,
+            List<String> candidateIds,
+            int selectionCount,
+            int rerollsRemaining,
+            int expiresAtTick
+    ) {
+        private static BeginResult noCore() {
+            return new BeginResult(BeginStatus.NO_CORE, null, null, List.of(), 0, 0, 0);
+        }
+        private static BeginResult fullyMaxed() {
+            return new BeginResult(BeginStatus.FULLY_MAXED, null, null, List.of(), 0, 0, 0);
+        }
+        private static BeginResult ready(
+                String token,
+                AugmentTier tier,
+                List<String> candidateIds,
+                int selectionCount,
+                int rerollsRemaining,
+                int expiresAtTick
+        ) {
+            return new BeginResult(
+                    BeginStatus.READY,
+                    token,
+                    tier,
+                    List.copyOf(candidateIds),
+                    selectionCount,
+                    rerollsRemaining,
+                    expiresAtTick
+            );
+        }
+    }
+
+    public record RerollResult(RerollStatus status, String replacementId, int rerollsRemaining) {
+        private static RerollResult invalid(RerollStatus status) {
+            return new RerollResult(status, null, 0);
         }
     }
 
@@ -204,8 +325,18 @@ public final class AugmentOfferService {
         private static CommitResult invalid(CommitStatus status) { return new CommitResult(status, List.of(), null); }
     }
 
-    private record PendingOffer(String token, AugmentTier tier, List<String> candidateIds,
-                                int selectionCount, int expiresAtTick) {
-        private PendingOffer { candidateIds = List.copyOf(candidateIds); }
+    private record PendingOffer(
+            String token,
+            AugmentTier tier,
+            List<String> candidateIds,
+            int selectionCount,
+            int rerollsRemaining,
+            int expiresAtTick,
+            Set<String> seenIds
+    ) {
+        private PendingOffer {
+            candidateIds = List.copyOf(candidateIds);
+            seenIds = Set.copyOf(seenIds);
+        }
     }
 }

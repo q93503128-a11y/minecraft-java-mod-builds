@@ -3,7 +3,7 @@
   "expected_counts": {
     "common": 20,
     "uncommon": 27,
-    "rare": 30,
+    "rare": 31,
     "epic": 40,
     "legendary": 20,
     "mythic": 9
@@ -88,6 +88,7 @@
     {"id":"healing_amplification","canonical_name_ko":"회복 증폭","tier":"rare","max_level":3},
     {"id":"lifesteal","canonical_name_ko":"흡혈","tier":"rare","max_level":3},
     {"id":"elastic_storage","canonical_name_ko":"탄성 저장","tier":"rare","max_level":3},
+    {"id":"candidate_reroll","canonical_name_ko":"재추첨","tier":"rare","max_level":3},
 
     {"id":"piercing_arrow","canonical_name_ko":"관통 화살","tier":"epic","max_level":3},
     {"id":"sweeping_enhancement","canonical_name_ko":"휩쓸기 강화","tier":"epic","max_level":3},

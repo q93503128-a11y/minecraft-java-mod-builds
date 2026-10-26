@@ -33,9 +33,10 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     private static final int DATA_STATUS = 0, DATA_TIER = 1, DATA_CANDIDATE_0 = 2,
             DATA_CANDIDATE_1 = 3, DATA_CANDIDATE_2 = 4, DATA_SELECTION_COUNT = 5,
             DATA_SELECTED_MASK = 6, DATA_LAST_OUTPUT_COUNT = 7, DATA_CURRENT_LEVEL_0 = 8,
-            DATA_CURRENT_LEVEL_1 = 9, DATA_CURRENT_LEVEL_2 = 10, DATA_COUNT = 11;
+            DATA_CURRENT_LEVEL_1 = 9, DATA_CURRENT_LEVEL_2 = 10, DATA_REROLL_REMAINING = 11,
+            DATA_COUNT = 12;
     private static final int BUTTON_BEGIN_TIER = 0, BUTTON_SELECT_CANDIDATE = 100,
-            BUTTON_UPGRADE_ONE = 200, BUTTON_UPGRADE_ALL = 220;
+            BUTTON_REROLL_CANDIDATE = 120, BUTTON_UPGRADE_ONE = 200, BUTTON_UPGRADE_ALL = 220;
 
     private final ContainerLevelAccess access;
     private final ContainerData data;
@@ -77,6 +78,10 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
             selectCandidate(serverPlayer, buttonId - BUTTON_SELECT_CANDIDATE);
             return true;
         }
+        if (buttonId >= BUTTON_REROLL_CANDIDATE && buttonId < BUTTON_REROLL_CANDIDATE + 3) {
+            rerollCandidate(serverPlayer, buttonId - BUTTON_REROLL_CANDIDATE);
+            return true;
+        }
         if (advanced && buttonId >= BUTTON_UPGRADE_ONE
                 && buttonId < BUTTON_UPGRADE_ONE + AugmentTier.values().length - 1) {
             upgrade(serverPlayer, AugmentTier.values()[buttonId - BUTTON_UPGRADE_ONE], false);
@@ -99,6 +104,7 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
                 data.set(DATA_TIER, result.tier().ordinal());
                 data.set(DATA_STATUS, STATUS_READY);
                 data.set(DATA_SELECTION_COUNT, result.selectionCount());
+                data.set(DATA_REROLL_REMAINING, result.rerollsRemaining());
                 AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
                 for (int index = 0; index < result.candidateIds().size() && index < 3; index++) {
                     String candidateId = result.candidateIds().get(index);
@@ -114,6 +120,34 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
                 data.set(DATA_TIER, tier.ordinal());
                 data.set(DATA_STATUS, STATUS_FULLY_MAXED);
             }
+        }
+        broadcastChanges();
+    }
+
+    private void rerollCandidate(ServerPlayer player, int candidateSlot) {
+        if (pendingToken == null || data.get(DATA_STATUS) != STATUS_READY) {
+            data.set(DATA_STATUS, STATUS_INVALID);
+            broadcastChanges();
+            return;
+        }
+        int bit = 1 << candidateSlot;
+        if ((data.get(DATA_SELECTED_MASK) & bit) != 0 || data.get(DATA_REROLL_REMAINING) <= 0) {
+            broadcastChanges();
+            return;
+        }
+        AugmentOfferService.RerollResult result =
+                AugmentOfferService.rerollCandidate(player, pendingToken, candidateSlot);
+        switch (result.status()) {
+            case SUCCESS -> {
+                String replacementId = result.replacementId();
+                data.set(DATA_CANDIDATE_0 + candidateSlot, AugmentCatalog.indexOf(replacementId));
+                data.set(DATA_CURRENT_LEVEL_0 + candidateSlot,
+                        AugmentationPlayerStateService.state(player).level(replacementId));
+                data.set(DATA_REROLL_REMAINING, result.rerollsRemaining());
+            }
+            case NO_REROLLS -> data.set(DATA_REROLL_REMAINING, 0);
+            case NO_REPLACEMENT -> { }
+            default -> data.set(DATA_STATUS, STATUS_INVALID);
         }
         broadcastChanges();
     }
@@ -180,6 +214,7 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     private boolean isRecognizedButton(int buttonId) {
         if (buttonId >= BUTTON_BEGIN_TIER && buttonId < BUTTON_BEGIN_TIER + AugmentTier.values().length) return true;
         if (buttonId >= BUTTON_SELECT_CANDIDATE && buttonId < BUTTON_SELECT_CANDIDATE + 3) return true;
+        if (buttonId >= BUTTON_REROLL_CANDIDATE && buttonId < BUTTON_REROLL_CANDIDATE + 3) return true;
         if (!advanced) return false;
         return (buttonId >= BUTTON_UPGRADE_ONE && buttonId < BUTTON_UPGRADE_ONE + AugmentTier.values().length - 1)
                 || (buttonId >= BUTTON_UPGRADE_ALL && buttonId < BUTTON_UPGRADE_ALL + AugmentTier.values().length - 1);
@@ -197,6 +232,7 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         data.set(DATA_CURRENT_LEVEL_0, 0);
         data.set(DATA_CURRENT_LEVEL_1, 0);
         data.set(DATA_CURRENT_LEVEL_2, 0);
+        data.set(DATA_REROLL_REMAINING, 0);
     }
 
     @Override public ItemStack quickMoveStack(Player player, int slotIndex) { return ItemStack.EMPTY; }
@@ -219,6 +255,7 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     public int selectionCount() { return data.get(DATA_SELECTION_COUNT); }
     public int selectedMask() { return data.get(DATA_SELECTED_MASK); }
     public int lastOutputCount() { return data.get(DATA_LAST_OUTPUT_COUNT); }
+    public int rerollsRemaining() { return data.get(DATA_REROLL_REMAINING); }
 
     public AugmentDefinition candidate(int slot) {
         if (slot < 0 || slot >= 3) throw new IllegalArgumentException("Candidate slot out of range: " + slot);
@@ -235,6 +272,10 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
     public static int candidateButtonId(int slot) {
         if (slot < 0 || slot >= 3) throw new IllegalArgumentException("Candidate slot out of range: " + slot);
         return BUTTON_SELECT_CANDIDATE + slot;
+    }
+    public static int rerollButtonId(int slot) {
+        if (slot < 0 || slot >= 3) throw new IllegalArgumentException("Candidate slot out of range: " + slot);
+        return BUTTON_REROLL_CANDIDATE + slot;
     }
     public static int upgradeOneButtonId(AugmentTier tier) { return BUTTON_UPGRADE_ONE + tier.ordinal(); }
     public static int upgradeAllButtonId(AugmentTier tier) { return BUTTON_UPGRADE_ALL + tier.ordinal(); }
