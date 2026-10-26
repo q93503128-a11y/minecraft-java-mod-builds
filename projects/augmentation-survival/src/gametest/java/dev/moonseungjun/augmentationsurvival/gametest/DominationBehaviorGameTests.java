@@ -38,7 +38,7 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
 
         require(ActiveAbilityRouter.tryUseSlot(player, 0), "domination active did not route successfully");
         require(CompanionAugmentService.isDominated(dominated), "domination did not persist companion ownership");
-        require(CompanionAugmentService.isOwnedBy(dominated, player), "dominated mob owner was not the caster");
+        require(CompanionAugmentService.isOwnedBy(dominated, player.getUUID()), "dominated mob owner was not the caster");
         require(dominated.isPersistenceRequired(), "dominated mob was not protected from normal despawn");
         require(dominated.getTarget() == null, "domination did not clear the previous hostile target immediately");
         require(player.isAlliedTo(dominated) && dominated.isAlliedTo(player),
