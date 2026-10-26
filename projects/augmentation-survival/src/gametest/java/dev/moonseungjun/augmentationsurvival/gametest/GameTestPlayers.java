@@ -51,7 +51,7 @@ final class GameTestPlayers {
                 action.run();
             } catch (RuntimeException | Error exception) {
                 retireAll(helper);
-                throw exception;
+                helper.fail(failureMessage(exception));
             }
         });
     }
@@ -94,6 +94,12 @@ final class GameTestPlayers {
         if (!player.isRemoved()) {
             player.discard();
         }
+    }
+
+    private static String failureMessage(Throwable exception) {
+        String message = exception.getMessage();
+        return exception.getClass().getSimpleName()
+                + (message == null || message.isBlank() ? "" : ": " + message);
     }
 
     private static String nextProfileName() {

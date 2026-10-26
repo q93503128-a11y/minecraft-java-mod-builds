@@ -14,6 +14,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -67,6 +69,11 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
                 .withAugmentLevel(id("invincibility"), 1)
                 .withAugmentLevel(id("delayed_damage"), 1));
         ServerLevel level = (ServerLevel) player.level();
+        LivingEntity attacker = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 1).withNoFreeWill().spawn();
+        DamageSource attackSource = player.damageSources().mobAttack(attacker);
+        require(!attackSource.typeHolder().is(DamageTypeTags.BYPASSES_INVULNERABILITY),
+                "mob attack unexpectedly bypasses invulnerability");
+
         int activationDelay = ReactiveCombatTuning.current().invulnerabilityIntervalTicks() + 1;
         int delayedWindow = CombatTuning.current().delayedDamageIntervalTicks()
                 * CombatTuning.current().delayedDamageInstallmentCount();
@@ -78,9 +85,9 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
             require(ReactiveCombatAugmentService.isInvulnerable(player),
                     "invincibility window did not open at its configured interval");
             healthBefore[0] = player.getHealth();
-            player.hurtServer(level, player.damageSources().generic(), 8.0F);
+            player.hurtServer(level, attackSource, 8.0F);
             requireClose(player.getHealth(), healthBefore[0], 1.0E-5F,
-                    "invincibility allowed the initial hit through");
+                    "invincibility allowed the initial non-bypassing mob hit through");
 
             AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
                     .withAugmentLevel(id("delayed_damage"), 1));
