@@ -70,7 +70,7 @@ public final class AugmentPresentationCatalog {
             return new Entry(
                     source.displayName(),
                     Kind.PASSIVE,
-                    "개인 저장공간 +3 / +6 / +9칸 · 인벤토리 초과 아이템 자동 수납 · 기본 B키.",
+                    "개인 저장공간 +3 / +6 / +9칸. 인벤토리 초과 아이템을 가능한 경우 자동 수납합니다.",
                     "별도 아이템을 제작하지 않습니다. Lv.1 / 2 / 3에서 개인 주머니 슬롯 +3 / +6 / +9칸이 열리고, 일반 인벤토리에 들어가지 못한 아이템은 가능한 경우 주머니로 자동 수납됩니다. 기본 B키로 증강 저장소를 엽니다. 키 설정에서 변경할 수 있습니다."
             );
         }
@@ -78,7 +78,7 @@ public final class AugmentPresentationCatalog {
             return new Entry(
                     source.displayName(),
                     source.kind(),
-                    append(source.summary(), "기본 B키로 원격 보관함을 엽니다."),
+                    source.summary(),
                     append(source.detail(), "기본 B키로 원격 보관함을 엽니다. 키 설정에서 변경할 수 있습니다.")
             );
         }
@@ -86,7 +86,7 @@ public final class AugmentPresentationCatalog {
             return new Entry(
                     source.displayName(),
                     source.kind(),
-                    append(source.summary(), "기본 G키로 공간 연결 화면을 엽니다."),
+                    source.summary(),
                     append(source.detail(), "기본 G키로 공간 연결 화면을 엽니다. 키 설정에서 변경할 수 있습니다.")
             );
         }
@@ -94,7 +94,7 @@ public final class AugmentPresentationCatalog {
             return new Entry(
                     source.displayName(),
                     source.kind(),
-                    append(source.summary(), "기본 J키로 탈취한 권능을 해방합니다."),
+                    source.summary(),
                     append(source.detail(), "일반 액티브 슬롯을 사용하지 않습니다. 기본 J키로 탈취한 권능을 해방하며 키 설정에서 변경할 수 있습니다.")
             );
         }
@@ -102,7 +102,7 @@ public final class AugmentPresentationCatalog {
             return new Entry(
                     source.displayName(),
                     source.kind(),
-                    append(source.summary(), "기본 조작: K키로 편성, 왼쪽 Alt로 사용 모드 ON/OFF, 슬롯 숫자(1~0)로 사용."),
+                    source.summary(),
                     append(source.detail(), "기본 조작은 K키로 액티브 편성을 열고, 왼쪽 Alt를 눌러 증강 사용 모드를 켜거나 끈 뒤 편성한 슬롯 숫자(1~0)를 눌러 사용합니다. 사용 모드가 켜져 있는 동안 슬롯 HUD가 표시됩니다. 키 설정에서 변경할 수 있습니다.")
             );
         }
@@ -176,15 +176,16 @@ public final class AugmentPresentationCatalog {
         String[] sentences = detail.split("(?<=\\.)\\s+");
         StringBuilder result = new StringBuilder();
         for (String sentence : sentences) {
-            if (sentence.isBlank()) continue;
+            String normalized = sentence.trim();
+            if (normalized.isBlank()) continue;
+            if (result.length() > 0 && result.length() + 1 + normalized.length() > 104) break;
             if (result.length() > 0) result.append(' ');
-            result.append(sentence.trim());
-            if (result.length() >= 72 || result.length() + (sentences.length > 1 ? 1 : 0) >= 108) break;
-            if (result.length() >= 48) break;
+            result.append(normalized);
+            if (result.length() >= 58) break;
         }
-        String summary = result.length() == 0 ? detail : result.toString();
-        if (summary.length() > 128) summary = summary.substring(0, 125).stripTrailing() + "…";
-        return summary;
+        // Never fabricate an ellipsis for a card summary. Keep complete sentence(s) and
+        // let the responsive card renderer wrap the text instead.
+        return result.length() == 0 ? detail.trim() : result.toString();
     }
 
     private static String displayName(String canonical) {

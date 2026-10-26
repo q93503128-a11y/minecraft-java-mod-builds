@@ -69,6 +69,8 @@ import dev.moonseungjun.augmentationsurvival.core.CoreSourceResolver;
 import dev.moonseungjun.augmentationsurvival.core.FishingCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.core.StructureCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.device.AugmentDeviceBlocks;
+import dev.moonseungjun.augmentationsurvival.guide.GuidebookGrantService;
+import dev.moonseungjun.augmentationsurvival.guide.GuidebookItems;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenus;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentStorageMenus;
@@ -94,6 +96,7 @@ public final class AugmentationSurvival implements ModInitializer {
     @Override
     public void onInitialize() {
         AugmentCoreItems.initialize();
+        GuidebookItems.initialize();
         AugmentDeviceMenus.initialize();
         AugmentStorageMenus.initialize();
         AugmentDeviceBlocks.initialize();
@@ -101,6 +104,7 @@ public final class AugmentationSurvival implements ModInitializer {
         SpatialGateBlocks.initialize();
         TemporaryPlatformBlocks.initialize();
         AugmentationAttachments.initialize();
+        GuidebookGrantService.initialize();
         WorldThreatAttachments.initialize();
         ThreatEntityAttachments.initialize();
         CompanionEntityAttachments.initialize();

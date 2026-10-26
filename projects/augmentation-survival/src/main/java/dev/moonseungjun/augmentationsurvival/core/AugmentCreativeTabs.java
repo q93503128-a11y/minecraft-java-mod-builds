@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.core;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.device.AugmentDeviceBlocks;
+import dev.moonseungjun.augmentationsurvival.guide.GuidebookItems;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -31,6 +32,7 @@ public final class AugmentCreativeTabs {
                 output.accept(AugmentCoreItems.MYTHIC_CORE);
                 output.accept(AugmentDeviceBlocks.AUGMENT_DEVICE);
                 output.accept(AugmentDeviceBlocks.ADVANCED_AUGMENT_DEVICE);
+                output.accept(GuidebookItems.GUIDEBOOK);
             })
             .build();
 

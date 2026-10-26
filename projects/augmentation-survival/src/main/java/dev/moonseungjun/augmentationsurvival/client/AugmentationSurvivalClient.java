@@ -17,6 +17,7 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         MenuScreens.register(AugmentDeviceMenus.BASIC, AugmentDeviceScreen::new);
         MenuScreens.register(AugmentDeviceMenus.ADVANCED, AugmentDeviceScreen::new);
         MenuScreens.register(AugmentStorageMenus.STORAGE, AugmentStorageScreen::new);
+        GuidebookClient.initialize();
         EntityRenderers.register(CloneEntityTypes.COMBAT_CLONE, CombatCloneRenderer::new);
         ActiveLoadoutClientNetworking.initialize();
         CombatHudClient.initialize();

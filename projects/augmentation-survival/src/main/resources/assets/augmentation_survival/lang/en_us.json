@@ -31,5 +31,7 @@
   "message.augmentation_survival.storage.left_group": "You left the Remote Storage group. Your personal 27-slot segment remains intact.",
   "message.augmentation_survival.spatial_link.no_access": "The Spatial Link augment is required.",
   "message.augmentation_survival.spatial_link.blocked": "The destination is obstructed and cannot be entered safely.",
-  "message.augmentation_survival.authority_theft.stolen": "Stole %s's authority."
+  "message.augmentation_survival.authority_theft.stolen": "Stole %s's authority.",
+  "item.augmentation_survival.guidebook": "Augmentation Crafting Guide",
+  "screen.augmentation_survival.guidebook": "Augmentation Crafting Guide"
 }

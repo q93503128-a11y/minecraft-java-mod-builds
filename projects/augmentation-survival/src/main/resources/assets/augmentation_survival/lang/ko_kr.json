@@ -31,5 +31,7 @@
   "message.augmentation_survival.storage.left_group": "원격 보관함 공유 그룹에서 나왔습니다. 개인 27칸 저장분은 그대로 유지됩니다.",
   "message.augmentation_survival.spatial_link.no_access": "공간 연결 증강이 필요합니다.",
   "message.augmentation_survival.spatial_link.blocked": "목적지 공간이 막혀 있어 이동할 수 없습니다.",
-  "message.augmentation_survival.authority_theft.stolen": "%s의 권능을 탈취했습니다."
+  "message.augmentation_survival.authority_theft.stolen": "%s의 권능을 탈취했습니다.",
+  "item.augmentation_survival.guidebook": "증강 제작 안내서",
+  "screen.augmentation_survival.guidebook": "증강 제작 안내서"
 }

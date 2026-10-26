@@ -78,7 +78,10 @@
     "ClientPhaseShiftCollisionMixin",
     "EntityRendererPerceptionMixin",
     "BetterCombatTargetFinderMixin",
-    "ClientHudHealthMixin"
+    "ClientHudHealthMixin",
+    "AugmentDeviceCardPresentationMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
