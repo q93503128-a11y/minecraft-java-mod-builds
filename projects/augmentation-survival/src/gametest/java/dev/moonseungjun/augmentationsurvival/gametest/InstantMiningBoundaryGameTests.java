@@ -52,6 +52,7 @@ public final class InstantMiningBoundaryGameTests implements CustomTestMethodInv
         float progress = stone.getDestroyProgress(player, level, pos);
         require(progress >= 1.0F,
                 "BlockState#getDestroyProgress lost the instant-mining speed; progress=" + progress);
+        player.discard();
         helper.succeed();
     }
 

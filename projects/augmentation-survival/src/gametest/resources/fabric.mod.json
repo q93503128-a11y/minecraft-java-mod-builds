@@ -7,9 +7,10 @@
   "entrypoints": {
     "fabric-gametest": [
       "dev.moonseungjun.augmentationsurvival.gametest.InstantMiningBoundaryGameTests",
-      "dev.moonseungjun.augmentationsurvival.gametest.AugmentationSurvivalGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ActiveInteractionGameTests",
-      "dev.moonseungjun.augmentationsurvival.gametest.HealingInteractionGameTests"
+      "dev.moonseungjun.augmentationsurvival.gametest.HealingInteractionGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.ProtectionInteractionGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.AugmentationSurvivalGameTests"
     ]
   },
   "depends": {

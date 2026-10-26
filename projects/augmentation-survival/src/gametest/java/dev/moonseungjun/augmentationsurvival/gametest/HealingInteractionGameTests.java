@@ -6,7 +6,6 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -67,6 +66,8 @@ public final class HealingInteractionGameTests implements CustomTestMethodInvoke
         );
         requireClose(ally.getHealth() - allyBefore, expectedShared, 1.0E-4F,
                 "healing share used amplified/overflow healing instead of actual HP restored");
+        source.discard();
+        ally.discard();
         helper.succeed();
     }
 
@@ -99,6 +100,8 @@ public final class HealingInteractionGameTests implements CustomTestMethodInvoke
                 "shared heal recursively triggered the recipient's healing-share augment");
         requireClose(hostile.getHealth(), hostileBefore, 1.0E-4F,
                 "shared heal recursively triggered the recipient's life-wave augment");
+        recipient.discard();
+        ally.discard();
         helper.succeed();
     }
 
@@ -130,13 +133,6 @@ public final class HealingInteractionGameTests implements CustomTestMethodInvoke
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        try {
-            method.invoke(this, helper);
-        } catch (InvocationTargetException exception) {
-            Throwable cause = exception.getCause();
-            if (cause instanceof RuntimeException runtimeException) throw runtimeException;
-            if (cause instanceof Error error) throw error;
-            throw exception;
-        }
+        method.invoke(this, helper);
     }
 }

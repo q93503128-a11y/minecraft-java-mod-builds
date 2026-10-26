@@ -10,7 +10,6 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
@@ -69,6 +68,7 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
                 require(afterSecondWindow.cooldownReadyTick(charge0) == firstReady
                                 && afterSecondWindow.cooldownReadyTick(charge1) == secondReady,
                         "replay scheduled another replay or consumed an additional charge");
+                player.discard();
                 helper.succeed();
             });
         });
@@ -102,6 +102,7 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
                     player, ProtectionAugmentService.PoolKind.SHIELD,
                     ProtectionAugmentService.ACTIVE_SHIELD_POOL) == 0.0F,
                     "single normal kill extended the manual shield beyond its configured extension");
+            player.discard();
             helper.succeed();
         });
     }
@@ -137,13 +138,6 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        try {
-            method.invoke(this, helper);
-        } catch (InvocationTargetException exception) {
-            Throwable cause = exception.getCause();
-            if (cause instanceof RuntimeException runtimeException) throw runtimeException;
-            if (cause instanceof Error error) throw error;
-            throw exception;
-        }
+        method.invoke(this, helper);
     }
 }
