@@ -46,7 +46,7 @@ public abstract class AugmentOfferTierAuraMixin extends AbstractContainerScreen<
         AugmentTier tier = AugmentTier.values()[Math.min(ordinal, AugmentTier.values().length - 1)];
         Geometry geo = augmentationSurvival$geometry(tier);
         long now = System.currentTimeMillis();
-        double pulse = (Math.sin(now / (tier == AugmentTier.MYTHIC ? 210.0 : 310.0)) + 1.0) * 0.5;
+        double pulse = (Math.sin(now / (tier == AugmentTier.MYTHIC ? 190.0 : 280.0)) + 1.0) * 0.5;
 
         for (int slot = 0; slot < 3; slot++) {
             int x = geo.cardLeft() + slot * (geo.cardW() + geo.gap());
@@ -70,36 +70,47 @@ public abstract class AugmentOfferTierAuraMixin extends AbstractContainerScreen<
             int slot
     ) {
         int gold = 0xFFE5AA36;
-        int pale = 0xFFFFE9A2;
-        int warm = 0xFFFFC957;
-        int outer = 0x0D + (int) Math.round(pulse * 0x09);
-        int mid = 0x18 + (int) Math.round(pulse * 0x0C);
+        int pale = 0xFFFFEDAA;
+        int warm = 0xFFFFC84C;
+        int outer = 0x32 + (int) Math.round(pulse * 0x16);
+        int mid = 0x54 + (int) Math.round(pulse * 0x18);
 
-        augmentationSurvival$ring(g, x, y, w, h, 20, gold, outer, 2);
-        augmentationSurvival$ring(g, x, y, w, h, 14, warm, mid, 2);
-        augmentationSurvival$ring(g, x, y, w, h, 8, pale, 0x28, 2);
+        // Keep the ordinary neon frame, then add a clearly readable halo outside it.
+        augmentationSurvival$ring(g, x, y, w, h, 18, gold, outer, 3);
+        augmentationSurvival$ring(g, x, y, w, h, 12, warm, mid, 3);
+        augmentationSurvival$ring(g, x, y, w, h, 7, pale, 0x8C, 2);
 
         int cx = x + w / 2;
         int cy = y + h / 2;
-        int rayAlpha = 0x1C + (int) Math.round(pulse * 0x10);
+        int ray = 0x72 + (int) Math.round(pulse * 0x20);
+        int softRay = 0x46 + (int) Math.round(pulse * 0x18);
 
-        // Large readable halo rays behind the card, on top of the normal subtle glow.
-        g.fill(cx - 1, y - 27, cx + 2, y - 6, augmentationSurvival$alpha(pale, rayAlpha + 0x12));
-        g.fill(cx - 3, y - 20, cx + 4, y - 8, augmentationSurvival$alpha(warm, rayAlpha));
-        g.fill(cx - 1, y + h + 6, cx + 2, y + h + 24, augmentationSurvival$alpha(pale, rayAlpha));
+        // Long cardinal rays make the legendary tier visibly radiate instead of only changing
+        // border colour. The rays stay narrow so neighbouring cards do not merge into one panel.
+        g.fill(cx - 2, y - 34, cx + 3, y - 6, augmentationSurvival$alpha(pale, ray));
+        g.fill(cx - 5, y - 27, cx + 6, y - 9, augmentationSurvival$alpha(warm, softRay));
+        g.fill(cx - 2, y + h + 6, cx + 3, y + h + 28, augmentationSurvival$alpha(pale, ray - 0x10));
 
-        g.fill(x - 22, cy - 1, x - 6, cy + 2, augmentationSurvival$alpha(warm, rayAlpha));
-        g.fill(x + w + 6, cy - 1, x + w + 22, cy + 2, augmentationSurvival$alpha(warm, rayAlpha));
+        g.fill(x - 27, cy - 2, x - 6, cy + 3, augmentationSurvival$alpha(warm, ray - 0x12));
+        g.fill(x + w + 6, cy - 2, x + w + 27, cy + 3, augmentationSurvival$alpha(warm, ray - 0x12));
 
-        int offset = slot == 1 ? 3 : 0;
-        g.fill(x + 16 + offset, y - 17, x + 18 + offset, y - 7,
-                augmentationSurvival$alpha(pale, 0x20));
-        g.fill(x + w - 19 - offset, y - 15, x + w - 17 - offset, y - 7,
-                augmentationSurvival$alpha(pale, 0x1D));
-        g.fill(x + 12, y + h + 7, x + 14, y + h + 15,
-                augmentationSurvival$alpha(gold, 0x18));
-        g.fill(x + w - 15, y + h + 7, x + w - 13, y + h + 17,
-                augmentationSurvival$alpha(gold, 0x18));
+        // A crown-like secondary halo above and below the card.
+        g.fill(x + 10, y - 12, x + w - 10, y - 8,
+                augmentationSurvival$alpha(warm, 0x48 + (int) Math.round(pulse * 0x14)));
+        g.fill(x + 24, y - 19, x + w - 24, y - 15,
+                augmentationSurvival$alpha(pale, 0x3C + (int) Math.round(pulse * 0x10)));
+        g.fill(x + 14, y + h + 8, x + w - 14, y + h + 12,
+                augmentationSurvival$alpha(gold, 0x3E));
+
+        int offset = slot == 1 ? 4 : 0;
+        g.fill(x + 14 + offset, y - 25, x + 18 + offset, y - 12,
+                augmentationSurvival$alpha(pale, 0x5C));
+        g.fill(x + w - 20 - offset, y - 23, x + w - 16 - offset, y - 11,
+                augmentationSurvival$alpha(pale, 0x54));
+        g.fill(x + 9, y + h + 11, x + 13, y + h + 22,
+                augmentationSurvival$alpha(gold, 0x42));
+        g.fill(x + w - 14, y + h + 11, x + w - 10, y + h + 23,
+                augmentationSurvival$alpha(gold, 0x42));
     }
 
     @Unique
@@ -113,55 +124,74 @@ public abstract class AugmentOfferTierAuraMixin extends AbstractContainerScreen<
             int slot,
             long now
     ) {
-        int bloodDark = 0xFF52000D;
-        int blood = 0xFF8F0018;
-        int bloodHot = 0xFFC1122D;
-        int bloodCore = 0xFFE12A3D;
+        int bloodDark = 0xFF3A0008;
+        int blood = 0xFF780012;
+        int bloodHot = 0xFFB20825;
+        int bloodCore = 0xFFF02A43;
 
-        int outer = 0x14 + (int) Math.round(pulse * 0x0D);
-        int mid = 0x20 + (int) Math.round(pulse * 0x10);
-        augmentationSurvival$ring(g, x, y, w, h, 24, bloodDark, outer, 3);
-        augmentationSurvival$ring(g, x, y, w, h, 17, blood, mid, 3);
-        augmentationSurvival$ring(g, x, y, w, h, 10, bloodHot, 0x32, 2);
+        int outer = 0x34 + (int) Math.round(pulse * 0x18);
+        int mid = 0x58 + (int) Math.round(pulse * 0x1C);
+        augmentationSurvival$ring(g, x, y, w, h, 19, bloodDark, outer, 3);
+        augmentationSurvival$ring(g, x, y, w, h, 13, blood, mid, 3);
+        augmentationSurvival$ring(g, x, y, w, h, 7, bloodHot, 0x8C, 2);
 
-        // Broad dark-red wash that reads as an aura rather than another frame.
-        g.fill(x - 10, y - 13, x + w + 10, y - 7,
-                augmentationSurvival$alpha(bloodDark, 0x22 + (int) Math.round(pulse * 0x10)));
-        g.fill(x - 12, y + h + 7, x + w + 12, y + h + 14,
-                augmentationSurvival$alpha(bloodDark, 0x20 + (int) Math.round(pulse * 0x0C)));
+        // Dense top/bottom bleed, restricted to short exterior bands so it reads as aura rather
+        // than a rectangular backing plate.
+        g.fill(x + 5, y - 12, x + w - 5, y - 7,
+                augmentationSurvival$alpha(blood, 0x58 + (int) Math.round(pulse * 0x18)));
+        g.fill(x + 14, y - 18, x + w - 14, y - 13,
+                augmentationSurvival$alpha(bloodHot, 0x46 + (int) Math.round(pulse * 0x18)));
+        g.fill(x + 8, y + h + 7, x + w - 8, y + h + 13,
+                augmentationSurvival$alpha(bloodDark, 0x52 + (int) Math.round(pulse * 0x12)));
 
-        // Uneven blood-flame plumes. Different phase per card keeps three mythic cards from
-        // becoming one rectangular red slab.
-        double phase = slot * 1.37;
-        int[] points = {12, 29, 47, 68, 84};
+        // Large, irregular blood-flame plumes. Each card gets a different phase so three mythic
+        // cards still look like separate objects instead of one red rectangle.
+        double phase = slot * 1.41;
+        int[] points = {8, 22, 37, 53, 68, 82, 93};
         for (int i = 0; i < points.length; i++) {
-            double wave = (Math.sin(now / 145.0 + phase + i * 0.91) + 1.0) * 0.5;
-            int px = x + Math.max(6, (w * points[i]) / 100);
-            int plumeH = 9 + (int) Math.round(wave * 17);
-            int plumeW = i % 2 == 0 ? 3 : 2;
-            int plumeColor = i % 3 == 0 ? bloodCore : i % 3 == 1 ? bloodHot : blood;
-            int alpha = 0x28 + (int) Math.round(wave * 0x20);
-            g.fill(px - plumeW, y - 7 - plumeH, px + plumeW, y - 6,
-                    augmentationSurvival$alpha(plumeColor, alpha));
-            if (plumeH >= 18) {
-                g.fill(px - 1, y - 12 - plumeH, px + 1, y - 8 - plumeH,
-                        augmentationSurvival$alpha(bloodCore, 0x26));
+            double wave = (Math.sin(now / 130.0 + phase + i * 0.83) + 1.0) * 0.5;
+            int px = x + Math.max(5, (w * points[i]) / 100);
+            int plumeH = 18 + (int) Math.round(wave * 27);
+            int outerW = 4 + (i % 3);
+            int innerW = Math.max(2, outerW - 2);
+            int outerAlpha = 0x56 + (int) Math.round(wave * 0x26);
+            int innerAlpha = 0x78 + (int) Math.round(wave * 0x32);
+
+            g.fill(px - outerW, y - 8 - plumeH, px + outerW, y - 5,
+                    augmentationSurvival$alpha(i % 2 == 0 ? blood : bloodDark, outerAlpha));
+            g.fill(px - innerW, y - 5 - (plumeH * 3) / 4, px + innerW, y - 4,
+                    augmentationSurvival$alpha(i % 3 == 0 ? bloodCore : bloodHot, innerAlpha));
+            if (plumeH >= 32) {
+                g.fill(px - 1, y - 13 - plumeH, px + 2, y - 7 - plumeH,
+                        augmentationSurvival$alpha(bloodCore, 0x70));
             }
         }
 
-        int sideWave = 7 + (int) Math.round(pulse * 8);
-        g.fill(x - 13 - sideWave, y + h / 4, x - 7, y + h / 4 + 3,
-                augmentationSurvival$alpha(bloodHot, 0x32));
-        g.fill(x + w + 7, y + (h * 2) / 3, x + w + 13 + sideWave, y + (h * 2) / 3 + 3,
-                augmentationSurvival$alpha(bloodHot, 0x30));
+        // Side wisps and lower flare make the aura visibly extend beyond all four card edges.
+        int sideWave = 12 + (int) Math.round(pulse * 10);
+        g.fill(x - 11 - sideWave, y + h / 4, x - 6, y + h / 4 + 5,
+                augmentationSurvival$alpha(bloodHot, 0x72));
+        g.fill(x - 15 - sideWave / 2, y + h / 2, x - 7, y + h / 2 + 4,
+                augmentationSurvival$alpha(blood, 0x60));
+        g.fill(x + w + 6, y + (h * 2) / 3, x + w + 11 + sideWave, y + (h * 2) / 3 + 5,
+                augmentationSurvival$alpha(bloodHot, 0x70));
+        g.fill(x + w + 7, y + h / 3, x + w + 15 + sideWave / 2, y + h / 3 + 4,
+                augmentationSurvival$alpha(blood, 0x5E));
 
-        // Low embers / blood sparks around the silhouette.
-        for (int i = 0; i < 4; i++) {
-            double spark = (Math.sin(now / 120.0 + slot * 0.7 + i * 1.5) + 1.0) * 0.5;
-            int sx = x + 8 + (i * Math.max(1, w - 16)) / 4;
-            int sy = y + h + 8 + (int) Math.round(spark * 10);
-            g.fill(sx, sy, sx + 2, sy + 2,
-                    augmentationSurvival$alpha(i % 2 == 0 ? bloodCore : bloodHot, 0x55));
+        int lowerPulse = 0x5A + (int) Math.round(pulse * 0x1E);
+        g.fill(x + w / 5, y + h + 14, x + (w * 2) / 5, y + h + 19,
+                augmentationSurvival$alpha(bloodHot, lowerPulse));
+        g.fill(x + (w * 3) / 5, y + h + 12, x + (w * 4) / 5, y + h + 17,
+                augmentationSurvival$alpha(blood, lowerPulse));
+
+        // Bright blood sparks around the silhouette.
+        for (int i = 0; i < 7; i++) {
+            double spark = (Math.sin(now / 105.0 + slot * 0.73 + i * 1.17) + 1.0) * 0.5;
+            int sx = x + 5 + (i * Math.max(1, w - 10)) / 7;
+            int sy = y + h + 9 + (int) Math.round(spark * 15);
+            int size = i % 3 == 0 ? 3 : 2;
+            g.fill(sx, sy, sx + size, sy + size,
+                    augmentationSurvival$alpha(i % 2 == 0 ? bloodCore : bloodHot, 0xA0));
         }
     }
 
