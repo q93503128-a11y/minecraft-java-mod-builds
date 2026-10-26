@@ -2,14 +2,12 @@ package dev.moonseungjun.augmentationsurvival.client;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
-/**
- * Combat HUD following the canonical HUD standard: hearts are replaced by a compact numeric liquid
- * health gauge; the ten active slots only expand while the augment-skill modifier is held.
- */
+/** Canonical combat HUD: replaces vanilla hearts and reveals active slots only while skill mode is held. */
 public final class CombatHudClient {
     private static final int TEXT = 0xFFF4F7F9;
     private static final int MUTED = 0xFF89939A;
@@ -26,19 +24,37 @@ public final class CombatHudClient {
     private CombatHudClient() { }
 
     public static void initialize() {
-        HudElementRegistry.addLast(
-                Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "combat_hud"),
-                CombatHudClient::extract
+        // The health gauge is the health HUD. Do not leave vanilla hearts underneath it.
+        HudElementRegistry.replaceElement(
+                VanillaHudElements.HEALTH_BAR,
+                original -> CombatHudClient::extractHealth
+        );
+        // Attach near the vanilla hotbar so F1/vanilla HUD conditions are inherited naturally.
+        HudElementRegistry.attachElementAfter(
+                VanillaHudElements.HOTBAR,
+                Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "active_slots"),
+                CombatHudClient::extractSkills
         );
     }
 
-    private static void extract(GuiGraphicsExtractor g, net.minecraft.client.DeltaTracker delta) {
+    private static void extractHealth(GuiGraphicsExtractor g, net.minecraft.client.DeltaTracker delta) {
         Minecraft client = Minecraft.getInstance();
-        if (client.player == null || client.gui.screen() != null || client.gui.hud.isHidden()) return;
+        if (!canRender(client)) return;
         int sw = client.getWindow().getGuiScaledWidth();
         int sh = client.getWindow().getGuiScaledHeight();
-        drawHealth(g, client, sw / 2 - 91, sh - 40);
-        if (ActiveAbilityInputClient.isModeDown()) drawSkills(g, client, sw / 2 - 91, sh - 88);
+        drawHealth(g, client, sw / 2 - 91, sh - 39);
+    }
+
+    private static void extractSkills(GuiGraphicsExtractor g, net.minecraft.client.DeltaTracker delta) {
+        Minecraft client = Minecraft.getInstance();
+        if (!canRender(client) || !ActiveAbilityInputClient.isModeDown()) return;
+        int sw = client.getWindow().getGuiScaledWidth();
+        int sh = client.getWindow().getGuiScaledHeight();
+        drawSkills(g, client, sw / 2 - 89, sh - 67);
+    }
+
+    private static boolean canRender(Minecraft client) {
+        return client.player != null && client.gui.screen() == null && !client.gui.hud.isHidden();
     }
 
     private static void drawHealth(GuiGraphicsExtractor g, Minecraft client, int x, int y) {
@@ -51,7 +67,7 @@ public final class CombatHudClient {
         int hpFill = Math.max(0, Math.min(inner, Math.round(inner * hp / max)));
         int absorbFill = Math.max(0, Math.min(inner, Math.round(inner * absorption / max)));
 
-        drawShield(g, client, x, y - 6, w);
+        drawShield(g, x, y - 5, w);
 
         g.fill(x, y, x + w, y + h, TRACK);
         g.outline(x, y, w, h, 0xFF313940);
@@ -63,14 +79,16 @@ public final class CombatHudClient {
         if (absorbFill > 0) {
             int start = Math.max(x + 2, x + 2 + hpFill - absorbFill);
             int end = Math.min(x + w - 2, start + absorbFill);
-            g.fill(start, y + 2, end, y + 4, ABSORB);
-            if (end > start + 2) g.fill(start + 1, y + 2, end - 1, y + 3, ABSORB_HI);
+            if (end > start) {
+                g.fill(start, y + 2, end, y + 4, ABSORB);
+                if (end > start + 2) g.fill(start + 1, y + 2, end - 1, y + 3, ABSORB_HI);
+            }
         }
         String value = compact(hp) + " / " + compact(max);
         g.text(client.font, value, x + w / 2 - client.font.width(value) / 2, y + 1, TEXT, true);
     }
 
-    private static void drawShield(GuiGraphicsExtractor g, Minecraft client, int x, int y, int w) {
+    private static void drawShield(GuiGraphicsExtractor g, int x, int y, int w) {
         float shield = ClientProtectionHudState.shield();
         float cap = ClientProtectionHudState.shieldCapacity();
         if (!(shield > 0.0F) || !(cap > 0.0F)) return;
@@ -81,8 +99,6 @@ public final class CombatHudClient {
         g.fill(x + 2, y + 1, x + w - 2, y + 3, SHIELD_DARK);
         g.fill(x + 2, y + 1, x + 2 + fill, y + 3, SHIELD);
         if (fill > 3) g.fill(x + 3, y + 1, x + 1 + fill, y + 2, SHIELD_HI);
-        String value = "보호막 " + compact(shield) + " / " + compact(cap);
-        g.text(client.font, value, x, y - 9, SHIELD_HI, true);
     }
 
     private static void drawLiquidCrest(GuiGraphicsExtractor g, int x, int y, int width, int color) {
@@ -95,27 +111,25 @@ public final class CombatHudClient {
     }
 
     private static void drawSkills(GuiGraphicsExtractor g, Minecraft client, int x, int y) {
-        int slot = 17, gap = 1;
-        g.fill(x - 3, y - 12, x + 10 * (slot + gap) + 2, y + slot + 3, 0xA9080B0E);
-        g.text(client.font, "증강 스킬", x, y - 10, 0xFFDCE5EA, false);
+        int slot = 16, gap = 2;
         for (int i = 0; i < 10; i++) {
             int sx = x + i * (slot + gap);
             String id = ClientActiveLoadoutState.slot(i);
             int cd = ClientActiveLoadoutState.cooldownTicks(i);
             boolean empty = id.isBlank();
-            g.fill(sx, y, sx + slot, y + slot, empty ? 0xD90A0D10 : 0xE312181D);
-            g.outline(sx, y, slot, slot, empty ? 0xFF30363B : 0xFF778993);
+            g.fill(sx, y, sx + slot, y + slot, empty ? 0xB2080B0E : 0xD9101519);
+            g.outline(sx, y, slot, slot, empty ? 0xAA313940 : 0xDD7A8992);
             if (!empty) {
                 var definition = safeDefinition(id);
-                if (definition != null) g.item(AugmentIconClient.stackFor(id, definition.tier()), sx + 1, y + 1);
+                if (definition != null) g.item(AugmentIconClient.stackFor(id, definition.tier()), sx, y);
                 if (cd > 0) {
-                    g.fill(sx, y, sx + slot, y + slot, 0xA9000000);
+                    g.fill(sx, y, sx + slot, y + slot, 0xA8000000);
                     String sec = Integer.toString((cd + 19) / 20);
-                    g.text(client.font, sec, sx + slot / 2 - client.font.width(sec) / 2, y + 5, TEXT, true);
+                    g.text(client.font, sec, sx + slot / 2 - client.font.width(sec) / 2, y + 4, TEXT, true);
                 }
             }
             String key = i == 9 ? "0" : Integer.toString(i + 1);
-            g.text(client.font, key, sx + 1, y - 8, empty ? 0xFF596168 : MUTED, false);
+            g.text(client.font, key, sx + 1, y + slot - 7, empty ? 0xFF586168 : MUTED, true);
         }
     }
 
