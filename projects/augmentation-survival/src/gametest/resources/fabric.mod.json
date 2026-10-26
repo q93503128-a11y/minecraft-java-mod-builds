@@ -6,6 +6,7 @@
   "environment": "*",
   "entrypoints": {
     "fabric-gametest": [
+      "dev.moonseungjun.augmentationsurvival.gametest.CanonicalCoverageGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.InstantMiningBoundaryGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ActiveInteractionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.HealingInteractionGameTests",
