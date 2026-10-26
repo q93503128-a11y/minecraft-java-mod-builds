@@ -81,7 +81,8 @@
     "ClientHudHealthMixin",
     "AugmentOfferBreathingRoomMixin",
     "AugmentDeviceUiRescueMixin",
-    "ActiveLoadoutUiRescueMixin"
+    "ActiveLoadoutUiRescueMixin",
+    "CoreSynthesisAnimationMixin"
   ],
   "injectors": {
     "defaultRequire": 1
