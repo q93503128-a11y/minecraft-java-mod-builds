@@ -80,7 +80,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         helper.succeed();
     }
 
-    @GameTest
+    @GameTest(maxTicks = 100)
     public void lastStandPrecedesInventoryTotem(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         AugmentationPlayerState state = AugmentationPlayerState.initial()
