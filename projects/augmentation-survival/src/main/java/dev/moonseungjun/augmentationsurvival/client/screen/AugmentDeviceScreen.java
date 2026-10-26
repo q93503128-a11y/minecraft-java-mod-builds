@@ -22,7 +22,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 
-/** Focused augment selection/collection/synthesis UI. Gameplay state remains server-authoritative. */
+/** Responsive augment selection, collection and synthesis UI. Gameplay state stays server-authoritative. */
 public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDeviceMenu> {
     private static final int W = 704, H = 360;
     private static final int BG = 0xF20A0E12, SURFACE = 0xFF11171C, SURFACE_HI = 0xFF172027;
@@ -30,7 +30,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     private static final int TEXT = 0xFFF3F6F8, MUTED = 0xFF909CA3, FAINT = 0xFF616B71;
     private static final int GOOD = 0xFF79D496, BAD = 0xFFE67F86;
     private static final int OFFER_MAX_CARD_W = 196, OFFER_MAX_CARD_H = 238;
-    private static final int OWNED_PER_PAGE = 18;
 
     private View view = View.SELECT;
     private int ownedPage;
@@ -48,23 +47,8 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int scaledW = minecraft.getWindow().getGuiScaledWidth();
         int scaledH = minecraft.getWindow().getGuiScaledHeight();
         g.fill(0, 0, scaledW, scaledH, 0x8B000000);
-
-        if (menu.status() == AugmentDeviceMenu.STATUS_READY) {
-            OfferLayout layout = offerLayout();
-            drawResponsivePanel(g, layout.visibleLeft(), layout.visibleTop(), layout.visibleRight(), layout.visibleBottom());
-            return;
-        }
-        if (view == View.SELECT) {
-            TierLayout layout = tierLayout();
-            drawResponsivePanel(g, layout.visibleLeft(), layout.visibleTop(), layout.visibleRight(), layout.visibleBottom());
-            return;
-        }
-
-        int l = leftPos, t = topPos;
-        g.fill(l, t, l + W, t + H, BG);
-        g.outline(l, t, W, H, 0xFF4A5760);
-        g.fill(l + 1, t + 1, l + W - 1, t + 31, 0xFF151D23);
-        g.fill(l + 2, t + 2, l + W - 2, t + 3, 0xFF83939D);
+        VisibleBounds bounds = viewportBounds(8);
+        drawResponsivePanel(g, bounds.left(), bounds.top(), bounds.right(), bounds.bottom());
     }
 
     private void drawResponsivePanel(GuiGraphicsExtractor g, int visibleLeft, int visibleTop, int visibleRight, int visibleBottom) {
@@ -84,10 +68,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         if (menu.status() == AugmentDeviceMenu.STATUS_READY) {
             drawOffer(g, mx, my);
             return;
-        }
-        VisibleBounds bounds = viewportBounds(8);
-        if (view != View.SELECT && bounds.width() >= 520) {
-            g.text(font, title.getString(), bounds.left(), bounds.top() + 6, TEXT, false);
         }
         drawTabs(g, mx, my);
         switch (view) {
@@ -115,7 +95,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         if (showGuide) {
             String guide = layout.compact()
                     ? "코어 1개 → 같은 등급 후보 3개"
-                    : "코어 1개를 사용해 같은 등급의 증강 후보 3개를 확인합니다.";
+                    : "사용할 코어 등급을 고르면 같은 등급의 증강 후보 3개가 나옵니다.";
             centered(g, clip(guide, layout.visibleRight() - layout.visibleLeft() - 20),
                     layout.centerX(), layout.headerTop() + 14, MUTED);
         }
@@ -323,104 +303,46 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         if (selected) g.fill(x + 6, y + h - 7, x + w - 6, y + h - 5, color);
     }
 
-    private OfferLayout offerLayout() {
-        VisibleBounds bounds = viewportBounds(8);
-        int usableW = bounds.width();
-        int usableH = bounds.height();
-        int gap = usableW >= 620 ? 14 : usableW >= 480 ? 10 : 6;
-        int cardW = Math.min(OFFER_MAX_CARD_W, Math.max(82, (usableW - gap * 2) / 3));
-        int groupW = cardW * 3 + gap * 2;
-        int cardLeft = bounds.left() + Math.max(0, (usableW - groupW) / 2);
-        boolean compact = cardW < 145 || usableH < 270;
-        int headerTop = bounds.top() + 5;
-        int cardTop = headerTop + (compact ? 33 : 43);
-        int footerY = bounds.bottom() - 11;
-        int cardH = Math.min(OFFER_MAX_CARD_H, Math.max(92, footerY - cardTop - 6));
-        if (cardTop + cardH > footerY - 3) cardH = Math.max(88, footerY - cardTop - 3);
-        return new OfferLayout(bounds.left(), bounds.right(), bounds.top(), bounds.bottom(),
-                cardLeft, cardTop, cardW, cardH, gap, headerTop, footerY, compact);
-    }
-
-    private TierLayout tierLayout() {
-        VisibleBounds bounds = viewportBounds(8);
-        int usableW = bounds.width();
-        int usableH = bounds.height();
-        int columns = usableW >= 430 ? 3 : usableW >= 180 ? 2 : 1;
-        int rows = (AugmentTier.values().length + columns - 1) / columns;
-        int gapX = usableW >= 520 ? 10 : 5;
-        int gapY = usableH >= 260 ? 8 : 4;
-        boolean compact = usableW < 430 || usableH < 285;
-        int headerTop = bounds.top() + 27;
-        boolean showGuide = usableH >= 190;
-        boolean showBonus = !compact && usableH >= 300;
-        int headerSpace = showBonus ? 42 : showGuide ? 27 : 14;
-        int gridTop = headerTop + headerSpace;
-        int footerY = bounds.bottom() - 8;
-        int gridBudget = Math.max(1, footerY - gridTop - 5);
-        int rawCellW = Math.max(1, (usableW - gapX * (columns - 1)) / columns);
-        int cellW = Math.min(190, Math.max(72, rawCellW));
-        int rawCellH = Math.max(1, (gridBudget - gapY * (rows - 1)) / rows);
-        int cellH = Math.min(78, Math.max(24, rawCellH));
-        int gridW = cellW * columns + gapX * (columns - 1);
-        int gridLeft = bounds.left() + Math.max(0, (usableW - gridW) / 2);
-        return new TierLayout(bounds.left(), bounds.right(), bounds.top(), bounds.bottom(),
-                gridLeft, gridTop, cellW, cellH, gapX, gapY, columns, headerTop, footerY, compact);
-    }
-
-    private TabLayout tabLayout() {
-        VisibleBounds bounds = viewportBounds(8);
-        int gap = bounds.width() >= 300 ? 8 : 4;
-        if (!menu.advanced()) {
-            int total = 72 + gap + 88;
-            int start = bounds.left() + Math.max(0, (bounds.width() - total) / 2);
-            return new TabLayout(start, 72, start + 72 + gap, 88, -1, 0, bounds.top() + 3);
-        }
-        int available = bounds.width() - gap * 2;
-        int selectW = Math.min(72, Math.max(54, available / 3));
-        int ownedW = Math.min(88, Math.max(60, (available - selectW) / 2));
-        int synthesisW = Math.min(88, Math.max(60, available - selectW - ownedW));
-        int total = selectW + ownedW + synthesisW + gap * 2;
-        int start = bounds.left() + Math.max(0, (bounds.width() - total) / 2);
-        return new TabLayout(start, selectW, start + selectW + gap, ownedW,
-                start + selectW + gap + ownedW + gap, synthesisW, bounds.top() + 3);
-    }
-
-    private VisibleBounds viewportBounds(int margin) {
-        int scaledW = minecraft == null ? W : minecraft.getWindow().getGuiScaledWidth();
-        int scaledH = minecraft == null ? H : minecraft.getWindow().getGuiScaledHeight();
-        int left = Math.max(margin, -leftPos + margin);
-        int right = Math.min(W - margin, scaledW - leftPos - margin);
-        int top = Math.max(margin, -topPos + margin);
-        int bottom = Math.min(H - margin, scaledH - topPos - margin);
-        if (right <= left) { left = margin; right = W - margin; }
-        if (bottom <= top) { top = margin; bottom = H - margin; }
-        return new VisibleBounds(left, right, top, bottom);
-    }
-
     private void drawOwned(GuiGraphicsExtractor g, int mx, int my) {
+        OwnedLayout layout = ownedLayout();
         List<AugmentDefinition> owned = ownedDefinitions();
-        int pages = Math.max(1, (owned.size() + OWNED_PER_PAGE - 1) / OWNED_PER_PAGE);
+        int pages = Math.max(1, (owned.size() + layout.pageSize() - 1) / layout.pageSize());
         ownedPage = Math.max(0, Math.min(ownedPage, pages - 1));
-        g.text(font, "보유 증강 " + owned.size() + " / " + AugmentCatalog.allDefinitions().size(), 18, 48, TEXT, false);
-        String help = "마우스: 설명 · Shift: 정확한 수치";
-        g.text(font, help, W - 18 - font.width(help), 48, MUTED, false);
         hoveredOwnedId = "";
 
-        int start = ownedPage * OWNED_PER_PAGE;
-        int end = Math.min(owned.size(), start + OWNED_PER_PAGE);
-        int startX = 18, startY = 68, cellW = 216, cellH = 31, gapX = 8, gapY = 5;
+        String title = "보유 증강 " + owned.size() + " / " + AugmentCatalog.allDefinitions().size();
+        g.text(font, clip(title, Math.max(30, layout.width() / 2)), layout.left(), layout.headerY(), TEXT, false);
+        String help = layout.width() >= 390 ? "마우스: 설명 · Shift: 정확한 수치" : "Shift: 상세";
+        g.text(font, help, layout.right() - font.width(help), layout.headerY(), MUTED, false);
+
+        int start = ownedPage * layout.pageSize();
+        int end = Math.min(owned.size(), start + layout.pageSize());
         for (int i = start; i < end; i++) {
-            int local = i - start, col = local % 3, row = local / 3;
-            AugmentDefinition d = owned.get(i);
-            drawOwnedCell(g, startX + col * (cellW + gapX), startY + row * (cellH + gapY), cellW, cellH, d, mx, my);
+            int local = i - start;
+            int col = local % layout.columns();
+            int row = local / layout.columns();
+            int x = layout.gridLeft() + col * (layout.cellW() + layout.gapX());
+            int y = layout.gridTop() + row * (layout.cellH() + layout.gapY());
+            drawOwnedCell(g, x, y, layout.cellW(), layout.cellH(), owned.get(i), mx, my);
         }
-        if (owned.isEmpty()) centered(g, "아직 획득한 증강이 없습니다.", W / 2, 150, MUTED);
-        if (pages > 1) drawPager(g, W / 2, 304, ownedPage, pages, mx, my);
+
+        if (owned.isEmpty()) {
+            centered(g, "아직 획득한 증강이 없습니다.", layout.centerX(), layout.gridTop() + 24, MUTED);
+        }
+        if (pages > 1) drawOwnedPager(g, layout, ownedPage, pages, mx, my);
+
         if (!hoveredOwnedId.isBlank()) {
             AugmentDefinition d = AugmentCatalog.require(hoveredOwnedId);
             int level = ClientAugmentProgressState.level(d.id());
-            if (shiftDown()) drawDetailedStrip(g, d, 18, H - 45, W - 36, level);
-            else drawSummaryStrip(g, d, 18, H - 45, W - 36, level);
+            drawOwnedDetail(g, layout, d, level, shiftDown());
+        } else {
+            g.fill(layout.detailLeft(), layout.detailY(), layout.detailRight(), layout.detailY() + layout.detailH(), 0xE30D1216);
+            g.outline(layout.detailLeft(), layout.detailY(), layout.detailRight() - layout.detailLeft(), layout.detailH(), LINE);
+            String message = layout.detailH() >= 44
+                    ? "증강에 마우스를 올리면 효과를 확인할 수 있습니다. Shift를 누르면 정확한 수치가 표시됩니다."
+                    : "마우스로 효과 확인 · Shift 상세";
+            g.text(font, clip(message, layout.detailRight() - layout.detailLeft() - 18),
+                    layout.detailLeft() + 9, layout.detailY() + Math.max(6, layout.detailH() / 2 - 4), MUTED, false);
         }
     }
 
@@ -428,83 +350,109 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         boolean hover = inside(mx, my, x, y, w, h);
         int color = tierColor(d.tier());
         g.fill(x, y, x + w, y + h, hover ? SURFACE_HI : SURFACE);
-        g.fill(x, y, x + 2, y + h, color);
-        g.item(AugmentIconClient.stackFor(d.id(), d.tier()), x + 7, y + 8);
+        g.fill(x, y, x + 3, y + h, color);
+        g.outline(x, y, w, h, hover ? shade(color, 0.82) : LINE);
+        if (w >= 52) g.item(AugmentIconClient.stackFor(d.id(), d.tier()), x + 7, y + Math.max(5, (h - 16) / 2));
         AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
-        g.text(font, clip(p.displayName(), w - 72), x + 29, y + 6, hover ? TEXT : 0xFFD3DADE, false);
+        int textX = x + (w >= 52 ? 30 : 8);
         int level = ClientAugmentProgressState.level(d.id());
-        g.text(font, "Lv." + level + "/" + d.maxLevel(), x + 29, y + 18, MUTED, false);
+        g.text(font, clip(p.displayName(), Math.max(20, w - (textX - x) - 54)), textX, y + 5, hover ? TEXT : 0xFFD3DADE, false);
+        if (h >= 28) g.text(font, "Lv." + level + "/" + d.maxLevel(), textX, y + 17, MUTED, false);
         String kind = p.kind().label();
-        g.text(font, kind, x + w - 8 - font.width(kind), y + 11,
+        if (w >= 98) g.text(font, kind, x + w - 7 - font.width(kind), y + Math.max(6, h / 2 - 4),
                 p.kind() == AugmentPresentationCatalog.Kind.PASSIVE ? FAINT : 0xFFE8CF78, false);
         if (hover) hoveredOwnedId = d.id();
     }
 
-    private void drawPager(GuiGraphicsExtractor g, int centerX, int y, int page, int pages, int mx, int my) {
-        boolean left = page > 0 && inside(mx, my, centerX - 58, y - 5, 28, 20);
-        boolean right = page + 1 < pages && inside(mx, my, centerX + 30, y - 5, 28, 20);
-        g.text(font, "‹", centerX - 50, y, left ? TEXT : FAINT, false);
-        String state = (page + 1) + " / " + pages;
-        centered(g, state, centerX, y, MUTED);
-        g.text(font, "›", centerX + 42, y, right ? TEXT : FAINT, false);
+    private void drawOwnedDetail(GuiGraphicsExtractor g, OwnedLayout layout, AugmentDefinition d, int level, boolean detailed) {
+        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
+        int x = layout.detailLeft(), y = layout.detailY(), w = layout.detailRight() - layout.detailLeft();
+        g.fill(x, y, x + w, y + layout.detailH(), 0xE30D1216);
+        g.fill(x, y, x + 3, y + layout.detailH(), tierColor(d.tier()));
+        g.outline(x, y, w, layout.detailH(), LINE);
+        String head = p.displayName() + " · " + tierLabel(d.tier()) + " · " + p.kind().label() + " · Lv." + level + "/" + d.maxLevel();
+        g.text(font, clip(head, w - 18), x + 9, y + 5, TEXT, false);
+        if (layout.detailH() >= 30) {
+            String body = detailed ? p.detail() : p.summary();
+            int maxLines = Math.max(1, (layout.detailH() - 19) / 10);
+            drawWrapped(g, body, x + 9, y + 18, Math.max(24, w - 18), maxLines, detailed ? 0xFFDCE3E6 : 0xFFC7D0D5);
+        }
+    }
+
+    private void drawOwnedPager(GuiGraphicsExtractor g, OwnedLayout layout, int page, int pages, int mx, int my) {
+        boolean left = page > 0 && inside(mx, my, layout.pagerLeftX(), layout.pagerY(), 28, 16);
+        boolean right = page + 1 < pages && inside(mx, my, layout.pagerRightX(), layout.pagerY(), 28, 16);
+        g.text(font, "‹", layout.pagerLeftX() + 10, layout.pagerY() + 3, left ? TEXT : FAINT, false);
+        centered(g, (page + 1) + " / " + pages, layout.centerX(), layout.pagerY() + 3, MUTED);
+        g.text(font, "›", layout.pagerRightX() + 10, layout.pagerY() + 3, right ? TEXT : FAINT, false);
     }
 
     private void drawSynthesis(GuiGraphicsExtractor g, int mx, int my) {
-        centered(g, "같은 등급 코어 3개를 다음 등급 코어 1개로 정제합니다.", W / 2, 54, MUTED);
-        int y = 77;
+        SynthesisLayout layout = synthesisLayout();
+        centered(g, "코어 합성", layout.centerX(), layout.headerY(), TEXT);
+        if (layout.showGuide()) {
+            centered(g, clip("같은 등급 코어 3개를 다음 등급 코어 1개로 정제합니다.", layout.width() - 18),
+                    layout.centerX(), layout.headerY() + 14, MUTED);
+        }
+
         for (int i = 0; i < AugmentTier.values().length - 1; i++) {
             AugmentTier tier = AugmentTier.values()[i];
-            int x = 131 + i * 89;
-            boolean selected = synthesisTier == i, hover = inside(mx, my, x, y, 78, 28);
-            g.fill(x, y, x + 78, y + 28, selected || hover ? SURFACE_HI : SURFACE);
-            g.fill(x, y + 26, x + 78, y + 28, selected ? tierColor(tier) : 0xFF343D43);
-            centered(g, tierLabel(tier), x + 39, y + 9, selected ? TEXT : MUTED);
+            int col = i % layout.columns();
+            int row = i / layout.columns();
+            int x = layout.gridLeft() + col * (layout.cellW() + layout.gapX());
+            int y = layout.gridTop() + row * (layout.cellH() + layout.gapY());
+            boolean selected = synthesisTier == i;
+            boolean hover = inside(mx, my, x, y, layout.cellW(), layout.cellH());
+            int color = tierColor(tier);
+            g.fill(x, y, x + layout.cellW(), y + layout.cellH(), selected || hover ? SURFACE_HI : SURFACE);
+            g.outline(x, y, layout.cellW(), layout.cellH(), selected ? color : hover ? LINE_HI : LINE);
+            g.fill(x, y + layout.cellH() - 2, x + layout.cellW(), y + layout.cellH(), selected ? color : 0xFF343D43);
+            centered(g, clip(tierLabel(tier), layout.cellW() - 8), x + layout.cellW() / 2,
+                    y + Math.max(5, layout.cellH() / 2 - 4), selected ? TEXT : MUTED);
         }
-        AugmentTier from = AugmentTier.values()[synthesisTier];
+
+        AugmentTier from = AugmentTier.values()[Math.max(0, Math.min(synthesisTier, AugmentTier.values().length - 2))];
         AugmentTier to = from.next().orElse(AugmentTier.MYTHIC);
-        int cy = 172;
-        for (int i = 0; i < 3; i++) g.item(new ItemStack(AugmentCoreItems.item(from)), 196 + i * 23, cy);
-        g.text(font, "×3", 263, cy + 5, MUTED, false);
-        centered(g, "→", W / 2, cy + 5, tierColor(to));
-        g.item(new ItemStack(AugmentCoreItems.item(to)), 433, cy);
-        g.text(font, "×1", 455, cy + 5, MUTED, false);
-        centered(g, tierLabel(from) + "  →  " + tierLabel(to), W / 2, 205, TEXT);
-        centered(g, "보유 " + coreCount(from), W / 2, 223, coreCount(from) >= 3 ? MUTED : BAD);
-        drawButton(g, 259, 251, 82, 26, "1회 정제", mx, my);
-        drawButton(g, 363, 251, 82, 26, "모두 정제", mx, my);
-        if (menu.status() == AugmentDeviceMenu.STATUS_UPGRADED) centered(g, "정제 완료 ×" + Math.max(1, menu.lastOutputCount()), W / 2, 298, GOOD);
-        else if (menu.status() == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES) centered(g, "코어가 부족합니다.", W / 2, 298, BAD);
-    }
+        int flowY = layout.flowY();
+        int fromX = layout.centerX() - 70;
+        int toX = layout.centerX() + 54;
+        g.fill(fromX - 8, flowY - 8, fromX + 40, flowY + 30, SURFACE);
+        g.outline(fromX - 8, flowY - 8, 48, 38, shade(tierColor(from), 0.72));
+        g.item(new ItemStack(AugmentCoreItems.item(from)), fromX, flowY);
+        g.text(font, "×3", fromX + 19, flowY + 5, MUTED, false);
+        centered(g, "→", layout.centerX(), flowY + 5, tierColor(to));
+        g.fill(toX - 8, flowY - 8, toX + 40, flowY + 30, SURFACE);
+        g.outline(toX - 8, flowY - 8, 48, 38, shade(tierColor(to), 0.82));
+        g.item(new ItemStack(AugmentCoreItems.item(to)), toX, flowY);
+        g.text(font, "×1", toX + 19, flowY + 5, MUTED, false);
 
-    private void drawSummaryStrip(GuiGraphicsExtractor g, AugmentDefinition d, int x, int y, int w, int level) {
-        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
-        g.fill(x, y, x + w, y + 34, 0xE30D1216);
-        g.fill(x, y, x + 3, y + 34, tierColor(d.tier()));
-        g.text(font, p.displayName() + "  Lv." + level, x + 11, y + 6, TEXT, false);
-        g.text(font, clip(p.summary(), w - 22), x + 11, y + 19, 0xFFC7D0D5, false);
-    }
+        centered(g, tierLabel(from) + "  →  " + tierLabel(to), layout.centerX(), layout.flowLabelY(), TEXT);
+        int ownedCount = coreCount(from);
+        centered(g, "보유 " + ownedCount + " · 1회당 3개 필요", layout.centerX(), layout.countY(), ownedCount >= 3 ? MUTED : BAD);
 
-    private void drawDetailedStrip(GuiGraphicsExtractor g, AugmentDefinition d, int x, int y, int w, int level) {
-        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
-        g.fill(x, y - 16, x + w, y + 36, 0xF20B1014);
-        g.fill(x, y - 16, x + 3, y + 36, tierColor(d.tier()));
-        g.text(font, p.displayName() + "  Lv." + level + "/" + d.maxLevel(), x + 11, y - 10, TEXT, false);
-        List<String> lines = wrap(p.detail(), w - 22);
-        for (int i = 0; i < Math.min(3, lines.size()); i++) g.text(font, lines.get(i), x + 11, y + 3 + i * 10, 0xFFD2D9DD, false);
+        drawButton(g, layout.oneButtonX(), layout.buttonY(), layout.buttonW(), layout.buttonH(), "1회 정제", mx, my, ownedCount >= 3);
+        drawButton(g, layout.allButtonX(), layout.allButtonY(), layout.buttonW(), layout.buttonH(), "모두 정제", mx, my, ownedCount >= 3);
+
+        if (menu.status() == AugmentDeviceMenu.STATUS_UPGRADED) {
+            centered(g, "정제 완료 ×" + Math.max(1, menu.lastOutputCount()), layout.centerX(), layout.statusY(), GOOD);
+        } else if (menu.status() == AugmentDeviceMenu.STATUS_NOT_ENOUGH_CORES) {
+            centered(g, "코어가 부족합니다.", layout.centerX(), layout.statusY(), BAD);
+        }
     }
 
     private void drawTab(GuiGraphicsExtractor g, int x, int y, int w, String text, boolean active, int mx, int my) {
         boolean hover = inside(mx, my, x, y, w, 20);
         int color = active ? 0xFFC7D3D9 : hover ? LINE_HI : MUTED;
-        g.text(font, clip(text, Math.max(20, w - 8)), x + (w - font.width(clip(text, Math.max(20, w - 8)))) / 2, y + 5, color, false);
+        String clipped = clip(text, Math.max(20, w - 8));
+        g.text(font, clipped, x + (w - font.width(clipped)) / 2, y + 5, color, false);
         if (active && w > 22) g.fill(x + 10, y + 18, x + w - 10, y + 20, 0xFF8FA3AE);
     }
 
-    private void drawButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, int mx, int my) {
-        boolean hover = inside(mx, my, x, y, w, h);
+    private void drawButton(GuiGraphicsExtractor g, int x, int y, int w, int h, String text, int mx, int my, boolean enabled) {
+        boolean hover = enabled && inside(mx, my, x, y, w, h);
         g.fill(x, y, x + w, y + h, hover ? SURFACE_HI : SURFACE);
-        g.outline(x, y, w, h, hover ? LINE_HI : LINE);
-        centered(g, text, x + w / 2, y + 9, hover ? TEXT : MUTED);
+        g.outline(x, y, w, h, enabled ? (hover ? LINE_HI : LINE) : 0xFF2B3237);
+        centered(g, clip(text, w - 10), x + w / 2, y + Math.max(4, h / 2 - 4), enabled ? (hover ? TEXT : MUTED) : FAINT);
     }
 
     @Override
@@ -559,28 +507,186 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
                 }
             }
         } else if (view == View.OWNED) {
+            OwnedLayout layout = ownedLayout();
             List<AugmentDefinition> owned = ownedDefinitions();
-            int pages = Math.max(1, (owned.size() + OWNED_PER_PAGE - 1) / OWNED_PER_PAGE);
-            if (inside(x, y, W / 2 - 58, 299, 28, 20) && ownedPage > 0) {
+            int pages = Math.max(1, (owned.size() + layout.pageSize() - 1) / layout.pageSize());
+            if (pages > 1 && inside(x, y, layout.pagerLeftX(), layout.pagerY(), 28, 16) && ownedPage > 0) {
                 ownedPage--;
                 playClick(0.96F);
                 return true;
             }
-            if (inside(x, y, W / 2 + 30, 299, 28, 20) && ownedPage + 1 < pages) {
+            if (pages > 1 && inside(x, y, layout.pagerRightX(), layout.pagerY(), 28, 16) && ownedPage + 1 < pages) {
                 ownedPage++;
                 playClick(1.04F);
                 return true;
             }
         } else if (view == View.SYNTHESIS && menu.advanced()) {
+            SynthesisLayout layout = synthesisLayout();
             for (int i = 0; i < AugmentTier.values().length - 1; i++) {
-                int xx = 131 + i * 89;
-                if (inside(x, y, xx, 77, 78, 28)) { synthesisTier = i; playClick(0.95F + i * 0.05F); return true; }
+                int col = i % layout.columns();
+                int row = i / layout.columns();
+                int xx = layout.gridLeft() + col * (layout.cellW() + layout.gapX());
+                int yy = layout.gridTop() + row * (layout.cellH() + layout.gapY());
+                if (inside(x, y, xx, yy, layout.cellW(), layout.cellH())) {
+                    synthesisTier = i;
+                    playClick(0.95F + i * 0.05F);
+                    return true;
+                }
             }
-            AugmentTier tier = AugmentTier.values()[synthesisTier];
-            if (inside(x, y, 259, 251, 82, 26)) return send(AugmentDeviceMenu.upgradeOneButtonId(tier));
-            if (inside(x, y, 363, 251, 82, 26)) return send(AugmentDeviceMenu.upgradeAllButtonId(tier));
+            AugmentTier tier = AugmentTier.values()[Math.max(0, Math.min(synthesisTier, AugmentTier.values().length - 2))];
+            if (coreCount(tier) >= 3 && inside(x, y, layout.oneButtonX(), layout.buttonY(), layout.buttonW(), layout.buttonH())) {
+                return send(AugmentDeviceMenu.upgradeOneButtonId(tier));
+            }
+            if (coreCount(tier) >= 3 && inside(x, y, layout.allButtonX(), layout.allButtonY(), layout.buttonW(), layout.buttonH())) {
+                return send(AugmentDeviceMenu.upgradeAllButtonId(tier));
+            }
         }
         return super.mouseClicked(event, doubleClick);
+    }
+
+    private OfferLayout offerLayout() {
+        VisibleBounds bounds = viewportBounds(8);
+        int usableW = bounds.width();
+        int usableH = bounds.height();
+        int gap = usableW >= 620 ? 14 : usableW >= 480 ? 10 : 6;
+        int cardW = Math.min(OFFER_MAX_CARD_W, Math.max(82, (usableW - gap * 2) / 3));
+        int groupW = cardW * 3 + gap * 2;
+        int cardLeft = bounds.left() + Math.max(0, (usableW - groupW) / 2);
+        boolean compact = cardW < 145 || usableH < 270;
+        int headerTop = bounds.top() + 5;
+        int cardTop = headerTop + (compact ? 33 : 43);
+        int footerY = bounds.bottom() - 11;
+        int cardH = Math.min(OFFER_MAX_CARD_H, Math.max(92, footerY - cardTop - 6));
+        if (cardTop + cardH > footerY - 3) cardH = Math.max(88, footerY - cardTop - 3);
+        return new OfferLayout(bounds.left(), bounds.right(), bounds.top(), bounds.bottom(),
+                cardLeft, cardTop, cardW, cardH, gap, headerTop, footerY, compact);
+    }
+
+    private TierLayout tierLayout() {
+        VisibleBounds bounds = viewportBounds(8);
+        int usableW = bounds.width();
+        int usableH = bounds.height();
+        int columns = usableW >= 430 ? 3 : usableW >= 180 ? 2 : 1;
+        int rows = (AugmentTier.values().length + columns - 1) / columns;
+        int gapX = usableW >= 520 ? 10 : 5;
+        int gapY = usableH >= 260 ? 8 : 4;
+        boolean compact = usableW < 430 || usableH < 285;
+        int headerTop = bounds.top() + 27;
+        boolean showGuide = usableH >= 190;
+        boolean showBonus = !compact && usableH >= 300;
+        int headerSpace = showBonus ? 42 : showGuide ? 27 : 14;
+        int gridTop = headerTop + headerSpace;
+        int footerY = bounds.bottom() - 8;
+        int gridBudget = Math.max(1, footerY - gridTop - 5);
+        int rawCellW = Math.max(1, (usableW - gapX * (columns - 1)) / columns);
+        int cellW = Math.min(190, Math.max(72, rawCellW));
+        int rawCellH = Math.max(1, (gridBudget - gapY * (rows - 1)) / rows);
+        int cellH = Math.min(78, Math.max(24, rawCellH));
+        int gridW = cellW * columns + gapX * (columns - 1);
+        int gridLeft = bounds.left() + Math.max(0, (usableW - gridW) / 2);
+        return new TierLayout(bounds.left(), bounds.right(), bounds.top(), bounds.bottom(),
+                gridLeft, gridTop, cellW, cellH, gapX, gapY, columns, headerTop, footerY, compact);
+    }
+
+    private OwnedLayout ownedLayout() {
+        VisibleBounds bounds = viewportBounds(8);
+        int left = bounds.left() + 10;
+        int right = bounds.right() - 10;
+        int width = Math.max(40, right - left);
+        int headerY = bounds.top() + 31;
+        int gridTop = headerY + 20;
+        int detailH = bounds.height() >= 245 ? 52 : bounds.height() >= 190 ? 38 : 28;
+        int detailY = bounds.bottom() - detailH - 5;
+        int pagerY = detailY - 19;
+        int gridBottom = pagerY - 4;
+        int columns = width >= 560 ? 3 : width >= 330 ? 2 : 1;
+        int gapX = width >= 430 ? 8 : 5;
+        int gapY = 5;
+        int cellH = gridBottom - gridTop >= 70 ? 31 : 26;
+        int cellW = Math.max(54, (width - gapX * (columns - 1)) / columns);
+        int rows = Math.max(1, (Math.max(cellH, gridBottom - gridTop) + gapY) / (cellH + gapY));
+        int maxRows = Math.max(1, (gridBottom - gridTop + gapY) / (cellH + gapY));
+        rows = Math.min(rows, maxRows);
+        int pageSize = Math.max(1, columns * rows);
+        int gridWidth = cellW * columns + gapX * (columns - 1);
+        int gridLeft = left + Math.max(0, (width - gridWidth) / 2);
+        int centerX = (left + right) / 2;
+        return new OwnedLayout(left, right, width, centerX, headerY, gridLeft, gridTop, cellW, cellH,
+                gapX, gapY, columns, rows, pageSize, pagerY, centerX - 48, centerX + 20,
+                left, right, detailY, detailH);
+    }
+
+    private SynthesisLayout synthesisLayout() {
+        VisibleBounds bounds = viewportBounds(8);
+        int left = bounds.left() + 10;
+        int right = bounds.right() - 10;
+        int width = Math.max(40, right - left);
+        int center = (left + right) / 2;
+        int headerY = bounds.top() + 30;
+        boolean showGuide = bounds.height() >= 190;
+        int gridTop = headerY + (showGuide ? 31 : 17);
+        int columns = width >= 520 ? 5 : width >= 320 ? 3 : 2;
+        int rows = (5 + columns - 1) / columns;
+        int gapX = width >= 430 ? 7 : 4;
+        int gapY = 5;
+        int cellW = Math.max(48, Math.min(92, (width - gapX * (columns - 1)) / columns));
+        int cellH = bounds.height() >= 220 ? 28 : 24;
+        int gridW = cellW * columns + gapX * (columns - 1);
+        int gridLeft = left + Math.max(0, (width - gridW) / 2);
+        int flowY = gridTop + rows * cellH + Math.max(0, rows - 1) * gapY + (bounds.height() >= 260 ? 27 : 16);
+        int flowLabelY = flowY + 34;
+        int countY = flowLabelY + 15;
+        int buttonH = 24;
+        int buttonW = Math.min(96, Math.max(68, (width - 16) / 2));
+        int buttonY = countY + 18;
+        int oneButtonX;
+        int allButtonX;
+        int allButtonY = buttonY;
+        if (width >= buttonW * 2 + 10) {
+            oneButtonX = center - buttonW - 5;
+            allButtonX = center + 5;
+        } else {
+            oneButtonX = center - buttonW / 2;
+            allButtonX = oneButtonX;
+            allButtonY = buttonY + buttonH + 5;
+        }
+        int statusY = Math.min(bounds.bottom() - 10, allButtonY + buttonH + 10);
+        return new SynthesisLayout(left, right, width, center, headerY, showGuide, gridLeft, gridTop,
+                cellW, cellH, gapX, gapY, columns, flowY, flowLabelY, countY,
+                oneButtonX, allButtonX, buttonY, allButtonY, buttonW, buttonH, statusY);
+    }
+
+    private TabLayout tabLayout() {
+        VisibleBounds bounds = viewportBounds(8);
+        int gap = bounds.width() >= 300 ? 8 : 4;
+        if (!menu.advanced()) {
+            int selectW = Math.min(72, Math.max(52, (bounds.width() - gap) / 2));
+            int ownedW = Math.min(88, Math.max(60, bounds.width() - gap - selectW));
+            int total = selectW + gap + ownedW;
+            int start = bounds.left() + Math.max(0, (bounds.width() - total) / 2);
+            return new TabLayout(start, selectW, start + selectW + gap, ownedW, -1, 0, bounds.top() + 3);
+        }
+        int available = Math.max(90, bounds.width() - gap * 2);
+        int each = Math.max(42, available / 3);
+        int selectW = Math.min(72, each);
+        int ownedW = Math.min(88, each);
+        int synthesisW = Math.min(88, Math.max(42, available - selectW - ownedW));
+        int total = selectW + ownedW + synthesisW + gap * 2;
+        int start = bounds.left() + Math.max(0, (bounds.width() - total) / 2);
+        return new TabLayout(start, selectW, start + selectW + gap, ownedW,
+                start + selectW + gap + ownedW + gap, synthesisW, bounds.top() + 3);
+    }
+
+    private VisibleBounds viewportBounds(int margin) {
+        int scaledW = minecraft == null ? W : minecraft.getWindow().getGuiScaledWidth();
+        int scaledH = minecraft == null ? H : minecraft.getWindow().getGuiScaledHeight();
+        int left = Math.max(margin, -leftPos + margin);
+        int right = Math.min(W - margin, scaledW - leftPos - margin);
+        int top = Math.max(margin, -topPos + margin);
+        int bottom = Math.min(H - margin, scaledH - topPos - margin);
+        if (right <= left) { left = margin; right = W - margin; }
+        if (bottom <= top) { top = margin; bottom = H - margin; }
+        return new VisibleBounds(left, right, top, bottom);
     }
 
     private boolean send(int id) {
@@ -685,6 +791,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     }
 
     private String clip(String value, int maxWidth) {
+        if (maxWidth <= 0) return "";
         if (font.width(value) <= maxWidth) return value;
         return ellipsize(value, maxWidth);
     }
@@ -767,6 +874,21 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     ) {
         int centerX() { return (visibleLeft + visibleRight) / 2; }
     }
+
+    private record OwnedLayout(
+            int left, int right, int width, int centerX, int headerY,
+            int gridLeft, int gridTop, int cellW, int cellH, int gapX, int gapY,
+            int columns, int rows, int pageSize, int pagerY, int pagerLeftX, int pagerRightX,
+            int detailLeft, int detailRight, int detailY, int detailH
+    ) { }
+
+    private record SynthesisLayout(
+            int left, int right, int width, int centerX, int headerY, boolean showGuide,
+            int gridLeft, int gridTop, int cellW, int cellH, int gapX, int gapY, int columns,
+            int flowY, int flowLabelY, int countY,
+            int oneButtonX, int allButtonX, int buttonY, int allButtonY,
+            int buttonW, int buttonH, int statusY
+    ) { }
 
     private record TabLayout(
             int selectX, int selectW, int ownedX, int ownedW,
