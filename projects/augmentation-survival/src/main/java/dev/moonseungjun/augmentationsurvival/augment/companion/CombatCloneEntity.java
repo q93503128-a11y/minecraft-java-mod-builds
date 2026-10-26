@@ -81,6 +81,11 @@ public final class CombatCloneEntity extends PathfinderMob {
         goalSelector.addGoal(2, new RandomLookAroundGoal(this));
     }
 
+    /** Non-Clone callers (for example authored authority packages) get no Overtime budget. */
+    public void configure(ServerPlayer owner, float maxHealth, double attackDamage, int durationTicks) {
+        configure(owner, maxHealth, attackDamage, durationTicks, 0);
+    }
+
     public void configure(
             ServerPlayer owner,
             float maxHealth,
