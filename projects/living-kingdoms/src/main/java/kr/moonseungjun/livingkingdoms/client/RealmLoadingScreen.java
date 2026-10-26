@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
 public final class RealmLoadingScreen extends Screen {
@@ -30,6 +29,7 @@ public final class RealmLoadingScreen extends Screen {
         complete = payload.complete();
         failed = payload.failed();
         if (failed) complete = false;
+        if (!complete) completeTicks = 0;
     }
 
     boolean allRequiredControlsFit() {
@@ -69,13 +69,8 @@ public final class RealmLoadingScreen extends Screen {
         int panelHeight = layout.height();
         ExternalRpgUi.window(graphics, left, top, panelWidth, panelHeight);
 
-        Item emblem = switch (homelandId) {
-            case "silvana_forest" -> Items.OAK_SAPLING;
-            case "kardum_league" -> Items.IRON_PICKAXE;
-            default -> Items.GOLDEN_HELMET;
-        };
         int iconSize = panelHeight < 200 ? 42 : 52;
-        ExternalRpgUi.iconFrame(graphics, emblem, left + 27, top + 30, iconSize);
+        ExternalRpgUi.iconFrame(graphics, Items.GOLDEN_HELMET, left + 27, top + 30, iconSize);
         ExternalRpgUi.title(graphics, font,
                 failed ? "왕국 준비 실패" : complete ? "입국 준비 완료" : "왕국을 준비하고 있습니다",
                 homelandName(), left + 92, top + 35);
@@ -108,23 +103,22 @@ public final class RealmLoadingScreen extends Screen {
 
     private String phaseLabel() {
         return switch (phase) {
-            case "survey" -> "입지 조사 · 물과 절벽을 피해 수도 후보를 검토 중";
-            case "chunks" -> "지역 준비 · 선택한 부지의 청크를 생성 중";
+            case "survey" -> "입지 조사 · 수도권 지형을 검토 중";
+            case "chunks" -> "지역 준비 · 수도권 청크를 생성 중";
             case "planning" -> "건축 배치 · 도로와 시설 배치를 조립 중";
             case "building" -> "왕국 건설 · 구역별 작업을 적용 중";
-            case "complete" -> "완료 · 선택한 거주지로 이동 중";
+            case "settling" -> "정리 · 마지막 블록 갱신과 건설 잔해를 확인 중";
+            case "residence" -> "거주지 확인 · 실제 시민 주택 내부와 출입 동선을 검증 중";
+            case "complete" -> "완료 · 검증된 시민구 거주지로 입장 중";
             case "failed" -> "실패 · 왕국 생성 작업을 중단함";
-            default -> "시작 준비 · 출신과 소속을 확인 중";
+            default -> "시작 준비 · 시민 등록 정보를 확인 중";
         };
     }
 
     private String homelandName() {
-        return switch (homelandId) {
-            case "silvana_forest" -> "실바나 수림 의회";
-            case "kardum_league" -> "카르둠 산악 연맹";
-            case "erden_kingdom" -> "에르덴 왕국 · 로엔 변경백령";
-            default -> "살아있는 왕국";
-        };
+        return "erden_kingdom".equals(homelandId)
+                ? "에르덴 왕국 · 로엔 변경백령"
+                : "살아있는 왕국";
     }
 
     private record Layout(int left, int top, int width, int height) {
