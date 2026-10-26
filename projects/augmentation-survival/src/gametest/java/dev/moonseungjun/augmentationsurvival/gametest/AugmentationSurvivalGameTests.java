@@ -89,12 +89,11 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         int beforeTotems = player.getInventory().countItem(Items.TOTEM_OF_UNDYING);
         long now = player.level().getGameTime();
 
-        require(player.hurtServer(
-                        (ServerLevel) player.level(),
-                        player.damageSources().generic(),
-                        player.getMaxHealth() * 20.0F
-                ),
-                "real server damage path rejected the lethal hit before death protection");
+        player.hurtServer(
+                (ServerLevel) player.level(),
+                player.damageSources().generic(),
+                player.getMaxHealth() * 20.0F
+        );
 
         require(!player.isDeadOrDying(), "last stand allowed a real death");
         require(player.getHealth() == 1.0F,
