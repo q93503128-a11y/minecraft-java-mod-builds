@@ -13,9 +13,27 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(Player.class)
 public abstract class InstantMiningPlayerMixin {
     @ModifyReturnValue(
-            method = "getDestroySpeed",
-            at = @At("RETURN")
+            method = "getDestroySpeed(Lnet/minecraft/world/level/block/state/BlockState;)F",
+            at = @At("RETURN"),
+            require = 0
     )
+    private float augmentationSurvival$instantMineLegacy(float original, BlockState state) {
+        return augmentationSurvival$instantMine(original, state);
+    }
+
+    @ModifyReturnValue(
+            method = "getDestroySpeed(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;)F",
+            at = @At("RETURN"),
+            require = 0
+    )
+    private float augmentationSurvival$instantMineAtPos(
+            float original,
+            BlockState state,
+            BlockPos pos
+    ) {
+        return augmentationSurvival$instantMine(original, state);
+    }
+
     private float augmentationSurvival$instantMine(float original, BlockState state) {
         if ((Object) this instanceof ServerPlayer player
                 && UtilityAugmentService.shouldInstantMine(player, state, original)) {
