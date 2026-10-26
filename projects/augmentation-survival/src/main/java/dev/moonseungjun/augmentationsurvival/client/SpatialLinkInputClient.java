@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.network.SpatialLinkActionPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -10,10 +11,11 @@ import org.lwjgl.glfw.GLFW;
 
 /** Rebindable dedicated key for the permanent spatial-link network. */
 public final class SpatialLinkInputClient {
+    private static final String SPATIAL_LINK_ID = AugmentationSurvival.MOD_ID + ":spatial_link";
     private static final KeyMapping OPEN_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.augmentation_survival.spatial_link",
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_K,
+            GLFW.GLFW_KEY_G,
             ActiveAbilityInputClient.CATEGORY
     ));
     private static boolean wasDown;
@@ -23,7 +25,8 @@ public final class SpatialLinkInputClient {
     public static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             boolean down = client.player != null && client.gui.screen() == null && OPEN_KEY.isDown();
-            if (down && !wasDown) {
+            boolean unlocked = ClientAugmentProgressState.level(SPATIAL_LINK_ID) > 0;
+            if (down && !wasDown && unlocked) {
                 ClientPlayNetworking.send(new SpatialLinkActionPayload(
                         SpatialLinkActionPayload.Action.OPEN, "", ""
                 ));

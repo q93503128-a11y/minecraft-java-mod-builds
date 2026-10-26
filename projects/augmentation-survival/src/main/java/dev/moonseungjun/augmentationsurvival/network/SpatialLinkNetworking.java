@@ -5,7 +5,6 @@ import dev.moonseungjun.augmentationsurvival.augment.spatial.SpatialLinkWorldSta
 import java.util.ArrayList;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Server-owned networking boundary for the spatial-link screen. */
@@ -17,10 +16,7 @@ public final class SpatialLinkNetworking {
         PayloadTypeRegistry.clientboundPlay().register(SpatialLinkSnapshotPayload.TYPE, SpatialLinkSnapshotPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(SpatialLinkActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            if (!SpatialLinkService.hasAccess(player)) {
-                player.sendSystemMessage(Component.translatable("message.augmentation_survival.spatial_link.no_access"));
-                return;
-            }
+            if (!SpatialLinkService.hasAccess(player)) return;
             handle(player, payload);
             sendSnapshot(player);
         });

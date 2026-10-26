@@ -2,6 +2,9 @@ package dev.moonseungjun.augmentationsurvival.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentPresentationCatalog;
 import dev.moonseungjun.augmentationsurvival.client.screen.ActiveLoadoutScreen;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityRequestPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -16,6 +19,7 @@ public final class ActiveAbilityInputClient {
     static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "augmentation")
     );
+    private static final String AUTHORITY_THEFT_ID = AugmentationSurvival.MOD_ID + ":authority_theft";
     private static final KeyMapping MODE_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.augmentation_survival.active_mode", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY
     ));
@@ -35,12 +39,13 @@ public final class ActiveAbilityInputClient {
     public static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             boolean loadoutDown = client.player != null && LOADOUT_KEY.isDown();
-            if (client.player != null && client.gui.screen() == null && loadoutDown && !loadoutWasDown) {
+            boolean hasActive = hasLoadoutActive();
+            if (client.player != null && client.gui.screen() == null && loadoutDown && !loadoutWasDown && hasActive) {
                 client.gui.setScreen(new ActiveLoadoutScreen());
             }
             loadoutWasDown = loadoutDown;
 
-            if (client.player == null || client.gui.screen() != null) {
+            if (client.player == null || client.gui.screen() != null || !hasActive) {
                 reset(client);
                 return;
             }
@@ -56,7 +61,21 @@ public final class ActiveAbilityInputClient {
     }
 
     public static boolean isModeDown() {
-        return MODE_KEY.isDown();
+        return hasLoadoutActive() && MODE_KEY.isDown();
+    }
+
+    private static boolean hasLoadoutActive() {
+        for (String id : ClientAugmentProgressState.levels().keySet()) {
+            if (AUTHORITY_THEFT_ID.equals(id)) continue;
+            try {
+                AugmentDefinition definition = AugmentCatalog.require(id);
+                if (AugmentPresentationCatalog.get(definition).kind() != AugmentPresentationCatalog.Kind.PASSIVE) {
+                    return true;
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+        return false;
     }
 
     private static void reset(net.minecraft.client.Minecraft client) {

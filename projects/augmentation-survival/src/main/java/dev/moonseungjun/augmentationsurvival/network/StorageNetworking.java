@@ -11,7 +11,9 @@ public final class StorageNetworking {
     public static void initialize() {
         PayloadTypeRegistry.serverboundPlay().register(StorageOpenRequestPayload.TYPE, StorageOpenRequestPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(StorageOpenRequestPayload.TYPE, (payload, context) -> {
-            if (payload.open()) StorageAugmentService.openStorage(context.player());
+            if (payload.open() && StorageAugmentService.hasAnyStorage(context.player())) {
+                StorageAugmentService.openStorage(context.player());
+            }
         });
     }
 }
