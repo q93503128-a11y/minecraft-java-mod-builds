@@ -154,7 +154,7 @@
     {"id":"time_stop","canonical_name_ko":"시간 정지 (액티브)","tier":"mythic","max_level":1},
     {"id":"spatial_link","canonical_name_ko":"공간 연결","tier":"mythic","max_level":1},
     {"id":"abundance","canonical_name_ko":"풍요","tier":"mythic","max_level":1},
-    {"id":"instant_mining","canonical_name_ko":"순간 채굴 (액티브 · 토글)","tier":"mythic","max_level":1},
+    {"id":"instant_mining","canonical_name_ko":"순간 채굴","tier":"mythic","max_level":1},
     {"id":"domination","canonical_name_ko":"지배 (액티브)","tier":"mythic","max_level":3},
     {"id":"divine_punishment","canonical_name_ko":"천벌 (액티브)","tier":"mythic","max_level":2},
     {"id":"gigantification","canonical_name_ko":"거대화 (액티브)","tier":"mythic","max_level":2},
