@@ -2,9 +2,6 @@ package dev.moonseungjun.augmentationsurvival.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
-import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
-import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
-import dev.moonseungjun.augmentationsurvival.augment.AugmentPresentationCatalog;
 import dev.moonseungjun.augmentationsurvival.client.screen.ActiveLoadoutScreen;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityRequestPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -19,7 +16,6 @@ public final class ActiveAbilityInputClient {
     static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "augmentation")
     );
-    private static final String AUTHORITY_THEFT_ID = AugmentationSurvival.MOD_ID + ":authority_theft";
     private static final KeyMapping MODE_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.augmentation_survival.active_mode", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY
     ));
@@ -37,13 +33,14 @@ public final class ActiveAbilityInputClient {
     private ActiveAbilityInputClient() { }
 
     public static void initialize() {
-        // START_CLIENT_TICK runs before vanilla drains hotbar key clicks. Raw 1..0 edge detection
-        // preserves slot 10, while draining the nine vanilla hotbar mappings prevents dual input.
+        // Client ownership/loadout snapshots are presentation state, not authority. Always forward a
+        // deliberate active-slot input and let the server router validate ownership, slot binding and cooldowns.
+        // START_CLIENT_TICK runs before vanilla drains hotbar clicks, so enabled skill mode still consumes
+        // the nine vanilla hotbar mappings while raw 1..0 edge detection preserves slot 10.
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             boolean hasPlayer = client.player != null;
-            boolean hasActive = hasPlayer && hasLoadoutActive();
 
-            if (!hasPlayer || client.player.isDeadOrDying() || !hasActive) {
+            if (!hasPlayer || client.player.isDeadOrDying()) {
                 modeEnabled = false;
                 drain(MODE_KEY);
                 drain(LOADOUT_KEY);
@@ -88,21 +85,7 @@ public final class ActiveAbilityInputClient {
 
     /** Existing HUD hook name retained for compatibility; now means toggled skill mode is enabled. */
     public static boolean isModeDown() {
-        return hasLoadoutActive() && modeEnabled;
-    }
-
-    private static boolean hasLoadoutActive() {
-        for (String id : ClientAugmentProgressState.levels().keySet()) {
-            if (AUTHORITY_THEFT_ID.equals(id)) continue;
-            try {
-                AugmentDefinition definition = AugmentCatalog.require(id);
-                if (AugmentPresentationCatalog.get(definition).kind() != AugmentPresentationCatalog.Kind.PASSIVE) {
-                    return true;
-                }
-            } catch (RuntimeException ignored) {
-            }
-        }
-        return false;
+        return modeEnabled;
     }
 
     private static void rememberSlotState(net.minecraft.client.Minecraft client) {

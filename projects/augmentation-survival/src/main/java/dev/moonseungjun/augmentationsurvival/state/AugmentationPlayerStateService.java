@@ -9,6 +9,7 @@ import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentServi
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.PerceptionAugmentService;
+import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
 import dev.moonseungjun.augmentationsurvival.network.AugmentProgressNetworking;
 import dev.moonseungjun.augmentationsurvival.threat.ThreatScalingService;
 import java.util.Objects;
@@ -59,6 +60,7 @@ public final class AugmentationPlayerStateService {
             PerceptionAugmentService.syncNow(player);
             ThreatScalingService.observePlayerPower(player, next);
             AugmentProgressNetworking.syncNow(player);
+            ActiveAbilityNetworking.syncNow(player);
         }
         return next;
     }

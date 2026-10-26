@@ -3,11 +3,14 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveTuning;
+import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -22,8 +25,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 
-/** Interaction regressions for shared active charge, replay and Overtime contracts. */
+/** Interaction regressions for shared active charge, replay, Overtime and special-control contracts. */
 public final class ActiveInteractionGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -99,6 +103,44 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
                     player, ProtectionAugmentService.PoolKind.SHIELD,
                     ProtectionAugmentService.ACTIVE_SHIELD_POOL) == 0.0F,
                     "single normal kill extended the manual shield beyond its configured extension");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest(maxTicks = 260)
+    public void timeStopFreezesHostileAndRespectsCompatibility(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        String timeStopId = id("time_stop");
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(timeStopId, 1)
+                .withActiveSlots(List.of(timeStopId)));
+
+        LivingEntity near = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 1).spawn();
+        LivingEntity outside = helper.spawnMob(EntityTypes.ZOMBIE, 4, 2, 1).spawn();
+        require(EntityCompatibilityProfileService.allowTimeStop(near),
+                "vanilla hostile compatibility baseline unexpectedly denied time stop");
+        double radius = SpecialActiveTuning.current().timeStopRadius();
+        outside.setPos(player.getX() + radius + 4.0D, player.getY(), player.getZ());
+
+        long castTick = player.level().getGameTime();
+        require(ActiveAbilityRouter.tryUseSlot(player, 0), "time stop route failed");
+        require(SpecialActiveAugmentService.isTimeStopped(near), "near hostile was not time-stopped");
+        require(!SpecialActiveAugmentService.isTimeStopped(outside), "out-of-range hostile was time-stopped");
+        require(near instanceof Mob && ((Mob) near).isNoAi(), "time-stopped hostile AI was not disabled");
+
+        AugmentationPlayerState afterCast = AugmentationPlayerStateService.state(player);
+        require(afterCast.cooldownReadyTick(timeStopId) > castTick, "time stop cooldown was not consumed");
+        require(!ActiveAbilityRouter.tryUseSlot(player, 0), "time stop allowed immediate cooldown bypass");
+
+        int duration = SpecialActiveTuning.current().timeStopDurationTicks();
+        GameTestPlayers.runAfterDelay(helper, Math.max(1, duration / 2), () -> {
+            require(SpecialActiveAugmentService.isTimeStopped(near), "time stop ended before configured duration");
+            require(near instanceof Mob && ((Mob) near).isNoAi(), "hostile AI resumed during time stop");
+        });
+        GameTestPlayers.runAfterDelay(helper, duration + 3, () -> {
+            require(!SpecialActiveAugmentService.isTimeStopped(near), "time stop runtime did not expire");
+            require(!(near instanceof Mob) || !((Mob) near).isNoAi(), "hostile AI did not restore after time stop");
+            require(!SpecialActiveAugmentService.isTimeStopped(outside), "out-of-range hostile entered time stop later");
             GameTestPlayers.succeed(helper);
         });
     }
