@@ -4,6 +4,7 @@
   "mixins": [
     "RaidMixin",
     "CombatAugmentMixin",
+    "LastStandDeathProtectionMixin",
     "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin",
     "StatusReflectRecursionGuardMixin",
@@ -51,6 +52,7 @@
     "UseCooldownMasteryMixin",
     "TridentPortableRiptideMixin",
     "ActiveAbilityServiceInvoker",
+    "CombatAugmentServiceInvoker",
     "ActiveAbilityOvertimeMixin",
     "TimeAccelerationMiningAttributeMixin",
     "PlayerActionLockMixin",
