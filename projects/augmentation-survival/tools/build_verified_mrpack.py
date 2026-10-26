@@ -182,7 +182,7 @@ def build() -> Path:
 
     with zipfile.ZipFile(output) as archive:
         names = archive.namelist()
-        if (names.count("modrinth.index.json") != 1 or own_arc not in names or analytics_arc not in names or terralith_arc not in names:
+        if (names.count("modrinth.index.json") != 1 or own_arc not in names or analytics_arc not in names or terralith_arc not in names):
             fail("required mrpack entries are missing")
         third_party_overrides = [
             name for name in names
