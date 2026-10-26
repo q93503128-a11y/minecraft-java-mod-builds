@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.ClientTemporalState;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
@@ -13,7 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Mirrors server mining-speed augments on the local player so block-breaking prediction matches authority. */
+/** Mirrors the shared additive mining-speed axis on the local player for break-progress prediction. */
 @Mixin(Player.class)
 abstract class ClientMiningAugmentMixin {
     private static final String MINERS_HAND_ID = id("miners_hand");
@@ -41,12 +42,8 @@ abstract class ClientMiningAugmentMixin {
             bonus += SurvivalTuning.current().nocturnalMiningSpeedPerLevel() * nocturnal;
         }
         bonus += ClientMiningPredictionState.miningSpeedBonus();
-
-        // Time Acceleration is already synchronized to the client and currently contributes through
-        // the vanilla block-break-speed attribute. Leave that contribution inside `original` so this
-        // prediction remains byte-for-byte consistent with the current server formula.
         if (ClientTemporalState.timeAccelerationActive()) {
-            // The branch is intentionally retained as an explicit audit boundary; no second bonus is added.
+            bonus += AdvancedActiveTuning.current().timeAccelerationMiningBonus();
         }
 
         double scaled = original * (1.0D + bonus);
