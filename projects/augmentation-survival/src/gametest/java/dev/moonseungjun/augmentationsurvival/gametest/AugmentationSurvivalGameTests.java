@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
@@ -106,10 +107,16 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         MobEffectInstance attackerPoison = attacker.getEffect(MobEffects.POISON);
         require(victimPoison != null, "victim lost the transformed harmful effect");
         require(attackerPoison != null, "status reflection did not reach the attacker");
-        require(victimPoison.getDuration() < 200,
-                "strong mind did not shorten the victim effect; duration=" + victimPoison.getDuration());
-        require(attackerPoison.getDuration() >= victimPoison.getDuration(),
-                "reflected copy was recursively shortened or otherwise corrupted");
+        int expectedVictimDuration = Math.max(1, (int) Math.ceil(
+                200 * (1.0D - ReactiveCombatTuning.current().strongMindDurationReduction(1))));
+        int expectedReflectedDuration = Math.max(1, (int) Math.floor(
+                200 * ReactiveCombatTuning.current().statusReflectDurationFraction()));
+        require(victimPoison.getDuration() == expectedVictimDuration,
+                "strong mind duration mismatch; expected=" + expectedVictimDuration
+                        + ", actual=" + victimPoison.getDuration());
+        require(attackerPoison.getDuration() == expectedReflectedDuration,
+                "status reflect duration mismatch; expected=" + expectedReflectedDuration
+                        + ", actual=" + attackerPoison.getDuration());
         helper.succeed();
     }
 
