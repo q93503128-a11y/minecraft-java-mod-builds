@@ -13,19 +13,16 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 /** Pins the final server block-break progress boundary used by instant mining. */
-@SuppressWarnings({"removal", "deprecation"})
 public final class InstantMiningBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String INSTANT_MINING_ID = AugmentationSurvival.MOD_ID + ":instant_mining";
 
     @GameTest
     public void instantMiningStatePredicateAndFinalProgressStayBound(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
@@ -48,8 +45,7 @@ public final class InstantMiningBoundaryGameTests implements CustomTestMethodInv
         float progress = stone.getDestroyProgress(player, level, pos);
         require(progress >= 1.0F,
                 "final BlockState#getDestroyProgress boundary did not apply instant mining; progress=" + progress);
-        player.discard();
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     private static void require(boolean condition, String message) {
@@ -58,6 +54,6 @@ public final class InstantMiningBoundaryGameTests implements CustomTestMethodInv
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        method.invoke(this, helper);
+        GameTestPlayers.invoke(this, helper, method);
     }
 }

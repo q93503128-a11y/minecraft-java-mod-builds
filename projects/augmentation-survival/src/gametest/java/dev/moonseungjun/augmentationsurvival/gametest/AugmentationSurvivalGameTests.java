@@ -12,7 +12,6 @@ import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
@@ -31,14 +30,12 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.phys.AABB;
 
 /** High-risk runtime regression tests executed inside a real Minecraft GameTest server. */
-@SuppressWarnings({"removal", "deprecation"})
 public final class AugmentationSurvivalGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -55,7 +52,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         require(player.hasEffect(MobEffects.POISON), "precondition: poison was not applied");
         require(ActiveAbilityRouter.tryUseSlot(player, 1), "reordered cleanse slot did not execute");
         require(!player.hasEffect(MobEffects.POISON), "slot 2 did not route to cleanse after reordering");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -78,7 +75,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         long second = after.cooldownReadyTick(id("shield") + "#charge1");
         require(first > now, "first charge did not enter cooldown");
         require(second > first, "double-charge cooldowns are not sequential");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -94,7 +91,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                 "incoming harmful effect was unexpectedly rejected");
         require(victim.hasEffect(MobEffects.POISON), "victim lost the original harmful effect");
         require(attacker.hasEffect(MobEffects.POISON), "status reflect did not create the reflected copy");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -122,7 +119,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         require(attackerPoison.getDuration() == expectedReflectedDuration,
                 "status reflect duration mismatch; expected=" + expectedReflectedDuration
                         + ", actual=" + attackerPoison.getDuration());
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest(maxTicks = 100)
@@ -135,7 +132,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         player.getInventory().add(new ItemStack(Items.TOTEM_OF_UNDYING));
         int beforeTotems = player.getInventory().countItem(Items.TOTEM_OF_UNDYING);
 
-        helper.runAfterDelay(70, () -> {
+        GameTestPlayers.runAfterDelay(helper, 70, () -> {
             long now = player.level().getGameTime();
             lethalDamage(player);
 
@@ -146,7 +143,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                     "emergency totem was consumed before last stand");
             require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand")) > now,
                     "last stand did not consume its cooldown");
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
@@ -157,7 +154,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                 .withAugmentLevel(id("last_stand"), 1)
                 .withAugmentLevel(id("reincarnation"), 1));
 
-        helper.runAfterDelay(70, () -> {
+        GameTestPlayers.runAfterDelay(helper, 70, () -> {
             long now = player.level().getGameTime();
             lethalDamage(player);
             AugmentationPlayerState after = AugmentationPlayerStateService.state(player);
@@ -169,7 +166,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                     "reincarnation was consumed before last stand");
             require(!CombatAugmentService.isActionLocked(player),
                     "reincarnation stasis started even though last stand won priority");
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
@@ -181,7 +178,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                 .withAugmentLevel(id("reincarnation"), 1));
         player.getInventory().add(new ItemStack(Items.TOTEM_OF_UNDYING));
 
-        helper.runAfterDelay(70, () -> {
+        GameTestPlayers.runAfterDelay(helper, 70, () -> {
             long now = player.level().getGameTime();
             lethalDamage(player);
             AugmentationPlayerState after = AugmentationPlayerStateService.state(player);
@@ -192,7 +189,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                     "reincarnation was consumed before emergency totem");
             require(!CombatAugmentService.isActionLocked(player),
                     "reincarnation stasis started despite emergency totem priority");
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
@@ -202,7 +199,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
                 .withAugmentLevel(id("reincarnation"), 1));
 
-        helper.runAfterDelay(70, () -> {
+        GameTestPlayers.runAfterDelay(helper, 70, () -> {
             long now = player.level().getGameTime();
             lethalDamage(player);
             AugmentationPlayerState after = AugmentationPlayerStateService.state(player);
@@ -213,7 +210,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                     "reincarnation did not consume its cooldown");
             require(CombatAugmentService.isActionLocked(player),
                     "reincarnation did not enter action-locked stasis");
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
@@ -229,14 +226,14 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         require(ActiveAbilityRouter.isThreatSuppressionEnabled(player), "threat suppression state did not persist on");
         require(ActiveAbilityRouter.tryUseSlot(player, 0), "threat suppression did not toggle off");
         require(!ActiveAbilityRouter.isThreatSuppressionEnabled(player), "threat suppression state did not persist off");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
     public void vanillaBossCompatibilityProfileIsBound(GameTestHelper helper) {
         var wither = helper.spawnMob(EntityTypes.WITHER, 1, 2, 1).withNoFreeWill().spawn();
         require(EntityCompatibilityProfileService.isBoss(wither), "wither is missing the shared boss compatibility profile");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -260,7 +257,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         float emptyHandProgress = stone.getDestroyProgress(player, level, pos);
         require(emptyHandProgress < 1.0F,
                 "instant mining ignored the correct-tool harvest contract; empty-hand progress=" + emptyHandProgress);
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -288,7 +285,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         float expected = (float) (1.0D + SurvivalTuning.current().continuousMiningSpeedPerStackPerLevel());
         requireClose(actual, expected, 1.0E-5F,
                 "derived tunneling block incorrectly counted as a continuous-mining ROOT stack");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -315,7 +312,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         float expected = (float) (1.0D + SurvivalTuning.current().continuousMiningSpeedPerStackPerLevel());
         requireClose(actual, expected, 1.0E-5F,
                 "derived tree-felling block incorrectly counted as a continuous-mining ROOT stack");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest(maxTicks = 100)
@@ -337,12 +334,12 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         player.getInventory().setItem(9, new ItemStack(Items.WHEAT_SEEDS));
 
         int delay = ResourceHarvestTuning.current().replantDelayTicks() + 2;
-        helper.runAfterDelay(delay, () -> {
+        GameTestPlayers.runAfterDelay(helper, delay, () -> {
             require(level.getBlockState(cropPos).equals(wheat.getStateForAge(0)),
                     "replant failed after the harvested seed was already picked up");
             require(player.getInventory().countItem(Items.WHEAT_SEEDS) == 0,
                     "replant did not consume exactly one owner-inventory planting item");
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
@@ -358,13 +355,13 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         SurvivalAugmentService.reconcile(player, state);
         player.getInventory().setItem(selectedSlot, ItemStack.EMPTY);
 
-        helper.runAfterDelay(2, () -> {
+        GameTestPlayers.runAfterDelay(helper, 2, () -> {
             ItemStack selected = player.getInventory().getItem(selectedSlot);
             require(selected.is(Items.COBBLESTONE) && selected.getCount() == 32,
                     "auto refill did not move the matching main-inventory stack into the selected slot");
             require(player.getInventory().getItem(9).isEmpty(),
                     "auto refill duplicated the source stack instead of transferring it");
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
@@ -403,7 +400,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         require(actualSecond == now + 35,
                 "combat-cycle overflow did not carry the remaining 15 ticks into the next charge; expected="
                         + (now + 35) + ", actual=" + actualSecond);
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -437,12 +434,11 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                 "root direct kill did not trigger chain explosion");
         require(player.getAttributeValue(Attributes.ATTACK_SPEED) > attackSpeedBefore,
                 "root direct kill did not advance kill streak");
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
@@ -485,13 +481,6 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        try {
-            method.invoke(this, helper);
-        } catch (InvocationTargetException exception) {
-            Throwable cause = exception.getCause();
-            if (cause instanceof RuntimeException runtimeException) throw runtimeException;
-            if (cause instanceof Error error) throw error;
-            throw exception;
-        }
+        GameTestPlayers.invoke(this, helper, method);
     }
 }

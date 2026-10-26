@@ -22,10 +22,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.GameType;
 
 /** Interaction regressions for shared active charge, replay and Overtime contracts. */
-@SuppressWarnings({"removal", "deprecation"})
 public final class ActiveInteractionGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -52,7 +50,7 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
                 "manual shield pool was not created");
 
         int delay = ExpansionTuning.current().replayDelayTicks();
-        helper.runAfterDelay(delay + 2, () -> {
+        GameTestPlayers.runAfterDelay(helper, delay + 2, () -> {
             AugmentationPlayerState afterReplay = AugmentationPlayerStateService.state(player);
             require(afterReplay.cooldownReadyTick(charge0) == firstReady,
                     "replay changed the already-consumed charge cooldown");
@@ -63,13 +61,12 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
                     ProtectionAugmentService.ACTIVE_SHIELD_POOL + "_replay") > 0.0F,
                     "replay did not create its isolated shield pool");
 
-            helper.runAfterDelay(delay + 2, () -> {
+            GameTestPlayers.runAfterDelay(helper, delay + 2, () -> {
                 AugmentationPlayerState afterSecondWindow = AugmentationPlayerStateService.state(player);
                 require(afterSecondWindow.cooldownReadyTick(charge0) == firstReady
                                 && afterSecondWindow.cooldownReadyTick(charge1) == secondReady,
                         "replay scheduled another replay or consumed an additional charge");
-                player.discard();
-                helper.succeed();
+                GameTestPlayers.succeed(helper);
             });
         });
     }
@@ -91,25 +88,23 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
         int extension = AdvancedActiveTuning.current().overtimeNormalExtensionTicks();
         require(extension > 1, "overtime normal extension is too small for the runtime boundary test");
 
-        helper.runAfterDelay(baseDuration + 1, () -> {
+        GameTestPlayers.runAfterDelay(helper, baseDuration + 1, () -> {
             require(ProtectionAugmentService.poolAmount(
                     player, ProtectionAugmentService.PoolKind.SHIELD,
                     ProtectionAugmentService.ACTIVE_SHIELD_POOL) > 0.0F,
                     "overtime did not keep the manual shield alive past its base duration");
         });
-        helper.runAfterDelay(baseDuration + extension + 2, () -> {
+        GameTestPlayers.runAfterDelay(helper, baseDuration + extension + 2, () -> {
             require(ProtectionAugmentService.poolAmount(
                     player, ProtectionAugmentService.PoolKind.SHIELD,
                     ProtectionAugmentService.ACTIVE_SHIELD_POOL) == 0.0F,
                     "single normal kill extended the manual shield beyond its configured extension");
-            player.discard();
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
@@ -138,6 +133,6 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        method.invoke(this, helper);
+        GameTestPlayers.invoke(this, helper, method);
     }
 }

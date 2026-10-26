@@ -16,10 +16,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.GameType;
 
 /** Interaction regressions for protection-pool depletion and invulnerability ordering. */
-@SuppressWarnings({"removal", "deprecation"})
 public final class ProtectionInteractionGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
     private static final String TEST_SHIELD_POOL = "gametest_shield_burst";
@@ -59,8 +57,7 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
                 "removed shield pool still consumed later damage");
         requireClose(hostile.getHealth(), afterFirstBurst, 1.0E-5F,
                 "shield burst fired more than once after the pool was removed");
-        player.discard();
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest(maxTicks = 500)
@@ -77,7 +74,7 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
         require(finalCheckTick < 500, "protection tuning exceeded the GameTest timing budget");
 
         final float[] healthBefore = new float[1];
-        helper.runAfterDelay(activationDelay, () -> {
+        GameTestPlayers.runAfterDelay(helper, activationDelay, () -> {
             require(ReactiveCombatAugmentService.isInvulnerable(player),
                     "invincibility window did not open at its configured interval");
             healthBefore[0] = player.getHealth();
@@ -91,17 +88,15 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
                     "invincibility runtime remained active after the augment was removed");
         });
 
-        helper.runAfterDelay(finalCheckTick, () -> {
+        GameTestPlayers.runAfterDelay(helper, finalCheckTick, () -> {
             requireClose(player.getHealth(), healthBefore[0], 1.0E-5F,
                     "blocked invincibility hit reserved delayed-damage installments");
-            player.discard();
-            helper.succeed();
+            GameTestPlayers.succeed(helper);
         });
     }
 
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
@@ -124,6 +119,6 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        method.invoke(this, helper);
+        GameTestPlayers.invoke(this, helper, method);
     }
 }

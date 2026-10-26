@@ -14,12 +14,10 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 
 /** Interaction regressions for amplification, overflow, sharing, and shared-heal recursion. */
-@SuppressWarnings({"removal", "deprecation"})
 public final class HealingInteractionGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -66,9 +64,7 @@ public final class HealingInteractionGameTests implements CustomTestMethodInvoke
         );
         requireClose(ally.getHealth() - allyBefore, expectedShared, 1.0E-4F,
                 "healing share used amplified/overflow healing instead of actual HP restored");
-        source.discard();
-        ally.discard();
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -100,14 +96,11 @@ public final class HealingInteractionGameTests implements CustomTestMethodInvoke
                 "shared heal recursively triggered the recipient's healing-share augment");
         requireClose(hostile.getHealth(), hostileBefore, 1.0E-4F,
                 "shared heal recursively triggered the recipient's life-wave augment");
-        recipient.discard();
-        ally.discard();
-        helper.succeed();
+        GameTestPlayers.succeed(helper);
     }
 
     private static ServerPlayer player(GameTestHelper helper, double relativeX) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(0, 2, 1));
         player.setPos(anchor.getX() + relativeX, anchor.getY(), anchor.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
@@ -133,6 +126,6 @@ public final class HealingInteractionGameTests implements CustomTestMethodInvoke
 
     @Override
     public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
-        method.invoke(this, helper);
+        GameTestPlayers.invoke(this, helper, method);
     }
 }
