@@ -79,6 +79,7 @@
     "EntityRendererPerceptionMixin",
     "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin",
+    "AugmentOfferBreathingRoomMixin",
     "AugmentDeviceUiRescueMixin",
     "ActiveLoadoutUiRescueMixin"
   ],
