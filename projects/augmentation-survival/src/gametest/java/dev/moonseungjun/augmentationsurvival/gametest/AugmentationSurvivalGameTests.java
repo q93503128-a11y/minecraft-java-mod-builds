@@ -17,6 +17,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 
 /** High-risk runtime regression tests executed inside a real Minecraft GameTest server. */
 @SuppressWarnings({"removal", "deprecation"})
@@ -128,7 +129,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
     }
 
     private static ServerPlayer player(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
         player.setHealth(player.getMaxHealth());
         return player;
     }
