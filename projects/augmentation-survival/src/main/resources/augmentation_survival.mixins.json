@@ -4,7 +4,9 @@
   "mixins": [
     "RaidMixin",
     "CombatAugmentMixin",
+    "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin",
+    "StatusReflectRecursionGuardMixin",
     "LivingEntityHealingAugmentMixin",
     "LivingEntityEnchantmentResonanceMixin",
     "LivingEntityLootScoopMixin",

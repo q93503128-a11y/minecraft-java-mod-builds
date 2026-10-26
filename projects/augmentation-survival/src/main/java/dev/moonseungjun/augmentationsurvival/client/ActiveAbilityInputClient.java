@@ -26,13 +26,19 @@ public final class ActiveAbilityInputClient {
     private static final KeyMapping LOADOUT_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.augmentation_survival.active_loadout", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, CATEGORY
     ));
+    private static final int[] SLOT_KEYS = {
+            InputConstants.KEY_1, InputConstants.KEY_2, InputConstants.KEY_3, InputConstants.KEY_4,
+            InputConstants.KEY_5, InputConstants.KEY_6, InputConstants.KEY_7, InputConstants.KEY_8,
+            InputConstants.KEY_9, InputConstants.KEY_0
+    };
+    private static final boolean[] SLOT_WAS_DOWN = new boolean[SLOT_KEYS.length];
     private static boolean modeEnabled;
 
     private ActiveAbilityInputClient() { }
 
     public static void initialize() {
-        // START_CLIENT_TICK runs before vanilla drains hotbar key clicks. When skill mode is enabled,
-        // consuming those clicks here prevents a 1..9 ability press from also changing held items.
+        // START_CLIENT_TICK runs before vanilla drains hotbar key clicks. Raw 1..0 edge detection
+        // preserves slot 10, while draining the nine vanilla hotbar mappings prevents dual input.
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             boolean hasPlayer = client.player != null;
             boolean hasActive = hasPlayer && hasLoadoutActive();
@@ -41,12 +47,14 @@ public final class ActiveAbilityInputClient {
                 modeEnabled = false;
                 drain(MODE_KEY);
                 drain(LOADOUT_KEY);
+                rememberSlotState(client);
                 return;
             }
 
             if (client.gui.screen() != null) {
                 drain(MODE_KEY);
                 drain(LOADOUT_KEY);
+                rememberSlotState(client);
                 return;
             }
 
@@ -54,6 +62,7 @@ public final class ActiveAbilityInputClient {
                 client.gui.setScreen(new ActiveLoadoutScreen());
             }
             if (client.gui.screen() != null) {
+                rememberSlotState(client);
                 return;
             }
 
@@ -61,15 +70,17 @@ public final class ActiveAbilityInputClient {
                 modeEnabled = !modeEnabled;
             }
 
-            if (!modeEnabled) {
-                return;
+            for (int index = 0; index < SLOT_KEYS.length; index++) {
+                boolean down = InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
+                if (modeEnabled && down && !SLOT_WAS_DOWN[index]) {
+                    ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
+                }
+                SLOT_WAS_DOWN[index] = down;
             }
 
-            KeyMapping[] hotbarKeys = client.options.keyHotbarSlots;
-            int count = Math.min(10, hotbarKeys.length);
-            for (int index = 0; index < count; index++) {
-                while (hotbarKeys[index].consumeClick()) {
-                    ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
+            if (modeEnabled) {
+                for (KeyMapping hotbarKey : client.options.keyHotbarSlots) {
+                    drain(hotbarKey);
                 }
             }
         });
@@ -92,6 +103,13 @@ public final class ActiveAbilityInputClient {
             }
         }
         return false;
+    }
+
+    private static void rememberSlotState(net.minecraft.client.Minecraft client) {
+        for (int index = 0; index < SLOT_KEYS.length; index++) {
+            SLOT_WAS_DOWN[index] = client.player != null
+                    && InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
+        }
     }
 
     private static void drain(KeyMapping mapping) {
