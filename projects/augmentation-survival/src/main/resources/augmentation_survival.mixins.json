@@ -4,6 +4,8 @@
   "mixins": [
     "RaidMixin",
     "CombatAugmentMixin",
+    "CombatAugmentKillProvenanceMixin",
+    "CombatExpansionKillProvenanceMixin",
     "LastStandDeathProtectionMixin",
     "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin",

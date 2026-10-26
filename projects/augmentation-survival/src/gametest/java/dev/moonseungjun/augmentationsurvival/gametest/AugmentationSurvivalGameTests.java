@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning;
@@ -14,15 +15,19 @@ import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateServic
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -132,11 +137,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
 
         helper.runAfterDelay(70, () -> {
             long now = player.level().getGameTime();
-            player.hurtServer(
-                    (ServerLevel) player.level(),
-                    player.damageSources().generic(),
-                    player.getMaxHealth() * 20.0F
-            );
+            lethalDamage(player);
 
             require(!player.isDeadOrDying(), "last stand allowed a real death");
             require(player.getHealth() == 1.0F,
@@ -145,6 +146,73 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                     "emergency totem was consumed before last stand");
             require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand")) > now,
                     "last stand did not consume its cooldown");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(maxTicks = 100)
+    public void lastStandPrecedesReincarnation(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("last_stand"), 1)
+                .withAugmentLevel(id("reincarnation"), 1));
+
+        helper.runAfterDelay(70, () -> {
+            long now = player.level().getGameTime();
+            lethalDamage(player);
+            AugmentationPlayerState after = AugmentationPlayerStateService.state(player);
+            require(!player.isDeadOrDying(), "last stand + reincarnation allowed death");
+            require(player.getHealth() == 1.0F, "last stand did not own the lethal interception");
+            require(after.cooldownReadyTick(id("last_stand")) > now,
+                    "last stand cooldown was not consumed");
+            require(after.cooldownReadyTick(id("reincarnation")) <= now,
+                    "reincarnation was consumed before last stand");
+            require(!CombatAugmentService.isActionLocked(player),
+                    "reincarnation stasis started even though last stand won priority");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(maxTicks = 100)
+    public void emergencyTotemPrecedesReincarnation(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("emergency_totem"), 1)
+                .withAugmentLevel(id("reincarnation"), 1));
+        player.getInventory().add(new ItemStack(Items.TOTEM_OF_UNDYING));
+
+        helper.runAfterDelay(70, () -> {
+            long now = player.level().getGameTime();
+            lethalDamage(player);
+            AugmentationPlayerState after = AugmentationPlayerStateService.state(player);
+            require(!player.isDeadOrDying(), "emergency totem + reincarnation allowed death");
+            require(player.getInventory().countItem(Items.TOTEM_OF_UNDYING) == 0,
+                    "emergency totem was not consumed on the post-vanilla protection layer");
+            require(after.cooldownReadyTick(id("reincarnation")) <= now,
+                    "reincarnation was consumed before emergency totem");
+            require(!CombatAugmentService.isActionLocked(player),
+                    "reincarnation stasis started despite emergency totem priority");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(maxTicks = 100)
+    public void reincarnationHandlesLethalDamageAfterEarlierLayersAreAbsent(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("reincarnation"), 1));
+
+        helper.runAfterDelay(70, () -> {
+            long now = player.level().getGameTime();
+            lethalDamage(player);
+            AugmentationPlayerState after = AugmentationPlayerStateService.state(player);
+            require(!player.isDeadOrDying(), "reincarnation failed to intercept lethal damage");
+            require(player.getHealth() == 1.0F,
+                    "reincarnation did not enter stasis at 1 HP; health=" + player.getHealth());
+            require(after.cooldownReadyTick(id("reincarnation")) > now,
+                    "reincarnation did not consume its cooldown");
+            require(CombatAugmentService.isActionLocked(player),
+                    "reincarnation did not enter action-locked stasis");
             helper.succeed();
         });
     }
@@ -316,22 +384,16 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         AugmentationPlayerStateService.replace(player, state);
         ServerLevel level = (ServerLevel) player.level();
 
-        var derivedVictim = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 3).withNoFreeWill().spawn();
-        derivedVictim.setHealth(1.0F);
-        CombatProvenanceContext.runAs(CombatProvenance.DERIVED_AOE,
-                () -> derivedVictim.hurtServer(level, player.damageSources().playerAttack(player), 10.0F));
-        require(derivedVictim.isDeadOrDying(), "derived provenance precondition did not produce a kill");
+        LivingEntity derivedVictim = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 3).withNoFreeWill().spawn();
+        fireKillEvent(level, player, derivedVictim, CombatProvenance.DERIVED_AOE);
         AugmentationPlayerState afterDerived = AugmentationPlayerStateService.state(player);
         require(afterDerived.cooldownReadyTick(firstCharge) == now + 5,
                 "derived kill incorrectly reduced the first active charge cooldown");
         require(afterDerived.cooldownReadyTick(secondCharge) == now + 50,
                 "derived kill incorrectly reduced the second active charge cooldown");
 
-        var rootVictim = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).withNoFreeWill().spawn();
-        rootVictim.setHealth(1.0F);
-        CombatProvenanceContext.runAs(CombatProvenance.ROOT_MELEE,
-                () -> rootVictim.hurtServer(level, player.damageSources().playerAttack(player), 10.0F));
-        require(rootVictim.isDeadOrDying(), "root provenance precondition did not produce a kill");
+        LivingEntity rootVictim = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).withNoFreeWill().spawn();
+        fireKillEvent(level, player, rootVictim, CombatProvenance.ROOT_MELEE);
         AugmentationPlayerState afterRoot = AugmentationPlayerStateService.state(player);
         long actualFirst = afterRoot.cooldownReadyTick(firstCharge);
         long actualSecond = afterRoot.cooldownReadyTick(secondCharge);
@@ -344,11 +406,67 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         helper.succeed();
     }
 
+    @GameTest
+    public void derivedKillEventsDoNotTriggerRootKillRewardsOrChains(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("lifesteal"), 1)
+                .withAugmentLevel(id("kill_streak"), 1)
+                .withAugmentLevel(id("chain_explosion"), 1));
+        player.setHealth(Math.max(1.0F, player.getMaxHealth() - 6.0F));
+        ServerLevel level = (ServerLevel) player.level();
+        LivingEntity derivedVictim = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).withNoFreeWill().spawn();
+        LivingEntity secondary = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 3).withNoFreeWill().spawn();
+        float playerHealthBefore = player.getHealth();
+        float secondaryHealthBefore = secondary.getHealth();
+        double attackSpeedBefore = player.getAttributeValue(Attributes.ATTACK_SPEED);
+
+        fireKillEvent(level, player, derivedVictim, CombatProvenance.DERIVED_AOE);
+        requireClose(player.getHealth(), playerHealthBefore, 1.0E-5F,
+                "derived kill incorrectly triggered lifesteal");
+        requireClose(secondary.getHealth(), secondaryHealthBefore, 1.0E-5F,
+                "derived kill incorrectly triggered chain explosion");
+        requireClose((float) player.getAttributeValue(Attributes.ATTACK_SPEED), (float) attackSpeedBefore, 1.0E-5F,
+                "derived kill incorrectly advanced kill streak");
+
+        LivingEntity rootVictim = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 4).withNoFreeWill().spawn();
+        fireKillEvent(level, player, rootVictim, CombatProvenance.ROOT_MELEE);
+        require(player.getHealth() > playerHealthBefore,
+                "root direct kill did not trigger lifesteal");
+        require(secondary.getHealth() < secondaryHealthBefore || secondary.isDeadOrDying(),
+                "root direct kill did not trigger chain explosion");
+        require(player.getAttributeValue(Attributes.ATTACK_SPEED) > attackSpeedBefore,
+                "root direct kill did not advance kill streak");
+        helper.succeed();
+    }
+
     private static ServerPlayer player(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
+        BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
+        player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
         return player;
+    }
+
+    private static void lethalDamage(ServerPlayer player) {
+        player.hurtServer(
+                (ServerLevel) player.level(),
+                player.damageSources().generic(),
+                player.getMaxHealth() * 20.0F
+        );
+    }
+
+    private static void fireKillEvent(
+            ServerLevel level,
+            ServerPlayer killer,
+            LivingEntity killed,
+            CombatProvenance provenance
+    ) {
+        DamageSource source = killer.damageSources().playerAttack(killer);
+        CombatProvenanceContext.runAs(provenance, () ->
+                ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.invoker()
+                        .afterKilledOtherEntity(level, killer, killed, source));
     }
 
     private static String id(String path) {
