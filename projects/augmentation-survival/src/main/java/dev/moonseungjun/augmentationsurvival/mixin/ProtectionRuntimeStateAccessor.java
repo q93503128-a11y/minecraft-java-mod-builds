@@ -1,6 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -8,5 +8,5 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(targets = "dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService$RuntimeState")
 public interface ProtectionRuntimeStateAccessor {
     @Accessor("pools")
-    Map<String, Object> augmentationSurvival$getPools();
+    LinkedHashMap<String, Object> augmentationSurvival$getPools();
 }
