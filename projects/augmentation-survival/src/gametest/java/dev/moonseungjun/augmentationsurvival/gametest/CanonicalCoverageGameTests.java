@@ -35,24 +35,19 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
         require(definitions.size() == 147,
                 "canonical roster size drifted; expected=147, actual=" + definitions.size());
 
-        AugmentationPlayerState state = AugmentationPlayerState.initial();
         for (AugmentDefinition definition : definitions) {
-            state = state.withAugmentLevel(definition.id(), definition.maxLevel());
-        }
-        AugmentationPlayerStateService.replace(player, state);
-
-        AugmentationPlayerState persisted = AugmentationPlayerStateService.state(player);
-        require(persisted.augmentLevels().size() == definitions.size(),
-                "server player state dropped or added augment identities; expected=" + definitions.size()
-                        + ", actual=" + persisted.augmentLevels().size());
-        for (AugmentDefinition definition : definitions) {
+            AugmentationPlayerState owned = AugmentationPlayerState.initial()
+                    .withAugmentLevel(definition.id(), definition.maxLevel());
+            AugmentationPlayerStateService.replace(player, owned);
+            AugmentationPlayerState persisted = AugmentationPlayerStateService.state(player);
+            require(persisted.augmentLevels().size() == 1,
+                    "single-augment state gained unrelated identities for " + definition.id());
             require(persisted.level(definition.id()) == definition.maxLevel(),
                     "server player state failed max-level round trip for " + definition.id());
+            AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial());
+            require(AugmentationPlayerStateService.state(player).augmentLevels().isEmpty(),
+                    "server player state failed to clear after " + definition.id());
         }
-
-        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial());
-        require(AugmentationPlayerStateService.state(player).augmentLevels().isEmpty(),
-                "server player state did not clear the canonical roster cleanly");
         GameTestPlayers.succeed(helper);
     }
 
