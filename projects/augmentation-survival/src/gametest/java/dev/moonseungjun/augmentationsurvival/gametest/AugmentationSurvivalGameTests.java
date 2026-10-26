@@ -89,22 +89,24 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         AugmentationPlayerStateService.replace(player, state);
         player.getInventory().add(new ItemStack(Items.TOTEM_OF_UNDYING));
         int beforeTotems = player.getInventory().countItem(Items.TOTEM_OF_UNDYING);
-        long now = player.level().getGameTime();
 
-        player.hurtServer(
-                (ServerLevel) player.level(),
-                player.damageSources().generic(),
-                player.getMaxHealth() * 20.0F
-        );
+        helper.runAfterDelay(70, () -> {
+            long now = player.level().getGameTime();
+            player.hurtServer(
+                    (ServerLevel) player.level(),
+                    player.damageSources().generic(),
+                    player.getMaxHealth() * 20.0F
+            );
 
-        require(!player.isDeadOrDying(), "last stand allowed a real death");
-        require(player.getHealth() == 1.0F,
-                "last stand did not stop lethal damage at 1 HP; health=" + player.getHealth());
-        require(player.getInventory().countItem(Items.TOTEM_OF_UNDYING) == beforeTotems,
-                "emergency totem was consumed before last stand");
-        require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand")) > now,
-                "last stand did not consume its cooldown");
-        helper.succeed();
+            require(!player.isDeadOrDying(), "last stand allowed a real death");
+            require(player.getHealth() == 1.0F,
+                    "last stand did not stop lethal damage at 1 HP; health=" + player.getHealth());
+            require(player.getInventory().countItem(Items.TOTEM_OF_UNDYING) == beforeTotems,
+                    "emergency totem was consumed before last stand");
+            require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand")) > now,
+                    "last stand did not consume its cooldown");
+            helper.succeed();
+        });
     }
 
     @GameTest
