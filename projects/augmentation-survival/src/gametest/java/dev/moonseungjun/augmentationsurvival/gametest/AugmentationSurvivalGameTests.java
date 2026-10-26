@@ -311,8 +311,10 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         ServerLevel level = (ServerLevel) player.level();
 
         var derivedVictim = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 3).withNoFreeWill().spawn();
+        derivedVictim.setHealth(1.0F);
         CombatProvenanceContext.runAs(CombatProvenance.DERIVED_AOE,
-                () -> derivedVictim.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F));
+                () -> derivedVictim.hurtServer(level, player.damageSources().playerAttack(player), 10.0F));
+        require(derivedVictim.isDeadOrDying(), "derived provenance precondition did not produce a kill");
         AugmentationPlayerState afterDerived = AugmentationPlayerStateService.state(player);
         require(afterDerived.cooldownReadyTick(firstCharge) == now + 5,
                 "derived kill incorrectly reduced the first active charge cooldown");
@@ -320,13 +322,19 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                 "derived kill incorrectly reduced the second active charge cooldown");
 
         var rootVictim = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).withNoFreeWill().spawn();
+        rootVictim.setHealth(1.0F);
         CombatProvenanceContext.runAs(CombatProvenance.ROOT_MELEE,
-                () -> rootVictim.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F));
+                () -> rootVictim.hurtServer(level, player.damageSources().playerAttack(player), 10.0F));
+        require(rootVictim.isDeadOrDying(), "root provenance precondition did not produce a kill");
         AugmentationPlayerState afterRoot = AugmentationPlayerStateService.state(player);
-        require(afterRoot.cooldownReadyTick(firstCharge) == now,
-                "combat cycle did not finish the nearly-ready first charge");
-        require(afterRoot.cooldownReadyTick(secondCharge) == now + 35,
-                "combat-cycle overflow did not carry the remaining 15 ticks into the next charge");
+        long actualFirst = afterRoot.cooldownReadyTick(firstCharge);
+        long actualSecond = afterRoot.cooldownReadyTick(secondCharge);
+        require(actualFirst == now,
+                "combat cycle did not finish the nearly-ready first charge; expected=" + now
+                        + ", actual=" + actualFirst);
+        require(actualSecond == now + 35,
+                "combat-cycle overflow did not carry the remaining 15 ticks into the next charge; expected="
+                        + (now + 35) + ", actual=" + actualSecond);
         helper.succeed();
     }
 
