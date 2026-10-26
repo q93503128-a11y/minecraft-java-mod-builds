@@ -2,6 +2,11 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
+import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -10,15 +15,21 @@ import java.lang.reflect.Method;
 import java.util.List;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
+import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.phys.AABB;
 
 /** High-risk runtime regression tests executed inside a real Minecraft GameTest server. */
 @SuppressWarnings({"removal", "deprecation"})
@@ -80,6 +91,28 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         helper.succeed();
     }
 
+    @GameTest
+    public void statusReflectionAndStrongMindComposeWithoutRecursion(GameTestHelper helper) {
+        ServerPlayer attacker = player(helper);
+        ServerPlayer victim = player(helper);
+        AugmentationPlayerState state = AugmentationPlayerState.initial()
+                .withAugmentLevel(id("status_reflect"), 1)
+                .withAugmentLevel(id("strong_mind"), 1);
+        AugmentationPlayerStateService.replace(victim, state);
+
+        require(victim.addEffect(new MobEffectInstance(MobEffects.POISON, 200), attacker),
+                "strong-mind victim rejected the transformed poison unexpectedly");
+        MobEffectInstance victimPoison = victim.getEffect(MobEffects.POISON);
+        MobEffectInstance attackerPoison = attacker.getEffect(MobEffects.POISON);
+        require(victimPoison != null, "victim lost the transformed harmful effect");
+        require(attackerPoison != null, "status reflection did not reach the attacker");
+        require(victimPoison.getDuration() < 200,
+                "strong mind did not shorten the victim effect; duration=" + victimPoison.getDuration());
+        require(attackerPoison.getDuration() >= victimPoison.getDuration(),
+                "reflected copy was recursively shortened or otherwise corrupted");
+        helper.succeed();
+    }
+
     @GameTest(maxTicks = 100)
     public void lastStandPrecedesInventoryTotem(GameTestHelper helper) {
         ServerPlayer player = player(helper);
@@ -131,6 +164,165 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         helper.succeed();
     }
 
+    @GameTest
+    public void instantMiningRequiresAValidHarvestTool(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("instant_mining"), 1));
+        player.getInventory().setItem(player.getInventory().getSelectedSlot(), new ItemStack(Items.DIAMOND_PICKAXE));
+
+        float validToolSpeed = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
+        require(validToolSpeed == Float.MAX_VALUE,
+                "instant mining did not convert a harvestable root block to instant speed");
+
+        player.getInventory().setItem(player.getInventory().getSelectedSlot(), ItemStack.EMPTY);
+        float emptyHandSpeed = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
+        require(emptyHandSpeed < Float.MAX_VALUE,
+                "instant mining ignored the correct-tool harvest contract");
+        helper.succeed();
+    }
+
+    @GameTest
+    public void tunnelingDerivedBreaksDoNotInflateContinuousMining(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerState state = AugmentationPlayerState.initial()
+                .withAugmentLevel(id("continuous_mining"), 1)
+                .withAugmentLevel(id("tunneling"), 1)
+                .withAugmentLevel(id("instant_mining"), 1);
+        AugmentationPlayerStateService.replace(player, state);
+        player.getInventory().setItem(player.getInventory().getSelectedSlot(), new ItemStack(Items.DIAMOND_PICKAXE));
+
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos root = player.blockPosition().offset(2, 0, 0);
+        BlockPos derived = root.east();
+        level.setBlock(root, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+        level.setBlock(derived, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+
+        require(player.gameMode.destroyBlock(root), "root tunneling break failed");
+        require(level.getBlockState(root).isAir(), "root tunneling block remained");
+        require(level.getBlockState(derived).isAir(), "tunneling did not destroy the derived block");
+
+        float actual = SurvivalAugmentService.modifyBlockBreakSpeed(
+                player, Blocks.STONE.defaultBlockState(), 1.0F);
+        float expected = (float) (1.0D + SurvivalTuning.current().continuousMiningSpeedPerStackPerLevel());
+        requireClose(actual, expected, 1.0E-5F,
+                "derived tunneling block incorrectly counted as a continuous-mining ROOT stack");
+        helper.succeed();
+    }
+
+    @GameTest
+    public void treeFellingDerivedBreaksDoNotInflateContinuousMining(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerState state = AugmentationPlayerState.initial()
+                .withAugmentLevel(id("continuous_mining"), 1)
+                .withAugmentLevel(id("tree_felling"), 1);
+        AugmentationPlayerStateService.replace(player, state);
+        player.getInventory().setItem(player.getInventory().getSelectedSlot(), new ItemStack(Items.DIAMOND_AXE));
+
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos root = player.blockPosition().offset(2, 0, 0);
+        BlockPos derived = root.above();
+        level.setBlock(root, Blocks.OAK_LOG.defaultBlockState(), Block.UPDATE_ALL);
+        level.setBlock(derived, Blocks.OAK_LOG.defaultBlockState(), Block.UPDATE_ALL);
+
+        require(player.gameMode.destroyBlock(root), "root tree-felling break failed");
+        require(level.getBlockState(root).isAir(), "root log remained after tree felling");
+        require(level.getBlockState(derived).isAir(), "tree felling did not destroy the derived log");
+
+        float actual = SurvivalAugmentService.modifyBlockBreakSpeed(
+                player, Blocks.STONE.defaultBlockState(), 1.0F);
+        float expected = (float) (1.0D + SurvivalTuning.current().continuousMiningSpeedPerStackPerLevel());
+        requireClose(actual, expected, 1.0E-5F,
+                "derived tree-felling block incorrectly counted as a continuous-mining ROOT stack");
+        helper.succeed();
+    }
+
+    @GameTest(maxTicks = 100)
+    public void replantConsumesSeedAfterImmediatePickupWindow(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("replant"), 1));
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos cropPos = player.blockPosition().offset(2, 0, 0);
+        CropBlock wheat = (CropBlock) Blocks.WHEAT;
+        level.setBlock(cropPos.below(), Blocks.FARMLAND.defaultBlockState(), Block.UPDATE_ALL);
+        level.setBlock(cropPos, wheat.getStateForAge(wheat.getMaxAge()), Block.UPDATE_ALL);
+
+        require(player.gameMode.destroyBlock(cropPos), "mature crop root break failed");
+        for (ItemEntity item : level.getEntitiesOfClass(
+                ItemEntity.class, new AABB(cropPos).inflate(3.0D), entity -> entity.isAlive())) {
+            item.discard();
+        }
+        player.getInventory().setItem(9, new ItemStack(Items.WHEAT_SEEDS));
+
+        int delay = ResourceHarvestTuning.current().replantDelayTicks() + 2;
+        helper.runAfterDelay(delay, () -> {
+            require(level.getBlockState(cropPos).equals(wheat.getStateForAge(0)),
+                    "replant failed after the harvested seed was already picked up");
+            require(player.getInventory().countItem(Items.WHEAT_SEEDS) == 0,
+                    "replant did not consume exactly one owner-inventory planting item");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(maxTicks = 40)
+    public void autoRefillMovesMatchingMainInventoryStackIntoSelectedHotbar(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        int selectedSlot = player.getInventory().getSelectedSlot();
+        player.getInventory().setItem(selectedSlot, new ItemStack(Items.COBBLESTONE));
+        player.getInventory().setItem(9, new ItemStack(Items.COBBLESTONE, 32));
+        AugmentationPlayerState state = AugmentationPlayerState.initial()
+                .withAugmentLevel(id("auto_refill"), 1);
+        AugmentationPlayerStateService.replace(player, state);
+        SurvivalAugmentService.reconcile(player, state);
+        player.getInventory().setItem(selectedSlot, ItemStack.EMPTY);
+
+        helper.runAfterDelay(2, () -> {
+            ItemStack selected = player.getInventory().getItem(selectedSlot);
+            require(selected.is(Items.COBBLESTONE) && selected.getCount() == 32,
+                    "auto refill did not move the matching main-inventory stack into the selected slot");
+            require(player.getInventory().getItem(9).isEmpty(),
+                    "auto refill duplicated the source stack instead of transferring it");
+            helper.succeed();
+        });
+    }
+
+    @GameTest
+    public void combatCycleOnlyConsumesRootKillAndCarriesReductionToNextCharge(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        long now = player.level().getGameTime();
+        String firstCharge = id("shield_throw") + "#charge0";
+        String secondCharge = id("shield_throw") + "#charge1";
+        AugmentationPlayerState state = AugmentationPlayerState.initial()
+                .withAugmentLevel(id("shield_throw"), 1)
+                .withAugmentLevel(id("ability_haste"), 1)
+                .withAugmentLevel(id("double_charge"), 1)
+                .withAugmentLevel(id("combat_cycle"), 1)
+                .withCooldownReadyTick(firstCharge, now + 5)
+                .withCooldownReadyTick(secondCharge, now + 50);
+        AugmentationPlayerStateService.replace(player, state);
+        ServerLevel level = (ServerLevel) player.level();
+
+        var derivedVictim = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 3).withNoFreeWill().spawn();
+        CombatProvenanceContext.runAs(CombatProvenance.DERIVED_AOE,
+                () -> derivedVictim.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F));
+        AugmentationPlayerState afterDerived = AugmentationPlayerStateService.state(player);
+        require(afterDerived.cooldownReadyTick(firstCharge) == now + 5,
+                "derived kill incorrectly reduced the first active charge cooldown");
+        require(afterDerived.cooldownReadyTick(secondCharge) == now + 50,
+                "derived kill incorrectly reduced the second active charge cooldown");
+
+        var rootVictim = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).withNoFreeWill().spawn();
+        CombatProvenanceContext.runAs(CombatProvenance.ROOT_MELEE,
+                () -> rootVictim.hurtServer(level, player.damageSources().playerAttack(player), 1000.0F));
+        AugmentationPlayerState afterRoot = AugmentationPlayerStateService.state(player);
+        require(afterRoot.cooldownReadyTick(firstCharge) == now,
+                "combat cycle did not finish the nearly-ready first charge");
+        require(afterRoot.cooldownReadyTick(secondCharge) == now + 35,
+                "combat-cycle overflow did not carry the remaining 15 ticks into the next charge");
+        helper.succeed();
+    }
+
     private static ServerPlayer player(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
@@ -144,6 +336,12 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
 
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
+    }
+
+    private static void requireClose(float actual, float expected, float tolerance, String message) {
+        if (Math.abs(actual - expected) > tolerance) {
+            throw new AssertionError(message + "; expected=" + expected + ", actual=" + actual);
+        }
     }
 
     @Override
