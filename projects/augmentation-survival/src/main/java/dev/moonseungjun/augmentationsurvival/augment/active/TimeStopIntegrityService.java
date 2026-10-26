@@ -23,7 +23,12 @@ public final class TimeStopIntegrityService {
 
     public static boolean isBlockedByTimeStop(DamageSource source) {
         if (source == null) return false;
-        return isFrozenSource(source.getEntity()) || isFrozenSource(source.getDirectEntity());
+        Entity causing = source.getEntity();
+        Entity direct = source.getDirectEntity();
+        return isFrozenSource(causing)
+                || isFrozenSource(direct)
+                || SpecialActiveAugmentService.isHostileSourceInsideActiveTimeStopZone(causing)
+                || SpecialActiveAugmentService.isHostileSourceInsideActiveTimeStopZone(direct);
     }
 
     private static boolean isFrozenSource(Entity entity) {

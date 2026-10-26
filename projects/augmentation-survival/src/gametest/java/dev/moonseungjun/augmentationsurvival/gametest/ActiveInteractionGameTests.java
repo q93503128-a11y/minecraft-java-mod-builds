@@ -129,15 +129,18 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
 
         LivingEntity near = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 1).spawn();
         LivingEntity outside = helper.spawnMob(EntityTypes.ZOMBIE, 4, 2, 1).spawn();
+        LivingEntity lateEntrant = helper.spawnMob(EntityTypes.ZOMBIE, 5, 2, 1).spawn();
         require(EntityCompatibilityProfileService.allowTimeStop(near),
                 "vanilla hostile compatibility baseline unexpectedly denied time stop");
         double radius = SpecialActiveTuning.current().timeStopRadius();
-        outside.setPos(player.getX() + radius + 4.0D, player.getY(), player.getZ());
+        outside.setPos(player.getX() + radius + 6.0D, player.getY(), player.getZ());
+        lateEntrant.setPos(player.getX() + radius + 8.0D, player.getY(), player.getZ());
 
         long castTick = player.level().getGameTime();
         require(ActiveAbilityRouter.tryUseSlot(player, 0), "time stop route failed");
         require(SpecialActiveAugmentService.isTimeStopped(near), "near hostile was not time-stopped");
         require(!SpecialActiveAugmentService.isTimeStopped(outside), "out-of-range hostile was time-stopped");
+        require(!SpecialActiveAugmentService.isTimeStopped(lateEntrant), "future entrant was stopped before entering the field");
         require(near instanceof Mob && ((Mob) near).isNoAi(), "time-stopped hostile AI was not disabled");
 
         float healthBeforeFrozenAttack = player.getHealth();
@@ -147,18 +150,39 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
         require(player.getHealth() == healthBeforeFrozenAttack,
                 "time-stopped hostile changed player health through an alternate attack path");
 
+        // Move a previously out-of-range hostile into the active field and attack before the END_SERVER_TICK
+        // field refresh. The damage-boundary zone guard must already reject the hit on this same tick.
+        lateEntrant.setPos(player.getX() + 2.0D, player.getY(), player.getZ());
+        float healthBeforeEntryAttack = player.getHealth();
+        DamageSource entryAttack = player.damageSources().mobAttack(lateEntrant);
+        boolean entryAttackApplied = player.hurtServer((ServerLevel) player.level(), entryAttack, 4.0F);
+        require(!entryAttackApplied, "hostile entering an active time-stop field attacked before field reconciliation");
+        require(player.getHealth() == healthBeforeEntryAttack,
+                "late time-stop entrant changed player health before server reconciliation");
+
         AugmentationPlayerState afterCast = AugmentationPlayerStateService.state(player);
         require(afterCast.cooldownReadyTick(timeStopId) > castTick, "time stop cooldown was not consumed");
         require(!ActiveAbilityRouter.tryUseSlot(player, 0), "time stop allowed immediate cooldown bypass");
 
         int duration = SpecialActiveTuning.current().timeStopDurationTicks();
-        GameTestPlayers.runAfterDelay(helper, Math.max(1, duration / 2), () -> {
+        GameTestPlayers.runAfterDelay(helper, 2, () -> {
+            require(SpecialActiveAugmentService.isTimeStopped(lateEntrant),
+                    "hostile entering during time stop was not dynamically frozen");
+            require(lateEntrant instanceof Mob && ((Mob) lateEntrant).isNoAi(),
+                    "late time-stop entrant AI was not disabled");
+        });
+        GameTestPlayers.runAfterDelay(helper, Math.max(3, duration / 2), () -> {
             require(SpecialActiveAugmentService.isTimeStopped(near), "time stop ended before configured duration");
+            require(SpecialActiveAugmentService.isTimeStopped(lateEntrant),
+                    "late entrant resumed before the active time-stop window ended");
             require(near instanceof Mob && ((Mob) near).isNoAi(), "hostile AI resumed during time stop");
         });
         GameTestPlayers.runAfterDelay(helper, duration + 3, () -> {
             require(!SpecialActiveAugmentService.isTimeStopped(near), "time stop runtime did not expire");
+            require(!SpecialActiveAugmentService.isTimeStopped(lateEntrant), "late entrant time stop did not expire");
             require(!(near instanceof Mob) || !((Mob) near).isNoAi(), "hostile AI did not restore after time stop");
+            require(!(lateEntrant instanceof Mob) || !((Mob) lateEntrant).isNoAi(),
+                    "late entrant AI did not restore after time stop");
             require(!SpecialActiveAugmentService.isTimeStopped(outside), "out-of-range hostile entered time stop later");
 
             float healthBeforeReleasedAttack = player.getHealth();

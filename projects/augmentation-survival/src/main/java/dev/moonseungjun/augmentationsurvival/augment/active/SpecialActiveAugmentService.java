@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -44,6 +45,7 @@ public final class SpecialActiveAugmentService {
     );
 
     private static final Map<UUID, ReturnHomeChannel> RETURN_HOME_CHANNELS = new HashMap<>();
+    private static final Map<UUID, Long> TIME_STOP_WINDOWS = new HashMap<>();
     private static final Map<LivingEntity, ControlState> CONTROLLED = new IdentityHashMap<>();
     private static final Map<Projectile, ProjectileFreezeState> FROZEN_PROJECTILES = new IdentityHashMap<>();
 
@@ -57,6 +59,7 @@ public final class SpecialActiveAugmentService {
         ServerLivingEntityEvents.AFTER_DAMAGE.register(SpecialActiveAugmentService::afterDamage);
         ServerPlayerEvents.JOIN.register(SpecialActiveAugmentService::clearPlayerRuntime);
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> clearPlayerRuntime(newPlayer));
+        ServerPlayerEvents.LEAVE.register(SpecialActiveAugmentService::clearPlayerRuntime);
         ServerTickEvents.END_SERVER_TICK.register(SpecialActiveAugmentService::tickRuntime);
     }
 
@@ -90,6 +93,42 @@ public final class SpecialActiveAugmentService {
         return FROZEN_PROJECTILES.containsKey(projectile);
     }
 
+    /**
+     * Final damage-boundary helper: even an attack path that bypasses vanilla AI cannot deal damage
+     * while its hostile source is physically inside an active time-stop field.
+     */
+    public static boolean isHostileSourceInsideActiveTimeStopZone(Entity sourceEntity) {
+        if (sourceEntity == null || sourceEntity.isRemoved() || !(sourceEntity.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        LivingEntity hostileOwner;
+        if (sourceEntity instanceof Projectile projectile && projectile.getOwner() instanceof LivingEntity owner) {
+            hostileOwner = owner;
+        } else if (sourceEntity instanceof LivingEntity living) {
+            hostileOwner = living;
+        } else {
+            return false;
+        }
+        if (!EntityCompatibilityProfileService.allowTimeStop(hostileOwner)) {
+            return false;
+        }
+
+        MinecraftServer server = level.getServer();
+        long now = level.getGameTime();
+        double radius = SpecialActiveTuning.current().timeStopRadius();
+        double radiusSquared = radius * radius;
+        for (Map.Entry<UUID, Long> entry : TIME_STOP_WINDOWS.entrySet()) {
+            if (entry.getValue() <= now) continue;
+            ServerPlayer caster = server.getPlayerList().getPlayer(entry.getKey());
+            if (caster == null || caster.isDeadOrDying() || caster.level() != level) continue;
+            if (caster.distanceToSqr(sourceEntity) <= radiusSquared
+                    && CompanionAugmentService.isHostileTarget(caster, hostileOwner)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean tryStartReturnHome(ServerPlayer player) {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         if (boundedLevel(state, RETURN_HOME_ID) <= 0 || player.getRespawnConfig() == null) {
@@ -121,29 +160,9 @@ public final class SpecialActiveAugmentService {
         }
         SpecialActiveTuning.Snapshot tuning = SpecialActiveTuning.current();
         setCooldown(player, state, TIME_STOP_ID, tuning.timeStopCooldownTicks());
-
-        ServerLevel level = player.level();
-        double radius = tuning.timeStopRadius();
-        double radiusSquared = radius * radius;
-        AABB bounds = player.getBoundingBox().inflate(radius);
-        for (LivingEntity target : level.getEntitiesOfClass(
-                LivingEntity.class,
-                bounds,
-                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
-                        && player.distanceToSqr(candidate) <= radiusSquared
-                        && EntityCompatibilityProfileService.allowTimeStop(candidate)
-        )) {
-            applyTimeStop(target, tuning.timeStopDurationTicks());
-        }
-        for (Projectile projectile : level.getEntitiesOfClass(
-                Projectile.class,
-                bounds,
-                candidate -> !candidate.isRemoved()
-                        && player.distanceToSqr(candidate) <= radiusSquared
-                        && isHostileProjectile(player, candidate)
-        )) {
-            freezeProjectile(projectile, tuning.timeStopDurationTicks());
-        }
+        long now = player.level().getGameTime();
+        TIME_STOP_WINDOWS.put(player.getUUID(), now + tuning.timeStopDurationTicks());
+        applyTimeStopField(player, tuning.timeStopDurationTicks());
         return true;
     }
 
@@ -188,8 +207,56 @@ public final class SpecialActiveAugmentService {
 
     private static void tickRuntime(MinecraftServer server) {
         tickReturnHome(server);
+        tickTimeStopFields(server);
         tickControlledEntities();
         tickFrozenProjectiles();
+    }
+
+    private static void tickTimeStopFields(MinecraftServer server) {
+        Iterator<Map.Entry<UUID, Long>> iterator = TIME_STOP_WINDOWS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, Long> entry = iterator.next();
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player == null || player.isDeadOrDying()) {
+                iterator.remove();
+                continue;
+            }
+            long now = player.level().getGameTime();
+            long remainingLong = entry.getValue() - now;
+            if (remainingLong <= 0L) {
+                iterator.remove();
+                continue;
+            }
+            int remaining = (int) Math.min(Integer.MAX_VALUE, remainingLong);
+            applyTimeStopField(player, remaining);
+        }
+    }
+
+    private static void applyTimeStopField(ServerPlayer player, int remainingTicks) {
+        if (remainingTicks <= 0) return;
+        SpecialActiveTuning.Snapshot tuning = SpecialActiveTuning.current();
+        ServerLevel level = player.level();
+        double radius = tuning.timeStopRadius();
+        double radiusSquared = radius * radius;
+        AABB bounds = player.getBoundingBox().inflate(radius);
+        for (LivingEntity target : level.getEntitiesOfClass(
+                LivingEntity.class,
+                bounds,
+                candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
+                        && player.distanceToSqr(candidate) <= radiusSquared
+                        && EntityCompatibilityProfileService.allowTimeStop(candidate)
+        )) {
+            applyTimeStop(target, remainingTicks);
+        }
+        for (Projectile projectile : level.getEntitiesOfClass(
+                Projectile.class,
+                bounds,
+                candidate -> !candidate.isRemoved()
+                        && player.distanceToSqr(candidate) <= radiusSquared
+                        && isHostileProjectile(player, candidate)
+        )) {
+            freezeProjectile(projectile, remainingTicks);
+        }
     }
 
     private static void tickReturnHome(MinecraftServer server) {
@@ -386,7 +453,13 @@ public final class SpecialActiveAugmentService {
     }
 
     private static void clearPlayerRuntime(ServerPlayer player) {
-        RETURN_HOME_CHANNELS.remove(player.getUUID());
+        boolean returnHome = RETURN_HOME_CHANNELS.remove(player.getUUID()) != null;
+        TIME_STOP_WINDOWS.remove(player.getUUID());
+        if (returnHome && player.connection != null) {
+            ActivePresentationService.notifyState(
+                    player, RETURN_HOME_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+            );
+        }
     }
 
     private static int boundedLevel(AugmentationPlayerState state, String augmentId) {
