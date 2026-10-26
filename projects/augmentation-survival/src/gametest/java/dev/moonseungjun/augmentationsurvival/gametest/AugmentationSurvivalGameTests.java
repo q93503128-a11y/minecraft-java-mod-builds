@@ -176,16 +176,22 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
         ServerPlayer player = player(helper);
         AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
                 .withAugmentLevel(id("instant_mining"), 1));
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos pos = player.blockPosition().offset(2, 0, 0);
+        var stone = Blocks.STONE.defaultBlockState();
+        level.setBlock(pos, stone, Block.UPDATE_ALL);
         player.getInventory().setItem(player.getInventory().getSelectedSlot(), new ItemStack(Items.DIAMOND_PICKAXE));
 
-        float validToolSpeed = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
-        require(validToolSpeed == Float.MAX_VALUE,
-                "instant mining did not convert a harvestable root block to instant speed");
+        require(player.hasCorrectToolForDrops(stone),
+                "instant-mining precondition: diamond pickaxe was not recognized as the correct stone tool");
+        float validToolProgress = stone.getDestroyProgress(player, level, pos);
+        require(validToolProgress >= 1.0F,
+                "instant mining did not reach one-game-tick root progress; progress=" + validToolProgress);
 
         player.getInventory().setItem(player.getInventory().getSelectedSlot(), ItemStack.EMPTY);
-        float emptyHandSpeed = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
-        require(emptyHandSpeed < Float.MAX_VALUE,
-                "instant mining ignored the correct-tool harvest contract");
+        float emptyHandProgress = stone.getDestroyProgress(player, level, pos);
+        require(emptyHandProgress < 1.0F,
+                "instant mining ignored the correct-tool harvest contract; empty-hand progress=" + emptyHandProgress);
         helper.succeed();
     }
 
