@@ -5,7 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentPresentationCatalog;
 import dev.moonseungjun.augmentationsurvival.client.AugmentIconClient;
- dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
+import dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenu;
