@@ -14,7 +14,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
-/** Hold the augment skill-mode key and press 1..0 to request active slots 1..10. */
+/** Toggle augment skill mode, then press 1..0 to request active slots 1..10. */
 public final class ActiveAbilityInputClient {
     static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "augmentation")
@@ -33,26 +33,42 @@ public final class ActiveAbilityInputClient {
     };
     private static final boolean[] SLOT_WAS_DOWN = new boolean[SLOT_KEYS.length];
     private static boolean loadoutWasDown;
+    private static boolean modeWasDown;
+    private static boolean modeEnabled;
 
     private ActiveAbilityInputClient() { }
 
     public static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            boolean loadoutDown = client.player != null && LOADOUT_KEY.isDown();
+            boolean hasPlayer = client.player != null;
+            boolean loadoutDown = hasPlayer && LOADOUT_KEY.isDown();
             boolean hasActive = hasLoadoutActive();
-            if (client.player != null && client.gui.screen() == null && loadoutDown && !loadoutWasDown && hasActive) {
+            if (hasPlayer && client.gui.screen() == null && loadoutDown && !loadoutWasDown && hasActive) {
                 client.gui.setScreen(new ActiveLoadoutScreen());
             }
             loadoutWasDown = loadoutDown;
 
-            if (client.player == null || client.gui.screen() != null || !hasActive) {
+            boolean modeDown = hasPlayer && MODE_KEY.isDown();
+            if (!hasPlayer || client.player.isDeadOrDying() || !hasActive) {
+                modeEnabled = false;
+                modeWasDown = modeDown;
                 reset(client);
                 return;
             }
-            boolean modeDown = MODE_KEY.isDown();
+            if (client.gui.screen() != null) {
+                modeWasDown = modeDown;
+                reset(client);
+                return;
+            }
+
+            if (modeDown && !modeWasDown) {
+                modeEnabled = !modeEnabled;
+            }
+            modeWasDown = modeDown;
+
             for (int index = 0; index < SLOT_KEYS.length; index++) {
                 boolean down = InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
-                if (modeDown && down && !SLOT_WAS_DOWN[index]) {
+                if (modeEnabled && down && !SLOT_WAS_DOWN[index]) {
                     ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
                 }
                 SLOT_WAS_DOWN[index] = down;
@@ -60,8 +76,9 @@ public final class ActiveAbilityInputClient {
         });
     }
 
+    /** Existing HUD hook name retained for compatibility; now means toggled skill mode is enabled. */
     public static boolean isModeDown() {
-        return hasLoadoutActive() && MODE_KEY.isDown();
+        return hasLoadoutActive() && modeEnabled;
     }
 
     private static boolean hasLoadoutActive() {

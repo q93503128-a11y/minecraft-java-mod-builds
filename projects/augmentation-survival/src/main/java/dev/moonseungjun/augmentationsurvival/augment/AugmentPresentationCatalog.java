@@ -102,8 +102,8 @@ public final class AugmentPresentationCatalog {
             return new Entry(
                     source.displayName(),
                     source.kind(),
-                    append(source.summary(), "기본 조작: K키로 편성, 왼쪽 Alt + 슬롯 숫자(1~0)로 사용."),
-                    append(source.detail(), "기본 조작은 K키로 액티브 편성을 열고, 왼쪽 Alt를 누른 채 편성한 슬롯 숫자(1~0)를 눌러 사용합니다. 키 설정에서 변경할 수 있습니다.")
+                    append(source.summary(), "기본 조작: K키로 편성, 왼쪽 Alt로 사용 모드 ON/OFF, 슬롯 숫자(1~0)로 사용."),
+                    append(source.detail(), "기본 조작은 K키로 액티브 편성을 열고, 왼쪽 Alt를 눌러 증강 사용 모드를 켜거나 끈 뒤 편성한 슬롯 숫자(1~0)를 눌러 사용합니다. 사용 모드가 켜져 있는 동안 슬롯 HUD가 표시됩니다. 키 설정에서 변경할 수 있습니다.")
             );
         }
         return source;
