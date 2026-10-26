@@ -13,6 +13,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationServ
 import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityTheftService;
 import dev.moonseungjun.augmentationsurvival.augment.active.DeathReturnAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.PhaseStateNetworking;
+import dev.moonseungjun.augmentationsurvival.augment.active.ShieldOvertimeService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporalStateNetworking;
@@ -140,6 +141,7 @@ public final class AugmentationSurvival implements ModInitializer {
         PhaseStateNetworking.initialize();
         ProtectionAugmentService.initialize();
         ActiveAbilityService.initialize();
+        ShieldOvertimeService.initialize();
         TemporaryPlatformService.initialize();
         DeathReturnAugmentService.initialize();
         SpecialActiveAugmentService.initialize();

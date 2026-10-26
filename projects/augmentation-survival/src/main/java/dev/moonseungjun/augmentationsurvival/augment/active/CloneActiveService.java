@@ -12,8 +12,16 @@ import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -21,25 +29,33 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
-/** Server-authoritative activation, cooldown and snapshot boundary for Clone. */
+/** Server-authoritative activation, cooldown and sustained-instance boundary for Clone. */
 public final class CloneActiveService {
     public static final String CLONE_ID = id("clone");
     private static final String ABILITY_HASTE_ID = id("ability_haste");
     private static final String DOUBLE_CHARGE_ID = id("double_charge");
     private static final String COMBAT_CYCLE_ID = id("combat_cycle");
+    private static final String OVERTIME_ID = id("overtime");
     private static final int DURATION_TICKS = 20 * 20;
     private static final int BASE_COOLDOWN_TICKS = 60 * 20;
     private static final double HEALTH_MULTIPLIER = 0.50D;
     private static final double DAMAGE_MULTIPLIER = 0.60D;
+    private static final Map<UUID, Set<UUID>> ACTIVE_CLONES = new HashMap<>();
 
     private CloneActiveService() {
     }
 
     public static void initialize() {
         CloneEntityTypes.initialize();
-        for (String augmentId : new String[]{CLONE_ID, ABILITY_HASTE_ID, DOUBLE_CHARGE_ID, COMBAT_CYCLE_ID}) {
+        for (String augmentId : new String[]{
+                CLONE_ID, ABILITY_HASTE_ID, DOUBLE_CHARGE_ID, COMBAT_CYCLE_ID, OVERTIME_ID
+        }) {
             AugmentCatalog.require(augmentId);
         }
+        ServerPlayerEvents.JOIN.register(player -> ACTIVE_CLONES.remove(player.getUUID()));
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> ACTIVE_CLONES.remove(newPlayer.getUUID()));
+        ServerPlayerEvents.LEAVE.register(player -> ACTIVE_CLONES.remove(player.getUUID()));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_CLONES.clear());
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(CloneActiveService::afterKill);
     }
 
@@ -63,7 +79,10 @@ public final class CloneActiveService {
         CombatCloneEntity clone = new CombatCloneEntity(CloneEntityTypes.COMBAT_CLONE, level);
         float maxHealth = Math.max(1.0F, owner.getMaxHealth() * (float) HEALTH_MULTIPLIER);
         double damage = Math.max(0.0D, CloneCombatSnapshot.meleeDamage(owner) * DAMAGE_MULTIPLIER);
-        clone.configure(owner, maxHealth, damage, DURATION_TICKS);
+        int extensionBudget = (int) Math.round(
+                DURATION_TICKS * AdvancedActiveTuning.current().overtimeMaximumExtensionFraction()
+        );
+        clone.configure(owner, maxHealth, damage, DURATION_TICKS, extensionBudget);
 
         Vec3 look = owner.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0D, look.z);
@@ -75,11 +94,45 @@ public final class CloneActiveService {
             Vec3 candidate = origin.add(offset);
             clone.snapTo(candidate.x, candidate.y, candidate.z);
             clone.setYRot(owner.getYRot());
-            if (level.noCollision(clone, clone.getBoundingBox())) {
-                return level.addFreshEntity(clone);
+            if (level.noCollision(clone, clone.getBoundingBox()) && level.addFreshEntity(clone)) {
+                registerActiveClone(clone);
+                return true;
             }
         }
         return false;
+    }
+
+    /** Called by the entity itself so loaded clones are recoverable after a save/reload boundary. */
+    public static void registerActiveClone(CombatCloneEntity clone) {
+        UUID ownerId = clone.ownerId();
+        if (ownerId == null || clone.isRemoved()) return;
+        ACTIVE_CLONES.computeIfAbsent(ownerId, ignored -> new HashSet<>()).add(clone.getUUID());
+    }
+
+    public static void unregisterActiveClone(CombatCloneEntity clone) {
+        UUID ownerId = clone.ownerId();
+        if (ownerId == null) return;
+        Set<UUID> clones = ACTIVE_CLONES.get(ownerId);
+        if (clones == null) return;
+        clones.remove(clone.getUUID());
+        if (clones.isEmpty()) ACTIVE_CLONES.remove(ownerId);
+    }
+
+    private static void extendRunningClones(ServerLevel level, UUID ownerId, int ticks) {
+        if (ticks <= 0) return;
+        Set<UUID> ids = ACTIVE_CLONES.get(ownerId);
+        if (ids == null || ids.isEmpty()) return;
+        Iterator<UUID> iterator = ids.iterator();
+        while (iterator.hasNext()) {
+            UUID cloneId = iterator.next();
+            Entity entity = level.getEntity(cloneId);
+            if (!(entity instanceof CombatCloneEntity clone) || !ownerId.equals(clone.ownerId())) {
+                iterator.remove();
+                continue;
+            }
+            clone.extendDuration(ticks);
+        }
+        if (ids.isEmpty()) ACTIVE_CLONES.remove(ownerId);
     }
 
     private static ChargeReservation reserveCharge(
@@ -113,10 +166,22 @@ public final class CloneActiveService {
     private static void afterKill(ServerLevel level, Entity killer, LivingEntity killed, DamageSource source) {
         if (!(killer instanceof ServerPlayer player) || !CombatProvenanceContext.resolve(source).isRootDirect()) return;
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        if (boundedLevel(state, CLONE_ID) <= 0) return;
+
+        boolean boss = CombatExpansionService.isConfiguredBoss(killed);
         int cycleLevel = boundedLevel(state, COMBAT_CYCLE_ID);
-        if (cycleLevel <= 0 || boundedLevel(state, CLONE_ID) <= 0) return;
-        int seconds = CombatExpansionService.isConfiguredBoss(killed) ? cycleLevel * 5 : cycleLevel;
-        reduceCooldown(player, seconds * 20);
+        if (cycleLevel > 0) {
+            int seconds = boss ? cycleLevel * 5 : cycleLevel;
+            reduceCooldown(player, seconds * 20);
+            state = AugmentationPlayerStateService.state(player);
+        }
+
+        if (boundedLevel(state, OVERTIME_ID) > 0) {
+            int extension = boss
+                    ? AdvancedActiveTuning.current().overtimeBossExtensionTicks()
+                    : AdvancedActiveTuning.current().overtimeNormalExtensionTicks();
+            extendRunningClones(level, player.getUUID(), extension);
+        }
     }
 
     private static void reduceCooldown(ServerPlayer player, int reductionTicks) {

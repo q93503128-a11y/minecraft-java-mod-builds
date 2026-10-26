@@ -4,19 +4,21 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.active.ShieldOvertimeService;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Bridges Overtime into legacy Berserk without duplicating the established active engine. */
+/** Bridges Overtime into sustained legacy actives without duplicating the established active engine. */
 @Mixin(value = ActiveAbilityService.class, remap = false)
 public abstract class ActiveAbilityOvertimeMixin {
     private static final String BERSERK_ID = AugmentationSurvival.MOD_ID + ":berserk";
+    private static final String SHIELD_ID = AugmentationSurvival.MOD_ID + ":shield";
 
     @Inject(method = "executeAbility", at = @At("RETURN"))
-    private static void augmentationSurvival$recordManualBerserk(
+    private static void augmentationSurvival$recordManualSustainedActive(
             ServerPlayer player,
             String abilityId,
             int level,
@@ -24,8 +26,11 @@ public abstract class ActiveAbilityOvertimeMixin {
             boolean replayInvocation,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (cir.getReturnValueZ() && !replayInvocation && BERSERK_ID.equals(abilityId)) {
+        if (!cir.getReturnValueZ() || replayInvocation) return;
+        if (BERSERK_ID.equals(abilityId)) {
             AdvancedActiveAugmentService.onLegacyBerserkStarted(player, level);
+        } else if (SHIELD_ID.equals(abilityId)) {
+            ShieldOvertimeService.recordManualShield(player);
         }
     }
 

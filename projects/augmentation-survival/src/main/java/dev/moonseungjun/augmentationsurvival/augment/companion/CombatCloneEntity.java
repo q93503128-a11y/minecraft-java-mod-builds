@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.augment.companion;
 
+import dev.moonseungjun.augmentationsurvival.augment.active.CloneActiveService;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +51,7 @@ public final class CombatCloneEntity extends PathfinderMob {
 
     private UUID ownerId;
     private int remainingTicks;
+    private int overtimeExtensionRemainingTicks;
 
     public CombatCloneEntity(EntityType<? extends CombatCloneEntity> type, Level level) {
         super(type, level);
@@ -79,10 +81,17 @@ public final class CombatCloneEntity extends PathfinderMob {
         goalSelector.addGoal(2, new RandomLookAroundGoal(this));
     }
 
-    public void configure(ServerPlayer owner, float maxHealth, double attackDamage, int durationTicks) {
+    public void configure(
+            ServerPlayer owner,
+            float maxHealth,
+            double attackDamage,
+            int durationTicks,
+            int overtimeExtensionBudgetTicks
+    ) {
         ownerId = owner.getUUID();
         entityData.set(OWNER_ID, ownerId.toString());
-        remainingTicks = durationTicks;
+        remainingTicks = Math.max(1, durationTicks);
+        overtimeExtensionRemainingTicks = Math.max(0, overtimeExtensionBudgetTicks);
         AttributeInstance maxHealthAttribute = getAttribute(Attributes.MAX_HEALTH);
         AttributeInstance attackAttribute = getAttribute(Attributes.ATTACK_DAMAGE);
         if (maxHealthAttribute != null) maxHealthAttribute.setBaseValue(Math.max(1.0D, maxHealth));
@@ -91,6 +100,17 @@ public final class CombatCloneEntity extends PathfinderMob {
         setHealth(getMaxHealth());
         setPersistenceRequired();
         setCanPickUpLoot(false);
+    }
+
+    /** Extends this manual Clone instance while respecting its per-use Overtime budget. */
+    public int extendDuration(int requestedTicks) {
+        if (requestedTicks <= 0 || remainingTicks <= 0 || overtimeExtensionRemainingTicks <= 0) {
+            return 0;
+        }
+        int applied = Math.min(requestedTicks, overtimeExtensionRemainingTicks);
+        remainingTicks = Math.min(Integer.MAX_VALUE, remainingTicks + applied);
+        overtimeExtensionRemainingTicks -= applied;
+        return applied;
     }
 
     private void copyPresentationSnapshot(ServerPlayer owner) {
@@ -153,12 +173,15 @@ public final class CombatCloneEntity extends PathfinderMob {
         if (!(level() instanceof ServerLevel level)) return;
         UUID resolvedOwner = ownerId();
         if (remainingTicks <= 0 || resolvedOwner == null) {
+            CloneActiveService.unregisterActiveClone(this);
             discard();
             return;
         }
+        CloneActiveService.registerActiveClone(this);
         remainingTicks--;
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(resolvedOwner);
         if (owner == null || owner.isDeadOrDying() || owner.level() != level) {
+            CloneActiveService.unregisterActiveClone(this);
             discard();
             return;
         }
@@ -190,6 +213,7 @@ public final class CombatCloneEntity extends PathfinderMob {
         UUID resolvedOwner = ownerId();
         if (resolvedOwner != null) output.putString("clone_owner", resolvedOwner.toString());
         output.putInt("clone_remaining_ticks", remainingTicks);
+        output.putInt("clone_overtime_extension_remaining_ticks", overtimeExtensionRemainingTicks);
         output.putInt("clone_model_parts", entityData.get(MODEL_PARTS));
     }
 
@@ -207,6 +231,7 @@ public final class CombatCloneEntity extends PathfinderMob {
         entityData.set(OWNER_ID, ownerId == null ? "" : ownerId.toString());
         entityData.set(MODEL_PARTS, input.getInt("clone_model_parts").orElse(ALL_MODEL_PARTS));
         remainingTicks = input.getInt("clone_remaining_ticks").orElse(0);
+        overtimeExtensionRemainingTicks = input.getInt("clone_overtime_extension_remaining_ticks").orElse(0);
         this.xpReward = 0;
         setCanPickUpLoot(false);
         for (EquipmentSlot slot : PRESENTATION_SLOTS) {
