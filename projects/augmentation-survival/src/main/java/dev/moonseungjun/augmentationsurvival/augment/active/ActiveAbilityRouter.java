@@ -48,7 +48,13 @@ public final class ActiveAbilityRouter {
 
     public static void initialize() {
         CloneActiveService.initialize();
-        for (String augmentId : ALL_ORDER) AugmentCatalog.require(augmentId);
+        TimeStopIntegrityService.initialize();
+        for (String augmentId : ALL_ORDER) {
+            AugmentCatalog.require(augmentId);
+            if (!ActivePresentationService.hasProfile(augmentId)) {
+                throw new IllegalStateException("Missing active presentation profile: " + augmentId);
+            }
+        }
     }
 
     public static boolean tryUseSlot(ServerPlayer player, int slotIndex) {
@@ -57,6 +63,16 @@ public final class ActiveAbilityRouter {
         List<String> slots = resolvedSlots(state);
         String abilityId = slots.get(slotIndex);
         if (abilityId.isBlank()) return false;
+
+        ActivePresentationService.Capture capture = ActivePresentationService.capture(player, abilityId);
+        boolean success = executeResolved(player, state, abilityId);
+        if (success) {
+            ActivePresentationService.presentSuccessfulUse(player, abilityId, capture);
+        }
+        return success;
+    }
+
+    private static boolean executeResolved(ServerPlayer player, AugmentationPlayerState state, String abilityId) {
         if (abilityId.equals(THREAT_SUPPRESSION_ID)) return toggle(player, state, THREAT_SUPPRESSION_ID, THREAT_TOGGLE_KEY);
         if (abilityId.equals(DEATH_RETURN_ID)) return DeathReturnAugmentService.tryUse(player);
         if (abilityId.equals(CLONE_ID)) return CloneActiveService.tryUse(player);

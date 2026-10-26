@@ -10,7 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Common networking for active use requests and the server-owned ten-slot loadout. */
+/** Common networking for active use requests, presentation and the server-owned ten-slot loadout. */
 public final class ActiveAbilityNetworking {
     private ActiveAbilityNetworking() { }
 
@@ -18,6 +18,7 @@ public final class ActiveAbilityNetworking {
         PayloadTypeRegistry.serverboundPlay().register(ActiveAbilityRequestPayload.TYPE, ActiveAbilityRequestPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ActiveLoadoutEditPayload.TYPE, ActiveLoadoutEditPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(ActiveLoadoutStatePayload.TYPE, ActiveLoadoutStatePayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(ActivePresentationPayload.TYPE, ActivePresentationPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(
                 ActiveAbilityRequestPayload.TYPE,

@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
+import dev.moonseungjun.augmentationsurvival.augment.active.ActivePresentationService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
@@ -30,6 +31,17 @@ import net.minecraft.world.entity.Mob;
 /** Interaction regressions for shared active charge, replay, Overtime and special-control contracts. */
 public final class ActiveInteractionGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
+
+    @GameTest(maxTicks = 20)
+    public void everyRoutedActiveHasPresentationProfile(GameTestHelper helper) {
+        require(ActiveAbilityRouter.supportedIds().size() == 21,
+                "standard active roster changed without updating the presentation coverage contract");
+        for (String abilityId : ActiveAbilityRouter.supportedIds()) {
+            require(ActivePresentationService.hasProfile(abilityId),
+                    "missing server-confirmed presentation profile for " + abilityId);
+        }
+        GameTestPlayers.succeed(helper);
+    }
 
     @GameTest(maxTicks = 100)
     public void replayDoesNotConsumeAnotherDoubleChargeOrScheduleItself(GameTestHelper helper) {
@@ -128,6 +140,13 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
         require(!SpecialActiveAugmentService.isTimeStopped(outside), "out-of-range hostile was time-stopped");
         require(near instanceof Mob && ((Mob) near).isNoAi(), "time-stopped hostile AI was not disabled");
 
+        float healthBeforeFrozenAttack = player.getHealth();
+        DamageSource frozenAttack = player.damageSources().mobAttack(near);
+        boolean frozenAttackApplied = player.hurtServer((ServerLevel) player.level(), frozenAttack, 4.0F);
+        require(!frozenAttackApplied, "time-stopped hostile still passed the final server damage boundary");
+        require(player.getHealth() == healthBeforeFrozenAttack,
+                "time-stopped hostile changed player health through an alternate attack path");
+
         AugmentationPlayerState afterCast = AugmentationPlayerStateService.state(player);
         require(afterCast.cooldownReadyTick(timeStopId) > castTick, "time stop cooldown was not consumed");
         require(!ActiveAbilityRouter.tryUseSlot(player, 0), "time stop allowed immediate cooldown bypass");
@@ -141,6 +160,13 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
             require(!SpecialActiveAugmentService.isTimeStopped(near), "time stop runtime did not expire");
             require(!(near instanceof Mob) || !((Mob) near).isNoAi(), "hostile AI did not restore after time stop");
             require(!SpecialActiveAugmentService.isTimeStopped(outside), "out-of-range hostile entered time stop later");
+
+            float healthBeforeReleasedAttack = player.getHealth();
+            DamageSource releasedAttack = player.damageSources().mobAttack(near);
+            boolean releasedAttackApplied = player.hurtServer((ServerLevel) player.level(), releasedAttack, 4.0F);
+            require(releasedAttackApplied, "hostile damage stayed blocked after time stop expired");
+            require(player.getHealth() < healthBeforeReleasedAttack,
+                    "hostile damage did not resume after time stop expired");
             GameTestPlayers.succeed(helper);
         });
     }

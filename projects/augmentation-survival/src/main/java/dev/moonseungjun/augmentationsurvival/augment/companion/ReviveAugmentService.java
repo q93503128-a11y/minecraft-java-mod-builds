@@ -2,13 +2,14 @@ package dev.moonseungjun.augmentationsurvival.augment.companion;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.active.ActivePresentationService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
+import dev.moonseungjun.augmentationsurvival.network.ActivePresentationPayload;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,6 +125,11 @@ public final class ReviveAugmentService {
             ReviveChannel channel = entry.getValue();
             ReviveMarker marker = MARKERS.get(channel.markerEntityId);
             if (player == null || marker == null || player.isDeadOrDying() || !validFocus(player, marker)) {
+                if (player != null) {
+                    ActivePresentationService.notifyState(
+                            player, REVIVE_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+                    );
+                }
                 completed.add(entry.getKey());
                 continue;
             }
@@ -131,6 +137,13 @@ public final class ReviveAugmentService {
                 if (restore(player, marker)) {
                     commitReservation(player, channel.reservation);
                     MARKERS.remove(marker.entityId);
+                    ActivePresentationService.notifyStateAndPulse(
+                            player, REVIVE_ID, ActivePresentationPayload.END, 0, 0.0F
+                    );
+                } else {
+                    ActivePresentationService.notifyState(
+                            player, REVIVE_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+                    );
                 }
                 completed.add(entry.getKey());
             }

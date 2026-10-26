@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
+import dev.moonseungjun.augmentationsurvival.network.ActivePresentationPayload;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -72,7 +74,11 @@ public final class SpecialActiveAugmentService {
     }
 
     public static void notifyDisruptingAction(ServerPlayer player) {
-        RETURN_HOME_CHANNELS.remove(player.getUUID());
+        if (RETURN_HOME_CHANNELS.remove(player.getUUID()) != null) {
+            ActivePresentationService.notifyState(
+                    player, RETURN_HOME_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+            );
+        }
     }
 
     public static boolean isTimeStopped(LivingEntity entity) {
@@ -192,6 +198,11 @@ public final class SpecialActiveAugmentService {
             Map.Entry<UUID, ReturnHomeChannel> entry = iterator.next();
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null || player.isDeadOrDying()) {
+                if (player != null) {
+                    ActivePresentationService.notifyState(
+                            player, RETURN_HOME_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+                    );
+                }
                 iterator.remove();
                 continue;
             }
@@ -199,6 +210,9 @@ public final class SpecialActiveAugmentService {
             if (!channel.dimensionId.equals(player.level().dimension().identifier().toString())
                     || channel.startPosition.distanceToSqr(player.position()) > 1.0E-6D
                     || player.isUsingItem()) {
+                ActivePresentationService.notifyState(
+                        player, RETURN_HOME_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+                );
                 iterator.remove();
                 continue;
             }
@@ -207,6 +221,9 @@ public final class SpecialActiveAugmentService {
             }
             iterator.remove();
             if (player.getRespawnConfig() == null) {
+                ActivePresentationService.notifyState(
+                        player, RETURN_HOME_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+                );
                 continue;
             }
             TeleportTransition destination = player.findRespawnPositionAndUseSpawnBlock(
@@ -214,9 +231,17 @@ public final class SpecialActiveAugmentService {
                     TeleportTransition.DO_NOTHING
             );
             if (destination == null || destination.missingRespawnBlock()) {
+                ActivePresentationService.notifyState(
+                        player, RETURN_HOME_ID, ActivePresentationPayload.CANCEL, 0, 0.0F
+                );
                 continue;
             }
-            player.teleport(destination);
+            ServerPlayer teleported = player.teleport(destination);
+            if (teleported != null) {
+                ActivePresentationService.notifyStateAndPulse(
+                        teleported, RETURN_HOME_ID, ActivePresentationPayload.END, 0, 0.0F
+                );
+            }
         }
     }
 
@@ -242,6 +267,14 @@ public final class SpecialActiveAugmentService {
                 if (entity instanceof Mob mob) {
                     mob.setNoAi(true);
                 }
+            }
+            if (state.timeStopTicks > 0 && state.timeStopTicks % 10 == 0 && entity.level() instanceof ServerLevel level) {
+                level.sendParticles(
+                        ParticleTypes.END_ROD,
+                        entity.getX(), entity.getY() + entity.getBbHeight() * 0.55D, entity.getZ(),
+                        1, entity.getBbWidth() * 0.35D, entity.getBbHeight() * 0.25D,
+                        entity.getBbWidth() * 0.35D, 0.0D
+                );
             }
             if (state.timeStopTicks <= 0 && state.stunTicks <= 0) {
                 if (entity instanceof Mob mob) {
