@@ -87,8 +87,8 @@ final class GameTestPlayers {
         if (player.isSleeping()) {
             player.stopSleepInBed(true, true);
         }
-        MinecraftServer server = player.getServer();
-        if (server != null && server.getPlayerList().getPlayers().contains(player)) {
+        MinecraftServer server = ((ServerLevel) player.level()).getServer();
+        if (server.getPlayerList().getPlayers().contains(player)) {
             server.getPlayerList().remove(player);
         }
         if (!player.isRemoved()) {
