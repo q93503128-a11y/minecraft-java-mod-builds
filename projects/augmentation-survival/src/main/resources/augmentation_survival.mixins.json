@@ -27,7 +27,7 @@
     "SurvivalTimeAccelerationMiningMixin",
     "TemporaryPlatformFallMixin",
     "TemporaryPlatformReplayGuardMixin",
-    "InstantMiningPlayerMixin",
+    "InstantMiningBlockStateMixin",
     "WaterRunLivingEntityMixin",
     "ResourceHarvestAuditFixMixin",
     "AbstractFurnaceUtilityMixin",

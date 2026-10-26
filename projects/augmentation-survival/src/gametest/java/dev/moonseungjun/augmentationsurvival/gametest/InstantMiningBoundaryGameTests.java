@@ -17,13 +17,13 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/** Pinpoints the exact server boundary responsible for the instant-mining one-tick contract. */
+/** Pins the final server block-break progress boundary used by instant mining. */
 @SuppressWarnings({"removal", "deprecation"})
 public final class InstantMiningBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String INSTANT_MINING_ID = AugmentationSurvival.MOD_ID + ":instant_mining";
 
     @GameTest
-    public void instantMiningStatePredicateAndPlayerSpeedStayBound(GameTestHelper helper) {
+    public void instantMiningStatePredicateAndFinalProgressStayBound(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
         BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
@@ -39,19 +39,15 @@ public final class InstantMiningBoundaryGameTests implements CustomTestMethodInv
         player.getInventory().setItem(player.getInventory().getSelectedSlot(), new ItemStack(Items.DIAMOND_PICKAXE));
 
         require(AugmentationPlayerStateService.state(player).level(INSTANT_MINING_ID) == 1,
-                "instant-mining attachment state was lost before speed calculation");
+                "instant-mining attachment state was lost before break-progress calculation");
         require(player.hasCorrectToolForDrops(stone),
                 "instant-mining precondition rejected the diamond pickaxe");
         require(UtilityAugmentService.shouldInstantMine(player, stone, 1.0F),
                 "instant-mining service predicate rejected valid state/tool input");
 
-        float directSpeed = player.getDestroySpeed(stone);
-        require(directSpeed >= 1.0E20F,
-                "Player#getDestroySpeed hook did not apply; speed=" + directSpeed);
-
         float progress = stone.getDestroyProgress(player, level, pos);
         require(progress >= 1.0F,
-                "BlockState#getDestroyProgress lost the instant-mining speed; progress=" + progress);
+                "final BlockState#getDestroyProgress boundary did not apply instant mining; progress=" + progress);
         player.discard();
         helper.succeed();
     }
