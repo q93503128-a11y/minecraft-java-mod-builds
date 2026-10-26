@@ -7,6 +7,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityTheftService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -198,7 +199,7 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
     }
 
     @GameTest
-    public void glassCannonPenaltyClampsAtCanonicalMaxLevel(GameTestHelper helper) {
+    public void glassCannonHealthPenaltyMatchesCanonicalTuningAndClamps(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         String glassCannon = id("glass_cannon");
         AugmentDefinition definition = AugmentCatalog.require(glassCannon);
@@ -206,15 +207,18 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
 
         PlayerStatAugmentService.reconcile(player, empty);
         double baseline = player.getAttributeValue(Attributes.MAX_HEALTH);
+
         PlayerStatAugmentService.reconcile(player, empty.withAugmentLevel(glassCannon, 1));
         double one = player.getAttributeValue(Attributes.MAX_HEALTH);
-        require(one < baseline,
-                "glass cannon level one did not reduce max health; baseline=" + baseline + ", actual=" + one);
+        double expectedOne = baseline * ExpansionTuning.current().glassCannonHealthMultiplier(1);
+        requireClose(one, expectedOne, 1.0E-9D,
+                "glass cannon level-one health multiplier diverged from canonical tuning");
 
         PlayerStatAugmentService.reconcile(player, empty.withAugmentLevel(glassCannon, definition.maxLevel()));
         double max = player.getAttributeValue(Attributes.MAX_HEALTH);
-        require(max <= one + 1.0E-9D,
-                "glass cannon max level became less costly than level one; level1=" + one + ", max=" + max);
+        double expectedMax = baseline * ExpansionTuning.current().glassCannonHealthMultiplier(definition.maxLevel());
+        requireClose(max, expectedMax, 1.0E-9D,
+                "glass cannon max-level health multiplier diverged from canonical tuning");
 
         PlayerStatAugmentService.reconcile(player, empty.withAugmentLevel(glassCannon, definition.maxLevel() + 50));
         double overflow = player.getAttributeValue(Attributes.MAX_HEALTH);
