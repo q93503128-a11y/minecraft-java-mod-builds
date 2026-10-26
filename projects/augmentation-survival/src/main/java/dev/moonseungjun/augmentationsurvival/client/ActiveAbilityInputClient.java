@@ -14,7 +14,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
-/** Toggle augment skill mode, then press 1..0 to request active slots 1..10. */
+/** Toggle augment skill mode, then consume 1..0 as active-slot input instead of also changing hotbar slots. */
 public final class ActiveAbilityInputClient {
     static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "augmentation")
@@ -26,52 +26,51 @@ public final class ActiveAbilityInputClient {
     private static final KeyMapping LOADOUT_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.augmentation_survival.active_loadout", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, CATEGORY
     ));
-    private static final int[] SLOT_KEYS = {
-            InputConstants.KEY_1, InputConstants.KEY_2, InputConstants.KEY_3, InputConstants.KEY_4,
-            InputConstants.KEY_5, InputConstants.KEY_6, InputConstants.KEY_7, InputConstants.KEY_8,
-            InputConstants.KEY_9, InputConstants.KEY_0
-    };
-    private static final boolean[] SLOT_WAS_DOWN = new boolean[SLOT_KEYS.length];
-    private static boolean loadoutWasDown;
-    private static boolean modeWasDown;
     private static boolean modeEnabled;
 
     private ActiveAbilityInputClient() { }
 
     public static void initialize() {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+        // START_CLIENT_TICK runs before vanilla drains hotbar key clicks. When skill mode is enabled,
+        // consuming those clicks here prevents a 1..9 ability press from also changing held items.
+        ClientTickEvents.START_CLIENT_TICK.register(client -> {
             boolean hasPlayer = client.player != null;
-            boolean loadoutDown = hasPlayer && LOADOUT_KEY.isDown();
-            boolean hasActive = hasLoadoutActive();
-            if (hasPlayer && client.gui.screen() == null && loadoutDown && !loadoutWasDown && hasActive) {
-                client.gui.setScreen(new ActiveLoadoutScreen());
-            }
-            loadoutWasDown = loadoutDown;
+            boolean hasActive = hasPlayer && hasLoadoutActive();
 
-            boolean modeDown = hasPlayer && MODE_KEY.isDown();
             if (!hasPlayer || client.player.isDeadOrDying() || !hasActive) {
                 modeEnabled = false;
-                modeWasDown = modeDown;
-                reset(client);
+                drain(MODE_KEY);
+                drain(LOADOUT_KEY);
                 return;
+            }
+
+            if (client.gui.screen() != null) {
+                drain(MODE_KEY);
+                drain(LOADOUT_KEY);
+                return;
+            }
+
+            while (LOADOUT_KEY.consumeClick()) {
+                client.gui.setScreen(new ActiveLoadoutScreen());
             }
             if (client.gui.screen() != null) {
-                modeWasDown = modeDown;
-                reset(client);
                 return;
             }
 
-            if (modeDown && !modeWasDown) {
+            while (MODE_KEY.consumeClick()) {
                 modeEnabled = !modeEnabled;
             }
-            modeWasDown = modeDown;
 
-            for (int index = 0; index < SLOT_KEYS.length; index++) {
-                boolean down = InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
-                if (modeEnabled && down && !SLOT_WAS_DOWN[index]) {
+            if (!modeEnabled) {
+                return;
+            }
+
+            KeyMapping[] hotbarKeys = client.options.keyHotbarSlots;
+            int count = Math.min(10, hotbarKeys.length);
+            for (int index = 0; index < count; index++) {
+                while (hotbarKeys[index].consumeClick()) {
                     ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
                 }
-                SLOT_WAS_DOWN[index] = down;
             }
         });
     }
@@ -95,9 +94,9 @@ public final class ActiveAbilityInputClient {
         return false;
     }
 
-    private static void reset(net.minecraft.client.Minecraft client) {
-        for (int index = 0; index < SLOT_KEYS.length; index++) {
-            SLOT_WAS_DOWN[index] = client.player != null && InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
+    private static void drain(KeyMapping mapping) {
+        while (mapping.consumeClick()) {
+            // Intentionally discard stale clicks when the key cannot be used in the current state.
         }
     }
 }

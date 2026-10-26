@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.ReviveAugmentService;
+import dev.moonseungjun.augmentationsurvival.mixin.ActiveAbilityServiceInvoker;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
@@ -71,8 +72,10 @@ public final class ActiveAbilityRouter {
         if (abilityId.equals(RETURN_HOME_ID) || abilityId.equals(TIME_STOP_ID) || abilityId.equals(DIVINE_PUNISHMENT_ID)) {
             return SpecialActiveAugmentService.tryUse(player, abilityId);
         }
-        int legacySlot = legacyResolved(state).indexOf(abilityId);
-        return legacySlot >= 0 && ActiveAbilityService.tryUseSlot(player, legacySlot);
+        if (LEGACY_ORDER.contains(abilityId)) {
+            return ActiveAbilityServiceInvoker.augmentationSurvival$tryUse(player, state, abilityId);
+        }
+        return false;
     }
 
     public static List<String> supportedIds() { return ALL_ORDER; }
@@ -142,12 +145,6 @@ public final class ActiveAbilityRouter {
         int next = state.persistentInt(key) > 0 ? 0 : 1;
         AugmentationPlayerStateService.replace(player, state.withPersistentInt(key, next));
         return true;
-    }
-
-    private static List<String> legacyResolved(AugmentationPlayerState state) {
-        List<String> resolved = new ArrayList<>();
-        for (String id : LEGACY_ORDER) if (boundedLevel(state, id) > 0) resolved.add(id);
-        return resolved;
     }
 
     private static int boundedLevel(AugmentationPlayerState state, String augmentId) {

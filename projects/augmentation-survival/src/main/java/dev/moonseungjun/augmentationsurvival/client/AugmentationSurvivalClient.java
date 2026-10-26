@@ -26,6 +26,7 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         PhaseClientNetworking.initialize();
         PerceptionClientNetworking.initialize();
         EnchantmentRefreshClient.initialize();
+        ClientMiningPredictionState.initialize();
         MovementInputClient.initialize();
         ActiveAbilityInputClient.initialize();
         AuthorityTheftInputClient.initialize();
