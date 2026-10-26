@@ -408,27 +408,34 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             g.outline(x, y, layout.cellW(), layout.cellH(), selected ? color : hover ? LINE_HI : LINE);
             g.fill(x, y + layout.cellH() - 2, x + layout.cellW(), y + layout.cellH(), selected ? color : 0xFF343D43);
             centered(g, clip(tierLabel(tier), layout.cellW() - 8), x + layout.cellW() / 2,
-                    y + Math.max(5, layout.cellH() / 2 - 4), selected ? TEXT : MUTED);
+                    y + Math.max(4, layout.cellH() / 2 - 4), selected ? TEXT : MUTED);
         }
 
         AugmentTier from = AugmentTier.values()[Math.max(0, Math.min(synthesisTier, AugmentTier.values().length - 2))];
         AugmentTier to = from.next().orElse(AugmentTier.MYTHIC);
         int flowY = layout.flowY();
-        int fromX = layout.centerX() - 70;
-        int toX = layout.centerX() + 54;
-        g.fill(fromX - 8, flowY - 8, fromX + 40, flowY + 30, SURFACE);
-        g.outline(fromX - 8, flowY - 8, 48, 38, shade(tierColor(from), 0.72));
+        int fromX = layout.centerX() - (layout.compactFlow() ? 54 : 70);
+        int toX = layout.centerX() + (layout.compactFlow() ? 38 : 54);
+        if (!layout.compactFlow()) {
+            g.fill(fromX - 8, flowY - 8, fromX + 40, flowY + 30, SURFACE);
+            g.outline(fromX - 8, flowY - 8, 48, 38, shade(tierColor(from), 0.72));
+            g.fill(toX - 8, flowY - 8, toX + 40, flowY + 30, SURFACE);
+            g.outline(toX - 8, flowY - 8, 48, 38, shade(tierColor(to), 0.82));
+        }
         g.item(new ItemStack(AugmentCoreItems.item(from)), fromX, flowY);
         g.text(font, "×3", fromX + 19, flowY + 5, MUTED, false);
         centered(g, "→", layout.centerX(), flowY + 5, tierColor(to));
-        g.fill(toX - 8, flowY - 8, toX + 40, flowY + 30, SURFACE);
-        g.outline(toX - 8, flowY - 8, 48, 38, shade(tierColor(to), 0.82));
         g.item(new ItemStack(AugmentCoreItems.item(to)), toX, flowY);
         g.text(font, "×1", toX + 19, flowY + 5, MUTED, false);
 
-        centered(g, tierLabel(from) + "  →  " + tierLabel(to), layout.centerX(), layout.flowLabelY(), TEXT);
+        if (layout.flowLabelY() >= 0) {
+            centered(g, tierLabel(from) + "  →  " + tierLabel(to), layout.centerX(), layout.flowLabelY(), TEXT);
+        }
         int ownedCount = coreCount(from);
-        centered(g, "보유 " + ownedCount + " · 1회당 3개 필요", layout.centerX(), layout.countY(), ownedCount >= 3 ? MUTED : BAD);
+        String cost = layout.compactFlow()
+                ? "보유 " + ownedCount + " · 필요 3"
+                : "보유 " + ownedCount + " · 1회당 3개 필요";
+        centered(g, clip(cost, layout.width() - 16), layout.centerX(), layout.countY(), ownedCount >= 3 ? MUTED : BAD);
 
         drawButton(g, layout.oneButtonX(), layout.buttonY(), layout.buttonW(), layout.buttonH(), "1회 정제", mx, my, ownedCount >= 3);
         drawButton(g, layout.allButtonX(), layout.allButtonY(), layout.buttonW(), layout.buttonH(), "모두 정제", mx, my, ownedCount >= 3);
@@ -622,23 +629,37 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int right = bounds.right() - 10;
         int width = Math.max(40, right - left);
         int center = (left + right) / 2;
+        int height = bounds.height();
         int headerY = bounds.top() + 30;
-        boolean showGuide = bounds.height() >= 190;
+        boolean showGuide = height >= 260;
+        boolean compactFlow = height < 210;
         int gridTop = headerY + (showGuide ? 31 : 17);
-        int columns = width >= 520 ? 5 : width >= 320 ? 3 : 2;
+        int columns = width >= 520 ? 5 : width >= 270 ? 3 : 2;
         int rows = (5 + columns - 1) / columns;
         int gapX = width >= 430 ? 7 : 4;
-        int gapY = 5;
+        int gapY = height >= 260 ? 5 : 3;
         int cellW = Math.max(48, Math.min(92, (width - gapX * (columns - 1)) / columns));
-        int cellH = bounds.height() >= 220 ? 28 : 24;
+        int cellH = height >= 260 ? 28 : 20;
         int gridW = cellW * columns + gapX * (columns - 1);
         int gridLeft = left + Math.max(0, (width - gridW) / 2);
-        int flowY = gridTop + rows * cellH + Math.max(0, rows - 1) * gapY + (bounds.height() >= 260 ? 27 : 16);
-        int flowLabelY = flowY + 34;
-        int countY = flowLabelY + 15;
-        int buttonH = 24;
+        int gridEnd = gridTop + rows * cellH + Math.max(0, rows - 1) * gapY;
+        int flowY = gridEnd + (height >= 260 ? 20 : compactFlow ? 6 : 10);
+        int flowLabelY;
+        int countY;
+        int buttonH;
+        int buttonY;
+        if (compactFlow) {
+            flowLabelY = -1;
+            countY = flowY + 19;
+            buttonH = 20;
+            buttonY = countY + 14;
+        } else {
+            flowLabelY = flowY + 34;
+            countY = flowLabelY + 15;
+            buttonH = 24;
+            buttonY = countY + 18;
+        }
         int buttonW = Math.min(96, Math.max(68, (width - 16) / 2));
-        int buttonY = countY + 18;
         int oneButtonX;
         int allButtonX;
         int allButtonY = buttonY;
@@ -650,9 +671,9 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             allButtonX = oneButtonX;
             allButtonY = buttonY + buttonH + 5;
         }
-        int statusY = Math.min(bounds.bottom() - 10, allButtonY + buttonH + 10);
-        return new SynthesisLayout(left, right, width, center, headerY, showGuide, gridLeft, gridTop,
-                cellW, cellH, gapX, gapY, columns, flowY, flowLabelY, countY,
+        int statusY = Math.min(bounds.bottom() - 8, allButtonY + buttonH + 8);
+        return new SynthesisLayout(left, right, width, center, headerY, showGuide, compactFlow,
+                gridLeft, gridTop, cellW, cellH, gapX, gapY, columns, flowY, flowLabelY, countY,
                 oneButtonX, allButtonX, buttonY, allButtonY, buttonW, buttonH, statusY);
     }
 
@@ -883,7 +904,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     ) { }
 
     private record SynthesisLayout(
-            int left, int right, int width, int centerX, int headerY, boolean showGuide,
+            int left, int right, int width, int centerX, int headerY, boolean showGuide, boolean compactFlow,
             int gridLeft, int gridTop, int cellW, int cellH, int gapX, int gapY, int columns,
             int flowY, int flowLabelY, int countY,
             int oneButtonX, int allButtonX, int buttonY, int allButtonY,
