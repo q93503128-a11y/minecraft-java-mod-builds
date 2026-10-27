@@ -34,7 +34,7 @@ public final class PlayerRescueAugmentService {
     private static final String DOWNED_UNTIL_KEY = RESCUE_ID + "#downed_until";
     private static final int DOWNED_TICKS = 10 * 20;
     private static final int RESCUE_CHANNEL_TICKS = 2 * 20;
-    private static final int COOLDOWN_TICKS = 300 * 20;
+    private static final int COOLDOWN_TICKS = 15 * 20;
     private static final double RESCUE_RANGE_SQUARED = 3.5D * 3.5D;
     private static final Map<UUID, DownedState> DOWNED = new HashMap<>();
     private static final Map<UUID, RescueChannel> CHANNELS = new HashMap<>();
