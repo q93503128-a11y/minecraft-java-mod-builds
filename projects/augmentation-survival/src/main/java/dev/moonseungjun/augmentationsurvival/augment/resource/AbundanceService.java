@@ -10,8 +10,6 @@ import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 import java.util.function.Consumer;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
@@ -25,6 +23,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 /** Exact final ordinary-drop multiplier for the Mythic Abundance augment. */
 public final class AbundanceService {
@@ -34,52 +34,28 @@ public final class AbundanceService {
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "abundance_excluded")
     );
 
-    private static final ThreadLocal<Deque<ServerPlayer>> MINING_ACTORS =
-            ThreadLocal.withInitial(ArrayDeque::new);
-
     private AbundanceService() {
     }
 
     public static void initialize() {
         AugmentCatalog.require(ABUNDANCE_ID);
-        LootTableEvents.MODIFY_DROPS.register((holder, context, drops) -> duplicateDirectMiningDrops(drops));
+        LootTableEvents.MODIFY_DROPS.register((holder, context, drops) -> duplicateDirectMiningDrops(context, drops));
         AugmentationSurvival.LOGGER.info(
                 "Loaded abundance contract: exact direct block, fishing and normal-mob final-drop duplication"
         );
     }
 
     /**
-     * Tracks the server player whose direct destroyBlock call currently owns block-loot generation.
-     * A stack is used because derived harvest helpers can nest destroyBlock calls on the same server thread.
+     * Runs at Fabric's final runtime loot-list boundary. A block loot context identifies the actual breaker
+     * through THIS_ENTITY, so this does not depend on destroyBlock call-stack timing. The already-generated
+     * stacks are copied exactly: Silk Touch, Fortune, data packs and external loot modifiers are not re-rolled.
      */
-    public static void pushMiningActor(ServerPlayer player) {
-        MINING_ACTORS.get().push(player);
-    }
-
-    public static void popMiningActor() {
-        Deque<ServerPlayer> actors = MINING_ACTORS.get();
-        if (!actors.isEmpty()) {
-            actors.pop();
-        }
-        if (actors.isEmpty()) {
-            MINING_ACTORS.remove();
-        }
-    }
-
-    /**
-     * Runs at Fabric's final runtime loot-list boundary. This duplicates the already-generated block stacks,
-     * so Silk Touch, Fortune, data packs and external loot modifiers are preserved exactly instead of re-rolled.
-     */
-    private static void duplicateDirectMiningDrops(List<ItemStack> drops) {
-        if (drops.isEmpty() || ResourceHarvestService.isDerivedBreak()) {
-            return;
-        }
-        Deque<ServerPlayer> actors = MINING_ACTORS.get();
-        if (actors.isEmpty()) {
-            return;
-        }
-        ServerPlayer player = actors.peek();
-        if (player == null || !hasAbundance(player)) {
+    private static void duplicateDirectMiningDrops(LootContext context, List<ItemStack> drops) {
+        if (drops.isEmpty()
+                || ResourceHarvestService.isDerivedBreak()
+                || !context.hasParameter(LootContextParams.BLOCK_STATE)
+                || !(context.getOptionalParameter(LootContextParams.THIS_ENTITY) instanceof ServerPlayer player)
+                || !hasAbundance(player)) {
             return;
         }
         int originalSize = drops.size();

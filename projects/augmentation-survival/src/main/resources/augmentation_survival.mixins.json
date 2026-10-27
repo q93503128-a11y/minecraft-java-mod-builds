@@ -22,7 +22,7 @@
     "TimeAccelerationMiningAttributeMixin", "PlayerActionLockMixin", "ServerPlayerGameModeActionLockMixin",
     "ServerPlayerGameModeEnchantmentResonanceMixin", "PhaseShiftCollisionMixin", "PhaseShiftPlayerActionMixin",
     "PhaseShiftGameModeActionMixin", "PlayerGigantificationKnockbackMixin", "EntityCompanionAllyMixin",
-    "LivingEntityCompanionDeathMixin", "LivingEntityCompanionFriendlyFireMixin", "PlayerSweepingEnhancementMixin",
+    "LivingEntityCompanionDeathMixin", "LivingEntityCompanionFriendlyFireMixin", "WardenDominationTargetMixin", "PlayerSweepingEnhancementMixin",
     "BetterCombatPlayerAttackHelperMixin", "BetterCombatTargetHelperMixin", "WolfTamingAugmentMixin", "CatTamingAugmentMixin",
     "ParrotTamingAugmentMixin", "NautilusTamingAugmentMixin", "HorseTamingAugmentMixin", "EnchantmentResonanceMixin",
     "ItemCombinerMenuAccessor", "AnvilForbiddenMagicMixin", "EnchantmentMenuAugmentAccessor", "PlayerEnchantSeedAccessor",

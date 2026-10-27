@@ -128,17 +128,9 @@ public final class CompanionAugmentService {
                 && (source == null || (!areAllied(source, candidate) && !source.isAlliedTo(candidate)));
     }
 
-    /** Records an explicit owner attack as a command that dominated companions may follow, even for neutral mobs. */
+    /** Records the owner's actual successful attack so dominated companions can obey even against neutral mobs. */
     public static void recordOwnerAttack(ServerPlayer owner, LivingEntity target) {
         if (target == owner || target.isDeadOrDying() || areAllied(owner, target)) return;
-        boolean hasLoadedCompanion = false;
-        for (Mob companion : LOADED_DOMINATED.values()) {
-            if (!companion.isRemoved() && isOwnedBy(companion, owner.getUUID())) {
-                hasLoadedCompanion = true;
-                break;
-            }
-        }
-        if (!hasLoadedCompanion) return;
         OWNER_COMMAND_TARGETS.put(owner.getUUID(), target.getUUID());
         for (Mob companion : LOADED_DOMINATED.values()) {
             if (!companion.isRemoved() && isOwnedBy(companion, owner.getUUID()) && companion.level() == target.level()) {

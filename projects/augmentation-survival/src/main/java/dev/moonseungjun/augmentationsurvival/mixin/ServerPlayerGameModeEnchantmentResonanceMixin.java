@@ -1,6 +1,5 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
-import dev.moonseungjun.augmentationsurvival.augment.resource.AbundanceService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.DexterityService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.EnchantmentResonanceService;
 import net.minecraft.core.BlockPos;
@@ -23,7 +22,6 @@ abstract class ServerPlayerGameModeEnchantmentResonanceMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         DexterityService.pushBreakContext(this.player, pos);
-        AbundanceService.pushMiningActor(this.player);
         EnchantmentResonanceService.pushActor(this.player);
     }
 
@@ -33,7 +31,6 @@ abstract class ServerPlayerGameModeEnchantmentResonanceMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         EnchantmentResonanceService.popActor();
-        AbundanceService.popMiningActor();
         DexterityService.popBreakContext();
     }
 }
