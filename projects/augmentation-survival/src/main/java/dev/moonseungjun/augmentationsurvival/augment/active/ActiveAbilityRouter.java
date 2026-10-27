@@ -30,7 +30,7 @@ public final class ActiveAbilityRouter {
     private static final String AREA_ACCELERATION_ID = id("area_acceleration");
     private static final String REVIVE_ID = id("revive");
     private static final String TIME_STOP_ID = id("time_stop");
-    private static final String DIVINE_PUNISHMENT_ID = id("divine_punishment");
+    private static final String DIVINE_PUNISHMENT_ID = DivinePunishmentService.ID;
     private static final String INSTANT_MINING_ID = UtilityAugmentService.INSTANT_MINING_ID;
     private static final String THREAT_TOGGLE_KEY = "active_toggle/threat_suppression";
 
@@ -91,9 +91,8 @@ public final class ActiveAbilityRouter {
             if (used) TimeStopBoundaryService.begin(player);
             return used;
         }
-        if (abilityId.equals(RETURN_HOME_ID) || abilityId.equals(DIVINE_PUNISHMENT_ID)) {
-            return SpecialActiveAugmentService.tryUse(player, abilityId);
-        }
+        if (abilityId.equals(DIVINE_PUNISHMENT_ID)) return DivinePunishmentService.tryUse(player);
+        if (abilityId.equals(RETURN_HOME_ID)) return SpecialActiveAugmentService.tryUse(player, abilityId);
         if (LEGACY_ORDER.contains(abilityId)) return ActiveAbilityServiceInvoker.augmentationSurvival$tryUse(player, state, abilityId);
         return false;
     }
