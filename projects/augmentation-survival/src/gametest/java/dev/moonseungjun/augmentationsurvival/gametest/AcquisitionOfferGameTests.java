@@ -31,7 +31,7 @@ public final class AcquisitionOfferGameTests implements CustomTestMethodInvoker 
                 "common offer did not produce three candidates: " + offer.candidateIds());
         require(new HashSet<>(offer.candidateIds()).size() == offer.candidateIds().size(),
                 "common offer produced duplicate candidates: " + offer.candidateIds());
-        require(AugmentOfferService.countCores(player, AugmentTier.COMMON) == 1,
+        require(player.getInventory().countItem(AugmentCoreItems.COMMON_CORE) == 1,
                 "beginning an offer consumed its core before selection");
 
         String selected = offer.candidateIds().getFirst();
@@ -44,7 +44,7 @@ public final class AcquisitionOfferGameTests implements CustomTestMethodInvoker 
                 "valid common offer selection did not commit: " + commit.status());
         require(AugmentationPlayerStateService.state(player).level(selected) == 1,
                 "committed augment did not reach level one: " + selected);
-        require(AugmentOfferService.countCores(player, AugmentTier.COMMON) == 0,
+        require(player.getInventory().countItem(AugmentCoreItems.COMMON_CORE) == 0,
                 "committed offer did not consume exactly one common core");
         require(!AugmentOfferService.hasPendingOffer(player),
                 "committed offer remained pending");
