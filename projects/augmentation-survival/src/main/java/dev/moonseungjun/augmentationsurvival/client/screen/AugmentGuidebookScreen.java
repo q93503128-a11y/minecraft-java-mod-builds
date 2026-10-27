@@ -101,7 +101,7 @@ public final class AugmentGuidebookScreen extends Screen {
         drawResultSlot(g, l.resultX(), l.resultY(), l.resultSize(), recipe.result(), mouseX, mouseY);
 
         g.fill(l.x() + 13, l.footerLineY(), l.x() + l.w() - 13, l.footerLineY() + 1, LINE_SOFT);
-        String hover = hoveredName.isBlank() ? "아이콘에 마우스를 올리면 재료를 확인할 수 있습니다." : hoveredName;
+        String hover = hoveredName.isBlank() ? "K: 액티브 스킬 관리 · 마우스: 재료 확인" : hoveredName;
         centered(g, clip(hover, l.w() - 100), l.centerX(), l.footerTextY(), hoveredName.isBlank() ? MUTED : TEXT);
 
         drawPageControl(g, l.leftX(), l.controlY(), "‹", page > 0, mouseX, mouseY);
