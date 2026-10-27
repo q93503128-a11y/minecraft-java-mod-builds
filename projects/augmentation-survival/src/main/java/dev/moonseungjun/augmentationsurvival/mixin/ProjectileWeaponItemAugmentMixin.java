@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.presentation.PassiveProcReadabilityService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.FocusedAimAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileTuning;
@@ -83,6 +84,7 @@ public abstract class ProjectileWeaponItemAugmentMixin {
         ItemStack copy = projectile.copyWithCount(1);
         copy.set(DataComponents.INTANGIBLE_PROJECTILE, Unit.INSTANCE);
         cir.setReturnValue(copy);
+        PassiveProcReadabilityService.presentArrowSaved(player);
     }
 
     @Inject(method = "shoot", at = @At("HEAD"))
