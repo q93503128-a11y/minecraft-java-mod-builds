@@ -38,7 +38,7 @@
     "LocalPlayerConsumptionMixin", "ClientMiningAugmentMixin", "ClientWaterRunLivingEntityMixin",
     "ClientPhaseShiftCollisionMixin", "ClientPhaseShiftPushOutMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin", "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
-    "AugmentDeviceUiRescueMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
+    "AugmentDeviceUiRescueMixin", "ActiveLoadoutQuickClickMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
     "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin"
   ],
   "injectors": {"defaultRequire": 1}
