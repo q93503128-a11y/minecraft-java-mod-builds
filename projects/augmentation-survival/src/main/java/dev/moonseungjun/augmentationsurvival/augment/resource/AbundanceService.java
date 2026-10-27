@@ -23,6 +23,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 
 /** Exact final ordinary-drop multiplier for the Mythic Abundance augment. */
 public final class AbundanceService {
@@ -120,11 +121,16 @@ public final class AbundanceService {
                 || stack.is(ABUNDANCE_EXCLUDED)
                 || stack.get(DataComponents.CUSTOM_DATA) != null
                 || stack.get(DataComponents.CUSTOM_NAME) != null
-                || stack.get(DataComponents.LORE) != null
+                || hasAuthoredLore(stack)
                 || isCore(stack)) {
             return false;
         }
         return true;
+    }
+
+    private static boolean hasAuthoredLore(ItemStack stack) {
+        ItemLore lore = stack.get(DataComponents.LORE);
+        return lore != null && !lore.lines().isEmpty();
     }
 
     private static boolean isCore(ItemStack stack) {
