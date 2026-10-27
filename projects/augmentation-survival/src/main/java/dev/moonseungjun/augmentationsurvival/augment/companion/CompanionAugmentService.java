@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -25,11 +26,13 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.phys.Vec3;
 
 /** Server-owned permanent companion runtime for Domination and shared hostile classification. */
 public final class CompanionAugmentService {
     private static final String DOMINATION_ID = id("domination");
+    private static final int WARDEN_COMMAND_ANGER = 150;
     private static final Map<UUID, Mob> LOADED_DOMINATED = new HashMap<>();
     /** Last living entity deliberately attacked by each owner. It remains the command target until invalid. */
     private static final Map<UUID, UUID> OWNER_COMMAND_TARGETS = new HashMap<>();
@@ -47,6 +50,11 @@ public final class CompanionAugmentService {
             }
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> LOADED_DOMINATED.remove(entity.getUUID()));
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamageTaken, damageTaken, blocked) -> {
+            if (!blocked && damageTaken > 0.0F && source.getEntity() instanceof ServerPlayer owner) {
+                recordOwnerAttack(owner, entity);
+            }
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             LOADED_DOMINATED.clear();
             OWNER_COMMAND_TARGETS.clear();
@@ -67,15 +75,12 @@ public final class CompanionAugmentService {
         target.setPersistenceRequired();
         target.setGlowingTag(true);
         target.setTarget(null);
+        if (target instanceof Warden warden) {
+            warden.clearAnger(player);
+        }
         LOADED_DOMINATED.put(target.getUUID(), target);
         setWorldState(server, worldState.withDelta(player.getUUID(), 1));
-
-        LivingEntity firstTarget = commandTarget(target, player.getUUID());
-        if (firstTarget == null) firstTarget = findNearestHostile(target, player.getUUID());
-        if (firstTarget != null) {
-            target.setTarget(firstTarget);
-            target.getNavigation().moveTo(firstTarget, 1.15D);
-        }
+        refreshCombatTarget(target, player.getUUID(), server);
         return true;
     }
 
@@ -126,11 +131,18 @@ public final class CompanionAugmentService {
     /** Records an explicit owner attack as a command that dominated companions may follow, even for neutral mobs. */
     public static void recordOwnerAttack(ServerPlayer owner, LivingEntity target) {
         if (target == owner || target.isDeadOrDying() || areAllied(owner, target)) return;
+        boolean hasLoadedCompanion = false;
+        for (Mob companion : LOADED_DOMINATED.values()) {
+            if (!companion.isRemoved() && isOwnedBy(companion, owner.getUUID())) {
+                hasLoadedCompanion = true;
+                break;
+            }
+        }
+        if (!hasLoadedCompanion) return;
         OWNER_COMMAND_TARGETS.put(owner.getUUID(), target.getUUID());
         for (Mob companion : LOADED_DOMINATED.values()) {
             if (!companion.isRemoved() && isOwnedBy(companion, owner.getUUID()) && companion.level() == target.level()) {
-                companion.setTarget(target);
-                companion.getNavigation().moveTo(target, 1.15D);
+                applyCombatTarget(companion, target);
             }
         }
     }
@@ -166,6 +178,7 @@ public final class CompanionAugmentService {
         LOADED_DOMINATED.put(mob.getUUID(), mob);
         MinecraftServer server = level.getServer();
         setWorldState(server, worldState(server).withDelta(owner.get(), 1));
+        refreshCombatTarget(mob, owner.get(), server);
     }
 
     private static void tickDominatedCompanions(MinecraftServer server) {
@@ -179,27 +192,52 @@ public final class CompanionAugmentService {
             mob.setGlowingTag(true);
             Optional<UUID> owner = ownerId(mob);
             if (owner.isEmpty()) continue;
-
-            LivingEntity commanded = commandTarget(mob, owner.get());
-            if (commanded != null) {
-                if (mob.getTarget() != commanded) mob.setTarget(commanded);
-                mob.getNavigation().moveTo(commanded, 1.15D);
-                continue;
-            }
-
-            LivingEntity target = mob.getTarget();
-            if (target != null && !isHostileTarget(mob, target)) {
-                mob.setTarget(null);
-                target = null;
-            }
-            if (target == null) {
-                LivingEntity next = findNearestHostile(mob, owner.get());
-                if (next != null) {
-                    mob.setTarget(next);
-                    mob.getNavigation().moveTo(next, 1.15D);
-                }
-            }
+            refreshCombatTarget(mob, owner.get(), server);
         }
+    }
+
+    private static void refreshCombatTarget(Mob mob, UUID ownerId, MinecraftServer server) {
+        LivingEntity commanded = commandTarget(mob, ownerId);
+        sanitizeWardenAnger(mob, commanded);
+        if (commanded != null) {
+            applyCombatTarget(mob, commanded);
+            return;
+        }
+
+        LivingEntity target = mob.getTarget();
+        if (target != null && !isHostileTarget(mob, target)) {
+            if (mob instanceof Warden warden) {
+                warden.clearAnger(target);
+            }
+            mob.setTarget(null);
+            target = null;
+        }
+        if (target == null) {
+            LivingEntity next = findNearestHostile(mob, ownerId);
+            if (next != null) {
+                applyCombatTarget(mob, next);
+            }
+        } else if (mob instanceof Warden) {
+            applyCombatTarget(mob, target);
+        }
+    }
+
+    private static void sanitizeWardenAnger(Mob mob, LivingEntity commanded) {
+        if (!(mob instanceof Warden warden)) return;
+        warden.getEntityAngryAt().ifPresent(angryAt -> {
+            boolean commandTarget = commanded != null && angryAt.getUUID().equals(commanded.getUUID());
+            if (!commandTarget && !isHostileTarget(warden, angryAt)) {
+                warden.clearAnger(angryAt);
+            }
+        });
+    }
+
+    private static void applyCombatTarget(Mob companion, LivingEntity target) {
+        if (companion instanceof Warden warden) {
+            warden.increaseAngerAt(target, WARDEN_COMMAND_ANGER, false);
+        }
+        companion.setTarget(target);
+        companion.getNavigation().moveTo(target, 1.15D);
     }
 
     private static LivingEntity commandTarget(Mob companion, UUID ownerId) {
