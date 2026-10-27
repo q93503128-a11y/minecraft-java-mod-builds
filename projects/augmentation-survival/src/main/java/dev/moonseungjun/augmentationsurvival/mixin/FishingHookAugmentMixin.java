@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.presentation.PassiveProcReadabilityService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.AbundanceService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.TreasureFishingService;
@@ -72,7 +73,8 @@ public abstract class FishingHookAugmentMixin {
             LootParams params,
             ItemStack rod
     ) {
-        Player owner = ((FishingHook) (Object) this).getPlayerOwner();
+        FishingHook hook = (FishingHook) (Object) this;
+        Player owner = hook.getPlayerOwner();
         ServerPlayer player = owner instanceof ServerPlayer serverPlayer ? serverPlayer : null;
         ObjectArrayList<ItemStack> result;
         if (player != null
@@ -82,11 +84,14 @@ public abstract class FishingHookAugmentMixin {
                         this.openWater,
                         player.getRandom()
                 )) {
-            ServerLevel level = (ServerLevel) ((FishingHook) (Object) this).level();
+            ServerLevel level = (ServerLevel) hook.level();
             LootTable treasureTable = level.getServer()
                     .reloadableRegistries()
                     .getLootTable(BuiltInLootTables.FISHING_TREASURE);
             result = treasureTable.getRandomItems(params);
+            if (!result.isEmpty()) {
+                PassiveProcReadabilityService.presentTreasureFishing(player, hook.position());
+            }
         } else {
             result = rootFishingTable.getRandomItems(params);
         }
