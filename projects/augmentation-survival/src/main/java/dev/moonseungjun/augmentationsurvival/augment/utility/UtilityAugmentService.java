@@ -31,7 +31,8 @@ public final class UtilityAugmentService {
     private static final String FAST_BREWING_ID = id("fast_brewing");
     private static final String WATER_RUN_ID = id("water_run");
     private static final String EXPERIENCE_PRESERVATION_ID = id("experience_preservation");
-    private static final String INSTANT_MINING_ID = id("instant_mining");
+    public static final String INSTANT_MINING_ID = id("instant_mining");
+    public static final String INSTANT_MINING_TOGGLE_KEY = "active_toggle/instant_mining";
 
     private UtilityAugmentService() {
     }
@@ -94,11 +95,17 @@ public final class UtilityAugmentService {
                 && boundedLevel(AugmentationPlayerStateService.state(player), WATER_RUN_ID) > 0;
     }
 
-    /** Mythic instant mining is a passive: ownership alone enables one-tick direct mining. */
+    public static boolean isInstantMiningEnabled(ServerPlayer player) {
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        return boundedLevel(state, INSTANT_MINING_ID) > 0
+                && state.persistentInt(INSTANT_MINING_TOGGLE_KEY) > 0;
+    }
+
+    /** Mythic instant mining is an explicit active toggle; ownership alone never changes mining speed. */
     public static boolean shouldInstantMine(ServerPlayer player, BlockState state, float vanillaSpeed) {
         return vanillaSpeed > 0.0F
                 && Float.isFinite(vanillaSpeed)
-                && boundedLevel(AugmentationPlayerStateService.state(player), INSTANT_MINING_ID) > 0
+                && isInstantMiningEnabled(player)
                 && player.hasCorrectToolForDrops(state);
     }
 

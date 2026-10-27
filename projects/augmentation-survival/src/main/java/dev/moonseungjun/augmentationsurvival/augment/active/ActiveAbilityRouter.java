@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.ReviveAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.mixin.ActiveAbilityServiceInvoker;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -29,7 +30,8 @@ public final class ActiveAbilityRouter {
     private static final String AREA_ACCELERATION_ID = id("area_acceleration");
     private static final String REVIVE_ID = id("revive");
     private static final String TIME_STOP_ID = id("time_stop");
-    private static final String DIVINE_PUNISHMENT_ID = id("divine_punishment");
+    private static final String DIVINE_PUNISHMENT_ID = DivinePunishmentService.ID;
+    private static final String INSTANT_MINING_ID = UtilityAugmentService.INSTANT_MINING_ID;
     private static final String THREAT_TOGGLE_KEY = "active_toggle/threat_suppression";
 
     private static final List<String> LEGACY_ORDER = List.of(
@@ -40,7 +42,7 @@ public final class ActiveAbilityRouter {
             id("berserk"), id("healing_wave"), SHIELD_THROW_ID, REWIND_ID, TIME_ACCELERATION_ID,
             CLONE_ID, PHASE_SHIFT_ID, THREAT_SUPPRESSION_ID, DEATH_RETURN_ID,
             RETURN_HOME_ID, DOMINATION_ID, GIGANTIFICATION_ID, AREA_ACCELERATION_ID, REVIVE_ID,
-            TIME_STOP_ID, DIVINE_PUNISHMENT_ID
+            TIME_STOP_ID, DIVINE_PUNISHMENT_ID, INSTANT_MINING_ID
     );
     private static final Set<String> ALL_SUPPORTED = Set.copyOf(ALL_ORDER);
 
@@ -49,9 +51,10 @@ public final class ActiveAbilityRouter {
     public static void initialize() {
         CloneActiveService.initialize();
         TimeStopIntegrityService.initialize();
+        TimeStopBoundaryService.initialize();
         for (String augmentId : ALL_ORDER) {
             AugmentCatalog.require(augmentId);
-            if (!ActivePresentationService.hasProfile(augmentId)) {
+            if (!augmentId.equals(INSTANT_MINING_ID) && !ActivePresentationService.hasProfile(augmentId)) {
                 throw new IllegalStateException("Missing active presentation profile: " + augmentId);
             }
         }
@@ -63,17 +66,15 @@ public final class ActiveAbilityRouter {
         List<String> slots = resolvedSlots(state);
         String abilityId = slots.get(slotIndex);
         if (abilityId.isBlank()) return false;
-
         ActivePresentationService.Capture capture = ActivePresentationService.capture(player, abilityId);
         boolean success = executeResolved(player, state, abilityId);
-        if (success) {
-            ActivePresentationService.presentSuccessfulUse(player, abilityId, capture);
-        }
+        if (success) ActivePresentationService.presentSuccessfulUse(player, abilityId, capture);
         return success;
     }
 
     private static boolean executeResolved(ServerPlayer player, AugmentationPlayerState state, String abilityId) {
         if (abilityId.equals(THREAT_SUPPRESSION_ID)) return toggle(player, state, THREAT_SUPPRESSION_ID, THREAT_TOGGLE_KEY);
+        if (abilityId.equals(INSTANT_MINING_ID)) return toggle(player, state, INSTANT_MINING_ID, UtilityAugmentService.INSTANT_MINING_TOGGLE_KEY);
         if (abilityId.equals(DEATH_RETURN_ID)) return DeathReturnAugmentService.tryUse(player);
         if (abilityId.equals(CLONE_ID)) return CloneActiveService.tryUse(player);
         if (abilityId.equals(TEMPORARY_PLATFORM_ID)) return TemporaryPlatformService.tryUse(player);
@@ -85,12 +86,14 @@ public final class ActiveAbilityRouter {
         }
         if (abilityId.equals(AREA_ACCELERATION_ID)) return AreaAccelerationService.tryUse(player);
         if (abilityId.equals(REVIVE_ID)) return ReviveAugmentService.tryUse(player);
-        if (abilityId.equals(RETURN_HOME_ID) || abilityId.equals(TIME_STOP_ID) || abilityId.equals(DIVINE_PUNISHMENT_ID)) {
-            return SpecialActiveAugmentService.tryUse(player, abilityId);
+        if (abilityId.equals(TIME_STOP_ID)) {
+            boolean used = SpecialActiveAugmentService.tryUse(player, abilityId);
+            if (used) TimeStopBoundaryService.begin(player);
+            return used;
         }
-        if (LEGACY_ORDER.contains(abilityId)) {
-            return ActiveAbilityServiceInvoker.augmentationSurvival$tryUse(player, state, abilityId);
-        }
+        if (abilityId.equals(DIVINE_PUNISHMENT_ID)) return DivinePunishmentService.tryUse(player);
+        if (abilityId.equals(RETURN_HOME_ID)) return SpecialActiveAugmentService.tryUse(player, abilityId);
+        if (LEGACY_ORDER.contains(abilityId)) return ActiveAbilityServiceInvoker.augmentationSurvival$tryUse(player, state, abilityId);
         return false;
     }
 

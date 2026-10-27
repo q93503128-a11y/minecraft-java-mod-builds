@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 import dev.moonseungjun.augmentationsurvival.augment.active.CloneActiveService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -11,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Permanent companions and temporary clones cannot damage their owner/allies through normal hurtServer. */
+/** Enforces companion ally safety and explicit owner-directed domination targets at the damage boundary. */
 @Mixin(LivingEntity.class)
 abstract class LivingEntityCompanionFriendlyFireMixin {
     @Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
@@ -26,8 +27,24 @@ abstract class LivingEntityCompanionFriendlyFireMixin {
         if (dealer != null && (
                 CompanionAugmentService.areAllied(dealer, self)
                         || CloneActiveService.areCloneAllies(dealer, self)
+                        || (CompanionAugmentService.isDominated(dealer)
+                            && !CompanionAugmentService.mayDominatedMobDamage(dealer, self))
         )) {
             cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "hurtServer", at = @At("RETURN"))
+    private void augmentationSurvival$recordOwnerCommandTarget(
+            ServerLevel level,
+            DamageSource source,
+            float amount,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        if (!cir.getReturnValue()) return;
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (source.getEntity() instanceof ServerPlayer player) {
+            CompanionAugmentService.recordOwnerAttack(player, self);
         }
     }
 }

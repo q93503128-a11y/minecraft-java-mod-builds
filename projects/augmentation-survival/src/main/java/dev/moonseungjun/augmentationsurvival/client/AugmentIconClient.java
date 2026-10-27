@@ -14,15 +14,30 @@ public final class AugmentIconClient {
         return switch (path) {
             case "cleanse" -> new ItemStack(Items.MILK_BUCKET);
             case "pull" -> new ItemStack(Items.LEAD);
-            case "swap", "phase_shift", "return_home", "spatial_link" -> new ItemStack(Items.ENDER_PEARL);
-            case "shield", "shield_throw", "threat_suppression" -> new ItemStack(Items.SHIELD);
-            case "berserk", "divine_punishment" -> new ItemStack(Items.DIAMOND_SWORD);
-            case "healing_wave", "revive", "death_return" -> new ItemStack(Items.GOLDEN_APPLE);
+            case "swap" -> new ItemStack(Items.ENDER_PEARL);
+            case "phase_shift" -> new ItemStack(Items.CHORUS_FRUIT);
+            case "return_home" -> new ItemStack(Items.COMPASS);
+            case "spatial_link" -> new ItemStack(Items.ENDER_EYE);
+            case "shield" -> new ItemStack(Items.SHIELD);
+            case "shield_throw" -> new ItemStack(Items.TRIDENT);
+            case "threat_suppression" -> new ItemStack(Items.SOUL_TORCH);
+            case "berserk" -> new ItemStack(Items.DIAMOND_SWORD);
+            case "divine_punishment" -> new ItemStack(Items.LIGHTNING_ROD);
+            case "healing_wave" -> new ItemStack(Items.GLISTERING_MELON_SLICE);
+            case "revive" -> new ItemStack(Items.TOTEM_OF_UNDYING);
+            case "death_return" -> new ItemStack(Items.RECOVERY_COMPASS);
             case "temporary_platform" -> new ItemStack(Items.SCAFFOLDING);
-            case "rewind", "time_acceleration", "time_stop", "area_acceleration", "candidate_reroll" -> new ItemStack(Items.CLOCK);
-            case "clone", "domination" -> new ItemStack(Items.ARMOR_STAND);
-            case "instant_mining" -> new ItemStack(Items.DIAMOND_PICKAXE);
+            case "rewind" -> new ItemStack(Items.CLOCK);
+            case "time_acceleration" -> new ItemStack(Items.SUGAR);
+            case "time_stop" -> new ItemStack(Items.ECHO_SHARD);
+            case "area_acceleration" -> new ItemStack(Items.BONE_MEAL);
+            case "candidate_reroll" -> new ItemStack(Items.AMETHYST_SHARD);
+            case "clone" -> new ItemStack(Items.ARMOR_STAND);
+            case "domination" -> new ItemStack(Items.NAME_TAG);
+            case "instant_mining" -> new ItemStack(Items.NETHERITE_PICKAXE);
             case "gigantification" -> new ItemStack(Items.HEAVY_CORE);
+            case "flight" -> new ItemStack(Items.ELYTRA);
+            case "authority_theft" -> new ItemStack(Items.DRAGON_BREATH);
             default -> heuristic(path, tier);
         };
     }

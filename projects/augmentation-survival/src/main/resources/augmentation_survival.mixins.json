@@ -6,7 +6,7 @@
     "LastStandDeathProtectionMixin", "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin", "ServerPlayerInvulnerabilityMixin", "StatusReflectRecursionGuardMixin",
     "LivingEntityHealingAugmentMixin", "LivingEntityEnchantmentResonanceMixin", "LivingEntityLootScoopMixin",
-    "LivingEntityWallSlamKnockbackMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
+    "LivingEntityWallSlamKnockbackMixin", "LivingEntityTimeStopMotionMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
     "ProjectileTimeAccelerationMixin", "PlayerShieldGripMixin", "PlayerDeathAugmentMixin", "InventoryPocketAugmentMixin",
     "MovementAugmentMixin", "ServerPlayerMantleMixin", "SurvivalPlayerMixin", "SurvivalAugmentDerivedBreakGuardMixin",
     "SurvivalTimeAccelerationMiningMixin", "TemporaryPlatformFallMixin", "TemporaryPlatformReplayGuardMixin",
@@ -18,7 +18,7 @@
     "ItemStackDurabilityAugmentMixin", "FishingHookAugmentMixin", "AnimalBreedingAugmentMixin",
     "LivingEntityJumpPowerAccessor", "AbstractArrowAugmentAccessor", "AbstractArrowAugmentMixin",
     "ProjectileWeaponItemAugmentMixin", "UseCooldownMasteryMixin", "TridentPortableRiptideMixin",
-    "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "ActiveAbilityOvertimeMixin",
+    "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "SpecialActiveAugmentServiceInvoker", "ActiveAbilityOvertimeMixin",
     "TimeAccelerationMiningAttributeMixin", "PlayerActionLockMixin", "ServerPlayerGameModeActionLockMixin",
     "ServerPlayerGameModeEnchantmentResonanceMixin", "PhaseShiftCollisionMixin", "PhaseShiftPlayerActionMixin",
     "PhaseShiftGameModeActionMixin", "PlayerGigantificationKnockbackMixin", "EntityCompanionAllyMixin",
@@ -36,9 +36,9 @@
   ],
   "client": [
     "LocalPlayerConsumptionMixin", "ClientMiningAugmentMixin", "ClientWaterRunLivingEntityMixin",
-    "ClientPhaseShiftCollisionMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
+    "ClientPhaseShiftCollisionMixin", "ClientPhaseShiftPushOutMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin", "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
-    "AugmentDeviceUiRescueMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
+    "AugmentDeviceUiRescueMixin", "ActiveLoadoutQuickClickMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
     "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin"
   ],
   "injectors": {"defaultRequire": 1}

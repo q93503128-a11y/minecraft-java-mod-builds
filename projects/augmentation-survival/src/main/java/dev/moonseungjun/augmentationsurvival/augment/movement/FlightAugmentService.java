@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,7 +27,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -176,37 +176,24 @@ public final class FlightAugmentService {
         return false;
     }
 
-    /**
-     * Resolves the swept collision volume before vanilla movement collision clips the player.
-     * Weak blocks are smashed without drops, while hostile living entities take one 10-damage impact.
-     */
+    /** Resolves the full player body sweep before vanilla movement collision clips the player. */
     private static void resolveImpacts(ServerPlayer player, Vec3 movement) {
         FlightState state = ACTIVE.get(player.getUUID());
         if (state == null) return;
         double impactSpeed = movement.length();
         if (impactSpeed < MIN_IMPACT_SPEED) return;
         ServerLevel level = (ServerLevel) player.level();
-        AABB swept = player.getBoundingBox().expandTowards(movement).inflate(0.06D, 0.0D, 0.06D);
+        AABB swept = player.getBoundingBox().expandTowards(movement).inflate(0.24D, 0.18D, 0.24D);
         breakCollisionBlocks(level, player, swept, impactSpeed);
         damageCollisionEnemies(level, player, state, swept, movement);
     }
 
-    private static void breakCollisionBlocks(
-            ServerLevel level,
-            ServerPlayer player,
-            AABB swept,
-            double impactSpeed
-    ) {
+    private static void breakCollisionBlocks(ServerLevel level, ServerPlayer player, AABB swept, double impactSpeed) {
         double maxHardness = breakableHardness(impactSpeed);
         if (maxHardness <= 0.0D) return;
-        int minX = Mth.floor(swept.minX);
-        int minY = Mth.floor(swept.minY);
-        int minZ = Mth.floor(swept.minZ);
-        int maxX = Mth.floor(swept.maxX);
-        int maxY = Mth.floor(swept.maxY);
-        int maxZ = Mth.floor(swept.maxZ);
+        int minX = Mth.floor(swept.minX), minY = Mth.floor(swept.minY), minZ = Mth.floor(swept.minZ);
+        int maxX = Mth.floor(swept.maxX), maxY = Mth.floor(swept.maxY), maxZ = Mth.floor(swept.maxZ);
         int broken = 0;
-
         for (int y = minY; y <= maxY && broken < MAX_BROKEN_BLOCKS_PER_TICK; y++) {
             for (int x = minX; x <= maxX && broken < MAX_BROKEN_BLOCKS_PER_TICK; x++) {
                 for (int z = minZ; z <= maxZ && broken < MAX_BROKEN_BLOCKS_PER_TICK; z++) {
@@ -224,27 +211,18 @@ public final class FlightAugmentService {
     }
 
     private static double breakableHardness(double impactSpeed) {
-        // Hover only breaks very weak material; Cruise crosses stone/logs; full Boost reaches iron-block class.
         return Math.max(0.0D, impactSpeed * 3.0D - 0.70D);
     }
 
-    private static void damageCollisionEnemies(
-            ServerLevel level,
-            ServerPlayer player,
-            FlightState state,
-            AABB swept,
-            Vec3 movement
-    ) {
+    private static void damageCollisionEnemies(ServerLevel level, ServerPlayer player, FlightState state, AABB swept, Vec3 movement) {
         long now = level.getGameTime();
         if (now % 100L == 0L) state.entityImpactReadyTick.entrySet().removeIf(entry -> entry.getValue() <= now);
         Vec3 push = movement.lengthSqr() > 1.0E-6D ? movement.normalize() : Vec3.ZERO;
-        // The player caused the impact but is not a direct melee attacker. This preserves attribution while
-        // preventing combat overhauls from reclassifying a body collision as a weapon swing.
         var source = player.damageSources().source(FLIGHT_COLLISION_DAMAGE, null, player);
         for (LivingEntity target : level.getEntitiesOfClass(
                 LivingEntity.class,
-                swept.inflate(0.18D),
-                target -> target != player && target.isAlive() && target instanceof Enemy && !target.isAlliedTo(player)
+                swept,
+                target -> CompanionAugmentService.isHostileTarget(player, target)
         )) {
             long ready = state.entityImpactReadyTick.getOrDefault(target.getUUID(), 0L);
             if (ready > now) continue;
@@ -279,20 +257,24 @@ public final class FlightAugmentService {
         if (state.phase == Phase.CRUISE || state.phase == Phase.BOOST) {
             int count = state.phase == Phase.BOOST ? 9 : 4;
             double spread = state.phase == Phase.BOOST ? 0.27D : 0.16D;
-            level.sendParticles(ParticleTypes.CLOUD, trail.x, trail.y, trail.z, count, spread, spread, spread, 0.055D);
-            level.sendParticles(ParticleTypes.END_ROD, trail.x, trail.y, trail.z, state.phase == Phase.BOOST ? 4 : 2,
-                    spread, spread, spread, 0.035D);
+            level.sendParticles(ParticleTypes.CLOUD, trail.x, trail.y, trail.z, count, spread, spread * 0.7D, spread, 0.04D);
         } else if (state.phase == Phase.HOVER) {
-            level.sendParticles(ParticleTypes.CLOUD, trail.x, trail.y - 0.30D, trail.z, 1, 0.16D, 0.06D, 0.16D, 0.008D);
+            level.sendParticles(ParticleTypes.CLOUD, trail.x, trail.y, trail.z, 2, 0.12D, 0.08D, 0.12D, 0.01D);
         }
     }
 
     private static void landingFeedback(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel level)) return;
-        Vec3 at = player.position().add(0.0D, 0.12D, 0.0D);
-        level.sendParticles(ParticleTypes.POOF, at.x, at.y, at.z, 12, 0.45D, 0.12D, 0.45D, 0.045D);
-        level.playSound(null, player.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.38F, 0.82F);
+        ServerLevel level = (ServerLevel) player.level();
+        level.sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY() + 0.15D, player.getZ(), 10, 0.45D, 0.08D, 0.45D, 0.05D);
+        level.playSound(null, player.blockPosition(), SoundEvents.WIND_CHARGE_BURST, SoundSource.PLAYERS, 0.38F, 0.82F);
     }
+
+    private static boolean owns(ServerPlayer player) {
+        return AugmentationPlayerStateService.state(player).level(FLIGHT_ID) > 0;
+    }
+
+    private static double axis(boolean positive, boolean negative) { return positive == negative ? 0.0D : positive ? 1.0D : -1.0D; }
+    private static String id(String path) { return AugmentationSurvival.MOD_ID + ":" + path; }
 
     private static void deactivateImmediately(ServerPlayer player) {
         FlightState state = ACTIVE.remove(player.getUUID());
@@ -301,30 +283,31 @@ public final class FlightAugmentService {
 
     private static void restore(ServerPlayer player, FlightState state) {
         var abilities = player.getAbilities();
-        abilities.mayfly = state.previousMayFly;
-        abilities.flying = state.previousFlying;
+        abilities.mayfly = state.hadMayfly;
+        abilities.flying = state.wasFlying;
         player.onUpdateAbilities();
-        player.setNoGravity(state.previousNoGravity);
+        player.setNoGravity(state.hadNoGravity);
         player.resetFallDistance();
+        player.hurtMarked = true;
     }
 
-    private static boolean owns(ServerPlayer player) { return AugmentationPlayerStateService.state(player).level(FLIGHT_ID) > 0; }
-    private static double axis(boolean positive, boolean negative) { return positive == negative ? 0.0D : positive ? 1.0D : -1.0D; }
-    private static String id(String path) { return AugmentationSurvival.MOD_ID + ":" + path; }
-
     public enum Phase { OFF, TAKEOFF, HOVER, CRUISE, BOOST, BRAKE_LANDING }
+
     private static final class FlightState {
-        private final boolean previousMayFly;
-        private final boolean previousFlying;
-        private final boolean previousNoGravity;
+        private final boolean hadMayfly;
+        private final boolean wasFlying;
+        private final boolean hadNoGravity;
         private final Map<UUID, Long> entityImpactReadyTick = new HashMap<>();
-        private int takeoffTicks;
-        private double speed;
-        private Vec3 direction = Vec3.ZERO;
-        private boolean shuttingDown;
         private Phase phase = Phase.OFF;
-        private FlightState(boolean previousMayFly, boolean previousFlying, boolean previousNoGravity) {
-            this.previousMayFly = previousMayFly; this.previousFlying = previousFlying; this.previousNoGravity = previousNoGravity;
+        private int takeoffTicks;
+        private Vec3 direction = Vec3.ZERO;
+        private double speed;
+        private boolean shuttingDown;
+
+        private FlightState(boolean hadMayfly, boolean wasFlying, boolean hadNoGravity) {
+            this.hadMayfly = hadMayfly;
+            this.wasFlying = wasFlying;
+            this.hadNoGravity = hadNoGravity;
         }
     }
 }

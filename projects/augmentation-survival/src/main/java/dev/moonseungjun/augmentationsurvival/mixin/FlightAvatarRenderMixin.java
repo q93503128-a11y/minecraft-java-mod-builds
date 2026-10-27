@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Reuses vanilla's mature gliding body transform as the baseline superhero silhouette, then adds a
+ * Uses vanilla's gliding body transform for a horizontal powered-flight silhouette, then adds a
  * restrained whole-body bank while the look direction turns across the current velocity vector.
  * This is presentation only: the powered-flight server runtime still owns velocity and collision.
  */
@@ -31,9 +31,12 @@ abstract class FlightAvatarRenderMixin {
     ) {
         if (!(avatar instanceof Player player) || !isPoweredFlight(player)) return;
         double speed = player.getDeltaMovement().length();
-        if (speed < 0.58D) return;
+        if (speed < 0.30D) return;
 
+        // setupRotations keys off the explicit gliding render-state boolean, not only Entity#pose.
+        // Setting only FALL_FLYING left the powered-flight avatar visually upright in live play.
         state.pose = Pose.FALL_FLYING;
+        state.isFallFlying = true;
         state.fallFlyingTimeInTicks = Math.max(state.fallFlyingTimeInTicks, speed >= 1.55D ? 24.0F : 14.0F);
         state.shouldApplyFlyingYRot = false;
     }
