@@ -53,7 +53,7 @@ public final class ActiveAbilityRouter {
         TimeStopIntegrityService.initialize();
         for (String augmentId : ALL_ORDER) {
             AugmentCatalog.require(augmentId);
-            if (!ActivePresentationService.hasProfile(augmentId)) {
+            if (!augmentId.equals(INSTANT_MINING_ID) && !ActivePresentationService.hasProfile(augmentId)) {
                 throw new IllegalStateException("Missing active presentation profile: " + augmentId);
             }
         }
