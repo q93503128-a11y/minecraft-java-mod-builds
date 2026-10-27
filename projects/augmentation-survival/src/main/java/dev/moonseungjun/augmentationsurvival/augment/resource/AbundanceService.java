@@ -23,8 +23,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 /** Exact final ordinary-drop multiplier for the Mythic Abundance augment. */
 public final class AbundanceService {
@@ -45,15 +43,15 @@ public final class AbundanceService {
     }
 
     /**
-     * Called from BlockState's final getDrops return boundary. Every block-specific getDrops override has
-     * already run at this point, while the original LootParams.Builder still identifies the breaker.
-     * Copies the exact generated stacks rather than re-rolling Silk Touch, Fortune or external loot logic.
+     * Called from the exact Block.getDrops overload that already carries the direct breaker. The returned
+     * stacks have already passed the block's loot-table/Silk/Fortune logic, so compatible results are copied
+     * without any re-roll.
      */
-    public static List<ItemStack> applyDirectBlockDrops(LootParams.Builder params, List<ItemStack> drops) {
-        if (drops == null
+    public static List<ItemStack> applyDirectBlockDrops(ServerPlayer player, List<ItemStack> drops) {
+        if (player == null
+                || drops == null
                 || drops.isEmpty()
                 || ResourceHarvestService.isDerivedBreak()
-                || !(params.getOptionalParameter(LootContextParams.THIS_ENTITY) instanceof ServerPlayer player)
                 || !hasAbundance(player)) {
             return drops;
         }

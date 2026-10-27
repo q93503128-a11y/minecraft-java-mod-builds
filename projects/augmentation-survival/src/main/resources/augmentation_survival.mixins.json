@@ -11,7 +11,7 @@
     "MovementAugmentMixin", "ServerPlayerMantleMixin", "SurvivalPlayerMixin", "SurvivalAugmentDerivedBreakGuardMixin",
     "SurvivalTimeAccelerationMiningMixin", "TemporaryPlatformFallMixin", "TemporaryPlatformReplayGuardMixin",
     "InstantMiningBlockStateMixin", "WaterRunLivingEntityMixin", "ResourceHarvestAuditFixMixin",
-    "AbstractFurnaceUtilityMixin", "BlockAbundanceMixin", "BlockStateAbundanceMixin", "AreaAccelerationFurnaceMixin", "AreaAccelerationRandomTickMixin",
+    "AbstractFurnaceUtilityMixin", "BlockAbundanceMixin", "AreaAccelerationFurnaceMixin", "AreaAccelerationRandomTickMixin",
     "AreaAccelerationAgeableMobMixin", "AreaAccelerationChickenMixin", "BrewingStandAugmentAccessor",
     "BrewingStandUtilityMixin", "VillagerBargainingMixin", "PlayerConsumptionAugmentMixin", "PotionDiffusionMixin",
     "FoodPropertiesAugmentMixin", "FoodDataAugmentMixin", "ItemStackConsumptionAugmentMixin",
