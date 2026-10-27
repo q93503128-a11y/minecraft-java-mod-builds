@@ -5,7 +5,6 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
-import dev.moonseungjun.augmentationsurvival.integration.McEndgameDamageAdapter;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -239,7 +238,9 @@ public final class FlightAugmentService {
         long now = level.getGameTime();
         if (now % 100L == 0L) state.entityImpactReadyTick.entrySet().removeIf(entry -> entry.getValue() <= now);
         Vec3 push = movement.lengthSqr() > 1.0E-6D ? movement.normalize() : Vec3.ZERO;
-        var source = player.damageSources().source(FLIGHT_COLLISION_DAMAGE, player);
+        // The player caused the impact but is not a direct melee attacker. This preserves attribution while
+        // preventing combat overhauls from reclassifying a body collision as a weapon swing.
+        var source = player.damageSources().source(FLIGHT_COLLISION_DAMAGE, null, player);
         for (LivingEntity target : level.getEntitiesOfClass(
                 LivingEntity.class,
                 swept.inflate(0.18D),
@@ -249,9 +250,7 @@ public final class FlightAugmentService {
             if (ready > now) continue;
             boolean damaged = CombatProvenanceContext.callAs(
                     CombatProvenance.MOVEMENT_IMPACT,
-                    () -> McEndgameDamageAdapter.isLoaded()
-                            ? McEndgameDamageAdapter.dealTrueDamage(target, COLLISION_DAMAGE, player)
-                            : target.hurtServer(level, source, COLLISION_DAMAGE)
+                    () -> target.hurtServer(level, source, COLLISION_DAMAGE)
             );
             if (!damaged) continue;
             state.entityImpactReadyTick.put(target.getUUID(), now + ENTITY_IMPACT_COOLDOWN_TICKS);
