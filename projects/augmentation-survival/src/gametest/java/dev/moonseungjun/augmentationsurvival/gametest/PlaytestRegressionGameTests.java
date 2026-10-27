@@ -133,7 +133,9 @@ public final class PlaytestRegressionGameTests implements CustomTestMethodInvoke
         LivingEntity cow = helper.spawnMob(EntityTypes.COW, 1, 2, 4).withNoFreeWill().spawn();
         require(!CompanionAugmentService.mayDominatedMobDamage(dominated, cow),
                 "dominated mob was allowed to attack an arbitrary neutral mob");
-        require(cow.hurtServer((ServerLevel) cow.level(), owner.damageSources().playerAttack(owner), 1.0F),
+        float beforeOwnerAttack = cow.getHealth();
+        owner.attack(cow);
+        require(cow.getHealth() < beforeOwnerAttack,
                 "owner attack used to issue domination command did not land");
         require(CompanionAugmentService.mayDominatedMobDamage(dominated, cow),
                 "owner-hit neutral target was not promoted to domination command target");
