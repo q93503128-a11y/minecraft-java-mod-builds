@@ -31,6 +31,8 @@ import net.minecraft.world.phys.Vec3;
 public final class CompanionAugmentService {
     private static final String DOMINATION_ID = id("domination");
     private static final Map<UUID, Mob> LOADED_DOMINATED = new HashMap<>();
+    /** Last living entity deliberately attacked by each owner. It remains the command target until invalid. */
+    private static final Map<UUID, UUID> OWNER_COMMAND_TARGETS = new HashMap<>();
 
     private CompanionAugmentService() {
     }
@@ -40,11 +42,15 @@ public final class CompanionAugmentService {
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
             if (entity instanceof Mob mob && isDominated(mob)) {
                 mob.setPersistenceRequired();
+                mob.setGlowingTag(true);
                 LOADED_DOMINATED.put(mob.getUUID(), mob);
             }
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> LOADED_DOMINATED.remove(entity.getUUID()));
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> LOADED_DOMINATED.clear());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            LOADED_DOMINATED.clear();
+            OWNER_COMMAND_TARGETS.clear();
+        });
         ServerTickEvents.END_SERVER_TICK.register(CompanionAugmentService::tickDominatedCompanions);
     }
 
@@ -59,9 +65,17 @@ public final class CompanionAugmentService {
         if (target == null) return false;
         target.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.dominatedBy(player.getUUID()));
         target.setPersistenceRequired();
+        target.setGlowingTag(true);
         target.setTarget(null);
         LOADED_DOMINATED.put(target.getUUID(), target);
         setWorldState(server, worldState.withDelta(player.getUUID(), 1));
+
+        LivingEntity firstTarget = commandTarget(target, player.getUUID());
+        if (firstTarget == null) firstTarget = findNearestHostile(target, player.getUUID());
+        if (firstTarget != null) {
+            target.setTarget(firstTarget);
+            target.getNavigation().moveTo(firstTarget, 1.15D);
+        }
         return true;
     }
 
@@ -109,13 +123,37 @@ public final class CompanionAugmentService {
                 && (source == null || (!areAllied(source, candidate) && !source.isAlliedTo(candidate)));
     }
 
+    /** Records an explicit owner attack as a command that dominated companions may follow, even for neutral mobs. */
+    public static void recordOwnerAttack(ServerPlayer owner, LivingEntity target) {
+        if (target == owner || target.isDeadOrDying() || areAllied(owner, target)) return;
+        OWNER_COMMAND_TARGETS.put(owner.getUUID(), target.getUUID());
+        for (Mob companion : LOADED_DOMINATED.values()) {
+            if (!companion.isRemoved() && isOwnedBy(companion, owner.getUUID()) && companion.level() == target.level()) {
+                companion.setTarget(target);
+                companion.getNavigation().moveTo(target, 1.15D);
+            }
+        }
+    }
+
+    /** Dominated mobs may damage only true hostiles or the living target their owner deliberately attacked. */
+    public static boolean mayDominatedMobDamage(Entity attacker, LivingEntity target) {
+        Optional<UUID> owner = ownerId(attacker);
+        if (owner.isEmpty()) return true;
+        if (target == attacker || target.isDeadOrDying() || areAllied(attacker, target)) return false;
+        if (isHostileEntity(target)) return true;
+        UUID commanded = OWNER_COMMAND_TARGETS.get(owner.get());
+        return commanded != null && commanded.equals(target.getUUID());
+    }
+
     /** Called from the shared LivingEntity death boundary; owner need not be online. */
     public static void onActualDeath(LivingEntity entity) {
         Optional<UUID> owner = ownerId(entity);
-        if (owner.isEmpty() || !(entity.level() instanceof ServerLevel level)) return;
-        LOADED_DOMINATED.remove(entity.getUUID());
-        MinecraftServer server = level.getServer();
-        setWorldState(server, worldState(server).withDelta(owner.get(), -1));
+        if (owner.isPresent() && entity.level() instanceof ServerLevel level) {
+            LOADED_DOMINATED.remove(entity.getUUID());
+            MinecraftServer server = level.getServer();
+            setWorldState(server, worldState(server).withDelta(owner.get(), -1));
+        }
+        OWNER_COMMAND_TARGETS.entrySet().removeIf(entry -> entry.getValue().equals(entity.getUUID()));
     }
 
     /** Reclaims the domination occupancy slot and AI tracking after a successful permanent-companion revive. */
@@ -123,6 +161,7 @@ public final class CompanionAugmentService {
         Optional<UUID> owner = ownerId(mob);
         if (owner.isEmpty() || !(mob.level() instanceof ServerLevel level)) return;
         mob.setPersistenceRequired();
+        mob.setGlowingTag(true);
         mob.setTarget(null);
         LOADED_DOMINATED.put(mob.getUUID(), mob);
         MinecraftServer server = level.getServer();
@@ -137,8 +176,17 @@ public final class CompanionAugmentService {
             }
             if (!isDominated(mob) || mob.isDeadOrDying()) continue;
             mob.setPersistenceRequired();
+            mob.setGlowingTag(true);
             Optional<UUID> owner = ownerId(mob);
             if (owner.isEmpty()) continue;
+
+            LivingEntity commanded = commandTarget(mob, owner.get());
+            if (commanded != null) {
+                if (mob.getTarget() != commanded) mob.setTarget(commanded);
+                mob.getNavigation().moveTo(commanded, 1.15D);
+                continue;
+            }
+
             LivingEntity target = mob.getTarget();
             if (target != null && !isHostileTarget(mob, target)) {
                 mob.setTarget(null);
@@ -146,9 +194,23 @@ public final class CompanionAugmentService {
             }
             if (target == null) {
                 LivingEntity next = findNearestHostile(mob, owner.get());
-                if (next != null) mob.setTarget(next);
+                if (next != null) {
+                    mob.setTarget(next);
+                    mob.getNavigation().moveTo(next, 1.15D);
+                }
             }
         }
+    }
+
+    private static LivingEntity commandTarget(Mob companion, UUID ownerId) {
+        UUID targetId = OWNER_COMMAND_TARGETS.get(ownerId);
+        if (targetId == null || !(companion.level() instanceof ServerLevel level)) return null;
+        Entity found = level.getEntity(targetId);
+        if (!(found instanceof LivingEntity living) || living.isDeadOrDying() || living.isRemoved() || areAllied(companion, living)) {
+            OWNER_COMMAND_TARGETS.remove(ownerId, targetId);
+            return null;
+        }
+        return living;
     }
 
     private static LivingEntity findNearestHostile(Mob companion, UUID ownerId) {
