@@ -23,6 +23,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
+import dev.moonseungjun.augmentationsurvival.augment.combat.InvulnerabilityShieldSyncService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning;
@@ -139,6 +140,7 @@ public final class AugmentationSurvival implements ModInitializer {
         AdvancedWorldTuning.initialize();
         TemporalStateNetworking.initialize();
         PhaseStateNetworking.initialize();
+        InvulnerabilityShieldSyncService.initialize();
         ProtectionAugmentService.initialize();
         ActiveAbilityService.initialize();
         ShieldOvertimeService.initialize();
