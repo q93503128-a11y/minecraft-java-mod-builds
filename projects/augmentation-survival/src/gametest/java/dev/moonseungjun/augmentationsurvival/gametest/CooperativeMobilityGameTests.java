@@ -11,6 +11,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 /** Regression coverage for co-op-only rescue eligibility and custom superhero flight authority. */
 public final class CooperativeMobilityGameTests implements CustomTestMethodInvoker {
@@ -32,6 +36,7 @@ public final class CooperativeMobilityGameTests implements CustomTestMethodInvok
                 AugmentationPlayerState.initial().withAugmentLevel(PlayerRescueAugmentService.RESCUE_ID, 1)
         );
         target.setHealth(target.getMaxHealth());
+        long downedAt = target.level().getGameTime();
         target.hurtServer(
                 (ServerLevel) target.level(),
                 target.damageSources().generic(),
@@ -39,6 +44,9 @@ public final class CooperativeMobilityGameTests implements CustomTestMethodInvok
         );
         require(PlayerRescueAugmentService.isDowned(target), "rescue owner died instead of entering Downed");
         require(target.getHealth() > 0.0F, "Downed target did not remain alive");
+        require(AugmentationPlayerStateService.state(target).cooldownReadyTick(PlayerRescueAugmentService.RESCUE_ID)
+                        == downedAt + 15L * 20L,
+                "co-op rescue cooldown is not the canonical 15 seconds");
         require(PlayerRescueAugmentService.tryBeginRescue(rescuer, target), "nearby teammate could not begin rescue");
         GameTestPlayers.runAfterDelay(helper, 45, () -> {
             require(!PlayerRescueAugmentService.isDowned(target), "target remained Downed after the two-second rescue channel");
@@ -70,6 +78,43 @@ public final class CooperativeMobilityGameTests implements CustomTestMethodInvok
             require(!player.getAbilities().flying, "vanilla Creative flying remained enabled after powered flight ended");
             GameTestPlayers.succeed(helper);
         });
+    }
+
+    @GameTest
+    public void flightImpactBreaksByHardnessAndDealsTenDamageToHostiles(GameTestHelper helper) throws ReflectiveOperationException {
+        ServerPlayer player = player(helper, 1);
+        AugmentationPlayerStateService.replace(
+                player,
+                AugmentationPlayerState.initial().withAugmentLevel(FlightAugmentService.FLIGHT_ID, 1)
+        );
+        require(FlightAugmentService.toggle(player), "owned flight augment could not activate for impact test");
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos impactPos = helper.absolutePos(new BlockPos(1, 2, 2));
+
+        level.setBlockAndUpdate(impactPos, Blocks.STONE.defaultBlockState());
+        resolveFlightImpact(player, new Vec3(0.0D, 0.0D, 1.30D));
+        require(level.getBlockState(impactPos).isAir(), "Cruise impact did not break ordinary stone");
+
+        level.setBlockAndUpdate(impactPos, Blocks.OBSIDIAN.defaultBlockState());
+        resolveFlightImpact(player, new Vec3(0.0D, 0.0D, 2.30D));
+        require(level.getBlockState(impactPos).is(Blocks.OBSIDIAN), "Boost impact incorrectly broke obsidian-class material");
+        level.setBlockAndUpdate(impactPos, Blocks.AIR.defaultBlockState());
+
+        LivingEntity hostile = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 2).withNoFreeWill().spawn();
+        hostile.setHealth(20.0F);
+        resolveFlightImpact(player, new Vec3(0.0D, 0.0D, 1.30D));
+        requireClose(hostile.getHealth(), 10.0F, 0.05F, "flight collision did not deal 10 damage to hostile");
+        float afterFirstImpact = hostile.getHealth();
+        resolveFlightImpact(player, new Vec3(0.0D, 0.0D, 1.30D));
+        requireClose(hostile.getHealth(), afterFirstImpact, 0.05F,
+                "same flight overlap dealt repeated per-tick collision damage instead of one impact");
+        GameTestPlayers.succeed(helper);
+    }
+
+    private static void resolveFlightImpact(ServerPlayer player, Vec3 movement) throws ReflectiveOperationException {
+        Method method = FlightAugmentService.class.getDeclaredMethod("resolveImpacts", ServerPlayer.class, Vec3.class);
+        method.setAccessible(true);
+        method.invoke(null, player, movement);
     }
 
     private static ServerPlayer player(GameTestHelper helper, int x) {
