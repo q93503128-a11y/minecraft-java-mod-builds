@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -8,13 +9,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Runs after the default-priority vanilla/emergency/reincarnation death-protection return hook. */
-@Mixin(value = LivingEntity.class, priority = 900)
+/**
+ * Extends the existing post-vanilla death-protection chain instead of competing with another
+ * LivingEntity RETURN injector. Rescue therefore runs only after Emergency Totem and Reincarnation
+ * have both declined the lethal event.
+ */
+@Mixin(value = CombatAugmentService.class, remap = false)
 abstract class PlayerRescueDeathProtectionMixin {
-    @Inject(method = "checkTotemDeathProtection", at = @At("RETURN"), cancellable = true)
-    private void augmentationSurvival$applyCoopRescueLast(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "tryPostVanillaDeathProtection", at = @At("RETURN"), cancellable = true, remap = false)
+    private static void augmentationSurvival$applyCoopRescueLast(
+            LivingEntity entity,
+            DamageSource source,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
         if (!cir.getReturnValueZ()
-                && PlayerRescueAugmentService.tryPostVanillaDeathProtection((LivingEntity) (Object) this, source)) {
+                && PlayerRescueAugmentService.tryPostVanillaDeathProtection(entity, source)) {
             cir.setReturnValue(true);
         }
     }
