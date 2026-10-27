@@ -16,6 +16,7 @@
   "key.augmentation_survival.active_mode": "Combat Augment Mode",
   "key.augmentation_survival.active_loadout": "Combat Augment Loadout",
   "key.augmentation_survival.authority_theft": "Release Stolen Authority",
+  "key.augmentation_survival.flight": "Toggle Flight",
   "key.augmentation_survival.storage": "Open Pockets · Remote Storage",
   "key.augmentation_survival.spatial_link": "Open Spatial Link",
   "message.augmentation_survival.storage.no_access": "You do not have Pockets or Remote Storage to open.",

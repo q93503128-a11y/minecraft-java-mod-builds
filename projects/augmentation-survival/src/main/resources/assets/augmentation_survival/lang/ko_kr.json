@@ -16,6 +16,7 @@
   "key.augmentation_survival.active_mode": "전투 증강 사용 모드",
   "key.augmentation_survival.active_loadout": "전투 증강 편성",
   "key.augmentation_survival.authority_theft": "권능 해방",
+  "key.augmentation_survival.flight": "비행 전환",
   "key.augmentation_survival.storage": "포켓 · 원격 보관함 열기",
   "key.augmentation_survival.spatial_link": "공간 연결 열기",
   "message.augmentation_survival.storage.no_access": "사용할 수 있는 포켓 또는 원격 보관함이 없습니다.",
