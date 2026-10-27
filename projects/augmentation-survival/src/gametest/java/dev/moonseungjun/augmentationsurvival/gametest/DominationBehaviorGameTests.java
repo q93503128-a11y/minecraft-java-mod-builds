@@ -32,6 +32,7 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
 
         Mob dominated = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 4).spawn();
         dominated.setTarget(player);
+        Mob hostile = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 7).withNoFreeWill().spawn();
         AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
                 .withAugmentLevel(DOMINATION, 1)
                 .withActiveSlots(List.of(DOMINATION)));
@@ -40,7 +41,8 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
         require(CompanionAugmentService.isDominated(dominated), "domination did not persist companion ownership");
         require(CompanionAugmentService.isOwnedBy(dominated, player.getUUID()), "dominated mob owner was not the caster");
         require(dominated.isPersistenceRequired(), "dominated mob was not protected from normal despawn");
-        require(dominated.getTarget() == null, "domination did not clear the previous hostile target immediately");
+        require(dominated.getTarget() == hostile,
+                "dominated mob did not immediately replace its owner target with a nearby hostile");
         require(player.isAlliedTo(dominated) && dominated.isAlliedTo(player),
                 "vanilla ally checks did not expose domination ownership");
 
@@ -51,10 +53,9 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
         require(!friendlyApplied, "dominated companion damage reached its owner");
         require(player.getHealth() == ownerHealth, "dominated companion changed owner health");
 
-        Mob hostile = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 7).withNoFreeWill().spawn();
         GameTestPlayers.runAfterDelay(helper, 3, () -> {
             require(dominated.getTarget() == hostile,
-                    "dominated companion did not acquire a nearby hostile target");
+                    "dominated companion did not retain a nearby hostile target");
             require(!CompanionAugmentService.areAllied(dominated, hostile),
                     "unowned hostile was incorrectly treated as a domination ally");
 
