@@ -36,7 +36,7 @@
     "ClientPhaseShiftCollisionMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin", "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
     "AugmentDeviceUiRescueMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
-    "ClientCoopMobilityBootstrapMixin"
+    "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin"
   ],
   "injectors": {"defaultRequire": 1}
 }
