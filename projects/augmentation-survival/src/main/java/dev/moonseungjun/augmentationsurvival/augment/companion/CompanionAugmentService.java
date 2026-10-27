@@ -25,6 +25,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.phys.Vec3;
@@ -74,7 +75,7 @@ public final class CompanionAugmentService {
         target.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.dominatedBy(player.getUUID()));
         target.setPersistenceRequired();
         target.setGlowingTag(true);
-        target.setTarget(null);
+        clearCombatTarget(target, target.getTarget());
         if (target instanceof Warden warden) {
             warden.clearAnger(player);
         }
@@ -128,7 +129,7 @@ public final class CompanionAugmentService {
                 && (source == null || (!areAllied(source, candidate) && !source.isAlliedTo(candidate)));
     }
 
-    /** Records the owner's actual successful attack so dominated companions can obey even against neutral mobs. */
+    /** Records an explicit owner attack so dominated companions can obey even against neutral mobs. */
     public static void recordOwnerAttack(ServerPlayer owner, LivingEntity target) {
         if (target == owner || target.isDeadOrDying() || areAllied(owner, target)) return;
         OWNER_COMMAND_TARGETS.put(owner.getUUID(), target.getUUID());
@@ -166,7 +167,7 @@ public final class CompanionAugmentService {
         if (owner.isEmpty() || !(mob.level() instanceof ServerLevel level)) return;
         mob.setPersistenceRequired();
         mob.setGlowingTag(true);
-        mob.setTarget(null);
+        clearCombatTarget(mob, mob.getTarget());
         LOADED_DOMINATED.put(mob.getUUID(), mob);
         MinecraftServer server = level.getServer();
         setWorldState(server, worldState(server).withDelta(owner.get(), 1));
@@ -198,10 +199,7 @@ public final class CompanionAugmentService {
 
         LivingEntity target = mob.getTarget();
         if (target != null && !isHostileTarget(mob, target)) {
-            if (mob instanceof Warden warden) {
-                warden.clearAnger(target);
-            }
-            mob.setTarget(null);
+            clearCombatTarget(mob, target);
             target = null;
         }
         if (target == null) {
@@ -227,9 +225,22 @@ public final class CompanionAugmentService {
     private static void applyCombatTarget(Mob companion, LivingEntity target) {
         if (companion instanceof Warden warden) {
             warden.increaseAngerAt(target, WARDEN_COMMAND_ANGER, false);
+            warden.setAttackTarget(target);
+        } else {
+            companion.setTarget(target);
         }
-        companion.setTarget(target);
         companion.getNavigation().moveTo(target, 1.15D);
+    }
+
+    private static void clearCombatTarget(Mob companion, LivingEntity previousTarget) {
+        if (companion instanceof Warden warden) {
+            if (previousTarget != null) {
+                warden.clearAnger(previousTarget);
+            }
+            warden.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+        } else {
+            companion.setTarget(null);
+        }
     }
 
     private static LivingEntity commandTarget(Mob companion, UUID ownerId) {
