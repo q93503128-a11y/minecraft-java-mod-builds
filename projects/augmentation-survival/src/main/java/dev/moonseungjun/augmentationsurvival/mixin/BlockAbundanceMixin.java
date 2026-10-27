@@ -16,32 +16,30 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Final direct-break loot boundary for Abundance plus the spawned-resource boundary for Dexterity. */
 @Mixin(Block.class)
 abstract class BlockAbundanceMixin {
-    @Inject(
-            method = "getDrops(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemInstance;)Ljava/util/List;",
-            at = @At("RETURN"),
-            cancellable = true
+    @Redirect(
+            method = "dropResources(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemStack;)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/block/Block;getDrops(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemInstance;)Ljava/util/List;"
+            )
     )
-    private static void augmentationSurvival$duplicateDirectBreakerDrops(
+    private static List<ItemStack> augmentationSurvival$duplicateDirectBreakerDrops(
             BlockState state,
             ServerLevel level,
             BlockPos pos,
             BlockEntity blockEntity,
             Entity breaker,
-            ItemInstance tool,
-            CallbackInfoReturnable<List<ItemStack>> cir
+            ItemInstance tool
     ) {
-        if (!(breaker instanceof ServerPlayer player)) return;
-        List<ItemStack> original = cir.getReturnValue();
-        List<ItemStack> augmented = AbundanceService.applyDirectBlockDrops(player, original);
-        if (augmented != original) {
-            cir.setReturnValue(augmented);
-        }
+        List<ItemStack> drops = Block.getDrops(state, level, pos, blockEntity, breaker, tool);
+        if (!(breaker instanceof ServerPlayer player)) return drops;
+        return AbundanceService.applyDirectBlockDrops(player, drops);
     }
 
     @Inject(
