@@ -10,9 +10,9 @@ import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -23,7 +23,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 /** Exact final ordinary-drop multiplier for the Mythic Abundance augment. */
@@ -39,32 +39,32 @@ public final class AbundanceService {
 
     public static void initialize() {
         AugmentCatalog.require(ABUNDANCE_ID);
-        LootTableEvents.MODIFY_DROPS.register((holder, context, drops) -> duplicateDirectMiningDrops(context, drops));
         AugmentationSurvival.LOGGER.info(
                 "Loaded abundance contract: exact direct block, fishing and normal-mob final-drop duplication"
         );
     }
 
     /**
-     * Runs at Fabric's final runtime loot-list boundary. A block loot context identifies the actual breaker
-     * through THIS_ENTITY, so this does not depend on destroyBlock call-stack timing. The already-generated
-     * stacks are copied exactly: Silk Touch, Fortune, data packs and external loot modifiers are not re-rolled.
+     * Called from BlockState's final getDrops return boundary. Every block-specific getDrops override has
+     * already run at this point, while the original LootParams.Builder still identifies the breaker.
+     * Copies the exact generated stacks rather than re-rolling Silk Touch, Fortune or external loot logic.
      */
-    private static void duplicateDirectMiningDrops(LootContext context, List<ItemStack> drops) {
-        if (drops.isEmpty()
+    public static List<ItemStack> applyDirectBlockDrops(LootParams.Builder params, List<ItemStack> drops) {
+        if (drops == null
+                || drops.isEmpty()
                 || ResourceHarvestService.isDerivedBreak()
-                || !context.hasParameter(LootContextParams.BLOCK_STATE)
-                || !(context.getOptionalParameter(LootContextParams.THIS_ENTITY) instanceof ServerPlayer player)
+                || !(params.getOptionalParameter(LootContextParams.THIS_ENTITY) instanceof ServerPlayer player)
                 || !hasAbundance(player)) {
-            return;
+            return drops;
         }
-        int originalSize = drops.size();
-        for (int index = 0; index < originalSize; index++) {
-            ItemStack stack = drops.get(index);
+        List<ItemStack> result = new ArrayList<>(drops.size() * 2);
+        result.addAll(drops);
+        for (ItemStack stack : drops) {
             if (eligibleOrdinaryDrop(stack)) {
-                drops.add(stack.copy());
+                result.add(stack.copy());
             }
         }
+        return result;
     }
 
     /** Multiplies only the exact final fishing loot-list entries. Loot tables are not re-rolled. */
