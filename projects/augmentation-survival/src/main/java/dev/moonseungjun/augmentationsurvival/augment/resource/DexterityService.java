@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.augment.resource;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentTuning;
+import dev.moonseungjun.augmentationsurvival.augment.presentation.PassiveProcReadabilityService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayDeque;
@@ -89,6 +90,7 @@ public final class DexterityService {
         ItemStack bonus = stack.copy();
         bonus.setCount(1);
         Block.popResource(level, pos, bonus);
+        PassiveProcReadabilityService.presentDexterityBonus(context.player, pos);
     }
 
     private static int boundedLevel(AugmentationPlayerState state) {

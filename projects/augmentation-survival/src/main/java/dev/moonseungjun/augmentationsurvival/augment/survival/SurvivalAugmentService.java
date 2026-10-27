@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.augment.survival;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.presentation.PassiveProcReadabilityService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
@@ -308,6 +309,7 @@ public final class SurvivalAugmentService {
             ItemStack replacement = inventory.getSelectedItem();
             runtime.lastSelectedTemplate = replacement.copy();
             runtime.lastSelectedTemplate.setCount(1);
+            PassiveProcReadabilityService.presentAutoRefill(player);
             return;
         }
     }

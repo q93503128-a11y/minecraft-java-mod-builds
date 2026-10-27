@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.presentation.PassiveProcReadabilityService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -52,10 +53,15 @@ public final class LootScoopService {
             return downstream;
         }
 
+        boolean[] presented = {false};
         return stack -> {
             downstream.accept(stack);
             if (!stack.isEmpty() && !isCore(stack)) {
                 downstream.accept(stack.copy());
+                if (!presented[0]) {
+                    presented[0] = true;
+                    PassiveProcReadabilityService.presentLootScoop(player, victim);
+                }
             }
         };
     }

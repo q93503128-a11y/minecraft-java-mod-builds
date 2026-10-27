@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.presentation.ConditionalPassiveReadabilityService;
 import dev.moonseungjun.augmentationsurvival.augment.presentation.PassiveProcReadabilityService;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,5 +14,6 @@ abstract class PassiveProcReadabilityBootstrapMixin {
     @Inject(method = "onInitialize", at = @At("TAIL"))
     private void augmentationSurvival$initializePassiveProcReadability(CallbackInfo ci) {
         PassiveProcReadabilityService.initialize();
+        ConditionalPassiveReadabilityService.initialize();
     }
 }

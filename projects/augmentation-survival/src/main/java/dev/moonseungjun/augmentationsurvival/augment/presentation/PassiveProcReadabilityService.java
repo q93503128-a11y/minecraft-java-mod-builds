@@ -100,6 +100,56 @@ public final class PassiveProcReadabilityService {
         );
     }
 
+    /** Called only after Auto Refill has moved a matching main-inventory stack into the selected hotbar slot. */
+    public static void presentAutoRefill(ServerPlayer player) {
+        if (player == null || player.isDeadOrDying()) return;
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 at = player.getEyePosition().add(player.getLookAngle().scale(0.42D));
+        level.sendParticles(ParticleTypes.ENCHANT, at.x, at.y, at.z, 4, 0.10D, 0.08D, 0.10D, 0.012D);
+        level.sendParticles(ParticleTypes.END_ROD, at.x, at.y, at.z, 1, 0.04D, 0.04D, 0.04D, 0.002D);
+        sound(level, at, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.08F, 1.66F);
+    }
+
+    /** Called only when Arrow Saver wins its ammo-preservation roll for a real bow/crossbow arrow shot. */
+    public static void presentArrowSaved(ServerPlayer player) {
+        if (player == null || player.isDeadOrDying()) return;
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 at = player.getEyePosition().add(player.getLookAngle().scale(0.62D));
+        ring(level, ParticleTypes.ENCHANT, at, 0.12D, 5);
+        level.sendParticles(ParticleTypes.END_ROD, at.x, at.y, at.z, 1, 0.04D, 0.04D, 0.04D, 0.002D);
+        sound(level, at, SoundEvents.AMETHYST_BLOCK_CHIME, 0.08F, 1.52F);
+    }
+
+    /** Called once when Loot Scoop has actually duplicated at least one eligible death-loot stack. */
+    public static void presentLootScoop(ServerPlayer player, LivingEntity victim) {
+        if (player == null || victim == null || player.isDeadOrDying()) return;
+        if (!(victim.level() instanceof ServerLevel level)) return;
+        Vec3 at = victim.getBoundingBox().getCenter();
+        ring(level, ParticleTypes.ENCHANT, at, Math.max(0.28D, victim.getBbWidth() * 0.45D), 7);
+        level.sendParticles(ParticleTypes.END_ROD, at.x, at.y, at.z, 2, 0.14D, 0.18D, 0.14D, 0.006D);
+        sound(level, at, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.12F, 1.30F);
+    }
+
+    /** Called only after Dexterity has emitted its confirmed +1 whitelist gathering drop. */
+    public static void presentDexterityBonus(ServerPlayer player, BlockPos pos) {
+        if (player == null || pos == null || player.isDeadOrDying()) return;
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 at = Vec3.atCenterOf(pos).add(0.0D, 0.12D, 0.0D);
+        level.sendParticles(ParticleTypes.ENCHANT, at.x, at.y, at.z, 3, 0.16D, 0.10D, 0.16D, 0.014D);
+        level.sendParticles(ParticleTypes.END_ROD, at.x, at.y, at.z, 1, 0.06D, 0.06D, 0.06D, 0.002D);
+        sound(level, at, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.09F, 1.44F);
+    }
+
+    /** Called only when Treasure Fishing's bonus probability, rather than vanilla selection, forces treasure. */
+    public static void presentTreasureFishing(ServerPlayer player, Vec3 hookPosition) {
+        if (player == null || hookPosition == null || player.isDeadOrDying()) return;
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 at = hookPosition.add(0.0D, 0.16D, 0.0D);
+        ring(level, ParticleTypes.ENCHANT, at, 0.34D, 8);
+        level.sendParticles(ParticleTypes.END_ROD, at.x, at.y, at.z, 4, 0.12D, 0.18D, 0.12D, 0.006D);
+        sound(level, at, SoundEvents.AMETHYST_BLOCK_CHIME, 0.18F, 1.36F);
+    }
+
     private static void afterDamage(
             LivingEntity entity,
             DamageSource source,
