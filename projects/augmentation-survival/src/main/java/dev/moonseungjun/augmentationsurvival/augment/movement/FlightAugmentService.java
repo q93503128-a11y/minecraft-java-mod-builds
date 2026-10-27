@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
+import dev.moonseungjun.augmentationsurvival.integration.McEndgameDamageAdapter;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -248,7 +249,9 @@ public final class FlightAugmentService {
             if (ready > now) continue;
             boolean damaged = CombatProvenanceContext.callAs(
                     CombatProvenance.MOVEMENT_IMPACT,
-                    () -> target.hurtServer(level, source, COLLISION_DAMAGE)
+                    () -> McEndgameDamageAdapter.isLoaded()
+                            ? McEndgameDamageAdapter.dealTrueDamage(target, COLLISION_DAMAGE, player)
+                            : target.hurtServer(level, source, COLLISION_DAMAGE)
             );
             if (!damaged) continue;
             state.entityImpactReadyTick.put(target.getUUID(), now + ENTITY_IMPACT_COOLDOWN_TICKS);
