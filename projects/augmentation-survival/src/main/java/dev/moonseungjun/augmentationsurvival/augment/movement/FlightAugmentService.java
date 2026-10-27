@@ -15,12 +15,16 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Input;
@@ -31,6 +35,10 @@ import net.minecraft.world.phys.Vec3;
 /** Server-authoritative powered superhero flight. Vanilla Creative movement is never enabled. */
 public final class FlightAugmentService {
     public static final String FLIGHT_ID = id("flight");
+    private static final ResourceKey<DamageType> FLIGHT_COLLISION_DAMAGE = ResourceKey.create(
+            Registries.DAMAGE_TYPE,
+            Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "flight_collision")
+    );
     private static final double HOVER_SPEED = 0.42D;
     private static final double CRUISE_SPEED = 1.30D;
     private static final double BOOST_SPEED = 2.30D;
@@ -230,6 +238,7 @@ public final class FlightAugmentService {
         long now = level.getGameTime();
         if (now % 100L == 0L) state.entityImpactReadyTick.entrySet().removeIf(entry -> entry.getValue() <= now);
         Vec3 push = movement.lengthSqr() > 1.0E-6D ? movement.normalize() : Vec3.ZERO;
+        var source = player.damageSources().source(FLIGHT_COLLISION_DAMAGE, player);
         for (LivingEntity target : level.getEntitiesOfClass(
                 LivingEntity.class,
                 swept.inflate(0.18D),
@@ -239,7 +248,7 @@ public final class FlightAugmentService {
             if (ready > now) continue;
             boolean damaged = CombatProvenanceContext.callAs(
                     CombatProvenance.MOVEMENT_IMPACT,
-                    () -> target.hurtServer(level, player.damageSources().playerAttack(player), COLLISION_DAMAGE)
+                    () -> target.hurtServer(level, source, COLLISION_DAMAGE)
             );
             if (!damaged) continue;
             state.entityImpactReadyTick.put(target.getUUID(), now + ENTITY_IMPACT_COOLDOWN_TICKS);
