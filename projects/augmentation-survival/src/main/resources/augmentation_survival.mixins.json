@@ -30,6 +30,7 @@
     "PassivePresentationBootstrapMixin", "CombatPassivePresentationMixin", "ReactivePassivePresentationMixin",
     "ExpansionPassivePresentationMixin", "PassiveReadabilityBootstrapMixin", "LifeLinkPresentationMixin",
     "FinalAugmentReadabilityMixin", "ProtectionPassiveReadabilityMixin", "ContinuousMiningReadabilityMixin",
+    "PassiveProcReadabilityBootstrapMixin", "DurabilityPassiveReadabilityMixin", "ResourceProcReadabilityMixin",
     "CoopMobilityBootstrapMixin", "AugmentOfferMultiplayerEligibilityMixin",
     "PlayerRescueActionLockMixin", "ServerPlayerGameModeRescueLockMixin"
   ],
