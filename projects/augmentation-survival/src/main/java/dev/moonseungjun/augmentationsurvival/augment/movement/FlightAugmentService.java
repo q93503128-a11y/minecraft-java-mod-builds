@@ -11,13 +11,19 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /** Server-authoritative powered superhero flight. Vanilla Creative movement is never enabled. */
@@ -30,6 +36,10 @@ public final class FlightAugmentService {
     private static final double BOOST_ACCEL = 0.075D;
     private static final double BRAKE_DECEL = 0.11D;
     private static final int TAKEOFF_TICKS = 10;
+    private static final float COLLISION_DAMAGE = 10.0F;
+    private static final int ENTITY_IMPACT_COOLDOWN_TICKS = 10;
+    private static final int MAX_BROKEN_BLOCKS_PER_TICK = 12;
+    private static final double MIN_IMPACT_SPEED = 0.35D;
     private static final Map<UUID, FlightState> ACTIVE = new HashMap<>();
     private static boolean initialized;
 
@@ -149,10 +159,88 @@ public final class FlightAugmentService {
             if (next.lengthSqr() > 1.0E-6D) state.direction = next.normalize();
         }
 
+        resolveImpacts(player, next);
         player.setDeltaMovement(next);
         player.hurtMarked = true;
         emitFeedback(player, state, previous);
         return false;
+    }
+
+    /**
+     * Resolves the swept collision volume before vanilla movement collision clips the player.
+     * Weak blocks are smashed without drops, while hostile living entities take one 10-damage impact.
+     */
+    private static void resolveImpacts(ServerPlayer player, Vec3 movement) {
+        FlightState state = ACTIVE.get(player.getUUID());
+        if (state == null) return;
+        double impactSpeed = movement.length();
+        if (impactSpeed < MIN_IMPACT_SPEED) return;
+        ServerLevel level = (ServerLevel) player.level();
+        AABB swept = player.getBoundingBox().expandTowards(movement).inflate(0.06D, 0.0D, 0.06D);
+        breakCollisionBlocks(level, player, swept, impactSpeed);
+        damageCollisionEnemies(level, player, state, swept, movement);
+    }
+
+    private static void breakCollisionBlocks(
+            ServerLevel level,
+            ServerPlayer player,
+            AABB swept,
+            double impactSpeed
+    ) {
+        double maxHardness = breakableHardness(impactSpeed);
+        if (maxHardness <= 0.0D) return;
+        int minX = Mth.floor(swept.minX);
+        int minY = Mth.floor(swept.minY);
+        int minZ = Mth.floor(swept.minZ);
+        int maxX = Mth.floor(swept.maxX);
+        int maxY = Mth.floor(swept.maxY);
+        int maxZ = Mth.floor(swept.maxZ);
+        int broken = 0;
+
+        for (int y = minY; y <= maxY && broken < MAX_BROKEN_BLOCKS_PER_TICK; y++) {
+            for (int x = minX; x <= maxX && broken < MAX_BROKEN_BLOCKS_PER_TICK; x++) {
+                for (int z = minZ; z <= maxZ && broken < MAX_BROKEN_BLOCKS_PER_TICK; z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState block = level.getBlockState(pos);
+                    if (block.isAir() || level.getBlockEntity(pos) != null) continue;
+                    var collision = block.getCollisionShape(level, pos);
+                    if (collision.isEmpty() || !collision.bounds().move(pos).intersects(swept)) continue;
+                    float hardness = block.getDestroySpeed(level, pos);
+                    if (hardness < 0.0F || hardness > maxHardness) continue;
+                    if (level.destroyBlock(pos, false, player)) broken++;
+                }
+            }
+        }
+    }
+
+    private static double breakableHardness(double impactSpeed) {
+        // Hover only breaks very weak material; Cruise crosses stone/logs; full Boost reaches iron-block class.
+        return Math.max(0.0D, impactSpeed * 3.0D - 0.70D);
+    }
+
+    private static void damageCollisionEnemies(
+            ServerLevel level,
+            ServerPlayer player,
+            FlightState state,
+            AABB swept,
+            Vec3 movement
+    ) {
+        long now = level.getGameTime();
+        if (now % 100L == 0L) state.entityImpactReadyTick.entrySet().removeIf(entry -> entry.getValue() <= now);
+        Vec3 push = movement.lengthSqr() > 1.0E-6D ? movement.normalize() : Vec3.ZERO;
+        for (LivingEntity target : level.getEntitiesOfClass(
+                LivingEntity.class,
+                swept.inflate(0.18D),
+                target -> target != player && target.isAlive() && target instanceof Enemy && !target.isAlliedTo(player)
+        )) {
+            long ready = state.entityImpactReadyTick.getOrDefault(target.getUUID(), 0L);
+            if (ready > now) continue;
+            if (!target.hurtServer(level, player.damageSources().playerAttack(player), COLLISION_DAMAGE)) continue;
+            state.entityImpactReadyTick.put(target.getUUID(), now + ENTITY_IMPACT_COOLDOWN_TICKS);
+            target.push(push.x * 0.75D, Math.max(0.12D, push.y * 0.30D), push.z * 0.75D);
+            Vec3 hit = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
+            level.sendParticles(ParticleTypes.CRIT, hit.x, hit.y, hit.z, 12, 0.28D, 0.28D, 0.28D, 0.12D);
+        }
     }
 
     private static Vec3 steer(Vec3 current, Vec3 desired, double amount) {
@@ -212,6 +300,7 @@ public final class FlightAugmentService {
         private final boolean previousMayFly;
         private final boolean previousFlying;
         private final boolean previousNoGravity;
+        private final Map<UUID, Long> entityImpactReadyTick = new HashMap<>();
         private int takeoffTicks;
         private double speed;
         private Vec3 direction = Vec3.ZERO;
