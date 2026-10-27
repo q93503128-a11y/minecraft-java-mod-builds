@@ -36,7 +36,7 @@
   ],
   "client": [
     "LocalPlayerConsumptionMixin", "ClientMiningAugmentMixin", "ClientWaterRunLivingEntityMixin",
-    "ClientPhaseShiftCollisionMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
+    "ClientPhaseShiftCollisionMixin", "ClientPhaseShiftPushOutMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin", "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
     "AugmentDeviceUiRescueMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
     "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin"
