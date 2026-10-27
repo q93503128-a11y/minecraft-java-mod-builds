@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.SweepingEnhancementService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.FocusedAimAugmentService;
@@ -130,17 +131,24 @@ abstract class CombatAugmentMixin {
         ));
     }
 
-    /** Vanilla held-item death protection runs first; inventory totem/reincarnation follow it. */
+    /**
+     * Vanilla held-item death protection resolves first. If it declines, personal augment protection
+     * (Emergency Totem / Reincarnation) gets priority; co-op rescue is the final fallback.
+     */
     @Inject(method = "checkTotemDeathProtection", at = @At("RETURN"), cancellable = true)
     private void augmentationSurvival$postVanillaDeathProtection(
             DamageSource source,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (!cir.getReturnValueZ()
-                && CombatAugmentService.tryPostVanillaDeathProtection(
-                        (LivingEntity) (Object) this,
-                        source
-                )) {
+        if (cir.getReturnValueZ()) {
+            return;
+        }
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (CombatAugmentService.tryPostVanillaDeathProtection(self, source)) {
+            cir.setReturnValue(true);
+            return;
+        }
+        if (PlayerRescueAugmentService.tryPostVanillaDeathProtection(self, source)) {
             cir.setReturnValue(true);
         }
     }
