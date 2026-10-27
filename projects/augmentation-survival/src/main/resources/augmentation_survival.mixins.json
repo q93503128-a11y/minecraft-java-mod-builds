@@ -29,7 +29,8 @@
     "EnchantmentMenuRefreshMixin", "ProtectionRuntimeAccessor", "ProtectionRuntimeStateAccessor", "ProtectionPoolAccessor",
     "PassivePresentationBootstrapMixin", "CombatPassivePresentationMixin", "ReactivePassivePresentationMixin",
     "ExpansionPassivePresentationMixin", "PassiveReadabilityBootstrapMixin", "LifeLinkPresentationMixin",
-    "FinalAugmentReadabilityMixin", "CoopMobilityBootstrapMixin", "AugmentOfferMultiplayerEligibilityMixin",
+    "FinalAugmentReadabilityMixin", "ProtectionPassiveReadabilityMixin", "ContinuousMiningReadabilityMixin",
+    "CoopMobilityBootstrapMixin", "AugmentOfferMultiplayerEligibilityMixin",
     "PlayerRescueActionLockMixin", "ServerPlayerGameModeRescueLockMixin"
   ],
   "client": [
