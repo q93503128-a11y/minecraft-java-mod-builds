@@ -23,7 +23,7 @@ public final class CooperativeMobilityGameTests implements CustomTestMethodInvok
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest
+    @GameTest(maxTicks = 80)
     public void companionRescueDownsAndAnotherPlayerRestoresThirtyPercentHealth(GameTestHelper helper) {
         ServerPlayer target = player(helper, 1);
         ServerPlayer rescuer = player(helper, 2);
