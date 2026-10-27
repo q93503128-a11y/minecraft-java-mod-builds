@@ -103,9 +103,9 @@ public final class DivinePunishmentService {
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, x, y, target.getZ(),
                     2, 0.08D, 0.08D, 0.08D, 0.01D);
         }
-        level.sendParticles(ParticleTypes.FLASH,
+        level.sendParticles(ParticleTypes.END_ROD,
                 x, bottom + target.getBbHeight() * 0.55D, target.getZ(),
-                1, 0.0D, 0.0D, 0.0D, 0.0D);
+                4, 0.18D, 0.28D, 0.18D, 0.02D);
         level.playSound(null, target.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT,
                 SoundSource.PLAYERS, 0.75F, 1.15F);
     }
