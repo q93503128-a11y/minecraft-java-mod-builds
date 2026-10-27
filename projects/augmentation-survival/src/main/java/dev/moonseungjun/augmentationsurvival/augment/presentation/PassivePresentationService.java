@@ -121,10 +121,10 @@ public final class PassivePresentationService {
 
         switch (path) {
             case "last_stand" -> {
-                level.sendParticles(ParticleTypes.FLASH, chest.x, chest.y, chest.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+                level.sendParticles(ParticleTypes.POOF, chest.x, chest.y, chest.z, 8, 0.16D, 0.22D, 0.16D, 0.045D);
                 ring(level, ParticleTypes.END_ROD, self.add(0.0D, 0.85D, 0.0D), 1.10D, 18);
                 level.sendParticles(ParticleTypes.CRIT, chest.x, chest.y, chest.z, 10, 0.35D, 0.55D, 0.35D, 0.08D);
-                sound(level, self, SoundEvents.SHIELD_BLOCK, 0.70F, 0.58F);
+                sound(level, self, SoundEvents.SHIELD_BLOCK.value(), 0.70F, 0.58F);
             }
             case "reincarnation" -> {
                 ring(level, ParticleTypes.SOUL, self.add(0.0D, 0.20D, 0.0D), 1.45D, 20);
@@ -149,7 +149,7 @@ public final class PassivePresentationService {
             case "chain_explosion" -> {
                 level.sendParticles(ParticleTypes.EXPLOSION, target.x, target.y, target.z, 2, 0.35D, 0.35D, 0.35D, 0.0D);
                 ring(level, ParticleTypes.POOF, target, 1.55D, 20);
-                sound(level, target, SoundEvents.GENERIC_EXPLODE, 0.68F, 1.22F);
+                sound(level, target, SoundEvents.GENERIC_EXPLODE.value(), 0.68F, 1.22F);
             }
             case "lightning" -> {
                 column(level, ParticleTypes.ELECTRIC_SPARK, target.add(0.0D, -0.8D, 0.0D), 2.8D, 12);
@@ -191,7 +191,7 @@ public final class PassivePresentationService {
             case "return_to_sender" -> {
                 line(level, ParticleTypes.END_ROD, chest, target, 10);
                 level.sendParticles(ParticleTypes.CRIT, target.x, target.y, target.z, 9, 0.20D, 0.20D, 0.20D, 0.10D);
-                sound(level, target, SoundEvents.SHIELD_BLOCK, 0.50F, 1.34F);
+                sound(level, target, SoundEvents.SHIELD_BLOCK.value(), 0.50F, 1.34F);
             }
             case "status_reflect" -> {
                 line(level, ParticleTypes.WITCH, chest, target, 10);
@@ -206,14 +206,14 @@ public final class PassivePresentationService {
             case "shield_burst" -> {
                 ring(level, ParticleTypes.POOF, self.add(0.0D, 0.90D, 0.0D), 1.85D, 24);
                 ring(level, ParticleTypes.END_ROD, self.add(0.0D, 0.90D, 0.0D), 1.15D, 16);
-                sound(level, self, SoundEvents.SHIELD_BREAK, 0.60F, 1.00F);
+                sound(level, self, SoundEvents.SHIELD_BREAK.value(), 0.60F, 1.00F);
             }
             case "retrace" -> {
                 level.sendParticles(ParticleTypes.PORTAL, chest.x, chest.y, chest.z, 16, 0.45D, 0.65D, 0.45D, 0.10D);
                 sound(level, self, SoundEvents.ENDERMAN_TELEPORT, 0.50F, 1.26F);
             }
             case "invincibility" -> {
-                level.sendParticles(ParticleTypes.FLASH, chest.x, chest.y, chest.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+                level.sendParticles(ParticleTypes.ENCHANT, chest.x, chest.y, chest.z, 12, 0.20D, 0.35D, 0.20D, 0.035D);
                 ring(level, ParticleTypes.END_ROD, self.add(0.0D, 1.0D, 0.0D), 0.95D, 18);
                 sound(level, self, SoundEvents.BEACON_ACTIVATE, 0.44F, 1.08F);
             }
