@@ -52,7 +52,7 @@ public final class AugmentOfferService {
         List<AugmentDefinition> eligible = eligibleCandidates(state, requestedTier);
         if (eligible.isEmpty()) return BeginResult.fullyMaxed();
 
-        shuffle(eligible, player.getRandom());
+        eligible = shuffledCopy(eligible, player.getRandom());
         int candidateCount = Math.min(TARGET_CANDIDATE_COUNT, eligible.size());
         List<String> candidateIds = eligible.subList(0, candidateCount).stream()
                 .map(AugmentDefinition::id).toList();
@@ -112,7 +112,7 @@ public final class AugmentOfferService {
             return RerollResult.invalid(RerollStatus.NO_REPLACEMENT);
         }
 
-        shuffle(replacements, player.getRandom());
+        replacements = shuffledCopy(replacements, player.getRandom());
         String replacementId = replacements.get(0).id();
         ArrayList<String> nextCandidates = new ArrayList<>(pending.candidateIds());
         nextCandidates.set(slot, replacementId);
@@ -258,13 +258,15 @@ public final class AugmentOfferService {
         return eligible;
     }
 
-    private static void shuffle(List<AugmentDefinition> definitions, RandomSource random) {
-        for (int index = definitions.size() - 1; index > 0; index--) {
+    private static List<AugmentDefinition> shuffledCopy(List<AugmentDefinition> definitions, RandomSource random) {
+        ArrayList<AugmentDefinition> shuffled = new ArrayList<>(definitions);
+        for (int index = shuffled.size() - 1; index > 0; index--) {
             int swapIndex = random.nextInt(index + 1);
-            AugmentDefinition current = definitions.get(index);
-            definitions.set(index, definitions.get(swapIndex));
-            definitions.set(swapIndex, current);
+            AugmentDefinition current = shuffled.get(index);
+            shuffled.set(index, shuffled.get(swapIndex));
+            shuffled.set(swapIndex, current);
         }
+        return shuffled;
     }
 
     private static MinecraftServer requireServer(ServerPlayer player) {
