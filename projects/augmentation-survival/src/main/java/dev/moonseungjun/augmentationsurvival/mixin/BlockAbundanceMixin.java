@@ -1,6 +1,5 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
-import dev.moonseungjun.augmentationsurvival.augment.resource.AbundanceService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.DexterityService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
@@ -11,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Exact final block-drop boundary for compatible gathering additions and Abundance duplication. */
+/** Actual spawned-resource boundary used by Dexterity's additional gathering drop. */
 @Mixin(Block.class)
 abstract class BlockAbundanceMixin {
     @Inject(
@@ -25,6 +24,5 @@ abstract class BlockAbundanceMixin {
             CallbackInfo ci
     ) {
         DexterityService.duplicateActualGatheringDrop(level, pos, stack);
-        AbundanceService.duplicateDirectBlockDrop(level, pos, stack);
     }
 }
