@@ -1,12 +1,20 @@
 package dev.moonseungjun.augmentationsurvival.augment.presentation;
 
+import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.WeakHashMap;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -20,10 +28,27 @@ import net.minecraft.world.phys.Vec3;
  * Gameplay services remain authoritative; this class only mirrors confirmed state edges/procs.
  */
 public final class ConditionalPassiveReadabilityService {
+    private static final String NOCTURNAL_ID = id("nocturnal");
+    private static final String SUN_AFFINITY_ID = id("sun_affinity");
+
     private static final Map<ServerPlayer, AdaptationCueState> ADAPTATION_CUES = new WeakHashMap<>();
     private static final Map<ServerPlayer, MiningCueState> MINING_CUES = new WeakHashMap<>();
+    private static final Map<UUID, DayCycleCueState> DAY_CYCLE_CUES = new HashMap<>();
+    private static boolean initialized;
 
     private ConditionalPassiveReadabilityService() {
+    }
+
+    public static void initialize() {
+        if (initialized) return;
+        initialized = true;
+        ServerTickEvents.END_SERVER_TICK.register(ConditionalPassiveReadabilityService::tickDayCyclePassives);
+        ServerPlayerEvents.JOIN.register(ConditionalPassiveReadabilityService::clearDayCycleCue);
+        ServerPlayerEvents.LEAVE.register(ConditionalPassiveReadabilityService::clearDayCycleCue);
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            clearDayCycleCue(oldPlayer);
+            clearDayCycleCue(newPlayer);
+        });
     }
 
     /** Called only after Damage Adaptation has recorded a real non-delayed hit family. */
@@ -91,6 +116,92 @@ public final class ConditionalPassiveReadabilityService {
         }
     }
 
+    private static void tickDayCyclePassives(MinecraftServer server) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.isDeadOrDying() || player.isSpectator()) {
+                DAY_CYCLE_CUES.remove(player.getUUID());
+                continue;
+            }
+
+            AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+            boolean nocturnal = state.level(NOCTURNAL_ID) > 0;
+            boolean sunAffinity = state.level(SUN_AFFINITY_ID) > 0;
+            if (!nocturnal && !sunAffinity) {
+                DAY_CYCLE_CUES.remove(player.getUUID());
+                continue;
+            }
+
+            boolean daytime = isDaytime(player);
+            DayCycleCueState cue = DAY_CYCLE_CUES.computeIfAbsent(
+                    player.getUUID(),
+                    ignored -> new DayCycleCueState(daytime, nocturnal, sunAffinity)
+            );
+            if (!cue.ready) {
+                cue.ready = true;
+                cue.daytime = daytime;
+                cue.nocturnal = nocturnal;
+                cue.sunAffinity = sunAffinity;
+                continue;
+            }
+
+            boolean phaseChanged = cue.daytime != daytime;
+            boolean nocturnalActivatedByOwnership = !cue.nocturnal && nocturnal && !daytime;
+            boolean sunActivatedByOwnership = !cue.sunAffinity && sunAffinity && daytime;
+            if (phaseChanged || nocturnalActivatedByOwnership || sunActivatedByOwnership) {
+                presentDayCycleTransition(player, daytime, nocturnal, sunAffinity);
+            }
+
+            cue.daytime = daytime;
+            cue.nocturnal = nocturnal;
+            cue.sunAffinity = sunAffinity;
+        }
+    }
+
+    private static void presentDayCycleTransition(
+            ServerPlayer player,
+            boolean daytime,
+            boolean nocturnal,
+            boolean sunAffinity
+    ) {
+        boolean active = daytime ? sunAffinity : nocturnal;
+        boolean deactivated = daytime ? nocturnal : sunAffinity;
+        if (!active && !deactivated) return;
+
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 chest = player.position().add(0.0D, Math.max(0.72D, player.getBbHeight() * 0.52D), 0.0D);
+        ParticleOptions primary = daytime ? ParticleTypes.END_ROD : ParticleTypes.ENCHANT;
+        ring(level, primary, chest, active ? 0.56D : 0.42D, active ? 8 : 5);
+        if (active) {
+            level.sendParticles(
+                    daytime ? ParticleTypes.ENCHANT : ParticleTypes.END_ROD,
+                    chest.x, chest.y, chest.z,
+                    3,
+                    0.15D, 0.20D, 0.15D,
+                    0.006D
+            );
+            sound(
+                    level,
+                    chest,
+                    daytime ? SoundEvents.AMETHYST_BLOCK_CHIME : SoundEvents.EXPERIENCE_ORB_PICKUP,
+                    0.12F,
+                    daytime ? 1.34F : 0.88F
+            );
+        } else {
+            level.sendParticles(ParticleTypes.POOF, chest.x, chest.y, chest.z, 3, 0.14D, 0.16D, 0.14D, 0.010D);
+        }
+    }
+
+    private static boolean isDaytime(ServerPlayer player) {
+        long dayTime = Math.floorMod(player.level().getOverworldClockTime(), 24_000L);
+        return dayTime < 13_000L;
+    }
+
+    private static void clearDayCycleCue(ServerPlayer player) {
+        if (player != null) {
+            DAY_CYCLE_CUES.remove(player.getUUID());
+        }
+    }
+
     private static String damageFamily(DamageSource source) {
         return source.typeHolder()
                 .unwrapKey()
@@ -117,6 +228,10 @@ public final class ConditionalPassiveReadabilityService {
         level.playSound(null, at.x, at.y, at.z, sound, SoundSource.PLAYERS, volume, pitch);
     }
 
+    private static String id(String path) {
+        return AugmentationSurvival.MOD_ID + ":" + path;
+    }
+
     private static final class AdaptationCueState {
         private String family;
         private long untilTick;
@@ -125,5 +240,18 @@ public final class ConditionalPassiveReadabilityService {
     private static final class MiningCueState {
         private int stacks;
         private long untilTick;
+    }
+
+    private static final class DayCycleCueState {
+        private boolean ready;
+        private boolean daytime;
+        private boolean nocturnal;
+        private boolean sunAffinity;
+
+        private DayCycleCueState(boolean daytime, boolean nocturnal, boolean sunAffinity) {
+            this.daytime = daytime;
+            this.nocturnal = nocturnal;
+            this.sunAffinity = sunAffinity;
+        }
     }
 }
