@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -16,7 +17,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/** Pins the final server block-break progress boundary used by instant mining. */
+/** Pins the final server block-break progress boundary used by the Instant Mining active toggle. */
 public final class InstantMiningBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String INSTANT_MINING_ID = AugmentationSurvival.MOD_ID + ":instant_mining";
 
@@ -35,16 +36,20 @@ public final class InstantMiningBoundaryGameTests implements CustomTestMethodInv
         level.setBlock(pos, stone, Block.UPDATE_ALL);
         player.getInventory().setItem(player.getInventory().getSelectedSlot(), new ItemStack(Items.DIAMOND_PICKAXE));
 
-        require(AugmentationPlayerStateService.state(player).level(INSTANT_MINING_ID) == 1,
-                "instant-mining attachment state was lost before break-progress calculation");
-        require(player.hasCorrectToolForDrops(stone),
-                "instant-mining precondition rejected the diamond pickaxe");
+        require(!UtilityAugmentService.isInstantMiningEnabled(player),
+                "instant mining became active from ownership alone");
+        require(!UtilityAugmentService.shouldInstantMine(player, stone, 1.0F),
+                "instant mining service bypassed its explicit toggle while off");
+        require(ActiveAbilityRouter.assignSlot(player, 0, INSTANT_MINING_ID),
+                "instant mining could not be assigned to an active slot");
+        require(ActiveAbilityRouter.tryUseSlot(player, 0),
+                "instant mining active slot did not toggle on");
         require(UtilityAugmentService.shouldInstantMine(player, stone, 1.0F),
-                "instant-mining service predicate rejected valid state/tool input");
+                "instant-mining service predicate rejected enabled valid state/tool input");
 
         float progress = stone.getDestroyProgress(player, level, pos);
         require(progress >= 1.0F,
-                "final BlockState#getDestroyProgress boundary did not apply instant mining; progress=" + progress);
+                "final BlockState#getDestroyProgress boundary did not apply enabled instant mining; progress=" + progress);
         GameTestPlayers.succeed(helper);
     }
 

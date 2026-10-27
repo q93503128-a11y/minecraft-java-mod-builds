@@ -9,6 +9,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
+import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -239,8 +240,16 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
     @GameTest
     public void instantMiningRequiresAValidHarvestTool(GameTestHelper helper) {
         ServerPlayer player = player(helper);
+        String instantMining = id("instant_mining");
         AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
-                .withAugmentLevel(id("instant_mining"), 1));
+                .withAugmentLevel(instantMining, 1));
+        require(!UtilityAugmentService.isInstantMiningEnabled(player),
+                "instant mining started enabled from ownership alone");
+        require(ActiveAbilityRouter.assignSlot(player, 0, instantMining),
+                "instant mining could not be assigned for harvest-tool test");
+        require(ActiveAbilityRouter.tryUseSlot(player, 0),
+                "instant mining could not be toggled on for harvest-tool test");
+
         ServerLevel level = (ServerLevel) player.level();
         BlockPos pos = player.blockPosition().offset(2, 0, 0);
         var stone = Blocks.STONE.defaultBlockState();
@@ -251,7 +260,7 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                 "instant-mining precondition: diamond pickaxe was not recognized as the correct stone tool");
         float validToolProgress = stone.getDestroyProgress(player, level, pos);
         require(validToolProgress >= 1.0F,
-                "instant mining did not reach one-game-tick root progress; progress=" + validToolProgress);
+                "enabled instant mining did not reach one-game-tick root progress; progress=" + validToolProgress);
 
         player.getInventory().setItem(player.getInventory().getSelectedSlot(), ItemStack.EMPTY);
         float emptyHandProgress = stone.getDestroyProgress(player, level, pos);

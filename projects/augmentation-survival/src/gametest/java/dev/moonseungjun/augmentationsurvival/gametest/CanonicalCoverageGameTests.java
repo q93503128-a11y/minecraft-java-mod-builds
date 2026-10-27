@@ -11,6 +11,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.movement.FlightAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.PlayerStatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.stat.StatAugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -61,6 +62,8 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
     @GameTest public void canonicalActiveRosterMatchesServerRoutingContracts(GameTestHelper helper) {
         Set<String> canonicalActives = new LinkedHashSet<>();
         for (AugmentDefinition definition : AugmentCatalog.allDefinitions()) if (definition.canonicalNameKo().contains("액티브")) canonicalActives.add(definition.id());
+        // Instant Mining is canonically an active toggle even though its catalog display name itself does not carry the marker.
+        canonicalActives.add(UtilityAugmentService.INSTANT_MINING_ID);
         Set<String> expectedStandardActives = new LinkedHashSet<>(canonicalActives); expectedStandardActives.removeAll(DEDICATED_KEY_ACTIVES);
         List<String> routedList = ActiveAbilityRouter.supportedIds(); Set<String> routed = new LinkedHashSet<>(routedList);
         require(routed.size() == routedList.size(), "server active router contains duplicate IDs");

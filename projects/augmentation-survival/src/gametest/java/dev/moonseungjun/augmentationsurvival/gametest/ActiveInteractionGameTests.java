@@ -11,6 +11,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceCont
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -34,9 +35,14 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
 
     @GameTest(maxTicks = 20)
     public void everyRoutedActiveHasPresentationProfile(GameTestHelper helper) {
-        require(ActiveAbilityRouter.supportedIds().size() == 21,
+        require(ActiveAbilityRouter.supportedIds().size() == 22,
                 "standard active roster changed without updating the presentation coverage contract");
         for (String abilityId : ActiveAbilityRouter.supportedIds()) {
+            if (UtilityAugmentService.INSTANT_MINING_ID.equals(abilityId)) {
+                require(!ActivePresentationService.hasProfile(abilityId),
+                        "instant mining should use its toggle state without generic world-particle presentation");
+                continue;
+            }
             require(ActivePresentationService.hasProfile(abilityId),
                     "missing server-confirmed presentation profile for " + abilityId);
         }
@@ -150,8 +156,6 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
         require(player.getHealth() == healthBeforeFrozenAttack,
                 "time-stopped hostile changed player health through an alternate attack path");
 
-        // Move a previously out-of-range hostile into the active field and attack before the END_SERVER_TICK
-        // field refresh. The damage-boundary zone guard must already reject the hit on this same tick.
         lateEntrant.setPos(player.getX() + 2.0D, player.getY(), player.getZ());
         float healthBeforeEntryAttack = player.getHealth();
         DamageSource entryAttack = player.damageSources().mobAttack(lateEntrant);

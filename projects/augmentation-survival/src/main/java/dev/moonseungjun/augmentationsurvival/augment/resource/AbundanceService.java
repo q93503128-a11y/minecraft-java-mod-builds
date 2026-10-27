@@ -12,12 +12,12 @@ import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateServic
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.function.Consumer;
-import net.minecraft.core.BlockPos;
+import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
@@ -25,8 +25,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 
 /** Exact final ordinary-drop multiplier for the Mythic Abundance augment. */
 public final class AbundanceService {
@@ -38,21 +36,20 @@ public final class AbundanceService {
 
     private static final ThreadLocal<Deque<ServerPlayer>> MINING_ACTORS =
             ThreadLocal.withInitial(ArrayDeque::new);
-    private static final ThreadLocal<Boolean> DUPLICATING_BLOCK_DROP =
-            ThreadLocal.withInitial(() -> false);
 
     private AbundanceService() {
     }
 
     public static void initialize() {
         AugmentCatalog.require(ABUNDANCE_ID);
+        LootTableEvents.MODIFY_DROPS.register((holder, context, drops) -> duplicateDirectMiningDrops(drops));
         AugmentationSurvival.LOGGER.info(
                 "Loaded abundance contract: exact direct block, fishing and normal-mob final-drop duplication"
         );
     }
 
     /**
-     * Tracks the server player whose direct destroyBlock call currently owns block-drop emission.
+     * Tracks the server player whose direct destroyBlock call currently owns block-loot generation.
      * A stack is used because derived harvest helpers can nest destroyBlock calls on the same server thread.
      */
     public static void pushMiningActor(ServerPlayer player) {
@@ -70,38 +67,31 @@ public final class AbundanceService {
     }
 
     /**
-     * Called at Block.popResource, after the block loot result and compatible direct-harvest additions
-     * have already been calculated. Derived tree-felling/tunneling/sweeping-harvest breaks are not direct
-     * player harvests and therefore do not receive another Abundance copy.
+     * Runs at Fabric's final runtime loot-list boundary. This duplicates the already-generated block stacks,
+     * so Silk Touch, Fortune, data packs and external loot modifiers are preserved exactly instead of re-rolled.
      */
-    public static void duplicateDirectBlockDrop(Level level, BlockPos pos, ItemStack stack) {
-        if (Boolean.TRUE.equals(DUPLICATING_BLOCK_DROP.get())
-                || !(level instanceof ServerLevel serverLevel)
-                || ResourceHarvestService.isDerivedBreak()
-                || !eligibleOrdinaryDrop(stack)) {
+    private static void duplicateDirectMiningDrops(List<ItemStack> drops) {
+        if (drops.isEmpty() || ResourceHarvestService.isDerivedBreak()) {
             return;
         }
-
         Deque<ServerPlayer> actors = MINING_ACTORS.get();
         if (actors.isEmpty()) {
             return;
         }
         ServerPlayer player = actors.peek();
-        if (player.level() != serverLevel || !hasAbundance(player)) {
+        if (player == null || !hasAbundance(player)) {
             return;
         }
-
-        DUPLICATING_BLOCK_DROP.set(true);
-        try {
-            Block.popResource(level, pos, stack.copy());
-        } finally {
-            DUPLICATING_BLOCK_DROP.remove();
+        int originalSize = drops.size();
+        for (int index = 0; index < originalSize; index++) {
+            ItemStack stack = drops.get(index);
+            if (eligibleOrdinaryDrop(stack)) {
+                drops.add(stack.copy());
+            }
         }
     }
 
-    /**
-     * Multiplies only the exact final fishing loot-list entries. Loot tables are not re-rolled.
-     */
+    /** Multiplies only the exact final fishing loot-list entries. Loot tables are not re-rolled. */
     public static ObjectArrayList<ItemStack> applyFishingResult(
             ServerPlayer player,
             ObjectArrayList<ItemStack> drops
