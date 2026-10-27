@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -40,6 +41,7 @@ final class GameTestPlayers {
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
         new EmbeddedChannel(connection);
         server.getPlayerList().placeNewPlayer(connection, player, cookie);
+        player.connection.handleAcceptPlayerLoad(new ServerboundPlayerLoadedPacket());
         player.gameMode.changeGameModeForPlayer(GameType.SURVIVAL);
         TRACKED.computeIfAbsent(helper, ignored -> new ArrayList<>()).add(player);
         return player;
