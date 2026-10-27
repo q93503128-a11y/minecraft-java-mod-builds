@@ -22,7 +22,7 @@ public final class AugmentIconClient {
             case "shield_throw" -> new ItemStack(Items.TRIDENT);
             case "threat_suppression" -> new ItemStack(Items.SOUL_TORCH);
             case "berserk" -> new ItemStack(Items.DIAMOND_SWORD);
-            case "divine_punishment" -> new ItemStack(Items.LIGHTNING_ROD);
+            case "divine_punishment" -> new ItemStack(Items.NETHER_STAR);
             case "healing_wave" -> new ItemStack(Items.GLISTERING_MELON_SLICE);
             case "revive" -> new ItemStack(Items.TOTEM_OF_UNDYING);
             case "death_return" -> new ItemStack(Items.RECOVERY_COMPASS);

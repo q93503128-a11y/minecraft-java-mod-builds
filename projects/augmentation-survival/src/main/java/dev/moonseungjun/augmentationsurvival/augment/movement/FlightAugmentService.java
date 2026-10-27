@@ -266,7 +266,7 @@ public final class FlightAugmentService {
     private static void landingFeedback(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         level.sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY() + 0.15D, player.getZ(), 10, 0.45D, 0.08D, 0.45D, 0.05D);
-        level.playSound(null, player.blockPosition(), SoundEvents.WIND_CHARGE_BURST, SoundSource.PLAYERS, 0.38F, 0.82F);
+        level.playSound(null, player.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.38F, 0.82F);
     }
 
     private static boolean owns(ServerPlayer player) {
