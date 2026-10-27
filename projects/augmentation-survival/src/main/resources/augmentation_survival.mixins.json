@@ -6,7 +6,7 @@
     "LastStandDeathProtectionMixin", "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin", "ServerPlayerInvulnerabilityMixin", "StatusReflectRecursionGuardMixin",
     "LivingEntityHealingAugmentMixin", "LivingEntityEnchantmentResonanceMixin", "LivingEntityLootScoopMixin",
-    "LivingEntityWallSlamKnockbackMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
+    "LivingEntityWallSlamKnockbackMixin", "LivingEntityTimeStopMotionMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
     "ProjectileTimeAccelerationMixin", "PlayerShieldGripMixin", "PlayerDeathAugmentMixin", "InventoryPocketAugmentMixin",
     "MovementAugmentMixin", "ServerPlayerMantleMixin", "SurvivalPlayerMixin", "SurvivalAugmentDerivedBreakGuardMixin",
     "SurvivalTimeAccelerationMiningMixin", "TemporaryPlatformFallMixin", "TemporaryPlatformReplayGuardMixin",
