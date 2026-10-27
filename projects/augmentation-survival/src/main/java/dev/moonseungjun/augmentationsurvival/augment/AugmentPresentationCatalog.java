@@ -54,8 +54,8 @@ public final class AugmentPresentationCatalog {
         }
         if (definition.id().endsWith(":instant_mining")) {
             return new Entry("순간 채굴", Kind.TOGGLE,
-                    "활성화 중, 현재 도구로 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
-                    "활성화 중 현재 도구로 정상 수확 가능한 직접 채굴 블록을 1 game tick에 파괴합니다. 파괴 불가 블록은 제외되며 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다. 자동 파생 블록까지 1틱 채굴로 재귀 확장하지 않습니다.");
+                    "액티브 슬롯에서 사용해 켜고 끄며, 활성화 중 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
+                    "액티브 슬롯에서 사용할 때마다 활성화와 비활성화가 전환됩니다. 활성화 중 현재 도구로 정상 수확 가능한 직접 채굴 블록을 1 game tick에 파괴합니다. 파괴 불가 블록은 제외되며 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다. 자동 파생 블록까지 1틱 채굴로 재귀 확장하지 않습니다.");
         }
         if (definition.id().equals(FlightAugmentService.FLIGHT_ID)) {
             return new Entry("비행", Kind.TOGGLE,
@@ -73,7 +73,6 @@ public final class AugmentPresentationCatalog {
         if (id.endsWith(":remote_storage")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 B키로 원격 보관함을 엽니다. 키 설정에서 변경할 수 있습니다."));
         if (id.endsWith(":spatial_link")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 G키로 공간 연결 화면을 엽니다. 키 설정에서 변경할 수 있습니다."));
         if (id.endsWith(":authority_theft")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "일반 액티브 슬롯을 사용하지 않습니다. 기본 J키로 탈취한 권능을 해방하며 키 설정에서 변경할 수 있습니다."));
-        if (source.kind() != Kind.PASSIVE) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 조작은 K키로 액티브 편성을 열고, 왼쪽 Alt를 눌러 증강 사용 모드를 켜거나 끈 뒤 편성한 슬롯 숫자(1~0)를 눌러 사용합니다. 사용 모드가 켜져 있는 동안 슬롯 HUD가 표시됩니다. 키 설정에서 변경할 수 있습니다."));
         return source;
     }
 
