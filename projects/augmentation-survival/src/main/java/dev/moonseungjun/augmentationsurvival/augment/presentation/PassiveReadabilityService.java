@@ -25,6 +25,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.phys.Vec3;
 
@@ -63,6 +64,44 @@ public final class PassiveReadabilityService {
             LIFE_LINK_CUES.remove(oldPlayer.getUUID());
             LIFE_LINK_CUES.remove(newPlayer.getUUID());
         });
+    }
+
+    public static void presentPotionDiffusion(ServerPlayer player, List<LivingEntity> recipients) {
+        if (player == null || recipients == null || recipients.isEmpty()) return;
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 source = player.position().add(0.0D, 1.0D, 0.0D);
+        for (LivingEntity recipient : recipients) {
+            if (recipient == null || recipient.isDeadOrDying() || recipient.level() != level) continue;
+            Vec3 target = focusPoint(recipient);
+            line(level, ParticleTypes.ENCHANT, source, target, 9);
+            ring(level, ParticleTypes.END_ROD, target, 0.38D, 8);
+            level.sendParticles(ParticleTypes.HEART, target.x, target.y, target.z, 2, 0.18D, 0.22D, 0.18D, 0.010D);
+        }
+        sound(level, source, SoundEvents.AMETHYST_BLOCK_CHIME, 0.28F, 1.38F);
+    }
+
+    public static void presentBallisticIntercept(ServerPlayer player, Projectile projectile) {
+        if (player == null || projectile == null || projectile.isRemoved()) return;
+        ServerLevel level = (ServerLevel) player.level();
+        Vec3 impact = projectile.position();
+        ring(level, ParticleTypes.END_ROD, impact, 0.42D, 8);
+        level.sendParticles(ParticleTypes.CRIT, impact.x, impact.y, impact.z, 7, 0.18D, 0.18D, 0.18D, 0.080D);
+        level.sendParticles(ParticleTypes.POOF, impact.x, impact.y, impact.z, 4, 0.10D, 0.10D, 0.10D, 0.025D);
+    }
+
+    public static void presentWallSlam(ServerPlayer owner, LivingEntity target) {
+        if (owner == null || target == null || target.isDeadOrDying()) return;
+        ServerLevel level = (ServerLevel) owner.level();
+        Vec3 impact = target.position().add(0.0D, Math.max(0.25D, target.getBbHeight() * 0.45D), 0.0D);
+        ring(level, ParticleTypes.POOF, impact, 0.78D, 14);
+        level.sendParticles(ParticleTypes.CRIT, impact.x, impact.y, impact.z, 12, 0.28D, 0.34D, 0.28D, 0.110D);
+        Vec3 motion = target.getDeltaMovement();
+        Vec3 horizontal = new Vec3(motion.x, 0.0D, motion.z);
+        if (horizontal.lengthSqr() > 1.0E-6D) {
+            Vec3 from = impact.subtract(horizontal.normalize().scale(1.0D));
+            line(level, ParticleTypes.POOF, from, impact, 6);
+        }
+        sound(level, impact, SoundEvents.SHIELD_BLOCK.value(), 0.58F, 0.62F);
     }
 
     public static void presentLifeLink(ServerPlayer owner, LivingEntity primary) {
