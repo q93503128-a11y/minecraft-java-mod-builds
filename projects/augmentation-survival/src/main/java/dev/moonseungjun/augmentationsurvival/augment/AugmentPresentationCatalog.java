@@ -50,7 +50,12 @@ public final class AugmentPresentationCatalog {
         if (definition.id().equals(PlayerRescueAugmentService.RESCUE_ID)) {
             return new Entry("동료 구조", Kind.PASSIVE,
                     "둘 이상이 함께할 때, 치명상을 입은 당신이 잠시 쓰러져 구조를 기다립니다.",
-                    "온라인 비관전자 플레이어가 2명 이상일 때만 후보에 등장합니다. 다른 사망 방지 효과가 모두 실패한 치명 피해를 받으면 10초 동안 쓰러집니다. 다른 플레이어가 가까이서 2초 구조하면 최대 체력 30%로 복귀하며, 구조되지 못하면 실제로 사망합니다. 쓰러짐 발동 후 300초 동안 다시 발동하지 않습니다.");
+                    "온라인 비관전자 플레이어가 2명 이상일 때만 후보에 등장합니다. 다른 사망 방지 효과가 모두 실패한 치명 피해를 받으면 10초 동안 쓰러집니다. 다른 플레이어가 가까이서 2초 구조하면 최대 체력 30%로 복귀하며, 구조되지 못하면 실제로 사망합니다. 쓰러짐 발동 후 15초 동안 다시 발동하지 않습니다.");
+        }
+        if (definition.id().endsWith(":instant_mining")) {
+            return new Entry("순간 채굴", Kind.TOGGLE,
+                    "활성화 중, 현재 도구로 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
+                    "활성화 중 현재 도구로 정상 수확 가능한 직접 채굴 블록을 1 game tick에 파괴합니다. 파괴 불가 블록은 제외되며 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다. 자동 파생 블록까지 1틱 채굴로 재귀 확장하지 않습니다.");
         }
         if (definition.id().equals(FlightAugmentService.FLIGHT_ID)) {
             return new Entry("비행", Kind.TOGGLE,
@@ -62,9 +67,6 @@ public final class AugmentPresentationCatalog {
 
     private static Entry playerFacingOverride(AugmentDefinition definition, Entry source) {
         String id = definition.id();
-        if (id.endsWith(":instant_mining")) return new Entry("순간 채굴", Kind.PASSIVE,
-                "보유 중, 현재 도구로 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
-                "별도 조작 없이 항상 적용됩니다. 현재 도구로 정상 수확 가능한 직접 채굴 블록을 한 틱에 파괴하며, 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다.");
         if (id.endsWith(":pockets")) return new Entry(source.displayName(), Kind.PASSIVE,
                 "개인 저장공간 +3 / +6 / +9칸. 인벤토리 초과 아이템을 가능한 경우 자동 수납합니다.",
                 "별도 아이템을 제작하지 않습니다. Lv.1 / 2 / 3에서 개인 주머니 슬롯 +3 / +6 / +9칸이 열리고, 일반 인벤토리에 들어가지 못한 아이템은 가능한 경우 주머니로 자동 수납됩니다. 기본 B키로 증강 저장소를 엽니다. 키 설정에서 변경할 수 있습니다.");
