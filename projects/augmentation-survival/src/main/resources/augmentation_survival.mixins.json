@@ -3,7 +3,7 @@
   "package": "dev.moonseungjun.augmentationsurvival.mixin",
   "mixins": [
     "RaidMixin", "CombatAugmentMixin", "CombatAugmentKillProvenanceMixin", "CombatExpansionKillProvenanceMixin",
-    "LastStandDeathProtectionMixin", "PlayerRescueDeathProtectionMixin", "CombatExpansionSpeedConversionMixin",
+    "LastStandDeathProtectionMixin", "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin", "ServerPlayerInvulnerabilityMixin", "StatusReflectRecursionGuardMixin",
     "LivingEntityHealingAugmentMixin", "LivingEntityEnchantmentResonanceMixin", "LivingEntityLootScoopMixin",
     "LivingEntityWallSlamKnockbackMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
