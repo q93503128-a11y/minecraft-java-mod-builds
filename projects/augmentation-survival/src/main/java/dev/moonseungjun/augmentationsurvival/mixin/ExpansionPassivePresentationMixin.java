@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Adds readable feedback to discrete combat procs while leaving all damage logic untouched. */
+/** Adds event-shaped world feedback to discrete combat procs while leaving all damage logic untouched. */
 @Mixin(value = CombatExpansionService.class, remap = false)
 abstract class ExpansionPassivePresentationMixin {
     private static final String CHAIN_EXPLOSION = PassivePresentationService.id("chain_explosion");
@@ -40,7 +40,7 @@ abstract class ExpansionPassivePresentationMixin {
             CallbackInfo ci
     ) {
         if (state.level(CHAIN_EXPLOSION) > 0) {
-            PassivePresentationService.proc(player, CHAIN_EXPLOSION);
+            PassivePresentationService.proc(player, CHAIN_EXPLOSION, killed);
         }
     }
 
@@ -52,7 +52,7 @@ abstract class ExpansionPassivePresentationMixin {
             float actualDamage,
             CallbackInfo ci
     ) {
-        PassivePresentationService.proc(attacker, LIGHTNING);
+        PassivePresentationService.proc(attacker, LIGHTNING, primaryTarget);
     }
 
     @Inject(method = "triggerEchoStrike", at = @At(value = "INVOKE", target = DERIVED_DAMAGE_TARGET))
@@ -64,7 +64,7 @@ abstract class ExpansionPassivePresentationMixin {
             long now,
             CallbackInfo ci
     ) {
-        PassivePresentationService.proc(attacker, ECHO_STRIKE);
+        PassivePresentationService.proc(attacker, ECHO_STRIKE, target);
     }
 
     @Inject(method = "triggerHeavyStrike", at = @At(value = "INVOKE", target = DERIVED_DAMAGE_TARGET))
@@ -75,7 +75,7 @@ abstract class ExpansionPassivePresentationMixin {
             long now,
             CallbackInfo ci
     ) {
-        PassivePresentationService.proc(attacker, HEAVY_STRIKE);
+        PassivePresentationService.proc(attacker, HEAVY_STRIKE, target);
     }
 
     @Inject(
@@ -89,7 +89,7 @@ abstract class ExpansionPassivePresentationMixin {
             long now,
             CallbackInfo ci
     ) {
-        PassivePresentationService.proc(attacker, WEAKNESS_MARK);
+        PassivePresentationService.proc(attacker, WEAKNESS_MARK, target);
     }
 
     @Inject(method = "onPrimaryHealing", at = @At("RETURN"))

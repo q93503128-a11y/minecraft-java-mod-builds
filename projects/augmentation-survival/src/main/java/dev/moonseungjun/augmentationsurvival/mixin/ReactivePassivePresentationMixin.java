@@ -12,6 +12,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -28,6 +29,7 @@ abstract class ReactivePassivePresentationMixin {
     private static final String RETRACE = PassivePresentationService.id("retrace");
     private static final String INVINCIBILITY = PassivePresentationService.id("invincibility");
     private static final ThreadLocal<Long> RETRACE_READY_BEFORE = new ThreadLocal<>();
+    private static final ThreadLocal<Vec3> RETRACE_POSITION_BEFORE = new ThreadLocal<>();
 
     @Inject(method = "interceptIncomingEffect", at = @At("RETURN"))
     private static void augmentationSurvival$presentEffectPassives(
@@ -44,7 +46,7 @@ abstract class ReactivePassivePresentationMixin {
             return;
         }
         if (owns(victim, STATUS_REFLECT) && isEnemySource(victim, source)) {
-            PassivePresentationService.proc(victim, STATUS_REFLECT);
+            PassivePresentationService.proc(victim, STATUS_REFLECT, source);
         }
         if (owns(victim, STRONG_MIND) && cir.getReturnValue() != null) {
             PassivePresentationService.proc(victim, STRONG_MIND);
@@ -59,7 +61,7 @@ abstract class ReactivePassivePresentationMixin {
     ) {
         if (source.getDirectEntity() instanceof Projectile projectile
                 && ReactiveCombatAugmentService.isReflectedProjectile(projectile)) {
-            PassivePresentationService.proc(player, RETURN_TO_SENDER);
+            PassivePresentationService.proc(player, RETURN_TO_SENDER, projectile);
         }
     }
 
@@ -75,7 +77,7 @@ abstract class ReactivePassivePresentationMixin {
     }
 
     @Inject(method = "triggerRetrace", at = @At("HEAD"))
-    private static void augmentationSurvival$captureRetraceCooldown(
+    private static void augmentationSurvival$captureRetraceState(
             ServerPlayer attacker,
             float baseDamageTaken,
             CallbackInfo ci
@@ -83,6 +85,7 @@ abstract class ReactivePassivePresentationMixin {
         RETRACE_READY_BEFORE.set(
                 AugmentationPlayerStateService.state(attacker).cooldownReadyTick(RETRACE)
         );
+        RETRACE_POSITION_BEFORE.set(attacker.position());
     }
 
     @Inject(method = "triggerRetrace", at = @At("RETURN"))
@@ -91,11 +94,14 @@ abstract class ReactivePassivePresentationMixin {
             float baseDamageTaken,
             CallbackInfo ci
     ) {
-        Long before = RETRACE_READY_BEFORE.get();
+        Long readyBefore = RETRACE_READY_BEFORE.get();
+        Vec3 positionBefore = RETRACE_POSITION_BEFORE.get();
         RETRACE_READY_BEFORE.remove();
-        if (before != null
-                && AugmentationPlayerStateService.state(attacker).cooldownReadyTick(RETRACE) > before) {
-            PassivePresentationService.proc(attacker, RETRACE);
+        RETRACE_POSITION_BEFORE.remove();
+        if (readyBefore != null
+                && positionBefore != null
+                && AugmentationPlayerStateService.state(attacker).cooldownReadyTick(RETRACE) > readyBefore) {
+            PassivePresentationService.procPath(attacker, RETRACE, positionBefore, attacker.position());
         }
     }
 

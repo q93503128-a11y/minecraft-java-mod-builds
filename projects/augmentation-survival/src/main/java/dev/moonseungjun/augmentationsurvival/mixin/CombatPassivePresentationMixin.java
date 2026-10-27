@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceCont
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.presentation.PassivePresentationService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -20,7 +21,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = CombatAugmentService.class, remap = false)
 abstract class CombatPassivePresentationMixin {
     private static final String LAST_STAND = PassivePresentationService.id("last_stand");
-    private static final String EMERGENCY_TOTEM = PassivePresentationService.id("emergency_totem");
     private static final String REINCARNATION = PassivePresentationService.id("reincarnation");
     private static final String URGENT_STEPS = PassivePresentationService.id("urgent_steps");
     private static final String KILL_STREAK = PassivePresentationService.id("kill_streak");
@@ -39,16 +39,18 @@ abstract class CombatPassivePresentationMixin {
     }
 
     @Inject(method = "tryPostVanillaDeathProtection", at = @At("RETURN"))
-    private static void augmentationSurvival$presentDeathProtection(
+    private static void augmentationSurvival$presentReincarnationStart(
             LivingEntity entity,
             DamageSource source,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (!cir.getReturnValueZ() || !(entity instanceof ServerPlayer player)) return;
-        PassivePresentationService.proc(
-                player,
-                CombatAugmentService.isActionLocked(player) ? REINCARNATION : EMERGENCY_TOTEM
-        );
+        if (cir.getReturnValueZ()
+                && entity instanceof ServerPlayer player
+                && CombatAugmentService.isActionLocked(player)) {
+            PassivePresentationService.observeState(player, REINCARNATION, true);
+        }
+        // Emergency Totem intentionally has no extra presentation here. The gameplay path consumes
+        // a real Totem of Undying and broadcasts vanilla entity event 35, which already owns that moment.
     }
 
     @Inject(method = "afterDamage", at = @At("RETURN"))
@@ -80,8 +82,22 @@ abstract class CombatPassivePresentationMixin {
         if (!(killer instanceof ServerPlayer player) || !CompanionAugmentService.isHostileEntity(killedEntity)) {
             return;
         }
-        if (owns(player, LIFESTEAL)) PassivePresentationService.proc(player, LIFESTEAL);
+        if (owns(player, LIFESTEAL)) PassivePresentationService.proc(player, LIFESTEAL, killedEntity);
         if (owns(player, KILL_STREAK)) PassivePresentationService.proc(player, KILL_STREAK);
+    }
+
+    @Inject(method = "tickRuntime", at = @At("RETURN"))
+    private static void augmentationSurvival$observeReincarnationEnd(
+            MinecraftServer server,
+            CallbackInfo ci
+    ) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            PassivePresentationService.observeState(
+                    player,
+                    REINCARNATION,
+                    CombatAugmentService.isActionLocked(player)
+            );
+        }
     }
 
     private static boolean owns(ServerPlayer player, String augmentId) {
