@@ -51,6 +51,7 @@ public final class ActiveAbilityRouter {
     public static void initialize() {
         CloneActiveService.initialize();
         TimeStopIntegrityService.initialize();
+        TimeStopBoundaryService.initialize();
         for (String augmentId : ALL_ORDER) {
             AugmentCatalog.require(augmentId);
             if (!augmentId.equals(INSTANT_MINING_ID) && !ActivePresentationService.hasProfile(augmentId)) {
@@ -85,7 +86,12 @@ public final class ActiveAbilityRouter {
         }
         if (abilityId.equals(AREA_ACCELERATION_ID)) return AreaAccelerationService.tryUse(player);
         if (abilityId.equals(REVIVE_ID)) return ReviveAugmentService.tryUse(player);
-        if (abilityId.equals(RETURN_HOME_ID) || abilityId.equals(TIME_STOP_ID) || abilityId.equals(DIVINE_PUNISHMENT_ID)) {
+        if (abilityId.equals(TIME_STOP_ID)) {
+            boolean used = SpecialActiveAugmentService.tryUse(player, abilityId);
+            if (used) TimeStopBoundaryService.begin(player);
+            return used;
+        }
+        if (abilityId.equals(RETURN_HOME_ID) || abilityId.equals(DIVINE_PUNISHMENT_ID)) {
             return SpecialActiveAugmentService.tryUse(player, abilityId);
         }
         if (LEGACY_ORDER.contains(abilityId)) return ActiveAbilityServiceInvoker.augmentationSurvival$tryUse(player, state, abilityId);
