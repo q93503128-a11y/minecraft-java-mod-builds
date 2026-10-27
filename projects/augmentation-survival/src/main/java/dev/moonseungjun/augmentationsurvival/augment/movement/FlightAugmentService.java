@@ -2,6 +2,8 @@ package dev.moonseungjun.augmentationsurvival.augment.movement;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
@@ -235,7 +237,11 @@ public final class FlightAugmentService {
         )) {
             long ready = state.entityImpactReadyTick.getOrDefault(target.getUUID(), 0L);
             if (ready > now) continue;
-            if (!target.hurtServer(level, player.damageSources().playerAttack(player), COLLISION_DAMAGE)) continue;
+            boolean damaged = CombatProvenanceContext.callAs(
+                    CombatProvenance.MOVEMENT_IMPACT,
+                    () -> target.hurtServer(level, player.damageSources().playerAttack(player), COLLISION_DAMAGE)
+            );
+            if (!damaged) continue;
             state.entityImpactReadyTick.put(target.getUUID(), now + ENTITY_IMPACT_COOLDOWN_TICKS);
             target.push(push.x * 0.75D, Math.max(0.12D, push.y * 0.30D), push.z * 0.75D);
             Vec3 hit = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
