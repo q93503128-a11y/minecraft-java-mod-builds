@@ -28,7 +28,8 @@
     "ItemCombinerMenuAccessor", "AnvilForbiddenMagicMixin", "EnchantmentMenuAugmentAccessor", "PlayerEnchantSeedAccessor",
     "EnchantmentMenuRefreshMixin", "ProtectionRuntimeAccessor", "ProtectionRuntimeStateAccessor", "ProtectionPoolAccessor",
     "PassivePresentationBootstrapMixin", "CombatPassivePresentationMixin", "ReactivePassivePresentationMixin",
-    "ExpansionPassivePresentationMixin", "CoopMobilityBootstrapMixin", "AugmentOfferMultiplayerEligibilityMixin",
+    "ExpansionPassivePresentationMixin", "PassiveReadabilityBootstrapMixin", "LifeLinkPresentationMixin",
+    "CoopMobilityBootstrapMixin", "AugmentOfferMultiplayerEligibilityMixin",
     "PlayerRescueActionLockMixin", "ServerPlayerGameModeRescueLockMixin"
   ],
   "client": [
