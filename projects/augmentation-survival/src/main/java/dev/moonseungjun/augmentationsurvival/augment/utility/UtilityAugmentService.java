@@ -44,32 +44,54 @@ public final class UtilityAugmentService {
     }
 
     public static float modifyShieldDisableSeconds(ServerPlayer player, float originalSeconds) {
-        if (!(originalSeconds > 0.0F) || !Float.isFinite(originalSeconds)) return originalSeconds;
+        if (!(originalSeconds > 0.0F) || !Float.isFinite(originalSeconds)) {
+            return originalSeconds;
+        }
         int level = boundedLevel(AugmentationPlayerStateService.state(player), SHIELD_GRIP_ID);
-        if (level <= 0) return originalSeconds;
+        if (level <= 0) {
+            return originalSeconds;
+        }
         double reduction = UtilityAugmentTuning.current().shieldDisableReduction(level);
         return (float) Math.max(0.0D, originalSeconds * (1.0D - reduction));
     }
 
-    public static int modifyFuelBurnDuration(ServerLevel level, BlockPos pos, int originalDuration) {
-        if (originalDuration <= 0) return originalDuration;
+    public static int modifyFuelBurnDuration(
+            ServerLevel level,
+            BlockPos pos,
+            int originalDuration
+    ) {
+        if (originalDuration <= 0) {
+            return originalDuration;
+        }
         int augmentLevel = highestNearbyLevel(level, pos, FUEL_SAVER_ID);
-        if (augmentLevel <= 0) return originalDuration;
-        double scaled = originalDuration * (1.0D + UtilityAugmentTuning.current().fuelBurnTimeBonus(augmentLevel));
+        if (augmentLevel <= 0) {
+            return originalDuration;
+        }
+        double scaled = originalDuration
+                * (1.0D + UtilityAugmentTuning.current().fuelBurnTimeBonus(augmentLevel));
         return (int) Math.min(Integer.MAX_VALUE, Math.max(1L, Math.round(scaled)));
     }
 
-    public static int modifyBrewingDuration(ServerLevel level, BlockPos pos, int originalDuration) {
-        if (originalDuration <= 0) return originalDuration;
+    public static int modifyBrewingDuration(
+            ServerLevel level,
+            BlockPos pos,
+            int originalDuration
+    ) {
+        if (originalDuration <= 0) {
+            return originalDuration;
+        }
         int augmentLevel = highestNearbyLevel(level, pos, FAST_BREWING_ID);
-        if (augmentLevel <= 0) return originalDuration;
+        if (augmentLevel <= 0) {
+            return originalDuration;
+        }
         double reduction = UtilityAugmentTuning.current().brewingTimeReduction(augmentLevel);
         double scaled = originalDuration * Math.max(0.01D, 1.0D - reduction);
         return (int) Math.min(Integer.MAX_VALUE, Math.max(1L, Math.round(scaled)));
     }
 
     public static boolean canRunOnWater(ServerPlayer player) {
-        return player.isSprinting() && !player.isDeadOrDying()
+        return player.isSprinting()
+                && !player.isDeadOrDying()
                 && boundedLevel(AugmentationPlayerStateService.state(player), WATER_RUN_ID) > 0;
     }
 
@@ -88,84 +110,149 @@ public final class UtilityAugmentService {
     }
 
     public static int modifyDeathExperienceReward(ServerPlayer player, int vanillaReward) {
-        if (vanillaReward <= 0) return vanillaReward;
+        if (vanillaReward <= 0) {
+            return vanillaReward;
+        }
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         int level = boundedLevel(state, EXPERIENCE_PRESERVATION_ID);
-        if (level <= 0) return vanillaReward;
+        if (level <= 0) {
+            return vanillaReward;
+        }
         double retained = UtilityAugmentTuning.current().experienceRetainFraction(level);
         return Math.max(0, (int) Math.floor(vanillaReward * (1.0D - retained)));
     }
 
     private static void tickPickupRadius(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (player.isDeadOrDying() || player.isSpectator()) continue;
+            if (player.isDeadOrDying() || player.isSpectator()) {
+                continue;
+            }
             AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
             int level = boundedLevel(state, PICKUP_HAND_ID);
-            if (level <= 0) continue;
+            if (level <= 0) {
+                continue;
+            }
             double radius = UtilityAugmentTuning.current().pickupRadius(level);
             List<ItemEntity> items = player.level().getEntitiesOfClass(
-                    ItemEntity.class, player.getBoundingBox().inflate(radius), ItemEntity::isAlive);
-            for (ItemEntity item : items) item.playerTouch(player);
+                    ItemEntity.class,
+                    player.getBoundingBox().inflate(radius),
+                    item -> item.isAlive()
+            );
+            for (ItemEntity item : items) {
+                item.playerTouch(player);
+            }
             List<ExperienceOrb> orbs = player.level().getEntitiesOfClass(
-                    ExperienceOrb.class, player.getBoundingBox().inflate(radius), ExperienceOrb::isAlive);
-            for (ExperienceOrb orb : orbs) orb.playerTouch(player);
+                    ExperienceOrb.class,
+                    player.getBoundingBox().inflate(radius),
+                    orb -> orb.isAlive()
+            );
+            for (ExperienceOrb orb : orbs) {
+                orb.playerTouch(player);
+            }
         }
     }
 
-    private static boolean allowEntityLoad(Entity entity, ServerLevel level, EntitySpawnReason spawnReason, boolean loadedFromDisk) {
-        if (loadedFromDisk || spawnReason != EntitySpawnReason.NATURAL
-                || !(entity instanceof LivingEntity living) || !(entity instanceof Enemy)
-                || EntityCompatibilityProfileService.isBoss(living)) return true;
+    private static boolean allowEntityLoad(
+            Entity entity,
+            ServerLevel level,
+            EntitySpawnReason spawnReason,
+            boolean loadedFromDisk
+    ) {
+        if (loadedFromDisk
+                || spawnReason != EntitySpawnReason.NATURAL
+                || !(entity instanceof LivingEntity living)
+                || !(entity instanceof Enemy)
+                || EntityCompatibilityProfileService.isBoss(living)) {
+            return true;
+        }
         double radius = UtilityAugmentTuning.current().threatSuppressionRadius();
         double radiusSquared = radius * radius;
         for (ServerPlayer player : level.players()) {
-            if (!player.isDeadOrDying() && !player.isSpectator()
+            if (!player.isDeadOrDying()
+                    && !player.isSpectator()
                     && ActiveAbilityRouter.isThreatSuppressionEnabled(player)
-                    && player.distanceToSqr(entity) <= radiusSquared) return false;
+                    && player.distanceToSqr(entity) <= radiusSquared) {
+                return false;
+            }
         }
         return true;
     }
 
-    private static void copyExperienceOnRespawn(ServerPlayer oldPlayer, ServerPlayer newPlayer, boolean alive) {
-        if (alive || oldPlayer.level().getGameRules().get(GameRules.KEEP_INVENTORY)) return;
+    private static void copyExperienceOnRespawn(
+            ServerPlayer oldPlayer,
+            ServerPlayer newPlayer,
+            boolean alive
+    ) {
+        if (alive || oldPlayer.level().getGameRules().get(GameRules.KEEP_INVENTORY)) {
+            return;
+        }
         AugmentationPlayerState oldState = AugmentationPlayerStateService.state(oldPlayer);
         int level = boundedLevel(oldState, EXPERIENCE_PRESERVATION_ID);
-        if (level <= 0) return;
+        if (level <= 0) {
+            return;
+        }
+
         double fraction = UtilityAugmentTuning.current().experienceRetainFraction(level);
-        int retained = (int) Math.min(Integer.MAX_VALUE, Math.floor(currentExperiencePoints(oldPlayer) * fraction));
+        int retained = (int) Math.min(
+                Integer.MAX_VALUE,
+                Math.floor(currentExperiencePoints(oldPlayer) * fraction)
+        );
         newPlayer.experienceLevel = 0;
         newPlayer.experienceProgress = 0.0F;
         newPlayer.totalExperience = 0;
-        if (retained > 0) newPlayer.giveExperiencePoints(retained);
+        if (retained > 0) {
+            newPlayer.giveExperiencePoints(retained);
+        }
     }
 
     private static long currentExperiencePoints(ServerPlayer player) {
         int level = Math.max(0, player.experienceLevel);
         long start;
-        if (level <= 16) start = (long) level * level + 6L * level;
-        else if (level <= 31) start = (5L * level * level - 81L * level + 720L) / 2L;
-        else start = (9L * level * level - 325L * level + 4440L) / 2L;
-        long within = (long) Math.floor(Math.max(0.0F, Math.min(1.0F, player.experienceProgress)) * player.getXpNeededForNextLevel());
+        if (level <= 16) {
+            start = (long) level * level + 6L * level;
+        } else if (level <= 31) {
+            start = (5L * level * level - 81L * level + 720L) / 2L;
+        } else {
+            start = (9L * level * level - 325L * level + 4440L) / 2L;
+        }
+        long within = (long) Math.floor(
+                Math.max(0.0F, Math.min(1.0F, player.experienceProgress))
+                        * player.getXpNeededForNextLevel()
+        );
         return Math.max(0L, Math.min(Integer.MAX_VALUE, start + within));
     }
 
     private static int highestNearbyLevel(ServerLevel level, BlockPos pos, String augmentId) {
         double radius = UtilityAugmentTuning.current().machineHolderRadius();
         double radiusSquared = radius * radius;
-        double x = pos.getX() + 0.5D, y = pos.getY() + 0.5D, z = pos.getZ() + 0.5D;
+        double x = pos.getX() + 0.5D;
+        double y = pos.getY() + 0.5D;
+        double z = pos.getZ() + 0.5D;
         int highest = 0;
         for (ServerPlayer player : level.players()) {
-            if (player.isDeadOrDying() || player.isSpectator()) continue;
-            double dx = player.getX() - x, dy = player.getY() - y, dz = player.getZ() - z;
-            if (dx * dx + dy * dy + dz * dz > radiusSquared) continue;
-            highest = Math.max(highest, boundedLevel(AugmentationPlayerStateService.state(player), augmentId));
+            if (player.isDeadOrDying() || player.isSpectator()) {
+                continue;
+            }
+            double dx = player.getX() - x;
+            double dy = player.getY() - y;
+            double dz = player.getZ() - z;
+            if (dx * dx + dy * dy + dz * dz > radiusSquared) {
+                continue;
+            }
+            highest = Math.max(
+                    highest,
+                    boundedLevel(AugmentationPlayerStateService.state(player), augmentId)
+            );
         }
         return highest;
     }
 
     private static int boundedLevel(AugmentationPlayerState state, String augmentId) {
         int level = state.level(augmentId);
-        return level <= 0 ? 0 : Math.min(level, AugmentCatalog.require(augmentId).maxLevel());
+        if (level <= 0) {
+            return 0;
+        }
+        return Math.min(level, AugmentCatalog.require(augmentId).maxLevel());
     }
 
     private static String id(String path) {
