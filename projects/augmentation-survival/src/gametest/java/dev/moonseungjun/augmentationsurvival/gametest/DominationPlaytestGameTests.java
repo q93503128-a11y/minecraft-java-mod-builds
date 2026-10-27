@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
@@ -37,7 +36,9 @@ public final class DominationPlaytestGameTests implements CustomTestMethodInvoke
         dominated.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.dominatedBy(owner.getUUID()));
         CompanionAugmentService.onRevivedCompanion(dominated);
         Mob target = helper.spawnMob(EntityTypes.WARDEN, 1, 2, 6).spawn();
-        require(target.hurtServer((ServerLevel) target.level(), owner.damageSources().playerAttack(owner), 1.0F),
+        float before = target.getHealth();
+        owner.attack(target);
+        require(target.getHealth() < before,
                 "owner hit did not land on the second warden");
         GameTestPlayers.runAfterDelay(helper, 6, () -> {
             require(dominated.getTarget() == target,
