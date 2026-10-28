@@ -102,6 +102,19 @@ public final class MovementAugmentService {
         }
     }
 
+    /** Mirrors only the held state needed by Aerial Combo; actual jump authority stays server-side. */
+    public static void setJumpHeld(ServerPlayer player, boolean held) {
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        if (boundedLevel(state, DOUBLE_JUMP_ID) <= 0 && boundedLevel(state, AERIAL_COMBO_ID) <= 0) {
+            RuntimeState runtime = RUNTIME.get(player.getUUID());
+            if (runtime != null) runtime.jumpHeld = false;
+            return;
+        }
+        reconcile(player, state);
+        RuntimeState runtime = RUNTIME.get(player.getUUID());
+        if (runtime != null) runtime.jumpHeld = held;
+    }
+
     /** Called from the inferred vanilla ground-jump boundary on the logical server. */
     public static void afterGroundJump(ServerPlayer player) {
         if (CombatAugmentService.isActionLocked(player)) {
@@ -181,6 +194,9 @@ public final class MovementAugmentService {
         RuntimeState runtime = RUNTIME.get(attacker.getUUID());
         if (runtime != null) {
             runtime.airJumpAvailable = true;
+            if (runtime.jumpHeld) {
+                tryAirJump(attacker);
+            }
         }
     }
 
@@ -366,6 +382,7 @@ public final class MovementAugmentService {
         private long momentumUntilTick;
         private double maxObservedFallDistance;
         private boolean airJumpAvailable;
+        private boolean jumpHeld;
         private boolean wasGrounded;
         private boolean wasResetContact;
     }
