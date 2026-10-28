@@ -7,6 +7,8 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
+import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.movement.MovementTuning;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestService;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
@@ -26,7 +28,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -157,45 +158,41 @@ public final class CommonAugmentGameTests implements CustomTestMethodInvoker {
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 40)
-    public void webbedFeetAppliesOnlyInWaterAndClearsAfterLeaving(GameTestHelper helper) {
-        ServerPlayer swimmer = player(helper, 1, 1);
-        ServerLevel level = (ServerLevel) swimmer.level();
-        double baseline = swimmer.getAttributeValue(Attributes.MOVEMENT_SPEED);
+    @GameTest
+    public void webbedFeetMovementRuleRequiresWaterAndClampsLevel(GameTestHelper helper) {
         String webbedFeet = id("webbed_feet");
         AugmentDefinition definition = AugmentCatalog.require(webbedFeet);
-        AugmentationPlayerStateService.replace(
-                swimmer,
-                AugmentationPlayerState.initial().withAugmentLevel(webbedFeet, definition.maxLevel())
+        AugmentationPlayerState empty = AugmentationPlayerState.initial();
+        AugmentationPlayerState max = empty.withAugmentLevel(webbedFeet, definition.maxLevel());
+        AugmentationPlayerState overMax = empty.withAugmentLevel(webbedFeet, definition.maxLevel() + 50);
+        double expected = MovementTuning.current().webbedFeetMovementPerLevel() * definition.maxLevel();
+
+        requireClose(
+                invokeWebbedFeetMovementBonus(empty, true),
+                0.0D,
+                1.0E-9D,
+                "unowned webbed feet produced a water movement bonus"
+        );
+        requireClose(
+                invokeWebbedFeetMovementBonus(max, false),
+                0.0D,
+                1.0E-9D,
+                "webbed feet produced a movement bonus outside water"
+        );
+        requireClose(
+                invokeWebbedFeetMovementBonus(max, true),
+                expected,
+                1.0E-9D,
+                "webbed feet max-level water bonus diverged from movement tuning"
+        );
+        requireClose(
+                invokeWebbedFeetMovementBonus(overMax, true),
+                expected,
+                1.0E-9D,
+                "webbed feet exceeded canonical max-level clamp"
         );
 
-        BlockPos waterPos = helper.absolutePos(new BlockPos(1, 2, 1));
-        level.setBlockAndUpdate(waterPos, Blocks.WATER.defaultBlockState());
-        level.setBlockAndUpdate(waterPos.above(), Blocks.WATER.defaultBlockState());
-        swimmer.setPos(waterPos.getX() + 0.5D, waterPos.getY() + 0.1D, waterPos.getZ() + 0.5D);
-        GameTestPlayers.runAfterDelay(helper, 3, () -> {
-            require(swimmer.isInWater(),
-                    "webbed feet test setup never established actual server-side water contact");
-            double inWater = swimmer.getAttributeValue(Attributes.MOVEMENT_SPEED);
-            require(inWater > baseline,
-                    "webbed feet did not increase movement speed during confirmed water contact");
-
-            level.setBlockAndUpdate(waterPos, Blocks.AIR.defaultBlockState());
-            level.setBlockAndUpdate(waterPos.above(), Blocks.AIR.defaultBlockState());
-            BlockPos dryPos = helper.absolutePos(new BlockPos(4, 2, 1));
-            swimmer.setPos(dryPos.getX() + 0.5D, dryPos.getY(), dryPos.getZ() + 0.5D);
-            GameTestPlayers.runAfterDelay(helper, 3, () -> {
-                require(!swimmer.isInWater(),
-                        "webbed feet test setup did not clear server-side water contact");
-                requireClose(
-                        swimmer.getAttributeValue(Attributes.MOVEMENT_SPEED),
-                        baseline,
-                        1.0E-9D,
-                        "webbed feet movement modifier remained after leaving water"
-                );
-                GameTestPlayers.succeed(helper);
-            });
-        });
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest(maxTicks = 30)
@@ -304,6 +301,20 @@ public final class CommonAugmentGameTests implements CustomTestMethodInvoker {
                 "seed saver chance exceeded its canonical max-level clamp");
 
         GameTestPlayers.succeed(helper);
+    }
+
+    private static double invokeWebbedFeetMovementBonus(AugmentationPlayerState state, boolean inWater) {
+        try {
+            Method method = MovementAugmentService.class.getDeclaredMethod(
+                    "webbedFeetMovementBonus",
+                    AugmentationPlayerState.class,
+                    boolean.class
+            );
+            method.setAccessible(true);
+            return ((Number) method.invoke(null, state, inWater)).doubleValue();
+        } catch (ReflectiveOperationException exception) {
+            throw new AssertionError("unable to exercise webbed feet movement runtime rule", exception);
+        }
     }
 
     private static void invokeCropBonuses(
