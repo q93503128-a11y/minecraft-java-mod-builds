@@ -167,6 +167,6 @@ public final class RareTierPlaytestRegressionGameTests implements CustomTestMeth
 
     @Override
     public void invokeTestMethod(java.lang.reflect.Method method, GameTestHelper helper) throws Exception {
-        method.invoke(this, helper);
+        GameTestPlayers.invoke(this, helper, method);
     }
 }
