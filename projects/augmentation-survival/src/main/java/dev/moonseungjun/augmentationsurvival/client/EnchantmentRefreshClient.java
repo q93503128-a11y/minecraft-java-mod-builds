@@ -46,9 +46,8 @@ public final class EnchantmentRefreshClient {
                             }
                         }
                         if (!hasItem || !hasLapis || !hasOffer || client.player.totalExperience < XP_COST) {
-                            client.player.displayClientMessage(
-                                    Component.literal("새로고침에는 XP 5와 청금석 1개가 필요합니다."),
-                                    true
+                            client.gui.getChat().addMessage(
+                                    Component.literal("새로고침에는 XP 5와 청금석 1개가 필요합니다.")
                             );
                             return;
                         }
