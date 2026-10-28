@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.MCEndgameDamageCompatibility;
 import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.SweepingEnhancementService;
@@ -86,7 +87,7 @@ abstract class CombatAugmentMixin {
             float damage,
             CallbackInfoReturnable<Float> cir
     ) {
-        if (CombatProvenanceContext.isDelayedDamage()) {
+        if (CombatProvenanceContext.isDelayedDamage() && !MCEndgameDamageCompatibility.active()) {
             cir.setReturnValue(CombatProvenanceContext.delayedDamageOr(damage));
         }
     }
@@ -98,7 +99,7 @@ abstract class CombatAugmentMixin {
             float damage,
             CallbackInfoReturnable<Float> cir
     ) {
-        if (!CombatProvenanceContext.isDelayedDamage()) {
+        if (!CombatProvenanceContext.isDelayedDamage() || MCEndgameDamageCompatibility.active()) {
             return;
         }
         float reserved = CombatProvenanceContext.delayedDamageOr(damage);
