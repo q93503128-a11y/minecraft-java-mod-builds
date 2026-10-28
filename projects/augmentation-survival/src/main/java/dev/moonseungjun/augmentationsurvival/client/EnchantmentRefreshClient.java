@@ -12,7 +12,6 @@ public final class EnchantmentRefreshClient {
     private static final int REFRESH_BUTTON_ID = 3;
     private static final int IMAGE_WIDTH = 176;
     private static final int IMAGE_HEIGHT = 166;
-    private static final int XP_COST = 5;
 
     private EnchantmentRefreshClient() {
     }
@@ -33,26 +32,9 @@ public final class EnchantmentRefreshClient {
             }
 
             Button button = Button.builder(Component.literal("↻"), ignored -> {
-                        if (client.gameMode == null || client.player == null) return;
-                        var menu = enchantmentScreen.getMenu();
-                        boolean hasItem = !menu.slots.get(0).getItem().isEmpty();
-                        boolean hasLapis = !menu.slots.get(1).getItem().isEmpty()
-                                && menu.slots.get(1).getItem().getCount() >= 1;
-                        boolean hasOffer = false;
-                        for (int cost : menu.costs) {
-                            if (cost > 0) {
-                                hasOffer = true;
-                                break;
-                            }
-                        }
-                        if (!hasItem || !hasLapis || !hasOffer || client.player.totalExperience < XP_COST) {
-                            client.gui.getChat().addMessage(
-                                    Component.literal("새로고침에는 XP 5와 청금석 1개가 필요합니다.")
-                            );
-                            return;
-                        }
+                        if (client.gameMode == null) return;
                         client.gameMode.handleInventoryButtonClick(
-                                menu.containerId,
+                                enchantmentScreen.getMenu().containerId,
                                 REFRESH_BUTTON_ID
                         );
                     })
