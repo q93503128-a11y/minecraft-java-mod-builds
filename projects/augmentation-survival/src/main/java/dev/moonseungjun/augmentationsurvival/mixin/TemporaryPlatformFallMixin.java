@@ -1,6 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
-import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformService;
+import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformLandingProtection;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -20,7 +20,7 @@ public abstract class TemporaryPlatformFallMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         if ((Object) this instanceof ServerPlayer player
-                && TemporaryPlatformService.cancelsFallDamage(player)) {
+                && TemporaryPlatformLandingProtection.protects(player)) {
             cir.setReturnValue(false);
         }
     }
