@@ -17,16 +17,14 @@ public final class DominationPlaytestGameTests implements CustomTestMethodInvoke
     @GameTest(maxTicks = 40)
     public void dominatedMobImmediatelyAcquiresNearbyHostile(GameTestHelper helper) {
         ServerPlayer owner = player(helper, 1, 1);
+        Mob hostile = helper.spawnMob(EntityTypes.SKELETON, 1, 2, 4).withNoFreeWill().spawn();
         Mob dominated = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 2).withNoFreeWill().spawn();
         dominated.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.dominatedBy(owner.getUUID()));
         CompanionAugmentService.onRevivedCompanion(dominated);
-        Mob hostile = helper.spawnMob(EntityTypes.SKELETON, 1, 2, 4).withNoFreeWill().spawn();
-        GameTestPlayers.runAfterDelay(helper, 2, () -> {
-            require(dominated.getTarget() == hostile,
-                    "dominated mob did not automatically acquire a nearby hostile after conversion");
-            require(dominated.isCurrentlyGlowing(), "dominated mob lost its visible domination marker");
-            GameTestPlayers.succeed(helper);
-        });
+        require(dominated.getTarget() == hostile,
+                "dominated mob did not immediately acquire the hostile already present at conversion");
+        require(dominated.isCurrentlyGlowing(), "dominated mob lost its visible domination marker");
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest(maxTicks = 50)
