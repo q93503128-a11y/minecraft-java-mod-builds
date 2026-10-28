@@ -23,9 +23,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Re-applies Return to Sender after vanilla projectile hit handling has finished.
- * AbstractArrow performs its own reverse/slowdown after shield-blocked damage returns,
- * which otherwise overwrites the augment's immediate reflection velocity.
+ * Legacy fallback for projectiles that reach the Fabric blocked-damage event without going through
+ * Player.tryDeflect. Vanilla shield deflection is now handled earlier by PlayerReturnToSenderMixin.
  */
 @Mixin(value = ReactiveCombatAugmentService.class, remap = false)
 public abstract class ReturnToSenderDeferralMixin {
@@ -36,13 +35,19 @@ public abstract class ReturnToSenderDeferralMixin {
     private static final Deque<PendingReflection> AUGMENTATION_SURVIVAL$PENDING =
             new ArrayDeque<>();
 
-    @Inject(method = "tryReturnProjectile", at = @At("HEAD"))
+    @Inject(method = "tryReturnProjectile", at = @At("HEAD"), cancellable = true)
     private static void augmentationSurvival$captureReflection(
             ServerPlayer player,
             DamageSource source,
             CallbackInfo ci
     ) {
         if (!(source.getDirectEntity() instanceof Projectile projectile)) {
+            return;
+        }
+        // The vanilla deflection hook already applied the authoritative reflection. Do not scale it
+        // a second time when AFTER_DAMAGE reports the same shield block.
+        if (ReactiveCombatAugmentService.isReflectedProjectile(projectile)) {
+            ci.cancel();
             return;
         }
         double originalSpeed = projectile.getDeltaMovement().length();
