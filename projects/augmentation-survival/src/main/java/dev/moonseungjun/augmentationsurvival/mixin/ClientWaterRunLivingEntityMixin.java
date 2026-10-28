@@ -14,13 +14,17 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(LivingEntity.class)
 abstract class ClientWaterRunLivingEntityMixin {
     private static final String WATER_RUN_ID = AugmentationSurvival.MOD_ID + ":water_run";
+    private static final double WATER_RUN_MIN_HORIZONTAL_SPEED_SQUARED = 0.0064D;
 
     @ModifyReturnValue(method = "canStandOnFluid", at = @At("RETURN"))
     private boolean augmentationSurvival$predictWaterRun(boolean original, FluidState fluidState) {
         if (original) return true;
-        return (Object) this instanceof LocalPlayer player
+        if (!((Object) this instanceof LocalPlayer player)) return false;
+        boolean movingFastEnough = player.isSprinting()
+                || player.getDeltaMovement().horizontalDistanceSqr() >= WATER_RUN_MIN_HORIZONTAL_SPEED_SQUARED;
+        return movingFastEnough
+                && !player.isShiftKeyDown()
                 && !player.isDeadOrDying()
-                && player.isSprinting()
                 && ClientAugmentProgressState.level(WATER_RUN_ID) > 0
                 && fluidState.is(FluidTags.WATER);
     }
