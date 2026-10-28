@@ -54,32 +54,6 @@ abstract class CombatAugmentMixin {
         );
     }
 
-    /**
-     * MCEndgame 1.7.0+26.2 cancels Player#actuallyHurt at HEAD after applying HP itself.
-     * Wrap the caller instead: vanilla has already accepted/blocked the hit and resolved hurt cooldown,
-     * but MCEndgame has not yet consumed the final damage argument. This covers both hurtServer branches.
-     */
-    @WrapOperation(
-            method = "hurtServer",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/LivingEntity;actuallyHurt(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)V"
-            )
-    )
-    private void augmentationSurvival$bridgeMCEndgameActuallyHurt(
-            LivingEntity instance,
-            ServerLevel level,
-            DamageSource source,
-            float damage,
-            Operation<Void> original
-    ) {
-        float adjusted = damage;
-        if (instance instanceof ServerPlayer player && MCEndgameDamageCompatibility.active()) {
-            adjusted = MCEndgameDamageCompatibility.modifyActuallyHurtInput(player, level, source, damage);
-        }
-        original.call(instance, level, source, adjusted);
-    }
-
     /** Reduces only the armor/toughness inputs for ROOT direct attacks with Armor Pierce. */
     @WrapOperation(
             method = "getDamageAfterArmorAbsorb",
