@@ -7,6 +7,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.ClientTemporalState;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
 import dev.moonseungjun.augmentationsurvival.client.ClientMiningPredictionState;
+import dev.moonseungjun.augmentationsurvival.client.InstantMiningInputClient;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
@@ -28,7 +29,9 @@ abstract class ClientMiningAugmentMixin {
             return original;
         }
 
-        if (ClientAugmentProgressState.level(INSTANT_MINING_ID) > 0 && player.hasCorrectToolForDrops(state)) {
+        if (ClientAugmentProgressState.level(INSTANT_MINING_ID) > 0
+                && InstantMiningInputClient.isEnabled()
+                && player.hasCorrectToolForDrops(state)) {
             return Float.MAX_VALUE;
         }
 
