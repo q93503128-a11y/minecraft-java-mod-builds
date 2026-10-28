@@ -10,6 +10,7 @@ import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -146,7 +147,9 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
                 data.set(DATA_REROLL_REMAINING, result.rerollsRemaining());
             }
             case NO_REROLLS -> data.set(DATA_REROLL_REMAINING, 0);
-            case NO_REPLACEMENT -> { }
+            case NO_REPLACEMENT -> player.displayClientMessage(
+                    Component.literal("바꿀 수 있는 다른 증강 후보가 없습니다."), true
+            );
             default -> data.set(DATA_STATUS, STATUS_INVALID);
         }
         broadcastChanges();
