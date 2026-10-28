@@ -3,6 +3,8 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
+import dev.moonseungjun.augmentationsurvival.network.InstantMiningNetworking;
+import dev.moonseungjun.augmentationsurvival.network.InstantMiningTogglePayload;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -17,12 +19,12 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/** Pins the final server block-break progress boundary used by the Instant Mining active toggle. */
+/** Pins the server payload path and final block-break boundary used by the Instant Mining dedicated key. */
 public final class InstantMiningBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String INSTANT_MINING_ID = AugmentationSurvival.MOD_ID + ":instant_mining";
 
     @GameTest
-    public void instantMiningStatePredicateAndFinalProgressStayBound(GameTestHelper helper) {
+    public void instantMiningDedicatedPayloadAndFinalProgressStayBound(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
@@ -40,16 +42,34 @@ public final class InstantMiningBoundaryGameTests implements CustomTestMethodInv
                 "instant mining became active from ownership alone");
         require(!UtilityAugmentService.shouldInstantMine(player, stone, 1.0F),
                 "instant mining service bypassed its explicit toggle while off");
-        require(ActiveAbilityRouter.assignSlot(player, 0, INSTANT_MINING_ID),
-                "instant mining could not be assigned to an active slot");
-        require(ActiveAbilityRouter.tryUseSlot(player, 0),
-                "instant mining active slot did not toggle on");
+        require(!ActiveAbilityRouter.assignSlot(player, 0, INSTANT_MINING_ID),
+                "instant mining leaked back into the K active loadout");
+        require(InstantMiningNetworking.handleToggleRequest(player, new InstantMiningTogglePayload(true)),
+                "dedicated instant mining payload did not enable for an owner");
+        require(UtilityAugmentService.isInstantMiningEnabled(player),
+                "dedicated instant mining payload state stayed off");
         require(UtilityAugmentService.shouldInstantMine(player, stone, 1.0F),
                 "instant-mining service predicate rejected enabled valid state/tool input");
 
         float progress = stone.getDestroyProgress(player, level, pos);
         require(progress >= 1.0F,
                 "final BlockState#getDestroyProgress boundary did not apply enabled instant mining; progress=" + progress);
+
+        require(InstantMiningNetworking.handleToggleRequest(player, new InstantMiningTogglePayload(true)),
+                "dedicated instant mining payload did not disable on second use");
+        require(!UtilityAugmentService.isInstantMiningEnabled(player),
+                "instant mining remained enabled after dedicated payload toggle off");
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void instantMiningDedicatedPayloadRejectsUnownedPlayer(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial());
+        require(!InstantMiningNetworking.handleToggleRequest(player, new InstantMiningTogglePayload(true)),
+                "unowned player enabled instant mining through the dedicated payload path");
+        require(!UtilityAugmentService.isInstantMiningEnabled(player),
+                "unowned player retained an instant mining enabled state");
         GameTestPlayers.succeed(helper);
     }
 

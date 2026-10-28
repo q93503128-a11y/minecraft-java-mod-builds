@@ -8,6 +8,7 @@ import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentS
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityState;
 import dev.moonseungjun.augmentationsurvival.augment.movement.FlightAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.utility.InstantMiningToggleService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -36,7 +37,7 @@ public final class PlaytestRegressionGameTests implements CustomTestMethodInvoke
     private static final String DOMINATION_ID = AugmentationSurvival.MOD_ID + ":domination";
 
     @GameTest
-    public void instantMiningIsAnExplicitActiveToggle(GameTestHelper helper) {
+    public void instantMiningUsesDedicatedToggleInsteadOfActiveSlot(GameTestHelper helper) {
         ServerPlayer player = player(helper, 1, 1);
         AugmentationPlayerStateService.replace(
                 player,
@@ -44,11 +45,11 @@ public final class PlaytestRegressionGameTests implements CustomTestMethodInvoke
         );
         require(!UtilityAugmentService.isInstantMiningEnabled(player),
                 "instant mining started enabled from ownership alone");
-        require(ActiveAbilityRouter.assignSlot(player, 0, UtilityAugmentService.INSTANT_MINING_ID),
-                "instant mining could not be assigned to an active slot");
-        require(ActiveAbilityRouter.tryUseSlot(player, 0), "instant mining active slot did not toggle on");
+        require(!ActiveAbilityRouter.assignSlot(player, 0, UtilityAugmentService.INSTANT_MINING_ID),
+                "instant mining leaked into the K active loadout");
+        require(InstantMiningToggleService.toggle(player), "dedicated instant mining toggle did not turn on");
         require(UtilityAugmentService.isInstantMiningEnabled(player), "instant mining toggle state stayed off");
-        require(ActiveAbilityRouter.tryUseSlot(player, 0), "instant mining active slot did not toggle off");
+        require(InstantMiningToggleService.toggle(player), "dedicated instant mining toggle did not turn off");
         require(!UtilityAugmentService.isInstantMiningEnabled(player), "instant mining toggle state stayed on");
         GameTestPlayers.succeed(helper);
     }

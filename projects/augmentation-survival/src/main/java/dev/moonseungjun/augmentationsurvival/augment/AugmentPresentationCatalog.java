@@ -54,8 +54,8 @@ public final class AugmentPresentationCatalog {
         }
         if (definition.id().endsWith(":instant_mining")) {
             return new Entry("순간 채굴", Kind.TOGGLE,
-                    "액티브 슬롯에서 사용해 켜고 끄며, 활성화 중 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
-                    "액티브 슬롯에서 사용할 때마다 활성화와 비활성화가 전환됩니다. 활성화 중 현재 도구로 정상 수확 가능한 직접 채굴 블록을 1 game tick에 파괴합니다. 파괴 불가 블록은 제외되며 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다. 자동 파생 블록까지 1틱 채굴로 재귀 확장하지 않습니다.");
+                    "전용 단축키로 켜고 끄며, 활성화 중 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
+                    "기본 N키로 켜고 끕니다. 키 설정에서 변경할 수 있습니다. 활성화 중 현재 도구로 정상 수확 가능한 직접 채굴 블록을 1 game tick에 파괴합니다. 파괴 불가 블록은 제외되며 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다. 자동 파생 블록까지 1틱 채굴로 재귀 확장하지 않습니다.");
         }
         if (definition.id().equals(FlightAugmentService.FLIGHT_ID)) {
             return new Entry("비행", Kind.TOGGLE,
