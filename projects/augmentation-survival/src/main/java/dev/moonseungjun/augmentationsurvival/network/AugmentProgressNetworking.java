@@ -83,7 +83,8 @@ public final class AugmentProgressNetworking {
         ServerPlayNetworking.send(player, new AugmentProgressStatePayload(ids, levels));
     }
 
-    static boolean containsExpectedAugments(
+    /** Pure completeness check used by respawn sync and its regression coverage. */
+    public static boolean containsExpectedAugments(
             AugmentationPlayerState state,
             Map<String, Integer> expectedAugments
     ) {
