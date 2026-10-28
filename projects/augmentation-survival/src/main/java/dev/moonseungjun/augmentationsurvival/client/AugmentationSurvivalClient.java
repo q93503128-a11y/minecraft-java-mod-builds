@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 public final class AugmentationSurvivalClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        AugmentIconClient.initialize();
         MenuScreens.register(AugmentDeviceMenus.BASIC, AugmentDeviceScreen::new);
         MenuScreens.register(AugmentDeviceMenus.ADVANCED, AugmentDeviceScreen::new);
         MenuScreens.register(AugmentStorageMenus.STORAGE, AugmentStorageScreen::new);
@@ -38,6 +39,7 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         ClientMiningPredictionState.initialize();
         MovementInputClient.initialize();
         ActiveAbilityInputClient.initialize();
+        InstantMiningInputClient.initialize();
         AuthorityTheftInputClient.initialize();
         StorageInputClient.initialize();
         SpatialLinkClientNetworking.initialize();
