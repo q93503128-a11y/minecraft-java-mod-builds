@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugment
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.lang.reflect.Method;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
@@ -166,7 +167,7 @@ public final class RareTierPlaytestRegressionGameTests implements CustomTestMeth
     }
 
     @Override
-    public void invokeTestMethod(java.lang.reflect.Method method, GameTestHelper helper) throws Exception {
+    public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
         GameTestPlayers.invoke(this, helper, method);
     }
 }
