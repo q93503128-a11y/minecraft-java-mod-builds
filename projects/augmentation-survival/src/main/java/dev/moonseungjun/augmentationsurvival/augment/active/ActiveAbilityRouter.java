@@ -74,7 +74,7 @@ public final class ActiveAbilityRouter {
 
     private static boolean executeResolved(ServerPlayer player, AugmentationPlayerState state, String abilityId) {
         if (abilityId.equals(THREAT_SUPPRESSION_ID)) return toggle(player, state, THREAT_SUPPRESSION_ID, THREAT_TOGGLE_KEY);
-        if (abilityId.equals(INSTANT_MINING_ID)) return toggle(player, state, INSTANT_MINING_ID, UtilityAugmentService.INSTANT_MINING_TOGGLE_KEY);
+        if (abilityId.equals(INSTANT_MINING_ID)) return UtilityAugmentService.toggleInstantMining(player);
         if (abilityId.equals(DEATH_RETURN_ID)) return DeathReturnAugmentService.tryUse(player);
         if (abilityId.equals(CLONE_ID)) return CloneActiveService.tryUse(player);
         if (abilityId.equals(TEMPORARY_PLATFORM_ID)) return TemporaryPlatformService.tryUse(player);
@@ -101,7 +101,9 @@ public final class ActiveAbilityRouter {
 
     public static List<String> ownedActiveIds(AugmentationPlayerState state) {
         List<String> owned = new ArrayList<>();
-        for (String id : ALL_ORDER) if (boundedLevel(state, id) > 0) owned.add(id);
+        for (String id : ALL_ORDER) {
+            if (!id.equals(INSTANT_MINING_ID) && boundedLevel(state, id) > 0) owned.add(id);
+        }
         return List.copyOf(owned);
     }
 
@@ -111,6 +113,7 @@ public final class ActiveAbilityRouter {
         if (state.activeSlots().isEmpty()) {
             int index = 0;
             for (String id : ALL_ORDER) {
+                if (id.equals(INSTANT_MINING_ID)) continue;
                 if (boundedLevel(state, id) > 0 && index < 10) result.set(index++, id);
             }
             return result;
