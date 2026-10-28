@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.acquisition.CoreUpgradeService;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
+import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenu;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -14,6 +15,7 @@ import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
 
 /** Server-runtime coverage for the core-to-offer acquisition transaction. */
@@ -140,6 +142,58 @@ public final class AcquisitionOfferGameTests implements CustomTestMethodInvoker 
                 "mythic core incorrectly allowed an upward conversion: " + topTier.status());
         require(player.getInventory().countItem(AugmentCoreItems.MYTHIC_CORE) == mythicBefore,
                 "top-tier rejection consumed mythic cores");
+
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void deviceMenuButtonsRouteOfferAndUpgradeTransactions(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        AugmentOfferService.clearOffer(player);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial());
+        player.getInventory().clearContent();
+        player.getInventory().add(new ItemStack(AugmentCoreItems.COMMON_CORE));
+
+        AugmentDeviceMenu basic = new AugmentDeviceMenu(
+                41, player.getInventory(), ContainerLevelAccess.NULL, false
+        );
+        require(!basic.clickMenuButton(player, AugmentDeviceMenu.upgradeOneButtonId(AugmentTier.COMMON)),
+                "basic augment device accepted an advanced-only core upgrade button");
+        require(basic.clickMenuButton(player, AugmentDeviceMenu.beginButtonId(AugmentTier.COMMON)),
+                "basic augment device did not accept the common-offer button");
+        require(basic.status() == AugmentDeviceMenu.STATUS_READY,
+                "menu did not enter ready state after beginning a valid offer: " + basic.status());
+        require(basic.selectionCount() == 1,
+                "basic offer exposed the wrong selection count: " + basic.selectionCount());
+        require(basic.candidate(0) != null && basic.candidate(1) != null && basic.candidate(2) != null,
+                "menu did not expose all three server offer candidates");
+
+        String selected = basic.candidate(0).id();
+        require(basic.clickMenuButton(player, AugmentDeviceMenu.candidateButtonId(0)),
+                "basic augment device rejected a valid candidate button");
+        require(basic.status() == AugmentDeviceMenu.STATUS_ACQUIRED,
+                "menu did not enter acquired state after committing selection: " + basic.status());
+        require(AugmentationPlayerStateService.state(player).level(selected) == 1,
+                "menu candidate button did not grant the selected augment");
+        require(player.getInventory().countItem(AugmentCoreItems.COMMON_CORE) == 0,
+                "menu selection did not consume exactly one common core");
+
+        AugmentOfferService.clearOffer(player);
+        player.getInventory().clearContent();
+        player.getInventory().add(new ItemStack(AugmentCoreItems.COMMON_CORE, 3));
+        AugmentDeviceMenu advanced = new AugmentDeviceMenu(
+                42, player.getInventory(), ContainerLevelAccess.NULL, true
+        );
+        require(advanced.clickMenuButton(player, AugmentDeviceMenu.upgradeOneButtonId(AugmentTier.COMMON)),
+                "advanced augment device rejected a valid upgrade button");
+        require(advanced.status() == AugmentDeviceMenu.STATUS_UPGRADED,
+                "advanced menu did not enter upgraded state: " + advanced.status());
+        require(advanced.lastOutputCount() == 1,
+                "advanced menu reported the wrong core output count: " + advanced.lastOutputCount());
+        require(player.getInventory().countItem(AugmentCoreItems.COMMON_CORE) == 0,
+                "advanced menu did not consume exactly three common cores");
+        require(player.getInventory().countItem(AugmentCoreItems.UNCOMMON_CORE) == 1,
+                "advanced menu did not grant one uncommon core");
 
         GameTestPlayers.succeed(helper);
     }
