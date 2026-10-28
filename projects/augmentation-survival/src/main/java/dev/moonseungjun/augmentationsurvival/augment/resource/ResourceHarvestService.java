@@ -103,9 +103,8 @@ public final class ResourceHarvestService {
         boolean matureCrop = crop != null && crop.isMaxAge(state);
         if (matureCrop) {
             applyCropBonusDrops(level, player, pos, state, baseDrops, augments);
-            boolean forceSweepReplant = mode == DerivedBreakMode.SWEEP_CROP;
-            if (forceSweepReplant || boundedLevel(augments, REPLANT_ID) > 0) {
-                scheduleReplant(level, player, pos, crop, state, forceSweepReplant);
+            if (boundedLevel(augments, REPLANT_ID) > 0) {
+                scheduleReplant(level, player, pos, crop, state);
             }
         }
 
@@ -179,8 +178,7 @@ public final class ResourceHarvestService {
             ServerPlayer player,
             BlockPos pos,
             CropBlock crop,
-            BlockState harvestedState,
-            boolean forceSweepReplant
+            BlockState harvestedState
     ) {
         Item planting = plantingItem(harvestedState.getBlock());
         if (planting == null) {
@@ -193,8 +191,7 @@ public final class ResourceHarvestService {
                 crop.getStateForAge(0),
                 planting,
                 player.getUUID(),
-                readyTick,
-                forceSweepReplant
+                readyTick
         ));
     }
 
@@ -514,8 +511,7 @@ public final class ResourceHarvestService {
             BlockState replantedState,
             Item plantingItem,
             UUID playerId,
-            long readyTick,
-            boolean forcedBySweep
+            long readyTick
     ) {
     }
 }
