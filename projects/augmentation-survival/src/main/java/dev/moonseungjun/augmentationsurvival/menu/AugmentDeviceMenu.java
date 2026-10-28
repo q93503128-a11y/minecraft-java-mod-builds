@@ -147,7 +147,7 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
                 data.set(DATA_REROLL_REMAINING, result.rerollsRemaining());
             }
             case NO_REROLLS -> data.set(DATA_REROLL_REMAINING, 0);
-            case NO_REPLACEMENT -> player.displayClientMessage(
+            case NO_REPLACEMENT -> player.sendSystemMessage(
                     Component.literal("바꿀 수 있는 다른 증강 후보가 없습니다."), true
             );
             default -> data.set(DATA_STATUS, STATUS_INVALID);
