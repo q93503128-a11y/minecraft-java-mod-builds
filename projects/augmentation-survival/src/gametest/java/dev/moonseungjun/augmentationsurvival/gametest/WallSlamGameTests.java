@@ -1,7 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
-import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentRuntimeService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -13,12 +12,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.phys.Vec3;
 
-/** Real movement/collision regression for Wall Slam. */
+/** Real knockback/movement/collision regression for Wall Slam. */
 public final class WallSlamGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -38,16 +37,21 @@ public final class WallSlamGameTests implements CustomTestMethodInvoker {
         ServerLevel level = helper.getLevel();
         float before = target.getHealth();
         float rootDamage = 4.0F;
+        DamageSource source = player.damageSources().playerAttack(player);
 
         CombatProvenanceContext.runAs(
                 CombatProvenance.ROOT_MELEE,
-                () -> target.hurtServer(level, player.damageSources().playerAttack(player), rootDamage)
+                () -> target.hurtServer(level, source, rootDamage)
         );
         float afterRoot = target.getHealth();
         require(afterRoot < before, "qualifying root melee damage did not land");
 
-        target.setDeltaMovement(new Vec3(0.0D, 0.0D, 0.75D));
-        FinalAugmentRuntimeService.noteWallSlamKnockback(target);
+        // Exercise Minecraft's actual LivingEntity.knockback boundary. The registered mixin must
+        // observe this call and arm the pending collision window; the test no longer calls the
+        // Wall Slam service hook directly.
+        target.knockback(0.75D, 0.0D, -1.0D, source, rootDamage, false);
+        require(target.getDeltaMovement().horizontalDistanceSqr() > 0.0025D,
+                "real knockback did not produce enough horizontal motion for Wall Slam");
 
         GameTestPlayers.runAfterDelay(helper, 8, () -> {
             require(target.getHealth() < afterRoot,
