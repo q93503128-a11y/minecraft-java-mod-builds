@@ -25,6 +25,6 @@
     "duration_ticks": 60
   },
   "double_jump": {
-    "vertical_multiplier": 1.0
+    "vertical_multiplier": 1.15
   }
 }
