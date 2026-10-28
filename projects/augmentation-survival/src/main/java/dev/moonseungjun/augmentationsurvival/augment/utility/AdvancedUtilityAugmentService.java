@@ -14,7 +14,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.Identifier;
@@ -22,9 +22,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -32,7 +32,9 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /** Server-authoritative bridge for the advanced passive/utility batch. */
@@ -45,6 +47,9 @@ public final class AdvancedUtilityAugmentService {
 
     private static final String HUNT_STACK_KEY = "hunt_record/stacks";
     private static final String HUNT_TYPE_PREFIX = "hunt_record/type/";
+    private static final String PORTABLE_RIPTIDE_USE_KEY =
+            "augmentation_survival.portable_riptide_uses";
+    private static final int PORTABLE_RIPTIDE_USES_PER_BUCKET = 10;
     private static final Identifier HUNT_MAX_HEALTH_MODIFIER = Identifier.fromNamespaceAndPath(
             AugmentationSurvival.MOD_ID,
             "augment_advanced/hunt_record_max_health"
@@ -124,19 +129,12 @@ public final class AdvancedUtilityAugmentService {
         return safeScale(damage, multiplier);
     }
 
-    public static float modifyIncomingBeforeProtection(
-            LivingEntity victim,
-            DamageSource source,
-            float damage
-    ) {
-        if (!(victim instanceof ServerPlayer player)
-                || !(damage > 0.0F)
-                || !Float.isFinite(damage)
-                || !source.typeHolder().is(DamageTypes.ENDER_PEARL)) {
+    /** Exact ender-pearl self-damage scaling, called from the pearl landing path. */
+    public static float modifyPearlSelfDamage(ServerPlayer player, float damage) {
+        if (!(damage > 0.0F) || !Float.isFinite(damage)) {
             return damage;
         }
-        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        int level = boundedLevel(state, PEARL_MASTERY_ID);
+        int level = boundedLevel(AugmentationPlayerStateService.state(player), PEARL_MASTERY_ID);
         if (level <= 0) {
             return damage;
         }
@@ -147,12 +145,13 @@ public final class AdvancedUtilityAugmentService {
     }
 
     public static int modifyPearlCooldownTicks(ServerPlayer player, int vanillaTicks) {
-        if (vanillaTicks <= 0) {
-            return vanillaTicks;
-        }
-        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        int level = boundedLevel(state, PEARL_MASTERY_ID);
-        if (level <= 0) {
+        int level = boundedLevel(AugmentationPlayerStateService.state(player), PEARL_MASTERY_ID);
+        return modifyPearlCooldownTicksForLevel(level, vanillaTicks);
+    }
+
+    /** Shared by the server and the client cooldown mirrors. */
+    public static int modifyPearlCooldownTicksForLevel(int level, int vanillaTicks) {
+        if (vanillaTicks <= 0 || level <= 0) {
             return vanillaTicks;
         }
         double reduction = AdvancedAugmentTuning.current().pearlCooldownReduction(level);
@@ -172,11 +171,33 @@ public final class AdvancedUtilityAugmentService {
         return EnchantmentHelper.getTridentSpinAttackStrength(trident, player) > 0.0F;
     }
 
+    public static int portableRiptideUsesRemaining(ItemStack waterBucket) {
+        if (!waterBucket.is(Items.WATER_BUCKET)) {
+            return 0;
+        }
+        CustomData data = waterBucket.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        int used = data.copyTag().getInt(PORTABLE_RIPTIDE_USE_KEY).orElse(0);
+        used = Mth.clamp(used, 0, PORTABLE_RIPTIDE_USES_PER_BUCKET - 1);
+        return PORTABLE_RIPTIDE_USES_PER_BUCKET - used;
+    }
+
+    /** One filled water bucket powers ten successful dry Riptide activations. */
     public static void consumePortableRiptideWater(ServerPlayer player) {
         if (player.getAbilities().instabuild || !player.getOffhandItem().is(Items.WATER_BUCKET)) {
             return;
         }
-        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.BUCKET));
+        ItemStack waterBucket = player.getOffhandItem();
+        int remaining = portableRiptideUsesRemaining(waterBucket);
+        if (remaining <= 1) {
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.BUCKET));
+            return;
+        }
+        int nextUsed = PORTABLE_RIPTIDE_USES_PER_BUCKET - remaining + 1;
+        CustomData.update(
+                DataComponents.CUSTOM_DATA,
+                waterBucket,
+                tag -> tag.putInt(PORTABLE_RIPTIDE_USE_KEY, nextUsed)
+        );
     }
 
     private static void afterKill(
@@ -273,21 +294,35 @@ public final class AdvancedUtilityAugmentService {
                 || player.isPassenger()
                 || player.isInWater()
                 || player.onClimbable()
-                || !player.horizontalCollision
                 || player.getLastClientInput().shift()) {
             return false;
         }
         var input = player.getLastClientInput();
-        if (!(input.forward() || input.backward() || input.left() || input.right() || input.jump())) {
-            return false;
-        }
-        BlockPos origin = player.blockPosition();
-        for (int yOffset = 0; yOffset <= 1; yOffset++) {
-            for (Direction direction : Direction.Plane.HORIZONTAL) {
-                BlockPos pos = origin.above(yOffset).relative(direction);
-                var blockState = player.level().getBlockState(pos);
-                if (blockState.is(BlockTags.LOGS) || blockState.is(BlockTags.LEAVES)) {
-                    return true;
+        boolean climbIntent = input.forward()
+                || input.jump()
+                || player.horizontalCollision
+                && (input.backward() || input.left() || input.right());
+        return climbIntent && touchesTreeSurface(player);
+    }
+
+    /** Uses physical proximity instead of relying solely on the transient horizontalCollision flag. */
+    private static boolean touchesTreeSurface(ServerPlayer player) {
+        AABB box = player.getBoundingBox();
+        int minX = Mth.floor(box.minX - 0.08D);
+        int maxX = Mth.floor(box.maxX + 0.08D);
+        int minY = Mth.floor(box.minY + 0.05D);
+        int maxY = Mth.floor(box.maxY - 0.05D);
+        int minZ = Mth.floor(box.minZ - 0.08D);
+        int maxZ = Mth.floor(box.maxZ + 0.08D);
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    cursor.set(x, y, z);
+                    var state = player.level().getBlockState(cursor);
+                    if (state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES)) {
+                        return true;
+                    }
                 }
             }
         }
