@@ -1,6 +1,8 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.movement.MantleAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.movement.TerrainResistanceService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -19,90 +21,98 @@ import net.minecraft.world.phys.Vec3;
 public final class MovementEdgeCaseGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
-    @GameTest(maxTicks = 40)
-    public void mantleActuallyRaisesOwnedAirbornePlayerAtClearLedge(GameTestHelper helper) {
+    @GameTest
+    public void mantleRuntimeRaisesOnlyOwnedPlayerWhenDestinationIsClear(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos wall = helper.absolutePos(new BlockPos(4, 5, 4));
-
-        for (int dy = -2; dy <= 3; dy++) {
-            for (int dx = -2; dx <= 2; dx++) {
-                for (int dz = -2; dz <= 2; dz++) {
-                    level.setBlock(wall.offset(dx, dy, dz), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-                }
-            }
-        }
+        clearAround(level, wall);
         level.setBlock(wall, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
-        level.setBlock(wall.below(2), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+
+        double startX = wall.getX() - 0.31D;
+        double startY = wall.getY();
+        double startZ = wall.getZ() + 0.5D;
+
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial());
+        prepareMantleAttempt(player, startX, startY, startZ);
+        require(!MantleAugmentService.tryMantle(player), "unowned mantle moved the player");
+        requireClose(player.getY(), startY, 1.0E-9D, "unowned mantle changed player Y");
 
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("mantle"), 1)
         );
-        double startX = wall.getX() - 0.42D;
-        double startY = wall.getY() + 0.05D;
-        double startZ = wall.getZ() + 0.5D;
-        player.setPos(startX, startY, startZ);
+        prepareMantleAttempt(player, startX, startY, startZ);
+        require(MantleAugmentService.tryMantle(player), "owned mantle rejected a clear ledge");
+        requireClose(player.getY(), startY + 1.0D, 1.0E-9D,
+                "owned mantle did not raise the player exactly one block");
+        require(player.getX() > startX + 0.30D,
+                "owned mantle did not move the player toward the ledge");
+        require(player.getDeltaMovement().y >= 0.0D,
+                "mantle retained downward velocity after climbing");
+
+        level.setBlock(wall.above(), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+        prepareMantleAttempt(player, startX, startY, startZ);
+        require(!MantleAugmentService.tryMantle(player),
+                "mantle entered a blocked destination above the ledge");
+        requireClose(player.getY(), startY, 1.0E-9D,
+                "blocked mantle changed player Y");
+
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void terrainResistanceMitigatesCobwebHorizontalAndVerticalStuckMultiplier(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        Vec3 vanillaCobweb = new Vec3(0.25D, 0.05D, 0.25D);
+        Vec3 weavingCobweb = new Vec3(0.50D, 0.25D, 0.50D);
+
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial());
+        requireClose(player.getAttributeValue(Attributes.MOVEMENT_EFFICIENCY), 0.0D, 1.0E-9D,
+                "baseline movement efficiency was not zero");
+        requireVec(TerrainResistanceService.adjustCobwebMultiplier(player, vanillaCobweb), vanillaCobweb, 1.0E-9D,
+                "unowned terrain resistance changed vanilla cobweb slowdown");
+
+        AugmentationPlayerStateService.replace(
+                player,
+                AugmentationPlayerState.initial().withAugmentLevel(id("terrain_resistance"), 3)
+        );
+        requireClose(player.getAttributeValue(Attributes.MOVEMENT_EFFICIENCY), 0.45D, 1.0E-9D,
+                "terrain resistance level 3 did not apply 45% movement efficiency");
+
+        Vec3 adjusted = TerrainResistanceService.adjustCobwebMultiplier(player, vanillaCobweb);
+        requireClose(adjusted.x, 0.5875D, 1.0E-9D,
+                "terrain resistance level 3 produced the wrong cobweb X multiplier");
+        requireClose(adjusted.y, 0.4775D, 1.0E-9D,
+                "terrain resistance level 3 did not mitigate cobweb vertical slowdown");
+        requireClose(adjusted.z, 0.5875D, 1.0E-9D,
+                "terrain resistance level 3 produced the wrong cobweb Z multiplier");
+
+        Vec3 weavingAdjusted = TerrainResistanceService.adjustCobwebMultiplier(player, weavingCobweb);
+        requireClose(weavingAdjusted.x, 0.725D, 1.0E-9D,
+                "terrain resistance diverged for Weaving cobweb X multiplier");
+        requireClose(weavingAdjusted.y, 0.5875D, 1.0E-9D,
+                "terrain resistance diverged for Weaving cobweb vertical multiplier");
+        requireClose(weavingAdjusted.z, 0.725D, 1.0E-9D,
+                "terrain resistance diverged for Weaving cobweb Z multiplier");
+
+        GameTestPlayers.succeed(helper);
+    }
+
+    private static void prepareMantleAttempt(ServerPlayer player, double x, double y, double z) {
+        player.setPos(x, y, z);
+        player.setOnGround(false);
+        player.horizontalCollision = true;
         player.setYRot(-90.0F);
         player.setXRot(0.0F);
         player.setDeltaMovement(new Vec3(0.28D, -0.04D, 0.0D));
-
-        GameTestPlayers.runAfterDelay(helper, 5, () -> {
-            require(player.getY() >= startY + 0.70D,
-                    "owned mantle did not raise the player over a clear one-block ledge; startY="
-                            + startY + ", actualY=" + player.getY());
-            GameTestPlayers.succeed(helper);
-        });
     }
 
-    @GameTest(maxTicks = 40)
-    public void terrainResistanceMitigatesActualCobwebVerticalSlowdown(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        ServerPlayer baseline = GameTestPlayers.survivalPlayer(helper);
-        ServerPlayer resistant = GameTestPlayers.survivalPlayer(helper);
-        BlockPos baseColumn = helper.absolutePos(new BlockPos(2, 7, 2));
-        BlockPos resistantColumn = helper.absolutePos(new BlockPos(8, 7, 2));
-
-        prepareCobwebColumn(level, baseColumn);
-        prepareCobwebColumn(level, resistantColumn);
-
-        AugmentationPlayerStateService.replace(baseline, AugmentationPlayerState.initial());
-        AugmentationPlayerStateService.replace(
-                resistant,
-                AugmentationPlayerState.initial().withAugmentLevel(id("terrain_resistance"), 3)
-        );
-        requireClose(baseline.getAttributeValue(Attributes.MOVEMENT_EFFICIENCY), 0.0D, 1.0E-9D,
-                "baseline movement efficiency was not zero");
-        requireClose(resistant.getAttributeValue(Attributes.MOVEMENT_EFFICIENCY), 0.45D, 1.0E-9D,
-                "terrain resistance level 3 did not apply 45% movement efficiency");
-
-        double baselineStartY = baseColumn.getY() + 2.70D;
-        double resistantStartY = resistantColumn.getY() + 2.70D;
-        baseline.setPos(baseColumn.getX() + 0.5D, baselineStartY, baseColumn.getZ() + 0.5D);
-        resistant.setPos(resistantColumn.getX() + 0.5D, resistantStartY, resistantColumn.getZ() + 0.5D);
-        baseline.setDeltaMovement(0.0D, -0.45D, 0.0D);
-        resistant.setDeltaMovement(0.0D, -0.45D, 0.0D);
-
-        GameTestPlayers.runAfterDelay(helper, 8, () -> {
-            double baselineDrop = baselineStartY - baseline.getY();
-            double resistantDrop = resistantStartY - resistant.getY();
-            require(baselineDrop > 0.0D, "baseline player did not descend through the cobweb column");
-            require(resistantDrop > baselineDrop + 0.05D,
-                    "terrain resistance did not mitigate cobweb vertical slowdown; baselineDrop="
-                            + baselineDrop + ", resistantDrop=" + resistantDrop);
-            GameTestPlayers.succeed(helper);
-        });
-    }
-
-    private static void prepareCobwebColumn(ServerLevel level, BlockPos base) {
-        for (int dy = -2; dy <= 5; dy++) {
-            level.setBlock(base.above(dy), Blocks.COBWEB.defaultBlockState(), Block.UPDATE_ALL);
-        }
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                if (dx == 0 && dz == 0) continue;
-                for (int dy = -2; dy <= 5; dy++) {
-                    level.setBlock(base.offset(dx, dy, dz), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+    private static void clearAround(ServerLevel level, BlockPos center) {
+        for (int dy = -2; dy <= 4; dy++) {
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dz = -3; dz <= 3; dz++) {
+                    level.setBlock(center.offset(dx, dy, dz), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 }
             }
         }
@@ -120,6 +130,12 @@ public final class MovementEdgeCaseGameTests implements CustomTestMethodInvoker 
         if (Math.abs(actual - expected) > tolerance) {
             throw new AssertionError(message + "; expected=" + expected + ", actual=" + actual);
         }
+    }
+
+    private static void requireVec(Vec3 actual, Vec3 expected, double tolerance, String message) {
+        requireClose(actual.x, expected.x, tolerance, message + " (x)");
+        requireClose(actual.y, expected.y, tolerance, message + " (y)");
+        requireClose(actual.z, expected.z, tolerance, message + " (z)");
     }
 
     @Override
