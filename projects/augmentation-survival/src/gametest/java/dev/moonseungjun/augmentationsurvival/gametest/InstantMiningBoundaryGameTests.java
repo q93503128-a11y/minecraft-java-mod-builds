@@ -17,7 +17,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-/** Pins the final server block-break progress boundary used by the Instant Mining active toggle. */
+/** Pins the final server block-break progress boundary used by the dedicated Instant Mining toggle. */
 public final class InstantMiningBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String INSTANT_MINING_ID = AugmentationSurvival.MOD_ID + ":instant_mining";
 
@@ -40,16 +40,20 @@ public final class InstantMiningBoundaryGameTests implements CustomTestMethodInv
                 "instant mining became active from ownership alone");
         require(!UtilityAugmentService.shouldInstantMine(player, stone, 1.0F),
                 "instant mining service bypassed its explicit toggle while off");
-        require(ActiveAbilityRouter.assignSlot(player, 0, INSTANT_MINING_ID),
-                "instant mining could not be assigned to an active slot");
-        require(ActiveAbilityRouter.tryUseSlot(player, 0),
-                "instant mining active slot did not toggle on");
+        require(!ActiveAbilityRouter.ownedActiveIds(AugmentationPlayerStateService.state(player)).contains(INSTANT_MINING_ID),
+                "instant mining is still exposed in the player-facing active loadout");
+        require(UtilityAugmentService.toggleInstantMining(player),
+                "dedicated instant mining toggle did not turn on");
         require(UtilityAugmentService.shouldInstantMine(player, stone, 1.0F),
                 "instant-mining service predicate rejected enabled valid state/tool input");
 
         float progress = stone.getDestroyProgress(player, level, pos);
         require(progress >= 1.0F,
                 "final BlockState#getDestroyProgress boundary did not apply enabled instant mining; progress=" + progress);
+        require(UtilityAugmentService.toggleInstantMining(player),
+                "dedicated instant mining toggle did not turn off");
+        require(!UtilityAugmentService.isInstantMiningEnabled(player),
+                "instant mining remained enabled after dedicated toggle off");
         GameTestPlayers.succeed(helper);
     }
 
