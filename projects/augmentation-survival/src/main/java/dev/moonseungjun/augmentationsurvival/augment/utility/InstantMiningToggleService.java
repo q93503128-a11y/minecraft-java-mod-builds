@@ -19,12 +19,9 @@ public final class InstantMiningToggleService {
                 player,
                 state.withPersistentInt(UtilityAugmentService.INSTANT_MINING_TOGGLE_KEY, enabled ? 1 : 0)
         );
-        player.displayClientMessage(
-                Component.translatable(enabled
-                        ? "message.augmentation_survival.instant_mining.enabled"
-                        : "message.augmentation_survival.instant_mining.disabled"),
-                true
-        );
+        player.sendSystemMessage(Component.translatable(enabled
+                ? "message.augmentation_survival.instant_mining.enabled"
+                : "message.augmentation_survival.instant_mining.disabled"));
         return true;
     }
 }
