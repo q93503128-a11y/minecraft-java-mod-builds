@@ -63,7 +63,7 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
             ServerLivingEntityEvents.AFTER_DAMAGE.invoker().afterDamage(
                     player,
                     source,
-                    INPUT_SPEED,
+                    (float) INPUT_SPEED,
                     0.0F,
                     true
             );
