@@ -17,7 +17,7 @@
     "FoodPropertiesAugmentMixin", "FoodDataAugmentMixin", "ItemStackConsumptionAugmentMixin",
     "ItemStackDurabilityAugmentMixin", "FishingHookAugmentMixin", "AnimalBreedingAugmentMixin",
     "LivingEntityJumpPowerAccessor", "AbstractArrowAugmentAccessor", "AbstractArrowAugmentMixin",
-    "ProjectileWeaponItemAugmentMixin", "UseCooldownMasteryMixin", "TridentPortableRiptideMixin", "ThrownEnderpearlMasteryMixin",
+    "ProjectileWeaponItemAugmentMixin", "UseCooldownMasteryMixin", "TridentPortableRiptideMixin", "PortableRiptideConsumptionMixin", "ThrownEnderpearlMasteryMixin",
     "ReactiveCombatReflectedAccessor", "ReturnToSenderDeferralMixin", "ActivePullEntityMixin",
     "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "SpecialActiveAugmentServiceInvoker", "ActiveAbilityOvertimeMixin",
     "TimeAccelerationMiningAttributeMixin", "PlayerActionLockMixin", "ServerPlayerGameModeActionLockMixin",
