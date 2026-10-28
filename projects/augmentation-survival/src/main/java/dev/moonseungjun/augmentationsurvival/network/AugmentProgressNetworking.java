@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.network;
 
+import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
@@ -16,8 +17,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /** Server authority for the acquired-augment collection snapshot. */
 public final class AugmentProgressNetworking {
-    private static final int RESPAWN_RESYNC_DELAY_TICKS = 2;
-    private static final Map<UUID, Integer> RESPAWN_RESYNCS = new HashMap<>();
+    private static final int[] RESPAWN_RESYNC_TICKS = {2, 10, 40};
+    private static final Map<UUID, RespawnResync> RESPAWN_RESYNCS = new HashMap<>();
 
     private AugmentProgressNetworking() { }
 
@@ -25,21 +26,45 @@ public final class AugmentProgressNetworking {
         PayloadTypeRegistry.clientboundPlay().register(AugmentProgressStatePayload.TYPE, AugmentProgressStatePayload.CODEC);
         ServerPlayerEvents.JOIN.register(AugmentProgressNetworking::syncNow);
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            syncNow(newPlayer);
-            RESPAWN_RESYNCS.put(newPlayer.getUUID(), RESPAWN_RESYNC_DELAY_TICKS);
+            Map<String, Integer> expectedAugments = Map.copyOf(
+                    AugmentationPlayerStateService.state(oldPlayer).augmentLevels()
+            );
+            if (containsExpectedAugments(newPlayer, expectedAugments)) {
+                syncNow(newPlayer);
+            }
+            RESPAWN_RESYNCS.put(newPlayer.getUUID(), new RespawnResync(expectedAugments, 0));
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            Iterator<Map.Entry<UUID, Integer>> iterator = RESPAWN_RESYNCS.entrySet().iterator();
+            Iterator<Map.Entry<UUID, RespawnResync>> iterator = RESPAWN_RESYNCS.entrySet().iterator();
             while (iterator.hasNext()) {
-                Map.Entry<UUID, Integer> entry = iterator.next();
-                int ticksRemaining = entry.getValue();
-                if (ticksRemaining > 1) {
-                    entry.setValue(ticksRemaining - 1);
+                Map.Entry<UUID, RespawnResync> entry = iterator.next();
+                ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+                if (player == null) {
+                    iterator.remove();
                     continue;
                 }
-                ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-                if (player != null) syncNow(player);
-                iterator.remove();
+
+                RespawnResync resync = entry.getValue();
+                int elapsed = resync.elapsedTicks() + 1;
+                boolean complete = containsExpectedAugments(player, resync.expectedAugments());
+                if (complete && isRespawnRetryTick(elapsed)) {
+                    syncNow(player);
+                }
+
+                if (elapsed >= RESPAWN_RESYNC_TICKS[RESPAWN_RESYNC_TICKS.length - 1]) {
+                    if (!complete) {
+                        AugmentationSurvival.LOGGER.warn(
+                                "Augment progress respawn snapshot remained incomplete for {} after {} ticks: expected={}, actual={}",
+                                player.getScoreboardName(),
+                                elapsed,
+                                resync.expectedAugments().size(),
+                                AugmentationPlayerStateService.state(player).augmentLevels().size()
+                        );
+                    }
+                    iterator.remove();
+                    continue;
+                }
+                entry.setValue(new RespawnResync(resync.expectedAugments(), elapsed));
             }
         });
     }
@@ -56,5 +81,35 @@ public final class AugmentProgressNetworking {
                     levels.add(entry.getValue());
                 });
         ServerPlayNetworking.send(player, new AugmentProgressStatePayload(ids, levels));
+    }
+
+    static boolean containsExpectedAugments(
+            AugmentationPlayerState state,
+            Map<String, Integer> expectedAugments
+    ) {
+        for (Map.Entry<String, Integer> expected : expectedAugments.entrySet()) {
+            if (state.level(expected.getKey()) != expected.getValue()) return false;
+        }
+        return true;
+    }
+
+    private static boolean containsExpectedAugments(
+            ServerPlayer player,
+            Map<String, Integer> expectedAugments
+    ) {
+        return containsExpectedAugments(AugmentationPlayerStateService.state(player), expectedAugments);
+    }
+
+    private static boolean isRespawnRetryTick(int elapsed) {
+        for (int retryTick : RESPAWN_RESYNC_TICKS) {
+            if (elapsed == retryTick) return true;
+        }
+        return false;
+    }
+
+    private record RespawnResync(Map<String, Integer> expectedAugments, int elapsedTicks) {
+        private RespawnResync {
+            expectedAugments = Map.copyOf(expectedAugments);
+        }
     }
 }
