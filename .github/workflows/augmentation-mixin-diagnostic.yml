@@ -32,6 +32,7 @@ jobs:
         env:
           JAVA_TOOL_OPTIONS: -Dmixin.debug.export=true
         run: |
+          # Diagnostic revision 2: verify the LivingEntity#hurtServer caller bridge.
           set +e
           chmod +x gradlew
           ./gradlew --no-daemon runGameTest -PaugmentationPackRuntime=true --stacktrace \
