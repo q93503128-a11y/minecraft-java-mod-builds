@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentIconCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldTuning;
@@ -28,7 +29,11 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 /** Canonical whole-roster contracts that exercise every augment identity through real runtime state. */
 public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
-    private static final Set<String> DEDICATED_KEY_ACTIVES = Set.of(AuthorityTheftService.AUTHORITY_THEFT_ID, FlightAugmentService.FLIGHT_ID);
+    private static final Set<String> DEDICATED_KEY_ACTIVES = Set.of(
+            AuthorityTheftService.AUTHORITY_THEFT_ID,
+            FlightAugmentService.FLIGHT_ID,
+            UtilityAugmentService.INSTANT_MINING_ID
+    );
 
     @GameTest public void everyCanonicalAugmentRoundTripsThroughServerPlayerState(GameTestHelper helper) {
         ServerPlayer player = player(helper); List<AugmentDefinition> definitions = AugmentCatalog.allDefinitions();
@@ -59,10 +64,21 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
         helper.succeed();
     }
 
+    @GameTest public void everyCanonicalAugmentHasDistinctIcon(GameTestHelper helper) {
+        var icons = AugmentIconCatalog.canonicalIcons();
+        require(icons.size() == 149, "icon catalog does not cover all 149 augments; actual=" + icons.size());
+        require(new LinkedHashSet<>(icons.values()).size() == 149,
+                "two or more canonical augments share the same icon item");
+        for (AugmentDefinition definition : AugmentCatalog.allDefinitions()) {
+            require(icons.containsKey(definition.id()), "missing icon for canonical augment: " + definition.id());
+        }
+        helper.succeed();
+    }
+
     @GameTest public void canonicalActiveRosterMatchesServerRoutingContracts(GameTestHelper helper) {
         Set<String> canonicalActives = new LinkedHashSet<>();
         for (AugmentDefinition definition : AugmentCatalog.allDefinitions()) if (definition.canonicalNameKo().contains("액티브")) canonicalActives.add(definition.id());
-        // Instant Mining is canonically an active toggle even though its catalog display name itself does not carry the marker.
+        // Instant Mining is canonically a toggle controlled by its own rebindable key.
         canonicalActives.add(UtilityAugmentService.INSTANT_MINING_ID);
         Set<String> expectedStandardActives = new LinkedHashSet<>(canonicalActives); expectedStandardActives.removeAll(DEDICATED_KEY_ACTIVES);
         List<String> routedList = ActiveAbilityRouter.supportedIds(); Set<String> routed = new LinkedHashSet<>(routedList);
