@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 public final class SurvivalTuning {
     private static final String RESOURCE_PATH =
             "data/augmentation_survival/augmentation/survival_modifier_contract.json";
+    private static final int VANILLA_NIGHT_VISION_FLICKER_WINDOW_TICKS = 200;
 
     private static volatile Snapshot current;
 
@@ -66,6 +67,20 @@ public final class SurvivalTuning {
                 JsonObject recovery = object(root, "recovery");
                 JsonObject sun = object(root, "sun_affinity");
                 JsonObject nightVision = object(root, "night_vision");
+                int nightVisionDuration = positiveInt(nightVision, "refresh_duration_ticks");
+                int nightVisionThreshold = positiveInt(nightVision, "refresh_threshold_ticks");
+                if (nightVisionThreshold <= VANILLA_NIGHT_VISION_FLICKER_WINDOW_TICKS) {
+                    throw new IllegalStateException(
+                            "Night vision refresh threshold must stay above vanilla flicker window: "
+                                    + nightVisionThreshold
+                    );
+                }
+                if (nightVisionDuration <= nightVisionThreshold) {
+                    throw new IllegalStateException(
+                            "Night vision refresh duration must exceed refresh threshold: "
+                                    + nightVisionDuration + " <= " + nightVisionThreshold
+                    );
+                }
 
                 return new Snapshot(
                         schema,
@@ -82,8 +97,8 @@ public final class SurvivalTuning {
                         fraction(armor, "durability_avoid_per_level"),
                         fraction(recovery, "natural_regen_interval_reduction_per_level"),
                         fraction(sun, "natural_regen_interval_reduction_per_level"),
-                        positiveInt(nightVision, "refresh_duration_ticks"),
-                        positiveInt(nightVision, "refresh_threshold_ticks")
+                        nightVisionDuration,
+                        nightVisionThreshold
                 );
             }
         } catch (IOException exception) {
