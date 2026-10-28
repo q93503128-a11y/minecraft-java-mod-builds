@@ -188,6 +188,7 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         if (result.status() == AugmentOfferService.CommitStatus.SUCCESS) {
             pendingToken = null;
             data.set(DATA_STATUS, STATUS_ACQUIRED);
+            syncPlayerInventory(player);
         } else {
             data.set(DATA_STATUS, STATUS_INVALID);
         }
@@ -208,7 +209,15 @@ public final class AugmentDeviceMenu extends AbstractContainerMenu {
         data.set(DATA_LAST_OUTPUT_COUNT, result.outputCount());
         data.set(DATA_STATUS, result.status() == CoreUpgradeService.UpgradeStatus.SUCCESS
                 ? STATUS_UPGRADED : STATUS_NOT_ENOUGH_CORES);
+        if (result.status() == CoreUpgradeService.UpgradeStatus.SUCCESS) {
+            syncPlayerInventory(player);
+        }
         broadcastChanges();
+    }
+
+    private static void syncPlayerInventory(ServerPlayer player) {
+        player.getInventory().setChanged();
+        player.inventoryMenu.broadcastChanges();
     }
 
     private boolean isRecognizedButton(int buttonId) {
