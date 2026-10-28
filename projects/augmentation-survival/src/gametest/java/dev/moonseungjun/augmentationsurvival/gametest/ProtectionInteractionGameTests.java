@@ -19,7 +19,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 
-/** Interaction regressions for protection-pool depletion and invulnerability ordering. */
+/** Interaction regressions for protection-pool depletion, delayed damage and invulnerability ordering. */
 public final class ProtectionInteractionGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
     private static final String TEST_SHIELD_POOL = "gametest_shield_burst";
@@ -60,6 +60,59 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
         requireClose(hostile.getHealth(), afterFirstBurst, 1.0E-5F,
                 "shield burst fired more than once after the pool was removed");
         GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest(maxTicks = 260)
+    public void shieldAbsorbsHitBeforeDelayedDamageIsReserved(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("delayed_damage"), 1));
+        ServerLevel level = (ServerLevel) player.level();
+        float healthBefore = player.getHealth();
+        ProtectionAugmentService.grantShield(player, TEST_SHIELD_POOL, 8.0F, 240);
+
+        player.hurtServer(level, player.damageSources().generic(), 6.0F);
+        requireClose(player.getHealth(), healthBefore, 1.0E-5F,
+                "shielded hit leaked immediate damage to HP");
+        requireClose(ProtectionAugmentService.poolAmount(
+                        player, ProtectionAugmentService.PoolKind.SHIELD, TEST_SHIELD_POOL),
+                2.0F, 1.0E-5F,
+                "shield did not absorb the full incoming hit before delay splitting");
+
+        int delayedWindow = CombatTuning.current().delayedDamageIntervalTicks()
+                * CombatTuning.current().delayedDamageInstallmentCount();
+        GameTestPlayers.runAfterDelay(helper, delayedWindow + 5, () -> {
+            requireClose(player.getHealth(), healthBefore, 1.0E-5F,
+                    "shielded damage was incorrectly reserved and leaked into HP later");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest(maxTicks = 260)
+    public void delayedDamageSplitsARealHitAcrossFiveInstallments(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(id("delayed_damage"), 1));
+        ServerLevel level = (ServerLevel) player.level();
+        float healthBefore = player.getHealth();
+        float hit = 10.0F;
+        float delayedFraction = (float) CombatTuning.current().delayedDamageFraction(1);
+
+        player.hurtServer(level, player.damageSources().generic(), hit);
+        requireClose(
+                player.getHealth(),
+                healthBefore - hit * (1.0F - delayedFraction),
+                1.0E-4F,
+                "delayed damage did not leave the configured fraction for later installments"
+        );
+
+        int delayedWindow = CombatTuning.current().delayedDamageIntervalTicks()
+                * CombatTuning.current().delayedDamageInstallmentCount();
+        GameTestPlayers.runAfterDelay(helper, delayedWindow + 5, () -> {
+            requireClose(player.getHealth(), healthBefore - hit, 1.0E-3F,
+                    "delayed installments did not restore the full original damage over time");
+            GameTestPlayers.succeed(helper);
+        });
     }
 
     @GameTest(maxTicks = 500)
