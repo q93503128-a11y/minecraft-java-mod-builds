@@ -36,7 +36,7 @@
     "natural_regen_interval_reduction_per_level": 0.05
   },
   "night_vision": {
-    "refresh_duration_ticks": 220,
-    "refresh_threshold_ticks": 60
+    "refresh_duration_ticks": 600,
+    "refresh_threshold_ticks": 220
   }
 }
