@@ -92,6 +92,6 @@ abstract class EnchantmentMenuRefreshMixin {
     }
 
     private static void augmentationSurvival$feedback(ServerPlayer player, String message) {
-        player.displayClientMessage(Component.literal(message), true);
+        player.sendSystemMessage(Component.literal(message), true);
     }
 }
