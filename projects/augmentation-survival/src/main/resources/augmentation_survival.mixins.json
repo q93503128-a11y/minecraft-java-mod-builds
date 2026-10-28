@@ -19,6 +19,7 @@
     "LivingEntityJumpPowerAccessor", "AbstractArrowAugmentAccessor", "AbstractArrowAugmentMixin",
     "ProjectileWeaponItemAugmentMixin", "UseCooldownMasteryMixin", "TridentPortableRiptideMixin", "PortableRiptideConsumptionMixin", "ThrownEnderpearlMasteryMixin",
     "ReactiveCombatReflectedAccessor", "ReturnToSenderDeferralMixin", "ActivePullEntityMixin", "AugmentMenuRerollDebounceMixin",
+    "ItemDisplayAugmentAccessor", "ShieldThrowFlightMixin",
     "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "SpecialActiveAugmentServiceInvoker", "ActiveAbilityOvertimeMixin",
     "TimeAccelerationMiningAttributeMixin", "PlayerActionLockMixin", "ServerPlayerGameModeActionLockMixin",
     "ServerPlayerGameModeEnchantmentResonanceMixin", "PhaseShiftCollisionMixin", "PhaseShiftPlayerActionMixin",
