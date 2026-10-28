@@ -23,8 +23,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Legacy fallback for projectiles that reach the Fabric blocked-damage event without going through
- * Player.tryDeflect. Vanilla shield deflection is now handled earlier by PlayerReturnToSenderMixin.
+ * Re-applies Return to Sender after vanilla has finished the shielded projectile collision.
+ * Fabric's blocked-damage event is the stable 26.2 boundary; the block-time aim and scaled speed
+ * are captured there, then the final vanilla deflection is applied at end-of-server-tick so later
+ * AbstractArrow collision logic cannot overwrite the reflected velocity.
  */
 @Mixin(value = ReactiveCombatAugmentService.class, remap = false)
 public abstract class ReturnToSenderDeferralMixin {
@@ -44,8 +46,6 @@ public abstract class ReturnToSenderDeferralMixin {
         if (!(source.getDirectEntity() instanceof Projectile projectile)) {
             return;
         }
-        // The vanilla deflection hook already applied the authoritative reflection. Do not scale it
-        // a second time when AFTER_DAMAGE reports the same shield block.
         if (ReactiveCombatAugmentService.isReflectedProjectile(projectile)) {
             ci.cancel();
             return;
@@ -56,7 +56,8 @@ public abstract class ReturnToSenderDeferralMixin {
         }
         int ownedLevel = AugmentationPlayerStateService.state(player)
                 .level(AUGMENTATION_SURVIVAL$RETURN_TO_SENDER_ID);
-        if (ownedLevel <= 0 || player.getLookAngle().lengthSqr() <= 1.0E-7D) {
+        Vec3 direction = player.getLookAngle();
+        if (ownedLevel <= 0 || direction.lengthSqr() <= 1.0E-7D) {
             return;
         }
         int level = Math.min(
@@ -66,7 +67,12 @@ public abstract class ReturnToSenderDeferralMixin {
         double reflectedSpeed = originalSpeed
                 * ReactiveCombatTuning.current().returnSpeedScale(level);
         AUGMENTATION_SURVIVAL$PENDING.addLast(
-                new PendingReflection(projectile, player.getUUID(), reflectedSpeed)
+                new PendingReflection(
+                        projectile,
+                        player.getUUID(),
+                        reflectedSpeed,
+                        direction.normalize()
+                )
         );
     }
 
@@ -84,20 +90,21 @@ public abstract class ReturnToSenderDeferralMixin {
             if (player == null || player.isDeadOrDying() || projectile.isRemoved()) {
                 continue;
             }
-            Vec3 direction = player.getLookAngle();
-            if (direction.lengthSqr() <= 1.0E-7D) {
-                continue;
-            }
             projectile.deflect(
                     ProjectileDeflection.AIM_DEFLECT,
                     player,
                     EntityReference.of(player),
                     true
             );
-            projectile.setDeltaMovement(direction.normalize().scale(pending.speed()));
+            projectile.setDeltaMovement(pending.direction().scale(pending.speed()));
         }
     }
 
     @Unique
-    private record PendingReflection(Projectile projectile, UUID playerId, double speed) { }
+    private record PendingReflection(
+            Projectile projectile,
+            UUID playerId,
+            double speed,
+            Vec3 direction
+    ) { }
 }
