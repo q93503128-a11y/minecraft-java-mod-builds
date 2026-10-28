@@ -2,11 +2,17 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ConsumptionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
+import dev.moonseungjun.augmentationsurvival.network.AugmentProgressNetworking;
+import dev.moonseungjun.augmentationsurvival.network.AugmentProgressStatePayload;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
@@ -133,6 +139,42 @@ public final class RareTierPlaytestRegressionGameTests implements CustomTestMeth
                 GameTestPlayers.succeed(helper);
             });
         });
+    }
+
+    @GameTest
+    public void augmentProgressProtocolCoversCanonicalRoster(GameTestHelper helper) {
+        int canonicalCount = AugmentCatalog.allDefinitions().size();
+        require(canonicalCount == 149,
+                "canonical roster changed unexpectedly during rare progress regression: " + canonicalCount);
+        require(AugmentProgressStatePayload.maxEntries() >= canonicalCount,
+                "augment progress payload cap truncates the canonical roster: cap="
+                        + AugmentProgressStatePayload.maxEntries() + ", roster=" + canonicalCount);
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void respawnProgressGuardRejectsPartialOwnedState(GameTestHelper helper) {
+        List<AugmentDefinition> definitions = AugmentCatalog.allDefinitions();
+        Map<String, Integer> expected = new LinkedHashMap<>();
+        for (int i = 0; i < 3; i++) {
+            expected.put(definitions.get(i).id(), 1);
+        }
+
+        AugmentationPlayerState partial = AugmentationPlayerState.initial()
+                .withAugmentLevel(definitions.get(0).id(), 1)
+                .withAugmentLevel(definitions.get(1).id(), 1);
+        require(!AugmentProgressNetworking.containsExpectedAugments(partial, expected),
+                "respawn progress guard accepted a partial owned-augment state");
+
+        AugmentationPlayerState complete = partial.withAugmentLevel(definitions.get(2).id(), 1);
+        require(AugmentProgressNetworking.containsExpectedAugments(complete, expected),
+                "respawn progress guard rejected the complete pre-death owned-augment state");
+
+        AugmentationPlayerState superset = complete.withAugmentLevel(definitions.get(3).id(), 1);
+        require(AugmentProgressNetworking.containsExpectedAugments(superset, expected),
+                "respawn progress guard rejected a complete state with an additional augment");
+
+        GameTestPlayers.succeed(helper);
     }
 
     private static void prepareMatureWheat(ServerLevel level, BlockPos cropPos) {
