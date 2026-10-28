@@ -169,15 +169,24 @@ public final class CommonAugmentGameTests implements CustomTestMethodInvoker {
                 AugmentationPlayerState.initial().withAugmentLevel(webbedFeet, definition.maxLevel())
         );
 
-        BlockPos waterPos = swimmer.blockPosition();
+        BlockPos waterPos = helper.absolutePos(new BlockPos(1, 2, 1));
         level.setBlockAndUpdate(waterPos, Blocks.WATER.defaultBlockState());
+        level.setBlockAndUpdate(waterPos.above(), Blocks.WATER.defaultBlockState());
+        swimmer.setPos(waterPos.getX() + 0.5D, waterPos.getY() + 0.1D, waterPos.getZ() + 0.5D);
         GameTestPlayers.runAfterDelay(helper, 3, () -> {
+            require(swimmer.isInWater(),
+                    "webbed feet test setup never established actual server-side water contact");
             double inWater = swimmer.getAttributeValue(Attributes.MOVEMENT_SPEED);
             require(inWater > baseline,
-                    "webbed feet did not increase movement speed while the player was in water");
+                    "webbed feet did not increase movement speed during confirmed water contact");
 
             level.setBlockAndUpdate(waterPos, Blocks.AIR.defaultBlockState());
+            level.setBlockAndUpdate(waterPos.above(), Blocks.AIR.defaultBlockState());
+            BlockPos dryPos = helper.absolutePos(new BlockPos(4, 2, 1));
+            swimmer.setPos(dryPos.getX() + 0.5D, dryPos.getY(), dryPos.getZ() + 0.5D);
             GameTestPlayers.runAfterDelay(helper, 3, () -> {
+                require(!swimmer.isInWater(),
+                        "webbed feet test setup did not clear server-side water contact");
                 requireClose(
                         swimmer.getAttributeValue(Attributes.MOVEMENT_SPEED),
                         baseline,
