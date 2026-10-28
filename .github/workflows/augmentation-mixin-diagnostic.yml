@@ -27,12 +27,11 @@ jobs:
           java-version: '25'
           cache: gradle
 
-      - name: Export transformed GameTest classes
+      - name: Export transformed GameTest classes and pinned MCEndgame damage ABI
         shell: bash
         env:
           JAVA_TOOL_OPTIONS: -Dmixin.debug.export=true
         run: |
-          # Diagnostic revision 2: verify the LivingEntity#hurtServer caller bridge.
           set +e
           chmod +x gradlew
           ./gradlew --no-daemon runGameTest -PaugmentationPackRuntime=true --stacktrace \
@@ -45,9 +44,16 @@ jobs:
             [[ -n "$file" ]] || continue
             cp --parents "$file" build/mixin-export/
           done < build/mixin-export/exported-files.txt
+          mcendgame_jar=$(find "$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/yJtKNlKW/HnEQE9aE" -type f -name '*.jar' -print -quit)
+          test -n "$mcendgame_jar"
+          {
+            echo "JAR=$mcendgame_jar"
+            javap -classpath "$mcendgame_jar" -p -s de.fuballer.mcendgame.main.component.damage.DamageService
+          } > build/mixin-export/mcendgame-damage-service-javap.txt
           cp build-mixin-diagnostic.log build/mixin-export/gametest.log
           echo "GAME_TEST_EXIT=$status" > build/mixin-export/status.txt
           test -s build/mixin-export/exported-files.txt
+          test -s build/mixin-export/mcendgame-damage-service-javap.txt
 
       - name: Upload transformed classes
         uses: actions/upload-artifact@v4
