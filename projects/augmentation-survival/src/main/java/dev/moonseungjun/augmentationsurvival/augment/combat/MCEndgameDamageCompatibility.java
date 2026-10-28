@@ -15,13 +15,13 @@ import net.minecraft.world.entity.player.Player;
  * MCEndgame actually consumes; every other runtime keeps the normal post-magic path.
  */
 public final class MCEndgameDamageCompatibility {
-    private static final boolean ACTIVE = FabricLoader.getInstance().isModLoaded("mcendgame");
-
     private MCEndgameDamageCompatibility() {
     }
 
     public static boolean active() {
-        return ACTIVE;
+        // Do not cache this at class initialization. Mixin helper classes can be resolved before
+        // every mod entrypoint has finished bootstrapping in development/GameTest environments.
+        return FabricLoader.getInstance().isModLoaded("mcendgame");
     }
 
     public static float modifyActuallyHurtInput(
@@ -30,7 +30,7 @@ public final class MCEndgameDamageCompatibility {
             DamageSource source,
             float damage
     ) {
-        if (!ACTIVE
+        if (!active()
                 || !(victim instanceof ServerPlayer player)
                 || !(damage > 0.0F)
                 || !Float.isFinite(damage)
