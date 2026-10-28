@@ -265,10 +265,7 @@ public final class MovementAugmentService {
             bonus += tuning.nocturnalMovementPerLevel() * nocturnal;
         }
 
-        int webbedFeet = boundedLevel(state, WEBBED_FEET_ID);
-        if (webbedFeet > 0 && player.isInWater()) {
-            bonus += tuning.webbedFeetMovementPerLevel() * webbedFeet;
-        }
+        bonus += webbedFeetMovementBonus(state, player.isInWater());
 
         int momentum = boundedLevel(state, MOMENTUM_SHIFT_ID);
         if (momentum > 0 && runtime.momentumUntilTick > now) {
@@ -288,6 +285,17 @@ public final class MovementAugmentService {
                 bonus,
                 AttributeModifier.Operation.ADD_MULTIPLIED_BASE
         ));
+    }
+
+    private static double webbedFeetMovementBonus(AugmentationPlayerState state, boolean inWater) {
+        if (!inWater) {
+            return 0.0D;
+        }
+        int level = boundedLevel(state, WEBBED_FEET_ID);
+        if (level <= 0) {
+            return 0.0D;
+        }
+        return MovementTuning.current().webbedFeetMovementPerLevel() * level;
     }
 
     private static void applyStepHeight(ServerPlayer player, int level) {
