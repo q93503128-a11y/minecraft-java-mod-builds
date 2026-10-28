@@ -22,9 +22,10 @@ import net.minecraft.world.damagesource.DamageSource;
 /**
  * Shared post-mitigation protection runtime.
  *
- * <p>Ordering is: adaptation -> delayed-damage split -> augment shield -> augment absorption ->
- * vanilla absorption/HP. Delayed installments re-enter the normal hurt pipeline with explicit
- * provenance, but armor/Protection and delay splitting are skipped by the combat mixin.</p>
+ * <p>Ordering is: adaptation -> augment shield -> augment absorption -> delayed-damage split ->
+ * vanilla absorption/HP. A shield must never reserve delayed HP damage for damage it already
+ * absorbed. Delayed installments re-enter the normal hurt pipeline with explicit provenance, but
+ * armor/Protection and delay splitting are skipped by the combat mixin.</p>
  */
 public final class ProtectionAugmentService {
     public static final String OVERFLOW_HEALING_POOL = "overflow_healing";
@@ -74,8 +75,15 @@ public final class ProtectionAugmentService {
             );
         }
 
+        // Protection pools own the current hit before delayed damage is reserved. Otherwise an
+        // absorbed hit can leak back into HP several seconds later after the shield has ended.
+        damage = consumeProtectionPools(player, runtime, damage, now);
+        if (!(damage > 0.0F)) {
+            return 0.0F;
+        }
+
         int delayedLevel = boundedLevel(state, DELAYED_DAMAGE_ID);
-        if (delayedLevel > 0 && damage > 0.0F) {
+        if (delayedLevel > 0) {
             double fraction = tuning.delayedDamageFraction(delayedLevel);
             float delayedTotal = safeScale(damage, fraction);
             damage = Math.max(0.0F, damage - delayedTotal);
@@ -89,11 +97,10 @@ public final class ProtectionAugmentService {
                             source
                     ));
                 }
-                runtime = target;
             }
         }
 
-        return consumeProtectionPools(player, runtime, damage, now);
+        return damage;
     }
 
     /**
