@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
@@ -71,6 +72,8 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
         float healthBefore = player.getHealth();
         ProtectionAugmentService.grantShield(player, TEST_SHIELD_POOL, 8.0F, 240);
 
+        require(!CombatProvenanceContext.isDelayedDamage(),
+                "root protection test unexpectedly entered with delayed-damage provenance");
         player.hurtServer(level, player.damageSources().generic(), 6.0F);
         requireClose(ProtectionAugmentService.poolAmount(
                         player, ProtectionAugmentService.PoolKind.SHIELD, TEST_SHIELD_POOL),
