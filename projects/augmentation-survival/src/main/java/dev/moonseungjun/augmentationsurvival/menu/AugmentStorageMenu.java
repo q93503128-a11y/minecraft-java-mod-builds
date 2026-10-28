@@ -20,6 +20,15 @@ public final class AugmentStorageMenu extends AbstractContainerMenu {
     public static final int REMOTE_VIEW_SLOTS = 54;
     public static final int STORAGE_SLOT_COUNT = POCKET_SLOTS + REMOTE_VIEW_SLOTS;
 
+    /** Shared compact layout contract used by the menu hit boxes and its client screen. */
+    public static final int GRID_STEP = 17;
+    public static final int STORAGE_X = 6;
+    public static final int POCKET_Y = 20;
+    public static final int REMOTE_Y = 54;
+    public static final int PLAYER_X = 162;
+    public static final int PLAYER_Y = 20;
+    public static final int HOTBAR_Y = 78;
+
     private static final int DATA_POCKET_UNLOCKED = 0;
     private static final int DATA_HAS_REMOTE = 1;
     private static final int DATA_REMOTE_MEMBERS = 2;
@@ -83,7 +92,10 @@ public final class AugmentStorageMenu extends AbstractContainerMenu {
         for (int slot = 0; slot < POCKET_SLOTS; slot++) {
             final int index = slot;
             addSlot(new ActiveStorageSlot(
-                    pocket, slot, 7 + slot * 18, 21,
+                    pocket,
+                    slot,
+                    STORAGE_X + slot * GRID_STEP,
+                    POCKET_Y,
                     () -> index < pocketUnlocked()
             ));
         }
@@ -92,7 +104,10 @@ public final class AugmentStorageMenu extends AbstractContainerMenu {
                 int slot = row * 9 + column;
                 final int index = slot;
                 addSlot(new ActiveStorageSlot(
-                        remote, slot, 7 + column * 18, 55 + row * 18,
+                        remote,
+                        slot,
+                        STORAGE_X + column * GRID_STEP,
+                        REMOTE_Y + row * GRID_STEP,
                         () -> remoteSlotActive(index)
                 ));
             }
@@ -102,11 +117,16 @@ public final class AugmentStorageMenu extends AbstractContainerMenu {
     private void addPlayerSlots(Inventory inventory) {
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
-                addSlot(new Slot(inventory, column + row * 9 + 9, 7 + column * 18, 183 + row * 18));
+                addSlot(new Slot(
+                        inventory,
+                        column + row * 9 + 9,
+                        PLAYER_X + column * GRID_STEP,
+                        PLAYER_Y + row * GRID_STEP
+                ));
             }
         }
         for (int column = 0; column < 9; column++) {
-            addSlot(new Slot(inventory, column, 7 + column * 18, 241));
+            addSlot(new Slot(inventory, column, PLAYER_X + column * GRID_STEP, HOTBAR_Y));
         }
     }
 
