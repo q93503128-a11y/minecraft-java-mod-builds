@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "status": "canonical-initial-implementation-baseline",
+  "status": "canonical-playtest-tuned-baseline",
   "runtime_active": true,
   "purpose": "Define save-wide threat progression and server-authoritative hostile scaling without coupling combat difficulty to core rewards.",
   "power_score": {
@@ -17,15 +17,15 @@
     "note": "Individual augment definitions may override power weight later if measured strength differs materially from tier baseline."
   },
   "threat_stages": [
-    { "stage": 0, "min_power_score": 0, "max_power_score": 24, "normal": { "health": 1.0, "damage": 1.0, "speed": 1.0, "armor_add": 0.0, "knockback_resistance_add": 0.0 } },
-    { "stage": 1, "min_power_score": 25, "max_power_score": 59, "normal": { "health": 1.25, "damage": 1.10, "speed": 1.0, "armor_add": 0.0, "knockback_resistance_add": 0.0 } },
-    { "stage": 2, "min_power_score": 60, "max_power_score": 109, "normal": { "health": 1.60, "damage": 1.20, "speed": 1.03, "armor_add": 1.0, "knockback_resistance_add": 0.0 } },
-    { "stage": 3, "min_power_score": 110, "max_power_score": 174, "normal": { "health": 2.10, "damage": 1.35, "speed": 1.05, "armor_add": 2.0, "knockback_resistance_add": 0.03 } },
-    { "stage": 4, "min_power_score": 175, "max_power_score": 259, "normal": { "health": 3.00, "damage": 1.55, "speed": 1.075, "armor_add": 4.0, "knockback_resistance_add": 0.05 } },
-    { "stage": 5, "min_power_score": 260, "max_power_score": 364, "normal": { "health": 4.50, "damage": 1.80, "speed": 1.10, "armor_add": 6.0, "knockback_resistance_add": 0.10 } },
-    { "stage": 6, "min_power_score": 365, "max_power_score": 489, "normal": { "health": 6.50, "damage": 2.05, "speed": 1.125, "armor_add": 8.0, "knockback_resistance_add": 0.13 } },
-    { "stage": 7, "min_power_score": 490, "max_power_score": 639, "normal": { "health": 9.00, "damage": 2.35, "speed": 1.15, "armor_add": 10.0, "knockback_resistance_add": 0.16 } },
-    { "stage": 8, "min_power_score": 640, "max_power_score": null, "normal": { "health": 12.00, "damage": 2.70, "speed": 1.175, "armor_add": 12.0, "knockback_resistance_add": 0.20 } }
+    { "stage": 0, "min_power_score": 0, "max_power_score": 24, "normal": { "health": 1.00, "damage": 1.00, "speed": 1.00, "armor_add": 0.0, "knockback_resistance_add": 0.00 } },
+    { "stage": 1, "min_power_score": 25, "max_power_score": 59, "normal": { "health": 1.15, "damage": 1.05, "speed": 1.00, "armor_add": 0.0, "knockback_resistance_add": 0.00 } },
+    { "stage": 2, "min_power_score": 60, "max_power_score": 109, "normal": { "health": 1.30, "damage": 1.10, "speed": 1.01, "armor_add": 0.5, "knockback_resistance_add": 0.00 } },
+    { "stage": 3, "min_power_score": 110, "max_power_score": 174, "normal": { "health": 1.50, "damage": 1.15, "speed": 1.02, "armor_add": 1.0, "knockback_resistance_add": 0.01 } },
+    { "stage": 4, "min_power_score": 175, "max_power_score": 259, "normal": { "health": 1.75, "damage": 1.22, "speed": 1.03, "armor_add": 1.5, "knockback_resistance_add": 0.02 } },
+    { "stage": 5, "min_power_score": 260, "max_power_score": 364, "normal": { "health": 2.05, "damage": 1.30, "speed": 1.04, "armor_add": 2.0, "knockback_resistance_add": 0.03 } },
+    { "stage": 6, "min_power_score": 365, "max_power_score": 489, "normal": { "health": 2.35, "damage": 1.38, "speed": 1.05, "armor_add": 2.5, "knockback_resistance_add": 0.04 } },
+    { "stage": 7, "min_power_score": 490, "max_power_score": 639, "normal": { "health": 2.70, "damage": 1.48, "speed": 1.06, "armor_add": 3.0, "knockback_resistance_add": 0.06 } },
+    { "stage": 8, "min_power_score": 640, "max_power_score": null, "normal": { "health": 3.10, "damage": 1.60, "speed": 1.07, "armor_add": 4.0, "knockback_resistance_add": 0.08 } }
   ],
   "scale_groups": {
     "normal": { "extra_scale_weight": 1.0, "speed_scaling_enabled": true },
@@ -62,7 +62,7 @@
     "movement_speed_growth_is_intentionally_small": true,
     "stage_8_is_a_hard_scaling_ceiling": true,
     "player_power_may_continue_growing_after_stage_8": true,
-    "reason": "Threat should preserve combat relevance without cancelling the power fantasy or turning every encounter into permanent rubber-band scaling."
+    "reason": "Threat should preserve combat relevance without cancelling the power fantasy or turning ordinary hostiles into HP sponges."
   },
   "reward_separation": {
     "core_drop_rate_changes_with_threat": false,
