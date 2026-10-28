@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.augment.combat;
 
+import java.util.Optional;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,10 +10,10 @@ import net.minecraft.world.entity.player.Player;
 /**
  * Bridges the pinned MCEndgame 26.2 player-damage replacement.
  *
- * MCEndgame handles Player#actuallyHurt at HEAD, applies absorption/HP itself, then cancels the
- * vanilla body. That means the normal post-magic damage hook is unreachable while MCEndgame is
- * loaded. This bridge moves only Augmentation Survival's final player-damage layers to the input
- * MCEndgame actually consumes; every other runtime keeps the normal post-magic path.
+ * <p>MCEndgame replaces the damage argument inside {@code Player#actuallyHurt} with the result of
+ * its own {@code DamageService.applyDamage(...)} call before applying vanilla absorption/HP. The
+ * compatibility boundary therefore has to modify that calculated result, not the incoming
+ * {@code actuallyHurt} argument.</p>
  */
 public final class MCEndgameDamageCompatibility {
     private MCEndgameDamageCompatibility() {
@@ -24,27 +25,41 @@ public final class MCEndgameDamageCompatibility {
         return FabricLoader.getInstance().isModLoaded("mcendgame");
     }
 
-    public static float modifyActuallyHurtInput(
+    /** Applies Augmentation Survival's final player layers to MCEndgame's post-reduction result. */
+    public static Optional<Float> modifyCalculatedDamage(
             Player victim,
             ServerLevel level,
             DamageSource source,
-            float damage
+            Optional<Float> calculatedDamage
     ) {
         if (!active()
                 || !(victim instanceof ServerPlayer player)
-                || !(damage > 0.0F)
-                || !Float.isFinite(damage)
+                || calculatedDamage.isEmpty()
                 || player.isInvulnerableTo(level, source)) {
-            return damage;
+            return calculatedDamage;
         }
 
+        float damage = calculatedDamage.get();
+        if (!(damage > 0.0F) || !Float.isFinite(damage)) {
+            return calculatedDamage;
+        }
+
+        float adjusted;
         if (CombatProvenanceContext.isDelayedDamage()) {
-            return ProtectionAugmentService.modifyDelayedDamage(
+            // Delayed installments were already mitigated when they were reserved. MCEndgame may
+            // calculate them again while rebuilding its DamageSourceResult, so restore the exact
+            // reserved installment before allowing current augment protection pools to consume it.
+            adjusted = ProtectionAugmentService.modifyDelayedDamage(
                     player,
                     CombatProvenanceContext.delayedDamageOr(damage)
             );
+        } else {
+            adjusted = CombatAugmentService.modifyPostMitigationDamage(player, source, damage);
         }
 
-        return CombatAugmentService.modifyPostMitigationDamage(player, source, damage);
+        if (!Float.isFinite(adjusted)) {
+            return calculatedDamage;
+        }
+        return Optional.of(Math.max(0.0F, adjusted));
     }
 }
