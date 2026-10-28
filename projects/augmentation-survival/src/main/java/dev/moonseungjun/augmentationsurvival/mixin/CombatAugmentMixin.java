@@ -109,23 +109,6 @@ abstract class CombatAugmentMixin {
         cir.setReturnValue(reserved);
     }
 
-    @Inject(method = "getDamageAfterMagicAbsorb", at = @At("RETURN"), cancellable = true)
-    private void augmentationSurvival$modifyPostMitigationDamage(
-            DamageSource source,
-            float damage,
-            CallbackInfoReturnable<Float> cir
-    ) {
-        if (CombatProvenanceContext.isDelayedDamage()) {
-            return;
-        }
-        LivingEntity self = (LivingEntity) (Object) this;
-        cir.setReturnValue(CombatAugmentService.modifyPostMitigationDamage(
-                self,
-                source,
-                cir.getReturnValueF()
-        ));
-    }
-
     /**
      * Vanilla held-item death protection resolves first. If it declines, personal augment protection
      * (Emergency Totem / Reincarnation) gets priority; co-op rescue is the final fallback.
