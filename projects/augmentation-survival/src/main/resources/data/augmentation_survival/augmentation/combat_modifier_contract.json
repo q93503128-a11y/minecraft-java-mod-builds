@@ -29,7 +29,7 @@
   },
   "last_stand": {
     "cooldown_ticks": 3600,
-    "invulnerable_ticks": 20
+    "invulnerable_ticks": 60
   },
   "damage_adaptation": {
     "reduction_per_level": 0.10,
