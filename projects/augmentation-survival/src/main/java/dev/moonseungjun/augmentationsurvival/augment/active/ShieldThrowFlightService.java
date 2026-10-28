@@ -31,7 +31,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -150,7 +150,7 @@ public final class ShieldThrowFlightService {
 
     private static Display.ItemDisplay spawnDisplay(ServerPlayer player, ItemStack shield) {
         ServerLevel level = player.level();
-        Display.ItemDisplay display = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, level);
+        Display.ItemDisplay display = new Display.ItemDisplay(EntityTypes.ITEM_DISPLAY, level);
         Vec3 start = player.getEyePosition().add(player.getLookAngle().normalize().scale(0.75D));
         display.setPos(start.x, start.y - 0.25D, start.z);
         display.setNoGravity(true);
