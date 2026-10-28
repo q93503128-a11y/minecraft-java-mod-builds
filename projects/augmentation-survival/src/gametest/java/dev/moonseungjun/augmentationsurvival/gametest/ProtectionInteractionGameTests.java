@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
+import dev.moonseungjun.augmentationsurvival.augment.combat.MCEndgameDamageCompatibility;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning;
@@ -69,12 +70,33 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
         AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
                 .withAugmentLevel(id("delayed_damage"), 1));
         ServerLevel level = (ServerLevel) player.level();
+        DamageSource generic = player.damageSources().generic();
         float healthBefore = player.getHealth();
         ProtectionAugmentService.grantShield(player, TEST_SHIELD_POOL, 8.0F, 240);
 
         require(!CombatProvenanceContext.isDelayedDamage(),
                 "root protection test unexpectedly entered with delayed-damage provenance");
-        player.hurtServer(level, player.damageSources().generic(), 6.0F);
+        require(MCEndgameDamageCompatibility.active(),
+                "full-pack protection regression expected MCEndgame to be loaded");
+        require(!player.isInvulnerableTo(level, generic),
+                "test player unexpectedly invulnerable to generic damage");
+
+        float directBridge = MCEndgameDamageCompatibility.modifyActuallyHurtInput(
+                player,
+                level,
+                generic,
+                6.0F
+        );
+        requireClose(directBridge, 0.0F, 1.0E-5F,
+                "MCEndgame compatibility helper did not absorb the shielded hit");
+        requireClose(ProtectionAugmentService.poolAmount(
+                        player, ProtectionAugmentService.PoolKind.SHIELD, TEST_SHIELD_POOL),
+                2.0F, 1.0E-5F,
+                "MCEndgame compatibility helper did not consume the shield pool");
+
+        // Restore the exact pre-hit shield state, then exercise the real transformed hurt path.
+        ProtectionAugmentService.grantShield(player, TEST_SHIELD_POOL, 8.0F, 240);
+        player.hurtServer(level, generic, 6.0F);
         requireClose(ProtectionAugmentService.poolAmount(
                         player, ProtectionAugmentService.PoolKind.SHIELD, TEST_SHIELD_POOL),
                 2.0F, 1.0E-5F,
