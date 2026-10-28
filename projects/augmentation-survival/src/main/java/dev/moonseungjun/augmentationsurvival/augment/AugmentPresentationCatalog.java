@@ -70,6 +70,9 @@ public final class AugmentPresentationCatalog {
         if (id.endsWith(":dexterity")) return new Entry(source.displayName(), Kind.PASSIVE,
                 "잎·꽃·대나무·사탕수수 등 일부 채집물을 캘 때 드롭 +1 확률 10% / 20% / 30%.",
                 "잎·꽃·대나무·사탕수수·선인장·버섯·덩굴·켈프·해초·베리 덤불·코코아 등 일부 비전투 채집물을 직접 캘 때 10% / 20% / 30% 확률로 실제 드롭 중 1개를 추가로 얻습니다.");
+        if (id.endsWith(":healing_amplification")) return new Entry(source.displayName(), Kind.PASSIVE,
+                "자연회복을 제외한 치유량 +10% / +20% / +30%.",
+                "허기·포만도에 의한 자연회복을 제외하고 자신이 받는 치유량이 +10% / +20% / +30% 증가합니다.");
         if (id.endsWith(":pockets")) return new Entry(source.displayName(), Kind.PASSIVE,
                 "개인 저장공간 +3 / +6 / +9칸. 인벤토리 초과 아이템을 가능한 경우 자동 수납합니다.",
                 "별도 아이템을 제작하지 않습니다. Lv.1 / 2 / 3에서 개인 주머니 슬롯 +3 / +6 / +9칸이 열리고, 일반 인벤토리에 들어가지 못한 아이템은 가능한 경우 주머니로 자동 수납됩니다. 기본 B키로 증강 저장소를 엽니다. 키 설정에서 변경할 수 있습니다.");
