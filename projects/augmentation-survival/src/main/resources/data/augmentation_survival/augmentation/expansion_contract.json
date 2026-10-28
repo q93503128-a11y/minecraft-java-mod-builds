@@ -17,7 +17,7 @@
     "weakness_mark": {"required_hits": 3, "window_ticks": 100, "duration_ticks": 120, "damage_bonus": [0.08, 0.12, 0.16]},
     "speed_conversion": {"damage_per_movement_percent": [0.004, 0.006, 0.008], "damage_cap": [0.20, 0.30, 0.40], "sprint_bonus_exclusion": 0.30},
     "heavy_strike": {"max_health_fraction": [0.05, 0.075, 0.10], "cooldown_ticks": 80},
-    "life_wave": {"radius": 4.0, "damage_multiplier": [1.0, 1.5, 2.0], "damage_cap": [10.0, 15.0, 20.0]},
+    "life_wave": {"radius": 6.0, "damage_multiplier": [1.0, 1.5, 2.0], "damage_cap": [10.0, 15.0, 20.0]},
     "brawl": {"radius": 8.0, "max_targets": 5, "damage_per_enemy": [0.03, 0.05, 0.07], "reduction_per_enemy": [0.02, 0.03, 0.04]},
     "glass_cannon": {"health_multiplier": [0.60, 0.80, 1.00], "damage_bonus": [0.60, 0.80, 1.00]},
     "boss_hunter": {"damage_bonus": [0.08, 0.16, 0.24]}
