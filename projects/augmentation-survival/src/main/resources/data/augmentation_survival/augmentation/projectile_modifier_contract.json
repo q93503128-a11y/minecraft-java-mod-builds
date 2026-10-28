@@ -7,9 +7,9 @@
     "followup_reduction_by_level": [0.10, 0.05, 0.0]
   },
   "tracking_arrow": {
-    "range": 12.0,
-    "cone_degrees": 30.0,
-    "turn_degrees_by_level": [2.0, 3.0, 4.0]
+    "range": 16.0,
+    "cone_degrees": 45.0,
+    "turn_degrees_by_level": [4.0, 6.0, 8.0]
   },
   "ricochet": {
     "damage_bonus_by_level": [0.20, 0.35, 0.50],
