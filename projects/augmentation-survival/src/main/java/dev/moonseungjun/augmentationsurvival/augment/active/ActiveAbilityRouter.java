@@ -105,17 +105,26 @@ public final class ActiveAbilityRouter {
     public static List<String> resolvedSlots(AugmentationPlayerState state) {
         List<String> result = new ArrayList<>(10);
         for (int i = 0; i < 10; i++) result.add("");
-        if (state.activeSlots().isEmpty()) {
-            int index = 0;
-            for (String id : ALL_ORDER) {
-                if (boundedLevel(state, id) > 0 && index < 10) result.set(index++, id);
-            }
-            return result;
-        }
+
         Set<String> used = new HashSet<>();
-        for (int i = 0; i < Math.min(10, state.activeSlots().size()); i++) {
-            String id = state.activeSlots().get(i);
-            if (id != null && ALL_SUPPORTED.contains(id) && boundedLevel(state, id) > 0 && used.add(id)) result.set(i, id);
+        if (!state.activeSlots().isEmpty()) {
+            for (int i = 0; i < Math.min(10, state.activeSlots().size()); i++) {
+                String id = state.activeSlots().get(i);
+                if (id != null && ALL_SUPPORTED.contains(id) && boundedLevel(state, id) > 0 && used.add(id)) {
+                    result.set(i, id);
+                }
+            }
+        }
+
+        // Newly acquired actives should appear immediately in the HUD/loadout without requiring
+        // the player to erase an existing manual layout. Preserve valid assigned slots first, then
+        // fill only currently empty slots in canonical active order.
+        for (String id : ALL_ORDER) {
+            if (boundedLevel(state, id) <= 0 || used.contains(id)) continue;
+            int empty = result.indexOf("");
+            if (empty < 0) break;
+            result.set(empty, id);
+            used.add(id);
         }
         return result;
     }
