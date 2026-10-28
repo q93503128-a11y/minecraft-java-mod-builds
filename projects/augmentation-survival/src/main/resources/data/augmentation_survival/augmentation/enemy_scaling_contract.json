@@ -18,14 +18,14 @@
   },
   "threat_stages": [
     { "stage": 0, "min_power_score": 0, "max_power_score": 24, "normal": { "health": 1.00, "damage": 1.00, "speed": 1.00, "armor_add": 0.0, "knockback_resistance_add": 0.00 } },
-    { "stage": 1, "min_power_score": 25, "max_power_score": 59, "normal": { "health": 1.15, "damage": 1.05, "speed": 1.00, "armor_add": 0.0, "knockback_resistance_add": 0.00 } },
-    { "stage": 2, "min_power_score": 60, "max_power_score": 109, "normal": { "health": 1.30, "damage": 1.10, "speed": 1.01, "armor_add": 0.5, "knockback_resistance_add": 0.00 } },
-    { "stage": 3, "min_power_score": 110, "max_power_score": 174, "normal": { "health": 1.50, "damage": 1.15, "speed": 1.02, "armor_add": 1.0, "knockback_resistance_add": 0.01 } },
-    { "stage": 4, "min_power_score": 175, "max_power_score": 259, "normal": { "health": 1.75, "damage": 1.22, "speed": 1.03, "armor_add": 1.5, "knockback_resistance_add": 0.02 } },
-    { "stage": 5, "min_power_score": 260, "max_power_score": 364, "normal": { "health": 2.05, "damage": 1.30, "speed": 1.04, "armor_add": 2.0, "knockback_resistance_add": 0.03 } },
-    { "stage": 6, "min_power_score": 365, "max_power_score": 489, "normal": { "health": 2.35, "damage": 1.38, "speed": 1.05, "armor_add": 2.5, "knockback_resistance_add": 0.04 } },
-    { "stage": 7, "min_power_score": 490, "max_power_score": 639, "normal": { "health": 2.70, "damage": 1.48, "speed": 1.06, "armor_add": 3.0, "knockback_resistance_add": 0.06 } },
-    { "stage": 8, "min_power_score": 640, "max_power_score": null, "normal": { "health": 3.10, "damage": 1.60, "speed": 1.07, "armor_add": 4.0, "knockback_resistance_add": 0.08 } }
+    { "stage": 1, "min_power_score": 25, "max_power_score": 59, "normal": { "health": 1.075, "damage": 1.025, "speed": 1.00, "armor_add": 0.0, "knockback_resistance_add": 0.00 } },
+    { "stage": 2, "min_power_score": 60, "max_power_score": 109, "normal": { "health": 1.15, "damage": 1.05, "speed": 1.005, "armor_add": 0.25, "knockback_resistance_add": 0.00 } },
+    { "stage": 3, "min_power_score": 110, "max_power_score": 174, "normal": { "health": 1.25, "damage": 1.075, "speed": 1.01, "armor_add": 0.5, "knockback_resistance_add": 0.005 } },
+    { "stage": 4, "min_power_score": 175, "max_power_score": 259, "normal": { "health": 1.375, "damage": 1.11, "speed": 1.015, "armor_add": 0.75, "knockback_resistance_add": 0.01 } },
+    { "stage": 5, "min_power_score": 260, "max_power_score": 364, "normal": { "health": 1.525, "damage": 1.15, "speed": 1.02, "armor_add": 1.0, "knockback_resistance_add": 0.015 } },
+    { "stage": 6, "min_power_score": 365, "max_power_score": 489, "normal": { "health": 1.675, "damage": 1.19, "speed": 1.025, "armor_add": 1.25, "knockback_resistance_add": 0.02 } },
+    { "stage": 7, "min_power_score": 490, "max_power_score": 639, "normal": { "health": 1.85, "damage": 1.24, "speed": 1.03, "armor_add": 1.5, "knockback_resistance_add": 0.03 } },
+    { "stage": 8, "min_power_score": 640, "max_power_score": null, "normal": { "health": 2.05, "damage": 1.30, "speed": 1.035, "armor_add": 2.0, "knockback_resistance_add": 0.04 } }
   ],
   "scale_groups": {
     "normal": { "extra_scale_weight": 1.0, "speed_scaling_enabled": true },
