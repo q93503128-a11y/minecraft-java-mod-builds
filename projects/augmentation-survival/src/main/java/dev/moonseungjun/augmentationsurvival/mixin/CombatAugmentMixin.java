@@ -119,15 +119,10 @@ abstract class CombatAugmentMixin {
             return;
         }
         LivingEntity self = (LivingEntity) (Object) this;
-        float advanced = AdvancedUtilityAugmentService.modifyIncomingBeforeProtection(
-                self,
-                source,
-                cir.getReturnValueF()
-        );
         cir.setReturnValue(CombatAugmentService.modifyPostMitigationDamage(
                 self,
                 source,
-                advanced
+                cir.getReturnValueF()
         ));
     }
 
