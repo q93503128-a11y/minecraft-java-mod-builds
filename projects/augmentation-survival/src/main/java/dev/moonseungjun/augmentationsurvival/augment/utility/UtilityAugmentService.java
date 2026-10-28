@@ -101,7 +101,17 @@ public final class UtilityAugmentService {
                 && state.persistentInt(INSTANT_MINING_TOGGLE_KEY) > 0;
     }
 
-    /** Mythic instant mining is an explicit active toggle; ownership alone never changes mining speed. */
+    public static boolean toggleInstantMining(ServerPlayer player) {
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        if (boundedLevel(state, INSTANT_MINING_ID) <= 0) {
+            return false;
+        }
+        int next = state.persistentInt(INSTANT_MINING_TOGGLE_KEY) > 0 ? 0 : 1;
+        AugmentationPlayerStateService.replace(player, state.withPersistentInt(INSTANT_MINING_TOGGLE_KEY, next));
+        return true;
+    }
+
+    /** Mythic instant mining is an explicit toggle; ownership alone never changes mining speed. */
     public static boolean shouldInstantMine(ServerPlayer player, BlockState state, float vanillaSpeed) {
         return vanillaSpeed > 0.0F
                 && Float.isFinite(vanillaSpeed)
