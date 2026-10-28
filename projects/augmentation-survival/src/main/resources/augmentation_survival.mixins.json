@@ -38,7 +38,7 @@
   "client": [
     "LocalPlayerConsumptionMixin", "ClientMiningAugmentMixin", "ClientWaterRunLivingEntityMixin",
     "ClientPhaseShiftCollisionMixin", "ClientPhaseShiftPushOutMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
-    "ClientHudHealthMixin", "ClientUseCooldownMasteryMixin", "ClientTridentPortableRiptideMixin",
+    "ClientHudHealthMixin", "ClientReserveMealHudMixin", "ClientUseCooldownMasteryMixin", "ClientTridentPortableRiptideMixin",
     "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
     "AugmentDeviceUiRescueMixin", "ActiveLoadoutQuickClickMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
     "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin"
