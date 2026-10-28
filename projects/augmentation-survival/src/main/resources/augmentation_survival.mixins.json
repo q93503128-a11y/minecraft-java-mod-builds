@@ -18,7 +18,7 @@
     "ItemStackDurabilityAugmentMixin", "FishingHookAugmentMixin", "AnimalBreedingAugmentMixin",
     "LivingEntityJumpPowerAccessor", "AbstractArrowAugmentAccessor", "AbstractArrowAugmentMixin",
     "ProjectileWeaponItemAugmentMixin", "UseCooldownMasteryMixin", "TridentPortableRiptideMixin", "ThrownEnderpearlMasteryMixin",
-    "ReturnToSenderDeferralMixin",
+    "ReturnToSenderDeferralMixin", "ActivePullEntityMixin",
     "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "SpecialActiveAugmentServiceInvoker", "ActiveAbilityOvertimeMixin",
     "TimeAccelerationMiningAttributeMixin", "PlayerActionLockMixin", "ServerPlayerGameModeActionLockMixin",
     "ServerPlayerGameModeEnchantmentResonanceMixin", "PhaseShiftCollisionMixin", "PhaseShiftPlayerActionMixin",
