@@ -8,7 +8,7 @@
     "LivingEntityHealingAugmentMixin", "LivingEntityEnchantmentResonanceMixin", "LivingEntityLootScoopMixin",
     "LivingEntityWallSlamKnockbackMixin", "LivingEntityTimeStopMotionMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
     "ProjectileTimeAccelerationMixin", "PlayerShieldGripMixin", "PlayerDeathAugmentMixin", "PlayerDominationCommandMixin", "InventoryPocketAugmentMixin",
-    "MovementAugmentMixin", "ServerPlayerMantleMixin", "SurvivalPlayerMixin", "SurvivalAugmentDerivedBreakGuardMixin",
+    "MovementAugmentMixin", "ServerPlayerMantleMixin", "WebBlockTerrainResistanceMixin", "SurvivalPlayerMixin", "SurvivalAugmentDerivedBreakGuardMixin",
     "SurvivalTimeAccelerationMiningMixin", "TemporaryPlatformFallMixin", "TemporaryPlatformReplayGuardMixin",
     "InstantMiningBlockStateMixin", "WaterRunLivingEntityMixin", "ResourceHarvestAuditFixMixin",
     "AbstractFurnaceUtilityMixin", "BlockAbundanceMixin", "AreaAccelerationFurnaceMixin", "AreaAccelerationRandomTickMixin",
