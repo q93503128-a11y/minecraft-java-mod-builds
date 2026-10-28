@@ -10,6 +10,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
+import java.util.Optional;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
@@ -81,13 +82,15 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
         require(!player.isInvulnerableTo(level, generic),
                 "test player unexpectedly invulnerable to generic damage");
 
-        float directBridge = MCEndgameDamageCompatibility.modifyActuallyHurtInput(
+        Optional<Float> directBridge = MCEndgameDamageCompatibility.modifyCalculatedDamage(
                 player,
                 level,
                 generic,
-                6.0F
+                Optional.of(6.0F)
         );
-        requireClose(directBridge, 0.0F, 1.0E-5F,
+        require(directBridge.isPresent(),
+                "MCEndgame compatibility helper unexpectedly discarded an applied hit");
+        requireClose(directBridge.get(), 0.0F, 1.0E-5F,
                 "MCEndgame compatibility helper did not absorb the shielded hit");
         requireClose(ProtectionAugmentService.poolAmount(
                         player, ProtectionAugmentService.PoolKind.SHIELD, TEST_SHIELD_POOL),
