@@ -16,7 +16,7 @@ abstract class PlayerDamagePipelineMixin {
     @ModifyVariable(
             method = "actuallyHurt",
             at = @At("STORE"),
-            ordinal = 0,
+            index = 3,
             slice = @Slice(
                     from = @At(
                             value = "INVOKE",
