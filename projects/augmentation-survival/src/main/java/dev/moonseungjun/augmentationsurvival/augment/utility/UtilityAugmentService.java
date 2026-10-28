@@ -31,6 +31,7 @@ public final class UtilityAugmentService {
     private static final String FAST_BREWING_ID = id("fast_brewing");
     private static final String WATER_RUN_ID = id("water_run");
     private static final String EXPERIENCE_PRESERVATION_ID = id("experience_preservation");
+    private static final double WATER_RUN_MIN_HORIZONTAL_SPEED_SQUARED = 0.0064D;
     public static final String INSTANT_MINING_ID = id("instant_mining");
     public static final String INSTANT_MINING_TOGGLE_KEY = "active_toggle/instant_mining";
 
@@ -90,7 +91,10 @@ public final class UtilityAugmentService {
     }
 
     public static boolean canRunOnWater(ServerPlayer player) {
-        return player.isSprinting()
+        boolean movingFastEnough = player.isSprinting()
+                || player.getDeltaMovement().horizontalDistanceSqr() >= WATER_RUN_MIN_HORIZONTAL_SPEED_SQUARED;
+        return movingFastEnough
+                && !player.isShiftKeyDown()
                 && !player.isDeadOrDying()
                 && boundedLevel(AugmentationPlayerStateService.state(player), WATER_RUN_ID) > 0;
     }
