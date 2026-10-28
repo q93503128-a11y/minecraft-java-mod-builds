@@ -85,11 +85,16 @@ public abstract class AugmentOfferBreathingRoomMixin extends AbstractContainerSc
         centered(g, fit(footer, geo.bounds().width() - 36), geo.centerX(), geo.footerY(), MUTED);
 
         if (shiftDown()) {
+            boolean reroll = ClientAugmentProgressState.level(AugmentCatalog.REROLL_ID) > 0;
             for (int slot = 0; slot < 3; slot++) {
                 AugmentDefinition d = menu.candidate(slot);
                 if (d == null) continue;
                 int x = geo.cardLeft() + slot * (geo.cardW() + geo.gap());
                 int y = geo.cardTop() + (int) Math.round((1.0 - revealProgress(slot)) * 9.0);
+                int buttonY = y + geo.cardH() - 18;
+                if (reroll && inside(mouseX, mouseY, x + 8, buttonY, geo.cardW() - 16, 13)) {
+                    continue;
+                }
                 if (inside(mouseX, mouseY, x, y, geo.cardW(), geo.cardH())) {
                     drawDetail(g, d, mouseX, mouseY, geo.bounds());
                     break;
@@ -118,8 +123,9 @@ public abstract class AugmentOfferBreathingRoomMixin extends AbstractContainerSc
                 int buttonY = y + geo.cardH() - 18;
                 if (inside(mx, my, x + 8, buttonY, geo.cardW() - 16, 13)) {
                     boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
-                    if (selected) send(AugmentDeviceMenu.candidateButtonId(slot));
-                    else if (menu.rerollsRemaining() > 0) send(AugmentDeviceMenu.rerollButtonId(slot));
+                    if (!selected && menu.rerollsRemaining() > 0) {
+                        send(AugmentDeviceMenu.rerollButtonId(slot));
+                    }
                     cir.setReturnValue(true);
                     return;
                 }
@@ -147,8 +153,11 @@ public abstract class AugmentOfferBreathingRoomMixin extends AbstractContainerSc
     ) {
         AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
         int color = tierColor(d.tier());
-        boolean hover = inside(mouseX, mouseY, x, y, w, h);
         boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
+        boolean reroll = ClientAugmentProgressState.level(AugmentCatalog.REROLL_ID) > 0;
+        int buttonY = y + h - 18;
+        boolean buttonHover = reroll && inside(mouseX, mouseY, x + 8, buttonY, w - 16, 13);
+        boolean hover = inside(mouseX, mouseY, x, y, w, h) && !buttonHover;
 
         drawAura(g, x, y, w, h, d.tier(), color, hover, selected);
         drawMaterial(g, x, y, w, h, d.tier(), color, hover);
@@ -185,8 +194,6 @@ public abstract class AugmentOfferBreathingRoomMixin extends AbstractContainerSc
         int dividerY = nameY + (dense ? 23 : 25);
         g.fill(x + 9, dividerY, x + w - 9, dividerY + 1, withAlpha(brighten(color, 20), 0x58));
 
-        boolean reroll = ClientAugmentProgressState.level(AugmentCatalog.REROLL_ID) > 0;
-        int buttonY = y + h - 18;
         int bodyTop = dividerY + 6;
         int bodyBottom = reroll ? buttonY - 4 : y + h - 8;
         int available = Math.max(8, bodyBottom - bodyTop);
@@ -199,13 +206,11 @@ public abstract class AugmentOfferBreathingRoomMixin extends AbstractContainerSc
 
         if (reroll) {
             boolean can = menu.rerollsRemaining() > 0 && !selected;
-            boolean buttonHover = inside(mouseX, mouseY, x + 8, buttonY, w - 16, 13);
             g.fill(x + 8, buttonY, x + w - 8, buttonY + 13,
                     can && buttonHover ? tint(0xFF10161B, color, 18) : 0xF0101519);
             g.outline(x + 8, buttonY, w - 16, 13,
                     can ? (buttonHover ? brighten(color, 30) : shade(color, 0.76)) : LINE_SOFT);
-            String label = selected ? "선택 해제" : menu.rerollsRemaining() > 0 ? "↻ 재추첨" : "재추첨 소진";
-            centered(g, fit(label, w - 22), x + w / 2, buttonY + 2,
+            centered(g, "↻", x + w / 2, buttonY + 2,
                     can ? (buttonHover ? TEXT : color) : FAINT);
         } else if (selected) {
             g.fill(x + 12, y + h - 6, x + w - 12, y + h - 3, brighten(color, 36));
