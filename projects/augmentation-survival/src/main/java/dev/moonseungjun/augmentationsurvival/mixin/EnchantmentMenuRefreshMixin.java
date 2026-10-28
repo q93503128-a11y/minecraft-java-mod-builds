@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
@@ -38,7 +39,7 @@ abstract class EnchantmentMenuRefreshMixin {
                 state.level(AUGMENTATION_SURVIVAL$ENCHANT_REFRESH_ID),
                 AugmentCatalog.require(AUGMENTATION_SURVIVAL$ENCHANT_REFRESH_ID).maxLevel()
         );
-        if (ownedLevel <= 0 || serverPlayer.totalExperience < AUGMENTATION_SURVIVAL$XP_COST) {
+        if (ownedLevel <= 0) {
             cir.setReturnValue(false);
             return;
         }
@@ -48,6 +49,22 @@ abstract class EnchantmentMenuRefreshMixin {
         Container slots = accessor.augmentationSurvival$getEnchantSlots();
         ItemStack item = slots.getItem(0);
         ItemStack lapis = slots.getItem(1);
+        if (item.isEmpty()) {
+            augmentationSurvival$feedback(serverPlayer, "새로고침할 장비를 마법부여대에 올려주세요.");
+            cir.setReturnValue(false);
+            return;
+        }
+        if (lapis.isEmpty() || lapis.getCount() < 1) {
+            augmentationSurvival$feedback(serverPlayer, "새로고침에는 청금석 1개가 필요합니다.");
+            cir.setReturnValue(false);
+            return;
+        }
+        if (serverPlayer.totalExperience < AUGMENTATION_SURVIVAL$XP_COST) {
+            augmentationSurvival$feedback(serverPlayer, "새로고침에는 경험치 5가 필요합니다.");
+            cir.setReturnValue(false);
+            return;
+        }
+
         boolean hasOffer = false;
         for (int cost : menu.costs) {
             if (cost > 0) {
@@ -55,7 +72,8 @@ abstract class EnchantmentMenuRefreshMixin {
                 break;
             }
         }
-        if (item.isEmpty() || lapis.isEmpty() || lapis.getCount() < 1 || !hasOffer) {
+        if (!hasOffer) {
+            augmentationSurvival$feedback(serverPlayer, "지금은 새로고침할 마법 후보가 없습니다.");
             cir.setReturnValue(false);
             return;
         }
@@ -63,11 +81,17 @@ abstract class EnchantmentMenuRefreshMixin {
         lapis.shrink(1);
         slots.setChanged();
         serverPlayer.giveExperiencePoints(-AUGMENTATION_SURVIVAL$XP_COST);
+        int previousSeed = accessor.augmentationSurvival$getEnchantmentSeedData().get();
         int seed = serverPlayer.getRandom().nextInt();
+        if (seed == previousSeed) seed++;
         ((PlayerEnchantSeedAccessor) serverPlayer).augmentationSurvival$setEnchantmentSeed(seed);
         accessor.augmentationSurvival$getEnchantmentSeedData().set(seed);
         menu.slotsChanged(slots);
         menu.broadcastChanges();
         cir.setReturnValue(true);
+    }
+
+    private static void augmentationSurvival$feedback(ServerPlayer player, String message) {
+        player.displayClientMessage(Component.literal(message), true);
     }
 }
