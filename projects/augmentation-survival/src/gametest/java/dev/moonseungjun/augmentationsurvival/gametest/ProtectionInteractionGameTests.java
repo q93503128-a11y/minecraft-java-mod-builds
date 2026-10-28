@@ -72,12 +72,12 @@ public final class ProtectionInteractionGameTests implements CustomTestMethodInv
         ProtectionAugmentService.grantShield(player, TEST_SHIELD_POOL, 8.0F, 240);
 
         player.hurtServer(level, player.damageSources().generic(), 6.0F);
-        requireClose(player.getHealth(), healthBefore, 1.0E-5F,
-                "shielded hit leaked immediate damage to HP");
         requireClose(ProtectionAugmentService.poolAmount(
                         player, ProtectionAugmentService.PoolKind.SHIELD, TEST_SHIELD_POOL),
                 2.0F, 1.0E-5F,
-                "shield did not absorb the full incoming hit before delay splitting");
+                "real hurt path never consumed the shield pool before HP damage");
+        requireClose(player.getHealth(), healthBefore, 1.0E-5F,
+                "shielded hit leaked immediate damage to HP");
 
         int delayedWindow = CombatTuning.current().delayedDamageIntervalTicks()
                 * CombatTuning.current().delayedDamageInstallmentCount();
