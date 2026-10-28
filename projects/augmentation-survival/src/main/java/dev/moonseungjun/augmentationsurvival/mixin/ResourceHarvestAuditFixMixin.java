@@ -44,7 +44,6 @@ abstract class ResourceHarvestAuditFixMixin {
             BlockPos pos,
             CropBlock crop,
             BlockState harvestedState,
-            boolean forceSweepReplant,
             CallbackInfo ci
     ) {
         ReplantFallbackService.record(level, pos, player);
