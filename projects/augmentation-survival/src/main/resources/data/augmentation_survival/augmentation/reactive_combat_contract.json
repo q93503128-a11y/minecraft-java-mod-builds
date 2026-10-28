@@ -10,7 +10,7 @@
     "duration_reduction": [0.20, 0.40, 0.60]
   },
   "shield_burst": {
-    "radius": 4.0,
+    "radius": 6.0,
     "damage_multiplier": [1.00, 1.50, 2.00],
     "damage_cap": [12.0, 20.0, 30.0]
   },
