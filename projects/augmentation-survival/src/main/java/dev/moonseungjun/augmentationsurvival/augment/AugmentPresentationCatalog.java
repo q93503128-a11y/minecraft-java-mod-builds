@@ -76,6 +76,18 @@ public final class AugmentPresentationCatalog {
         if (id.endsWith(":pockets")) return new Entry(source.displayName(), Kind.PASSIVE,
                 "개인 저장공간 +3 / +6 / +9칸. 인벤토리 초과 아이템을 가능한 경우 자동 수납합니다.",
                 "별도 아이템을 제작하지 않습니다. Lv.1 / 2 / 3에서 개인 주머니 슬롯 +3 / +6 / +9칸이 열리고, 일반 인벤토리에 들어가지 못한 아이템은 가능한 경우 주머니로 자동 수납됩니다. 기본 B키로 증강 저장소를 엽니다. 키 설정에서 변경할 수 있습니다.");
+        if (id.endsWith(":wall_slam")) return new Entry(source.displayName(), Kind.PASSIVE,
+                "직접 근접 공격으로 밀어낸 적이 1초 안에 벽에 닿으면 추가 피해를 줍니다.",
+                "직접 근접 공격으로 밀려난 적이 1초 안에 벽에 닿거나 벽 바로 근처까지 밀리면, 그 공격 기준 피해의 30% / 60% / 100%를 추가로 한 번 받습니다. 벽 접촉 위치에 충돌 효과와 소리가 발생합니다.");
+        if (id.endsWith(":aerial_combo")) return new Entry(source.displayName(), Kind.PASSIVE,
+                "공중에서 직접 근접 공격을 적중시키면 공중 점프를 다시 충전해 연속 공중전을 이어갈 수 있습니다.",
+                "두 번 점프가 없어도 단독으로 작동합니다. 공중에서 직접 근접 공격을 아군이 아닌 대상에게 적중할 때마다 공중 점프가 1회 다시 준비됩니다. 점프 입력을 유지하면 즉시 사용되며, 착지 전 다시 적중시키면 같은 대상에게도 반복 충전되어 공중전을 이어갈 수 있습니다. 파생·동료·투사체 공격은 충전하지 않습니다.");
+        if (id.endsWith(":tracking_arrow")) return new Entry(source.displayName(), Kind.PASSIVE,
+                "발사 직후부터 아군이 아닌 공격 가능한 대상을 16블록·전방 45° 안에서 추적합니다.",
+                "일반 비행과 낙하 중에도 계속 대상을 다시 찾고 방향을 보정합니다. 탐색 범위는 16블록, 전방 45°이며 Lv.1 / 2 / 3에서 tick당 최대 4° / 6° / 8° 방향을 바꿉니다. 자신의 아군·동료는 추적하지 않으며 철골렘 같은 비아군 중립 대상도 추적할 수 있습니다.");
+        if (id.endsWith(":water_run")) return new Entry(source.displayName(), Kind.PASSIVE,
+                "질주하며 움직이는 동안 물 표면을 달리고, 조건이 끝나면 정상 수영으로 돌아갑니다.",
+                "물 표면에 진입할 때 질주 상태와 실제 수평 이동이 유지되면 수면 위를 달립니다. 짧은 입력 전환은 자연스럽게 이어지지만 질주를 멈추거나 이동 조건이 끝나면 일반 수영·낙하 상태로 돌아갑니다.");
         if (id.endsWith(":remote_storage")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 B키로 원격 보관함을 엽니다. 키 설정에서 변경할 수 있습니다."));
         if (id.endsWith(":spatial_link")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 G키로 공간 연결 화면을 엽니다. 키 설정에서 변경할 수 있습니다."));
         if (id.endsWith(":authority_theft")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "일반 액티브 슬롯을 사용하지 않습니다. 기본 J키로 탈취한 권능을 해방하며 키 설정에서 변경할 수 있습니다."));
