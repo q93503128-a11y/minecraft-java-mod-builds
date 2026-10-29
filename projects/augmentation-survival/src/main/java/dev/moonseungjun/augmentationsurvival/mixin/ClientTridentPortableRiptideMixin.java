@@ -1,8 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
-import dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -18,11 +16,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Mirrors the server's dry portable-Riptide eligibility for local prediction and movement. */
+/**
+ * Mirrors dry Riptide eligibility for local prediction without trusting client augment state.
+ * The server remains authoritative and separately checks actual Portable Riptide ownership.
+ */
 @Mixin(TridentItem.class)
 public abstract class ClientTridentPortableRiptideMixin {
-    private static final String PORTABLE_RIPTIDE_ID =
-            AugmentationSurvival.MOD_ID + ":portable_riptide";
     private static final ThreadLocal<Boolean> AUGMENTATION_SURVIVAL$PORTABLE =
             ThreadLocal.withInitial(() -> Boolean.FALSE);
 
@@ -34,8 +33,7 @@ public abstract class ClientTridentPortableRiptideMixin {
             CallbackInfoReturnable<InteractionResult> cir
     ) {
         AUGMENTATION_SURVIVAL$PORTABLE.set(
-                player instanceof LocalPlayer
-                        && canUsePortableRiptide(player, player.getItemInHand(hand))
+                player instanceof LocalPlayer && canPredictPortableRiptide(player, player.getItemInHand(hand))
         );
     }
 
@@ -69,7 +67,7 @@ public abstract class ClientTridentPortableRiptideMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         AUGMENTATION_SURVIVAL$PORTABLE.set(
-                entity instanceof LocalPlayer player && canUsePortableRiptide(player, stack)
+                entity instanceof LocalPlayer player && canPredictPortableRiptide(player, stack)
         );
     }
 
@@ -95,9 +93,8 @@ public abstract class ClientTridentPortableRiptideMixin {
         AUGMENTATION_SURVIVAL$PORTABLE.remove();
     }
 
-    private static boolean canUsePortableRiptide(Player player, ItemStack trident) {
-        if (ClientAugmentProgressState.level(PORTABLE_RIPTIDE_ID) <= 0
-                || !player.getOffhandItem().is(Items.WATER_BUCKET)) {
+    private static boolean canPredictPortableRiptide(Player player, ItemStack trident) {
+        if (!player.getOffhandItem().is(Items.WATER_BUCKET)) {
             return false;
         }
         return EnchantmentHelper.getTridentSpinAttackStrength(trident, player) > 0.0F;

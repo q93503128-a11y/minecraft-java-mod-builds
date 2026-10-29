@@ -1,43 +1,100 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
-import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
+import java.util.List;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
-/** Regression for the real Fabric blocked-damage boundary used by Return to Sender. */
+/** Regression coverage for replacement-projectile Return to Sender, including a real shield block. */
 public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
     private static final double INPUT_SPEED = 2.0D;
     private static final double[] EXPECTED_SCALES = {0.60D, 0.80D, 1.00D};
 
+    @GameTest(maxTicks = 40)
+    public void actualShieldBlockReplacesIncomingArrowAndRelaunchesClone(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        BlockPos anchor = helper.absolutePos(new BlockPos(3, 2, 3));
+        player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
+        player.setYRot(0.0F);
+        player.setXRot(0.0F);
+        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
+        AugmentationPlayerStateService.replace(
+                player,
+                AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 3)
+        );
+        player.startUsingItem(InteractionHand.OFF_HAND);
+
+        LivingEntity skeleton = helper.spawnMob(EntityTypes.SKELETON, 3, 2, 8)
+                .withNoFreeWill()
+                .spawn();
+        Vec3 blockDirection = player.getLookAngle().normalize();
+        Arrow[] original = new Arrow[1];
+
+        // Give the real shield-use state enough time to become authoritative before impact.
+        GameTestPlayers.runAfterDelay(helper, 6, () -> {
+            Arrow arrow = new Arrow(
+                    player.level(),
+                    player.getX(),
+                    player.getEyeY(),
+                    player.getZ() + 3.5D,
+                    Items.ARROW.getDefaultInstance(),
+                    null
+            );
+            arrow.setOwner(skeleton);
+            arrow.setDeltaMovement(blockDirection.scale(-INPUT_SPEED));
+            require(player.level().addFreshEntity(arrow), "incoming shield-test arrow failed to spawn");
+            original[0] = arrow;
+
+            GameTestPlayers.runAfterDelay(helper, 5, () -> {
+                require(original[0].isRemoved(),
+                        "the projectile that physically struck the shield was not discarded");
+                List<Arrow> reflected = player.level().getEntitiesOfClass(
+                        Arrow.class,
+                        player.getBoundingBox().inflate(20.0D),
+                        candidate -> candidate.getOwner() == player
+                );
+                require(!reflected.isEmpty(),
+                        "actual shield collision did not spawn a player-owned replacement arrow");
+                Arrow replacement = reflected.getFirst();
+                require(replacement != original[0],
+                        "Return to Sender reused the collision object instead of replacing it");
+                require(replacement.getDeltaMovement().length() > 1.5D,
+                        "replacement arrow lost the level-three reflection speed");
+                require(replacement.getDeltaMovement().normalize().dot(blockDirection) > 0.95D,
+                        "replacement arrow did not travel along the block-time look direction");
+                GameTestPlayers.succeed(helper);
+            });
+        });
+    }
+
     @GameTest(maxTicks = 20)
-    public void blockedSkeletonArrowUsesBlockTimeAimAndLevelSpeed(GameTestHelper helper) {
+    public void reflectedClonePreservesLevelSpeedScaling(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(2, 2, 2));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setYRot(0.0F);
         player.setXRot(0.0F);
-
         LivingEntity skeleton = helper.spawnMob(EntityTypes.SKELETON, 2, 2, 7)
                 .withNoFreeWill()
                 .spawn();
         Vec3 blockDirection = player.getLookAngle().normalize();
-        Arrow[] arrows = new Arrow[EXPECTED_SCALES.length];
 
         for (int index = 0; index < EXPECTED_SCALES.length; index++) {
             int level = index + 1;
@@ -45,21 +102,19 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                     player,
                     AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, level)
             );
-
-            Arrow arrow = new Arrow(
+            Arrow original = new Arrow(
                     player.level(),
                     player.getX(),
                     player.getEyeY(),
-                    player.getZ() + 1.5D + index * 0.25D,
+                    player.getZ() + 1.5D,
                     Items.ARROW.getDefaultInstance(),
                     null
             );
-            arrow.setOwner(skeleton);
-            arrow.setDeltaMovement(blockDirection.scale(-INPUT_SPEED));
-            require(player.level().addFreshEntity(arrow), "test arrow failed to enter the level");
-            arrows[index] = arrow;
+            original.setOwner(skeleton);
+            original.setDeltaMovement(blockDirection.scale(-INPUT_SPEED));
+            require(player.level().addFreshEntity(original), "scale-test arrow failed to enter the level");
 
-            DamageSource source = player.damageSources().arrow(arrow, skeleton);
+            DamageSource source = player.damageSources().arrow(original, skeleton);
             ServerLivingEntityEvents.AFTER_DAMAGE.invoker().afterDamage(
                     player,
                     source,
@@ -67,46 +122,24 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                     0.0F,
                     true
             );
+            require(original.isRemoved(),
+                    "blocked projectile object survived clone replacement at level " + level);
 
             double expectedSpeed = INPUT_SPEED * EXPECTED_SCALES[index];
-            require(arrow.getOwner() == player,
-                    "blocked arrow owner was not transferred to the defending player at level " + level);
-            require(ReactiveCombatAugmentService.isReflectedProjectile(arrow),
-                    "blocked arrow was not marked reflected at level " + level);
-            require(close(arrow.getDeltaMovement().length(), expectedSpeed, 1.0E-6D),
-                    "level " + level + " reflected speed drifted from the 60/80/100 percent contract");
-            require(arrow.getDeltaMovement().normalize().dot(blockDirection) > 0.999D,
-                    "level " + level + " immediate reflection did not follow the block-time look direction");
-
-            // Vanilla AbstractArrow collision logic can still mutate velocity after AFTER_DAMAGE.
-            // Recreate that overwrite so the deferred end-of-tick deflection must restore it.
-            arrow.setDeltaMovement(blockDirection.scale(-0.25D));
+            Arrow replacement = player.level().getEntitiesOfClass(
+                            Arrow.class,
+                            player.getBoundingBox().inflate(6.0D),
+                            candidate -> candidate.getOwner() == player
+                                    && close(candidate.getDeltaMovement().length(), expectedSpeed, 1.0E-6D)
+                    ).stream()
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(
+                            "no reflected clone with expected speed at level " + level));
+            require(replacement.getDeltaMovement().normalize().dot(blockDirection) > 0.999D,
+                    "level " + level + " reflected clone did not follow block-time aim");
+            replacement.discard();
         }
-
-        // Turning after the shield block must not retarget already-blocked arrows.
-        player.setYRot(180.0F);
-
-        GameTestPlayers.runAfterDelay(helper, 1, () -> {
-            for (int index = 0; index < arrows.length; index++) {
-                Arrow arrow = arrows[index];
-                int level = index + 1;
-                Vec3 velocity = arrow.getDeltaMovement();
-                require(!arrow.isRemoved(), "reflected arrow disappeared before deferred deflection at level " + level);
-                require(arrow.getOwner() == player,
-                        "deferred reflection lost player ownership at level " + level);
-                require(velocity.horizontalDistanceSqr() > 1.0E-7D,
-                        "deferred reflection produced no horizontal velocity at level " + level);
-                Vec3 horizontal = new Vec3(velocity.x, 0.0D, velocity.z).normalize();
-                Vec3 expectedHorizontal = new Vec3(blockDirection.x, 0.0D, blockDirection.z).normalize();
-                require(horizontal.dot(expectedHorizontal) > 0.98D,
-                        "deferred reflection followed the later look direction instead of block-time aim at level " + level);
-                double expectedHorizontalSpeed = INPUT_SPEED * EXPECTED_SCALES[index];
-                require(Math.abs(Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z)
-                                - expectedHorizontalSpeed) < 0.20D,
-                        "deferred reflection did not restore the expected level speed at level " + level);
-            }
-            GameTestPlayers.succeed(helper);
-        });
+        GameTestPlayers.succeed(helper);
     }
 
     private static boolean close(double actual, double expected, double tolerance) {

@@ -104,7 +104,7 @@ public abstract class TridentPortableRiptideMixin {
             ServerPlayer player = AUGMENTATION_SURVIVAL$PLAYER.get();
             if (player != null
                     && Boolean.TRUE.equals(AUGMENTATION_SURVIVAL$PORTABLE.get())
-                    && player.isAutoSpinAttack()) {
+                    && Boolean.TRUE.equals(cir.getReturnValue())) {
                 AdvancedUtilityAugmentService.consumePortableRiptideWater(player);
             }
         } finally {

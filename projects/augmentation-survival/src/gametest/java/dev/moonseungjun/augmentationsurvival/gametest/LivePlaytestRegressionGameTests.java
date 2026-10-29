@@ -3,13 +3,13 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
-import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,6 +18,8 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Blocks;
 
 /** Regressions found only during the 2026-10-29 live playtest pass. */
@@ -25,16 +27,34 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
     @GameTest(maxTicks = 20)
-    public void portableRiptideConsumesOneWaterBucketPerDryUse(GameTestHelper helper) {
+    public void portableRiptideRunsActualDryVanillaUseAndConsumesBucket(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        ServerLevel level = helper.getLevel();
+        BlockPos anchor = helper.absolutePos(new BlockPos(2, 3, 2));
+        player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("portable_riptide"), 1)
         );
+
+        ItemStack trident = new ItemStack(Items.TRIDENT);
+        var enchantments = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        trident.enchant(enchantments.getOrThrow(Enchantments.RIPTIDE), 1);
+        player.setItemInHand(InteractionHand.MAIN_HAND, trident);
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.WATER_BUCKET));
-        AdvancedUtilityAugmentService.consumePortableRiptideWater(player);
+        require(!player.isInWaterOrRain(), "Portable Riptide regression must run in a genuinely dry state");
+
+        TridentItem tridentItem = (TridentItem) trident.getItem();
+        tridentItem.use(level, player, InteractionHand.MAIN_HAND);
+        require(player.isUsingItem(), "dry Portable Riptide did not enter the vanilla trident use state");
+
+        int remainingUseTicks = tridentItem.getUseDuration(trident, player) - 20;
+        boolean released = tridentItem.releaseUsing(trident, level, player, remainingUseTicks);
+        require(released, "dry Portable Riptide did not complete vanilla TridentItem.releaseUsing");
+        require(player.getDeltaMovement().lengthSqr() > 0.05D || player.isAutoSpinAttack(),
+                "successful dry Portable Riptide produced no vanilla launch/spin state");
         require(player.getOffhandItem().is(Items.BUCKET),
-                "one successful dry Portable Riptide must turn the offhand water bucket into an empty bucket");
+                "one successful dry Portable Riptide must turn the water bucket into an empty bucket");
         GameTestPlayers.succeed(helper);
     }
 

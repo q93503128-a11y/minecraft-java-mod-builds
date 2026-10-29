@@ -16,8 +16,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Highest-priority reroll hit target: reroll clicks are consumed before any card-selection layer can see them. */
-@Mixin(value = AugmentDeviceScreen.class, priority = 3000)
+/**
+ * Canonical owner of offer-screen left-click input.
+ *
+ * <p>The offer screen has several presentation mixins. They may still draw the cards, but this
+ * early injector owns the actual READY-state click so one physical click can never fall through to
+ * both the reroll strip and a card-selection handler.</p>
+ */
+@Mixin(value = AugmentDeviceScreen.class, priority = 10000)
 public abstract class AugmentOfferRerollClickFixMixin extends AbstractContainerScreen<AugmentDeviceMenu> {
     @Unique private static final int AUGMENTATION_SURVIVAL$W = 704;
     @Unique private static final int AUGMENTATION_SURVIVAL$H = 360;
@@ -31,34 +37,49 @@ public abstract class AugmentOfferRerollClickFixMixin extends AbstractContainerS
         super(menu, inventory, title, imageWidth, imageHeight);
     }
 
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void augmentationSurvival$ownRerollClick(
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, order = 0)
+    private void augmentationSurvival$ownOfferClick(
             MouseButtonEvent event,
             boolean doubleClick,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (menu.status() != AugmentDeviceMenu.STATUS_READY
-                || event.button() != 0
-                || ClientAugmentProgressState.level(AugmentCatalog.REROLL_ID) <= 0) return;
+        if (menu.status() != AugmentDeviceMenu.STATUS_READY || event.button() != 0) return;
 
         double mx = event.x() - leftPos;
         double my = event.y() - topPos;
         Geometry geo = augmentationSurvival$geometry();
+        boolean rerollVisible = menu.rerollsRemaining() > 0
+                || ClientAugmentProgressState.level(AugmentCatalog.REROLL_ID) > 0;
+
         for (int slot = 0; slot < 3; slot++) {
             if (menu.candidate(slot) == null) continue;
             int x = geo.cardLeft + slot * (geo.cardW + geo.gap);
             int y = geo.cardTop + (int) Math.round((1.0D - revealProgress(slot)) * 9.0D);
             int buttonY = y + geo.cardH - 18;
-            // Slightly oversized vertically so border/scale rounding can never fall through to card selection.
-            if (!augmentationSurvival$inside(mx, my, x + 7, buttonY - 2, geo.cardW - 14, 17)) continue;
 
-            boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
-            if (!selected && menu.rerollsRemaining() > 0) {
-                augmentationSurvival$send(AugmentDeviceMenu.rerollButtonId(slot));
+            // Own the complete visual reroll strip, including a small border allowance. The strip
+            // is checked before the card body and is never allowed to fall through to selection.
+            if (rerollVisible
+                    && augmentationSurvival$inside(mx, my, x + 6, buttonY - 3, geo.cardW - 12, 19)) {
+                boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
+                if (!selected && menu.rerollsRemaining() > 0) {
+                    augmentationSurvival$send(AugmentDeviceMenu.rerollButtonId(slot));
+                }
+                cir.setReturnValue(true);
+                return;
             }
-            cir.setReturnValue(true);
-            return;
+
+            if (augmentationSurvival$inside(mx, my, x, y, geo.cardW, geo.cardH)) {
+                augmentationSurvival$send(AugmentDeviceMenu.candidateButtonId(slot));
+                cir.setReturnValue(true);
+                return;
+            }
         }
+
+        // READY-state clicks outside the three canonical card regions are intentionally consumed.
+        // This prevents lower-priority legacy presentation handlers from interpreting a different
+        // geometry for the same physical click.
+        cir.setReturnValue(true);
     }
 
     @Unique
@@ -80,7 +101,10 @@ public abstract class AugmentOfferRerollClickFixMixin extends AbstractContainerS
         int idealW = (int) Math.round(idealH * AUGMENTATION_SURVIVAL$CARD_W_TO_H);
         int widthBudget = Math.max(42, usableW - outerPad * 2 - gap * 2);
         int cardW = Math.min(idealW, Math.max(42, widthBudget / 3));
-        int cardH = Math.min(availableH, Math.max(100, (int) Math.round(cardW / AUGMENTATION_SURVIVAL$CARD_W_TO_H)));
+        int cardH = Math.min(
+                availableH,
+                Math.max(100, (int) Math.round(cardW / AUGMENTATION_SURVIVAL$CARD_W_TO_H))
+        );
         int groupW = cardW * 3 + gap * 2;
         int cardLeft = b.left + Math.max(0, (usableW - groupW) / 2);
         int contentTop = b.top + headerBand;
