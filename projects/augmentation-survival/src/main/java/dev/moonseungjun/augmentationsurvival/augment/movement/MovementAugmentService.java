@@ -97,7 +97,8 @@ public final class MovementAugmentService {
             runtime.wasResetContact = resetContact;
             runtime.airJumpAvailable = resetContact && boundedLevel(state, DOUBLE_JUMP_ID) > 0;
             RUNTIME.put(player.getUUID(), runtime);
-        } else if (boundedLevel(state, DOUBLE_JUMP_ID) <= 0) {
+        } else if (boundedLevel(state, DOUBLE_JUMP_ID) <= 0
+                && boundedLevel(state, AERIAL_COMBO_ID) <= 0) {
             runtime.airJumpAvailable = false;
         }
     }
@@ -239,7 +240,9 @@ public final class MovementAugmentService {
                 }
             }
 
-            if (boundedLevel(state, DOUBLE_JUMP_ID) <= 0) {
+            int doubleJump = boundedLevel(state, DOUBLE_JUMP_ID);
+            int aerialCombo = boundedLevel(state, AERIAL_COMBO_ID);
+            if (doubleJump <= 0 && (aerialCombo <= 0 || resetContact)) {
                 runtime.airJumpAvailable = false;
             }
 
