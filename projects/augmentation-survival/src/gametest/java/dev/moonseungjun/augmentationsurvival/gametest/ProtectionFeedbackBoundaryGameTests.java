@@ -27,7 +27,7 @@ public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMeth
         player.setPos(target.getX() - 2.0D, target.getY(), target.getZ());
         float before = target.getHealth();
 
-        ProtectionAugmentService.grantShield(player, "expiration-regression", 4.0F, 1, 4.0F);
+        ProtectionAugmentService.grantShield(player, "expiration-regression", 4.0F, 1);
 
         GameTestPlayers.runAfterDelay(helper, 3L, () -> {
             float afterBurst = target.getHealth();
