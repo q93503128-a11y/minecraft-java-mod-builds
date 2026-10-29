@@ -108,3 +108,31 @@ This section supersedes the earlier head and verification labels for the follow-
 - This exposed an incomplete guard in the prior fix: target lookup checked the target dimension but omitted the attacking companion's dimension. `mayDominatedMobDamage` now requires the stored command dimension to match both attacker and target. The existing cross-dimension regression test exercises this actual damage authorization boundary.
 - Build #437 skipped localization capture/audit, dedicated server smoke, client boot, and verified Modrinth pack because GameTest failed. It uploaded only a partial diagnostic artifact, ID `12869815005`; this is not a verified pack.
 - Follow-up fix is not yet built or tested. Build verification, GameTests, dedicated server/client smoke, JAR inspection, SHA-256, and pack production remain NO for the current code until the next CI run succeeds.
+
+### Successful verification — Build Augmentation Survival Pack #438
+
+- Commit `09852ced15db96cb1fd157a5853d5f47b80449b7` was built by GitHub Actions run `40808710842` / run #438: PASS.
+- Java 25.0.5+8 and Gradle 9.5.1; `clean build`, `inspectPackDependencies`, and `verifyPackRuntimeClasspath`: PASS.
+- All 77 required GameTests passed, including the cross-dimension command-target damage boundary regression.
+- World Bosses localization contract (789 keys), external Korean localization audit (24 namespaces, 4,165 English entries, 0 missing), dedicated server smoke, client boot smoke, and verified Modrinth pack generation: PASS.
+- Modrinth pack SHA-256: `c0f1fdcbd06b4aa296d4630815d1abc6f116f7f3aadc5577625a43fcff7cd3ea`.
+- Workflow artifact `augmentation-survival-pack-smoke-438`, ID `12869825395`, uploaded successfully (3,330,134 bytes; archive SHA-256 `833c07f890faaf33f885a82db47aeabf62c3f864bac694f8f1651d4668e2e463`). Download: https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/40808710842/artifacts/12869825395 . The artifact contains the workflow outputs; no JAR or pack was downloaded into the local workspace.
+- CI now verifies build, tests, server/client boot, and pack for commit `09852ced`. Manual play, multiplayer play, and profiling remain NOT RUN. The broader file-by-file source audit remains incomplete: 249 reviewed, 198 unread.
+
+### Final labels for commit `09852ced`
+
+```text
+SOURCE FILES FOUND: 447
+SOURCE FILES REVIEWED: 249
+SOURCE FILES UNREAD: 198
+FULL SOURCE AUDIT COMPLETE: NO
+CODE REVIEWED: NO (file-by-file audit incomplete)
+TESTED: YES (77/77 required GameTests, workflow #438)
+BUILD VERIFIED: YES (workflow #438)
+PACK PRODUCED: YES (verified Modrinth pack; artifact 12869825395)
+DEDICATED SERVER SMOKE: YES (workflow #438)
+CLIENT BOOT TESTED: YES (workflow #438; boot smoke only, no visual review)
+PLAYTESTED: NO
+MULTIPLAYER TESTED: NO
+PROFILER: NOT RUN
+```
