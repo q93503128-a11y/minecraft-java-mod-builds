@@ -21,8 +21,25 @@
       "dev.moonseungjun.augmentationsurvival.gametest.DominationPlaytestGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.CommonAugmentGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.MovementEdgeCaseGameTests",
-      "dev.moonseungjun.augmentationsurvival.gametest.LivePlaytestRegressionGameTests"
+      "dev.moonseungjun.augmentationsurvival.gametest.LivePlaytestRegressionGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.ReturnToSenderGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.UiInputRegressionGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.WallSlamGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.HeroSurvivalPlaytestGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.AerialProjectilePlaytestGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.HeroTraversalHudRegressionGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.TraversalRescueGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.ShieldThrowFlightGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.TrackingWaterPresentationGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.HeroActiveBoundaryGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.ProtectionFeedbackBoundaryGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.HealingMovementFeelGameTests"
     ]
   },
-  "depends": {"fabricloader": ">=0.19.5", "fabric-api": "*", "minecraft": "~26.2", "augmentation_survival": "*"}
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "minecraft": "~26.2",
+    "augmentation_survival": "*"
+  }
 }
