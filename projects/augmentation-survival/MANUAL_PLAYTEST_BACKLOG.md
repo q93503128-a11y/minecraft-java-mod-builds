@@ -2,32 +2,37 @@
 
 This file is the durable reminder for the final in-game pass. Do not mark an item complete from compile/build/GameTest results alone.
 
-## Must re-check because code/presentation changed after earlier playtest coverage
+## Rare regressions to re-check
 
-- [ ] `return_to_sender` — block an arrow while aiming elsewhere; confirm ownership/velocity transfer survives the next tick and the reflected arrow actually travels in the intended direction.
-- [ ] `portable_riptide` — use Riptide while dry with a water bucket; confirm the vanilla launch occurs and exactly one water bucket becomes an empty bucket.
-- [ ] `reroll` — reroll an offer once; confirm one charge is consumed, the card changes once, and the same click does not also select the card.
-- [ ] `retrace` — inspect the augment card; confirm the summary/detail are visible Korean text, explain the last-2-second path rewind, 50/75/100% damage and 5-second internal cooldown, and never expose `ROOT`.
-- [ ] `delayed_damage` + `last_stand` — take a hit large enough that a later reserved installment becomes lethal; confirm Last Stand leaves 1 HP and the immediately following reserved installment cannot damage that 1 HP during the 3-second protection window.
-- [ ] `wall_slam` — melee a target into/near a wall; confirm bonus damage resolves once at wall contact and the wall impact point shows visible world-space particles plus an impact sound rather than only HUD feedback.
-- [ ] `aerial_combo` — own Aerial Combo without Double Jump, stay airborne and hold jump; hit an enemy, consume the air jump, then hit another enemy before landing and confirm another air jump is recharged/consumed. Repeat several times to check the intended infinite aerial-combat loop.
-- [ ] active HUD auto-equip — acquire a new active augment with at least one empty HUD slot; confirm it appears immediately in the first empty slot without overwriting manually assigned slots.
-- [ ] active HUD respawn/rejoin — die and respawn, then disconnect/rejoin once; confirm active slots do not remain blank and the server-owned loadout reappears without opening another screen.
-- [ ] `temporary_platform` — while falling with meaningful accumulated fall distance, activate the skill from the actual active HUD slot; confirm the 3x3 platform appears directly below, landing causes no fall damage, and occupied blocks are not overwritten.
+- [ ] `reroll` — click the real reroll button; exactly one charge and one candidate change, with no click-through card selection.
+- [ ] `return_to_sender` — block a real projectile with a shield while aiming elsewhere; the blocked original disappears and a newly owned projectile travels in the look direction without immediately diving into the ground. Repeat from several angles and confirm ownership/velocity survives the next tick.
+- [ ] `portable_riptide` — Survival, dry land, Riptide trident, water bucket present. Confirm the vanilla Riptide launch occurs; one successful dry launch changes exactly one water bucket to an empty bucket; inventory placement does not snap the bucket back to the hotbar. Re-check normal water/rain behavior too.
+- [ ] `retrace` presentation — card must explain the last-2-second path rewind, reverse-moving afterimage, path damage 50/75/100%, and 5-second internal cooldown. It must never expose `ROOT` or other internal terms.
 
-## Hero-priority final feel pass
+## Hero regressions and interaction checks
 
-- [ ] `double_jump` — confirm 1.30x jump-power vertical impulse, +0.08 same-direction horizontal reboost, no direction rotation, and no forced forward movement when nearly stationary. If it feels weak, tune horizontal reboost before vertical height.
-- [ ] `pull`
-- [ ] `shield`
-- [ ] `shield` + `delayed_damage`
-- [ ] `shield_throw`
-- [ ] `spell_refresh`
-- [ ] `water_run`
-- [ ] `shield_burst` — visible/mechanical radius should both read as 6 blocks.
-- [ ] `life_wave` — visible/mechanical radius should both read as 6 blocks.
-- [ ] `tracking_arrow` — 16-block acquisition, 45-degree cone, level turn limits 4/6/8 degrees per tick.
-- [ ] general hostile combat feel — check zombie HP/time-to-kill under the current threat curve; report feel problems separately from code correctness.
+- [ ] `delayed_damage` + `last_stand` — reserve a large hit so a later installment is lethal. Last Stand must leave 1 HP and the following reserved installment must not damage that 1 HP during the 3-second protection window. Delayed installments should cause no repeated knockback or camera shake, but successful HP loss must still produce an audible damage sound.
+- [ ] `last_stand` alone — ordinary lethal damage leaves 1 HP, grants 3 seconds of ordinary-damage protection, and cannot retrigger during its 180-second cooldown.
+- [ ] `wall_slam` — use a real direct melee attack and knock the target into or very near a wall. Bonus damage should resolve once with forgiving contact, with world-space particles and impact sound at the wall contact point; simply remaining near the wall must not cause repeated damage.
+- [ ] `aerial_combo` — own Aerial Combo without Double Jump, stay airborne and hold jump, land a direct melee hit, consume the recharged air jump, then hit again before landing. Repeating hits, including the same target, should sustain the intended aerial-combat loop; allied/derived/companion/projectile hits must not recharge it.
+- [ ] active HUD auto-equip — gain a new active augment with an empty HUD slot and confirm it appears immediately in the first empty slot without overwriting manually assigned slots.
+- [ ] active HUD respawn/rejoin — die/respawn, then disconnect/rejoin once. The server-owned loadout must reappear automatically; opening K must not be required to repair blank slots.
+- [ ] `temporary_platform` — activate from the real active HUD slot while falling with meaningful fall distance. A 3x3 platform appears directly below, occupied blocks are not overwritten, landing fall damage is zero, and the platform later expires. If practical, restart the server once to confirm it does not persist forever.
+- [ ] `tracking_arrow` — test an ordinary shot with no ricochet. Tracking begins immediately, continues during normal flight and descending flight, reacquires within 16 blocks / 45°, and respects 4/6/8 degrees per tick at Lv.1/2/3. A neutral non-ally such as an iron golem may be targeted; the player's allies/companions must not be targeted.
+- [ ] `water_run` — sprint into a water surface and continue running on it. Releasing sprint/ending the movement condition must return to normal swim/fall behavior; residual velocity alone must not sustain water running forever.
+- [ ] `pull` — use the actual active slot. Ordinary animals/neutral entities should be pulled, player allies must not be pulled, bosses should move less than ordinary targets, and compatibility profiles with `allowPull=false` must remain fixed.
+- [ ] `shield_throw` — use the actual active slot. The real shield leaves the hand, flies/hits/ricochets/returns, and the original ItemStack returns intact. Re-check death/respawn/disconnect and an inventory-full return path for duplication or loss.
+- [ ] `enchant_refresh` (`마법 새로고침`) — use the actual enchantment menu refresh control. A successful refresh consumes exactly 5 XP points + 1 lapis and changes candidates; a failed refresh must not consume either cost.
+- [ ] `shield` — confirm the augment shield absorbs damage according to its pool rules.
+- [ ] `shield` + `delayed_damage` — damage absorbed by the augment shield must never reappear later as delayed damage.
+- [ ] `shield_burst` — depletion or expiration should trigger exactly one burst. Mechanical and visible radius should both read as 6 blocks.
+- [ ] `life_wave` — a real positive, non-natural primary heal triggers the wave at radius 6; shared healing must not recursively create another wave. Mechanical and visible radius should match.
+- [ ] `double_jump` — confirm vertical impulse is actual jump power ×1.30 and horizontal reboost is +0.08 in the current travel direction. It must not rotate toward look direction or force forward motion while stationary/nearly stationary. If feel is weak, tune horizontal reboost before vertical height.
+- [ ] general hostile combat feel — check ordinary zombie HP/time-to-kill under the current threat curve. Report “too slow / too tanky / flat” as feel feedback rather than assuming code correctness from the scaling table.
+
+## Presentation audit
+
+- [ ] Re-open cards/details for `reroll`, `return_to_sender`, `portable_riptide`, `retrace`, `delayed_damage`, `last_stand`, `wall_slam`, `aerial_combo`, `temporary_platform`, `tracking_arrow`, and `water_run`. Text must match the current live behavior and must not expose internal terms such as `ROOT`, `DERIVED`, `P0`, or `debug`.
 
 ## Verification rule
 
