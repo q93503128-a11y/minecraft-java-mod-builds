@@ -27,7 +27,7 @@
 
 `149-AUGMENT RUNTIME ROSTER / GAMEPLAY IMPLEMENTATION COMPLETE / FINAL PLAYTEST AUDIT`
 
-외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현이 완료되었다. 현재는 **149종 runtime catalog와 모든 확정 증강 효과의 런타임 연결**, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water와 실제 hostile stat application, 외부 보스 공통 identity adapter, 코어 획득 경로, 기본/강화 증강 장치, 서버 권한 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성, 세이브 전역 증강 저장소가 구현되어 있다. 최종 플레이테스트 전 UI/VFX/audio polish, multiplayer 검증, 실제 게임 내 조작감 검수는 별도 완료 조건이다. 상세 감사 결과는 `FINAL_AUDIT_2026-10-29.md`를 참조한다.
+외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현이 완료되었다. 현재는 **149종 runtime catalog와 모든 확정 증강 효과의 런타임 연결**, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water와 실제 hostile stat application, 외부 보스 공통 identity adapter, 코어 획득 경로, 기본/강화 증강 장치, 서버 권한 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성, 세이브 전역 증강 저장소가 구현되어 있다. 최종 플레이테스트 전 UI/VFX/audio polish, multiplayer 검증, 실제 게임 내 조작감 검수는 별도 완료 조건이다. 상세 감사 결과는 `FINAL_AUDIT_2026-10-29.md`, 감사 이후 최종 수정·검증은 `POST_AUDIT_CLOSURE_2026-10-29.md`를 참조한다.
 
 Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource → harvest/drop → consumption/fishing/breeding → save-wide threat application → external boss compatibility → reactive/status/mobility/utility bulk → advanced utility/permanent progression → special temporal/mythic active → advanced active/interact → advanced world/control → area acceleration + normalized companions → perception/revive/external-heal/enchant-refresh → inventory/storage 순으로 공통 런타임 경계를 확장했다.
 
@@ -112,9 +112,9 @@ Compatibility contract는 pull/swap/time-stop/stun/percent-HP/wall-impact/domina
 
 common active engine은 `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`, `방패 던지기`, `되감기`, `시간 가속`, `위상 이동`, `소생`, `영역 가속`과 `능력 가속`, `이중 충전`, `재연`, `전투 순환`, `연장전`을 처리한다. toggle routing은 `위협 억제`, `순간 채굴`, one-use routing은 `사망 지점 귀환`, no-cooldown concentration routing은 `귀환`, mythic/world routing은 `시간 정지`, `천벌`, `지배`, `거대화`를 처리한다.
 
-현재 로스터와 최근 자동검증 상태는 아래 `현재 검증 상태` 절과 `FINAL_AUDIT_2026-10-29.md`를 따른다. 이전 full-pack 검증 checkpoint의 상세 수치와 artifact SHA-256은 역사 기록으로 그 절에 보존한다.
+현재 로스터와 최근 자동검증 상태는 아래 `현재 검증 상태` 절, `FINAL_AUDIT_2026-10-29.md`, `POST_AUDIT_CLOSURE_2026-10-29.md`를 따른다. 이전 full-pack 검증 checkpoint의 상세 수치와 artifact SHA-256은 역사 기록으로 그 절에 보존한다.
 
-실제 Minecraft에서의 조작감·표시·AI·회복/마법부여 edge case, 액티브/투사체/이동/보스/threat 시스템, multiplayer correctness는 아직 플레이테스트되지 않았다. 남은 검증 범위는 `FINAL_AUDIT_2026-10-29.md`에 기록한다.
+실제 Minecraft에서의 조작감·표시·AI·회복/마법부여 edge case, 액티브/투사체/이동/보스/threat 시스템, multiplayer correctness는 아직 플레이테스트되지 않았다. 남은 검증 범위는 `FINAL_AUDIT_2026-10-29.md`와 post-audit closure에 기록한다.
 
 ## 프로젝트 정체성
 
@@ -219,19 +219,22 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 
 ## 현재 검증 상태
 
-최신 성공 CI checkpoint는 Build Augmentation Survival Pack #441 (run ID `40811651532`), commit `477872f3967994bbcfc833f60bfb1aed27c0867b`다. Java 25 / Gradle 9.5.1 `clean build`, 77개 required GameTests, localization audit, dedicated-server/client boot smoke, 최종 JAR 구조·해시 검사, 검증된 Modrinth pack 생성이 통과했다. 결과 artifact `augmentation-survival-pack-smoke-441` (ID `12870627324`, 3,402,587 bytes)는 JAR, `.sha256`, `.mrpack`, `BUILD_AND_RUNTIME_REPORT.md`, `raw-logs.zip` 및 상세 보고서를 포함한다.
+최신 성공 code checkpoint는 Build Augmentation Survival Pack #444 (run ID `40870393971`), commit `c970b9aebd6b3435da7782413be6896d5f81a0f8`다. Java 25 / Gradle 9.5.1 build, **78개 required GameTests**, pack dependency/runtime-classpath 검사, localization audit, dedicated-server smoke, client boot smoke, 최종 JAR 구조·해시 검사, 검증된 Modrinth pack 생성이 모두 통과했다. 결과 artifact는 `augmentation-survival-pack-smoke-444` (ID `12896400619`)이며 JAR, `.sha256`, `.mrpack`, `BUILD_AND_RUNTIME_REPORT.md`, `raw-logs.zip` 및 상세 로그를 포함한다.
 
-2026-10-29 후속 전체 정적 파일 감사에서는 467개 source/config/resource 항목을 읽어 검토했고, 미검토 항목은 0개다. 18개 항목은 실제 런타임/외부 연동/렌더링 검증이 남아 있다. 추가 확인한 8개 결함과 수정 사항, JSON/언어/텍스처 검사 결과는 `FINAL_AUDIT_2026-10-29.md`에 기록했다. 로컬 `clean build`는 Java 25로 재시도했으나 Fabric Maven Loom fetch에서 `Unsupported or unrecognized SSL message`로 컴파일 전 중단되었다. 이후 동일 수정 코드가 CI에서 빌드 및 런타임 smoke 검증을 통과했다.
+#444 이후 runtime/source 변경은 없다. 현재 `main`은 `끌어당기기` 정본 문구 및 post-audit 검증 문서만 갱신한 `[skip ci]` 문서 커밋들의 descendant다. post-audit에서 `동료 구조`의 로그아웃 타임아웃 우회, 300초 성공 쿨다운 회귀, `공중 연계`의 shared-hostility 누락, 비행 서버 종료 cleanup을 닫았고 `끌어당기기`의 broad-entity 의도를 정본과 동기화했다. 상세 근거는 `POST_AUDIT_CLOSURE_2026-10-29.md`를 따른다.
 
-- CODE REVIEWED: YES — 467개 항목 모두 정적 검토; 18개 runtime-sensitive 항목은 실제 플레이/렌더링 등 후속 검증 필요
-- BUILD VERIFIED FOR CURRENT FIXES: YES — Build #441, `477872f`
-- VERIFIED JAR: YES — 1,415,465 bytes; SHA-256 `d0f7f182e2943167c7af7f3f58cdd0b2329b938cd395885f0d20eb4b096437f5`
-- VERIFIED MODRINTH PACK: YES — Build #441; SHA-256 `561e0b17fd460c0e33085e0084c3ed3228f461ac60d8e1d4f1ac681737f41c2e`
-- CURRENT GAME TESTS: PASS — 77 required tests
-- LOCALIZATION / SERVER / CLIENT BOOT: PASS — Build #441
+2026-10-29 후속 전체 정적 파일 감사에서는 467개 source/config/resource 항목을 읽어 검토했고, 미검토 항목은 0개다. 18개 항목은 실제 런타임/외부 연동/렌더링 검증이 남아 있다. 자동 검증은 현재 코드 checkpoint까지 닫혔지만 실제 플레이 조작감·화면·멀티플레이 검증은 별도 완료 조건이다.
+
+- CODE REVIEWED: YES — full static inventory + post-audit focused review
+- BUILD VERIFIED FOR CURRENT CODE: YES — Build #444, `c970b9ae`
+- VERIFIED JAR: YES — 1,415,748 bytes; SHA-256 `862058aafb32dc1a9d601448fcd7ed905f8c228260e8c8a6388692cefa0aa31b`
+- VERIFIED MODRINTH PACK: YES — Build #444; SHA-256 `a678615a64d0c426c79922f25e45eb38fcab69b97c95e94c5a4d1483ba289ac9`
+- CURRENT GAME TESTS: PASS — 78 required tests
+- LOCALIZATION / SERVER / CLIENT BOOT: PASS — Build #444
 - BUILD REPORT / RAW LOG ARCHIVE: PASS — artifact includes `BUILD_AND_RUNTIME_REPORT.md` and `raw-logs.zip`
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
+- PROFILER: NOT RUN
 
 Older full-pack checkpoint retained as history: Build #80 (`40153395848`), artifact `augmentation-survival-pack-smoke-80` / ID `12584170120`, 146-definition catalog, 23 pinned external artifacts, 150-file runtime classpath, server with 92 mods, client with 108 mods; ZIP SHA-256 `2dbeccbe6b4c7d697a93eba10950e8d9a40f97dfec883b46184bca6869041141`.
 
