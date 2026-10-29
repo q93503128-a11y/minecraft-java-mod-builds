@@ -15,6 +15,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityReference;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileDeflection;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,20 +23,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Re-applies Return to Sender after vanilla has finished the shielded projectile collision.
- * Fabric's blocked-damage event is the stable 26.2 boundary; the block-time aim and scaled speed
- * are captured there, then the final vanilla deflection is applied at end-of-server-tick so later
- * AbstractArrow collision logic cannot overwrite the reflected velocity.
- */
+/** Re-applies Return to Sender after vanilla collision and relaunches the projectile clear of the blocker. */
 @Mixin(value = ReactiveCombatAugmentService.class, remap = false)
 public abstract class ReturnToSenderDeferralMixin {
-    @Unique
-    private static final String AUGMENTATION_SURVIVAL$RETURN_TO_SENDER_ID =
+    @Unique private static final String AUGMENTATION_SURVIVAL$RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
-    @Unique
-    private static final Deque<PendingReflection> AUGMENTATION_SURVIVAL$PENDING =
-            new ArrayDeque<>();
+    @Unique private static final Deque<PendingReflection> AUGMENTATION_SURVIVAL$PENDING = new ArrayDeque<>();
 
     @Inject(method = "tryReturnProjectile", at = @At("HEAD"), cancellable = true)
     private static void augmentationSurvival$captureReflection(
@@ -43,68 +36,49 @@ public abstract class ReturnToSenderDeferralMixin {
             DamageSource source,
             CallbackInfo ci
     ) {
-        if (!(source.getDirectEntity() instanceof Projectile projectile)) {
-            return;
-        }
+        if (!(source.getDirectEntity() instanceof Projectile projectile)) return;
         if (ReactiveCombatAugmentService.isReflectedProjectile(projectile)) {
             ci.cancel();
             return;
         }
         double originalSpeed = projectile.getDeltaMovement().length();
-        if (!(originalSpeed > 1.0E-7D)) {
-            return;
-        }
+        if (!(originalSpeed > 1.0E-7D)) return;
         int ownedLevel = AugmentationPlayerStateService.state(player)
                 .level(AUGMENTATION_SURVIVAL$RETURN_TO_SENDER_ID);
         Vec3 direction = player.getLookAngle();
-        if (ownedLevel <= 0 || direction.lengthSqr() <= 1.0E-7D) {
-            return;
-        }
-        int level = Math.min(
-                ownedLevel,
-                AugmentCatalog.require(AUGMENTATION_SURVIVAL$RETURN_TO_SENDER_ID).maxLevel()
-        );
-        double reflectedSpeed = originalSpeed
-                * ReactiveCombatTuning.current().returnSpeedScale(level);
-        AUGMENTATION_SURVIVAL$PENDING.addLast(
-                new PendingReflection(
-                        projectile,
-                        player.getUUID(),
-                        reflectedSpeed,
-                        direction.normalize()
-                )
-        );
+        if (ownedLevel <= 0 || direction.lengthSqr() <= 1.0E-7D) return;
+        int level = Math.min(ownedLevel, AugmentCatalog.require(AUGMENTATION_SURVIVAL$RETURN_TO_SENDER_ID).maxLevel());
+        AUGMENTATION_SURVIVAL$PENDING.addLast(new PendingReflection(
+                projectile,
+                player.getUUID(),
+                originalSpeed * ReactiveCombatTuning.current().returnSpeedScale(level),
+                direction.normalize()
+        ));
     }
 
     @Inject(method = "tickRuntime", at = @At("HEAD"))
-    private static void augmentationSurvival$applyDeferredReflections(
-            MinecraftServer server,
-            CallbackInfo ci
-    ) {
+    private static void augmentationSurvival$applyDeferredReflections(MinecraftServer server, CallbackInfo ci) {
         Iterator<PendingReflection> iterator = AUGMENTATION_SURVIVAL$PENDING.iterator();
         while (iterator.hasNext()) {
             PendingReflection pending = iterator.next();
             iterator.remove();
             Projectile projectile = pending.projectile();
             ServerPlayer player = server.getPlayerList().getPlayer(pending.playerId());
-            if (player == null || player.isDeadOrDying() || projectile.isRemoved()) {
-                continue;
+            if (player == null || player.isDeadOrDying() || projectile.isRemoved() || projectile.level() != player.level()) continue;
+
+            projectile.deflect(ProjectileDeflection.AIM_DEFLECT, player, EntityReference.of(player), true);
+            projectile.setOwner(player);
+            if (projectile instanceof AbstractArrow arrow) {
+                ((AbstractArrowAugmentAccessor) arrow).augmentationSurvival$invokeSetInGround(false);
+                ((AbstractArrowAugmentAccessor) arrow).augmentationSurvival$invokeResetPiercedEntities();
             }
-            projectile.deflect(
-                    ProjectileDeflection.AIM_DEFLECT,
-                    player,
-                    EntityReference.of(player),
-                    true
-            );
-            projectile.setDeltaMovement(pending.direction().scale(pending.speed()));
+            Vec3 direction = pending.direction();
+            Vec3 launch = player.getEyePosition().add(direction.scale(Math.max(0.85D, player.getBbWidth() * 0.5D + 0.55D)));
+            projectile.setPos(launch.x, launch.y, launch.z);
+            projectile.setDeltaMovement(direction.scale(pending.speed()));
         }
     }
 
     @Unique
-    private record PendingReflection(
-            Projectile projectile,
-            UUID playerId,
-            double speed,
-            Vec3 direction
-    ) { }
+    private record PendingReflection(Projectile projectile, UUID playerId, double speed, Vec3 direction) { }
 }

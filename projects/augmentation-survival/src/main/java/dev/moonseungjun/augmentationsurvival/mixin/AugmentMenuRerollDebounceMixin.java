@@ -9,9 +9,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Prevents overlapping client offer layers from turning one reroll click into multiple transactions. */
+/** Prevents reroll UI overlap/double delivery from becoming an accidental candidate selection. */
 @Mixin(AugmentDeviceMenu.class)
 abstract class AugmentMenuRerollDebounceMixin {
+    @Unique private static final long AUGMENTATION_SURVIVAL$SELECTION_GUARD_TICKS = 3L;
     @Unique private long augmentationSurvival$lastRerollTick = Long.MIN_VALUE;
 
     @Inject(method = "clickMenuButton", at = @At("HEAD"), cancellable = true)
@@ -35,7 +36,10 @@ abstract class AugmentMenuRerollDebounceMixin {
             augmentationSurvival$lastRerollTick = now;
             return;
         }
-        if (selection && augmentationSurvival$lastRerollTick == now) {
+        if (selection
+                && augmentationSurvival$lastRerollTick != Long.MIN_VALUE
+                && now >= augmentationSurvival$lastRerollTick
+                && now - augmentationSurvival$lastRerollTick <= AUGMENTATION_SURVIVAL$SELECTION_GUARD_TICKS) {
             cir.setReturnValue(true);
         }
     }
