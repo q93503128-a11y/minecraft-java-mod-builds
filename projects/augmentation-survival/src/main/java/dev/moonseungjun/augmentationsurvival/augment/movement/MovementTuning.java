@@ -84,7 +84,8 @@ public final class MovementTuning {
                 requirePositive(momentumShift, "minimum_fall_distance"),
                 requirePositive(momentumShift, "movement_per_level"),
                 requirePositiveInt(momentumShift, "duration_ticks"),
-                requirePositive(doubleJump, "vertical_multiplier")
+                requirePositive(doubleJump, "vertical_multiplier"),
+                requirePositive(doubleJump, "horizontal_reboost")
         );
     }
 
@@ -137,7 +138,8 @@ public final class MovementTuning {
             double momentumMinimumFallDistance,
             double momentumMovementPerLevel,
             int momentumDurationTicks,
-            double doubleJumpVerticalMultiplier
+            double doubleJumpVerticalMultiplier,
+            double doubleJumpHorizontalReboost
     ) {
     }
 }
