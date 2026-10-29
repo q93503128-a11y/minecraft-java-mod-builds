@@ -64,12 +64,14 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         LivingEntity wallTarget = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 5).withNoFreeWill().spawn();
         float wallBefore = wallTarget.getHealth();
         wallPlayer.attack(wallTarget);
-        float wallDamage = wallBefore - wallTarget.getHealth();
 
-        require(wallDamage > controlDamage * 1.5F,
-                "Wall Slam did not add meaningful derived damage to the same real melee hit at a nearby wall; control="
-                        + controlDamage + " wall=" + wallDamage);
-        GameTestPlayers.succeed(helper);
+        GameTestPlayers.runAfterDelay(helper, 2, () -> {
+            float wallDamage = wallBefore - wallTarget.getHealth();
+            require(wallDamage > controlDamage * 1.5F,
+                    "Wall Slam did not add meaningful derived damage after a real melee hit reached the nearby wall; control="
+                            + controlDamage + " wall=" + wallDamage);
+            GameTestPlayers.succeed(helper);
+        });
     }
 
     @GameTest(maxTicks = 20)
