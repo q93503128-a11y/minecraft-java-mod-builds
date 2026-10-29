@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
+import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Pull targets nearby entities rather than only hostile living targets. */
+/** Pull targets nearby entities while respecting player-owned allies and compatibility policy. */
 @Mixin(value = ActiveAbilityService.class, remap = false)
 abstract class ActivePullEntityMixin {
     @Inject(method = "executePull", at = @At("HEAD"), cancellable = true)
@@ -33,7 +34,8 @@ abstract class ActivePullEntityMixin {
                 candidate -> candidate != player
                         && candidate.isAlive()
                         && (!(candidate instanceof LivingEntity living)
-                                || EntityCompatibilityProfileService.allowPull(living))
+                                || (OffensiveTargetContext.isValid(player, living)
+                                        && EntityCompatibilityProfileService.allowPull(living)))
                         && player.distanceToSqr(candidate) <= radiusSquared
         );
         if (targets.isEmpty()) {

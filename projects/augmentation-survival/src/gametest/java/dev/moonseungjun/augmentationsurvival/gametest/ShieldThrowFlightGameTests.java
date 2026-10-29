@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.ShieldThrowFlightService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -16,19 +17,21 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Real-path regression for physical Shield Throw flight, ricochet and item return. */
+/** Real active-slot regression for physical Shield Throw flight, ricochet and item return. */
 public final class ShieldThrowFlightGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
     @GameTest(maxTicks = 160)
-    public void shieldLeavesHandHitsMultipleTargetsAndReturns(GameTestHelper helper) {
+    public void shieldLeavesHandHitsMultipleTargetsAndReturnsThroughActiveSlot(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setYRot(0.0F);
         player.setXRot(0.0F);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD));
-        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
+        ItemStack originalShield = new ItemStack(Items.SHIELD);
+        originalShield.setDamageValue(7);
+        player.setItemInHand(InteractionHand.OFF_HAND, originalShield);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("shield_throw"), 3)
@@ -39,8 +42,8 @@ public final class ShieldThrowFlightGameTests implements CustomTestMethodInvoker
         float firstBefore = first.getHealth();
         float secondBefore = second.getHealth();
 
-        require(ShieldThrowFlightService.tryUse(player, 1.0D, true),
-                "shield throw failed to launch with a valid shield, weapon and targets");
+        require(ActiveAbilityRouter.tryUseSlot(player, 0),
+                "active HUD slot did not route owned Shield Throw into its physical flight runtime");
         require(player.getOffhandItem().isEmpty(),
                 "physical shield remained equipped while its display was in flight");
         require(ShieldThrowFlightService.activeFlightCount(player) == 1,
@@ -53,6 +56,8 @@ public final class ShieldThrowFlightGameTests implements CustomTestMethodInvoker
                     "physical shield did not ricochet to the next target");
             require(player.getOffhandItem().is(Items.SHIELD),
                     "physical shield did not return to its original hand");
+            require(player.getOffhandItem().getDamageValue() == 7,
+                    "shield escrow did not restore the original ItemStack durability state");
             require(ShieldThrowFlightService.activeFlightCount(player) == 0,
                     "shield flight remained active after returning to the owner");
             GameTestPlayers.succeed(helper);
