@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 /** Detects airborne jump input and mirrors held state for Aerial Combo auto-consumption. */
 public final class MovementInputClient {
     private static final String DOUBLE_JUMP_ID = AugmentationSurvival.MOD_ID + ":double_jump";
+    private static final String AERIAL_COMBO_ID = AugmentationSurvival.MOD_ID + ":aerial_combo";
     private static boolean jumpWasDown;
     private static boolean resetContactWasActive = true;
 
@@ -28,7 +29,8 @@ public final class MovementInputClient {
             boolean resetContact = client.player.onGround()
                     || client.player.isInWater()
                     || client.player.onClimbable();
-            boolean unlocked = ClientAugmentProgressState.level(DOUBLE_JUMP_ID) > 0;
+            boolean unlocked = ClientAugmentProgressState.level(DOUBLE_JUMP_ID) > 0
+                    || ClientAugmentProgressState.level(AERIAL_COMBO_ID) > 0;
 
             if (jumpDown != jumpWasDown) {
                 ClientPlayNetworking.send(new AirJumpHoldPayload(jumpDown));
