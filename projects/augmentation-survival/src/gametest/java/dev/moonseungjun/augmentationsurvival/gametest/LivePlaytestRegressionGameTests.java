@@ -1,7 +1,10 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentPresentationCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -95,6 +98,20 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
     }
 
     @GameTest(maxTicks = 20)
+    public void retracePlayerTextKeepsItsActualMechanic(GameTestHelper helper) {
+        AugmentPresentationCatalog.Entry entry = AugmentPresentationCatalog.get(
+                AugmentCatalog.require(id("retrace"))
+        );
+        require(entry.summary().contains("지난 2초") && entry.summary().contains("잔상"),
+                "Retrace summary lost the path-rewind mechanic: " + entry.summary());
+        require(entry.detail().contains("50% / 75% / 100%") && entry.detail().contains("5초"),
+                "Retrace detail lost level damage or cooldown information: " + entry.detail());
+        require(!entry.summary().contains("ROOT") && !entry.detail().contains("ROOT"),
+                "Retrace player-facing text leaked the internal ROOT term");
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest(maxTicks = 20)
     public void delayedDamageStillTriggersAndThenRespectsLastStandInvulnerability(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         AugmentationPlayerStateService.replace(
@@ -112,6 +129,55 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         require(Math.abs(player.getHealth() - 1.0F) < 0.01F,
                 "delayed damage bypassed the active Last Stand invulnerability window");
         GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest(maxTicks = 320)
+    public void realDelayedReservationTriggersLastStandAndBlocksTheNextInstallment(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        ServerLevel level = helper.getLevel();
+        int delayedLevel = 3;
+        AugmentationPlayerStateService.replace(
+                player,
+                AugmentationPlayerState.initial()
+                        .withAugmentLevel(id("delayed_damage"), delayedLevel)
+                        .withAugmentLevel(id("last_stand"), 1)
+        );
+
+        CombatTuning.Snapshot tuning = CombatTuning.current();
+        int installments = tuning.delayedDamageInstallmentCount();
+        int interval = tuning.delayedDamageIntervalTicks();
+        require(installments == 5, "live-playtest regression expects the canonical five delayed installments");
+        require(tuning.lastStandInvulnerableTicks() > interval,
+                "Last Stand invulnerability must cover at least the installment immediately after its trigger");
+
+        float startHealth = 10.0F;
+        player.setHealth(startHealth);
+        double fraction = tuning.delayedDamageFraction(delayedLevel);
+        float hit = (float) (startHealth
+                / ((1.0D - fraction) + 3.5D * fraction / installments));
+        boolean accepted = player.hurtServer(level, player.damageSources().generic(), hit);
+        require(accepted, "real delayed-damage root hit was rejected");
+        require(player.getHealth() > 0.0F && player.getHealth() < startHealth,
+                "real delayed-damage root hit did not leave an immediate HP portion");
+        require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand"))
+                        <= player.level().getGameTime(),
+                "Last Stand triggered on the root hit instead of a later reserved installment");
+
+        GameTestPlayers.runAfterDelay(helper, interval * 4 + 2, () -> {
+            require(Math.abs(player.getHealth() - 1.0F) < 0.01F,
+                    "the fourth reserved installment should trigger Last Stand and leave 1 HP; health="
+                            + player.getHealth());
+            require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand"))
+                            > player.level().getGameTime(),
+                    "Last Stand cooldown was not armed by the lethal reserved installment");
+        });
+
+        GameTestPlayers.runAfterDelay(helper, interval * 5 + 2, () -> {
+            require(Math.abs(player.getHealth() - 1.0F) < 0.01F,
+                    "the installment immediately after Last Stand bypassed its invulnerability; health="
+                            + player.getHealth());
+            GameTestPlayers.succeed(helper);
+        });
     }
 
     @GameTest(maxTicks = 20)

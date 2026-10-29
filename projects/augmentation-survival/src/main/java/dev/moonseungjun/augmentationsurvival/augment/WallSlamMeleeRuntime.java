@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
+import dev.moonseungjun.augmentationsurvival.augment.presentation.WallSlamPresentationService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
@@ -83,15 +84,19 @@ public final class WallSlamMeleeRuntime {
             }
 
             int previousInvulnerableTime = target.invulnerableTime;
+            boolean applied;
             target.invulnerableTime = 0;
             try {
                 DamageSource wallSource = owner.damageSources().playerAttack(owner);
-                CombatProvenanceContext.runAs(
+                applied = CombatProvenanceContext.callAs(
                         CombatProvenance.DERIVED_AOE,
                         () -> target.hurtServer((ServerLevel) target.level(), wallSource, damage)
                 );
             } finally {
                 target.invulnerableTime = Math.max(target.invulnerableTime, previousInvulnerableTime);
+            }
+            if (applied && !target.isRemoved()) {
+                WallSlamPresentationService.impact(owner, target, window.impactDirection());
             }
         }
     }
