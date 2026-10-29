@@ -45,8 +45,8 @@ public final class CooperativeMobilityGameTests implements CustomTestMethodInvok
         require(PlayerRescueAugmentService.isDowned(target), "rescue owner died instead of entering Downed");
         require(target.getHealth() > 0.0F, "Downed target did not remain alive");
         require(AugmentationPlayerStateService.state(target).cooldownReadyTick(PlayerRescueAugmentService.RESCUE_ID)
-                        == downedAt + 15L * 20L,
-                "co-op rescue cooldown is not the canonical 15 seconds");
+                        == downedAt + 300L * 20L,
+                "co-op rescue cooldown is not the canonical 300 seconds");
         require(PlayerRescueAugmentService.tryBeginRescue(rescuer, target), "nearby teammate could not begin rescue");
         GameTestPlayers.runAfterDelay(helper, 45, () -> {
             require(!PlayerRescueAugmentService.isDowned(target), "target remained Downed after the two-second rescue channel");
