@@ -1,7 +1,7 @@
 # Augmentation Survival — Augment Interaction Contract V2
 
-Date: 2026-10-24
-Status: CANONICAL DESIGN CONTRACT — 146 roster lock
+Date: 2026-10-29
+Status: CANONICAL INTERACTION CONTRACT — 149 runtime roster
 
 이 문서는 `AUGMENTS.md`의 확정 증강 전체가 동시에 존재할 때 적용할 계산 순서, 출처 판정, 재귀 차단, 외부 모드 호환, 서버 권한 규칙을 하나로 합친 정본이다.
 
@@ -41,7 +41,7 @@ Status: CANONICAL DESIGN CONTRACT — 146 roster lock
 5. 일반 증강 피해 감소
 6. 조건부/속성 피해 감소
 7. `약점 표식` 같은 최종 받는 피해 증가
-8. 이후 피해 지연/보호막/흡수/HP 파이프라인
+8. 이후 증강 보호막/증강 흡수 → 피해 지연 예약 → 바닐라 absorption/HP 파이프라인
 
 `천벌` 같은 명시적 최대체력 비율 특수 피해는 일반 공격 피해증폭 레이어를 사용하지 않는다.
 
@@ -107,8 +107,8 @@ Status: CANONICAL DESIGN CONTRACT — 146 roster lock
 
 ### 4.5 추적 화살
 
-- 기본 후보 획득은 전방 30° / 12블록 범위를 기준으로 한다.
-- 방향 보정은 tick당 최대 2° / 3° / 4°.
+- 기본 후보 획득은 전방 45° / 16블록 범위를 기준으로 한다.
+- 방향 보정은 tick당 최대 4° / 6° / 8°.
 - 도탄 뒤에도 추적 상태를 유지/재획득할 수 있다.
 - 직전 segment에서 맞힌 대상도 새 segment에서는 다시 추적 후보가 된다.
 - 직전 목표가 살아 있고 유효하면 재획득 우선 대상이 될 수 있다.
@@ -131,7 +131,9 @@ Status: CANONICAL DESIGN CONTRACT — 146 roster lock
 
 - 지상/수영/등반 접촉 시 기본 공중 점프 상태를 초기화한다.
 - `두 번 점프`는 지상 이탈 후 1회의 기본 공중 점프 권한을 준다.
-- `공중 연계`는 공중 ROOT 근접 적중마다 공중 점프 권한 1회를 즉시 다시 사용할 수 있게 한다.
+- 추가 점프는 그 순간 플레이어의 실제 점프 힘 ×1.30 수직 추진을 사용한다.
+- 추가 점프 직전 수평 진행 방향과 속도가 존재하면 같은 방향으로 수평 속도 +0.08을 재추진하며, 정지 상태에서는 임의 방향 추진을 만들지 않는다.
+- `공중 연계`는 `두 번 점프` 보유 여부와 무관하게 공중 ROOT 근접 적중마다 같은 공중 점프 권한 1회를 즉시 다시 사용할 수 있게 한다.
 - 내부 쿨다운은 없다. 같은 적을 계속 맞혀도 재충전된다.
 - 따라서 타격을 계속 성공시키면 착지 없이 무한 공중전을 할 수 있으며 이는 의도된 시너지다.
 
@@ -188,6 +190,7 @@ Status: CANONICAL DESIGN CONTRACT — 146 roster lock
 ### 생명 파동
 
 - 자연회복이 아닌 **1차 실제 회복 사건**에서만 공격 파동을 만든다.
+- 실제 판정 반경은 6블록이다.
 - `회복 나눔`으로 생성된 공유 회복은 생명 파동을 다시 만들지 않는다.
 
 ## 7. 보호막 / 흡수 / 피해 지연 / 무적
@@ -201,19 +204,23 @@ Status: CANONICAL DESIGN CONTRACT — 146 roster lock
 1. 갑옷/방어 강도/Protection
 2. 일반 증강 피해 감소
 3. 조건부 피해 감소
-4. `피해 지연` 예약 비율 분리
-5. 별도 `보호막` pool
-6. 바닐라/증강 absorption
-7. 실제 HP
-8. 치명 판정
+4. 별도 증강 `보호막` pool
+5. 증강이 만든 별도 absorption pool
+6. 남은 피해에 `피해 지연` 예약 비율 분리
+7. 바닐라 absorption
+8. 실제 HP
+9. 치명 판정
 
-예약된 지연 피해는 방어 계산과 피해 지연을 다시 적용하지 않는다.
+즉 보호막/증강 흡수가 현재 타격을 막은 부분은 지연 피해로 예약되지 않는다. 보호막을 넘친 피해만 `피해 지연` 입력이 된다.
+
+예약된 지연 피해는 방어 계산과 피해 지연을 다시 적용하지 않는다. 도착 시 이미 존재하는 증강 보호 pool은 소비할 수 있지만 새 지연 예약을 만들지 않는다.
 
 ### 보호막 폭발
 
 보호막/흡수는 source pool identity를 보존한다.
 
 - 같은 pool은 완전 소진 또는 만료 시 최대 1회만 폭발한다.
+- 실제 판정 반경은 6블록이다.
 - 중간에 값을 보충했다고 같은 pool의 폭발 횟수가 리셋되지 않는다.
 - 새로 생성된 별도 pool만 새로운 1회의 폭발 권리를 가진다.
 - vanilla absorption과 다른 모드의 알 수 없는 absorption은 기본적으로 증강 생성 pool로 취급하지 않는다.
@@ -226,6 +233,8 @@ Status: CANONICAL DESIGN CONTRACT — 146 roster lock
 3. `비상 토템` 인벤토리 Totem
 4. `재림`
 5. 실제 사망
+
+`한 번 버티기`가 발동하면 체력 1로 생존하고 이후 60 ticks(3초) 동안 일반 피해에 완전 무적이며, 재사용 대기시간은 3600 ticks(180초)다.
 
 `재림`은 실제 사망이 아니다. 드롭/XP 손실/사망 지점/소생 표식을 만들지 않는다.
 
@@ -446,28 +455,26 @@ clientbound:
 - 보호막 pool, delayed damage, cooldown queue는 source ID와 만료시각으로 정리한다.
 - 위협 스케일은 event/load 시 갱신하며 tick 단위 재계산 금지.
 
-## 21. 구현 전 남은 수치 파라미터
+## 21. 남은 전역 튜닝 파라미터
 
-아래는 **아키텍처 차단 요소가 아니라 콘텐츠 파라미터**다. 구현 구조는 먼저 만들 수 있다.
+현재 149종 런타임 구현 구조는 닫혔으며, 아래는 플레이테스트로 확정할 시스템 차원의 밸런스 값이다.
 
-1. `탄도 장막` 정확한 발동 주기 / 범위 / 회당 투사체 수
-2. `임시 발판` 지속시간 / 쿨다운
-3. `생명 연결` 자동 연결 조건 / 대상 수 / 범위 / 지속 / 공유 비율
-4. `작아지기` 웅크리기 유지시간
-5. `벽치기` 충돌 유효 시간 / 충돌 판정 최소 기준
-6. 코어 획득처별 정확한 등급 확률
-7. 위협 단계 수치 테이블 최종 튜닝
+1. 코어 획득처별 정확한 등급 확률
+2. 위협 단계 수치 테이블 최종 튜닝
+3. 개별 증강의 체감/밸런스 미세조정
 
-이 값은 하드코딩 분기보다 data/config parameter로 넣어 플레이테스트에서 조정 가능하게 한다.
+반복 조정 값은 하드코딩 분기보다 data/config parameter로 유지한다.
 
 ## 22. 검증 상태
 
-- ROSTER TARGET: 146
-- DESIGN CONTRACT V2: FINALIZED
-- DUPLICATE REQUIRING REMOVAL: 0
-- RUNTIME IMPLEMENTED: NO
+- ROSTER RUNTIME: 149
+- INTERACTION CONTRACT: CURRENT RUNTIME SYNCED 2026-10-29
+- RUNTIME IMPLEMENTED: YES
+- GAME TESTS: PASS — Build Augmentation Survival Pack #431
+- DEDICATED SERVER SMOKE: PASS — #431
+- CLIENT BOOT SMOKE: PASS — #431
+- VERIFIED MODRINTH PACK: PRODUCED — #431
 - BETTER COMBAT GAMEPLAY TESTED: NO
 - EXTERNAL BOSS GAMEPLAY TESTED: NO
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
-- BUILD/CI: NOT RUN — docs-only
