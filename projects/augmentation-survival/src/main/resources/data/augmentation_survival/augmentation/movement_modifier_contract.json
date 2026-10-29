@@ -25,6 +25,7 @@
     "duration_ticks": 60
   },
   "double_jump": {
-    "vertical_multiplier": 1.30
+    "vertical_multiplier": 1.30,
+    "horizontal_reboost": 0.08
   }
 }
