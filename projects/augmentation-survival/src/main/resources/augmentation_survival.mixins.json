@@ -42,7 +42,8 @@
     "ClientHudHealthMixin", "ClientReserveMealHudMixin", "ClientUseCooldownMasteryMixin", "ClientTridentPortableRiptideMixin",
     "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
     "AugmentDeviceUiRescueMixin", "ActiveLoadoutQuickClickMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
-    "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin"
+    "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin",
+    "AugmentDeviceCardPresentationMixin"
   ],
   "injectors": {"defaultRequire": 1}
 }

@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival;
 
+import dev.moonseungjun.augmentationsurvival.acquisition.AugmentOfferService;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentRuntimeService;
 import dev.moonseungjun.augmentationsurvival.augment.FinalAugmentTuning;
@@ -107,6 +108,7 @@ public final class AugmentationSurvival implements ModInitializer {
         TemporaryPlatformBlocks.initialize();
         AugmentationAttachments.initialize();
         GuidebookGrantService.initialize();
+        AugmentOfferService.initialize();
         WorldThreatAttachments.initialize();
         ThreatEntityAttachments.initialize();
         CompanionEntityAttachments.initialize();

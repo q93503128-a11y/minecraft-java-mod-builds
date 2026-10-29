@@ -7,6 +7,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.resource.ResourceHarvestTuning;
+import dev.moonseungjun.augmentationsurvival.augment.resource.ReplantFallbackService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalTuning;
 import dev.moonseungjun.augmentationsurvival.augment.utility.InstantMiningToggleService;
@@ -349,6 +350,23 @@ public final class AugmentationSurvivalGameTests implements CustomTestMethodInvo
                     "replant failed after the harvested seed was already picked up");
             require(player.getInventory().countItem(Items.WHEAT_SEEDS) == 0,
                     "replant did not consume exactly one owner-inventory planting item");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest(maxTicks = 240)
+    public void expiredReplantOwnerContextDoesNotConsumeLaterSeeds(GameTestHelper helper) {
+        ServerPlayer player = player(helper);
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos cropPos = player.blockPosition().offset(2, 0, 0);
+        player.getInventory().setItem(9, new ItemStack(Items.WHEAT_SEEDS));
+        ReplantFallbackService.record(level, cropPos, player);
+
+        GameTestPlayers.runAfterDelay(helper, 205, () -> {
+            require(!ReplantFallbackService.consumeOwnerInventory(level, cropPos, Items.WHEAT_SEEDS),
+                    "expired replant context consumed a planting item long after its pending operation");
+            require(player.getInventory().countItem(Items.WHEAT_SEEDS) == 1,
+                    "expired replant context changed the owner's inventory");
             GameTestPlayers.succeed(helper);
         });
     }

@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -31,6 +32,8 @@ abstract class ActivePullEntityMixin {
                 player.getBoundingBox().inflate(radius),
                 candidate -> candidate != player
                         && candidate.isAlive()
+                        && (!(candidate instanceof LivingEntity living)
+                                || EntityCompatibilityProfileService.allowPull(living))
                         && player.distanceToSqr(candidate) <= radiusSquared
         );
         if (targets.isEmpty()) {
@@ -44,7 +47,10 @@ abstract class ActivePullEntityMixin {
             if (delta.lengthSqr() < 1.0E-6D) continue;
             double bossScalar = target instanceof LivingEntity living
                     && CombatExpansionService.isConfiguredBoss(living)
-                    ? tuning.pullBossScalar()
+                    ? EntityCompatibilityProfileService.resolve(living)
+                            .map(profile -> EntityCompatibilityProfileService.pullMultiplier(
+                                    profile, tuning.pullBossScalar()))
+                            .orElse(tuning.pullBossScalar())
                     : 1.0D;
             Vec3 impulse = delta.normalize().scale(tuning.pullSpeed() * efficiency * bossScalar);
             target.setDeltaMovement(target.getDeltaMovement().add(impulse));

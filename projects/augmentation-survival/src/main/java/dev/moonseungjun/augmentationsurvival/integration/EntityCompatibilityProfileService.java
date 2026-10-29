@@ -77,15 +77,27 @@ public final class EntityCompatibilityProfileService {
     }
 
     public static boolean allowPull(LivingEntity entity) {
-        return resolve(entity).map(Profile::allowPull).orElse(true);
+        return allowPull(resolve(entity).orElse(null));
+    }
+
+    public static boolean allowPull(Profile profile) {
+        return profile == null || profile.allowPull();
     }
 
     public static double pullMultiplier(LivingEntity entity) {
         return resolve(entity).map(Profile::pullMultiplier).orElse(1.0D);
     }
 
+    public static double pullMultiplier(Profile profile, double fallback) {
+        return profile == null ? fallback : profile.pullMultiplier();
+    }
+
     public static boolean allowPositionSwap(LivingEntity entity) {
-        return resolve(entity).map(Profile::allowPositionSwap).orElse(true);
+        return allowPositionSwap(resolve(entity).orElse(null));
+    }
+
+    public static boolean allowPositionSwap(Profile profile) {
+        return profile == null || profile.allowPositionSwap();
     }
 
     public static boolean allowTimeStop(LivingEntity entity) {

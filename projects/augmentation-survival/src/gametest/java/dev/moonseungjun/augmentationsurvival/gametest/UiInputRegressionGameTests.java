@@ -1,5 +1,8 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.acquisition.AugmentOfferService;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
@@ -9,7 +12,9 @@ import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenu;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.io.InputStreamReader;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
@@ -107,6 +112,44 @@ public final class UiInputRegressionGameTests implements CustomTestMethodInvoker
                 "no-replacement reroll incorrectly consumed its charge");
         require(menu.status() == AugmentDeviceMenu.STATUS_READY && menu.selectedMask() == 0,
                 "no-replacement reroll invalidated or selected the offer");
+
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void expiredOfferSweepReleasesStalePlayerEntry(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        AugmentOfferService.clearOffer(player);
+        player.getInventory().clearContent();
+        player.getInventory().add(new ItemStack(AugmentCoreItems.COMMON_CORE));
+
+        AugmentOfferService.BeginResult first = AugmentOfferService.beginOffer(player, AugmentTier.COMMON);
+        require(first.status() == AugmentOfferService.BeginStatus.READY,
+                "cleanup regression could not create an offer");
+        AugmentOfferService.expireOffers(Integer.MAX_VALUE);
+        require(!AugmentOfferService.hasPendingOffer(player),
+                "expired offer sweep retained the stale player entry");
+        AugmentOfferService.BeginResult replacement = AugmentOfferService.beginOffer(player, AugmentTier.COMMON);
+        require(replacement.status() == AugmentOfferService.BeginStatus.READY,
+                "cleanup regression could not create a replacement offer");
+        require(!first.token().equals(replacement.token()),
+                "expired offer remained in the process-wide pending map");
+        AugmentOfferService.clearOffer(player);
+
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void clientMixinConfigRegistersAugmentCardPresentation(GameTestHelper helper) throws Exception {
+        try (var stream = AugmentationSurvival.class.getClassLoader()
+                .getResourceAsStream("augmentation_survival.mixins.json")) {
+            require(stream != null, "mixin configuration is missing from the runtime resources");
+            JsonObject config = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+            boolean registered = config.getAsJsonArray("client").asList().stream()
+                    .anyMatch(entry -> entry.getAsString().equals("AugmentDeviceCardPresentationMixin"));
+            require(registered, "client card presentation mixin is not registered in the client mixin list");
+        }
 
         GameTestPlayers.succeed(helper);
     }

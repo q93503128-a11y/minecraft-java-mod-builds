@@ -85,7 +85,7 @@ public final class ProjectileAugmentService {
                 () -> target.hurtOrSimulate(source, scaled)
         );
         if (hurt) {
-            runtime.recordSegmentHit(target.getId());
+            runtime.recordSegmentHit(target.getUUID());
         }
         return hurt;
     }
@@ -216,7 +216,7 @@ public final class ProjectileAugmentService {
                 LivingEntity.class,
                 search,
                 candidate -> CompanionAugmentService.isHostileTarget(arrow.getOwner(), candidate)
-                        && !runtime.hasHitInCurrentSegment(candidate.getId())
+                        && !runtime.hasHitInCurrentSegment(candidate.getUUID())
         );
 
         LivingEntity target = null;
@@ -231,7 +231,7 @@ public final class ProjectileAugmentService {
             if (currentDirection.dot(desired) < minDot) {
                 continue;
             }
-            if (candidate.getId() == runtime.trackingTargetId()) {
+            if (candidate.getUUID().equals(runtime.trackingTargetId())) {
                 target = candidate;
                 break;
             }
@@ -241,7 +241,7 @@ public final class ProjectileAugmentService {
             }
         }
         if (target == null) {
-            runtime.setTrackingTargetId(-1);
+            runtime.setTrackingTargetId(null);
             return;
         }
 
@@ -252,7 +252,7 @@ public final class ProjectileAugmentService {
                 Math.toRadians(tuning.trackingTurnDegrees(level))
         );
         arrow.setDeltaMovement(turned.scale(speed));
-        runtime.setTrackingTargetId(target.getId());
+        runtime.setTrackingTargetId(target.getUUID());
     }
 
     private static Vec3 turnTowards(Vec3 current, Vec3 desired, double maxAngle) {

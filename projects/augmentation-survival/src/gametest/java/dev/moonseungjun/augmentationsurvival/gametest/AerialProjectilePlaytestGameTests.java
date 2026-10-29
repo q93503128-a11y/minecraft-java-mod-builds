@@ -4,20 +4,29 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementTuning;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileRuntimeCarrier;
+import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileRuntimeState;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileTuning;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
+import dev.moonseungjun.augmentationsurvival.mixin.AbstractArrowAugmentAccessor;
 import dev.moonseungjun.augmentationsurvival.mixin.LivingEntityJumpPowerAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
+import java.util.UUID;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 /** Real runtime regressions for the 4-A aerial-movement and tracking-arrow playtest bundle. */
@@ -184,6 +193,65 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
         Vec3 afterBehind = arrow.getDeltaMovement().normalize();
         require(angleDegrees(beforeBehind, afterBehind) < 1.0E-4D,
                 "tracking arrow performed a snap turn toward a target behind its acquisition cone");
+
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void projectileFlightStateSurvivesEntitySaveAndReload(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        BlockPos origin = helper.absolutePos(new BlockPos(2, 5, 2));
+        Arrow arrow = new Arrow(
+                player.level(), origin.getX() + 0.5D, origin.getY() + 0.5D,
+                origin.getZ() + 0.5D, Items.ARROW.getDefaultInstance(), null
+        );
+        arrow.setOwner(player);
+        require(player.level().addFreshEntity(arrow), "save/reload test arrow failed to enter the level");
+
+        ProjectileRuntimeState runtime = new ProjectileRuntimeState();
+        UUID priorTarget = UUID.randomUUID();
+        runtime.initialize(player.getUUID(), (byte) 2, 3, 2, 3, 1);
+        runtime.setBaseDamageScale(0.75D);
+        runtime.setProvenance(CombatProvenance.DERIVED_PROJECTILE);
+        runtime.recordBounce();
+        runtime.recordSegmentHit(priorTarget);
+        runtime.setTrackingTargetId(priorTarget);
+        runtime.markChainUsed();
+        ((ProjectileRuntimeCarrier) arrow).augmentationSurvival$setProjectileRuntime(runtime);
+        ((AbstractArrowAugmentAccessor) arrow).augmentationSurvival$invokeSetPierceLevel((byte) 5);
+
+        TagValueOutput output = TagValueOutput.createWithoutContext(ProblemReporter.DISCARDING);
+        arrow.saveWithoutId(output);
+        CompoundTag saved = output.buildResult();
+        Arrow restored = new Arrow(
+                player.level(), origin.getX() + 0.5D, origin.getY() + 0.5D,
+                origin.getZ() + 0.5D, Items.ARROW.getDefaultInstance(), null
+        );
+        restored.load(TagValueInput.create(
+                ProblemReporter.DISCARDING, player.level().registryAccess(), saved
+        ));
+
+        ProjectileRuntimeState loaded = ((ProjectileRuntimeCarrier) restored)
+                .augmentationSurvival$getProjectileRuntime();
+        require(loaded != null && loaded.initialized(), "saved projectile runtime was not restored");
+        require(player.getUUID().equals(loaded.originalOwnerId()), "projectile owner identity was not persisted");
+        require(loaded.provenance() == CombatProvenance.DERIVED_PROJECTILE,
+                "projectile provenance changed across save/reload");
+        requireClose(loaded.baseDamageScale(), 0.75D, 1.0E-9D,
+                "projectile base damage scale changed across save/reload");
+        require(loaded.vanillaPierceLevel() == 2 && loaded.piercingLevel() == 3,
+                "vanilla and augment pierce budgets were not kept separate across save/reload");
+        ProjectileAugmentService.beforeArrowTick(restored);
+        require(Byte.toUnsignedInt(restored.getPierceLevel()) == 5,
+                "restored projectile re-added augment pierce to its already combined vanilla value");
+        require(loaded.trackingLevel() == 2 && loaded.ricochetLevel() == 3 && loaded.chainLevel() == 1,
+                "projectile augment levels changed across save/reload");
+        require(loaded.bounceCount() == 1 && loaded.chainUsed(),
+                "flight-wide ricochet or chain state reset across save/reload");
+        require(loaded.segmentHitCount() == 1 && loaded.hasHitInCurrentSegment(priorTarget),
+                "segment hit identity was not preserved across save/reload");
+        require(priorTarget.equals(loaded.trackingTargetId()),
+                "tracking target identity was not preserved across save/reload");
 
         GameTestPlayers.succeed(helper);
     }

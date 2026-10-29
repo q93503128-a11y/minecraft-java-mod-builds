@@ -16,6 +16,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -29,6 +31,19 @@ public final class AugmentOfferService {
     private static final Map<UUID, PendingOffer> PENDING = new ConcurrentHashMap<>();
 
     private AugmentOfferService() { }
+
+    public static void initialize() {
+        ServerTickEvents.END_SERVER_TICK.register(server -> expireOffers(server.getTickCount()));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> PENDING.clear());
+    }
+
+    public static void expireOffers(int serverTick) {
+        PENDING.entrySet().removeIf(entry -> isExpired(entry.getValue(), serverTick));
+    }
+
+    private static boolean isExpired(PendingOffer offer, int serverTick) {
+        return serverTick > offer.expiresAtTick();
+    }
 
     public static BeginResult beginOffer(ServerPlayer player, AugmentTier requestedTier) {
         Objects.requireNonNull(player, "player");

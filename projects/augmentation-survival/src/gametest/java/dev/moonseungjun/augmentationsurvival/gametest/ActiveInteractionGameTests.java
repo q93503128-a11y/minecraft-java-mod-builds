@@ -43,6 +43,23 @@ public final class ActiveInteractionGameTests implements CustomTestMethodInvoker
         GameTestPlayers.succeed(helper);
     }
 
+    @GameTest(maxTicks = 20)
+    public void bossControlOverridesAreAppliedAsAuthored(GameTestHelper helper) {
+        EntityCompatibilityProfileService.Profile blocked = new EntityCompatibilityProfileService.Profile(
+                "test_blocked", true, false, 0.0D, false,
+                true, true, true, true, false, ""
+        );
+        require(!EntityCompatibilityProfileService.allowPull(blocked),
+                "profile allow_pull=false did not deny the pull policy");
+        require(!EntityCompatibilityProfileService.allowPositionSwap(blocked),
+                "profile allow_position_swap=false did not deny the swap policy");
+        require(EntityCompatibilityProfileService.pullMultiplier(blocked, 0.30D) == 0.0D,
+                "profile pull_multiplier override was not preserved");
+        require(EntityCompatibilityProfileService.pullMultiplier(null, 0.30D) == 0.30D,
+                "unprofiled boss did not retain the configured pull scalar fallback");
+        GameTestPlayers.succeed(helper);
+    }
+
     @GameTest(maxTicks = 100)
     public void replayDoesNotConsumeAnotherDoubleChargeOrScheduleItself(GameTestHelper helper) {
         ServerPlayer player = player(helper);

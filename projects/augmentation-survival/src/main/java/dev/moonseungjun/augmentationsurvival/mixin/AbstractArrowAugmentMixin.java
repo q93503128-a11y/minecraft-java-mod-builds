@@ -6,6 +6,8 @@ import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileRuntim
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -27,6 +29,18 @@ public abstract class AbstractArrowAugmentMixin implements ProjectileRuntimeCarr
     @Override
     public void augmentationSurvival$setProjectileRuntime(ProjectileRuntimeState state) {
         augmentationSurvival$projectileRuntime = state;
+    }
+
+    @Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
+    private void augmentationSurvival$saveProjectileRuntime(ValueOutput output, CallbackInfo ci) {
+        if (augmentationSurvival$projectileRuntime != null) {
+            augmentationSurvival$projectileRuntime.write(output);
+        }
+    }
+
+    @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
+    private void augmentationSurvival$loadProjectileRuntime(ValueInput input, CallbackInfo ci) {
+        augmentationSurvival$projectileRuntime = ProjectileRuntimeState.read(input);
     }
 
     @Inject(method = "tick", at = @At("HEAD"))

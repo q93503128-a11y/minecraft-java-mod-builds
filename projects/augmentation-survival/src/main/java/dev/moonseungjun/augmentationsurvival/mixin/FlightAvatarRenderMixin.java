@@ -2,6 +2,8 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import dev.moonseungjun.augmentationsurvival.augment.movement.FlightAugmentService;
+import dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
@@ -71,7 +73,9 @@ abstract class FlightAvatarRenderMixin {
     }
 
     private static boolean isPoweredFlight(Player player) {
+        boolean localPlayer = player != null && player == Minecraft.getInstance().player;
         return player != null
+                && (!localPlayer || ClientAugmentProgressState.level(FlightAugmentService.FLIGHT_ID) > 0)
                 && !player.isSpectator()
                 && player.isNoGravity()
                 && !player.getAbilities().flying;

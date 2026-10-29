@@ -84,3 +84,18 @@ This follow-up did not rerun build, CI, or GameTests; it corrected audit documen
 - CLIENT BOOT TESTED: YES — prior #431 PASS; client boot NOT RUN during this follow-up.
 - PLAYTESTED: NO.
 - MULTIPLAYER TESTED: NO.
+
+## Current source-level follow-up — 2026-10-29
+
+This section supersedes the earlier head and verification labels for the follow-up work below; the preceding audit remains as a historical record.
+
+- Fetched `origin/main` before continuing. Current starting `HEAD` and `origin/main`: `47f1319253ef4512c333c33762e820b307eff638`; branch: `main`. The supplied older SHA `588943b26b024e95a3a49e6da048723a73798862` was not the fetched remote head.
+- Rechecked repository instructions, README, Build Standard, Quality Standard, project `PROJECT.md`, `AUGMENTS.md`, and interaction contract. The named Minecraft playbook was not found in the repository; previous local-tree search also found no shared dev-playbook source.
+- Current project source/config inventory: 447 files (364 Java, 75 JSON, 2 Gradle, 2 properties, 1 replant function, 1 Python tool, 2 wrappers). The path-level record is [`CODE_AUDIT_2026-10-29_INVENTORY.csv`](CODE_AUDIT_2026-10-29_INVENTORY.csv). At this checkpoint, 249 files are reviewed, 198 remain unread, and 4 reviewed entries require runtime validation. All 137 mixin sources have been read. Therefore the full file-by-file audit is **not complete**.
+- Confirmed and fixed seven source defects: projectile flight-state save/reload, stale acquisition-offer cleanup, client card-presentation mixin registration, unused boss pull/swap profile controls, cross-dimension domination command-target UUID reuse, stale replant fallback ownership, and local powered-flight pose false positives when no-gravity comes from another source. The client pose change still needs in-game visual verification.
+- Verified the three active runtime metadata contracts (`core_distribution_contract.json`, `boss_core_reward_contract.json`, `core_source_profiles.json`) are all `runtime_active: true`. Their Java parsers do not use that field as a runtime gate.
+- Test-source review found event-invoker tests for some root-kill behaviors and policy-helper-only coverage for the boss pull/swap control. Marked these tests for runtime/path-strength validation; did not weaken or remove them. Other source and asset entries remain unread, so catalog-to-runtime coverage and the broader UI/resource review are incomplete.
+- `git diff --check`: PASS. JSON parse check: 74 project main-resource JSON files, 0 invalid (PowerShell parsed with `-AsHashtable` to support valid empty-string blockstate keys).
+- Local Java 25 / Gradle 9.5.1 `clean build` is BLOCKED before compilation: Fabric Loom `1.17.20` resolution from Fabric Maven ended with `Unsupported or unrecognized SSL message`. Current changes' GameTests, server/client boot, manual play, JAR inspection, SHA-256, and pack production have not been run. Historical Build #431 remains 74/74 GameTests PASS with build, localization audit, dedicated-server smoke, client boot smoke, and verified Modrinth pack PASS at gameplay checkpoint `3ecf999d36a3c067a77d6a3ff87aa5fe7657577e`; those results do not validate this follow-up's code.
+- Current follow-up labels: `CODE REVIEWED: NO` (198 unread); `TESTED: NO` for these changes; `BUILD VERIFIED: NO` for these changes; `PACK PRODUCED: NO` this follow-up; `CLIENT BOOT TESTED: NO` this follow-up; `PLAYTESTED: NO`; `MULTIPLAYER TESTED: NO`.
+- Commit/push and parent-folder rename have not yet been performed. The unrelated untracked root audit file remains outside this project-only change.

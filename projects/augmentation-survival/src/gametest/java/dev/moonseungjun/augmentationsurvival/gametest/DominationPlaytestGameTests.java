@@ -9,8 +9,10 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.Level;
 
 /** Manual-play regressions for permanent domination companion targeting. */
 public final class DominationPlaytestGameTests implements CustomTestMethodInvoker {
@@ -43,6 +45,29 @@ public final class DominationPlaytestGameTests implements CustomTestMethodInvoke
                     "dominated warden dropped the owner-commanded warden target across server ticks");
             GameTestPlayers.succeed(helper);
         });
+    }
+
+    @GameTest(maxTicks = 20)
+    public void commandTargetCannotCrossDimensionDamageBoundary(GameTestHelper helper) {
+        ServerPlayer owner = player(helper, 1, 1);
+        Mob neutralTarget = helper.spawnMob(EntityTypes.COW, 2, 2, 4).withNoFreeWill().spawn();
+        CompanionAugmentService.recordOwnerAttack(owner, neutralTarget);
+
+        ServerLevel nether = owner.level().getServer().getLevel(Level.NETHER);
+        require(nether != null, "vanilla nether server level was unavailable");
+        Mob companionInOtherDimension = EntityTypes.ZOMBIE.create(nether, EntitySpawnReason.TRIGGERED);
+        require(companionInOtherDimension != null, "could not create cross-dimension dominated companion");
+        companionInOtherDimension.setPos(0.5D, 80.0D, 0.5D);
+        companionInOtherDimension.setAttached(
+                CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(owner.getUUID())
+        );
+        require(nether.addFreshEntity(companionInOtherDimension),
+                "cross-dimension dominated companion failed to enter the level");
+        require(!CompanionAugmentService.mayDominatedMobDamage(companionInOtherDimension, neutralTarget),
+                "owner command target leaked across dimensions to an unrelated companion");
+        companionInOtherDimension.discard();
+        GameTestPlayers.succeed(helper);
     }
 
     private static ServerPlayer player(GameTestHelper helper, int x, int z) {

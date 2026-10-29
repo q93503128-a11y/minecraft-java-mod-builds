@@ -9,6 +9,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
@@ -292,6 +293,7 @@ public final class ActiveAbilityService {
                 LivingEntity.class,
                 player.getBoundingBox().inflate(radius),
                 candidate -> CompanionAugmentService.isHostileTarget(player, candidate)
+                        && EntityCompatibilityProfileService.allowPull(candidate)
                         && player.distanceToSqr(candidate) <= radiusSquared
         );
         if (targets.isEmpty()) {
@@ -303,7 +305,10 @@ public final class ActiveAbilityService {
                 continue;
             }
             double bossScalar = CombatExpansionService.isConfiguredBoss(target)
-                    ? tuning.pullBossScalar()
+                    ? EntityCompatibilityProfileService.resolve(target)
+                            .map(profile -> EntityCompatibilityProfileService.pullMultiplier(
+                                    profile, tuning.pullBossScalar()))
+                            .orElse(tuning.pullBossScalar())
                     : 1.0D;
             Vec3 impulse = delta.normalize().scale(tuning.pullSpeed() * efficiency * bossScalar);
             target.setDeltaMovement(target.getDeltaMovement().add(impulse));
@@ -314,7 +319,7 @@ public final class ActiveAbilityService {
     private static boolean executeSwap(ServerPlayer player) {
         ExpansionTuning.Snapshot tuning = ExpansionTuning.current();
         LivingEntity target = findLookTarget(player, tuning.swapRange());
-        if (target == null) {
+        if (target == null || !EntityCompatibilityProfileService.allowPositionSwap(target)) {
             return false;
         }
 

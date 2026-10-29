@@ -29,6 +29,7 @@ abstract class ResourceHarvestAuditFixMixin {
 
     @Inject(method = "initialize", at = @At("TAIL"))
     private static void augmentationSurvival$registerLifecycleCleanup(CallbackInfo ci) {
+        ReplantFallbackService.initialize();
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BREAK_SNAPSHOTS.clear();
             PENDING_REPLANTS.clear();

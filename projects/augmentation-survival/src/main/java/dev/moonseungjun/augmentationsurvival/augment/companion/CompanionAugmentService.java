@@ -17,9 +17,11 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -36,7 +38,7 @@ public final class CompanionAugmentService {
     private static final int WARDEN_COMMAND_ANGER = 150;
     private static final Map<UUID, Mob> LOADED_DOMINATED = new HashMap<>();
     /** Last living entity deliberately attacked by each owner. It remains the command target until invalid. */
-    private static final Map<UUID, UUID> OWNER_COMMAND_TARGETS = new HashMap<>();
+    private static final Map<UUID, OwnerCommandTarget> OWNER_COMMAND_TARGETS = new HashMap<>();
 
     private CompanionAugmentService() {
     }
@@ -132,7 +134,9 @@ public final class CompanionAugmentService {
     /** Records an explicit owner attack so dominated companions can obey even against neutral mobs. */
     public static void recordOwnerAttack(ServerPlayer owner, LivingEntity target) {
         if (target == owner || target.isDeadOrDying() || areAllied(owner, target)) return;
-        OWNER_COMMAND_TARGETS.put(owner.getUUID(), target.getUUID());
+        OWNER_COMMAND_TARGETS.put(owner.getUUID(), new OwnerCommandTarget(
+                target.getUUID(), target.level().dimension()
+        ));
         for (Mob companion : LOADED_DOMINATED.values()) {
             if (!companion.isRemoved() && isOwnedBy(companion, owner.getUUID()) && companion.level() == target.level()) {
                 applyCombatTarget(companion, target);
@@ -146,8 +150,10 @@ public final class CompanionAugmentService {
         if (owner.isEmpty()) return true;
         if (target == attacker || target.isDeadOrDying() || areAllied(attacker, target)) return false;
         if (isHostileEntity(target)) return true;
-        UUID commanded = OWNER_COMMAND_TARGETS.get(owner.get());
-        return commanded != null && commanded.equals(target.getUUID());
+        OwnerCommandTarget commanded = OWNER_COMMAND_TARGETS.get(owner.get());
+        return commanded != null
+                && commanded.dimension().equals(target.level().dimension())
+                && commanded.entityId().equals(target.getUUID());
     }
 
     /** Called from the shared LivingEntity death boundary; owner need not be online. */
@@ -158,7 +164,7 @@ public final class CompanionAugmentService {
             MinecraftServer server = level.getServer();
             setWorldState(server, worldState(server).withDelta(owner.get(), -1));
         }
-        OWNER_COMMAND_TARGETS.entrySet().removeIf(entry -> entry.getValue().equals(entity.getUUID()));
+        OWNER_COMMAND_TARGETS.entrySet().removeIf(entry -> entry.getValue().entityId().equals(entity.getUUID()));
     }
 
     /** Reclaims the domination occupancy slot and AI tracking after a successful permanent-companion revive. */
@@ -244,11 +250,13 @@ public final class CompanionAugmentService {
     }
 
     private static LivingEntity commandTarget(Mob companion, UUID ownerId) {
-        UUID targetId = OWNER_COMMAND_TARGETS.get(ownerId);
-        if (targetId == null || !(companion.level() instanceof ServerLevel level)) return null;
-        Entity found = level.getEntity(targetId);
+        OwnerCommandTarget command = OWNER_COMMAND_TARGETS.get(ownerId);
+        if (command == null
+                || !command.dimension().equals(companion.level().dimension())
+                || !(companion.level() instanceof ServerLevel level)) return null;
+        Entity found = level.getEntity(command.entityId());
         if (!(found instanceof LivingEntity living) || living.isDeadOrDying() || living.isRemoved() || areAllied(companion, living)) {
-            OWNER_COMMAND_TARGETS.remove(ownerId, targetId);
+            OWNER_COMMAND_TARGETS.remove(ownerId, command);
             return null;
         }
         return living;
@@ -313,4 +321,7 @@ public final class CompanionAugmentService {
     }
 
     private static String id(String path) { return AugmentationSurvival.MOD_ID + ":" + path; }
+
+    private record OwnerCommandTarget(UUID entityId, ResourceKey<Level> dimension) {
+    }
 }
