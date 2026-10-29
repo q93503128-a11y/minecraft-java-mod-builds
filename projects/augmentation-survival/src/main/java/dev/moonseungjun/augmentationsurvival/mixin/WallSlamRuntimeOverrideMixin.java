@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -71,9 +72,9 @@ abstract class WallSlamRuntimeOverrideMixin {
         if (target.horizontalCollision) return true;
         AABB box = target.getBoundingBox();
         double reach = AUGMENTATION_SURVIVAL$FORGIVING_WALL_REACH;
-        return !target.level().noCollision(target, box.move(reach, 0.0D, 0.0D))
-                || !target.level().noCollision(target, box.move(-reach, 0.0D, 0.0D))
-                || !target.level().noCollision(target, box.move(0.0D, 0.0D, reach))
-                || !target.level().noCollision(target, box.move(0.0D, 0.0D, -reach));
+        return !target.level().noCollision(target, box.expandTowards(new Vec3(reach, 0.0D, 0.0D)))
+                || !target.level().noCollision(target, box.expandTowards(new Vec3(-reach, 0.0D, 0.0D)))
+                || !target.level().noCollision(target, box.expandTowards(new Vec3(0.0D, 0.0D, reach)))
+                || !target.level().noCollision(target, box.expandTowards(new Vec3(0.0D, 0.0D, -reach)));
     }
 }
