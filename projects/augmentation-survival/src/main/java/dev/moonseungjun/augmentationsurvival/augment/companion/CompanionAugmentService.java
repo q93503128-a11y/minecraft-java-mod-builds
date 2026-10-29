@@ -152,6 +152,7 @@ public final class CompanionAugmentService {
         if (isHostileEntity(target)) return true;
         OwnerCommandTarget commanded = OWNER_COMMAND_TARGETS.get(owner.get());
         return commanded != null
+                && commanded.dimension().equals(attacker.level().dimension())
                 && commanded.dimension().equals(target.level().dimension())
                 && commanded.entityId().equals(target.getUUID());
     }

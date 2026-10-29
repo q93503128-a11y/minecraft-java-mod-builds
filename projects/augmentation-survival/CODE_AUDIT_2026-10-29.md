@@ -91,3 +91,9 @@ MULTIPLAYER TESTED: NO
 ```
 
 커밋 SHA, 이번 변경을 포함한 workflow run ID/결과, 최종 `origin/main` 일치 여부와 로컬 상위 폴더 rename 결과는 배포/검증 후 이 기록에 보충한다.
+
+## Latest CI result and follow-up
+
+Build Augmentation Survival Pack #437 (`40808457114`, commit `50cb291255164bd88ac5275d14f32b9b489a5898`) passed `compileJava` and `compileGametestJava`, then failed one required GameTest: `domination_playtest_game_tests_command_target_cannot_cross_dimension_damage_boundary`. The test showed that `mayDominatedMobDamage` validated the commanded target's dimension but not the attacking companion's dimension. The implementation now checks both dimensions against the saved command dimension. This correction is awaiting CI.
+
+Because #437 stopped at GameTest failure, localization audit, dedicated-server smoke, client boot, and Modrinth pack creation were skipped. Artifact `12869815005` is partial diagnostics, not a verified pack. Current-code labels remain `TESTED: NO`, `BUILD VERIFIED: NO`, `PACK PRODUCED: NO`, `DEDICATED SERVER SMOKE: NO`, and `CLIENT BOOT TESTED: NO` until the correction's CI run completes successfully.

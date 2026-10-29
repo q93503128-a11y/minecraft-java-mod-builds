@@ -100,3 +100,11 @@ This section supersedes the earlier head and verification labels for the follow-
 - After the first push, Build Augmentation Survival Pack #436 (`40808323457`) compiled main Java successfully but failed `compileGametestJava` on the missing `ServerLevel` import at `DominationPlaytestGameTests.java:56`. The import has been added locally; a following CI run is required before claiming test/build success. The failed run skipped GameTest execution, dedicated server/client smoke, and pack production.
 - Current follow-up labels: `CODE REVIEWED: NO` (198 unread); `TESTED: NO` for these changes; `BUILD VERIFIED: NO` for these changes; `PACK PRODUCED: NO` this follow-up; `CLIENT BOOT TESTED: NO` this follow-up; `PLAYTESTED: NO`; `MULTIPLAYER TESTED: NO`.
 - Commit/push and parent-folder rename have not yet been performed. The unrelated untracked root audit file remains outside this project-only change.
+
+### CI follow-up — Build Augmentation Survival Pack #437
+
+- Commit `50cb291255164bd88ac5275d14f32b9b489a5898` compiled main and GameTest Java successfully on GitHub Actions (Java 25.0.5+8, Gradle 9.5.1).
+- `:runGameTest` then failed one required test: `domination_playtest_game_tests_command_target_cannot_cross_dimension_damage_boundary`. The first actionable failure was `AssertionError: owner command target leaked across dimensions to an unrelated companion` at `DominationPlaytestGameTests.java:69`.
+- This exposed an incomplete guard in the prior fix: target lookup checked the target dimension but omitted the attacking companion's dimension. `mayDominatedMobDamage` now requires the stored command dimension to match both attacker and target. The existing cross-dimension regression test exercises this actual damage authorization boundary.
+- Build #437 skipped localization capture/audit, dedicated server smoke, client boot, and verified Modrinth pack because GameTest failed. It uploaded only a partial diagnostic artifact, ID `12869815005`; this is not a verified pack.
+- Follow-up fix is not yet built or tested. Build verification, GameTests, dedicated server/client smoke, JAR inspection, SHA-256, and pack production remain NO for the current code until the next CI run succeeds.
