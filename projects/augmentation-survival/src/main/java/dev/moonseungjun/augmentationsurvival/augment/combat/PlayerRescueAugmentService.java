@@ -217,8 +217,16 @@ public final class PlayerRescueAugmentService {
     private static void restoreDownedState(ServerPlayer player) {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         long stored = state.cooldownReadyTick(DOWNED_UNTIL_KEY);
-        if (stored > player.level().getGameTime() && owns(player)) DOWNED.put(player.getUUID(), new DownedState(stored));
-        else if (stored > 0L) AugmentationPlayerStateService.replace(player, state.withCooldownReadyTick(DOWNED_UNTIL_KEY, 0L));
+        if (stored <= 0L) return;
+        if (!owns(player)) {
+            AugmentationPlayerStateService.replace(player, state.withCooldownReadyTick(DOWNED_UNTIL_KEY, 0L));
+            return;
+        }
+        if (stored > player.level().getGameTime()) {
+            DOWNED.put(player.getUUID(), new DownedState(stored));
+            return;
+        }
+        forceDeath(player);
     }
 
     private static boolean owns(ServerPlayer player) { return AugmentationPlayerStateService.state(player).level(RESCUE_ID) > 0; }

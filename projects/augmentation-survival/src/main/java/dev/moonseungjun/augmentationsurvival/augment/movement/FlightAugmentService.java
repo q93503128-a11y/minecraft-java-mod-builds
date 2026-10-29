@@ -61,6 +61,7 @@ public final class FlightAugmentService {
         AugmentCatalog.require(FLIGHT_ID);
         ServerTickEvents.END_SERVER_TICK.register(FlightAugmentService::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> deactivateImmediately(handler.player));
+        ServerLifecycleEvents.SERVER_STOPPING.register(FlightAugmentService::restoreAll);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE.clear());
     }
 
@@ -281,11 +282,19 @@ public final class FlightAugmentService {
         if (state != null) restore(player, state);
     }
 
+    private static void restoreAll(MinecraftServer server) {
+        for (Map.Entry<UUID, FlightState> entry : new HashMap<>(ACTIVE).entrySet()) {
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player != null) restore(player, entry.getValue());
+        }
+        ACTIVE.clear();
+    }
+
     private static void restore(ServerPlayer player, FlightState state) {
         var abilities = player.getAbilities();
         abilities.mayfly = state.hadMayfly;
         abilities.flying = state.wasFlying;
-        player.onUpdateAbilities();
+        if (player.connection != null) player.onUpdateAbilities();
         player.setNoGravity(state.hadNoGravity);
         player.resetFallDistance();
         player.hurtMarked = true;

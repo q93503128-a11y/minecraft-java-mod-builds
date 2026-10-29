@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.mixin.LivingEntityJumpPowerAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -24,7 +25,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -185,10 +185,11 @@ public final class MovementAugmentService {
             float damageTaken,
             boolean blocked
     ) {
-        if (blocked || !(damageTaken > 0.0F) || !(entity instanceof Enemy)) {
+        if (blocked || !(damageTaken > 0.0F)) {
             return;
         }
-        if (!(source.getEntity() instanceof ServerPlayer attacker)) {
+        if (!(source.getEntity() instanceof ServerPlayer attacker)
+                || !CompanionAugmentService.isHostileTarget(attacker, entity)) {
             return;
         }
         if (CombatProvenanceContext.resolve(source) != CombatProvenance.ROOT_MELEE) {

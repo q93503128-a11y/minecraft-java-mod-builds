@@ -55,6 +55,32 @@ public final class CooperativeMobilityGameTests implements CustomTestMethodInvok
         });
     }
 
+    @GameTest(maxTicks = 20)
+    public void expiredCompanionRescueStateForcesDeathWhenRestored(GameTestHelper helper) {
+        ServerPlayer target = player(helper, 1);
+        String downedUntilKey = PlayerRescueAugmentService.RESCUE_ID + "#downed_until";
+        long expiresAt = target.level().getGameTime() + 1L;
+        AugmentationPlayerStateService.replace(
+                target,
+                AugmentationPlayerState.initial()
+                        .withAugmentLevel(PlayerRescueAugmentService.RESCUE_ID, 1)
+                        .withCooldownReadyTick(downedUntilKey, expiresAt)
+        );
+
+        GameTestPlayers.runAfterDelay(helper, 2, () -> {
+            try {
+                restoreDownedState(target);
+            } catch (ReflectiveOperationException exception) {
+                throw new AssertionError("could not invoke stored Downed-state restoration", exception);
+            }
+            require(target.isDeadOrDying(),
+                    "expired stored Downed state was cleared on restore instead of enforcing its timeout death");
+            require(AugmentationPlayerStateService.state(target).cooldownReadyTick(downedUntilKey) == 0L,
+                    "expired stored Downed marker remained after forced death");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
     @GameTest
     public void flightUsesCustomAuthorityAndBrakesInsteadOfCreativeStop(GameTestHelper helper) {
         ServerPlayer player = player(helper, 1);
@@ -109,6 +135,12 @@ public final class CooperativeMobilityGameTests implements CustomTestMethodInvok
         requireClose(hostile.getHealth(), afterFirstImpact, 0.05F,
                 "same flight overlap dealt repeated per-tick collision damage instead of one impact");
         GameTestPlayers.succeed(helper);
+    }
+
+    private static void restoreDownedState(ServerPlayer player) throws ReflectiveOperationException {
+        Method method = PlayerRescueAugmentService.class.getDeclaredMethod("restoreDownedState", ServerPlayer.class);
+        method.setAccessible(true);
+        method.invoke(null, player);
     }
 
     private static void resolveFlightImpact(ServerPlayer player, Vec3 movement) throws ReflectiveOperationException {

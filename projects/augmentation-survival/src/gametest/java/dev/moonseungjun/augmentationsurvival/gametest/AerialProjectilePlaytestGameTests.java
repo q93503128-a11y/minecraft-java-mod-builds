@@ -1,13 +1,15 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityAttachments;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityState;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementTuning;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileRuntimeCarrier;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileRuntimeState;
 import dev.moonseungjun.augmentationsurvival.augment.projectile.ProjectileTuning;
-import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.mixin.AbstractArrowAugmentAccessor;
 import dev.moonseungjun.augmentationsurvival.mixin.LivingEntityJumpPowerAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -132,6 +134,38 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
         require(!MovementAugmentService.tryAirJump(player),
                 "one aerial-combo hit granted more than one stored air jump");
 
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void aerialComboIgnoresDominatedEnemyCompanions(GameTestHelper helper) {
+        ServerPlayer attacker = GameTestPlayers.survivalPlayer(helper);
+        ServerPlayer companionOwner = GameTestPlayers.survivalPlayer(helper);
+        AugmentationPlayerStateService.replace(
+                attacker,
+                AugmentationPlayerState.initial().withAugmentLevel(id("aerial_combo"), 1)
+        );
+
+        BlockPos air = helper.absolutePos(new BlockPos(6, 6, 6));
+        attacker.setPos(air.getX() + 0.5D, air.getY(), air.getZ() + 0.5D);
+        attacker.setOnGround(false);
+        attacker.setDeltaMovement(0.0D, -0.05D, 0.0D);
+        MovementAugmentService.setJumpHeld(attacker, false);
+
+        LivingEntity zombie = helper.spawnMob(EntityTypes.ZOMBIE, 6, 6, 7)
+                .withNoFreeWill()
+                .spawn();
+        zombie.setAttached(
+                CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(companionOwner.getUUID())
+        );
+        float before = zombie.getHealth();
+        attacker.attack(zombie);
+
+        require(zombie.getHealth() < before,
+                "dominated-companion regression setup did not produce an actual melee hit");
+        require(!MovementAugmentService.tryAirJump(attacker),
+                "aerial combo recharged from a dominated companion that is no longer a hostile target");
         GameTestPlayers.succeed(helper);
     }
 
