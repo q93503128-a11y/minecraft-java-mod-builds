@@ -2,6 +2,8 @@ package dev.moonseungjun.augmentationsurvival.augment.presentation;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -172,8 +174,9 @@ public final class PassivePresentationService {
                 sound(level, target, SoundEvents.PLAYER_ATTACK_SWEEP, 0.65F, 0.56F);
             }
             case "life_wave" -> {
-                ring(level, ParticleTypes.HEART, self.add(0.0D, 0.55D, 0.0D), 1.35D, 14);
-                ring(level, ParticleTypes.END_ROD, self.add(0.0D, 0.55D, 0.0D), 2.10D, 22);
+                double radius = ExpansionTuning.current().lifeWaveRadius();
+                ring(level, ParticleTypes.HEART, self.add(0.0D, 0.55D, 0.0D), radius * 0.45D, 20);
+                ring(level, ParticleTypes.END_ROD, self.add(0.0D, 0.55D, 0.0D), radius, 32);
                 sound(level, self, SoundEvents.BEACON_ACTIVATE, 0.38F, 1.42F);
             }
             case "combat_cycle" -> {
@@ -204,8 +207,9 @@ public final class PassivePresentationService {
                 sound(level, self, SoundEvents.AMETHYST_BLOCK_CHIME, 0.32F, 1.62F);
             }
             case "shield_burst" -> {
-                ring(level, ParticleTypes.POOF, self.add(0.0D, 0.90D, 0.0D), 1.85D, 24);
-                ring(level, ParticleTypes.END_ROD, self.add(0.0D, 0.90D, 0.0D), 1.15D, 16);
+                double radius = ReactiveCombatTuning.current().shieldBurstRadius();
+                ring(level, ParticleTypes.END_ROD, self.add(0.0D, 0.90D, 0.0D), radius * 0.55D, 22);
+                ring(level, ParticleTypes.POOF, self.add(0.0D, 0.90D, 0.0D), radius, 36);
                 sound(level, self, SoundEvents.SHIELD_BREAK.value(), 0.60F, 1.00F);
             }
             case "retrace" -> {
