@@ -48,10 +48,20 @@ abstract class WallSlamRuntimeOverrideMixin {
                     * FinalAugmentTuning.current().wallSlamDamageFraction(window.augmentationSurvival$getLevel()));
             if (!(damage > 0.0F)) continue;
             DamageSource wallSource = owner.damageSources().playerAttack(owner);
-            CombatProvenanceContext.runAs(
-                    CombatProvenance.DERIVED_AOE,
-                    () -> target.hurtServer(level, wallSource, damage)
-            );
+
+            // Wall Slam is one derived impact belonging to the qualifying melee hit. It must not be
+            // swallowed by vanilla's short post-hit invulnerability window, but we also must not erase
+            // that window for unrelated follow-up attacks after the wall impact resolves.
+            int previousInvulnerableTime = target.invulnerableTime;
+            target.invulnerableTime = 0;
+            try {
+                CombatProvenanceContext.runAs(
+                        CombatProvenance.DERIVED_AOE,
+                        () -> target.hurtServer(level, wallSource, damage)
+                );
+            } finally {
+                target.invulnerableTime = Math.max(target.invulnerableTime, previousInvulnerableTime);
+            }
         }
     }
 
