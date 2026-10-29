@@ -22,7 +22,7 @@ abstract class ClientWaterRunLivingEntityMixin {
     @Unique private static final long AUGMENTATION_SURVIVAL$SPRINT_EDGE_GRACE_TICKS = 2L;
     @Unique private long augmentationSurvival$lastSprintTick = Long.MIN_VALUE;
 
-    @Inject(method = "tick", at = @At("TAIL"))
+    @Inject(method = "tick", at = @At("HEAD"))
     private void augmentationSurvival$rememberSprintIntent(CallbackInfo ci) {
         if ((Object) this instanceof LocalPlayer player && player.isSprinting()) {
             augmentationSurvival$lastSprintTick = player.level().getGameTime();

@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
+import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityState;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
@@ -21,6 +22,7 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.EntityTypes;
@@ -38,6 +40,7 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
     @GameTest
     public void doubleJumpUsesStrengthenedImpulseAndReboostsExistingMomentum(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        player.setOnGround(true);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("double_jump"), 1)
@@ -57,7 +60,7 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
         double expectedHorizontalSpeed = beforeHorizontal.length() + tuning.doubleJumpHorizontalReboost();
 
         require(MovementAugmentService.tryAirJump(player),
-                "owned double jump rejected its first airborne use");
+                "owned double jump rejected its first charged airborne use");
         Vec3 after = player.getDeltaMovement();
         requireClose(after.y, expectedVertical, 1.0E-6D,
                 "double jump did not use the strengthened configured vertical impulse");
@@ -93,10 +96,10 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
         zombie.setHealth(zombie.getMaxHealth());
         float before = zombie.getHealth();
 
-        player.attack(zombie);
-
+        require(rootMelee(player, zombie, 4.0F),
+                "aerial combo test ROOT melee damage was rejected");
         require(zombie.getHealth() < before,
-                "aerial combo test melee attack did not damage its hostile target");
+                "aerial combo test melee damage did not reach its hostile target");
         require(player.getDeltaMovement().y > 0.0D,
                 "airborne ROOT melee hit did not immediately consume held aerial-combo recharge");
         double expectedMinimum = ((LivingEntityJumpPowerAccessor) player)
@@ -126,7 +129,8 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
         LivingEntity zombie = helper.spawnMob(EntityTypes.ZOMBIE, 4, 6, 5)
                 .withNoFreeWill()
                 .spawn();
-        player.attack(zombie);
+        require(rootMelee(player, zombie, 4.0F),
+                "stored aerial-combo ROOT melee damage was rejected");
         require(player.getDeltaMovement().y <= 0.0D,
                 "aerial combo auto-jumped even though jump was not held");
         require(MovementAugmentService.tryAirJump(player),
@@ -160,10 +164,11 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
                 CompanionEntityState.dominatedBy(companionOwner.getUUID())
         );
         float before = zombie.getHealth();
-        attacker.attack(zombie);
+        require(rootMelee(attacker, zombie, 4.0F),
+                "dominated-companion regression setup did not produce actual damage");
 
         require(zombie.getHealth() < before,
-                "dominated-companion regression setup did not produce an actual melee hit");
+                "dominated-companion regression setup did not damage the target");
         require(!MovementAugmentService.tryAirJump(attacker),
                 "aerial combo recharged from a dominated companion that is no longer a hostile target");
         GameTestPlayers.succeed(helper);
@@ -288,6 +293,17 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
                 "tracking target identity was not preserved across save/reload");
 
         GameTestPlayers.succeed(helper);
+    }
+
+    private static boolean rootMelee(ServerPlayer attacker, LivingEntity target, float damage) {
+        return CombatProvenanceContext.callAs(
+                CombatProvenance.ROOT_MELEE,
+                () -> target.hurtServer(
+                        (ServerLevel) target.level(),
+                        attacker.damageSources().playerAttack(attacker),
+                        damage
+                )
+        );
     }
 
     private static double angleDegrees(Vec3 first, Vec3 second) {

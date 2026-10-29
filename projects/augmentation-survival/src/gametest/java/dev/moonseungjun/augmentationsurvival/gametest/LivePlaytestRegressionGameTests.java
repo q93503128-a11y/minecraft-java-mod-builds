@@ -61,7 +61,7 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 30)
+    @GameTest(maxTicks = 40)
     public void wallSlamAddsDamageToRealMeleeAtNearbyWall(GameTestHelper helper) {
         ServerPlayer controlPlayer = GameTestPlayers.survivalPlayer(helper);
         ServerPlayer wallPlayer = GameTestPlayers.survivalPlayer(helper);
@@ -70,10 +70,6 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         controlPlayer.setPos(controlPos.getX() + 0.5D, controlPos.getY(), controlPos.getZ() + 0.5D);
         controlPlayer.setYRot(0.0F);
         LivingEntity controlTarget = helper.spawnMob(EntityTypes.ZOMBIE, 4, 2, 4).withNoFreeWill().spawn();
-        float controlBefore = controlTarget.getHealth();
-        controlPlayer.attack(controlTarget);
-        float controlDamage = controlBefore - controlTarget.getHealth();
-        require(controlDamage > 0.0F, "control real melee hit did not land");
 
         BlockPos wallPlayerPos = helper.absolutePos(new BlockPos(1, 2, 3));
         wallPlayer.setPos(wallPlayerPos.getX() + 0.5D, wallPlayerPos.getY(), wallPlayerPos.getZ() + 0.5D);
@@ -85,15 +81,29 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         helper.setBlock(new BlockPos(1, 2, 6), Blocks.STONE);
         helper.setBlock(new BlockPos(1, 3, 6), Blocks.STONE);
         LivingEntity wallTarget = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 5).withNoFreeWill().spawn();
-        float wallBefore = wallTarget.getHealth();
-        wallPlayer.attack(wallTarget);
 
-        GameTestPlayers.runAfterDelay(helper, 2, () -> {
-            float wallDamage = wallBefore - wallTarget.getHealth();
-            require(wallDamage > controlDamage * 1.5F,
-                    "Wall Slam did not add meaningful derived damage after a real melee hit reached the nearby wall; control="
-                            + controlDamage + " wall=" + wallDamage);
-            GameTestPlayers.succeed(helper);
+        // Threat scaling can refresh newly loaded mobs during the first few server ticks. Snapshot
+        // only after that shared runtime has settled, otherwise max-health growth looks like healing.
+        GameTestPlayers.runAfterDelay(helper, 5, () -> {
+            controlTarget.setHealth(controlTarget.getMaxHealth());
+            controlTarget.invulnerableTime = 0;
+            float controlBefore = controlTarget.getHealth();
+            controlPlayer.attack(controlTarget);
+            float controlDamage = controlBefore - controlTarget.getHealth();
+            require(controlDamage > 0.0F, "control real melee hit did not land");
+
+            wallTarget.setHealth(wallTarget.getMaxHealth());
+            wallTarget.invulnerableTime = 0;
+            float wallBefore = wallTarget.getHealth();
+            wallPlayer.attack(wallTarget);
+
+            GameTestPlayers.runAfterDelay(helper, 2, () -> {
+                float wallDamage = wallBefore - wallTarget.getHealth();
+                require(wallDamage > controlDamage * 1.5F,
+                        "Wall Slam did not add meaningful derived damage after a real melee hit reached the nearby wall; control="
+                                + controlDamage + " wall=" + wallDamage);
+                GameTestPlayers.succeed(helper);
+            });
         });
     }
 

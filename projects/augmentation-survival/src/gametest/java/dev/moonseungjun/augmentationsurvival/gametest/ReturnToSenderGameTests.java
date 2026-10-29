@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -20,7 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
-/** Regression coverage for replacement-projectile Return to Sender, including a real shield block. */
+/** Regression coverage for replacement-projectile Return to Sender, including the vanilla shield pipeline. */
 public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
@@ -45,42 +46,46 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                 .withNoFreeWill()
                 .spawn();
         Vec3 blockDirection = player.getLookAngle().normalize();
-        Arrow[] original = new Arrow[1];
 
-        // Give the real shield-use state enough time to become authoritative before impact.
+        // Let vanilla establish the shield-use state, then enter through LivingEntity.hurtServer.
+        // This tests real shield classification without relying on server-side projectile movement,
+        // which connected GameTest players do not reproduce deterministically.
         GameTestPlayers.runAfterDelay(helper, 6, () -> {
-            Arrow arrow = new Arrow(
+            Arrow original = new Arrow(
                     player.level(),
                     player.getX(),
                     player.getEyeY(),
-                    player.getZ() + 3.5D,
+                    player.getZ() + 2.0D,
                     Items.ARROW.getDefaultInstance(),
                     null
             );
-            arrow.setOwner(skeleton);
-            arrow.setDeltaMovement(blockDirection.scale(-INPUT_SPEED));
-            require(player.level().addFreshEntity(arrow), "incoming shield-test arrow failed to spawn");
-            original[0] = arrow;
+            original.setOwner(skeleton);
+            original.setDeltaMovement(blockDirection.scale(-INPUT_SPEED));
+            require(player.level().addFreshEntity(original), "incoming shield-test arrow failed to spawn");
 
-            GameTestPlayers.runAfterDelay(helper, 5, () -> {
-                require(original[0].isRemoved(),
-                        "the projectile that physically struck the shield was not discarded");
-                List<Arrow> reflected = player.level().getEntitiesOfClass(
-                        Arrow.class,
-                        player.getBoundingBox().inflate(20.0D),
-                        candidate -> candidate.getOwner() == player
-                );
-                require(!reflected.isEmpty(),
-                        "actual shield collision did not spawn a player-owned replacement arrow");
-                Arrow replacement = reflected.getFirst();
-                require(replacement != original[0],
-                        "Return to Sender reused the collision object instead of replacing it");
-                require(replacement.getDeltaMovement().length() > 1.5D,
-                        "replacement arrow lost the level-three reflection speed");
-                require(replacement.getDeltaMovement().normalize().dot(blockDirection) > 0.95D,
-                        "replacement arrow did not travel along the block-time look direction");
-                GameTestPlayers.succeed(helper);
-            });
+            float healthBefore = player.getHealth();
+            DamageSource source = player.damageSources().arrow(original, skeleton);
+            player.hurtServer((ServerLevel) player.level(), source, 4.0F);
+
+            require(Math.abs(player.getHealth() - healthBefore) <= 1.0E-4F,
+                    "vanilla shield pipeline did not block the incoming arrow damage");
+            require(original.isRemoved(),
+                    "the projectile processed by the shield pipeline was not discarded");
+            List<Arrow> reflected = player.level().getEntitiesOfClass(
+                    Arrow.class,
+                    player.getBoundingBox().inflate(20.0D),
+                    candidate -> candidate.getOwner() == player
+            );
+            require(!reflected.isEmpty(),
+                    "actual shield block did not spawn a player-owned replacement arrow");
+            Arrow replacement = reflected.getFirst();
+            require(replacement != original,
+                    "Return to Sender reused the collision object instead of replacing it");
+            require(replacement.getDeltaMovement().length() > 1.5D,
+                    "replacement arrow lost the level-three reflection speed");
+            require(replacement.getDeltaMovement().normalize().dot(blockDirection) > 0.95D,
+                    "replacement arrow did not travel along the block-time look direction");
+            GameTestPlayers.succeed(helper);
         });
     }
 

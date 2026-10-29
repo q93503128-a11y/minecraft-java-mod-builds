@@ -49,19 +49,27 @@ public final class HeroSurvivalPlaytestGameTests implements CustomTestMethodInvo
         require(invulnerableTicks == 60,
                 "last stand playtest contract drifted from the intended 3-second window");
 
-        GameTestPlayers.runAfterDelay(helper, invulnerableTicks - 1L, () -> {
+        // GameTest delayed callbacks run on the server tick boundary, so sample with a safety tick
+        // inside the window rather than assuming callback tick N is world-time N exactly.
+        GameTestPlayers.runAfterDelay(helper, invulnerableTicks - 3L, () -> {
+            require(level.getGameTime() < triggeredAt + invulnerableTicks,
+                    "inside-window Last Stand sample ran after the configured expiry");
             player.setHealth(5.0F);
             player.hurtServer(level, player.damageSources().generic(), 1.0F);
             requireClose(player.getHealth(), 5.0F, 1.0E-6F,
                     "last stand invulnerability ended before the 3-second window completed");
 
-            GameTestPlayers.runAfterDelay(helper, 2L, () -> {
+            GameTestPlayers.runAfterDelay(helper, 5L, () -> {
+                require(level.getGameTime() >= triggeredAt + invulnerableTicks,
+                        "post-window Last Stand sample ran before the configured expiry");
                 player.setHealth(5.0F);
+                player.invulnerableTime = 0;
                 player.hurtServer(level, player.damageSources().generic(), 1.0F);
                 require(player.getHealth() < 5.0F,
                         "last stand invulnerability remained active after its 3-second window");
 
                 player.setHealth(2.0F);
+                player.invulnerableTime = 0;
                 lethalDamage(player);
                 require(player.isDeadOrDying(),
                         "last stand retriggered while its 180-second cooldown was still active");

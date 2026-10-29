@@ -67,7 +67,6 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
         Vec3 desired = neutral.getBoundingBox().getCenter().subtract(arrow.position()).normalize();
         double dotBefore = before.dot(desired);
 
-        // Enter through AbstractArrow.tick itself. The production mixin must initialize and steer it.
         arrow.tick();
 
         ProjectileRuntimeState runtime = ((ProjectileRuntimeCarrier) arrow)
@@ -87,7 +86,6 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
         require(first.dot(neutral.getBoundingBox().getCenter().subtract(arrow.position()).normalize()) > dotBefore,
                 "actual arrow tick did not improve aim toward the acquired target");
 
-        // A descending trajectory must keep tracking instead of only steering at spawn/ricochet time.
         neutral.setPos(neutral.getX() + 1.0D, neutral.getY(), neutral.getZ());
         double speed = arrow.getDeltaMovement().length();
         arrow.setDeltaMovement(first.x * speed, -0.30D, first.z * speed);
@@ -121,9 +119,9 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
         FluidState water = Blocks.WATER.defaultBlockState().getFluidState();
         require(water.is(FluidTags.WATER), "water-run regression setup did not produce water fluid state");
 
-        // Player.tick is the production entry that records sprint intent; canStandOnFluid is the
-        // vanilla fluid collision boundary modified by Water Run.
+        // HEAD captures the sprint intent before vanilla may clear the flag at a fluid edge.
         player.tick();
+        player.setDeltaMovement(0.18D, 0.0D, 0.0D);
         require(player.canStandOnFluid(water),
                 "sprinting player with real horizontal travel could not stand on water after an actual player tick");
 
@@ -133,13 +131,16 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
                 "water run did not bridge the intended short sprint-edge grace");
 
         GameTestPlayers.runAfterDelay(helper, 4L, () -> {
+            player.setSprinting(false);
             player.setDeltaMovement(0.18D, 0.0D, 0.0D);
             require(!player.canStandOnFluid(water),
                     "water run continued from residual velocity after sprint intent and grace ended");
 
             player.setSprinting(true);
             player.setShiftKeyDown(true);
+            player.setDeltaMovement(0.18D, 0.0D, 0.0D);
             player.tick();
+            player.setDeltaMovement(0.18D, 0.0D, 0.0D);
             require(!player.canStandOnFluid(water),
                     "crouching player incorrectly retained water-run support");
             require(!player.canStandOnFluid(Blocks.LAVA.defaultBlockState().getFluidState()),
@@ -150,19 +151,21 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
 
     @GameTest
     public void repairedAugmentDescriptionsMatchLiveBehaviorAndHideInternalTerms(GameTestHelper helper) {
-        String[] ids = {
-                "reroll", "return_to_sender", "portable_riptide", "retrace", "delayed_damage",
-                "last_stand", "wall_slam", "aerial_combo", "temporary_platform", "tracking_arrow", "water_run"
+        String[] augmentIds = {
+                AugmentCatalog.REROLL_ID,
+                id("return_to_sender"), id("portable_riptide"), id("retrace"), id("delayed_damage"),
+                id("last_stand"), id("wall_slam"), id("aerial_combo"), id("temporary_platform"),
+                id("tracking_arrow"), id("water_run")
         };
-        for (String path : ids) {
-            AugmentPresentationCatalog.Entry entry = AugmentPresentationCatalog.get(AugmentCatalog.require(id(path)));
+        for (String augmentId : augmentIds) {
+            AugmentPresentationCatalog.Entry entry = AugmentPresentationCatalog.get(AugmentCatalog.require(augmentId));
             String text = (entry.summary() + " " + entry.detail()).toLowerCase(Locale.ROOT);
             for (String forbidden : new String[]{"root", "derived", "p0", "debug"}) {
                 require(!text.contains(forbidden),
-                        path + " player-facing description leaked internal term " + forbidden + ": " + text);
+                        augmentId + " player-facing description leaked internal term " + forbidden + ": " + text);
             }
             require(!entry.summary().isBlank() && !entry.detail().isBlank(),
-                    path + " has an empty player-facing summary/detail");
+                    augmentId + " has an empty player-facing summary/detail");
         }
 
         String tracking = detail("tracking_arrow");

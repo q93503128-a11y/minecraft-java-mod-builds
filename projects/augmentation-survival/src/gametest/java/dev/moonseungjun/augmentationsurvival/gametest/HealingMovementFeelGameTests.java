@@ -33,7 +33,6 @@ public final class HealingMovementFeelGameTests implements CustomTestMethodInvok
         float healthBefore = player.getHealth();
         float targetBefore = target.getHealth();
 
-        // Enter through LivingEntity.heal, not AugmentHealingService.healPrimary.
         player.heal(4.0F);
 
         require(player.getHealth() > healthBefore,
@@ -46,6 +45,9 @@ public final class HealingMovementFeelGameTests implements CustomTestMethodInvok
     @GameTest
     public void stationaryDoubleJumpUsesConfiguredVerticalImpulseWithoutForcedForwardMotion(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        // Double Jump is charged by reset contact. Make that state explicit before moving airborne;
+        // connected GameTest players do not receive normal client movement packets.
+        player.setOnGround(true);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("double_jump"), 1)
@@ -60,7 +62,7 @@ public final class HealingMovementFeelGameTests implements CustomTestMethodInvok
                 .augmentationSurvival$invokeGetJumpPower()
                 * MovementTuning.current().doubleJumpVerticalMultiplier();
         require(MovementAugmentService.tryAirJump(player),
-                "owned Double Jump rejected its stationary airborne use");
+                "owned Double Jump rejected its charged stationary airborne use");
 
         Vec3 after = player.getDeltaMovement();
         require(Math.abs(after.x) < 1.0E-8D && Math.abs(after.z) < 1.0E-8D,

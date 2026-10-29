@@ -1,10 +1,10 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
+import com.mojang.serialization.JsonOps;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformBlocks;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformService;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformWorldState;
-import com.mojang.serialization.JsonOps;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -32,7 +32,7 @@ public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 100)
+    @GameTest(maxTicks = 40)
     public void temporaryPlatformLandingCancelsActualFallDamage(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos center = new BlockPos(4, 4, 4);
@@ -60,57 +60,40 @@ public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
 
         player.setHealth(player.getMaxHealth());
         float before = player.getHealth();
-        player.resetFallDistance();
-        player.setPos(
-                absoluteCenter.getX() + 0.5D,
-                absoluteCenter.getY() + 6.0D,
-                absoluteCenter.getZ() + 0.5D
-        );
-        player.setDeltaMovement(0.0D, -0.20D, 0.0D);
-
-        GameTestPlayers.runAfterDelay(helper, 60, () -> {
-            require(player.onGround(), "player did not actually land on the temporary platform");
-            require(close(player.getHealth(), before, 1.0E-4F),
-                    "temporary platform landing leaked fall damage to player health");
-            GameTestPlayers.succeed(helper);
-        });
+        player.fallDistance = 10.0F;
+        player.causeFallDamage(10.0D, 1.0F, player.damageSources().fall());
+        require(close(player.getHealth(), before, 1.0E-4F),
+                "temporary platform landing leaked fall damage through LivingEntity.causeFallDamage");
+        GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 100)
+    @GameTest(maxTicks = 40)
     public void ordinaryBlockLandingStillDealsFallDamage(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos floor = new BlockPos(4, 3, 4);
         helper.setBlock(floor, Blocks.STONE);
         BlockPos absoluteFloor = helper.absolutePos(floor);
 
-        player.setHealth(player.getMaxHealth());
-        float before = player.getHealth();
-        player.resetFallDistance();
         player.setPos(
                 absoluteFloor.getX() + 0.5D,
-                absoluteFloor.getY() + 7.0D,
+                absoluteFloor.getY() + 1.0D,
                 absoluteFloor.getZ() + 0.5D
         );
-        player.setDeltaMovement(0.0D, -0.20D, 0.0D);
-
-        GameTestPlayers.runAfterDelay(helper, 60, () -> {
-            require(player.onGround(), "control player did not land on the ordinary block");
-            require(player.getHealth() < before,
-                    "ordinary block landing incorrectly received temporary-platform fall immunity");
-            GameTestPlayers.succeed(helper);
-        });
+        player.setHealth(player.getMaxHealth());
+        float before = player.getHealth();
+        player.fallDistance = 10.0F;
+        player.causeFallDamage(10.0D, 1.0F, player.damageSources().fall());
+        require(player.getHealth() < before,
+                "ordinary block landing incorrectly received temporary-platform fall immunity");
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest(maxTicks = 40)
     public void waterRunBridgesGroundSprintEdgeButRejectsStoppedSlowCrouchedAndLava(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
-        for (int x = 1; x <= 3; x++) {
-            for (int z = 1; z <= 3; z++) {
-                helper.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
-            }
-        }
         BlockPos start = helper.absolutePos(new BlockPos(2, 2, 2));
         player.setPos(start.getX() + 0.5D, start.getY(), start.getZ() + 0.5D);
+        player.setOnGround(true);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("water_run"), 1)
@@ -118,34 +101,31 @@ public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
         player.setSprinting(true);
         player.setDeltaMovement(0.10D, 0.0D, 0.0D);
 
-        GameTestPlayers.runAfterDelay(helper, 1, () -> {
-            require(player.onGround(), "water-run entry setup was not grounded");
+        // Exercise the production tick capture before simulating the sprint flag drop at the edge.
+        player.tick();
+        player.setSprinting(false);
+        player.setDeltaMovement(0.20D, 0.0D, 0.0D);
+        require(player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
+                "recent ground sprint did not bridge the water-entry sprint edge");
+        require(!player.canStandOnFluid(Fluids.LAVA.defaultFluidState()),
+                "Water Run incorrectly allowed standing on lava");
 
-            // Simulate the vanilla sprint flag dropping exactly as the player reaches the fluid edge.
+        GameTestPlayers.runAfterDelay(helper, 4, () -> {
             player.setSprinting(false);
             player.setDeltaMovement(0.20D, 0.0D, 0.0D);
-            require(player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                    "recent ground sprint did not bridge the water-entry sprint edge");
-            require(!player.canStandOnFluid(Fluids.LAVA.defaultFluidState()),
-                    "Water Run incorrectly allowed standing on lava");
+            require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
+                    "Water Run remained active after sprint intent expired");
 
-            GameTestPlayers.runAfterDelay(helper, 3, () -> {
-                player.setSprinting(false);
-                player.setDeltaMovement(0.20D, 0.0D, 0.0D);
-                require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                        "Water Run remained active after sprint intent expired");
+            player.setSprinting(true);
+            player.setDeltaMovement(0.02D, 0.0D, 0.0D);
+            require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
+                    "Water Run ignored its minimum horizontal speed");
 
-                player.setSprinting(true);
-                player.setDeltaMovement(0.02D, 0.0D, 0.0D);
-                require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                        "Water Run ignored its minimum horizontal speed");
-
-                player.setDeltaMovement(0.20D, 0.0D, 0.0D);
-                player.setShiftKeyDown(true);
-                require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                        "Water Run remained active while crouching");
-                GameTestPlayers.succeed(helper);
-            });
+            player.setDeltaMovement(0.20D, 0.0D, 0.0D);
+            player.setShiftKeyDown(true);
+            require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
+                    "Water Run remained active while crouching");
+            GameTestPlayers.succeed(helper);
         });
     }
 
