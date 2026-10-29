@@ -30,17 +30,23 @@ jobs:
           cache: gradle
 
       - name: Verify toolchain
+        id: toolchain
         run: |
+          set -o pipefail
           chmod +x gradlew
-          java -version
-          ./gradlew --version
+          java -version 2>&1 | tee "$RUNNER_TEMP/augmentation-survival-toolchain.log"
+          ./gradlew --version 2>&1 | tee -a "$RUNNER_TEMP/augmentation-survival-toolchain.log"
 
       - name: Build and inspect pinned pack
+        id: build
+        shell: bash
         run: |
+          set -o pipefail
           ./gradlew --no-daemon clean build inspectPackDependencies verifyPackRuntimeClasspath \
-            -PaugmentationPackRuntime=true --stacktrace
+            -PaugmentationPackRuntime=true --stacktrace 2>&1 | tee "$RUNNER_TEMP/augmentation-survival-build.log"
 
       - name: Capture World Bosses localization contract
+        id: worldbosses_localization
         shell: bash
         run: |
           set -euo pipefail
@@ -90,6 +96,7 @@ jobs:
           PY
 
       - name: Audit external Korean localization
+        id: external_localization
         shell: bash
         run: |
           set -euo pipefail
@@ -253,6 +260,7 @@ jobs:
           PY
 
       - name: Dedicated server smoke test
+        id: server
         shell: bash
         run: |
           set -euo pipefail
@@ -324,6 +332,7 @@ jobs:
           sudo apt-get install -y xvfb
 
       - name: Client boot smoke test
+        id: client
         shell: bash
         run: |
           set -euo pipefail
@@ -392,8 +401,103 @@ jobs:
           echo 'AUGMENT_PACK_CLIENT_SMOKE_PASS'
 
       - name: Build verified Modrinth pack
+        id: mrpack
         run: |
           python3 tools/build_verified_mrpack.py
+
+      - name: Verify production JAR and write SHA-256
+        id: jar
+        if: success()
+        run: |
+          python3 tools/verify_production_jar.py
+
+      - name: Archive raw logs and write build report
+        if: always()
+        shell: bash
+        env:
+          RUN_SHA: ${{ github.sha }}
+          TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          WORLDBOSSES_OUTCOME: ${{ steps.worldbosses_localization.outcome }}
+          LOCALIZATION_OUTCOME: ${{ steps.external_localization.outcome }}
+          SERVER_OUTCOME: ${{ steps.server.outcome }}
+          CLIENT_OUTCOME: ${{ steps.client.outcome }}
+          MRPACK_OUTCOME: ${{ steps.mrpack.outcome }}
+          JAR_OUTCOME: ${{ steps.jar.outcome }}
+        run: |
+          set -euo pipefail
+          report_dir=build/reports/modpack
+          mkdir -p "$report_dir/raw-log-staging"
+          [[ ! -f "$RUNNER_TEMP/augmentation-survival-toolchain.log" ]] || cp "$RUNNER_TEMP/augmentation-survival-toolchain.log" "$report_dir/raw-log-staging/toolchain.log"
+          [[ ! -f "$RUNNER_TEMP/augmentation-survival-build.log" ]] || cp "$RUNNER_TEMP/augmentation-survival-build.log" "$report_dir/raw-log-staging/build.log"
+          if [[ -d "$report_dir" ]]; then
+            find "$report_dir" -maxdepth 1 -type f \( -name '*.log' -o -name '*.txt' \) -exec cp -f {} "$report_dir/raw-log-staging/" \;
+          fi
+          if ! find "$report_dir/raw-log-staging" -maxdepth 1 -type f -print -quit | grep -q .; then
+            echo 'No raw logs were produced before the workflow stopped.' > "$report_dir/raw-log-staging/NO_LOGS.txt"
+          fi
+          rm -f "$report_dir/raw-logs.zip"
+          (cd "$report_dir/raw-log-staging" && zip -q -j ../raw-logs.zip ./*)
+          rm -rf "$report_dir/raw-log-staging"
+          python3 - <<'PY'
+          import hashlib
+          import os
+          import re
+          from pathlib import Path
+
+          report_dir = Path('build/reports/modpack')
+          logs = Path(os.environ['RUNNER_TEMP'])
+          jar_line = 'NOT RUN'
+          jar_files = sorted(Path('build/libs').glob('augmentation-survival-*.jar'))
+          production = [path for path in jar_files if not path.name.endswith('-sources.jar')]
+          if production:
+              jar = production[-1]
+              digest = hashlib.sha256(jar.read_bytes()).hexdigest()
+              jar_line = f'{jar.name} — {jar.stat().st_size} bytes — SHA-256 `{digest}`'
+          pack_line = 'NOT RUN'
+          pack_sums = sorted(Path('build/distributions').glob('*.mrpack.sha256'))
+          if pack_sums:
+              pack_line = pack_sums[-1].read_text(encoding='utf-8').strip()
+
+          build_log = logs / 'augmentation-survival-build.log'
+          game_tests = 'not recorded'
+          if build_log.exists():
+              match = re.search(r'All (\d+) required tests passed', build_log.read_text(encoding='utf-8', errors='replace'))
+              if match:
+                  game_tests = f"{match.group(1)} required tests passed"
+
+          def result(name):
+              value = os.environ.get(name, 'skipped')
+              return 'PASS' if value == 'success' else ('NOT RUN' if value in ('skipped', '') else f'FAIL ({value})')
+
+          lines = [
+              '# Build and Runtime Report',
+              '',
+              '- Project: Augmentation Survival',
+              f"- Commit: `{os.environ['RUN_SHA']}`",
+              '- Toolchain: Temurin Java 25; Gradle 9.5.1 (wrapper)',
+              f"- Production JAR: {jar_line}",
+              f"- Modrinth pack SHA-256: `{pack_line}`",
+              '',
+              '## Verification',
+              '',
+              f"- Toolchain check: {result('TOOLCHAIN_OUTCOME')}",
+              f"- `clean build`, pack dependency checks, and GameTests: {result('BUILD_OUTCOME')} ({game_tests})",
+              f"- World Bosses localization capture: {result('WORLDBOSSES_OUTCOME')}",
+              f"- External Korean localization audit: {result('LOCALIZATION_OUTCOME')}",
+              f"- Dedicated server boot smoke: {result('SERVER_OUTCOME')}",
+              f"- Client boot smoke: {result('CLIENT_OUTCOME')}",
+              f"- Modrinth pack generation and verification: {result('MRPACK_OUTCOME')}",
+              f"- Production JAR structure and checksum: {result('JAR_OUTCOME')}",
+              '- Datagen: NOT RUN (no project datagen task is configured).',
+              '- Manual in-game UI/play testing, multiplayer testing, and profiling: NOT RUN.',
+              '',
+              'Raw toolchain, build, server, and client logs are included in `raw-logs.zip`; additional verification reports are alongside this file.',
+              '',
+          ]
+          (report_dir / 'BUILD_AND_RUNTIME_REPORT.md').write_text('\n'.join(lines), encoding='utf-8')
+          print('BUILD_RUNTIME_REPORT_WRITTEN')
+          PY
 
       - name: Upload verification reports
         if: always()
@@ -403,6 +507,7 @@ jobs:
           path: |
             projects/augmentation-survival/build/reports/modpack/**
             projects/augmentation-survival/build/libs/*.jar
+            projects/augmentation-survival/build/libs/*.sha256
             projects/augmentation-survival/build/distributions/**
           if-no-files-found: warn
           retention-days: 14

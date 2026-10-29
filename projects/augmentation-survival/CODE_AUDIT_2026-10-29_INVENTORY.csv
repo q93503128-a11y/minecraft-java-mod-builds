@@ -465,3 +465,4 @@
 "src/main/resources/assets/augmentation_survival/textures/item/epic_augment_core.png","REVIEWED — no issue"
 "src/main/resources/assets/augmentation_survival/textures/item/legendary_augment_core.png","REVIEWED — no issue"
 "src/main/resources/assets/augmentation_survival/textures/item/mythic_augment_core.png","REVIEWED — no issue"
+"tools/verify_production_jar.py","REVIEWED — no issue"
