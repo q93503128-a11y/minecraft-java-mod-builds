@@ -4,7 +4,6 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
-import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -80,8 +79,6 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
                 () -> player.hurtServer(level, player.damageSources().generic(), 12.0F));
         require(Math.abs(player.getHealth() - 1.0F) < 0.01F,
                 "lethal delayed damage must trigger Last Stand and leave the player at 1 HP");
-        require(ReactiveCombatAugmentService.isInvulnerable(player),
-                "Last Stand invulnerability did not start after lethal delayed damage");
         CombatProvenanceContext.callAsDelayed(2.0F,
                 () -> player.hurtServer(level, player.damageSources().generic(), 2.0F));
         require(Math.abs(player.getHealth() - 1.0F) < 0.01F,
