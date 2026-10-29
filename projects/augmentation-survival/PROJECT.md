@@ -219,16 +219,17 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 
 ## 현재 검증 상태
 
-최신 성공 CI checkpoint는 Build Augmentation Survival Pack #438 (run ID `40808710842`), commit `09852ced15db96cb1fd157a5853d5f47b80449b7`다. #438에서 Java 25.0.5+8 / Gradle 9.5.1 clean build, 77개 required GameTests, localization audit, dedicated-server/client boot smoke, 검증된 Modrinth pack 생성이 통과했다. 이 결과는 현재 감사 수정분을 포함하지 않는다.
+최신 성공 CI checkpoint는 Build Augmentation Survival Pack #441 (run ID `40811651532`), commit `477872f3967994bbcfc833f60bfb1aed27c0867b`다. Java 25 / Gradle 9.5.1 `clean build`, 77개 required GameTests, localization audit, dedicated-server/client boot smoke, 최종 JAR 구조·해시 검사, 검증된 Modrinth pack 생성이 통과했다. 결과 artifact `augmentation-survival-pack-smoke-441` (ID `12870627324`, 3,402,587 bytes)는 JAR, `.sha256`, `.mrpack`, `BUILD_AND_RUNTIME_REPORT.md`, `raw-logs.zip` 및 상세 보고서를 포함한다.
 
-2026-10-29 후속 전체 정적 파일 감사에서는 466개 source/config/resource 항목을 읽어 검토했고, 미검토 항목은 0개다. 18개 항목은 실제 런타임/외부 연동/렌더링 검증이 남아 있다. 추가 확인한 8개 결함과 수정 사항, JSON/언어/텍스처 검사 결과는 `FINAL_AUDIT_2026-10-29.md`에 기록했다. 로컬 `clean build`는 Java 25로 재시도했으나 Fabric Maven Loom fetch에서 `Unsupported or unrecognized SSL message`로 컴파일 전 중단되어 현재 수정 코드는 아직 빌드 검증되지 않았다. Build/CI, GameTest, 서버/클라이언트 smoke, 최종 JAR 검사와 artifact 생성은 새 CI 실행 결과를 기다린다.
+2026-10-29 후속 전체 정적 파일 감사에서는 467개 source/config/resource 항목을 읽어 검토했고, 미검토 항목은 0개다. 18개 항목은 실제 런타임/외부 연동/렌더링 검증이 남아 있다. 추가 확인한 8개 결함과 수정 사항, JSON/언어/텍스처 검사 결과는 `FINAL_AUDIT_2026-10-29.md`에 기록했다. 로컬 `clean build`는 Java 25로 재시도했으나 Fabric Maven Loom fetch에서 `Unsupported or unrecognized SSL message`로 컴파일 전 중단되었다. 이후 동일 수정 코드가 CI에서 빌드 및 런타임 smoke 검증을 통과했다.
 
-- CODE REVIEWED: YES — 466개 항목 모두 정적 검토; 18개 runtime-sensitive 항목은 후속 런타임 검증 필요
-- BUILD VERIFIED FOR CURRENT FIXES: NO — local resolution blocked before compilation; CI pending
-- LAST VERIFIED JAR / PACK: YES — Build #438 artifact is prior to current fixes
-- CURRENT GAME TESTS: NOT RUN — local dependency resolution stopped before compilation
-- LAST GAME TEST CHECKPOINT: YES — 77 required tests passed in #438
-- LOCALIZATION / SERVER / CLIENT BOOT: last passed in #438; current fixes pending CI verification
+- CODE REVIEWED: YES — 467개 항목 모두 정적 검토; 18개 runtime-sensitive 항목은 실제 플레이/렌더링 등 후속 검증 필요
+- BUILD VERIFIED FOR CURRENT FIXES: YES — Build #441, `477872f`
+- VERIFIED JAR: YES — 1,415,465 bytes; SHA-256 `d0f7f182e2943167c7af7f3f58cdd0b2329b938cd395885f0d20eb4b096437f5`
+- VERIFIED MODRINTH PACK: YES — Build #441; SHA-256 `561e0b17fd460c0e33085e0084c3ed3228f461ac60d8e1d4f1ac681737f41c2e`
+- CURRENT GAME TESTS: PASS — 77 required tests
+- LOCALIZATION / SERVER / CLIENT BOOT: PASS — Build #441
+- BUILD REPORT / RAW LOG ARCHIVE: PASS — artifact includes `BUILD_AND_RUNTIME_REPORT.md` and `raw-logs.zip`
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 

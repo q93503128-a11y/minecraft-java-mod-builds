@@ -141,26 +141,29 @@ PROFILER: NOT RUN
 
 This section records the continuation after Build #438. It supersedes the preceding “FULL SOURCE AUDIT COMPLETE: NO” label for **static file review only**; build and live validation remain separate.
 
-- Completed the tracked project source/config/resource inventory and included the two new Java persistence files: 466 distinct entries, 0 duplicate paths, 0 unread files. Status counts: 420 reviewed with no issue, 25 reviewed with issue fixes (including prior fixes), 18 reviewed but still requiring runtime/path validation, and 3 historical/test-only files.
+- Completed the tracked project source/config/resource inventory and included the two new Java persistence files: 467 distinct entries, 0 duplicate paths, 0 unread files. Status counts: 421 reviewed with no issue, 25 reviewed with issue fixes (including prior fixes), 18 reviewed but still requiring runtime/path validation, and 3 historical/test-only files. The production JAR verifier added for final packaging is included in this inventory.
 - Reviewed the project Java, Gradle/wrapper configuration, game-test sources and metadata, resource contracts, recipes, damage types, tags, models, item/block definitions, internal and external language assets, and authoritative `AUGMENTS.md`. The 18 runtime-validation entries are the GameTest/runtime-sensitive cases, Better Combat reflection and flight behavior, and screens that still need actual Minecraft rendering and interaction checks.
 - Confirmed 8 additional defects and applied fixes: temporary platform expiry records were not persisted across restart; reactive combat runtime data could survive player/session transitions; revive markers mixed dimension-local clocks with the Overworld clock; interrupted food-use snapshots could survive player departure; gigantification cleanup could raise a dying player's health; time-stop boundary state could outlive its player/server; passive-proc debounce timestamps could suppress effects after reconnect/world restart; and spatial-link search/page/snapshot selection changes could leave the rename field bound to an earlier gate name.
 - Temporary platform expiry/owner records now use a persistent Overworld attachment. A codec round-trip regression was added; an actual world save/reload and delayed dimension reload scenario remains NOT RUN.
 - Added cleanup for player/server lifecycle maps and unified revive marker comparisons on the Overworld game clock. Spatial-link selection changes now refresh the selected-name field.
 - Resource checks: all 74 main-resource JSON files parsed; internal Korean and English locale files have identical 39-key sets; the ten World Bosses Korean fragments contain 789 unique nonblank keys; eight encoded external-language chunks decode as a ZIP with 11 namespaces and 1,913 unique nonblank Korean entries; all eight mod item textures are 32×32 PNGs and every referenced internal texture exists.
 - `git diff --check`: PASS. Toolchain query reports Temurin Java 25.0.4.1 and Gradle 9.5.1. A first local clean-build attempt inherited a Java 8 path and stopped before Gradle work. Retried with the installed Java 25 runtime; `clean build --stacktrace` then stopped before project configuration completed because Gradle received `Unsupported or unrecognized SSL message` fetching Fabric Loom `1.17.20` from Fabric Maven. No source compilation occurred locally.
-- Build #438 / run `40808710842` still proves the earlier commit `09852ced15db96cb1fd157a5853d5f47b80449b7` only. It does not validate these current fixes. Current GameTests, dedicated-server/client smoke, JAR inspection, SHA-256 and verified-pack production are pending a CI run against the audited code.
+- Build #441 / run `40811651532` passed against audit commit `477872f3967994bbcfc833f60bfb1aed27c0867b`: Java 25 / Gradle 9.5.1 `clean build`, pack dependency checks, 77 required GameTests, localization audit, dedicated-server smoke, client boot smoke, verified Modrinth pack generation and production JAR inspection/checksum.
+- The production JAR is `augmentation-survival-0.1.0-alpha.1.jar`, 1,415,465 bytes, SHA-256 `d0f7f182e2943167c7af7f3f58cdd0b2329b938cd395885f0d20eb4b096437f5`. Inspection passed: 538 compiled classes, 45 internal asset entries, 41 internal data entries, loader metadata/manifest consistent with project pins, no duplicate entries, and no source/docs payload.
+- Verified Modrinth pack SHA-256: `561e0b17fd460c0e33085e0084c3ed3228f461ac60d8e1d4f1ac681737f41c2e`. Artifact `augmentation-survival-pack-smoke-441`, ID `12870627324`, size 3,402,587 bytes, includes the JAR sidecar, pack, `BUILD_AND_RUNTIME_REPORT.md`, `raw-logs.zip`, client/server logs, and localization reports.
 - Actual Minecraft screen review, full gameplay playtest, multiplayer save/reconnect checks, external-mod encounter testing, and profiler measurements remain NOT RUN. UI screens are reviewed at source level; visual completion is not claimed.
 
-### Verification labels before the next CI run
+### Final verification labels
 
 ```text
-INVENTORY FILES: 466
+INVENTORY FILES: 467
 INVENTORY UNREAD: 0
 FULL STATIC FILE REVIEW: YES
 RUNTIME-SENSITIVE REVIEW ITEMS: 18 (listed in CODE_AUDIT_2026-10-29_INVENTORY.csv)
 LOCAL CLEAN BUILD: BLOCKED before compilation (Fabric Maven TLS response)
-CURRENT CODE CI / GAMETEST / SERVER / CLIENT / JAR / PACK: NOT RUN
-LAST SUCCESSFUL CI CHECKPOINT: Build #438, commit 09852ced (prior code)
+CURRENT CODE CI / GAMETEST / SERVER / CLIENT / JAR / PACK: PASS (Build #441, commit 477872f)
+PRODUCTION JAR: PASS (538 classes; SHA-256 recorded above)
+RAW LOG ARCHIVE / BUILD REPORT: PASS (included in artifact 12870627324)
 PLAYTESTED: NO
 MULTIPLAYER TESTED: NO
 PROFILER: NOT RUN
