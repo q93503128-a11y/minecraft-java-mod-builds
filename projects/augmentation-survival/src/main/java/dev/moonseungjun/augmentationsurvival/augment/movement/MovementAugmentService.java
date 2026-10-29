@@ -144,7 +144,8 @@ public final class MovementAugmentService {
         }
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        if (boundedLevel(state, DOUBLE_JUMP_ID) <= 0) {
+        if (boundedLevel(state, DOUBLE_JUMP_ID) <= 0
+                && boundedLevel(state, AERIAL_COMBO_ID) <= 0) {
             return false;
         }
 
@@ -184,9 +185,7 @@ public final class MovementAugmentService {
         }
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(attacker);
-        if (boundedLevel(state, AERIAL_COMBO_ID) <= 0
-                || boundedLevel(state, DOUBLE_JUMP_ID) <= 0
-                || isResetContact(attacker)) {
+        if (boundedLevel(state, AERIAL_COMBO_ID) <= 0 || isResetContact(attacker)) {
             return;
         }
 
