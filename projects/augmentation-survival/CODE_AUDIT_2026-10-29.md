@@ -6,7 +6,7 @@
 
 프로젝트 내부 코드/설정 inventory는 447개 파일이다. 이 중 Java 364개, JSON 75개, Gradle 2개, properties 2개, 재식재 function 1개, Python 도구 1개, Gradle wrapper 2개다. 상세 경로별 판정은 [`CODE_AUDIT_2026-10-29_INVENTORY.csv`](CODE_AUDIT_2026-10-29_INVENTORY.csv)에 기록했다.
 
-**전체 전수 감사는 완료되지 않았다.** inventory의 현재 상태는 447개 중 249개 판정(15개 결함 수정, 4개 추가 검증 필요), 198개 미검토다. 따라서 `FULL SOURCE AUDIT COMPLETE: NO`다. Mixin 137개는 모두 파일 전체 검토 상태지만 client, augment 서비스, GameTest, 리소스 등에 미검토 파일이 남아 있다. 미확인 파일을 검토 완료로 계산하지 않았다.
+**전체 전수 감사는 완료되지 않았다.** inventory의 현재 상태는 447개 중 249개 판정(15개 결함 수정, 5개 추가 검증 필요), 198개 미검토다. 따라서 `FULL SOURCE AUDIT COMPLETE: NO`다. Mixin 137개는 모두 파일 전체 검토 상태지만 client, augment 서비스, GameTest, 리소스 등에 미검토 파일이 남아 있다. 미확인 파일을 검토 완료로 계산하지 않았다.
 
 ## 확인한 결함과 수정
 
@@ -62,8 +62,9 @@ offer 만료는 API 호출 때만 확인되어 만료 뒤 재방문하지 않은
 - Java 확인: 임시 설치한 Temurin 25.0.5+8
 - Gradle 확인: wrapper Gradle 9.5.1
 - `git diff --check`: PASS
-- `clean build`: BLOCKED. Java 25 환경에서 Gradle 설정 단계가 Fabric Loom `1.17.20` POM을 `maven.fabricmc.net`에서 받지 못했고 `Unsupported or unrecognized SSL message`로 끝났다. 컴파일 단계까지 도달하지 못했다.
-- 이번 변경 GameTest: NOT RUN — 로컬 빌드 의존성 해석 차단. 새 GameTest 중 여러 개는 실제 damage/save/menu 동작을 거치지만, active kill 이벤트는 invoker를 직접 호출하고 compatibility policy는 helper만 검증한다. 이에 해당 인벤토리 행은 runtime 검증 필요로 남겼다.
+- 로컬 `clean build`: BLOCKED. Java 25 환경에서 Gradle 설정 단계가 Fabric Loom `1.17.20` POM을 `maven.fabricmc.net`에서 받지 못했고 `Unsupported or unrecognized SSL message`로 끝났다.
+- GitHub Build Augmentation Survival Pack #436 (`40808323457`): `compileJava` PASS; `compileGametestJava` FAIL — `DominationPlaytestGameTests.java:56`의 `ServerLevel` import 누락. 해당 import를 수정했으며 후속 CI에서 검증한다. GameTest 실행, 서버/client smoke, pack 생성은 이 compile failure 때문에 건너뛰었다.
+- 이번 변경 GameTest: NOT RUN. 새 GameTest 중 여러 개는 실제 damage/save/menu 동작을 거치지만, healing 증강 테스트는 `AugmentHealingService`를 직접 호출하며, active kill 이벤트는 invoker를 직접 호출하고 compatibility policy는 helper만 검증한다. 이에 해당 인벤토리 행은 runtime/path 검증 필요로 남겼다.
 - Historical authoritative Build Augmentation Survival Pack #431 (`40795138452`, gameplay HEAD `3ecf999d36a3c067a77d6a3ff87aa5fe7657577e`): 74 GameTests PASS, build/localization audit/dedicated-server smoke/client boot smoke/verified Modrinth pack PASS. 이는 이번 변경의 검증으로 계산하지 않는다.
 - Datagen: NOT RUN — 프로젝트에 datagen task 미구성
 - 전용 서버 smoke: NOT RUN

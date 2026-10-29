@@ -15,7 +15,7 @@
 "src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/DominationBehaviorGameTests.java","REVIEWED — no issue"
 "src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/DominationPlaytestGameTests.java","REVIEWED — issue fixed"
 "src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/GameTestPlayers.java","REVIEWED — no issue"
-"src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/HealingInteractionGameTests.java","REVIEWED — no issue"
+"src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/HealingInteractionGameTests.java","REVIEWED — suspicious, needs runtime validation"
 "src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/HeroSurvivalPlaytestGameTests.java","UNREAD"
 "src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/InstantMiningBoundaryGameTests.java","UNREAD"
 "src/gametest/java/dev/moonseungjun/augmentationsurvival/gametest/MovementEdgeCaseGameTests.java","UNREAD"
