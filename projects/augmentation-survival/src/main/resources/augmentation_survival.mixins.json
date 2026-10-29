@@ -45,5 +45,7 @@
     "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin",
     "AugmentDeviceCardPresentationMixin"
   ],
-  "injectors": {"defaultRequire": 1}
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
