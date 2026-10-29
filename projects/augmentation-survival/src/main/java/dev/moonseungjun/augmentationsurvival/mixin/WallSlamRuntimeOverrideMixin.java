@@ -25,6 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = FinalAugmentRuntimeService.class, remap = false)
 abstract class WallSlamRuntimeOverrideMixin {
     @Shadow @Final private static Map<UUID, Object> WALL_SLAMS;
+    @Unique private static final double AUGMENTATION_SURVIVAL$FORGIVING_WALL_REACH = 0.85D;
 
     @Inject(method = "tickWallSlams", at = @At("HEAD"), cancellable = true)
     private static void augmentationSurvival$tickForgivingWallSlams(MinecraftServer server, CallbackInfo ci) {
@@ -69,7 +70,7 @@ abstract class WallSlamRuntimeOverrideMixin {
     private static boolean augmentationSurvival$isAtWall(LivingEntity target) {
         if (target.horizontalCollision) return true;
         AABB box = target.getBoundingBox();
-        double reach = 0.22D;
+        double reach = AUGMENTATION_SURVIVAL$FORGIVING_WALL_REACH;
         return !target.level().noCollision(target, box.move(reach, 0.0D, 0.0D))
                 || !target.level().noCollision(target, box.move(-reach, 0.0D, 0.0D))
                 || !target.level().noCollision(target, box.move(0.0D, 0.0D, reach))
