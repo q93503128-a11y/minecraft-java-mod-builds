@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "status": "canonical-initial-implementation-baseline",
-  "runtime_active": false,
+  "runtime_active": true,
   "exact_weights_defined": true,
   "purpose": "Define server-authoritative personal augmentation-core rewards for boss content while preserving original boss rewards.",
   "reward_bands": [

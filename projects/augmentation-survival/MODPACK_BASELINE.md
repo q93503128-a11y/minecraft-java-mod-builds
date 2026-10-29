@@ -106,7 +106,7 @@ Modrinth Maven의 전이 dependency만 믿지 않고 실제 `fabric.mod.json`을
 
 ## 5. 실제 JAR에서 확인한 연동 표면
 
-Run 5에서 총 22개 외부 JAR을 실제 resolve하고 Fabric metadata와 데이터 엔트리를 검사했다. LambDynamicLights 추가 후 공식 pin은 23개이며, 새 23개 조합은 별도 smoke verification 대상이다.
+Run 5에서는 22개 외부 JAR을 resolve했다. 이후 LambDynamicLights를 추가해 official pin은 23개가 되었으며, 최신 Build #431에서 pinned dependency inspection과 full-pack dedicated-server/client smoke가 통과했다. 실제 게임에서 동적 조명 동작과 외부 모드별 gameplay/visual 호환을 확인하는 일은 남아 있다.
 
 Run 5 대표 결과:
 
@@ -138,7 +138,7 @@ Run 5 대표 결과:
 - `data/augmentation_survival/augmentation/core_distribution_contract.json`
 - `data/augmentation_survival/augmentation/boss_core_reward_contract.json`
 
-둘 다 현재는 `runtime_active=false`이며 실제 코어 아이템/드랍 시스템 구현 전의 설계 계약이다.
+세 계약은 현재 구조물·적대몹·이벤트·낚시 및 보스 코어 보상 runtime에서 읽는다. `core_distribution_contract.json`, `boss_core_reward_contract.json`, `core_source_profiles.json`의 `runtime_active` 값은 실제 활성 상태를 표시하며, source identity 해석은 `core_source_profiles.json`과 `entity_compatibility_profiles.json`이 담당한다.
 
 ## 7. 외부 모드 수정 정책
 
@@ -202,7 +202,7 @@ World Bosses처럼 ARR인 모드는 JAR 수정/재배포를 하지 않는다. Ch
 
 ## 10. 현재 추적할 비차단 문제
 
-- LambDynamicLights: 새 client-only pin. 23-artifact 조합의 client smoke에서 실제 dynamic-light 초기화 및 기존 렌더링 모드 충돌 여부 확인 필요.
+- LambDynamicLights: client-only pin. 23-artifact client boot smoke는 #431에서 통과; 실제 dynamic-light 표현과 기존 렌더링 모드 공존은 플레이테스트 필요.
 - Illager Invasion: Fabric에서 NeoForge 전용 `neoforge:acceptable_villager_distances` data-map을 무시한다. 실제 주민 감지거리 기능차는 플레이테스트 필요.
 - Naturalist: 선택적 Field Guide 클래스가 없을 때 mixin target-not-found 경고가 3개 발생한다. client smoke는 통과.
 - World Bosses: client resource load에서 `worldbreaker_*` 도구의 particle texture reference와 `varkhul_trophy`의 `minecraft:block/magma_block` 참조 경고가 발생했다. 실제 화면에서 깨지는지 시각 검수 필요.
@@ -212,17 +212,19 @@ World Bosses처럼 ARR인 모드는 JAR 수정/재배포를 하지 않는다. Ch
 
 ## 11. 현재 상태
 
+최신 자동 검증은 Build Augmentation Survival Pack #431 (run ID `40795138452`)이다. 실제 job log에서 workflow의 `build` task graph가 `compileGametestJava`, `processGametestResources`, `gametestClasses`, `runGameTest`를 실행했으며, 74개 required GameTest가 모두 통과했다. 23 pinned dependency 검사, build, dedicated-server smoke, client boot smoke와 검증된 Modrinth pack 생성도 통과했다. 이 후속 turn에서는 이를 재실행하지 않았다. 수동 플레이 검증 상태는 `FINAL_AUDIT_2026-10-29.md` 참조.
+
 - VERSION/PIN RESEARCHED: YES
 - CURRENT PIN COUNT: 23 external artifacts
-- JAR METADATA/DATA REVIEWED: YES — previous 22-artifact baseline
-- BUILD VERIFIED: YES — previous Run 5 baseline
-- JAR PRODUCED: YES — previous Run 5 artifact
-- PACK SERVER SMOKE TESTED: YES / PASS — previous 22-artifact baseline
-- PACK CLIENT SMOKE TESTED: YES / PASS — previous 22-artifact baseline
-- LAMBDYNAMICLIGHTS 23-ARTIFACT SMOKE TESTED: NO
+- JAR METADATA/DATA REVIEWED: YES — Build #431 handoff
+- BUILD VERIFIED: YES — Build #431 handoff
+- JAR PRODUCED: YES — verified Modrinth pack from Build #431 handoff
+- PACK SERVER SMOKE TESTED: YES / PASS — Build #431 handoff
+- PACK CLIENT BOOT SMOKE TESTED: YES / PASS — Build #431 handoff; visual gameplay remains untested
+- LAMBDYNAMICLIGHTS 23-ARTIFACT CLIENT BOOT SMOKE: YES — Build #431 handoff; dynamic-light visual behavior not playtested
 - BOSS PACK SERVER/CLIENT CO-LOAD: YES / PASS — previous 22-artifact baseline
 - BOSS CORE REWARD CONTRACT ADDED: YES
-- CORE LOOT INTEGRATION IMPLEMENTED: NO
+- CORE LOOT INTEGRATION IMPLEMENTED: YES — structure, hostile/event, fishing and boss runtime services
 - WORLDGEN DENSITY/VISUAL TESTED: NO
 - BOSS GAMEPLAY TESTED: NO
 - BETTER COMBAT + AUGMENT INTERACTION TESTED: NO

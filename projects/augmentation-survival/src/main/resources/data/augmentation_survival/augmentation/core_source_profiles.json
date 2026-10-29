@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "canonical-source-resolution-baseline",
-  "runtime_active": false,
+  "runtime_active": true,
   "purpose": "Map structure, hostile, event, and boss sources onto the canonical core distribution and boss reward contracts without hardcoding balance weights in runtime code.",
   "contract_refs": {
     "distribution": "augmentation_survival:augmentation/core_distribution_contract.json",

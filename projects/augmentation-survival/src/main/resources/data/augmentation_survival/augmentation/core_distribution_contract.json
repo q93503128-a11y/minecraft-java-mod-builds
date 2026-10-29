@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "status": "canonical-initial-implementation-baseline",
-  "runtime_active": false,
+  "runtime_active": true,
   "exact_weights_defined": true,
   "design_rule": "A content source maps to a tier distribution, never to exactly one fixed tier.",
   "tiers": [

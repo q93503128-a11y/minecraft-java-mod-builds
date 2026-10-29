@@ -19,28 +19,26 @@
 - Official pack candidate mods: `MODPACK_BASELINE.md` 참조
 - Forbidden bundled dependencies: 재배포 권한이 불명확한 모드/자산을 저장소 JAR에 직접 번들하지 않는다. 외부 모드는 원본 배포처를 참조하는 모드팩 의존성으로 관리한다.
 - Datagen task: 아직 미구성
-- GameTest task: 아직 미구성
+- GameTest task: Fabric API GameTest source set enabled; the `build` workflow task graph runs `runGameTest`
 - Server smoke-test task: `runPackServer -PaugmentationPackRuntime=true`
 - Client smoke-test task: `runPackClient -PaugmentationPackRuntime=true` + 실제 화면 검수
 
 ## 현재 상태
 
-`M1C CORE ECONOMY + DEVICE + SHARED GAMEPLAY RUNTIMES / SAVE-WIDE THREAT + EXTERNAL BOSS COMPATIBILITY / 129-OF-146 GAMEPLAY RUNTIME VERIFIED`
+`149-AUGMENT RUNTIME ROSTER / GAMEPLAY IMPLEMENTATION COMPLETE / FINAL PLAYTEST AUDIT`
 
-외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현을 진행 중이다. 현재는 **146종 runtime catalog, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water와 실제 hostile stat application, 외부 보스 공통 identity adapter, 코어 획득 경로, 기본/강화 증강 장치, 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성, 세이브 전역 증강 저장소**까지 기능 기준선이 구현되어 있다.
+외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현이 완료되었다. 현재는 **149종 runtime catalog와 모든 확정 증강 효과의 런타임 연결**, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water와 실제 hostile stat application, 외부 보스 공통 identity adapter, 코어 획득 경로, 기본/강화 증강 장치, 서버 권한 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성, 세이브 전역 증강 저장소가 구현되어 있다. 최종 플레이테스트 전 UI/VFX/audio polish, multiplayer 검증, 실제 게임 내 조작감 검수는 별도 완료 조건이다. 상세 감사 결과는 `FINAL_AUDIT_2026-10-29.md`를 참조한다.
 
 Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource → harvest/drop → consumption/fishing/breeding → save-wide threat application → external boss compatibility → reactive/status/mobility/utility bulk → advanced utility/permanent progression → special temporal/mythic active → advanced active/interact → advanced world/control → area acceleration + normalized companions → perception/revive/external-heal/enchant-refresh → inventory/storage 순으로 공통 런타임 경계를 확장했다.
 
-현재 146종 기준 gameplay runtime 진행도:
+현재 149종 기준 gameplay runtime 진행도:
 
-- 완전 구현: **129 / 146**
-- 부분 구현: **3 / 146** — `전리품 챙기기`, `보물 낚시`, `풍요`
-- 완전 구현되지 않음: **17 / 146**
-- gameplay runtime 자체가 아직 없음: **14 / 146**
-- 최신 inventory/storage batch FULL 전진: **2종** — `주머니`, `원격 창고`
-- 이전 combined source pass FULL 전진: **8종** — `지배`, `영역 가속`, `광석 눈썰미`, `상자 찾기`, `위험 감지`, `소생`, `회복 증폭`, `마법 새로고침`
-- 이번 batch 신규 부분 구현: **0종**
-- 이전 source-consumer audit에서 기존 완전 구현으로 재분류: **1종** — `피해 적응`
+- 완전 구현: **149 / 149**
+- 부분 구현: **0 / 149**
+- 완전 구현되지 않음: **0 / 149**
+- gameplay runtime 자체가 아직 없는 증강: **0 / 149**
+
+`IMPLEMENTATION_STATUS_2026-10-24.md`와 `IMPLEMENTATION_STATUS_2026-10-25.md`는 각각 작성 당시의 146종 작업 체크포인트를 보존하는 역사 기록이며 현재 로스터 상태로 사용하지 않는다. 현재 정본 로스터는 `AUGMENTS.md`와 bundled catalog다.
 
 여기서 “완전 구현”은 canonical gameplay 효과의 runtime 구현을 뜻한다. 실제 플레이테스트, 최종 VFX/사운드/HUD/UI polish까지 끝났다는 뜻은 아니다.
 
@@ -114,9 +112,9 @@ Compatibility contract는 pull/swap/time-stop/stun/percent-HP/wall-impact/domina
 
 common active engine은 `정화`, `끌어당기기`, `자리 바꾸기`, `보호막`, `광폭화`, `치유 파동`, `방패 던지기`, `되감기`, `시간 가속`, `위상 이동`, `소생`, `영역 가속`과 `능력 가속`, `이중 충전`, `재연`, `전투 순환`, `연장전`을 처리한다. toggle routing은 `위협 억제`, `순간 채굴`, one-use routing은 `사망 지점 귀환`, no-cooldown concentration routing은 `귀환`, mythic/world routing은 `시간 정지`, `천벌`, `지배`, `거대화`를 처리한다.
 
-최신 검증 gameplay-code checkpoint `777f04c0f707f5b7255262ca11873805dfa4e41d`는 Build Augmentation Survival Pack #80 (`40153395848`)에서 build, 23개 pinned pack dependency inspection, 150-file runtime classpath verification, dedicated-server smoke, client boot smoke를 모두 통과했다. 서버는 92 mods, 클라이언트는 108 mods로 full-pack 부팅했다. 검증 artifact는 `augmentation-survival-pack-smoke-80` / ID `12584170120`, ZIP SHA-256 `2dbeccbe6b4c7d697a93eba10950e8d9a40f97dfec883b46184bca6869041141`이다.
+현재 로스터와 최근 자동검증 상태는 아래 `현재 검증 상태` 절과 `FINAL_AUDIT_2026-10-29.md`를 따른다. 이전 full-pack 검증 checkpoint의 상세 수치와 artifact SHA-256은 역사 기록으로 그 절에 보존한다.
 
-새 inventory/storage runtime과 이전 perception/revive/healing/enchant, area acceleration/normalized domination의 실제 조작감·표시·AI·회복/마법부여 edge case, 이전 액티브/투사체/이동/보스/threat 시스템과 multiplayer correctness는 아직 실제 플레이로 검증하지 않았다. 세부 구현 현황은 `IMPLEMENTATION_STATUS_2026-10-24.md`를 따른다.
+실제 Minecraft에서의 조작감·표시·AI·회복/마법부여 edge case, 액티브/투사체/이동/보스/threat 시스템, multiplayer correctness는 아직 플레이테스트되지 않았다. 남은 검증 범위는 `FINAL_AUDIT_2026-10-29.md`에 기록한다.
 
 ## 프로젝트 정체성
 
@@ -155,13 +153,14 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 ## 현재 확정된 핵심 규칙
 
 - 등급: `일반 → 고급 → 희귀 → 영웅 → 전설 → 신화`
-- 현재 확정 로스터: **146종**
+- 현재 확정 로스터: **149종**
   - 일반 20
   - 고급 27
-  - 희귀 30
-  - 영웅 40
+  - 희귀 31
+  - 영웅 41
   - 전설 20
-  - 신화 9
+  - 신화 10
+- `GAME_DESIGN.md`의 146종 수량은 2026-10-24 설계 시점 스냅샷이다. 현재 로스터와 효과는 `AUGMENTS.md` 및 `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`를 따른다.
 - 각 증강의 최대 레벨과 현재 효과는 `AUGMENTS.md`에 고정한다.
 - 등급별 증강 코어가 존재한다.
 - 증강 장치에 코어를 넣으면 같은 등급의 유효한 후보 3개를 제시한다.
@@ -179,17 +178,14 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 - 액티브는 일반 10칸 빠른 슬롯을 사용하고 `권능 탈취`는 별도 전용키 하나를 사용한다.
 - 월드 위협 단계는 지역/플레이어별이 아니라 **세이브 전체 공통 0~8**이다.
 
-아직 고정하지 않은 것:
+남은 플레이테스트 조정 항목:
 
 - 일부 구조물/외부 보스의 개별 risk/reward profile 세부 매핑
-- 일부 증강의 세부 파라미터 (`탄도 장막`, `임시 발판`, `생명 연결`, `작아지기`, `벽치기`)
-- `물약 확산`의 정확한 주변 범위
-- `손재주`의 비전투 수집 whitelist
-- `탄성 저장`의 낙하거리→추진력 환산 기준
 - 위협 단계 수치 테이블의 최종 플레이테스트 값
 - 코어 획득 확률의 최종 플레이테스트 튜닝 값
+- UI 미술 자산과 세부 연출
 
-현재 코어 획득 확률은 구현 가능한 초기 기준값으로 고정하고 실제 플레이테스트에서 조정한다.
+증강별 세부 파라미터는 `AUGMENTS.md`, `AUGMENT_INTERACTION_CONTRACT_2026-10-24.md`와 bundled tuning JSON에 고정되어 있다. 코어 획득 확률은 구현 가능한 초기 기준값이며 실제 플레이테스트에서 조정한다.
 
 ## 외부 모드 연동 계약
 
@@ -219,46 +215,33 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 10. HUD/VFX/animation/sound polish
 11. gameplay/performance/multiplayer validation
 
-현재 1~4 기능 기준선, 7번 공유 저장 baseline, 8번 save-wide threat gameplay application baseline, 9번의 핵심 external boss identity adapter baseline과 **129종 gameplay runtime**까지 구현되어 있다. 앞으로도 한 증강씩 독립 하드코딩하지 않고 현재 공통 기반으로 구현 가능한 쉬운/중간 난도 증강을 먼저 전수 분류하고, 같은 runtime boundary에 맞는 것은 한 번에 전부 연결하는 대형 묶음으로 진행한다.
-
-다음 pass는 남은 **14종 no-runtime**을 실제 source consumer와 다시 대조한 뒤 가장 밀도가 높은 공통 subsystem을 선택한다. 그중 고정 의미 no-runtime은 `마법 공명`, `분신`, `공간 연결`, `권능 탈취`, `길들이기 요령`, `휩쓸기 강화` 6종이다. `길들이기 요령`은 실제 종별 길들이기 확률 경계를 전수 연결할 수 있을 때만 FULL로 처리한다. 세부 의미가 아직 고정되지 않은 `손재주`, `물약 확산`, `탄성 저장`, `탄도 장막`, `임시 발판`, `생명 연결`, `작아지기`, `벽치기` 8종은 임의 수치나 동작을 만들어 넣지 않는다.
+149종 runtime roster 구현은 끝났다. 이후 작업은 새 증강 구현이 아니라 마지막 게임 내 검수, UI/VFX/audio polish, multiplayer 검증, 실제 플레이에서의 balance 및 feel 확인이다.
 
 ## 현재 검증 상태
 
-검증된 최신 gameplay-code 체크포인트:
+최신 자동검증 gameplay-code 체크포인트는 `3ecf999d36a3c067a77d6a3ff87aa5fe7657577e`다. Build Augmentation Survival Pack #431 (run ID `40795138452`)의 실제 job log에서 `build` task graph가 GameTest를 실행했고, 74개 required tests가 모두 통과했다. build, localization audit, dedicated-server smoke, client boot smoke, 검증된 Modrinth pack 생성도 #431에서 통과했다. 현재 `main` HEAD `588943b26b024e95a3a49e6da048723a73798862` 이후 gameplay checkpoint까지의 변경은 문서 동기화다. 이번 후속 turn에서는 build/CI, GameTest, 서버/클라이언트 부팅, 수동 플레이를 다시 실행하지 않았다.
 
-- CODE REVIEWED: YES
-- BUILD VERIFIED: YES — `777f04c0f707f5b7255262ca11873805dfa4e41d`
-- JAR PRODUCED: YES — Actions run `40153395848`
-- PACK DEPENDENCY INSPECTION: PASS — 23 pinned external artifacts
-- PACK RUNTIME CLASSPATH: PASS — 150 files
-- PACK SERVER SMOKE: PASS — 92 mods
-- PACK CLIENT SMOKE: PASS — 108 mods
-- CANONICAL AUGMENT CATALOG INITIALIZATION: PASS — 146 definitions
-- ENTITY COMPATIBILITY CONTRACT INITIALIZATION: PASS — 8 exact / 11 token / 1 dynamic
-- WORLD BOSSES LIVE REGISTRY PROFILE BINDING: PASS — 11 / 11
-- MCENDGAME DYNAMIC BOSS ADAPTER BINDING: PASS — 1 / 1
-- CHRONO DAWN EXACT BOSS PROFILE DEFINITIONS: PASS — 6
-- ENEMY SCALING CONTRACT INITIALIZATION: PASS — 9 stages / 4 native exact profiles / 0 namespace profiles
-- DOMINATION + AREA-ACCELERATION CONTRACT: PASS
-- PERCEPTION / REVIVE / EXTERNAL-HEAL / ENCHANT-REFRESH CONTRACT: PASS
-- POCKETS / REMOTE STORAGE CONTRACT: BUILD + FULL-PACK BOOT VERIFIED
-- GitHub Actions: `40153395848` / Build Augmentation Survival Pack #80
-- Verification artifact: `augmentation-survival-pack-smoke-80` / ID `12584170120`
-- Artifact ZIP SHA-256: `2dbeccbe6b4c7d697a93eba10950e8d9a40f97dfec883b46184bca6869041141`
+- CODE REVIEWED: YES — final audit at current main; coverage and open manual validation recorded in `FINAL_AUDIT_2026-10-29.md`
+- BUILD VERIFIED: YES — Build Augmentation Survival Pack #431 at gameplay HEAD `3ecf999d36a3c067a77d6a3ff87aa5fe7657577e` (handoff record)
+- JAR / PACK PRODUCED: YES — verified Modrinth pack produced by #431 (handoff record; artifact not downloaded in this audit)
+- GAME TESTED: YES — 74 required GameTests passed in Build #431, run `40795138452` (historical CI result; not rerun this turn)
+- LOCALIZATION AUDIT: YES — passed in #431 (handoff record)
+- DEDICATED SERVER SMOKE: YES — passed in #431 (handoff record)
+- CLIENT BOOT SMOKE: YES — passed in #431 (handoff record)
+- PLAYTESTED: NO
+- MULTIPLAYER TESTED: NO
+
+Older full-pack checkpoint retained as history: Build #80 (`40153395848`), artifact `augmentation-survival-pack-smoke-80` / ID `12584170120`, 146-definition catalog, 23 pinned external artifacts, 150-file runtime classpath, server with 92 mods, client with 108 mods; ZIP SHA-256 `2dbeccbe6b4c7d697a93eba10950e8d9a40f97dfec883b46184bca6869041141`.
 
 현재 구현 범위:
 
-- ROSTER LOCKED: YES — 146
-- GAMEPLAY RUNTIME FULLY IMPLEMENTED: **129 / 146**
-- GAMEPLAY RUNTIME PARTIAL: **3 / 146** — `전리품 챙기기`, `보물 낚시`, `풍요`
-- NOT FULLY IMPLEMENTED: **17 / 146**
-- NO GAMEPLAY RUNTIME YET: **14 / 146**
-- LATEST STORAGE BATCH FULL ADVANCEMENTS: **2** — `주머니`, `원격 창고`
-- PRIOR COMBINED PASS FULL ADVANCEMENTS: **8** — `지배`, `영역 가속`, `광석 눈썰미`, `상자 찾기`, `위험 감지`, `소생`, `회복 증폭`, `마법 새로고침`
-- CURRENT BATCH PARTIAL AUGMENTS: **0**
-- FINAL COMPATIBILITY AUDIT: YES
-- INTERACTION CONTRACT V2: YES
+- ROSTER LOCKED: YES — 149
+- GAMEPLAY RUNTIME FULLY IMPLEMENTED: **149 / 149**
+- GAMEPLAY RUNTIME PARTIAL: **0 / 149**
+- NOT FULLY IMPLEMENTED: **0 / 149**
+- NO GAMEPLAY RUNTIME YET: **0 / 149**
+- FINAL COMPATIBILITY AUDIT: YES — latest source-boundary review; live external encounter testing remains open
+- INTERACTION CONTRACT V2: YES — current canonical contract
 - CORE ACQUISITION LOOP: IMPLEMENTED BASELINE
 - PERSISTENT PLAYER AUGMENT STATE: IMPLEMENTED
 - SAVE-WIDE THREAT STATE / HOSTILE SCALING / BOSS SNAPSHOT: IMPLEMENTED BASELINE / LIVE TEST PENDING
