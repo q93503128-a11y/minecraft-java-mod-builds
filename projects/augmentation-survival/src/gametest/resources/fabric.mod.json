@@ -20,7 +20,8 @@
       "dev.moonseungjun.augmentationsurvival.gametest.PlaytestRegressionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.DominationPlaytestGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.CommonAugmentGameTests",
-      "dev.moonseungjun.augmentationsurvival.gametest.MovementEdgeCaseGameTests"
+      "dev.moonseungjun.augmentationsurvival.gametest.MovementEdgeCaseGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.LivePlaytestRegressionGameTests"
     ]
   },
   "depends": {"fabricloader": ">=0.19.5", "fabric-api": "*", "minecraft": "~26.2", "augmentation_survival": "*"}
