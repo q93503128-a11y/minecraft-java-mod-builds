@@ -38,33 +38,38 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 50)
-    public void wallSlamAcceptsRealPlayerMeleeIntoNearbyWall(GameTestHelper helper) {
-        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
-        BlockPos playerPos = helper.absolutePos(new BlockPos(1, 2, 3));
-        player.setPos(playerPos.getX() + 0.5D, playerPos.getY(), playerPos.getZ() + 0.5D);
-        player.setYRot(0.0F);
-        player.setXRot(0.0F);
+    @GameTest(maxTicks = 30)
+    public void wallSlamAddsDamageToRealMeleeAtNearbyWall(GameTestHelper helper) {
+        ServerPlayer controlPlayer = GameTestPlayers.survivalPlayer(helper);
+        ServerPlayer wallPlayer = GameTestPlayers.survivalPlayer(helper);
+
+        BlockPos controlPos = helper.absolutePos(new BlockPos(4, 2, 2));
+        controlPlayer.setPos(controlPos.getX() + 0.5D, controlPos.getY(), controlPos.getZ() + 0.5D);
+        controlPlayer.setYRot(0.0F);
+        LivingEntity controlTarget = helper.spawnMob(EntityTypes.ZOMBIE, 4, 2, 4).withNoFreeWill().spawn();
+        float controlBefore = controlTarget.getHealth();
+        controlPlayer.attack(controlTarget);
+        float controlDamage = controlBefore - controlTarget.getHealth();
+        require(controlDamage > 0.0F, "control real melee hit did not land");
+
+        BlockPos wallPlayerPos = helper.absolutePos(new BlockPos(1, 2, 3));
+        wallPlayer.setPos(wallPlayerPos.getX() + 0.5D, wallPlayerPos.getY(), wallPlayerPos.getZ() + 0.5D);
+        wallPlayer.setYRot(0.0F);
         AugmentationPlayerStateService.replace(
-                player,
+                wallPlayer,
                 AugmentationPlayerState.initial().withAugmentLevel(id("wall_slam"), 3)
         );
         helper.setBlock(new BlockPos(1, 2, 6), Blocks.STONE);
         helper.setBlock(new BlockPos(1, 3, 6), Blocks.STONE);
-        LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 5).withNoFreeWill().spawn();
-        float before = target.getHealth();
+        LivingEntity wallTarget = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 5).withNoFreeWill().spawn();
+        float wallBefore = wallTarget.getHealth();
+        wallPlayer.attack(wallTarget);
+        float wallDamage = wallBefore - wallTarget.getHealth();
 
-        // Use the real ServerPlayer melee path rather than synthesizing hurtServer directly. This
-        // exercises vanilla attack knockback and the same wall-reaching behavior the live player uses.
-        player.attack(target);
-        float afterRoot = target.getHealth();
-        require(afterRoot < before, "real player melee hit did not land");
-
-        GameTestPlayers.runAfterDelay(helper, 8, () -> {
-            require(target.getHealth() < afterRoot,
-                    "Wall Slam did not add its derived impact after a real melee hit pushed the target into the nearby wall");
-            GameTestPlayers.succeed(helper);
-        });
+        require(wallDamage > controlDamage * 1.5F,
+                "Wall Slam did not add meaningful derived damage to the same real melee hit at a nearby wall; control="
+                        + controlDamage + " wall=" + wallDamage);
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest(maxTicks = 20)
