@@ -25,7 +25,7 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
     @GameTest
-    public void doubleJumpUsesStrengthenedVanillaJumpImpulseAndConsumesOnce(GameTestHelper helper) {
+    public void doubleJumpUsesStrengthenedImpulseAndReboostsExistingMomentum(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         AugmentationPlayerStateService.replace(
                 player,
@@ -35,20 +35,25 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
         BlockPos air = helper.absolutePos(new BlockPos(2, 6, 2));
         player.setPos(air.getX() + 0.5D, air.getY(), air.getZ() + 0.5D);
         player.setOnGround(false);
-        player.setDeltaMovement(0.12D, -0.10D, 0.08D);
+        Vec3 before = new Vec3(0.12D, -0.10D, 0.08D);
+        player.setDeltaMovement(before);
 
         float vanillaJumpPower = ((LivingEntityJumpPowerAccessor) player)
                 .augmentationSurvival$invokeGetJumpPower();
-        double expectedVertical = vanillaJumpPower * MovementTuning.current().doubleJumpVerticalMultiplier();
+        MovementTuning.Snapshot tuning = MovementTuning.current();
+        double expectedVertical = vanillaJumpPower * tuning.doubleJumpVerticalMultiplier();
+        Vec3 beforeHorizontal = new Vec3(before.x, 0.0D, before.z);
+        double expectedHorizontalSpeed = beforeHorizontal.length() + tuning.doubleJumpHorizontalReboost();
 
         require(MovementAugmentService.tryAirJump(player),
                 "owned double jump rejected its first airborne use");
-        requireClose(player.getDeltaMovement().y, expectedVertical, 1.0E-6D,
+        Vec3 after = player.getDeltaMovement();
+        requireClose(after.y, expectedVertical, 1.0E-6D,
                 "double jump did not use the strengthened configured vertical impulse");
-        requireClose(player.getDeltaMovement().x, 0.12D, 1.0E-9D,
-                "double jump unexpectedly changed horizontal X momentum");
-        requireClose(player.getDeltaMovement().z, 0.08D, 1.0E-9D,
-                "double jump unexpectedly changed horizontal Z momentum");
+        requireClose(new Vec3(after.x, 0.0D, after.z).length(), expectedHorizontalSpeed, 1.0E-9D,
+                "double jump did not apply its configured horizontal reboost");
+        require(new Vec3(after.x, 0.0D, after.z).normalize().dot(beforeHorizontal.normalize()) > 0.999999D,
+                "double jump reboost changed horizontal travel direction");
         require(!MovementAugmentService.tryAirJump(player),
                 "double jump allowed a second airborne use without a recharge");
 
