@@ -156,11 +156,21 @@ public final class MovementAugmentService {
             return false;
         }
 
+        MovementTuning.Snapshot tuning = MovementTuning.current();
         float jumpPower = ((LivingEntityJumpPowerAccessor) player)
                 .augmentationSurvival$invokeGetJumpPower();
-        double vertical = jumpPower * MovementTuning.current().doubleJumpVerticalMultiplier();
+        double vertical = jumpPower * tuning.doubleJumpVerticalMultiplier();
         Vec3 movement = player.getDeltaMovement();
-        player.setDeltaMovement(movement.x, Math.max(movement.y, vertical), movement.z);
+        double horizontalSpeed = Math.sqrt(movement.x * movement.x + movement.z * movement.z);
+        double x = movement.x;
+        double z = movement.z;
+        if (horizontalSpeed > 1.0E-5D) {
+            double boostedSpeed = horizontalSpeed + tuning.doubleJumpHorizontalReboost();
+            double scale = boostedSpeed / horizontalSpeed;
+            x *= scale;
+            z *= scale;
+        }
+        player.setDeltaMovement(x, Math.max(movement.y, vertical), z);
         player.resetFallDistance();
         runtime.maxObservedFallDistance = 0.0D;
         runtime.airJumpAvailable = false;
