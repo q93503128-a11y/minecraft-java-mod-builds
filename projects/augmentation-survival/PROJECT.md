@@ -219,15 +219,16 @@ Minecraft 장기 서바이벌을 유지하면서 다양한 증강을 계속 획�
 
 ## 현재 검증 상태
 
-최신 자동검증 gameplay-code 체크포인트는 `3ecf999d36a3c067a77d6a3ff87aa5fe7657577e`다. Build Augmentation Survival Pack #431 (run ID `40795138452`)의 실제 job log에서 `build` task graph가 GameTest를 실행했고, 74개 required tests가 모두 통과했다. build, localization audit, dedicated-server smoke, client boot smoke, 검증된 Modrinth pack 생성도 #431에서 통과했다. 현재 `main` HEAD `588943b26b024e95a3a49e6da048723a73798862` 이후 gameplay checkpoint까지의 변경은 문서 동기화다. 이번 후속 turn에서는 build/CI, GameTest, 서버/클라이언트 부팅, 수동 플레이를 다시 실행하지 않았다.
+최신 성공 CI checkpoint는 Build Augmentation Survival Pack #438 (run ID `40808710842`), commit `09852ced15db96cb1fd157a5853d5f47b80449b7`다. #438에서 Java 25.0.5+8 / Gradle 9.5.1 clean build, 77개 required GameTests, localization audit, dedicated-server/client boot smoke, 검증된 Modrinth pack 생성이 통과했다. 이 결과는 현재 감사 수정분을 포함하지 않는다.
 
-- CODE REVIEWED: YES — final audit at current main; coverage and open manual validation recorded in `FINAL_AUDIT_2026-10-29.md`
-- BUILD VERIFIED: YES — Build Augmentation Survival Pack #431 at gameplay HEAD `3ecf999d36a3c067a77d6a3ff87aa5fe7657577e` (handoff record)
-- JAR / PACK PRODUCED: YES — verified Modrinth pack produced by #431 (handoff record; artifact not downloaded in this audit)
-- GAME TESTED: YES — 74 required GameTests passed in Build #431, run `40795138452` (historical CI result; not rerun this turn)
-- LOCALIZATION AUDIT: YES — passed in #431 (handoff record)
-- DEDICATED SERVER SMOKE: YES — passed in #431 (handoff record)
-- CLIENT BOOT SMOKE: YES — passed in #431 (handoff record)
+2026-10-29 후속 전체 정적 파일 감사에서는 466개 source/config/resource 항목을 읽어 검토했고, 미검토 항목은 0개다. 18개 항목은 실제 런타임/외부 연동/렌더링 검증이 남아 있다. 추가 확인한 8개 결함과 수정 사항, JSON/언어/텍스처 검사 결과는 `FINAL_AUDIT_2026-10-29.md`에 기록했다. 로컬 `clean build`는 Java 25로 재시도했으나 Fabric Maven Loom fetch에서 `Unsupported or unrecognized SSL message`로 컴파일 전 중단되어 현재 수정 코드는 아직 빌드 검증되지 않았다. Build/CI, GameTest, 서버/클라이언트 smoke, 최종 JAR 검사와 artifact 생성은 새 CI 실행 결과를 기다린다.
+
+- CODE REVIEWED: YES — 466개 항목 모두 정적 검토; 18개 runtime-sensitive 항목은 후속 런타임 검증 필요
+- BUILD VERIFIED FOR CURRENT FIXES: NO — local resolution blocked before compilation; CI pending
+- LAST VERIFIED JAR / PACK: YES — Build #438 artifact is prior to current fixes
+- CURRENT GAME TESTS: NOT RUN — local dependency resolution stopped before compilation
+- LAST GAME TEST CHECKPOINT: YES — 77 required tests passed in #438
+- LOCALIZATION / SERVER / CLIENT BOOT: last passed in #438; current fixes pending CI verification
 - PLAYTESTED: NO
 - MULTIPLAYER TESTED: NO
 

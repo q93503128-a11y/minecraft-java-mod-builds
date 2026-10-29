@@ -10,6 +10,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -40,6 +42,8 @@ public final class PassivePresentationService {
         if (initialized) return;
         initialized = true;
         ServerTickEvents.END_SERVER_TICK.register(PassivePresentationService::tick);
+        ServerPlayerEvents.LEAVE.register(player -> FEEDBACK.remove(player.getUUID()));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> FEEDBACK.clear());
     }
 
     public static void proc(ServerPlayer player, String augmentId) {

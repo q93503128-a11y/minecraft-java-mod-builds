@@ -55,6 +55,7 @@ public final class SpatialLinkScreen extends Screen {
     public void applySnapshot(List<SpatialLinkSnapshotPayload.GateView> next) {
         this.gates = List.copyOf(next);
         ensureSelection();
+        syncSelectedNameField();
         updateControls();
     }
 
@@ -70,6 +71,7 @@ public final class SpatialLinkScreen extends Screen {
             query = value;
             page = 0;
             ensureSelection();
+            syncSelectedNameField();
             updateControls();
         });
         addRenderableWidget(searchBox);
@@ -107,11 +109,13 @@ public final class SpatialLinkScreen extends Screen {
         previousButton = addRenderableWidget(Button.builder(Component.literal("‹"), button -> {
             if (page > 0) page--;
             ensureSelection();
+            syncSelectedNameField();
             updateControls();
         }).bounds(leftPos + 16, topPos + 220, 24, 20).build());
         nextButton = addRenderableWidget(Button.builder(Component.literal("›"), button -> {
             if (page + 1 < pageCount()) page++;
             ensureSelection();
+            syncSelectedNameField();
             updateControls();
         }).bounds(leftPos + 244, topPos + 220, 24, 20).build());
 

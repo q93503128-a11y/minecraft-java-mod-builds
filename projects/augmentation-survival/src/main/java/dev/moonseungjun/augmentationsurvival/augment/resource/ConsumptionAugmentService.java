@@ -54,8 +54,12 @@ public final class ConsumptionAugmentService {
             AugmentCatalog.require(augmentId);
         }
         ServerPlayerEvents.JOIN.register(player -> syncClient(player, AugmentationPlayerStateService.state(player)));
+        ServerPlayerEvents.LEAVE.register(player -> FOOD_SNAPSHOTS.remove(player.getUUID()));
         ServerPlayerEvents.AFTER_RESPAWN.register(
-                (oldPlayer, newPlayer, alive) -> syncClient(newPlayer, AugmentationPlayerStateService.state(newPlayer))
+                (oldPlayer, newPlayer, alive) -> {
+                    FOOD_SNAPSHOTS.remove(newPlayer.getUUID());
+                    syncClient(newPlayer, AugmentationPlayerStateService.state(newPlayer));
+                }
         );
         AugmentationSurvival.LOGGER.info(
                 "Loaded consumption/fishing contract: food, reserve, fishing and breeding runtime"

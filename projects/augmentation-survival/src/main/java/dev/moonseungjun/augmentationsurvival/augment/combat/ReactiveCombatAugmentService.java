@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -62,13 +63,18 @@ public final class ReactiveCombatAugmentService {
         }
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(ReactiveCombatAugmentService::allowDamage);
         ServerLivingEntityEvents.AFTER_DAMAGE.register(ReactiveCombatAugmentService::afterDamage);
-        ServerPlayerEvents.JOIN.register(player -> reconcile(
-                player,
-                AugmentationPlayerStateService.state(player)
-        ));
+        ServerPlayerEvents.JOIN.register(player -> {
+            RUNTIME.remove(player.getUUID());
+            reconcile(player, AugmentationPlayerStateService.state(player));
+        });
+        ServerPlayerEvents.LEAVE.register(player -> RUNTIME.remove(player.getUUID()));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             RUNTIME.remove(newPlayer.getUUID());
             reconcile(newPlayer, AugmentationPlayerStateService.state(newPlayer));
+        });
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            RUNTIME.clear();
+            REFLECTED_PROJECTILES.clear();
         });
         ServerTickEvents.END_SERVER_TICK.register(ReactiveCombatAugmentService::tickRuntime);
     }

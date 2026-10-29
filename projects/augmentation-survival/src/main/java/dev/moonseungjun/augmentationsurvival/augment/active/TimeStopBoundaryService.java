@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
@@ -22,6 +24,8 @@ public final class TimeStopBoundaryService {
         if (initialized) return;
         initialized = true;
         ServerTickEvents.END_SERVER_TICK.register(TimeStopBoundaryService::tick);
+        ServerPlayerEvents.LEAVE.register(player -> ACTIVE_UNTIL.remove(player.getUUID()));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> ACTIVE_UNTIL.clear());
     }
 
     public static void begin(ServerPlayer player) {

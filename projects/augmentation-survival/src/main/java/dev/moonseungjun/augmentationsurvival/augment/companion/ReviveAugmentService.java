@@ -83,7 +83,9 @@ public final class ReviveAugmentService {
         entity.saveWithoutId(output);
         CompoundTag snapshot = output.buildResult();
         snapshot.remove("UUID");
-        long now = level.getGameTime();
+        // Marker expiry is stored against the save-wide Overworld clock so markers created in
+        // dimensions with a different or paused game time are not removed early or retained forever.
+        long now = level.getServer().overworld().getGameTime();
         MARKERS.put(entity.getUUID(), new ReviveMarker(
                 entity.getUUID(), ownerId, entity.getType(), snapshot,
                 level.dimension().identifier().toString(), entity.position(), now + MARKER_TICKS
@@ -105,7 +107,7 @@ public final class ReviveAugmentService {
 
     public static List<Long> markerPositionsFor(ServerPlayer player) {
         if (boundedLevel(AugmentationPlayerStateService.state(player), REVIVE_ID) <= 0) return List.of();
-        long now = player.level().getGameTime();
+        long now = player.level().getServer().overworld().getGameTime();
         String dimension = player.level().dimension().identifier().toString();
         List<Long> positions = new ArrayList<>();
         for (ReviveMarker marker : MARKERS.values()) {
@@ -200,7 +202,7 @@ public final class ReviveAugmentService {
 
     private static boolean validFocus(ServerPlayer player, ReviveMarker marker) {
         return marker.ownerId.equals(player.getUUID())
-                && marker.expiresAtTick > player.level().getGameTime()
+                && marker.expiresAtTick > player.level().getServer().overworld().getGameTime()
                 && marker.dimension.equals(player.level().dimension().identifier().toString())
                 && player.position().distanceToSqr(marker.position) <= RANGE_SQUARED
                 && hasFocusedView(player, marker);

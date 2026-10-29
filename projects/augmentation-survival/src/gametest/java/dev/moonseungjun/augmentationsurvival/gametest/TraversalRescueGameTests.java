@@ -3,6 +3,8 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformBlocks;
 import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformService;
+import dev.moonseungjun.augmentationsurvival.augment.active.TemporaryPlatformWorldState;
+import com.mojang.serialization.JsonOps;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -17,6 +19,18 @@ import net.minecraft.world.level.material.Fluids;
 /** Physical traversal regressions for Temporary Platform landing and Water Run entry rules. */
 public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
+
+    @GameTest
+    public void temporaryPlatformExpiryRecordSurvivesCodecRoundTrip(GameTestHelper helper) {
+        var record = new TemporaryPlatformWorldState.PlatformRecord(
+                "minecraft:overworld", 123456789L, "00000000-0000-0000-0000-000000000001", 6000L, 12000L
+        );
+        var original = TemporaryPlatformWorldState.initial().withPlatform("test", record);
+        var encoded = TemporaryPlatformWorldState.CODEC.encodeStart(JsonOps.INSTANCE, original).getOrThrow();
+        var restored = TemporaryPlatformWorldState.CODEC.parse(JsonOps.INSTANCE, encoded).getOrThrow();
+        require(restored.equals(original), "temporary platform cleanup state did not survive serialization");
+        GameTestPlayers.succeed(helper);
+    }
 
     @GameTest(maxTicks = 100)
     public void temporaryPlatformLandingCancelsActualFallDamage(GameTestHelper helper) {

@@ -192,12 +192,16 @@ public final class AdvancedWorldAugmentService {
     }
 
     private static void removeGigantification(ServerPlayer player) {
+        boolean dying = player.isDeadOrDying();
         float giantMax = player.getMaxHealth();
         float ratio = giantMax > 0.0F ? Math.max(0.0F, Math.min(1.0F, player.getHealth() / giantMax)) : 1.0F;
         remove(player.getAttribute(Attributes.SCALE), GIANT_SCALE_MODIFIER);
         remove(player.getAttribute(Attributes.MAX_HEALTH), GIANT_HEALTH_MODIFIER);
         remove(player.getAttribute(Attributes.ENTITY_INTERACTION_RANGE), GIANT_REACH_MODIFIER);
         remove(player.getAttribute(Attributes.ATTACK_DAMAGE), GIANT_DAMAGE_MODIFIER);
+        // Expiration also runs when a player dies. Preserve the dying state instead of clamping
+        // zero health to one and potentially interfering with the vanilla death flow.
+        if (dying) return;
         player.setHealth(Math.max(1.0F, Math.min(player.getMaxHealth(), player.getMaxHealth() * ratio)));
         if (!player.level().noCollision(player)) {
             correctGenericExit(player);

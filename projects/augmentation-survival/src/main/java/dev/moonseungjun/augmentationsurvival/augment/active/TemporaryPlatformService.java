@@ -18,6 +18,8 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -43,7 +45,6 @@ public final class TemporaryPlatformService {
 
     private static final Block PLATFORM_BLOCK = TemporaryPlatformBlocks.TEMPORARY_PLATFORM;
     private static final BlockState PLATFORM_STATE = PLATFORM_BLOCK.defaultBlockState();
-    private static final Map<PlatformKey, PlatformRecord> PLATFORMS = new HashMap<>();
     private static final Map<UUID, List<ReplayAction>> REPLAYS = new HashMap<>();
 
     private TemporaryPlatformService() {
@@ -110,16 +111,22 @@ public final class TemporaryPlatformService {
         long maxExpiresAt = expiresAt + Math.round(
                 duration * AdvancedActiveTuning.current().overtimeMaximumExtensionFraction()
         );
+        TemporaryPlatformWorldState saved = worldState(level.getServer());
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 BlockPos pos = center.offset(dx, 0, dz);
                 if (!level.getBlockState(pos).isAir()) {
                     continue;
                 }
-                level.setBlock(pos, PLATFORM_STATE, Block.UPDATE_ALL);
-                PLATFORMS.put(
-                        new PlatformKey(level.dimension(), pos.immutable()),
-                        new PlatformRecord(player.getUUID(), expiresAt, maxExpiresAt)
+                if (!level.setBlock(pos, PLATFORM_STATE, Block.UPDATE_ALL)) {
+                    continue;
+                }
+                saved = saved.withPlatform(
+                        TemporaryPlatformWorldState.key(level.dimension(), pos.asLong()),
+                        new TemporaryPlatformWorldState.PlatformRecord(
+                                level.dimension().identifier().toString(), pos.asLong(), player.getUUID().toString(),
+                                expiresAt, maxExpiresAt
+                        )
                 );
                 placed++;
             }
@@ -127,6 +134,7 @@ public final class TemporaryPlatformService {
         if (placed <= 0) {
             return false;
         }
+        setWorldState(level.getServer(), saved);
         level.playSound(
                 null,
                 player.getX(), player.getY(), player.getZ(),
@@ -149,10 +157,12 @@ public final class TemporaryPlatformService {
         int maxZ = (int) Math.floor(box.maxZ - 1.0E-4D);
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                PlatformKey key = new PlatformKey(level.dimension(), new BlockPos(x, y, z));
-                PlatformRecord record = PLATFORMS.get(key);
-                if (record != null && record.expiresAtTick >= now
-                        && level.getBlockState(key.pos()).is(PLATFORM_BLOCK)) {
+                BlockPos pos = new BlockPos(x, y, z);
+                TemporaryPlatformWorldState.PlatformRecord record = worldState(level.getServer()).platforms().get(
+                        TemporaryPlatformWorldState.key(level.dimension(), pos.asLong())
+                );
+                if (record != null && record.expiresAtTick() >= now
+                        && level.getBlockState(pos).is(PLATFORM_BLOCK)) {
                     return true;
                 }
             }
@@ -201,7 +211,7 @@ public final class TemporaryPlatformService {
             int extension = boss
                     ? AdvancedActiveTuning.current().overtimeBossExtensionTicks()
                     : AdvancedActiveTuning.current().overtimeNormalExtensionTicks();
-            extendPlatforms(player.getUUID(), extension);
+            extendPlatforms(player.level().getServer(), player.getUUID(), extension);
         }
     }
 
@@ -234,13 +244,18 @@ public final class TemporaryPlatformService {
         }
     }
 
-    private static void extendPlatforms(UUID ownerId, int ticks) {
+    private static void extendPlatforms(MinecraftServer server, UUID ownerId, int ticks) {
         if (ticks <= 0) return;
-        for (PlatformRecord record : PLATFORMS.values()) {
-            if (record.ownerId.equals(ownerId)) {
-                record.expiresAtTick = Math.min(record.maxExpiresAtTick, record.expiresAtTick + ticks);
+        TemporaryPlatformWorldState current = worldState(server);
+        TemporaryPlatformWorldState next = current;
+        for (Map.Entry<String, TemporaryPlatformWorldState.PlatformRecord> entry : current.platforms().entrySet()) {
+            TemporaryPlatformWorldState.PlatformRecord record = entry.getValue();
+            if (record.ownerId().equals(ownerId.toString())) {
+                long expiry = Math.min(record.maxExpiresAtTick(), record.expiresAtTick() + ticks);
+                next = next.withPlatform(entry.getKey(), record.withExpiry(expiry));
             }
         }
+        if (!next.equals(current)) setWorldState(server, next);
     }
 
     private static void tickRuntime(MinecraftServer server) {
@@ -270,19 +285,31 @@ public final class TemporaryPlatformService {
     }
 
     private static void tickCleanup(MinecraftServer server) {
-        Iterator<Map.Entry<PlatformKey, PlatformRecord>> iterator = PLATFORMS.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<PlatformKey, PlatformRecord> entry = iterator.next();
-            PlatformKey key = entry.getKey();
-            ServerLevel level = server.getLevel(key.dimension());
-            if (level == null || level.getGameTime() < entry.getValue().expiresAtTick) {
+        TemporaryPlatformWorldState current = worldState(server);
+        TemporaryPlatformWorldState next = current;
+        for (Map.Entry<String, TemporaryPlatformWorldState.PlatformRecord> entry : current.platforms().entrySet()) {
+            TemporaryPlatformWorldState.PlatformRecord record = entry.getValue();
+            ResourceKey<Level> dimension;
+            try {
+                dimension = ResourceKey.create(Registries.DIMENSION, Identifier.parse(record.dimension()));
+            } catch (RuntimeException invalid) {
+                next = next.withoutPlatform(entry.getKey());
                 continue;
             }
-            if (level.getBlockState(key.pos()).is(PLATFORM_BLOCK)) {
-                level.removeBlock(key.pos(), false);
+            ServerLevel level = server.getLevel(dimension);
+            if (level == null) {
+                // A dimension may be unloaded while its chunk still contains our block. Keep
+                // the record so cleanup can resume if that dimension is loaded again.
+                continue;
             }
-            iterator.remove();
+            if (level.getGameTime() < record.expiresAtTick()) continue;
+            BlockPos pos = BlockPos.of(record.packedPosition());
+            if (level.getBlockState(pos).is(PLATFORM_BLOCK)) {
+                level.removeBlock(pos, false);
+            }
+            next = next.withoutPlatform(entry.getKey());
         }
+        if (!next.equals(current)) setWorldState(server, next);
     }
 
     private static int boundedLevel(AugmentationPlayerState state, String augmentId) {
@@ -298,19 +325,15 @@ public final class TemporaryPlatformService {
         return AugmentationSurvival.MOD_ID + ":" + path;
     }
 
-    private record PlatformKey(ResourceKey<Level> dimension, BlockPos pos) {
+    private static TemporaryPlatformWorldState worldState(MinecraftServer server) {
+        return server.overworld().getAttachedOrSet(
+                TemporaryPlatformWorldAttachments.STATE,
+                TemporaryPlatformWorldState.initial()
+        );
     }
 
-    private static final class PlatformRecord {
-        private final UUID ownerId;
-        private long expiresAtTick;
-        private final long maxExpiresAtTick;
-
-        private PlatformRecord(UUID ownerId, long expiresAtTick, long maxExpiresAtTick) {
-            this.ownerId = ownerId;
-            this.expiresAtTick = expiresAtTick;
-            this.maxExpiresAtTick = maxExpiresAtTick;
-        }
+    private static void setWorldState(MinecraftServer server, TemporaryPlatformWorldState state) {
+        server.overworld().setAttached(TemporaryPlatformWorldAttachments.STATE, state);
     }
 
     private record ReplayAction(long dueTick, double efficiency) {
