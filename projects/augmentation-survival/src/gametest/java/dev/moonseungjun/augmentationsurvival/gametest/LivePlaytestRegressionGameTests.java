@@ -1,7 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
-import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
 import dev.moonseungjun.augmentationsurvival.augment.utility.AdvancedUtilityAugmentService;
@@ -39,11 +38,13 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 40)
-    public void wallSlamAcceptsDirectMeleeAgainstNearbyWallWithoutExactKnockbackRace(GameTestHelper helper) {
+    @GameTest(maxTicks = 50)
+    public void wallSlamAcceptsRealPlayerMeleeIntoNearbyWall(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
-        BlockPos playerPos = helper.absolutePos(new BlockPos(1, 2, 1));
+        BlockPos playerPos = helper.absolutePos(new BlockPos(1, 2, 3));
         player.setPos(playerPos.getX() + 0.5D, playerPos.getY(), playerPos.getZ() + 0.5D);
+        player.setYRot(0.0F);
+        player.setXRot(0.0F);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("wall_slam"), 3)
@@ -51,17 +52,17 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         helper.setBlock(new BlockPos(1, 2, 6), Blocks.STONE);
         helper.setBlock(new BlockPos(1, 3, 6), Blocks.STONE);
         LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 5).withNoFreeWill().spawn();
-        ServerLevel level = helper.getLevel();
         float before = target.getHealth();
-        CombatProvenanceContext.runAs(
-                CombatProvenance.ROOT_MELEE,
-                () -> target.hurtServer(level, player.damageSources().playerAttack(player), 4.0F)
-        );
+
+        // Use the real ServerPlayer melee path rather than synthesizing hurtServer directly. This
+        // exercises vanilla attack knockback and the same wall-reaching behavior the live player uses.
+        player.attack(target);
         float afterRoot = target.getHealth();
-        require(afterRoot < before, "root melee hit did not land");
-        GameTestPlayers.runAfterDelay(helper, 4, () -> {
+        require(afterRoot < before, "real player melee hit did not land");
+
+        GameTestPlayers.runAfterDelay(helper, 8, () -> {
             require(target.getHealth() < afterRoot,
-                    "Wall Slam did not accept a target already within forgiving wall-contact distance");
+                    "Wall Slam did not add its derived impact after a real melee hit pushed the target into the nearby wall");
             GameTestPlayers.succeed(helper);
         });
     }
