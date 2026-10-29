@@ -17,6 +17,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 
 /**
@@ -33,6 +34,7 @@ public final class ProtectionAugmentService {
 
     private static final String DAMAGE_ADAPTATION_ID = id("damage_adaptation");
     private static final String DELAYED_DAMAGE_ID = id("delayed_damage");
+    private static final String LAST_STAND_ID = id("last_stand");
 
     private static final Map<UUID, RuntimeState> RUNTIME = new HashMap<>();
 
@@ -270,6 +272,9 @@ public final class ProtectionAugmentService {
                         continue;
                     }
                     delayedIterator.remove();
+                    if (blocksDelayedInstallment(player, installment.source, now)) {
+                        continue;
+                    }
                     CombatProvenanceContext.callAsDelayed(
                             installment.amount,
                             () -> player.hurtServer(level, installment.source, installment.amount)
@@ -286,6 +291,35 @@ public final class ProtectionAugmentService {
                 runtimeIterator.remove();
             }
         }
+    }
+
+    /**
+     * Queued damage must re-check survival windows at execution time because Last Stand can trigger
+     * after the reservation was created but before a later installment becomes due.
+     */
+    private static boolean blocksDelayedInstallment(
+            ServerPlayer player,
+            DamageSource source,
+            long now
+    ) {
+        if (source.typeHolder().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            return false;
+        }
+        if (ReactiveCombatAugmentService.isInvulnerable(player)) {
+            return true;
+        }
+
+        AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        if (boundedLevel(state, LAST_STAND_ID) <= 0) {
+            return false;
+        }
+        CombatTuning.Snapshot tuning = CombatTuning.current();
+        long readyTick = state.cooldownReadyTick(LAST_STAND_ID);
+        if (readyTick <= now) {
+            return false;
+        }
+        long triggeredAt = readyTick - tuning.lastStandCooldownTicks();
+        return triggeredAt <= now && now < triggeredAt + tuning.lastStandInvulnerableTicks();
     }
 
     private static void expirePools(ServerPlayer player, RuntimeState runtime, long now) {
