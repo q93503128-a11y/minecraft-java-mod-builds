@@ -15,8 +15,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Sparse world-space range boundaries for active fields/channels.
- * Geometry is fed by the same radius sent from the authoritative active presentation profile.
+ * Sparse world-space range boundaries for active fields/channels that do not already own a more
+ * exact specialized boundary renderer. Geometry is fed by the same radius used by the gameplay
+ * presentation state; Time Stop stays on its dedicated three-great-circle sphere renderer.
  */
 public final class ActiveRangeTelegraphService {
     private static final Map<Key, Window> ACTIVE = new HashMap<>();
@@ -40,6 +41,7 @@ public final class ActiveRangeTelegraphService {
             float radius
     ) {
         if (player == null || abilityId == null || abilityId.isBlank()) return;
+        if ("time_stop".equals(path(abilityId))) return;
         Key key = new Key(player.getUUID(), abilityId);
         if (phase == ActivePresentationPayload.END
                 || phase == ActivePresentationPayload.CANCEL
@@ -92,7 +94,7 @@ public final class ActiveRangeTelegraphService {
                 iterator.remove();
                 continue;
             }
-            // Four refreshes per second are enough to read the boundary without turning it into particle fog.
+            // Four refreshes per second keep the edge readable without turning the field into particle fog.
             if (now % 5L == 0L) {
                 emitBoundary(player.level(), player.position(), window.radius, window.particle);
             }
@@ -115,7 +117,6 @@ public final class ActiveRangeTelegraphService {
         return switch (path) {
             case "area_acceleration" -> ParticleTypes.ENCHANT;
             case "revive" -> ParticleTypes.HAPPY_VILLAGER;
-            case "time_stop" -> ParticleTypes.END_ROD;
             default -> ParticleTypes.END_ROD;
         };
     }
