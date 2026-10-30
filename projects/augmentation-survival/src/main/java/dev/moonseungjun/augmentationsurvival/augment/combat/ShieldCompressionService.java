@@ -2,17 +2,20 @@ package dev.moonseungjun.augmentationsurvival.augment.combat;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
-import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.Map;
 import java.util.WeakHashMap;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
@@ -21,6 +24,10 @@ import net.minecraft.world.phys.Vec3;
 public final class ShieldCompressionService {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
+    private static final ResourceKey<DamageType> SHIELD_COMPRESSION_DAMAGE = ResourceKey.create(
+            Registries.DAMAGE_TYPE,
+            Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "shield_compression")
+    );
     private static final Map<ServerPlayer, Double> STORED_BLOCKED_DAMAGE = new WeakHashMap<>();
 
     private ShieldCompressionService() {
@@ -77,6 +84,7 @@ public final class ShieldCompressionService {
         double range = tuning.returnWaveRange();
         double rangeSquared = range * range;
         double minimumDot = Math.cos(Math.toRadians(tuning.returnWaveHalfAngleDegrees()));
+        DamageSource waveSource = player.damageSources().source(SHIELD_COMPRESSION_DAMAGE, null, player);
 
         for (LivingEntity target : level.getEntitiesOfClass(
                 LivingEntity.class,
@@ -91,7 +99,6 @@ public final class ShieldCompressionService {
             if (direction.dot(toTarget.normalize()) < minimumDot) {
                 continue;
             }
-            DamageSource waveSource = player.damageSources().playerAttack(player);
             CombatProvenanceContext.runAs(
                     CombatProvenance.DERIVED_AOE,
                     () -> target.hurtServer(level, waveSource, damage)
