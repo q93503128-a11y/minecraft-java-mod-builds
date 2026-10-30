@@ -13,8 +13,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Keeps delayed installments audible while removing the ordinary directional damage tilt.
- * ServerPlayer applies its own post-Player damage feedback, so the final tilt restore belongs here.
+ * Keeps delayed installments audible while suppressing the ordinary knockback/camera/hurt-animation feedback.
+ * ServerPlayer applies final damage feedback after the nested Player/LivingEntity handlers, so visual state is
+ * restored at this outermost return boundary.
  */
 @Mixin(ServerPlayer.class)
 abstract class ServerPlayerDelayedDamageSoundMixin {
@@ -24,6 +25,10 @@ abstract class ServerPlayerDelayedDamageSoundMixin {
     private float augmentationSurvival$delayedHealthBefore;
     @Unique
     private float augmentationSurvival$delayedHurtDirBefore;
+    @Unique
+    private int augmentationSurvival$delayedHurtTimeBefore;
+    @Unique
+    private int augmentationSurvival$delayedHurtDurationBefore;
 
     @Inject(method = "hurtServer", at = @At("HEAD"))
     private void augmentationSurvival$captureDelayedHealth(
@@ -33,11 +38,16 @@ abstract class ServerPlayerDelayedDamageSoundMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         augmentationSurvival$trackingDelayedDamage = CombatProvenanceContext.isDelayedDamage();
-        if (augmentationSurvival$trackingDelayedDamage) {
-            ServerPlayer player = (ServerPlayer) (Object) this;
-            augmentationSurvival$delayedHealthBefore = player.getHealth();
-            augmentationSurvival$delayedHurtDirBefore = player.getHurtDir();
+        if (!augmentationSurvival$trackingDelayedDamage) {
+            return;
         }
+
+        ServerPlayer player = (ServerPlayer) (Object) this;
+        LivingEntityHurtTimingAccessor timing = (LivingEntityHurtTimingAccessor) player;
+        augmentationSurvival$delayedHealthBefore = player.getHealth();
+        augmentationSurvival$delayedHurtDirBefore = player.getHurtDir();
+        augmentationSurvival$delayedHurtTimeBefore = timing.augmentationSurvival$getHurtTime();
+        augmentationSurvival$delayedHurtDurationBefore = timing.augmentationSurvival$getHurtDuration();
     }
 
     @Inject(method = "hurtServer", at = @At("RETURN"))
@@ -51,9 +61,12 @@ abstract class ServerPlayerDelayedDamageSoundMixin {
         augmentationSurvival$trackingDelayedDamage = false;
 
         ServerPlayer player = (ServerPlayer) (Object) this;
+        LivingEntityHurtTimingAccessor timing = (LivingEntityHurtTimingAccessor) player;
         ((PlayerHurtDirAccessor) player).augmentationSurvival$setHurtDir(
                 augmentationSurvival$delayedHurtDirBefore
         );
+        timing.augmentationSurvival$setHurtTime(augmentationSurvival$delayedHurtTimeBefore);
+        timing.augmentationSurvival$setHurtDuration(augmentationSurvival$delayedHurtDurationBefore);
 
         if (!cir.getReturnValue() || !(player.getHealth() < augmentationSurvival$delayedHealthBefore - 1.0E-6F)) {
             return;
