@@ -3,8 +3,6 @@ package dev.moonseungjun.augmentationsurvival.augment.movement;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
-import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
-import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
 import dev.moonseungjun.augmentationsurvival.mixin.LivingEntityJumpPowerAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -21,7 +19,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -55,8 +52,6 @@ public final class MovementAugmentService {
     );
 
     private static final Map<UUID, RuntimeState> RUNTIME = new HashMap<>();
-    private static final ThreadLocal<Integer> ROOT_MELEE_BOUNDARY_DEPTH =
-            ThreadLocal.withInitial(() -> 0);
 
     private MovementAugmentService() {
     }
@@ -70,10 +65,6 @@ public final class MovementAugmentService {
             clearRuntime(newPlayer);
             reconcile(newPlayer);
         });
-        // Compatibility fallback for damage routes that carry ROOT_MELEE provenance without going
-        // through Player.attack. The Player.attack wrapper marks its own boundary so one hit can
-        // never grant two Aerial Combo recharges.
-        ServerLivingEntityEvents.AFTER_DAMAGE.register(MovementAugmentService::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayer player) {
                 clearRuntime(player);
@@ -122,21 +113,9 @@ public final class MovementAugmentService {
         if (runtime != null) runtime.jumpHeld = held;
     }
 
-    /** Marks the actual Player.attack call so the generic AFTER_DAMAGE fallback cannot double-fire. */
-    public static void beginRootMeleeBoundary() {
-        ROOT_MELEE_BOUNDARY_DEPTH.set(ROOT_MELEE_BOUNDARY_DEPTH.get() + 1);
-    }
-
-    /** Completes the actual Player.attack call marker. */
-    public static void endRootMeleeBoundary() {
-        int next = Math.max(0, ROOT_MELEE_BOUNDARY_DEPTH.get() - 1);
-        if (next == 0) ROOT_MELEE_BOUNDARY_DEPTH.remove();
-        else ROOT_MELEE_BOUNDARY_DEPTH.set(next);
-    }
-
     /**
-     * Canonical Aerial Combo entry. Player.attack invokes this only after its living-target damage
-     * call succeeds; compatibility damage routes may reach it through the provenance fallback.
+     * Canonical Aerial Combo entry. Called only after Player.attack successfully reaches a living
+     * target, so the recharge cannot drift away from the actual player melee boundary.
      */
     public static void onSuccessfulRootMelee(ServerPlayer attacker, LivingEntity target) {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(attacker);
@@ -215,23 +194,6 @@ public final class MovementAugmentService {
         runtime.airJumpAvailable = false;
         syncMotion(player);
         return true;
-    }
-
-    private static void afterDamage(
-            LivingEntity entity,
-            DamageSource source,
-            float baseDamageTaken,
-            float damageTaken,
-            boolean blocked
-    ) {
-        if (blocked || !(damageTaken > 0.0F) || ROOT_MELEE_BOUNDARY_DEPTH.get() > 0) {
-            return;
-        }
-        if (!(source.getEntity() instanceof ServerPlayer attacker)
-                || CombatProvenanceContext.resolve(source) != CombatProvenance.ROOT_MELEE) {
-            return;
-        }
-        onSuccessfulRootMelee(attacker, entity);
     }
 
     private static void tickRuntime(MinecraftServer server) {

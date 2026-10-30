@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.augmentationsurvival.augment.WallSlamMeleeRuntime;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
-import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -14,7 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Pins actual vanilla/Better Combat Player.attack damage to ROOT_MELEE and its hit-success runtimes. */
+/** Pins actual vanilla/Better Combat Player.attack damage to ROOT_MELEE and arms Wall Slam there. */
 @Mixin(Player.class)
 abstract class PlayerRootMeleeProvenanceMixin {
     @WrapOperation(
@@ -36,19 +35,11 @@ abstract class PlayerRootMeleeProvenanceMixin {
         }
 
         float healthBefore = target instanceof LivingEntity living ? living.getHealth() : Float.NaN;
-        boolean applied;
-        MovementAugmentService.beginRootMeleeBoundary();
-        try {
-            applied = CombatProvenanceContext.callAs(
-                    CombatProvenance.ROOT_MELEE,
-                    () -> original.call(target, source, proposedDamage)
-            );
-        } finally {
-            MovementAugmentService.endRootMeleeBoundary();
-        }
+        boolean applied = CombatProvenanceContext.callAs(
+                CombatProvenance.ROOT_MELEE,
+                () -> original.call(target, source, proposedDamage)
+        );
         if (applied && target instanceof LivingEntity living) {
-            MovementAugmentService.onSuccessfulRootMelee(serverPlayer, living);
-
             float actualHealthDamage = Float.isFinite(healthBefore)
                     ? Math.max(0.0F, healthBefore - living.getHealth())
                     : 0.0F;

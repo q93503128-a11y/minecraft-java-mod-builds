@@ -4,7 +4,7 @@
   "mixins": [
     "RaidMixin", "CombatAugmentMixin", "PlayerDamagePipelineMixin", "MCEndgameDamageServiceMixin", "CombatAugmentKillProvenanceMixin", "CombatExpansionKillProvenanceMixin",
     "LastStandDeathProtectionMixin", "CombatExpansionSpeedConversionMixin",
-    "LivingEntityReactiveAugmentMixin", "ServerLevelDelayedDamageFeedbackMixin", "ServerPlayerDelayedDamageSoundMixin", "ServerPlayerInvulnerabilityMixin", "StatusReflectRecursionGuardMixin",
+    "LivingEntityReactiveAugmentMixin", "LivingEntityAerialComboMixin", "ServerLevelDelayedDamageFeedbackMixin", "ServerPlayerDelayedDamageSoundMixin", "ServerPlayerInvulnerabilityMixin", "StatusReflectRecursionGuardMixin",
     "LivingEntityHealingAugmentMixin", "LivingEntityEnchantmentResonanceMixin", "LivingEntityLootScoopMixin",
     "LivingEntityWallSlamKnockbackMixin", "WallSlamWindowAccessor", "WallSlamRuntimeOverrideMixin", "LivingEntityTimeStopMotionMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
     "ProjectileTimeAccelerationMixin", "PlayerShieldGripMixin", "PlayerDeathAugmentMixin", "PlayerDominationCommandMixin", "InventoryPocketAugmentMixin",
