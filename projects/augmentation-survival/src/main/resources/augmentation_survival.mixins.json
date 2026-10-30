@@ -2,7 +2,7 @@
   "required": true,
   "package": "dev.moonseungjun.augmentationsurvival.mixin",
   "mixins": [
-    "RaidMixin", "CombatAugmentMixin", "PlayerDamagePipelineMixin", "PlayerDelayedDamageTiltMixin", "MCEndgameDamageServiceMixin", "CombatAugmentKillProvenanceMixin", "CombatExpansionKillProvenanceMixin",
+    "RaidMixin", "CombatAugmentMixin", "PlayerDamagePipelineMixin", "PlayerHurtDirAccessor", "MCEndgameDamageServiceMixin", "CombatAugmentKillProvenanceMixin", "CombatExpansionKillProvenanceMixin",
     "LastStandDeathProtectionMixin", "CombatExpansionSpeedConversionMixin",
     "LivingEntityReactiveAugmentMixin", "ServerLevelDelayedDamageFeedbackMixin", "ServerPlayerDelayedDamageSoundMixin", "EntityDelayedDamageFeedbackMixin", "LivingEntityDelayedDamageFeedbackMixin", "ServerPlayerInvulnerabilityMixin", "StatusReflectRecursionGuardMixin",
     "LivingEntityHealingAugmentMixin", "LivingEntityEnchantmentResonanceMixin", "LivingEntityLootScoopMixin",
