@@ -27,7 +27,14 @@ public final class CombatHudClient {
     private static final int ACTIVE_FILL = 0xFF5FB7D6;
     private static final int CHANNEL_FILL = 0xFFE8C56C;
     private static final int TIME_EDGE = 0xB09BE7FF;
+    private static final int STATUS_BACK = 0xC80A0E12;
     private static final String TIME_STOP_ID = AugmentationSurvival.MOD_ID + ":time_stop";
+    private static final String THREAT_SUPPRESSION_ID = AugmentationSurvival.MOD_ID + ":threat_suppression";
+    private static final String TIME_ACCELERATION_ID = AugmentationSurvival.MOD_ID + ":time_acceleration";
+    private static final String AREA_ACCELERATION_ID = AugmentationSurvival.MOD_ID + ":area_acceleration";
+    private static final List<String> CORNER_STATUS_IDS = List.of(
+            THREAT_SUPPRESSION_ID, TIME_ACCELERATION_ID, AREA_ACCELERATION_ID
+    );
 
     private CombatHudClient() { }
 
@@ -124,13 +131,32 @@ public final class CombatHudClient {
             int sx = x + i * (slot + gap);
             String id = ClientActiveLoadoutState.slot(i);
             int cd = ClientActiveLoadoutState.cooldownTicks(i);
+            int maxCharges = ClientActiveLoadoutState.maxCharges(i);
+            int readyCharges = ClientActiveLoadoutState.readyCharges(i);
+            int nextRecharge = ClientActiveLoadoutState.nextRechargeTicks(i);
             boolean empty = id.isBlank();
             g.fill(sx, y, sx + slot, y + slot, empty ? 0xB2080B0E : 0xD9101519);
             g.outline(sx, y, slot, slot, empty ? 0xAA313940 : 0xDD7A8992);
             if (!empty) {
                 var definition = safeDefinition(id);
                 if (definition != null) g.item(AugmentIconClient.stackFor(id, definition.tier()), sx, y);
-                if (cd > 0) {
+
+                if (maxCharges > 1) {
+                    if (readyCharges <= 0) {
+                        g.fill(sx, y, sx + slot, y + slot, 0xA8000000);
+                        if (nextRecharge > 0) {
+                            String sec = Integer.toString((nextRecharge + 19) / 20);
+                            g.text(client.font, sec,
+                                    sx + slot / 2 - client.font.width(sec) / 2, y + 4, TEXT, true);
+                        }
+                    } else if (readyCharges < maxCharges && nextRecharge > 0) {
+                        String sec = Integer.toString((nextRecharge + 19) / 20);
+                        g.text(client.font, sec, sx + slot - client.font.width(sec) - 1, y + 1, TEXT, true);
+                    }
+                    String charges = readyCharges + "/" + maxCharges;
+                    g.text(client.font, charges, sx + slot - client.font.width(charges) - 1,
+                            y + slot - 7, readyCharges > 0 ? TEXT : MUTED, true);
+                } else if (cd > 0) {
                     g.fill(sx, y, sx + slot, y + slot, 0xA8000000);
                     String sec = Integer.toString((cd + 19) / 20);
                     g.text(client.font, sec, sx + slot / 2 - client.font.width(sec) / 2, y + 4, TEXT, true);
@@ -152,7 +178,12 @@ public final class CombatHudClient {
             drawTimeStopEdge(g, screenWidth, screenHeight);
         }
 
-        List<ClientActivePresentationState.Entry> entries = ClientActivePresentationState.entries();
+        List<ClientActivePresentationState.Entry> allEntries = ClientActivePresentationState.entries();
+        drawCornerStatuses(g, client, screenWidth, allEntries);
+
+        List<ClientActivePresentationState.Entry> entries = allEntries.stream()
+                .filter(entry -> !isCornerStatus(entry.abilityId()))
+                .toList();
         int shown = Math.min(3, entries.size());
         int y = screenHeight - (skillStripVisible ? 82 : 62) - shown * 12;
         for (int i = Math.max(0, entries.size() - shown); i < entries.size(); i++) {
@@ -162,7 +193,7 @@ public final class CombatHudClient {
         }
 
         ClientActivePresentationState.Banner banner = ClientActivePresentationState.banner();
-        if (banner.visible()) {
+        if (banner.visible() && !isCornerStatus(banner.abilityId())) {
             String text = shortName(banner.abilityId()) + phaseSuffix(banner.phase());
             int width = client.font.width(text) + 12;
             int bx = screenWidth / 2 - width / 2;
@@ -171,6 +202,41 @@ public final class CombatHudClient {
             g.outline(bx, by, width, 11, ACTIVE_BORDER);
             g.text(client.font, text, bx + 6, by + 2, TEXT, true);
         }
+    }
+
+    private static void drawCornerStatuses(
+            GuiGraphicsExtractor g,
+            Minecraft client,
+            int screenWidth,
+            List<ClientActivePresentationState.Entry> entries
+    ) {
+        int y = 8;
+        for (String id : CORNER_STATUS_IDS) {
+            ClientActivePresentationState.Entry entry = entries.stream()
+                    .filter(candidate -> id.equals(candidate.abilityId()))
+                    .findFirst()
+                    .orElse(null);
+            if (entry == null) continue;
+            var definition = safeDefinition(id);
+            if (definition == null) continue;
+
+            int ticks = entry.remainingTicks();
+            String suffix = ticks >= 0 ? " " + Math.max(1, (ticks + 19) / 20) + "s" : " ON";
+            String label = shortName(id) + suffix;
+            int textWidth = client.font.width(label);
+            int width = Math.min(116, 23 + textWidth);
+            int x = screenWidth - width - 8;
+
+            g.fill(x, y, x + width, y + 18, STATUS_BACK);
+            g.fill(x, y, x + 2, y + 18, ACTIVE_FILL);
+            g.item(AugmentIconClient.stackFor(id, definition.tier()), x + 3, y + 1);
+            g.text(client.font, label, x + 21, y + 5, TEXT, true);
+            y += 21;
+        }
+    }
+
+    private static boolean isCornerStatus(String abilityId) {
+        return CORNER_STATUS_IDS.contains(abilityId);
     }
 
     private static void drawActiveEntry(
