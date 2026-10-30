@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceCont
 import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
+import dev.moonseungjun.augmentationsurvival.network.ActivePresentationPayload;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
@@ -133,6 +134,17 @@ public final class AreaAccelerationService {
         return Math.max(0, multiplierAt(level, position) - 1);
     }
 
+    public static int remainingTicks(ServerPlayer player) {
+        AuraWindow window = ACTIVE.get(player.getUUID());
+        if (window == null || player.isDeadOrDying()) return 0;
+        long remaining = Math.max(0L, window.endTick - player.level().getGameTime());
+        return (int) Math.min(Integer.MAX_VALUE, remaining);
+    }
+
+    public static int radius() {
+        return RADIUS;
+    }
+
     /** Canonical crop/sapling scope plus vanilla farmable stalk crops and modded CropBlock subclasses. */
     public static boolean isCompatibleGrowthBlock(BlockState state) {
         Object block = state.getBlock();
@@ -178,7 +190,19 @@ public final class AreaAccelerationService {
         AuraWindow window = ACTIVE.get(player.getUUID());
         if (window != null && window.endTick > level.getGameTime() && boundedLevel(state, OVERTIME_ID) > 0) {
             int extension = EntityCompatibilityProfileService.isBoss(killed) ? 80 : 20;
+            long previousEnd = window.endTick;
             window.endTick = Math.min(window.maxEndTick, window.endTick + extension);
+            if (window.endTick > previousEnd) {
+                int remaining = (int) Math.min(Integer.MAX_VALUE,
+                        Math.max(0L, window.endTick - level.getGameTime()));
+                ActivePresentationService.notifyState(
+                        player,
+                        AREA_ACCELERATION_ID,
+                        ActivePresentationPayload.SUSTAINED,
+                        remaining,
+                        RADIUS
+                );
+            }
         }
     }
 
