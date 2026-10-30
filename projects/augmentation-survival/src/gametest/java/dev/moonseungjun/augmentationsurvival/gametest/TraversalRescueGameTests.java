@@ -16,7 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
 
-/** Physical traversal regressions for Temporary Platform landing and Water Run entry rules. */
+/** Physical traversal regressions for Temporary Platform landing and water-surface traversal rules. */
 public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -89,44 +89,33 @@ public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
     }
 
     @GameTest(maxTicks = 40)
-    public void waterRunBridgesGroundSprintEdgeButRejectsStoppedSlowCrouchedAndLava(GameTestHelper helper) {
+    public void waterRunUsesOwnershipWithCrouchAndFiveBlockDiveExceptions(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos start = helper.absolutePos(new BlockPos(2, 2, 2));
         player.setPos(start.getX() + 0.5D, start.getY(), start.getZ() + 0.5D);
-        player.setOnGround(true);
+        player.setOnGround(false);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("water_run"), 1)
         );
-        player.setSprinting(true);
-        player.setDeltaMovement(0.10D, 0.0D, 0.0D);
-
-        // Exercise the production tick capture before simulating the sprint flag drop at the edge.
-        player.tick();
         player.setSprinting(false);
-        player.setDeltaMovement(0.20D, 0.0D, 0.0D);
+        player.setDeltaMovement(0.0D, 0.0D, 0.0D);
+        player.fallDistance = 0.0F;
+
         require(player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                "recent ground sprint did not bridge the water-entry sprint edge");
+                "Water Run ownership alone did not support standing on water");
         require(!player.canStandOnFluid(Fluids.LAVA.defaultFluidState()),
                 "Water Run incorrectly allowed standing on lava");
 
-        GameTestPlayers.runAfterDelay(helper, 4, () -> {
-            player.setSprinting(false);
-            player.setDeltaMovement(0.20D, 0.0D, 0.0D);
-            require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                    "Water Run remained active after sprint intent expired");
+        player.setShiftKeyDown(true);
+        require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
+                "Water Run remained active while crouching");
+        player.setShiftKeyDown(false);
 
-            player.setSprinting(true);
-            player.setDeltaMovement(0.02D, 0.0D, 0.0D);
-            require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                    "Water Run ignored its minimum horizontal speed");
-
-            player.setDeltaMovement(0.20D, 0.0D, 0.0D);
-            player.setShiftKeyDown(true);
-            require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                    "Water Run remained active while crouching");
-            GameTestPlayers.succeed(helper);
-        });
+        player.fallDistance = 5.0F;
+        require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
+                "five-block dive did not pass through the water surface");
+        GameTestPlayers.succeed(helper);
     }
 
     private static String id(String path) {

@@ -30,13 +30,14 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                 AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 3)
         );
 
-        LivingEntity attacker = helper.spawnMob(EntityTypes.IRON_GOLEM, 3, 2, 7)
+        // Passive animals are used deliberately so global hostile threat scaling cannot mutate HP mid-assertion.
+        LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7)
                 .withNoFreeWill()
                 .spawn();
-        LivingEntity insideCone = helper.spawnMob(EntityTypes.ZOMBIE, 4, 2, 6)
+        LivingEntity insideCone = helper.spawnMob(EntityTypes.COW, 4, 2, 6)
                 .withNoFreeWill()
                 .spawn();
-        LivingEntity outsideCone = helper.spawnMob(EntityTypes.ZOMBIE, 6, 2, 5)
+        LivingEntity outsideCone = helper.spawnMob(EntityTypes.COW, 6, 2, 5)
                 .withNoFreeWill()
                 .spawn();
 
@@ -59,8 +60,8 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
             ServerLivingEntityEvents.AFTER_DAMAGE.invoker().afterDamage(player, source, 4.0F, 0.0F, true);
             require(attacker.getHealth() < attackerBefore - 9.5F,
                     "10 blocked damage did not return a level-three shockwave to the attacker");
-            require(insideCone.getHealth() < insideBefore,
-                    "hostile target inside the forward cone was not hit by the shockwave");
+            require(insideCone.getHealth() < insideBefore - 9.5F,
+                    "non-allied target inside the forward cone was not hit by the shockwave");
             require(close(outsideCone.getHealth(), outsideBefore, 0.001D),
                     "target outside the 45-degree cone was incorrectly hit");
             GameTestPlayers.succeed(helper);
@@ -72,7 +73,7 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(2, 2, 2));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
-        LivingEntity attacker = helper.spawnMob(EntityTypes.IRON_GOLEM, 2, 2, 6)
+        LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 2, 2, 6)
                 .withNoFreeWill()
                 .spawn();
 

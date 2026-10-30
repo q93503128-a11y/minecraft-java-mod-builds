@@ -61,12 +61,11 @@ public final class ShieldCompressionService {
         direction = direction.normalize();
 
         float waveDamage = (float) (pulses * threshold * tuning.returnDamageFraction(level));
-        emitWave(player, dealer, origin, direction, waveDamage, tuning);
+        emitWave(player, origin, direction, waveDamage, tuning);
     }
 
     private static void emitWave(
             ServerPlayer player,
-            Entity dealer,
             Vec3 origin,
             Vec3 direction,
             float damage,
@@ -78,12 +77,11 @@ public final class ShieldCompressionService {
         double range = tuning.returnWaveRange();
         double rangeSquared = range * range;
         double minimumDot = Math.cos(Math.toRadians(tuning.returnWaveHalfAngleDegrees()));
-        LivingEntity directDealer = dealer instanceof LivingEntity living ? living : null;
 
         for (LivingEntity target : level.getEntitiesOfClass(
                 LivingEntity.class,
                 player.getBoundingBox().inflate(range),
-                candidate -> validTarget(player, candidate, directDealer)
+                candidate -> OffensiveTargetContext.isValid(player, candidate)
         )) {
             Vec3 toTarget = target.getBoundingBox().getCenter().subtract(origin);
             double distanceSquared = toTarget.lengthSqr();
@@ -109,20 +107,6 @@ public final class ShieldCompressionService {
                 0.9F,
                 0.72F
         );
-    }
-
-    private static boolean validTarget(
-            ServerPlayer player,
-            LivingEntity candidate,
-            LivingEntity directDealer
-    ) {
-        if (candidate == player || candidate.isDeadOrDying()) {
-            return false;
-        }
-        if (CompanionAugmentService.areAllied(player, candidate) || player.isAlliedTo(candidate)) {
-            return false;
-        }
-        return candidate == directDealer || CompanionAugmentService.isHostileTarget(player, candidate);
     }
 
     private static void emitConeParticles(

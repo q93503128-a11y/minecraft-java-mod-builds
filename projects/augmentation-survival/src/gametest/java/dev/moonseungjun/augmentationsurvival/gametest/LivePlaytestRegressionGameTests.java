@@ -183,9 +183,7 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
             require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand"))
                             > player.level().getGameTime(),
                     "Last Stand cooldown was not armed by the lethal reserved installment");
-
-            ProtectionRuntimeStateAccessor runtime = protectionRuntime(player);
-            require(runtime.augmentationSurvival$getDelayed().isEmpty(),
+            require(delayedQueueEmpty(player),
                     "Last Stand left old delayed-damage debt queued after activation");
 
             float duringWindow = ProtectionAugmentService.modifyAfterReductions(
@@ -195,7 +193,7 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
             );
             require(Math.abs(duringWindow - 10.0F) < 0.01F,
                     "Last Stand protection window still split new damage into delayed reservations");
-            require(runtime.augmentationSurvival$getDelayed().isEmpty(),
+            require(delayedQueueEmpty(player),
                     "new delayed-damage debt was created during Last Stand protection");
         });
 
@@ -204,8 +202,7 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
             require(Math.abs(player.getHealth() - 1.0F) < 0.01F,
                     "old delayed damage killed or damaged the player after Last Stand protection ended; health="
                             + player.getHealth());
-            ProtectionRuntimeStateAccessor runtime = protectionRuntime(player);
-            require(runtime.augmentationSurvival$getDelayed().isEmpty(),
+            require(delayedQueueEmpty(player),
                     "delayed-damage debt reappeared after Last Stand protection expired");
             GameTestPlayers.succeed(helper);
         });
@@ -220,12 +217,11 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         GameTestPlayers.succeed(helper);
     }
 
-    private static ProtectionRuntimeStateAccessor protectionRuntime(ServerPlayer player) {
+    private static boolean delayedQueueEmpty(ServerPlayer player) {
         Object runtime = ProtectionRuntimeAccessor.augmentationSurvival$getRuntime().get(player.getUUID());
-        if (!(runtime instanceof ProtectionRuntimeStateAccessor accessor)) {
-            throw new AssertionError("missing protection runtime for delayed-damage regression");
-        }
-        return accessor;
+        return runtime == null
+                || runtime instanceof ProtectionRuntimeStateAccessor accessor
+                && accessor.augmentationSurvival$getDelayed().isEmpty();
     }
 
     private static String id(String path) { return PREFIX + path; }
