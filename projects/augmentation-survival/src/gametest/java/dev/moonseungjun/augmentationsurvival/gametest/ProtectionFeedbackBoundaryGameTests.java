@@ -24,7 +24,8 @@ public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMeth
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("shield_burst"), 1)
         );
-        LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 3).withNoFreeWill().spawn();
+        // Use a daylight-safe hostile so environmental burning cannot masquerade as a second burst.
+        LivingEntity target = helper.spawnMob(EntityTypes.HUSK, 3, 2, 3).withNoFreeWill().spawn();
         player.setPos(target.getX() - 2.0D, target.getY(), target.getZ());
 
         // Let pack-wide threat scaling settle before taking the damage snapshot. The pool itself is
