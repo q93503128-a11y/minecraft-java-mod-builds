@@ -8,10 +8,13 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/** Clientbound snapshot for the ten active slots and their cooldowns. */
+/** Clientbound snapshot for the ten active slots, cooldowns and server-owned charge timers. */
 public record ActiveLoadoutStatePayload(
         List<String> slotIds,
         List<Integer> cooldownTicks,
+        List<Integer> maxCharges,
+        List<Integer> charge0Ticks,
+        List<Integer> charge1Ticks,
         List<String> availableIds
 ) implements CustomPacketPayload {
     public static final Type<ActiveLoadoutStatePayload> TYPE = new Type<>(
@@ -22,31 +25,49 @@ public record ActiveLoadoutStatePayload(
             int slots = Math.min(10, Math.max(0, buffer.readVarInt()));
             List<String> ids = new ArrayList<>(slots);
             List<Integer> cooldowns = new ArrayList<>(slots);
+            List<Integer> charges = new ArrayList<>(slots);
+            List<Integer> firstChargeTicks = new ArrayList<>(slots);
+            List<Integer> secondChargeTicks = new ArrayList<>(slots);
             for (int i = 0; i < slots; i++) {
                 ids.add(buffer.readUtf(128));
                 cooldowns.add(Math.max(0, buffer.readVarInt()));
+                charges.add(Math.max(0, Math.min(2, buffer.readVarInt())));
+                firstChargeTicks.add(Math.max(0, buffer.readVarInt()));
+                secondChargeTicks.add(Math.max(0, buffer.readVarInt()));
             }
             int availableCount = Math.min(32, Math.max(0, buffer.readVarInt()));
             List<String> available = new ArrayList<>(availableCount);
             for (int i = 0; i < availableCount; i++) available.add(buffer.readUtf(128));
-            return new ActiveLoadoutStatePayload(ids, cooldowns, available);
+            return new ActiveLoadoutStatePayload(
+                    ids, cooldowns, charges, firstChargeTicks, secondChargeTicks, available
+            );
         }
         @Override public void encode(RegistryFriendlyByteBuf buffer, ActiveLoadoutStatePayload value) {
             int slots = Math.min(10, value.slotIds().size());
             buffer.writeVarInt(slots);
             for (int i = 0; i < slots; i++) {
                 buffer.writeUtf(value.slotIds().get(i), 128);
-                buffer.writeVarInt(i < value.cooldownTicks().size() ? Math.max(0, value.cooldownTicks().get(i)) : 0);
+                buffer.writeVarInt(intAt(value.cooldownTicks(), i, 0));
+                buffer.writeVarInt(Math.min(2, intAt(value.maxCharges(), i, 0)));
+                buffer.writeVarInt(intAt(value.charge0Ticks(), i, 0));
+                buffer.writeVarInt(intAt(value.charge1Ticks(), i, 0));
             }
             int availableCount = Math.min(32, value.availableIds().size());
             buffer.writeVarInt(availableCount);
             for (int i = 0; i < availableCount; i++) buffer.writeUtf(value.availableIds().get(i), 128);
+        }
+
+        private int intAt(List<Integer> values, int index, int fallback) {
+            return index < values.size() ? Math.max(0, values.get(index)) : fallback;
         }
     };
 
     public ActiveLoadoutStatePayload {
         slotIds = List.copyOf(slotIds);
         cooldownTicks = List.copyOf(cooldownTicks);
+        maxCharges = List.copyOf(maxCharges);
+        charge0Ticks = List.copyOf(charge0Ticks);
+        charge1Ticks = List.copyOf(charge1Ticks);
         availableIds = List.copyOf(availableIds);
     }
 
