@@ -59,10 +59,22 @@ public final class ActiveRangeTelegraphService {
 
     /** Test/readability boundary: returns zero when no exact timed range is being presented. */
     public static float trackedRadius(ServerPlayer player, String abilityId) {
+        Window window = activeWindow(player, abilityId);
+        return window == null ? 0.0F : window.radius;
+    }
+
+    public static int remainingTicks(ServerPlayer player, String abilityId) {
+        Window window = activeWindow(player, abilityId);
+        if (window == null) return 0;
+        long remaining = Math.max(0L, window.endTick - player.level().getGameTime());
+        return (int) Math.min(Integer.MAX_VALUE, remaining);
+    }
+
+    private static Window activeWindow(ServerPlayer player, String abilityId) {
         Window window = ACTIVE.get(new Key(player.getUUID(), abilityId));
         if (window == null || window.level != player.level()
-                || window.endTick <= player.level().getGameTime()) return 0.0F;
-        return window.radius;
+                || window.endTick <= player.level().getGameTime()) return null;
+        return window;
     }
 
     private static void tick(MinecraftServer server) {
