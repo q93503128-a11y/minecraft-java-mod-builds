@@ -166,19 +166,18 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
                     augmentId + " has an empty player-facing summary/detail");
         }
 
-        AugmentPresentationCatalog.Entry trackingEntry = AugmentPresentationCatalog.get(AugmentCatalog.require(id("tracking_arrow")));
-        String tracking = trackingEntry.summary() + " " + trackingEntry.detail();
+        String tracking = text("tracking_arrow");
         require(tracking.contains("16") && tracking.contains("45")
                         && tracking.contains("4°") && tracking.contains("6°") && tracking.contains("8°")
                         && tracking.contains("철골렘") && tracking.contains("아군"),
                 "tracking-arrow description does not state its live range/cone/turn/neutral-target policy");
 
-        String wall = detail("wall_slam");
+        String wall = text("wall_slam");
         require(wall.contains("1초") && wall.contains("30%") && wall.contains("60%") && wall.contains("100%")
                         && wall.contains("벽 바로 근처"),
                 "wall-slam description does not match its forgiving live wall-contact window");
 
-        String aerial = detail("aerial_combo");
+        String aerial = text("aerial_combo");
         require(aerial.contains("두 번 점프가 없어도") && aerial.contains("같은 대상") && aerial.contains("공중 점프"),
                 "aerial-combo description does not explain standalone repeated air-jump recharge");
 
@@ -189,17 +188,17 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
                         && waterWalk.contains("다이빙") && waterWalk.contains("빠져나올"),
                 "Water Walk description does not explain one-way surface/crouch/dive behavior");
 
-        String returnToSender = detail("return_to_sender");
+        String returnToSender = text("return_to_sender");
         require(returnToSender.contains("누적 10") && returnToSender.contains("7블록")
                         && returnToSender.contains("45°") && returnToSender.contains("60% / 80% / 100%"),
                 "Return to Sender description does not match blocked-damage cone compression");
 
-        String portableRiptide = detail("portable_riptide");
+        String portableRiptide = text("portable_riptide");
         require(portableRiptide.contains("소모되지") && portableRiptide.contains("회전"),
                 "Portable Riptide description does not state unlimited bucket use and spin behavior");
 
-        String lastStand = detail("last_stand");
-        String delayedDamage = detail("delayed_damage");
+        String lastStand = text("last_stand");
+        String delayedDamage = text("delayed_damage");
         require(lastStand.contains("피해 지연") && lastStand.contains("모두 사라")
                         && delayedDamage.contains("모두 폐기") && delayedDamage.contains("새 예약"),
                 "Last Stand / delayed-damage descriptions do not explain debt clearing and suppression");
@@ -207,8 +206,9 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
         GameTestPlayers.succeed(helper);
     }
 
-    private static String detail(String path) {
-        return AugmentPresentationCatalog.get(AugmentCatalog.require(id(path))).detail();
+    private static String text(String path) {
+        AugmentPresentationCatalog.Entry entry = AugmentPresentationCatalog.get(AugmentCatalog.require(id(path)));
+        return entry.summary() + " " + entry.detail();
     }
 
     private static double angleDegrees(Vec3 first, Vec3 second) {
