@@ -20,7 +20,7 @@
     "ProjectileWeaponItemAugmentMixin", "UseCooldownMasteryMixin", "TridentPortableRiptideMixin", "ThrownEnderpearlMasteryMixin",
     "ReactiveCombatReflectedAccessor", "ReturnToSenderDeferralMixin", "ShieldCompressionBlockBoundaryMixin", "ActivePullEntityMixin", "AugmentMenuRerollDebounceMixin",
     "ItemDisplayAugmentAccessor", "ShieldThrowFlightMixin",
-    "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "SpecialActiveAugmentServiceInvoker", "ActiveAbilityOvertimeMixin", "ActiveLoadoutRespawnResyncMixin", "AdvancedActiveLoadoutSyncMixin", "ActiveRangeTelegraphBootstrapMixin",
+    "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "SpecialActiveAugmentServiceInvoker", "ActiveAbilityOvertimeMixin", "ActiveLoadoutRespawnResyncMixin", "AdvancedActiveLoadoutSyncMixin", "ActiveRangeTelegraphBootstrapMixin", "AreaAccelerationPresentationSyncMixin", "ActiveLoadoutExplicitSlotsMixin",
     "TimeAccelerationMiningAttributeMixin", "PlayerActionLockMixin", "ServerPlayerGameModeActionLockMixin",
     "ServerPlayerGameModeEnchantmentResonanceMixin", "PhaseShiftCollisionMixin", "PhaseShiftMovementValidationMixin", "PhaseShiftPlayerActionMixin",
     "PhaseShiftGameModeActionMixin", "PlayerGigantificationKnockbackMixin", "EntityCompanionAllyMixin", "CompanionOffensiveTargetContextMixin", "FinalRuntimeOffensiveTargetContextMixin",
@@ -38,10 +38,10 @@
   ],
   "client": [
     "LocalPlayerConsumptionMixin", "ClientMiningAugmentMixin", "ClientWaterWalkingLiquidBlockMixin",
-    "ClientPhaseShiftCollisionMixin", "ClientPhaseShiftPushOutMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
+    "ClientPhaseShiftCollisionMixin", "ClientPhaseShiftPushOutMixin", "ClientPhaseShiftScreenEffectMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin", "ClientReserveMealHudMixin", "ClientUseCooldownMasteryMixin", "ClientPortableRiptideWetnessMixin",
     "AugmentOfferRerollClickFixMixin", "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
-    "AugmentDeviceUiRescueMixin", "ActiveLoadoutQuickClickMixin", "ActiveLoadoutUiRescueMixin", "CoreSynthesisAnimationMixin",
+    "AugmentDeviceUiRescueMixin", "ActiveLoadoutQuickClickMixin", "ActiveLoadoutUiRescueMixin", "CombatHudDeclutterMixin", "CoreSynthesisAnimationMixin",
     "ClientCoopMobilityBootstrapMixin", "FlightFovMixin", "FlightAvatarRenderMixin",
     "AugmentDeviceCardPresentationMixin"
   ],

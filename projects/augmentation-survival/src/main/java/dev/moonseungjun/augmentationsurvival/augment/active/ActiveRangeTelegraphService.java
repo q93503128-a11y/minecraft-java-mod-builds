@@ -14,11 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Sparse world-space range boundaries for active fields/channels that do not already own a more
- * exact specialized boundary renderer. Geometry is fed by the same radius used by the gameplay
- * presentation state; Time Stop stays on its dedicated three-great-circle sphere renderer.
- */
+/** Sparse authoritative 3D range boundaries for sustained/channelled radial abilities. */
 public final class ActiveRangeTelegraphService {
     private static final Map<Key, Window> ACTIVE = new HashMap<>();
     private static boolean initialized;
@@ -94,28 +90,37 @@ public final class ActiveRangeTelegraphService {
                 iterator.remove();
                 continue;
             }
-            // Four refreshes per second keep the edge readable without turning the field into particle fog.
-            if (now % 5L == 0L) {
+            // Three great circles at 2 Hz read as a sphere while remaining much cheaper than a shell fog.
+            if (now % 10L == 0L) {
                 emitBoundary(player.level(), player.position(), window.radius, window.particle);
             }
         }
     }
 
+    /**
+     * The gameplay queries use full 3D distance-to-center. Render the same spherical contract with
+     * three orthogonal great circles rather than the old horizontal-only ring.
+     */
     private static void emitBoundary(ServerLevel level, Vec3 center, float radius, ParticleOptions particle) {
-        int points = Math.max(24, Math.min(72, Math.round(radius * 2.0F)));
-        double y = center.y + 0.12D;
+        int points = Math.max(20, Math.min(48, Math.round(radius * 1.5F)));
         for (int i = 0; i < points; i++) {
             double angle = Math.PI * 2.0D * i / points;
-            double x = center.x + Math.cos(angle) * radius;
-            double z = center.z + Math.sin(angle) * radius;
-            level.sendParticles(particle, x, y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            double c = Math.cos(angle) * radius;
+            double s = Math.sin(angle) * radius;
+            send(level, center.add(c, 0.0D, s), particle); // XZ
+            send(level, center.add(c, s, 0.0D), particle); // XY
+            send(level, center.add(0.0D, c, s), particle); // YZ
         }
+    }
+
+    private static void send(ServerLevel level, Vec3 point, ParticleOptions particle) {
+        level.sendParticles(particle, point.x, point.y, point.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
     }
 
     private static ParticleOptions particleFor(String abilityId) {
         String path = path(abilityId);
         return switch (path) {
-            case "area_acceleration" -> ParticleTypes.ENCHANT;
+            case "area_acceleration" -> ParticleTypes.END_ROD;
             case "revive" -> ParticleTypes.HAPPY_VILLAGER;
             default -> ParticleTypes.END_ROD;
         };

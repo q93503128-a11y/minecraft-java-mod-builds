@@ -21,8 +21,11 @@ abstract class ShieldCompressionBlockBoundaryMixin {
             CallbackInfoReturnable<Float> cir
     ) {
         if (!((Object) this instanceof ServerPlayer player)) return;
-        float remaining = cir.getReturnValueF();
-        float blocked = incomingDamage - remaining;
+
+        // 26.2 applyItemBlocking returns the amount actually blocked. The previous live-fix
+        // treated it as remaining damage and subtracted it from incomingDamage, which turns a
+        // fully blocked hit into zero stored compression and makes Return to Sender appear dead.
+        float blocked = cir.getReturnValueF();
         if (blocked > 0.0F && Float.isFinite(blocked)) {
             ShieldCompressionService.onBlockedDamage(player, source, blocked);
         }

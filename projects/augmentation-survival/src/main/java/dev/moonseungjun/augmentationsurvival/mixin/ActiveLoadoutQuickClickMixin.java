@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Double-click fast path resolved from the actual click geometry, never stale hover state. */
+/** Right-click quick equip/unequip resolved from actual click geometry; left-click stays manual. */
 @Mixin(value = ActiveLoadoutScreen.class, priority = 1400)
 abstract class ActiveLoadoutQuickClickMixin extends Screen {
     @Shadow private int selectedSlot;
@@ -26,25 +26,23 @@ abstract class ActiveLoadoutQuickClickMixin extends Screen {
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void augmentationSurvival$doubleClickQuickEquip(
+    private void augmentationSurvival$rightClickQuickEquip(
             MouseButtonEvent event,
             boolean doubleClick,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (!doubleClick || event.button() != 0) return;
+        if (event.button() != 1) return;
 
         Geometry layout = augmentationSurvival$layout();
         List<String> slots = ClientActiveLoadoutState.slots();
 
-        // Double-clicking an equipped quick slot is always an immediate unequip.
+        // Right-clicking a quick slot clears it. Blank slots are deliberately legal and persist.
         for (int slot = 0; slot < Math.min(10, slots.size()); slot++) {
             int sx = layout.slotStartX + slot * (layout.slotW + layout.slotGap);
             if (!inside(event.x(), event.y(), sx, layout.slotY, layout.slotW, layout.slotH)) continue;
-            if (!slots.get(slot).isBlank()) {
-                sendClear(slot);
-                selectedSlot = -1;
-                selectedAugmentId = "";
-            }
+            if (!slots.get(slot).isBlank()) sendClear(slot);
+            selectedSlot = -1;
+            selectedAugmentId = "";
             cir.setReturnValue(true);
             return;
         }
@@ -75,7 +73,8 @@ abstract class ActiveLoadoutQuickClickMixin extends Screen {
                             ActiveLoadoutEditPayload.ASSIGN, emptySlot, 0, id
                     ));
                 } else {
-                    // A full bar requires an explicit replacement choice rather than silently evicting one.
+                    // Full bar: never evict another augment implicitly. Fall back to the existing
+                    // deliberate left-click replacement flow with this augment selected.
                     selectedAugmentId = id;
                     selectedSlot = -1;
                     cir.setReturnValue(true);
