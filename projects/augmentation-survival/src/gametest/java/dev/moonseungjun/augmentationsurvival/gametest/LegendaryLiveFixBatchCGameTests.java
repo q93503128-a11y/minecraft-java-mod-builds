@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveRangeTelegraphService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
+import dev.moonseungjun.augmentationsurvival.augment.active.TimeStopBoundaryService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.network.ActivePresentationPayload;
@@ -44,7 +45,7 @@ public final class LegendaryLiveFixBatchCGameTests implements CustomTestMethodIn
     }
 
     @GameTest(maxTicks = 30)
-    public void timeStopTelegraphUsesTheGameplayRadius(GameTestHelper helper) {
+    public void timeStopTelegraphUsesTheDedicatedGameplaySphere(GameTestHelper helper) {
         ServerPlayer player = player(helper);
         String timeStop = id("time_stop");
         AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
@@ -52,9 +53,11 @@ public final class LegendaryLiveFixBatchCGameTests implements CustomTestMethodIn
                 .withActiveSlots(List.of(timeStop)));
 
         require(ActiveAbilityRouter.tryUseSlot(player, 0), "time stop route failed");
-        float gameplayRadius = (float) SpecialActiveTuning.current().timeStopRadius();
-        require(ActiveRangeTelegraphService.trackedRadius(player, timeStop) == gameplayRadius,
-                "time stop telegraph radius diverged from gameplay radius");
+        double gameplayRadius = SpecialActiveTuning.current().timeStopRadius();
+        require(Math.abs(TimeStopBoundaryService.activeRadius(player) - gameplayRadius) <= 1.0E-6D,
+                "time stop sphere boundary diverged from gameplay radius");
+        require(ActiveRangeTelegraphService.trackedRadius(player, timeStop) == 0.0F,
+                "generic range ring duplicated the dedicated time stop sphere");
         GameTestPlayers.succeed(helper);
     }
 
