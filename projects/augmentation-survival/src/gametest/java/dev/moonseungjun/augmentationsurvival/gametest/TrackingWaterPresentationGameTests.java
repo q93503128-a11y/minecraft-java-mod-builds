@@ -17,14 +17,15 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** Regressions for tracking, water traversal and repaired player-facing descriptions. */
 public final class TrackingWaterPresentationGameTests implements CustomTestMethodInvoker {
@@ -104,41 +105,44 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
     }
 
     @GameTest(maxTicks = 20)
-    public void waterRunSupportsStandingWalkingCrouchSinkAndFiveBlockDive(GameTestHelper helper) {
+    public void waterWalkSupportsStandingWalkingCrouchSinkAndFiveBlockDive(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("water_run"), 1)
         );
-        BlockPos anchor = helper.absolutePos(new BlockPos(3, 4, 3));
-        player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
+        BlockPos relativeWater = new BlockPos(3, 3, 3);
+        helper.setBlock(relativeWater, Blocks.WATER);
+        BlockPos waterPos = helper.absolutePos(relativeWater);
+        BlockState water = helper.getLevel().getBlockState(waterPos);
+        double surfaceY = waterPos.getY() + water.getFluidState().getHeight(helper.getLevel(), waterPos);
+        player.setPos(waterPos.getX() + 0.5D, surfaceY, waterPos.getZ() + 0.5D);
         player.setOnGround(false);
         player.setSprinting(false);
         player.setDeltaMovement(Vec3.ZERO);
-
-        FluidState water = Blocks.WATER.defaultBlockState().getFluidState();
-        require(water.is(FluidTags.WATER), "water-run regression setup did not produce water fluid state");
-
         player.fallDistance = 0.0F;
-        require(player.canStandOnFluid(water),
-                "stationary player with Water Run could not stand on water");
+
+        VoxelShape standing = water.getCollisionShape(helper.getLevel(), waterPos, CollisionContext.of(player));
+        require(!standing.isEmpty(), "stationary player with Water Walk had no water-surface collision");
 
         player.setDeltaMovement(0.12D, 0.0D, 0.0D);
-        require(player.canStandOnFluid(water),
-                "walking player with Water Run could not stay supported on water");
+        require(!water.getCollisionShape(helper.getLevel(), waterPos, CollisionContext.of(player)).isEmpty(),
+                "walking player with Water Walk lost water-surface support");
 
         player.setShiftKeyDown(true);
-        require(!player.canStandOnFluid(water),
+        require(water.getCollisionShape(helper.getLevel(), waterPos, CollisionContext.of(player)).isEmpty(),
                 "crouching player incorrectly retained water-surface support");
         player.setShiftKeyDown(false);
 
         player.fallDistance = 4.99F;
-        require(player.canStandOnFluid(water),
+        require(!water.getCollisionShape(helper.getLevel(), waterPos, CollisionContext.of(player)).isEmpty(),
                 "fall below the five-block dive threshold incorrectly broke water support");
         player.fallDistance = 5.0F;
-        require(!player.canStandOnFluid(water),
+        require(water.getCollisionShape(helper.getLevel(), waterPos, CollisionContext.of(player)).isEmpty(),
                 "five-block-or-higher dive did not pass through the water surface");
-        require(!player.canStandOnFluid(Blocks.LAVA.defaultBlockState().getFluidState()),
+
+        BlockState lava = Blocks.LAVA.defaultBlockState();
+        require(lava.getCollisionShape(helper.getLevel(), waterPos, CollisionContext.of(player)).isEmpty(),
                 "water traversal incorrectly allowed standing on lava");
         GameTestPlayers.succeed(helper);
     }
@@ -177,10 +181,12 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
         require(aerial.contains("두 번 점프가 없어도") && aerial.contains("같은 대상") && aerial.contains("공중 점프"),
                 "aerial-combo description does not explain standalone repeated air-jump recharge");
 
-        String waterRun = detail("water_run");
-        require(waterRun.contains("걷") && waterRun.contains("웅크") && waterRun.contains("5블록")
-                        && waterRun.contains("잠수"),
-                "water-run description does not explain stand/walk/crouch/dive behavior");
+        AugmentPresentationCatalog.Entry waterEntry = AugmentPresentationCatalog.get(AugmentCatalog.require(id("water_run")));
+        String waterWalk = waterEntry.detail();
+        require(waterEntry.displayName().equals("수상 보행")
+                        && waterWalk.contains("걷") && waterWalk.contains("웅크") && waterWalk.contains("5블록")
+                        && waterWalk.contains("다이빙") && waterWalk.contains("빠져나올"),
+                "Water Walk description does not explain one-way surface/crouch/dive behavior");
 
         String returnToSender = detail("return_to_sender");
         require(returnToSender.contains("누적 10") && returnToSender.contains("7블록")

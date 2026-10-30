@@ -31,6 +31,7 @@
       "dev.moonseungjun.augmentationsurvival.gametest.TraversalRescueGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ShieldThrowFlightGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.TrackingWaterPresentationGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.LegendaryPresentationGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.HeroActiveBoundaryGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ProtectionFeedbackBoundaryGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.HealingMovementFeelGameTests"
