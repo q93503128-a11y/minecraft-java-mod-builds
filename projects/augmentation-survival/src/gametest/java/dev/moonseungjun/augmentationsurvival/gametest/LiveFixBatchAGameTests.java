@@ -102,7 +102,7 @@ public final class LiveFixBatchAGameTests implements CustomTestMethodInvoker {
                 "respawn handoff lost the old player's freshly recorded last-death position");
         require(DeathReturnAugmentService.tryUse(newPlayer),
                 "Death Return did not become available after an actual-death respawn handoff");
-        require(newPlayer.blockPosition().closerToCenterThan(target.pos().getCenter(), 1.5D),
+        require(newPlayer.position().distanceToSqr(Vec3.atBottomCenterOf(target.pos())) < 2.25D,
                 "Death Return succeeded without moving the player to the recorded death point");
         GameTestPlayers.succeed(helper);
     }
