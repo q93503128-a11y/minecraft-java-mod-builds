@@ -14,7 +14,12 @@ public final class ActiveLoadoutClientNetworking {
         ClientPlayNetworking.registerGlobalReceiver(
                 ActiveLoadoutStatePayload.TYPE,
                 (payload, context) -> ClientActiveLoadoutState.apply(
-                        payload.slotIds(), payload.cooldownTicks(), payload.availableIds()
+                        payload.slotIds(),
+                        payload.cooldownTicks(),
+                        payload.maxCharges(),
+                        payload.charge0Ticks(),
+                        payload.charge1Ticks(),
+                        payload.availableIds()
                 )
         );
         ClientPlayNetworking.registerGlobalReceiver(
