@@ -94,10 +94,14 @@ public final class LiveFixBatchAGameTests implements CustomTestMethodInvoker {
         GlobalPos target = GlobalPos.of(level.dimension(), helper.absolutePos(new BlockPos(6, 2, 6)));
         oldPlayer.setLastDeathLocation(Optional.of(target));
         newPlayer.setLastDeathLocation(Optional.empty());
-        AugmentationPlayerStateService.replace(
-                newPlayer,
-                AugmentationPlayerState.initial().withAugmentLevel(id("death_return"), 1)
-        );
+
+        // A real death starts with the augment on the dying player, then the copyOnDeath
+        // attachment supplies the same ownership to the replacement player before AFTER_RESPAWN.
+        AugmentationPlayerState owned = AugmentationPlayerState.initial()
+                .withAugmentLevel(id("death_return"), 1);
+        AugmentationPlayerStateService.replace(oldPlayer, owned);
+        AugmentationPlayerStateService.replace(newPlayer, owned);
+
         BlockPos start = helper.absolutePos(new BlockPos(1, 2, 1));
         newPlayer.setPos(start.getX() + 0.5D, start.getY(), start.getZ() + 0.5D);
 
