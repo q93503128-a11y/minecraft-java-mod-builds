@@ -12,11 +12,14 @@ import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
-/** Physical traversal regressions for Temporary Platform landing and water-surface traversal rules. */
+/** Physical traversal regressions for Temporary Platform and Water Walk surface rules. */
 public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -89,32 +92,50 @@ public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
     }
 
     @GameTest(maxTicks = 40)
-    public void waterRunUsesOwnershipWithCrouchAndFiveBlockDiveExceptions(GameTestHelper helper) {
+    public void waterWalkUsesOneWaySurfaceCrouchDiveAndSafeLanding(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
-        BlockPos start = helper.absolutePos(new BlockPos(2, 2, 2));
-        player.setPos(start.getX() + 0.5D, start.getY(), start.getZ() + 0.5D);
-        player.setOnGround(false);
+        ServerLevel level = helper.getLevel();
+        BlockPos relativeWater = new BlockPos(4, 2, 4);
+        helper.setBlock(relativeWater, Blocks.WATER);
+        BlockPos waterPos = helper.absolutePos(relativeWater);
+        BlockState water = level.getBlockState(waterPos);
+
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("water_run"), 1)
         );
-        player.setSprinting(false);
-        player.setDeltaMovement(0.0D, 0.0D, 0.0D);
+        player.setPos(waterPos.getX() + 0.5D, waterPos.getY() + 1.0D, waterPos.getZ() + 0.5D);
+        player.setShiftKeyDown(false);
         player.fallDistance = 0.0F;
 
-        require(player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                "Water Run ownership alone did not support standing on water");
-        require(!player.canStandOnFluid(Fluids.LAVA.defaultFluidState()),
-                "Water Run incorrectly allowed standing on lava");
+        VoxelShape standing = water.getCollisionShape(level, waterPos, CollisionContext.of(player));
+        require(!standing.isEmpty(), "Water Walk did not expose a water-surface collision while above water");
 
         player.setShiftKeyDown(true);
-        require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                "Water Run remained active while crouching");
+        require(water.getCollisionShape(level, waterPos, CollisionContext.of(player)).isEmpty(),
+                "Water Walk surface remained solid while crouching");
         player.setShiftKeyDown(false);
 
         player.fallDistance = 5.0F;
-        require(!player.canStandOnFluid(Fluids.WATER.defaultFluidState()),
-                "five-block dive did not pass through the water surface");
+        require(water.getCollisionShape(level, waterPos, CollisionContext.of(player)).isEmpty(),
+                "five-block dive did not bypass the Water Walk surface");
+
+        player.fallDistance = 0.0F;
+        player.setPos(waterPos.getX() + 0.5D, waterPos.getY() + 0.20D, waterPos.getZ() + 0.5D);
+        require(water.getCollisionShape(level, waterPos, CollisionContext.of(player)).isEmpty(),
+                "Water Walk blocked a player rising from inside the water");
+
+        player.setPos(waterPos.getX() + 0.5D, waterPos.getY() + 1.0D, waterPos.getZ() + 0.5D);
+        player.setHealth(player.getMaxHealth());
+        float before = player.getHealth();
+        player.fallDistance = 4.5F;
+        player.causeFallDamage(4.5D, 1.0F, player.damageSources().fall());
+        require(close(player.getHealth(), before, 1.0E-4F),
+                "Water Walk surface landing leaked fall damage");
+
+        require(Blocks.LAVA.defaultBlockState()
+                        .getCollisionShape(level, waterPos, CollisionContext.of(player)).isEmpty(),
+                "Water Walk incorrectly exposed a collision surface for lava");
         GameTestPlayers.succeed(helper);
     }
 

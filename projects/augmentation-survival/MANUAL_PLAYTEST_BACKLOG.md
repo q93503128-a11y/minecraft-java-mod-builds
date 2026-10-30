@@ -4,19 +4,23 @@ This file tracks only player-facing behavior that is still unresolved or has cha
 
 ## Active retest after the current repair build
 
-- [ ] `water_run` — with the augment owned, stand still, walk and sprint on a water surface without needing sprint input. Crouching must let the player sink. A fall below 5 blocks should still catch the surface, while a 5-block-or-higher dive must pass through it. Lava must remain unaffected.
-- [ ] `return_to_sender` — block real attacks with a shield. Blocked damage accumulates; each 10 damage (5 hearts) of blocked damage emits one forward cone wave toward the entity that attacked the shield. The wave reaches 7 blocks, spans 45 degrees total, damages valid enemies in the cone, excludes allies/companions, and returns 60% / 80% / 100% of compressed damage at Lv.1 / 2 / 3. Leftover blocked damage carries into the next block.
-- [ ] `last_stand` + `delayed_damage` — create real delayed-damage debt and let a later installment trigger Last Stand. Activation must leave 1 HP, immediately erase all remaining delayed installments, and prevent any new delayed reservation during the 3-second protection window. When the protection ends there must be no old delayed damage waiting to kill the player.
-- [ ] `portable_riptide` — Survival, dry land, Riptide trident, water bucket in the offhand. Dry Riptide must launch repeatedly without consuming or degrading the water bucket. Confirm the normal visible Riptide body-spin animation also plays on dry-land launches.
+- [ ] `water_run` / **수상 보행** — stand, walk and sprint across real water surfaces. The surface should feel like ground from above, including flowing-water height. Crouching must let the player sink. A fall below 5 blocks should land without fall damage; a 5-block-or-higher dive must pass through. While already underwater, swimming upward must cross the surface normally instead of trapping the player below it. Lava must remain unaffected.
+- [ ] `portable_riptide` / **휴대 수류** — Survival, dry land, Riptide trident in the main hand, water bucket in the offhand. Repeated dry Riptide uses must keep the bucket intact and must show the same visible body-spin animation as ordinary wet Riptide.
 
-## Confirmed in the 2026-10-30 player playtest
+## Next manual scope — Legendary tier
 
-The player reported the remaining items from the previous manual backlog as working. Do not ask for another pass on those confirmed behaviors unless code affecting them changes again.
+The next broader player pass will include Legendary augments. Their card/tooltip text is now hand-authored instead of relying on mechanical summary extraction. Test them naturally and report only behavior or wording that is actually wrong; previously confirmed lower-tier items do not need another pass.
+
+## Confirmed / do not reopen
+
+- `return_to_sender` — no new failure was reported after the shield-compression redesign pass.
+- `last_stand` + `delayed_damage` — no new failure was reported after the delayed-debt clearing/protection repair.
+- All items already recorded as working in the 2026-10-30 playtest remain closed unless code affecting them changes again.
 
 ## Deferred change request
 
-- `aerial_combo` — the player requested a later change so its air jump uses 1.5x jump strength. This is explicitly deferred and is not part of the current repair build or current retest list.
+- `aerial_combo` — later change requested: its air jump should use 1.5x jump strength. This remains deferred and is not part of the current repair build.
 
 ## Reporting rule
 
-Automated tests/builds can validate code boundaries, but only the four active items above need another player-facing pass after this repair build. Report failures as `augment O/X - symptom` so the next repair is reproducible.
+Automated tests/builds validate code boundaries, but only the two active repaired mechanics above require focused retesting. The Legendary pass is new coverage rather than a repeat of already confirmed items. Report failures as `augment O/X - symptom` so the next repair is reproducible.
