@@ -52,7 +52,7 @@ Verification checkpoint: CI #505, 120/120 required GameTests, clean build, dedic
 
 Verification checkpoint: CI #506 completed SUCCESS: clean build/GameTests, localization, dedicated-server boot, client boot, MRPack generation and production-JAR verification all passed. Manual visual verification remains deferred until all repair bundles are complete.
 
-## Bundle C — input/range readability repair — IMPLEMENTED, VERIFICATION PENDING
+## Bundle C — input/range readability repair — IMPLEMENTED + BUILD VERIFIED
 
 1. **K-screen double-click quick equip / unequip**
    - Root cause: the fast-path mixin used `hoveredId` cached by a previous render frame, while another UI mixin owned the actual click geometry. A valid double click could therefore arrive with no/stale target.
@@ -61,22 +61,29 @@ Verification checkpoint: CI #506 completed SUCCESS: clean build/GameTests, local
 
 2. **Persistent sustained-field range outline**
    - Added a server-owned sparse range telegraph runtime. Sustained or channelled states with a real radius keep a world-space boundary visible at a restrained 4 Hz cadence.
-   - Current persistent field coverage includes Area Acceleration, Time Stop and the Revive focus range where their presentation profiles provide the actual gameplay radius.
+   - Area Acceleration and Revive use this shared persistent boundary; Time Stop keeps its dedicated gameplay-aligned 3D sphere instead of drawing a duplicate generic ring.
 
 3. **Instant radial range ring**
    - Existing successful-use rings were confirmed to already use the authoritative presentation radius for radial instant abilities; they remain one-shot rather than being incorrectly persisted.
-   - The new persistent service deliberately ignores `INSTANT` phases so burst indicators do not turn into fake sustained zones.
+   - The persistent service deliberately ignores `INSTANT` phases so burst indicators do not turn into fake sustained zones.
 
 4. **Cone range boundary**
    - Shield Compression / Return to Sender already used the exact gameplay range and half-angle for its cone VFX, but the old points were sparse.
    - Fix: the cone now draws centerline, four side rails and the circular far cross-section using `tan(halfAngle) * range`, matching the same finite 3D cone used by the damage dot-product check.
 
 5. **Indicator/gameplay boundary synchronization**
-   - Persistent ring radius comes directly from the same authoritative active profile/tuning used by gameplay rather than a client-authored estimate.
-   - Area Acceleration now exposes its real remaining runtime and republishes the sustained state whenever Overtime extends the aura, keeping both corner timer and world boundary aligned with the true extended end tick.
-   - Added regressions for Area Acceleration radius, Time Stop radius, channel cancellation cleanup and Overtime extension synchronization.
+   - Persistent range values come from authoritative gameplay tuning rather than client-authored estimates.
+   - Area Acceleration republishes the sustained state whenever Overtime extends the aura, keeping corner timer and world boundary aligned with the real extended end tick.
+   - Dedicated regressions cover Area Acceleration radius/duration, Revive channel cancellation cleanup, Overtime extension synchronization, and Time Stop's dedicated sphere radius without duplicate generic telegraphs.
 
-## Deferred to following bundles
+Verification checkpoint: CI #509 on `fff62aae14e6e6f78b1a1312e0d8154b26d17c28` completed SUCCESS: clean build/GameTests, localization, dedicated-server boot, client boot, MRPack generation and production-JAR verification all passed.
 
-- Any additional live-play failures already reported after these items; do not reopen confirmed lower-tier mechanics without related code changes.
+## Current live-play report closure
+
+The three bundles above cover the complete set of concrete issues reported in the latest Legendary play session: shield visual offset, K-screen double-click failure, Death Return failure, Delayed Damage/Last Stand failure, unclear Time Acceleration state, Phase Shift rubber-banding, Threat Suppression HUD obstruction, Double Charge cooldown/charge visibility, unclear Area Acceleration operation, and insufficient ability range visualization.
+
+No unreported fourth Legendary defect bundle is invented here. Further work starts only from a newly observed failure or an explicitly requested design change.
+
+## Deferred explicit change request
+
 - `aerial_combo`: requested later change to 1.5x own air-jump strength remains deferred until its dedicated change pass.
