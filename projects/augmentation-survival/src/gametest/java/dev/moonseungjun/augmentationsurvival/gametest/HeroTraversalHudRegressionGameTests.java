@@ -100,7 +100,7 @@ public final class HeroTraversalHudRegressionGameTests implements CustomTestMeth
     }
 
     private static boolean rootMelee(ServerPlayer attacker, LivingEntity target, float damage) {
-        return CombatProvenanceContext.callAs(
+        boolean applied = CombatProvenanceContext.callAs(
                 CombatProvenance.ROOT_MELEE,
                 () -> target.hurtServer(
                         (ServerLevel) target.level(),
@@ -108,6 +108,11 @@ public final class HeroTraversalHudRegressionGameTests implements CustomTestMeth
                         damage
                 )
         );
+        if (applied) {
+            // Mirrors the canonical post-Player.attack boundary owned by PlayerRootMeleeProvenanceMixin.
+            MovementAugmentService.onSuccessfulRootMelee(attacker, target);
+        }
+        return applied;
     }
 
     private static String id(String path) {

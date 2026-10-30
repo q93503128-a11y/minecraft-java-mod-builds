@@ -296,7 +296,7 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
     }
 
     private static boolean rootMelee(ServerPlayer attacker, LivingEntity target, float damage) {
-        return CombatProvenanceContext.callAs(
+        boolean applied = CombatProvenanceContext.callAs(
                 CombatProvenance.ROOT_MELEE,
                 () -> target.hurtServer(
                         (ServerLevel) target.level(),
@@ -304,6 +304,11 @@ public final class AerialProjectilePlaytestGameTests implements CustomTestMethod
                         damage
                 )
         );
+        if (applied) {
+            // Mirrors the canonical post-Player.attack boundary owned by PlayerRootMeleeProvenanceMixin.
+            MovementAugmentService.onSuccessfulRootMelee(attacker, target);
+        }
+        return applied;
     }
 
     private static double angleDegrees(Vec3 first, Vec3 second) {

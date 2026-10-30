@@ -16,7 +16,7 @@ import net.minecraft.world.entity.LivingEntity;
 public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
-    @GameTest(maxTicks = 24)
+    @GameTest(maxTicks = 28)
     public void shieldExpirationTriggersBurstExactlyOnce(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         AugmentationPlayerStateService.replace(
@@ -26,14 +26,15 @@ public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMeth
         LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 3).withNoFreeWill().spawn();
         player.setPos(target.getX() - 2.0D, target.getY(), target.getZ());
 
-        // Let global threat-stage scaling finish before taking the health baseline. Otherwise a
-        // legitimate max-health refresh can look like a second Shield Burst in this parallel suite.
+        // Let global threat-stage scaling finish before taking the health baseline. The first
+        // post-expiry assertion is intentionally several ticks later so GameTest callbacks cannot
+        // race the protection runtime's server-tick phase on the exact expiration tick.
         GameTestPlayers.runAfterDelay(helper, 5L, () -> {
             target.setHealth(target.getMaxHealth());
             float before = target.getHealth();
             ProtectionAugmentService.grantShield(player, "expiration-regression", 4.0F, 1);
 
-            GameTestPlayers.runAfterDelay(helper, 3L, () -> {
+            GameTestPlayers.runAfterDelay(helper, 5L, () -> {
                 float afterBurst = target.getHealth();
                 require(afterBurst < before,
                         "expiring augment shield did not trigger Shield Burst");
