@@ -36,6 +36,13 @@ public final class TimeStopBoundaryService {
         );
     }
 
+    /** Test/readability boundary: zero means this player's time-stop sphere is not active. */
+    public static double activeRadius(ServerPlayer player) {
+        Long until = ACTIVE_UNTIL.get(player.getUUID());
+        if (until == null || until <= player.level().getGameTime()) return 0.0D;
+        return SpecialActiveTuning.current().timeStopRadius();
+    }
+
     private static void tick(MinecraftServer server) {
         Iterator<Map.Entry<UUID, Long>> iterator = ACTIVE_UNTIL.entrySet().iterator();
         while (iterator.hasNext()) {
