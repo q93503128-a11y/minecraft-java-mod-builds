@@ -22,6 +22,7 @@
       "dev.moonseungjun.augmentationsurvival.gametest.CommonAugmentGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.MovementEdgeCaseGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.LivePlaytestRegressionGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.LiveFixBatchAGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ReturnToSenderGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.UiInputRegressionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.WallSlamGameTests",
