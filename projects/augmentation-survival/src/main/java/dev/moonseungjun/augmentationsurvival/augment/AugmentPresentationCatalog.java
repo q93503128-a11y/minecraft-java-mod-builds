@@ -1,171 +1,189 @@
 package dev.moonseungjun.augmentationsurvival.augment;
 
-import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
-import dev.moonseungjun.augmentationsurvival.augment.movement.FlightAugmentService;
-import java.io.BufferedReader;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-/** Player-facing presentation text derived from canonical design plus explicit live-runtime overrides. */
+/** Explicit player-facing augment text. Design canon is never auto-summarized into cards. */
 public final class AugmentPresentationCatalog {
-    private static final String RESOURCE = "data/augmentation_survival/augmentation/AUGMENTS.md";
+    private static final String RESOURCE = "data/augmentation_survival/augmentation/augment_presentations.json";
+    private static final int SCHEMA_VERSION = 1;
+    private static final String[] FORBIDDEN_PLAYER_TERMS = {
+            "root", "derived", "compat", "whitelist", "uuid", "namespace", "debug",
+            "server authority", "game tick", "blocks/tick", "재귀", "내부 판정"
+    };
     private static volatile Map<String, Entry> entries;
 
     private AugmentPresentationCatalog() { }
 
     public static void initialize() {
         Map<String, Entry> loaded = load();
+        if (loaded.size() != AugmentCatalog.allDefinitions().size()) {
+            throw new IllegalStateException("Player-facing augment text count mismatch: expected="
+                    + AugmentCatalog.allDefinitions().size() + ", actual=" + loaded.size());
+        }
+
         for (AugmentDefinition definition : AugmentCatalog.allDefinitions()) {
-            if (definition.id().equals(AugmentCatalog.REROLL_ID) || directOverride(definition) != null) continue;
-            if (!loaded.containsKey(definition.canonicalNameKo())) {
-                throw new IllegalStateException("Missing player-facing augment text for " + definition.canonicalNameKo());
+            String path = path(definition.id());
+            Entry entry = loaded.get(path);
+            if (entry == null) {
+                throw new IllegalStateException("Missing explicit player-facing augment text for " + definition.id());
             }
+
+            String expectedName = displayName(definition.canonicalNameKo());
+            if (!entry.displayName().equals(expectedName)) {
+                throw new IllegalStateException("Player-facing augment name drift for " + definition.id()
+                        + ": expected=" + expectedName + ", actual=" + entry.displayName());
+            }
+
+            Kind expectedKind = expectedKind(definition, path);
+            if (entry.kind() != expectedKind) {
+                throw new IllegalStateException("Player-facing augment kind drift for " + definition.id()
+                        + ": expected=" + expectedKind + ", actual=" + entry.kind());
+            }
+
+            validateText(definition.id(), entry.summary(), "summary");
+            validateText(definition.id(), entry.detail(), "detail");
         }
         entries = Map.copyOf(loaded);
     }
 
     public static Entry get(AugmentDefinition definition) {
-        if (definition.id().equals(AugmentCatalog.REROLL_ID)) {
-            return new Entry("재추첨", Kind.PASSIVE,
-                    "코어 뽑기마다 후보 카드 하나를 1 / 2 / 3회 새 후보로 바꿀 수 있습니다.",
-                    "Lv.1 / 2 / 3에서 코어 뽑기마다 재추첨 1 / 2 / 3회를 얻습니다. 한 번 사용할 때 선택한 카드 한 장만 같은 등급의 새 후보로 바뀌며 다른 두 카드는 유지됩니다. 현재 표시된 다른 후보와는 중복되지 않습니다.");
-        }
-        Entry direct = directOverride(definition);
-        if (direct != null) return direct;
         Map<String, Entry> current = entries;
-        if (current == null) { initialize(); current = entries; }
-        Entry entry = current.get(definition.canonicalNameKo());
-        if (entry != null) return playerFacingOverride(definition, entry);
-        return new Entry(displayName(definition.canonicalNameKo()), Kind.PASSIVE,
-                "효과 설명을 불러오지 못했습니다.", "효과 설명을 불러오지 못했습니다.");
+        if (current == null) {
+            initialize();
+            current = entries;
+        }
+        Entry entry = current.get(path(definition.id()));
+        if (entry == null) {
+            throw new IllegalStateException("Missing explicit player-facing augment text for " + definition.id());
+        }
+        return entry;
     }
-
-    private static Entry directOverride(AugmentDefinition definition) {
-        String id = definition.id();
-        if (id.equals(PlayerRescueAugmentService.RESCUE_ID)) {
-            return new Entry("동료 구조", Kind.PASSIVE,
-                    "둘 이상이 함께할 때, 치명상을 입은 당신이 잠시 쓰러져 구조를 기다립니다.",
-                    "온라인 비관전자 플레이어가 2명 이상일 때만 후보에 등장합니다. 다른 사망 방지 효과가 모두 실패한 치명 피해를 받으면 10초 동안 쓰러집니다. 다른 플레이어가 가까이서 2초 구조하면 최대 체력 30%로 복귀하며, 구조되지 못하면 실제로 사망합니다. 쓰러짐 발동 후 15초 동안 다시 발동하지 않습니다.");
-        }
-        if (id.endsWith(":instant_mining")) {
-            return new Entry("순간 채굴", Kind.TOGGLE,
-                    "전용 단축키로 켜고 끄며, 활성화 중 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
-                    "기본 N키로 켜고 끕니다. 키 설정에서 변경할 수 있습니다. 활성화 중 현재 도구로 정상 수확 가능한 직접 채굴 블록을 1 game tick에 파괴합니다. 파괴 불가 블록은 제외되며 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다. 자동 파생 블록까지 1틱 채굴로 재귀 확장하지 않습니다.");
-        }
-        if (id.equals(FlightAugmentService.FLIGHT_ID)) {
-            return new Entry("비행", Kind.TOGGLE,
-                    "시선 방향으로 가속해 호버·순항·초고속 비행을 오가는 전용 비행 능력입니다.",
-                    "기본 V키로 켜고 끕니다. 키 설정에서 변경할 수 있습니다. Creative 비행이 아니라 시선 방향과 이동 입력에 따라 관성 있게 움직입니다. 전진하면서 질주를 유지하면 순항으로 가속하고, 계속 속도를 올리면 더 빠른 초고속 비행으로 전환됩니다.");
-        }
-        if (id.endsWith(":retrace")) {
-            return new Entry("되밟기", Kind.PASSIVE,
-                    "완충 근접 공격 적중 시 지난 2초 이동 경로를 잔상이 역주행해 경로의 적을 공격합니다.",
-                    "완충 근접 공격이 적중하면 지난 2초 동안 이동한 경로를 잔상이 역주행합니다. 경로에 닿은 적은 기준 공격 피해의 50% / 75% / 100%를 한 번 받습니다. 내부 쿨다운은 5초입니다.");
-        }
-        if (id.endsWith(":return_to_sender")) {
-            return new Entry("돌려보내기", Kind.PASSIVE,
-                    "방패로 누적 10 피해를 막을 때마다 공격자 방향으로 전방 충격파를 방출합니다.",
-                    "방패로 막은 피해를 압축합니다. 누적 10 피해마다 공격자 방향 7블록, 전체 45° 원뿔 범위에 충격파를 방출해 압축된 피해의 60% / 80% / 100%를 돌려줍니다. 남은 누적 피해는 다음 방어까지 유지됩니다.");
-        }
-        if (id.endsWith(":portable_riptide")) {
-            return new Entry("휴대 수류", Kind.PASSIVE,
-                    "급류 삼지창과 물 양동이를 함께 들면 마른 곳에서도 정상적인 급류를 사용할 수 있습니다.",
-                    "주손에 급류 삼지창을, 보조손에 물 양동이를 들면 비나 물이 없는 곳에서도 급류를 사용할 수 있습니다. 물 양동이는 소모되지 않습니다. 이동·소리·몸 회전은 일반 급류와 같은 바닐라 동작을 사용합니다.");
-        }
-        if (id.endsWith(":water_run")) {
-            return new Entry("수상 보행", Kind.PASSIVE,
-                    "물 표면을 땅처럼 걷고 뛸 수 있습니다. 웅크리거나 높은 곳에서 뛰어들면 물속으로 들어갑니다.",
-                    "물의 실제 수면 높이에 발을 디디고 서거나 걷고 뛸 수 있습니다. 웅크리면 수면을 통과하며, 5블록 이상 높이에서 떨어져 들어가면 그대로 다이빙합니다. 물속에서는 수면을 막지 않아 정상적으로 위로 빠져나올 수 있습니다. 수면 착지로 낙하 피해를 받지 않으며 용암에는 적용되지 않습니다.");
-        }
-        if (id.endsWith(":last_stand")) {
-            return new Entry("한 번 버티기", Kind.PASSIVE,
-                    "치명 피해를 한 번 버티고 1 HP로 생존한 뒤 3초 동안 피해를 막습니다.",
-                    "치명 피해를 받으면 1 HP로 생존하고 3초 동안 일반 피해를 받지 않습니다. 발동 순간 남아 있던 피해 지연 예약은 모두 사라지고, 보호 시간 동안 새 피해 지연도 쌓이지 않습니다. 재사용 대기시간은 180초입니다.");
-        }
-        if (id.endsWith(":delayed_damage")) {
-            return new Entry("피해 지연", Kind.PASSIVE,
-                    "받을 피해 일부를 여러 번으로 나누어 뒤늦게 받습니다.",
-                    "즉시 받을 피해 일부를 예약해 여러 차례에 걸쳐 나누어 받습니다. 한 번 버티기가 발동하면 남은 예약 피해는 모두 폐기되며, 그 3초 보호 시간 동안에는 새 예약 피해도 생성되지 않습니다.");
-        }
-        return null;
-    }
-
-    private static Entry playerFacingOverride(AugmentDefinition definition, Entry source) {
-        String id = definition.id();
-        if (id.endsWith(":dexterity")) return new Entry(source.displayName(), Kind.PASSIVE,
-                "잎·꽃·대나무·사탕수수 등 일부 채집물을 캘 때 드롭 +1 확률 10% / 20% / 30%.",
-                "잎·꽃·대나무·사탕수수·선인장·버섯·덩굴·켈프·해초·베리 덤불·코코아 등 일부 비전투 채집물을 직접 캘 때 10% / 20% / 30% 확률로 실제 드롭 중 1개를 추가로 얻습니다.");
-        if (id.endsWith(":healing_amplification")) return new Entry(source.displayName(), Kind.PASSIVE,
-                "자연회복을 제외한 치유량 +10% / +20% / +30%.",
-                "허기·포만도에 의한 자연회복을 제외하고 자신이 받는 치유량이 +10% / +20% / +30% 증가합니다.");
-        if (id.endsWith(":pockets")) return new Entry(source.displayName(), Kind.PASSIVE,
-                "개인 저장공간 +3 / +6 / +9칸. 인벤토리 초과 아이템을 가능한 경우 자동 수납합니다.",
-                "별도 아이템을 제작하지 않습니다. Lv.1 / 2 / 3에서 개인 주머니 슬롯 +3 / +6 / +9칸이 열리고, 일반 인벤토리에 들어가지 못한 아이템은 가능한 경우 주머니로 자동 수납됩니다. 기본 B키로 증강 저장소를 엽니다. 키 설정에서 변경할 수 있습니다.");
-        if (id.endsWith(":wall_slam")) return new Entry(source.displayName(), Kind.PASSIVE,
-                "직접 근접 공격으로 밀어낸 적이 1초 안에 벽에 닿으면 추가 피해를 줍니다.",
-                "직접 근접 공격으로 밀려난 적이 1초 안에 벽에 닿거나 벽 바로 근처까지 밀리면, 그 공격 기준 피해의 30% / 60% / 100%를 추가로 한 번 받습니다. 벽 접촉 위치에 충돌 효과와 소리가 발생합니다.");
-        if (id.endsWith(":aerial_combo")) return new Entry(source.displayName(), Kind.PASSIVE,
-                "공중에서 직접 근접 공격을 적중시키면 공중 점프를 다시 충전해 연속 공중전을 이어갈 수 있습니다.",
-                "두 번 점프가 없어도 단독으로 작동합니다. 공중에서 직접 근접 공격을 아군이 아닌 대상에게 적중할 때마다 공중 점프가 1회 다시 준비됩니다. 점프 입력을 유지하면 즉시 사용되며, 착지 전 다시 적중시키면 같은 대상에게도 반복 충전되어 공중전을 이어갈 수 있습니다. 파생·동료·투사체 공격은 충전하지 않습니다.");
-        if (id.endsWith(":tracking_arrow")) return new Entry(source.displayName(), Kind.PASSIVE,
-                "발사 직후부터 아군이 아닌 공격 가능한 대상을 16블록·전방 45° 안에서 추적합니다.",
-                "일반 비행과 낙하 중에도 계속 대상을 다시 찾고 방향을 보정합니다. 탐색 범위는 16블록, 전방 45°이며 Lv.1 / 2 / 3에서 tick당 최대 4° / 6° / 8° 방향을 바꿉니다. 자신의 아군·동료는 추적하지 않으며 철골렘 같은 비아군 중립 대상도 추적할 수 있습니다.");
-        if (id.endsWith(":remote_storage")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 B키로 원격 보관함을 엽니다. 키 설정에서 변경할 수 있습니다."));
-        if (id.endsWith(":spatial_link")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 G키로 공간 연결 화면을 엽니다. 키 설정에서 변경할 수 있습니다."));
-        if (id.endsWith(":authority_theft")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "일반 액티브 슬롯을 사용하지 않습니다. 기본 J키로 탈취한 권능을 해방하며 키 설정에서 변경할 수 있습니다."));
-        return source;
-    }
-
-    private static String append(String source, String suffix) { return source == null || source.isBlank() ? suffix : source.stripTrailing() + " " + suffix; }
 
     private static Map<String, Entry> load() {
-        InputStream stream = AugmentPresentationCatalog.class.getClassLoader().getResourceAsStream(RESOURCE);
-        if (stream == null) throw new IllegalStateException("Missing bundled augment presentation canon: " + RESOURCE);
-        LinkedHashMap<String, Entry> result = new LinkedHashMap<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!line.startsWith("|") || !line.endsWith("|")) continue;
-                String[] parts = line.split("\\|", -1);
-                if (parts.length < 5) continue;
-                String rawName = clean(parts[1]);
-                String rawLevel = clean(parts[2]);
-                if (rawName.equals("이름") || rawName.isBlank() || rawName.chars().allMatch(c -> c == '-' || c == ':')) continue;
-                if (rawLevel.isBlank() || !rawLevel.chars().anyMatch(Character::isDigit)) continue;
-                String effect = clean(parts[3]);
-                if (effect.isBlank()) continue;
-                Kind kind = rawName.contains("(액티브 · 토글)") ? Kind.TOGGLE : rawName.contains("(액티브)") ? Kind.ACTIVE : Kind.PASSIVE;
-                String detail = sanitizePlayerText(effect);
-                result.put(rawName, new Entry(displayName(rawName), kind, summarize(detail), detail));
+        ClassLoader loader = AugmentPresentationCatalog.class.getClassLoader();
+        try (InputStream stream = loader.getResourceAsStream(RESOURCE)) {
+            if (stream == null) {
+                throw new IllegalStateException("Missing bundled player-facing augment text: " + RESOURCE);
             }
-        } catch (IOException exception) { throw new IllegalStateException("Failed to load augment presentation canon", exception); }
-        return result;
+            try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+                JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+                int schemaVersion = requiredInt(root, "schema_version");
+                if (schemaVersion != SCHEMA_VERSION) {
+                    throw new IllegalStateException("Unsupported augment presentation schema: " + schemaVersion);
+                }
+                JsonObject rawEntries = requiredObject(root, "entries");
+                LinkedHashMap<String, Entry> result = new LinkedHashMap<>();
+                for (Map.Entry<String, JsonElement> raw : rawEntries.entrySet()) {
+                    String id = raw.getKey();
+                    JsonObject object = raw.getValue().getAsJsonObject();
+                    Entry entry = new Entry(
+                            requiredString(object, "display_name"),
+                            Kind.parse(requiredString(object, "kind")),
+                            requiredString(object, "summary"),
+                            requiredString(object, "detail")
+                    );
+                    if (result.put(id, entry) != null) {
+                        throw new IllegalStateException("Duplicate player-facing augment text id: " + id);
+                    }
+                }
+                return result;
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to load player-facing augment text", exception);
+        }
     }
 
-    private static String clean(String value) { return value.trim().replace("`", "").replace("**", "").replace("\\|", "|").replace("<br>", " ").replace("<br/>", " ").replaceAll("\\s+", " ").trim(); }
-    private static String sanitizePlayerText(String value) {
-        String replaced = value.replaceAll("augmentation_survival:[a-z0-9_./-]+", "지정된 대상").replace("whitelist", "대상 목록");
-        String[] sentences = replaced.split("(?<=\\.)\\s+");
-        List<String> kept = new ArrayList<>();
-        for (String sentence : sentences) {
-            String lower = sentence.toLowerCase();
-            if (lower.contains("root") || lower.contains("derived") || lower.contains("better combat") || lower.contains("namespace") || lower.contains("재귀 차단") || lower.contains("내부 판정") || lower.contains("서버 권한") || lower.contains("호환 시")) continue;
-            kept.add(sentence.trim());
+    private static void validateText(String augmentId, String text, String field) {
+        if (text == null || text.isBlank()) {
+            throw new IllegalStateException("Blank player-facing " + field + " for " + augmentId);
         }
-        return kept.isEmpty() ? replaced : String.join(" ", kept).replaceAll("\\s+", " ").trim();
+        String lower = text.toLowerCase(Locale.ROOT);
+        for (String forbidden : FORBIDDEN_PLAYER_TERMS) {
+            if (lower.contains(forbidden)) {
+                throw new IllegalStateException("Player-facing " + field + " leaked internal term '"
+                        + forbidden + "' for " + augmentId + ": " + text);
+            }
+        }
     }
-    private static String summarize(String detail) {
-        String[] sentences = detail.split("(?<=\\.)\\s+"); StringBuilder result = new StringBuilder();
-        for (String sentence : sentences) { String normalized = sentence.trim(); if (normalized.isBlank()) continue; if (result.length() > 0 && result.length() + 1 + normalized.length() > 104) break; if (result.length() > 0) result.append(' '); result.append(normalized); if (result.length() >= 58) break; }
-        return result.length() == 0 ? detail.trim() : result.toString();
+
+    private static Kind expectedKind(AugmentDefinition definition, String path) {
+        if (path.equals("instant_mining")) return Kind.TOGGLE;
+        String canonical = definition.canonicalNameKo();
+        if (canonical.contains("(액티브 · 토글)")) return Kind.TOGGLE;
+        if (canonical.contains("(액티브)")) return Kind.ACTIVE;
+        return Kind.PASSIVE;
     }
-    private static String displayName(String canonical) { return canonical.replace(" (액티브 · 토글)", "").replace(" (액티브)", ""); }
-    public enum Kind { PASSIVE("패시브"), ACTIVE("액티브"), TOGGLE("토글"); private final String label; Kind(String label) { this.label = label; } public String label() { return label; } }
+
+    private static String path(String id) {
+        int colon = id.indexOf(':');
+        return colon >= 0 ? id.substring(colon + 1) : id;
+    }
+
+    private static String displayName(String canonical) {
+        return canonical.replace(" (액티브 · 토글)", "").replace(" (액티브)", "");
+    }
+
+    private static JsonObject requiredObject(JsonObject object, String key) {
+        JsonElement element = object.get(key);
+        if (element == null || !element.isJsonObject()) {
+            throw new IllegalStateException("Missing JSON object '" + key + "' in " + RESOURCE);
+        }
+        return element.getAsJsonObject();
+    }
+
+    private static String requiredString(JsonObject object, String key) {
+        JsonElement element = object.get(key);
+        if (element == null || !element.isJsonPrimitive()) {
+            throw new IllegalStateException("Missing string '" + key + "' in " + RESOURCE);
+        }
+        String value = element.getAsString();
+        if (value.isBlank()) {
+            throw new IllegalStateException("Blank string '" + key + "' in " + RESOURCE);
+        }
+        return value;
+    }
+
+    private static int requiredInt(JsonObject object, String key) {
+        JsonElement element = object.get(key);
+        if (element == null || !element.isJsonPrimitive()) {
+            throw new IllegalStateException("Missing integer '" + key + "' in " + RESOURCE);
+        }
+        return element.getAsInt();
+    }
+
+    public enum Kind {
+        PASSIVE("패시브"),
+        ACTIVE("액티브"),
+        TOGGLE("토글");
+
+        private final String label;
+
+        Kind(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        private static Kind parse(String raw) {
+            return switch (raw.toLowerCase(Locale.ROOT)) {
+                case "passive" -> PASSIVE;
+                case "active" -> ACTIVE;
+                case "toggle" -> TOGGLE;
+                default -> throw new IllegalStateException("Unknown player-facing augment kind: " + raw);
+            };
+        }
+    }
+
     public record Entry(String displayName, Kind kind, String summary, String detail) { }
 }
