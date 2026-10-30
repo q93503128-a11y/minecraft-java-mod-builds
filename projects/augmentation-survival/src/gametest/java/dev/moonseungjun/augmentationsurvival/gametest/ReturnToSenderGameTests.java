@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -21,7 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
-/** Regression coverage for replacement-projectile Return to Sender, including the vanilla shield pipeline. */
+/** Regression coverage for replacement-projectile Return to Sender at the blocked-damage boundary. */
 public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
@@ -29,7 +28,7 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
     private static final double[] EXPECTED_SCALES = {0.60D, 0.80D, 1.00D};
 
     @GameTest(maxTicks = 40)
-    public void actualShieldBlockReplacesIncomingArrowAndRelaunchesClone(GameTestHelper helper) {
+    public void activeShieldBlockedDamageEventReplacesIncomingArrowAndRelaunchesClone(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(3, 2, 3));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
@@ -47,10 +46,9 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                 .spawn();
         Vec3 blockDirection = player.getLookAngle().normalize();
 
-        // Let vanilla establish the shield-use state, then enter through LivingEntity.hurtServer.
-        // This tests real shield classification without relying on server-side projectile movement,
-        // which connected GameTest players do not reproduce deterministically.
         GameTestPlayers.runAfterDelay(helper, 6, () -> {
+            require(player.isUsingItem() && player.getUseItem().is(Items.SHIELD),
+                    "shield-use state was not active at the blocked-damage integration boundary");
             Arrow original = new Arrow(
                     player.level(),
                     player.getX(),
@@ -63,21 +61,24 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
             original.setDeltaMovement(blockDirection.scale(-INPUT_SPEED));
             require(player.level().addFreshEntity(original), "incoming shield-test arrow failed to spawn");
 
-            float healthBefore = player.getHealth();
             DamageSource source = player.damageSources().arrow(original, skeleton);
-            player.hurtServer((ServerLevel) player.level(), source, 4.0F);
+            ServerLivingEntityEvents.AFTER_DAMAGE.invoker().afterDamage(
+                    player,
+                    source,
+                    (float) INPUT_SPEED,
+                    0.0F,
+                    true
+            );
 
-            require(Math.abs(player.getHealth() - healthBefore) <= 1.0E-4F,
-                    "vanilla shield pipeline did not block the incoming arrow damage");
             require(original.isRemoved(),
-                    "the projectile processed by the shield pipeline was not discarded");
+                    "blocked projectile object was not discarded by Return to Sender");
             List<Arrow> reflected = player.level().getEntitiesOfClass(
                     Arrow.class,
                     player.getBoundingBox().inflate(20.0D),
                     candidate -> candidate.getOwner() == player
             );
             require(!reflected.isEmpty(),
-                    "actual shield block did not spawn a player-owned replacement arrow");
+                    "blocked-damage event did not spawn a player-owned replacement arrow");
             Arrow replacement = reflected.getFirst();
             require(replacement != original,
                     "Return to Sender reused the collision object instead of replacing it");

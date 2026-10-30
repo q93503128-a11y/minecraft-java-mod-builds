@@ -8,9 +8,9 @@
     "LivingEntityHealingAugmentMixin", "LivingEntityEnchantmentResonanceMixin", "LivingEntityLootScoopMixin",
     "LivingEntityWallSlamKnockbackMixin", "WallSlamWindowAccessor", "WallSlamRuntimeOverrideMixin", "LivingEntityTimeStopMotionMixin", "MobEffectTimeStopMixin", "ProjectileTimeStopMixin",
     "ProjectileTimeAccelerationMixin", "PlayerShieldGripMixin", "PlayerDeathAugmentMixin", "PlayerDominationCommandMixin", "InventoryPocketAugmentMixin",
-    "MovementAugmentMixin", "MovementOffensiveTargetContextMixin", "ServerPlayerMantleMixin", "WebBlockTerrainResistanceMixin", "SurvivalPlayerMixin", "SurvivalAugmentDerivedBreakGuardMixin",
+    "MovementAugmentMixin", "MovementOffensiveTargetContextMixin", "MovementResetContactMixin", "ServerPlayerMantleMixin", "WebBlockTerrainResistanceMixin", "SurvivalPlayerMixin", "SurvivalAugmentDerivedBreakGuardMixin",
     "SurvivalTimeAccelerationMiningMixin", "TemporaryPlatformFallMixin", "TemporaryPlatformDamageMixin", "TemporaryPlatformReplayGuardMixin",
-    "InstantMiningBlockStateMixin", "WaterRunLivingEntityMixin", "ResourceHarvestAuditFixMixin",
+    "InstantMiningBlockStateMixin", "ServerPlayerWaterRunSprintIntentMixin", "WaterRunLivingEntityMixin", "ResourceHarvestAuditFixMixin",
     "AbstractFurnaceUtilityMixin", "BlockAbundanceMixin", "AreaAccelerationFurnaceMixin", "AreaAccelerationRandomTickMixin",
     "AreaAccelerationAgeableMobMixin", "AreaAccelerationChickenMixin", "BrewingStandAugmentAccessor",
     "BrewingStandUtilityMixin", "VillagerBargainingMixin", "PlayerConsumptionAugmentMixin", "PotionDiffusionMixin",
@@ -37,7 +37,7 @@
     "PlayerRescueActionLockMixin", "ServerPlayerGameModeRescueLockMixin"
   ],
   "client": [
-    "LocalPlayerConsumptionMixin", "ClientMiningAugmentMixin", "ClientWaterRunLivingEntityMixin",
+    "LocalPlayerConsumptionMixin", "ClientMiningAugmentMixin", "LocalPlayerWaterRunSprintIntentMixin", "ClientWaterRunLivingEntityMixin",
     "ClientPhaseShiftCollisionMixin", "ClientPhaseShiftPushOutMixin", "EntityRendererPerceptionMixin", "BetterCombatTargetFinderMixin",
     "ClientHudHealthMixin", "ClientReserveMealHudMixin", "ClientUseCooldownMasteryMixin", "ClientTridentPortableRiptideMixin",
     "AugmentOfferRerollClickFixMixin", "AugmentOfferTierAuraMixin", "AugmentOfferBreathingRoomMixin",
