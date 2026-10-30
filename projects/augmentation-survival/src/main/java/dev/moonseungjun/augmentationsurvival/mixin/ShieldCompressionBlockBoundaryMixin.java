@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Captures the amount actually removed by the vanilla item-blocking calculation. */
+/** Captures the amount actually removed by the real 26.2 item-blocking path. */
 @Mixin(LivingEntity.class)
 abstract class ShieldCompressionBlockBoundaryMixin {
     @Inject(method = "applyItemBlocking", at = @At("RETURN"))
@@ -22,10 +22,11 @@ abstract class ShieldCompressionBlockBoundaryMixin {
     ) {
         if (!((Object) this instanceof ServerPlayer player)) return;
 
-        // 26.2 applyItemBlocking returns the amount actually blocked. The previous live-fix
-        // treated it as remaining damage and subtracted it from incomingDamage, which turns a
-        // fully blocked hit into zero stored compression and makes Return to Sender appear dead.
-        float blocked = cir.getReturnValueF();
+        // This exact Fabric 26.2 runtime is regression-tested through a raised vanilla shield.
+        // Its mapped boundary returns damage remaining after item blocking, so derive the removed
+        // amount here. Do not replace this with assumptions from a different loader/version.
+        float remaining = cir.getReturnValueF();
+        float blocked = incomingDamage - remaining;
         if (blocked > 0.0F && Float.isFinite(blocked)) {
             ShieldCompressionService.onBlockedDamage(player, source, blocked);
         }

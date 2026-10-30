@@ -99,10 +99,17 @@ public final class ShieldCompressionService {
             if (direction.dot(toTarget.normalize()) < minimumDot) {
                 continue;
             }
-            CombatProvenanceContext.runAs(
-                    CombatProvenance.DERIVED_AOE,
-                    () -> target.hurtServer(level, waveSource, damage)
-            );
+
+            int previousInvulnerableTime = target.invulnerableTime;
+            target.invulnerableTime = 0;
+            try {
+                CombatProvenanceContext.runAs(
+                        CombatProvenance.DERIVED_AOE,
+                        () -> target.hurtServer(level, waveSource, damage)
+                );
+            } finally {
+                target.invulnerableTime = Math.max(target.invulnerableTime, previousInvulnerableTime);
+            }
         }
 
         emitConeParticles(level, origin, direction, range, tuning.returnWaveHalfAngleDegrees());

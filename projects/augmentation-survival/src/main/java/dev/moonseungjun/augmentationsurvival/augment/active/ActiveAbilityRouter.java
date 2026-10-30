@@ -31,6 +31,7 @@ public final class ActiveAbilityRouter {
     private static final String TIME_STOP_ID = id("time_stop");
     private static final String DIVINE_PUNISHMENT_ID = DivinePunishmentService.ID;
     private static final String THREAT_TOGGLE_KEY = "active_toggle/threat_suppression";
+    private static final String MANUAL_LAYOUT_KEY = "active_loadout/manual_layout";
 
     private static final List<String> LEGACY_ORDER = List.of(
             id("cleanse"), id("pull"), id("swap"), id("shield"), id("berserk"), id("healing_wave")
@@ -116,15 +117,14 @@ public final class ActiveAbilityRouter {
             }
         }
 
-        // Newly acquired actives should appear immediately in the HUD/loadout without requiring
-        // the player to erase an existing manual layout. Preserve valid assigned slots first, then
-        // fill only currently empty slots in canonical active order.
-        for (String id : ALL_ORDER) {
-            if (boundedLevel(state, id) <= 0 || used.contains(id)) continue;
-            int empty = result.indexOf("");
-            if (empty < 0) break;
-            result.set(empty, id);
-            used.add(id);
+        if (state.persistentInt(MANUAL_LAYOUT_KEY) <= 0) {
+            for (String id : ALL_ORDER) {
+                if (boundedLevel(state, id) <= 0 || used.contains(id)) continue;
+                int empty = result.indexOf("");
+                if (empty < 0) break;
+                result.set(empty, id);
+                used.add(id);
+            }
         }
         return result;
     }
@@ -136,7 +136,8 @@ public final class ActiveAbilityRouter {
         List<String> slots = new ArrayList<>(resolvedSlots(state));
         for (int i = 0; i < slots.size(); i++) if (augmentId.equals(slots.get(i))) slots.set(i, "");
         slots.set(slot, augmentId);
-        AugmentationPlayerStateService.replace(player, state.withActiveSlots(slots));
+        AugmentationPlayerState next = state.withActiveSlots(slots).withPersistentInt(MANUAL_LAYOUT_KEY, 1);
+        AugmentationPlayerStateService.replace(player, next);
         return true;
     }
 
@@ -145,7 +146,8 @@ public final class ActiveAbilityRouter {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         List<String> slots = new ArrayList<>(resolvedSlots(state));
         slots.set(slot, "");
-        AugmentationPlayerStateService.replace(player, state.withActiveSlots(slots));
+        AugmentationPlayerState next = state.withActiveSlots(slots).withPersistentInt(MANUAL_LAYOUT_KEY, 1);
+        AugmentationPlayerStateService.replace(player, next);
         return true;
     }
 
@@ -156,7 +158,8 @@ public final class ActiveAbilityRouter {
         String value = slots.get(first);
         slots.set(first, slots.get(second));
         slots.set(second, value);
-        AugmentationPlayerStateService.replace(player, state.withActiveSlots(slots));
+        AugmentationPlayerState next = state.withActiveSlots(slots).withPersistentInt(MANUAL_LAYOUT_KEY, 1);
+        AugmentationPlayerStateService.replace(player, next);
         return true;
     }
 
