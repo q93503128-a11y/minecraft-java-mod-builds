@@ -27,7 +27,7 @@ This is the running engineering ledger for the current multi-bundle live-play re
 
 Verification checkpoint: CI #505, 120/120 required GameTests, clean build, dedicated-server boot, client boot, localization, JAR and MRPack verification PASS. Manual feel/visual verification was not performed by CI.
 
-## Bundle B — Legendary HUD/feedback repair — IMPLEMENTED, VERIFICATION PENDING
+## Bundle B — Legendary HUD/feedback repair — IMPLEMENTED + BUILD VERIFIED
 
 1. **Double Charge HUD**
    - Root cause: runtime charges live in `ability#charge0` / `ability#charge1`, while the old loadout packet only sent the base cooldown key.
@@ -50,9 +50,33 @@ Verification checkpoint: CI #505, 120/120 required GameTests, clean build, dedic
 5. **Time Acceleration HUD**
    - Fix: sustained Time Acceleration state is rendered as a persistent corner status while active; its center banner/entry is suppressed. Server temporal transitions also resync active-charge state.
 
+Verification checkpoint: CI #506 completed SUCCESS: clean build/GameTests, localization, dedicated-server boot, client boot, MRPack generation and production-JAR verification all passed. Manual visual verification remains deferred until all repair bundles are complete.
+
+## Bundle C — input/range readability repair — IMPLEMENTED, VERIFICATION PENDING
+
+1. **K-screen double-click quick equip / unequip**
+   - Root cause: the fast-path mixin used `hoveredId` cached by a previous render frame, while another UI mixin owned the actual click geometry. A valid double click could therefore arrive with no/stale target.
+   - Fix: double-click resolution now recomputes the exact quick-slot or owned-active tile from the click coordinates using the same responsive geometry as the live screen.
+   - Double-click equipped slot/tile -> immediate clear; unequipped owned tile -> first empty slot; full bar -> preserve deliberate replacement selection rather than silently evicting a slot.
+
+2. **Persistent sustained-field range outline**
+   - Added a server-owned sparse range telegraph runtime. Sustained or channelled states with a real radius keep a world-space boundary visible at a restrained 4 Hz cadence.
+   - Current persistent field coverage includes Area Acceleration, Time Stop and the Revive focus range where their presentation profiles provide the actual gameplay radius.
+
+3. **Instant radial range ring**
+   - Existing successful-use rings were confirmed to already use the authoritative presentation radius for radial instant abilities; they remain one-shot rather than being incorrectly persisted.
+   - The new persistent service deliberately ignores `INSTANT` phases so burst indicators do not turn into fake sustained zones.
+
+4. **Cone range boundary**
+   - Shield Compression / Return to Sender already used the exact gameplay range and half-angle for its cone VFX, but the old points were sparse.
+   - Fix: the cone now draws centerline, four side rails and the circular far cross-section using `tan(halfAngle) * range`, matching the same finite 3D cone used by the damage dot-product check.
+
+5. **Indicator/gameplay boundary synchronization**
+   - Persistent ring radius comes directly from the same authoritative active profile/tuning used by gameplay rather than a client-authored estimate.
+   - Area Acceleration now exposes its real remaining runtime and republishes the sustained state whenever Overtime extends the aura, keeping both corner timer and world boundary aligned with the true extended end tick.
+   - Added regressions for Area Acceleration radius, Time Stop radius, channel cancellation cleanup and Overtime extension synchronization.
+
 ## Deferred to following bundles
 
-- Double-click quick equip / quick activation reliability.
-- Ability range telegraphs: persistent sustained-field outlines, instant burst rings, and cone boundaries where applicable.
 - Any additional live-play failures already reported after these items; do not reopen confirmed lower-tier mechanics without related code changes.
 - `aerial_combo`: requested later change to 1.5x own air-jump strength remains deferred until its dedicated change pass.
