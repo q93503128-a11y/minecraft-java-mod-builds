@@ -4,9 +4,16 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.portal.TeleportTransition;
@@ -16,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 public final class DeathReturnAugmentService {
     private static final String DEATH_RETURN_ID = id("death_return");
     private static final String AVAILABLE_KEY = "death_return/available";
+    private static final Map<UUID, PendingReturn> PENDING_RESPAWNS = new HashMap<>();
 
     private DeathReturnAugmentService() {
     }
@@ -24,29 +32,57 @@ public final class DeathReturnAugmentService {
         AugmentCatalog.require(DEATH_RETURN_ID);
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             if (alive) {
+                PENDING_RESPAWNS.remove(newPlayer.getUUID());
                 return;
             }
 
-            // 26.2 can expose the freshly recorded death position on the old player before the
-            // replacement player has fully inherited it. Preserve the authoritative vanilla value
-            // explicitly so the active cannot lose its target during the respawn handoff.
             Optional<GlobalPos> lastDeath = newPlayer.getLastDeathLocation();
-            if (lastDeath.isEmpty()) {
-                lastDeath = oldPlayer.getLastDeathLocation();
-                if (lastDeath.isPresent()) {
-                    newPlayer.setLastDeathLocation(lastDeath);
-                }
+            if (lastDeath.isEmpty()) lastDeath = oldPlayer.getLastDeathLocation();
+            if (lastDeath.isEmpty()) return;
+
+            GlobalPos target = lastDeath.get();
+            newPlayer.setLastDeathLocation(Optional.of(target));
+            long now = newPlayer.level().getGameTime();
+            // Arm one tick later. Several systems reconcile persistent player state during the same
+            // respawn event; deferring prevents a later listener with a stale snapshot from erasing
+            // the one-use return grant.
+            PENDING_RESPAWNS.put(newPlayer.getUUID(), new PendingReturn(target, now + 1L, now + 40L));
+        });
+        ServerPlayerEvents.LEAVE.register(player -> PENDING_RESPAWNS.remove(player.getUUID()));
+        ServerTickEvents.END_SERVER_TICK.register(DeathReturnAugmentService::flushPendingRespawns);
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> PENDING_RESPAWNS.clear());
+    }
+
+    private static void flushPendingRespawns(MinecraftServer server) {
+        Iterator<Map.Entry<UUID, PendingReturn>> iterator = PENDING_RESPAWNS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, PendingReturn> entry = iterator.next();
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player == null) {
+                iterator.remove();
+                continue;
+            }
+            long now = player.level().getGameTime();
+            PendingReturn pending = entry.getValue();
+            if (now < pending.armAtTick()) continue;
+            if (now > pending.expiresAtTick()) {
+                iterator.remove();
+                continue;
             }
 
-            AugmentationPlayerState state = AugmentationPlayerStateService.state(newPlayer);
-            if (boundedLevel(state) <= 0 || lastDeath.isEmpty()) {
-                return;
+            AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+            if (boundedLevel(state) <= 0) {
+                // Attachment/state copy may settle a tick later in synthetic or heavily modded
+                // respawn flows. Retry briefly instead of consuming the death event prematurely.
+                continue;
             }
+            player.setLastDeathLocation(Optional.of(pending.target()));
             AugmentationPlayerStateService.replace(
-                    newPlayer,
+                    player,
                     state.withPersistentInt(AVAILABLE_KEY, 1)
             );
-        });
+            iterator.remove();
+        }
     }
 
     public static boolean tryUse(ServerPlayer player) {
@@ -88,5 +124,8 @@ public final class DeathReturnAugmentService {
 
     private static String id(String path) {
         return AugmentationSurvival.MOD_ID + ":" + path;
+    }
+
+    private record PendingReturn(GlobalPos target, long armAtTick, long expiresAtTick) {
     }
 }
