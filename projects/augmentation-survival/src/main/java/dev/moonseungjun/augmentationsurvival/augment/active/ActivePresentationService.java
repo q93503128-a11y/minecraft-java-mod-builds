@@ -276,6 +276,9 @@ public final class ActivePresentationService {
     }
 
     private static void sendState(ServerPlayer player, String abilityId, int phase, int durationTicks, float radius) {
+        // World-space readability is gameplay-side state and must not depend on whether a client packet
+        // connection exists (embedded GameTest players and early join windows legitimately have none).
+        ActiveRangeTelegraphService.onState(player, abilityId, phase, durationTicks, radius);
         if (player.connection == null || !ServerPlayNetworking.canSend(player, ActivePresentationPayload.TYPE)) return;
         ServerPlayNetworking.send(player, new ActivePresentationPayload(abilityId, phase, durationTicks, radius));
     }
