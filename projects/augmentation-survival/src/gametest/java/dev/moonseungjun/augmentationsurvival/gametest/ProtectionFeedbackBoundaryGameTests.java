@@ -16,7 +16,7 @@ import net.minecraft.world.entity.LivingEntity;
 public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
-    @GameTest(maxTicks = 20)
+    @GameTest(maxTicks = 24)
     public void shieldExpirationTriggersBurstExactlyOnce(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         AugmentationPlayerStateService.replace(
@@ -25,18 +25,23 @@ public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMeth
         );
         LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 3).withNoFreeWill().spawn();
         player.setPos(target.getX() - 2.0D, target.getY(), target.getZ());
-        float before = target.getHealth();
 
-        ProtectionAugmentService.grantShield(player, "expiration-regression", 4.0F, 1);
+        // Let global threat-stage scaling finish before taking the health baseline. Otherwise a
+        // legitimate max-health refresh can look like a second Shield Burst in this parallel suite.
+        GameTestPlayers.runAfterDelay(helper, 5L, () -> {
+            target.setHealth(target.getMaxHealth());
+            float before = target.getHealth();
+            ProtectionAugmentService.grantShield(player, "expiration-regression", 4.0F, 1);
 
-        GameTestPlayers.runAfterDelay(helper, 3L, () -> {
-            float afterBurst = target.getHealth();
-            require(afterBurst < before,
-                    "expiring augment shield did not trigger Shield Burst");
-            GameTestPlayers.runAfterDelay(helper, 4L, () -> {
-                require(Math.abs(target.getHealth() - afterBurst) < 1.0E-5F,
-                        "one shield expiration triggered Shield Burst more than once");
-                GameTestPlayers.succeed(helper);
+            GameTestPlayers.runAfterDelay(helper, 3L, () -> {
+                float afterBurst = target.getHealth();
+                require(afterBurst < before,
+                        "expiring augment shield did not trigger Shield Burst");
+                GameTestPlayers.runAfterDelay(helper, 4L, () -> {
+                    require(Math.abs(target.getHealth() - afterBurst) < 1.0E-5F,
+                            "one shield expiration triggered Shield Burst more than once");
+                    GameTestPlayers.succeed(helper);
+                });
             });
         });
     }
