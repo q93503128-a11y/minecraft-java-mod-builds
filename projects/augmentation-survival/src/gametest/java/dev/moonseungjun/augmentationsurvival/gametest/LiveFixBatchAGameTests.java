@@ -69,6 +69,8 @@ public final class LiveFixBatchAGameTests implements CustomTestMethodInvoker {
         player.setDeltaMovement(Vec3.ZERO);
         float beforeHealth = player.getHealth();
         float beforeHurtDir = player.getHurtDir();
+        int beforeHurtTime = player.hurtTime;
+        int beforeHurtDuration = player.hurtDuration;
 
         CombatProvenanceContext.callAsDelayed(3.0F,
                 () -> player.hurtServer(level, player.damageSources().mobAttack(attacker), 3.0F));
@@ -79,6 +81,8 @@ public final class LiveFixBatchAGameTests implements CustomTestMethodInvoker {
                 "delayed installment produced knockback velocity: " + player.getDeltaMovement());
         require(Math.abs(player.getHurtDir() - beforeHurtDir) < 1.0E-5F,
                 "delayed installment changed the ordinary directional hurt feedback");
+        require(player.hurtTime == beforeHurtTime && player.hurtDuration == beforeHurtDuration,
+                "delayed installment changed ordinary hurt animation timing");
         GameTestPlayers.succeed(helper);
     }
 
@@ -100,11 +104,19 @@ public final class LiveFixBatchAGameTests implements CustomTestMethodInvoker {
         ServerPlayerEvents.AFTER_RESPAWN.invoker().afterRespawn(oldPlayer, newPlayer, false);
         require(newPlayer.getLastDeathLocation().filter(target::equals).isPresent(),
                 "respawn handoff lost the old player's freshly recorded last-death position");
-        require(DeathReturnAugmentService.tryUse(newPlayer),
-                "Death Return did not become available after an actual-death respawn handoff");
-        require(newPlayer.position().distanceToSqr(Vec3.atBottomCenterOf(target.pos())) < 2.25D,
-                "Death Return succeeded without moving the player to the recorded death point");
-        GameTestPlayers.succeed(helper);
+
+        GameTestPlayers.runAfterDelay(helper, 3, () -> {
+            AugmentationPlayerState state = AugmentationPlayerStateService.state(newPlayer);
+            require(state.level(id("death_return")) > 0,
+                    "death-return ownership was lost during respawn reconciliation");
+            require(state.persistentInt("death_return/available") > 0,
+                    "Death Return one-use grant was not armed after respawn reconciliation");
+            require(DeathReturnAugmentService.tryUse(newPlayer),
+                    "Death Return was armed but the teleport still failed");
+            require(newPlayer.position().distanceToSqr(Vec3.atBottomCenterOf(target.pos())) < 2.25D,
+                    "Death Return succeeded without moving the player to the recorded death point");
+            GameTestPlayers.succeed(helper);
+        });
     }
 
     private static boolean delayedQueueEmpty(ServerPlayer player) {
