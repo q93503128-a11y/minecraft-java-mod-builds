@@ -166,7 +166,8 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
                     augmentId + " has an empty player-facing summary/detail");
         }
 
-        String tracking = detail("tracking_arrow");
+        AugmentPresentationCatalog.Entry trackingEntry = AugmentPresentationCatalog.get(AugmentCatalog.require(id("tracking_arrow")));
+        String tracking = trackingEntry.summary() + " " + trackingEntry.detail();
         require(tracking.contains("16") && tracking.contains("45")
                         && tracking.contains("4°") && tracking.contains("6°") && tracking.contains("8°")
                         && tracking.contains("철골렘") && tracking.contains("아군"),
