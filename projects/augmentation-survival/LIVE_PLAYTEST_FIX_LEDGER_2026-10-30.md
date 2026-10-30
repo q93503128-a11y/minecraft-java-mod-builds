@@ -60,7 +60,7 @@ Verification checkpoint: CI #506 completed SUCCESS: clean build/GameTests, local
    - Double-click equipped slot/tile -> immediate clear; unequipped owned tile -> first empty slot; full bar -> preserve deliberate replacement selection rather than silently evicting a slot.
 
 2. **Persistent sustained-field range outline**
-   - Added a server-owned sparse range telegraph runtime. Sustained or channelled states with a real radius keep a world-space boundary visible at a restrained 4 Hz cadence.
+   - Added a server-owned sparse range telegraph runtime. Sustained or channelled states with a real radius keep a world-space boundary visible at a restrained cadence.
    - Area Acceleration and Revive use this shared persistent boundary; Time Stop keeps its dedicated gameplay-aligned 3D sphere instead of drawing a duplicate generic ring.
 
 3. **Instant radial range ring**
@@ -78,11 +78,59 @@ Verification checkpoint: CI #506 completed SUCCESS: clean build/GameTests, local
 
 Verification checkpoint: CI #509 on `fff62aae14e6e6f78b1a1312e0d8154b26d17c28` completed SUCCESS: clean build/GameTests, localization, dedicated-server boot, client boot, MRPack generation and production-JAR verification all passed.
 
+## Bundle D — second live-play UX/combat repair — IMPLEMENTED + BUILD VERIFIED
+
+1. **Active HUD readability**
+   - Symptom: ten 16px active slots simultaneously overlaid hotkey digits, cooldown values and double-charge fractions, producing severe visual noise over the hotbar.
+   - Fix: keep the ten-icon strip, but reduce each slot to one small hotkey chip. Double Charge now uses two tiny charge pips instead of `1/2` / `0/2` text; a centered cooldown number appears only when the ability is actually unavailable.
+   - Manual check: verify the strip is readable at the user's actual GUI scale and that the pips remain legible without obscuring icons.
+
+2. **K-screen quick equip / unequip and intentional blank slots**
+   - Symptom: repeated double-click quick actions were unreliable, and clearing an active could be undone by `resolvedSlots()` automatically inserting the owned active into another blank slot.
+   - Root cause: the old router had no distinction between untouched auto-layout and a player-authored layout, so every missing owned active was treated as something that should be auto-filled.
+   - Fix: left-click keeps the existing deliberate selection/replacement flow. Right-click now directly equips an owned active into the first blank slot or unequips an equipped active. The first deliberate assign/swap/clear marks the loadout as manual; after that, blank slots remain genuinely blank and owned but unequipped actives do not silently return.
+   - Regression: a manually cleared active remains unequipped even after another active is newly acquired.
+
+3. **Return to Sender / Shield Compression live-combat reliability**
+   - Symptom: automated stationary-target tests passed, but live combat still reported the shockwave as doing nothing.
+   - Investigation: CI #510 rejected an attempted reinterpretation of the 26.2 `applyItemBlocking` return value; the established Fabric boundary was restored. The meaningful difference between the old test target and live combat was target hurt i-frame state.
+   - Root cause: unlike the project's other derived impacts (for example Wall Slam), Shield Compression did not temporarily bypass a target's pre-existing vanilla hurt i-frame. A monster that had just been hit could therefore swallow the independent counter-shockwave.
+   - Fix: only for the derived Shield Compression hit, temporarily clear the target hurt i-frame, apply the server-authoritative derived AOE damage, then restore at least the previous i-frame value.
+   - Regression: a level-1 10-damage real shield block must still deal 6 damage to an attacker that already has a hurt i-frame, and that previous i-frame must be restored afterward.
+
+4. **Area Acceleration duration/range presentation**
+   - Symptom: the live aura could lose its visible duration and range, making a working or non-working field impossible to distinguish.
+   - Fix: while the server aura exists, republish its authoritative remaining duration and radius once per second. The persistent world telegraph now draws three orthogonal great circles instead of a horizontal-only ring.
+   - Geometry: gameplay continues to use full 3D `distanceToSqr` against the 24-block radius, so the actual field and the new telegraph are spherical/all-directional rather than a sideways disk.
+   - Existing deterministic furnace regression remains in the required GameTest suite.
+
+5. **Time Acceleration duration display**
+   - Symptom: the player saw the 3-second focus timer but not the real sustained duration, making the ability appear to last only 3 seconds.
+   - Root cause: the focus presentation existed, but the transition into the successful temporal state did not publish the separate sustained presentation window.
+   - Fix: successful focus completion now publishes the real 20-second sustained timer; END clears it, and Overtime extension republishes the extended remaining time.
+   - Canonical gameplay remains 3 seconds focus -> 20 seconds sustained.
+
+6. **Phase Shift visibility**
+   - Symptom: intentional movement inside solid terrain was too dark to navigate comfortably.
+   - Fix: while the local player is actually in Phase Shift, suppress the camera-inside-block screen overlay only. This gives the intended spectator/x-ray-like navigation readability without making ordinary terrain globally transparent.
+   - Manual visual check remains required.
+
+7. **Invulnerability shield vertical position**
+   - Symptom: the corrected shield still appeared slightly high in the second live-play pass.
+   - Fix: lower the shell center modestly from `-0.50` to `-0.62`; do not return to the old `-1.02` value that buried the effect below the avatar.
+   - Manual visual check remains required.
+
+Verification history:
+- CI #510: FAILED intentionally-useful regression checkpoint. It disproved the attempted external-version assumption about `applyItemBlocking` and exposed that treating every saved blank as manual broke the existing new-active auto-placement contract. Those two approaches were removed rather than bypassing tests.
+- CI #511: SUCCESS after correcting both regressions, but its report still showed 126 tests because the new Bundle D test class had not yet been registered as a `fabric-gametest` entrypoint.
+- CI #512 on `1cc7366988fbe26141a345b073c97529c3f164df`: SUCCESS with **128/128 required GameTests**, clean build, external localization checks, dedicated-server smoke, client boot smoke, verified MRPack generation and production-JAR structure/checksum verification.
+- Manual second-pass fixes in this bundle are not called PLAYTESTED until the user runs the #512 artifact.
+
 ## Current live-play report closure
 
-The three bundles above cover the complete set of concrete issues reported in the latest Legendary play session: shield visual offset, K-screen double-click failure, Death Return failure, Delayed Damage/Last Stand failure, unclear Time Acceleration state, Phase Shift rubber-banding, Threat Suppression HUD obstruction, Double Charge cooldown/charge visibility, unclear Area Acceleration operation, and insufficient ability range visualization.
+Bundles A through D now cover every concrete issue reported across the two Legendary live-play passes: Delayed Damage feel, Last Stand debt handling, Return to Sender/Shield Compression, Death Return, Phase Shift movement and visibility, Double Charge HUD state, Area Acceleration operation/readability, Invulnerability shield placement, Threat Suppression HUD, Time Acceleration state/duration, K-screen quick equip/unequip and intentional blanks, persistent 3D range telegraphs, and active-HUD clutter.
 
-No unreported fourth Legendary defect bundle is invented here. Further work starts only from a newly observed failure or an explicitly requested design change.
+Further repair work starts from a newly observed failure in the #512 artifact or an explicitly requested design change; resolved lower-tier augments are not reopened without a new symptom.
 
 ## Deferred explicit change request
 
