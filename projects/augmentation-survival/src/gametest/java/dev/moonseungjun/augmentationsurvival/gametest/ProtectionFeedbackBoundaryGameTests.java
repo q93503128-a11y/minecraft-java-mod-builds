@@ -15,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 /** Protection regressions that complement the existing real-hit shield/delayed-damage tests. */
 public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
+    private static final String EXPIRATION_POOL = "expiration-regression";
 
     @GameTest(maxTicks = 28)
     public void shieldExpirationTriggersBurstExactlyOnce(GameTestHelper helper) {
@@ -26,21 +27,31 @@ public final class ProtectionFeedbackBoundaryGameTests implements CustomTestMeth
         LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 3).withNoFreeWill().spawn();
         player.setPos(target.getX() - 2.0D, target.getY(), target.getZ());
 
-        // Let global threat-stage scaling finish before taking the health baseline. The first
-        // post-expiry assertion is intentionally several ticks later so GameTest callbacks cannot
-        // race the protection runtime's server-tick phase on the exact expiration tick.
+        // Let pack-wide threat scaling settle before taking the damage snapshot. The pool itself is
+        // the authoritative exactly-once boundary; raw hostile HP can legitimately be refreshed by
+        // parallel threat-stage tests after the burst has already fired.
         GameTestPlayers.runAfterDelay(helper, 5L, () -> {
             target.setHealth(target.getMaxHealth());
             float before = target.getHealth();
-            ProtectionAugmentService.grantShield(player, "expiration-regression", 4.0F, 1);
+            ProtectionAugmentService.grantShield(player, EXPIRATION_POOL, 4.0F, 1);
 
             GameTestPlayers.runAfterDelay(helper, 5L, () -> {
                 float afterBurst = target.getHealth();
                 require(afterBurst < before,
                         "expiring augment shield did not trigger Shield Burst");
+                require(ProtectionAugmentService.poolAmount(
+                                player, ProtectionAugmentService.PoolKind.SHIELD, EXPIRATION_POOL
+                        ) <= 1.0E-5F,
+                        "expired shield pool remained after Shield Burst");
+
+                target.invulnerableTime = 0;
                 GameTestPlayers.runAfterDelay(helper, 4L, () -> {
-                    require(Math.abs(target.getHealth() - afterBurst) < 1.0E-5F,
-                            "one shield expiration triggered Shield Burst more than once");
+                    require(ProtectionAugmentService.poolAmount(
+                                    player, ProtectionAugmentService.PoolKind.SHIELD, EXPIRATION_POOL
+                            ) <= 1.0E-5F,
+                            "expired shield pool was recreated after its burst");
+                    require(target.getHealth() + 1.0E-5F >= afterBurst,
+                            "one shield expiration applied additional Shield Burst damage later");
                     GameTestPlayers.succeed(helper);
                 });
             });

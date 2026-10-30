@@ -51,6 +51,9 @@ public final class HeroTraversalHudRegressionGameTests implements CustomTestMeth
         player.setDeltaMovement(0.0D, -0.08D, 0.0D);
         player.setOnGround(false);
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
+            // Pack-wide damage hooks can touch nearby entities during the first ROOT hit. Reset the
+            // vanilla hurt window so this test measures Aerial Combo recharge rather than i-frames.
+            second.invulnerableTime = 0;
             require(rootMelee(player, second, 4.0F), "second aerial-combo ROOT melee damage was rejected");
             require(player.getDeltaMovement().y > 0.0D,
                     "second airborne ROOT melee hit did not recharge and consume another aerial jump");

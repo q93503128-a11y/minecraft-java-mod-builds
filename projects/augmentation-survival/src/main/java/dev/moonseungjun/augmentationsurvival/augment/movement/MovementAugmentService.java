@@ -4,6 +4,7 @@ import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.mixin.LivingEntityJumpPowerAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -121,6 +122,7 @@ public final class MovementAugmentService {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(attacker);
         if (boundedLevel(state, AERIAL_COMBO_ID) <= 0
                 || isResetContact(attacker)
+                || CompanionAugmentService.isDominated(target)
                 || !OffensiveTargetContext.isValid(attacker, target)) {
             return;
         }
