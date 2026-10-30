@@ -116,6 +116,10 @@ public final class ShieldCompressionService {
         );
     }
 
+    /**
+     * Draws the same finite 3D cone used by the damage dot-product check: center line, four side
+     * rails, and the circular far cross-section at tan(halfAngle) * range.
+     */
     private static void emitConeParticles(
             ServerLevel level,
             Vec3 origin,
@@ -130,18 +134,27 @@ public final class ShieldCompressionService {
         right = right.normalize();
         Vec3 up = right.cross(direction).normalize();
         double tangent = Math.tan(Math.toRadians(halfAngleDegrees));
-        int steps = 7;
-        for (int step = 1; step <= steps; step++) {
-            double distance = range * step / steps;
+        int railSteps = 7;
+
+        for (int step = 1; step <= railSteps; step++) {
+            double distance = range * step / railSteps;
             double width = tangent * distance;
             Vec3 center = origin.add(direction.scale(distance));
             send(level, center);
             send(level, center.add(right.scale(width)));
             send(level, center.subtract(right.scale(width)));
-            if ((step & 1) == 0) {
-                send(level, center.add(up.scale(width * 0.55D)));
-                send(level, center.subtract(up.scale(width * 0.55D)));
-            }
+            send(level, center.add(up.scale(width)));
+            send(level, center.subtract(up.scale(width)));
+        }
+
+        Vec3 capCenter = origin.add(direction.scale(range));
+        double capRadius = tangent * range;
+        int capPoints = 20;
+        for (int i = 0; i < capPoints; i++) {
+            double angle = Math.PI * 2.0D * i / capPoints;
+            Vec3 offset = right.scale(Math.cos(angle) * capRadius)
+                    .add(up.scale(Math.sin(angle) * capRadius));
+            send(level, capCenter.add(offset));
         }
     }
 
