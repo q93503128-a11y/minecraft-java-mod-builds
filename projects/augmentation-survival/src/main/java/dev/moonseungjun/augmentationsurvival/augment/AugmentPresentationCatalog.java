@@ -47,20 +47,51 @@ public final class AugmentPresentationCatalog {
     }
 
     private static Entry directOverride(AugmentDefinition definition) {
-        if (definition.id().equals(PlayerRescueAugmentService.RESCUE_ID)) {
+        String id = definition.id();
+        if (id.equals(PlayerRescueAugmentService.RESCUE_ID)) {
             return new Entry("동료 구조", Kind.PASSIVE,
                     "둘 이상이 함께할 때, 치명상을 입은 당신이 잠시 쓰러져 구조를 기다립니다.",
                     "온라인 비관전자 플레이어가 2명 이상일 때만 후보에 등장합니다. 다른 사망 방지 효과가 모두 실패한 치명 피해를 받으면 10초 동안 쓰러집니다. 다른 플레이어가 가까이서 2초 구조하면 최대 체력 30%로 복귀하며, 구조되지 못하면 실제로 사망합니다. 쓰러짐 발동 후 15초 동안 다시 발동하지 않습니다.");
         }
-        if (definition.id().endsWith(":instant_mining")) {
+        if (id.endsWith(":instant_mining")) {
             return new Entry("순간 채굴", Kind.TOGGLE,
                     "전용 단축키로 켜고 끄며, 활성화 중 정상 수확 가능한 블록을 한 틱에 채굴합니다.",
                     "기본 N키로 켜고 끕니다. 키 설정에서 변경할 수 있습니다. 활성화 중 현재 도구로 정상 수확 가능한 직접 채굴 블록을 1 game tick에 파괴합니다. 파괴 불가 블록은 제외되며 도구 내구도·Silk Touch·Fortune은 정상 적용됩니다. 자동 파생 블록까지 1틱 채굴로 재귀 확장하지 않습니다.");
         }
-        if (definition.id().equals(FlightAugmentService.FLIGHT_ID)) {
+        if (id.equals(FlightAugmentService.FLIGHT_ID)) {
             return new Entry("비행", Kind.TOGGLE,
                     "시선 방향으로 가속해 호버·순항·초고속 비행을 오가는 전용 비행 능력입니다.",
                     "기본 V키로 켜고 끕니다. 키 설정에서 변경할 수 있습니다. Creative 비행이 아니라 시선 방향과 이동 입력에 따라 관성 있게 움직입니다. 전진하면서 질주를 유지하면 순항으로 가속하고, 계속 속도를 올리면 더 빠른 초고속 비행으로 전환됩니다.");
+        }
+        if (id.endsWith(":retrace")) {
+            return new Entry("되밟기", Kind.PASSIVE,
+                    "완충 근접 공격 적중 시 지난 2초 이동 경로를 잔상이 역주행해 경로의 적을 공격합니다.",
+                    "완충 근접 공격이 적중하면 지난 2초 동안 이동한 경로를 잔상이 역주행합니다. 경로에 닿은 적은 기준 공격 피해의 50% / 75% / 100%를 한 번 받습니다. 내부 쿨다운은 5초입니다.");
+        }
+        if (id.endsWith(":return_to_sender")) {
+            return new Entry("돌려보내기", Kind.PASSIVE,
+                    "방패로 누적 10 피해를 막을 때마다 공격자 방향으로 전방 충격파를 방출합니다.",
+                    "방패로 막은 피해를 압축합니다. 누적 10 피해마다 공격자 방향 7블록, 전체 45° 원뿔 범위에 충격파를 방출해 압축된 피해의 60% / 80% / 100%를 돌려줍니다. 남은 누적 피해는 다음 방어까지 유지됩니다.");
+        }
+        if (id.endsWith(":portable_riptide")) {
+            return new Entry("휴대 수류", Kind.PASSIVE,
+                    "급류 삼지창과 물 양동이를 함께 들면 마른 곳에서도 정상적인 급류를 사용할 수 있습니다.",
+                    "주손에 급류 삼지창을, 보조손에 물 양동이를 들면 비나 물이 없는 곳에서도 급류를 사용할 수 있습니다. 물 양동이는 소모되지 않습니다. 이동·소리·몸 회전은 일반 급류와 같은 바닐라 동작을 사용합니다.");
+        }
+        if (id.endsWith(":water_run")) {
+            return new Entry("수상 보행", Kind.PASSIVE,
+                    "물 표면을 땅처럼 걷고 뛸 수 있습니다. 웅크리거나 높은 곳에서 뛰어들면 물속으로 들어갑니다.",
+                    "물의 실제 수면 높이에 발을 디디고 서거나 걷고 뛸 수 있습니다. 웅크리면 수면을 통과하며, 5블록 이상 높이에서 떨어져 들어가면 그대로 다이빙합니다. 물속에서는 수면을 막지 않아 정상적으로 위로 빠져나올 수 있습니다. 수면 착지로 낙하 피해를 받지 않으며 용암에는 적용되지 않습니다.");
+        }
+        if (id.endsWith(":last_stand")) {
+            return new Entry("한 번 버티기", Kind.PASSIVE,
+                    "치명 피해를 한 번 버티고 1 HP로 생존한 뒤 3초 동안 피해를 막습니다.",
+                    "치명 피해를 받으면 1 HP로 생존하고 3초 동안 일반 피해를 받지 않습니다. 발동 순간 남아 있던 피해 지연 예약은 모두 사라지고, 보호 시간 동안 새 피해 지연도 쌓이지 않습니다. 재사용 대기시간은 180초입니다.");
+        }
+        if (id.endsWith(":delayed_damage")) {
+            return new Entry("피해 지연", Kind.PASSIVE,
+                    "받을 피해 일부를 여러 번으로 나누어 뒤늦게 받습니다.",
+                    "즉시 받을 피해 일부를 예약해 여러 차례에 걸쳐 나누어 받습니다. 한 번 버티기가 발동하면 남은 예약 피해는 모두 폐기되며, 그 3초 보호 시간 동안에는 새 예약 피해도 생성되지 않습니다.");
         }
         return null;
     }
@@ -85,9 +116,6 @@ public final class AugmentPresentationCatalog {
         if (id.endsWith(":tracking_arrow")) return new Entry(source.displayName(), Kind.PASSIVE,
                 "발사 직후부터 아군이 아닌 공격 가능한 대상을 16블록·전방 45° 안에서 추적합니다.",
                 "일반 비행과 낙하 중에도 계속 대상을 다시 찾고 방향을 보정합니다. 탐색 범위는 16블록, 전방 45°이며 Lv.1 / 2 / 3에서 tick당 최대 4° / 6° / 8° 방향을 바꿉니다. 자신의 아군·동료는 추적하지 않으며 철골렘 같은 비아군 중립 대상도 추적할 수 있습니다.");
-        if (id.endsWith(":water_run")) return new Entry(source.displayName(), Kind.PASSIVE,
-                "질주하며 움직이는 동안 물 표면을 달리고, 조건이 끝나면 정상 수영으로 돌아갑니다.",
-                "물 표면에 진입할 때 질주 상태와 실제 수평 이동이 유지되면 수면 위를 달립니다. 짧은 입력 전환은 자연스럽게 이어지지만 질주를 멈추거나 이동 조건이 끝나면 일반 수영·낙하 상태로 돌아갑니다.");
         if (id.endsWith(":remote_storage")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 B키로 원격 보관함을 엽니다. 키 설정에서 변경할 수 있습니다."));
         if (id.endsWith(":spatial_link")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "기본 G키로 공간 연결 화면을 엽니다. 키 설정에서 변경할 수 있습니다."));
         if (id.endsWith(":authority_theft")) return new Entry(source.displayName(), source.kind(), source.summary(), append(source.detail(), "일반 액티브 슬롯을 사용하지 않습니다. 기본 J키로 탈취한 권능을 해방하며 키 설정에서 변경할 수 있습니다."));
