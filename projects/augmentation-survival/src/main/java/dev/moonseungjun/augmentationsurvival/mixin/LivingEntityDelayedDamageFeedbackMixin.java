@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /** Removes ordinary hit-direction, hurt-animation and duplicate hurt-sound feedback from delayed installments. */
 @Mixin(LivingEntity.class)
 abstract class LivingEntityDelayedDamageFeedbackMixin {
-    @Shadow public float hurtDir;
     @Shadow public int hurtTime;
     @Shadow public int hurtDuration;
 
@@ -35,7 +34,8 @@ abstract class LivingEntityDelayedDamageFeedbackMixin {
         augmentationSurvival$restoreDelayedVisualState =
                 (Object) this instanceof ServerPlayer && CombatProvenanceContext.isDelayedDamage();
         if (!augmentationSurvival$restoreDelayedVisualState) return;
-        augmentationSurvival$hurtDirBeforeDelayed = hurtDir;
+        ServerPlayer player = (ServerPlayer) (Object) this;
+        augmentationSurvival$hurtDirBeforeDelayed = player.getHurtDir();
         augmentationSurvival$hurtTimeBeforeDelayed = hurtTime;
         augmentationSurvival$hurtDurationBeforeDelayed = hurtDuration;
     }
@@ -49,7 +49,10 @@ abstract class LivingEntityDelayedDamageFeedbackMixin {
     ) {
         if (!augmentationSurvival$restoreDelayedVisualState) return;
         augmentationSurvival$restoreDelayedVisualState = false;
-        hurtDir = augmentationSurvival$hurtDirBeforeDelayed;
+        ServerPlayer player = (ServerPlayer) (Object) this;
+        ((PlayerHurtDirAccessor) player).augmentationSurvival$setHurtDir(
+                augmentationSurvival$hurtDirBeforeDelayed
+        );
         hurtTime = augmentationSurvival$hurtTimeBeforeDelayed;
         hurtDuration = augmentationSurvival$hurtDurationBeforeDelayed;
     }
