@@ -12,13 +12,18 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Restores audible delayed-damage feedback without reintroducing vanilla hurt camera/knockback feedback. */
+/**
+ * Keeps delayed installments audible while removing the ordinary directional damage tilt.
+ * ServerPlayer applies its own post-Player damage feedback, so the final tilt restore belongs here.
+ */
 @Mixin(ServerPlayer.class)
 abstract class ServerPlayerDelayedDamageSoundMixin {
     @Unique
     private boolean augmentationSurvival$trackingDelayedDamage;
     @Unique
     private float augmentationSurvival$delayedHealthBefore;
+    @Unique
+    private float augmentationSurvival$delayedHurtDirBefore;
 
     @Inject(method = "hurtServer", at = @At("HEAD"))
     private void augmentationSurvival$captureDelayedHealth(
@@ -29,12 +34,14 @@ abstract class ServerPlayerDelayedDamageSoundMixin {
     ) {
         augmentationSurvival$trackingDelayedDamage = CombatProvenanceContext.isDelayedDamage();
         if (augmentationSurvival$trackingDelayedDamage) {
-            augmentationSurvival$delayedHealthBefore = ((ServerPlayer) (Object) this).getHealth();
+            ServerPlayer player = (ServerPlayer) (Object) this;
+            augmentationSurvival$delayedHealthBefore = player.getHealth();
+            augmentationSurvival$delayedHurtDirBefore = player.getHurtDir();
         }
     }
 
     @Inject(method = "hurtServer", at = @At("RETURN"))
-    private void augmentationSurvival$playDelayedDamageSound(
+    private void augmentationSurvival$restoreQuietFeedbackAndPlayDelayedSound(
             ServerLevel level,
             DamageSource source,
             float amount,
@@ -44,6 +51,10 @@ abstract class ServerPlayerDelayedDamageSoundMixin {
         augmentationSurvival$trackingDelayedDamage = false;
 
         ServerPlayer player = (ServerPlayer) (Object) this;
+        ((PlayerHurtDirAccessor) player).augmentationSurvival$setHurtDir(
+                augmentationSurvival$delayedHurtDirBefore
+        );
+
         if (!cir.getReturnValue() || !(player.getHealth() < augmentationSurvival$delayedHealthBefore - 1.0E-6F)) {
             return;
         }
