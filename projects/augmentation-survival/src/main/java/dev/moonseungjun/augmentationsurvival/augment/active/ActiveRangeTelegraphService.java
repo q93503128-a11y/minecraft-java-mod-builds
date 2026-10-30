@@ -52,8 +52,9 @@ public final class ActiveRangeTelegraphService {
             return;
         }
         long now = player.level().getGameTime();
-        ACTIVE.put(key, new Window(player.level(), now + durationTicks, radius, particleFor(abilityId)));
-        emitBoundary(player.level(), player.position(), radius, particleFor(abilityId));
+        ParticleOptions particle = particleFor(abilityId);
+        ACTIVE.put(key, new Window(player.level(), now + durationTicks, radius, particle));
+        emitBoundary(player.level(), player.position(), radius, particle);
     }
 
     /** Test/readability boundary: returns zero when no exact timed range is being presented. */
@@ -80,7 +81,7 @@ public final class ActiveRangeTelegraphService {
                 continue;
             }
             // Four refreshes per second are enough to read the boundary without turning it into particle fog.
-            if ((now & 4L) == 0L) {
+            if (now % 5L == 0L) {
                 emitBoundary(player.level(), player.position(), window.radius, window.particle);
             }
         }
