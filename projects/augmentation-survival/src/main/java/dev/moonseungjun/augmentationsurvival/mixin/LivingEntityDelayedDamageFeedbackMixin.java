@@ -1,17 +1,59 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Removes ordinary hit-direction, hurt-animation and duplicate hurt-sound feedback from delayed installments. */
 @Mixin(LivingEntity.class)
 abstract class LivingEntityDelayedDamageFeedbackMixin {
+    @Shadow public float hurtDir;
+    @Shadow public int hurtTime;
+    @Shadow public int hurtDuration;
+
+    @Unique private boolean augmentationSurvival$restoreDelayedVisualState;
+    @Unique private float augmentationSurvival$hurtDirBeforeDelayed;
+    @Unique private int augmentationSurvival$hurtTimeBeforeDelayed;
+    @Unique private int augmentationSurvival$hurtDurationBeforeDelayed;
+
+    @Inject(method = "hurtServer", at = @At("HEAD"))
+    private void augmentationSurvival$captureDelayedVisualState(
+            ServerLevel level,
+            DamageSource source,
+            float amount,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        augmentationSurvival$restoreDelayedVisualState =
+                (Object) this instanceof ServerPlayer && CombatProvenanceContext.isDelayedDamage();
+        if (!augmentationSurvival$restoreDelayedVisualState) return;
+        augmentationSurvival$hurtDirBeforeDelayed = hurtDir;
+        augmentationSurvival$hurtTimeBeforeDelayed = hurtTime;
+        augmentationSurvival$hurtDurationBeforeDelayed = hurtDuration;
+    }
+
+    @Inject(method = "hurtServer", at = @At("RETURN"))
+    private void augmentationSurvival$restoreDelayedVisualState(
+            ServerLevel level,
+            DamageSource source,
+            float amount,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        if (!augmentationSurvival$restoreDelayedVisualState) return;
+        augmentationSurvival$restoreDelayedVisualState = false;
+        hurtDir = augmentationSurvival$hurtDirBeforeDelayed;
+        hurtTime = augmentationSurvival$hurtTimeBeforeDelayed;
+        hurtDuration = augmentationSurvival$hurtDurationBeforeDelayed;
+    }
+
     @Inject(method = "indicateDamage", at = @At("HEAD"), cancellable = true)
     private void augmentationSurvival$suppressDelayedDirectionalImpact(double x, double z, CallbackInfo ci) {
         augmentationSurvival$cancelForDelayedPlayer(ci);
