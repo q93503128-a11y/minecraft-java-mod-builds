@@ -99,12 +99,13 @@ public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
         helper.setBlock(relativeWater, Blocks.WATER);
         BlockPos waterPos = helper.absolutePos(relativeWater);
         BlockState water = level.getBlockState(waterPos);
+        double surfaceY = waterPos.getY() + water.getFluidState().getHeight(level, waterPos);
 
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(id("water_run"), 1)
         );
-        player.setPos(waterPos.getX() + 0.5D, waterPos.getY() + 1.0D, waterPos.getZ() + 0.5D);
+        player.setPos(waterPos.getX() + 0.5D, surfaceY, waterPos.getZ() + 0.5D);
         player.setShiftKeyDown(false);
         player.fallDistance = 0.0F;
 
@@ -125,7 +126,7 @@ public final class TraversalRescueGameTests implements CustomTestMethodInvoker {
         require(water.getCollisionShape(level, waterPos, CollisionContext.of(player)).isEmpty(),
                 "Water Walk blocked a player rising from inside the water");
 
-        player.setPos(waterPos.getX() + 0.5D, waterPos.getY() + 1.0D, waterPos.getZ() + 0.5D);
+        player.setPos(waterPos.getX() + 0.5D, surfaceY, waterPos.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
         float before = player.getHealth();
         player.fallDistance = 4.5F;
