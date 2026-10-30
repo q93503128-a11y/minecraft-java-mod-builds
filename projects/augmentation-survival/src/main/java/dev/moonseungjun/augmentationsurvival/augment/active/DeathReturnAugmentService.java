@@ -26,8 +26,20 @@ public final class DeathReturnAugmentService {
             if (alive) {
                 return;
             }
+
+            // 26.2 can expose the freshly recorded death position on the old player before the
+            // replacement player has fully inherited it. Preserve the authoritative vanilla value
+            // explicitly so the active cannot lose its target during the respawn handoff.
+            Optional<GlobalPos> lastDeath = newPlayer.getLastDeathLocation();
+            if (lastDeath.isEmpty()) {
+                lastDeath = oldPlayer.getLastDeathLocation();
+                if (lastDeath.isPresent()) {
+                    newPlayer.setLastDeathLocation(lastDeath);
+                }
+            }
+
             AugmentationPlayerState state = AugmentationPlayerStateService.state(newPlayer);
-            if (boundedLevel(state) <= 0 || newPlayer.getLastDeathLocation().isEmpty()) {
+            if (boundedLevel(state) <= 0 || lastDeath.isEmpty()) {
                 return;
             }
             AugmentationPlayerStateService.replace(
@@ -56,9 +68,7 @@ public final class DeathReturnAugmentService {
                 targetLevel,
                 destination,
                 Vec3.ZERO,
-                player.getYRot(),
-                player.getXRot(),
-                TeleportTransition.DO_NOTHING
+                player.getYRot(), player.getXRot(), TeleportTransition.DO_NOTHING
         ));
         if (teleported == null) {
             return false;
