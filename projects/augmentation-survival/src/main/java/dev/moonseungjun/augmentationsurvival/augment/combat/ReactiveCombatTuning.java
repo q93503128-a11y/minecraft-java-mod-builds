@@ -23,7 +23,7 @@ public final class ReactiveCombatTuning {
     public static void initialize() {
         current = loadBundled();
         AugmentationSurvival.LOGGER.info(
-                "Loaded reactive combat contract: reflect/status/shield/path/invulnerability runtime"
+                "Loaded reactive combat contract: shield compression/status/shield/path/invulnerability runtime"
         );
     }
 
@@ -62,7 +62,10 @@ public final class ReactiveCombatTuning {
                 JsonObject invulnerability = object(root, "invulnerability");
                 return new Snapshot(
                         schema,
-                        fractions(reflected, "speed_scale", 3),
+                        positive(reflected, "blocked_damage_threshold"),
+                        fractions(reflected, "damage_fraction", 3),
+                        positive(reflected, "wave_range"),
+                        coneHalfAngle(reflected, "wave_half_angle_degrees"),
                         fraction(status, "duration_fraction"),
                         fractions(mind, "duration_reduction", 3),
                         positive(burst, "radius"),
@@ -109,6 +112,14 @@ public final class ReactiveCombatTuning {
         double value = object.get(key).getAsDouble();
         if (!Double.isFinite(value) || value <= 0.0D) {
             throw new IllegalStateException("Reactive combat number must be positive: " + key);
+        }
+        return value;
+    }
+
+    private static double coneHalfAngle(JsonObject object, String key) {
+        double value = positive(object, key);
+        if (value >= 90.0D) {
+            throw new IllegalStateException("Reactive combat cone half-angle must be < 90 degrees: " + key);
         }
         return value;
     }
@@ -164,7 +175,10 @@ public final class ReactiveCombatTuning {
 
     public record Snapshot(
             int schemaVersion,
-            double[] returnSpeedScale,
+            double returnBlockedDamageThreshold,
+            double[] returnDamageFraction,
+            double returnWaveRange,
+            double returnWaveHalfAngleDegrees,
             double statusReflectDurationFraction,
             double[] strongMindDurationReduction,
             double shieldBurstRadius,
@@ -177,14 +191,16 @@ public final class ReactiveCombatTuning {
             int invulnerabilityDurationTicks
     ) {
         public Snapshot {
-            returnSpeedScale = returnSpeedScale.clone();
+            returnDamageFraction = returnDamageFraction.clone();
             strongMindDurationReduction = strongMindDurationReduction.clone();
             shieldBurstDamageMultiplier = shieldBurstDamageMultiplier.clone();
             shieldBurstDamageCap = shieldBurstDamageCap.clone();
             retraceDamageFraction = retraceDamageFraction.clone();
         }
 
-        public double returnSpeedScale(int level) { return at(returnSpeedScale, level); }
+        public double returnDamageFraction(int level) { return at(returnDamageFraction, level); }
+        /** Legacy accessor retained only so dead reflection source remains source-compatible. */
+        public double returnSpeedScale(int level) { return returnDamageFraction(level); }
         public double strongMindDurationReduction(int level) { return at(strongMindDurationReduction, level); }
         public double shieldBurstDamageMultiplier(int level) { return at(shieldBurstDamageMultiplier, level); }
         public double shieldBurstDamageCap(int level) { return at(shieldBurstDamageCap, level); }

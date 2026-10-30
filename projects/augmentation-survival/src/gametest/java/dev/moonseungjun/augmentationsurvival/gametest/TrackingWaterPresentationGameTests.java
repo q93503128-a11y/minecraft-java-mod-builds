@@ -26,7 +26,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 
-/** Bundle-four regressions that enter the same arrow/player boundaries used by live Minecraft. */
+/** Regressions for tracking, water traversal and repaired player-facing descriptions. */
 public final class TrackingWaterPresentationGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -104,7 +104,7 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
     }
 
     @GameTest(maxTicks = 20)
-    public void waterRunUsesActualPlayerTicksAndFluidStandBoundaryThenReleases(GameTestHelper helper) {
+    public void waterRunSupportsStandingWalkingCrouchSinkAndFiveBlockDive(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         AugmentationPlayerStateService.replace(
                 player,
@@ -113,40 +113,34 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
         BlockPos anchor = helper.absolutePos(new BlockPos(3, 4, 3));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setOnGround(false);
-        player.setSprinting(true);
-        player.setDeltaMovement(0.18D, 0.0D, 0.0D);
+        player.setSprinting(false);
+        player.setDeltaMovement(Vec3.ZERO);
 
         FluidState water = Blocks.WATER.defaultBlockState().getFluidState();
         require(water.is(FluidTags.WATER), "water-run regression setup did not produce water fluid state");
 
-        // HEAD captures the sprint intent before vanilla may clear the flag at a fluid edge.
-        player.tick();
-        player.setDeltaMovement(0.18D, 0.0D, 0.0D);
+        player.fallDistance = 0.0F;
         require(player.canStandOnFluid(water),
-                "sprinting player with real horizontal travel could not stand on water after an actual player tick");
+                "stationary player with Water Run could not stand on water");
 
-        player.setSprinting(false);
-        player.setDeltaMovement(0.18D, 0.0D, 0.0D);
+        player.setDeltaMovement(0.12D, 0.0D, 0.0D);
         require(player.canStandOnFluid(water),
-                "water run did not bridge the intended short sprint-edge grace");
+                "walking player with Water Run could not stay supported on water");
 
-        GameTestPlayers.runAfterDelay(helper, 4L, () -> {
-            player.setSprinting(false);
-            player.setDeltaMovement(0.18D, 0.0D, 0.0D);
-            require(!player.canStandOnFluid(water),
-                    "water run continued from residual velocity after sprint intent and grace ended");
+        player.setShiftKeyDown(true);
+        require(!player.canStandOnFluid(water),
+                "crouching player incorrectly retained water-surface support");
+        player.setShiftKeyDown(false);
 
-            player.setSprinting(true);
-            player.setShiftKeyDown(true);
-            player.setDeltaMovement(0.18D, 0.0D, 0.0D);
-            player.tick();
-            player.setDeltaMovement(0.18D, 0.0D, 0.0D);
-            require(!player.canStandOnFluid(water),
-                    "crouching player incorrectly retained water-run support");
-            require(!player.canStandOnFluid(Blocks.LAVA.defaultBlockState().getFluidState()),
-                    "water run incorrectly allowed standing on lava");
-            GameTestPlayers.succeed(helper);
-        });
+        player.fallDistance = 4.99F;
+        require(player.canStandOnFluid(water),
+                "fall below the five-block dive threshold incorrectly broke water support");
+        player.fallDistance = 5.0F;
+        require(!player.canStandOnFluid(water),
+                "five-block-or-higher dive did not pass through the water surface");
+        require(!player.canStandOnFluid(Blocks.LAVA.defaultBlockState().getFluidState()),
+                "water traversal incorrectly allowed standing on lava");
+        GameTestPlayers.succeed(helper);
     }
 
     @GameTest
@@ -184,8 +178,24 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
                 "aerial-combo description does not explain standalone repeated air-jump recharge");
 
         String waterRun = detail("water_run");
-        require(waterRun.contains("질주") && waterRun.contains("수평 이동") && waterRun.contains("일반 수영"),
-                "water-run description does not explain live entry/continuation/release behavior");
+        require(waterRun.contains("걷") && waterRun.contains("웅크") && waterRun.contains("5블록")
+                        && waterRun.contains("잠수"),
+                "water-run description does not explain stand/walk/crouch/dive behavior");
+
+        String returnToSender = detail("return_to_sender");
+        require(returnToSender.contains("누적 10") && returnToSender.contains("7블록")
+                        && returnToSender.contains("45°") && returnToSender.contains("60% / 80% / 100%"),
+                "Return to Sender description does not match blocked-damage cone compression");
+
+        String portableRiptide = detail("portable_riptide");
+        require(portableRiptide.contains("소모되지") && portableRiptide.contains("회전"),
+                "Portable Riptide description does not state unlimited bucket use and spin behavior");
+
+        String lastStand = detail("last_stand");
+        String delayedDamage = detail("delayed_damage");
+        require(lastStand.contains("피해 지연") && lastStand.contains("모두 사라")
+                        && delayedDamage.contains("모두 폐기") && delayedDamage.contains("새 예약"),
+                "Last Stand / delayed-damage descriptions do not explain debt clearing and suppression");
 
         GameTestPlayers.succeed(helper);
     }

@@ -83,14 +83,26 @@ public abstract class ClientTridentPortableRiptideMixin {
     }
 
     @Inject(method = "releaseUsing", at = @At("RETURN"))
-    private void augmentationSurvival$clearClientRelease(
+    private void augmentationSurvival$finishClientRelease(
             ItemStack stack,
             Level level,
             LivingEntity entity,
             int remainingUseTicks,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        AUGMENTATION_SURVIVAL$PORTABLE.remove();
+        try {
+            if (Boolean.TRUE.equals(AUGMENTATION_SURVIVAL$PORTABLE.get())
+                    && Boolean.TRUE.equals(cir.getReturnValue())
+                    && entity instanceof LocalPlayer player
+                    && !player.isAutoSpinAttack()) {
+                float spinStrength = EnchantmentHelper.getTridentSpinAttackStrength(stack, player);
+                if (spinStrength > 0.0F) {
+                    player.startAutoSpinAttack(20, spinStrength, stack);
+                }
+            }
+        } finally {
+            AUGMENTATION_SURVIVAL$PORTABLE.remove();
+        }
     }
 
     private static boolean canPredictPortableRiptide(Player player, ItemStack trident) {

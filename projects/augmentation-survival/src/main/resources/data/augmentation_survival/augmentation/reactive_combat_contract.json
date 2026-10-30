@@ -1,7 +1,10 @@
 {
   "schema_version": 1,
   "return_to_sender": {
-    "speed_scale": [0.60, 0.80, 1.00]
+    "blocked_damage_threshold": 10.0,
+    "damage_fraction": [0.60, 0.80, 1.00],
+    "wave_range": 7.0,
+    "wave_half_angle_degrees": 22.5
   },
   "status_reflect": {
     "duration_fraction": 0.50

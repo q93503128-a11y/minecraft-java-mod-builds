@@ -2,33 +2,24 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.moonseungjun.augmentationsurvival.augment.utility.UtilityAugmentService;
-import dev.moonseungjun.augmentationsurvival.augment.utility.WaterRunSprintIntentService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.material.FluidState;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Server-authoritative Water Run: sprint intent plus real horizontal travel is enough to stand on water. */
+/** Server-authoritative water walking: stand, walk or run on water unless crouching or diving from 5+ blocks. */
 @Mixin(LivingEntity.class)
 public abstract class WaterRunLivingEntityMixin {
-    @Unique private static final double AUGMENTATION_SURVIVAL$WATER_RUN_MIN_SPEED_SQUARED = 0.0064D;
-    @Unique private static final long AUGMENTATION_SURVIVAL$SPRINT_EDGE_GRACE_TICKS = 2L;
-
     @ModifyReturnValue(method = "canStandOnFluid", at = @At("RETURN"))
-    private boolean augmentationSurvival$runOnWater(boolean original, FluidState fluidState) {
+    private boolean augmentationSurvival$walkOnWater(boolean original, FluidState fluidState) {
         if (original) return true;
         if (!((Object) this instanceof ServerPlayer player) || !fluidState.is(FluidTags.WATER)) return false;
-        if (!UtilityAugmentService.canRunOnWater(player)
-                || player.isShiftKeyDown()
-                || player.isDeadOrDying()
-                || player.isPassenger()
-                || player.getDeltaMovement().horizontalDistanceSqr() < AUGMENTATION_SURVIVAL$WATER_RUN_MIN_SPEED_SQUARED) {
-            return false;
-        }
-        return player.isSprinting()
-                || WaterRunSprintIntentService.wasRecent(player, AUGMENTATION_SURVIVAL$SPRINT_EDGE_GRACE_TICKS);
+        return UtilityAugmentService.canRunOnWater(player)
+                && !player.isShiftKeyDown()
+                && !player.isDeadOrDying()
+                && !player.isPassenger()
+                && player.fallDistance < 5.0F;
     }
 }

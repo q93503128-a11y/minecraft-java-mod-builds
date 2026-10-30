@@ -6,6 +6,9 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentPresentationCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ProtectionAugmentService;
+import dev.moonseungjun.augmentationsurvival.mixin.ProtectionRuntimeAccessor;
+import dev.moonseungjun.augmentationsurvival.mixin.ProtectionRuntimeStateAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -25,12 +28,12 @@ import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Blocks;
 
-/** Regressions found only during the 2026-10-29 live playtest pass. */
+/** Regressions found only during the 2026-10-29/30 live playtest passes. */
 public final class LivePlaytestRegressionGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
     @GameTest(maxTicks = 20)
-    public void portableRiptideRunsActualDryVanillaUseAndConsumesBucket(GameTestHelper helper) {
+    public void portableRiptideRunsActualDryVanillaUseKeepsBucketAndSpin(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         ServerLevel level = helper.getLevel();
         BlockPos anchor = helper.absolutePos(new BlockPos(2, 3, 2));
@@ -54,10 +57,12 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         int remainingUseTicks = tridentItem.getUseDuration(trident, player) - 20;
         boolean released = tridentItem.releaseUsing(trident, level, player, remainingUseTicks);
         require(released, "dry Portable Riptide did not complete vanilla TridentItem.releaseUsing");
-        require(player.getDeltaMovement().lengthSqr() > 0.05D || player.isAutoSpinAttack(),
-                "successful dry Portable Riptide produced no vanilla launch/spin state");
-        require(player.getOffhandItem().is(Items.BUCKET),
-                "one successful dry Portable Riptide must turn the water bucket into an empty bucket");
+        require(player.getDeltaMovement().lengthSqr() > 0.05D,
+                "successful dry Portable Riptide produced no vanilla launch velocity");
+        require(player.isAutoSpinAttack(),
+                "successful dry Portable Riptide did not enter the vanilla spin-attack state");
+        require(player.getOffhandItem().is(Items.WATER_BUCKET),
+                "Portable Riptide must keep the water bucket intact for unlimited dry uses");
         GameTestPlayers.succeed(helper);
     }
 
@@ -82,8 +87,6 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         helper.setBlock(new BlockPos(1, 3, 6), Blocks.STONE);
         LivingEntity wallTarget = helper.spawnMob(EntityTypes.ZOMBIE, 1, 2, 5).withNoFreeWill().spawn();
 
-        // Threat scaling can refresh newly loaded mobs during the first few server ticks. Snapshot
-        // only after that shared runtime has settled, otherwise max-health growth looks like healing.
         GameTestPlayers.runAfterDelay(helper, 5, () -> {
             controlTarget.setHealth(controlTarget.getMaxHealth());
             controlTarget.invulnerableTime = 0;
@@ -141,8 +144,8 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 320)
-    public void realDelayedReservationTriggersLastStandAndBlocksTheNextInstallment(GameTestHelper helper) {
+    @GameTest(maxTicks = 400)
+    public void realDelayedReservationTriggersLastStandClearsDebtAndSuppressesNewReservations(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         ServerLevel level = helper.getLevel();
         int delayedLevel = 3;
@@ -152,13 +155,13 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
                         .withAugmentLevel(id("delayed_damage"), delayedLevel)
                         .withAugmentLevel(id("last_stand"), 1)
         );
+        player.getFoodData().setFoodLevel(6);
+        player.getFoodData().setSaturation(0.0F);
 
         CombatTuning.Snapshot tuning = CombatTuning.current();
         int installments = tuning.delayedDamageInstallmentCount();
         int interval = tuning.delayedDamageIntervalTicks();
         require(installments == 5, "live-playtest regression expects the canonical five delayed installments");
-        require(tuning.lastStandInvulnerableTicks() > interval,
-                "Last Stand invulnerability must cover at least the installment immediately after its trigger");
 
         float startHealth = 10.0F;
         player.setHealth(startHealth);
@@ -180,12 +183,30 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
             require(AugmentationPlayerStateService.state(player).cooldownReadyTick(id("last_stand"))
                             > player.level().getGameTime(),
                     "Last Stand cooldown was not armed by the lethal reserved installment");
+
+            ProtectionRuntimeStateAccessor runtime = protectionRuntime(player);
+            require(runtime.augmentationSurvival$getDelayed().isEmpty(),
+                    "Last Stand left old delayed-damage debt queued after activation");
+
+            float duringWindow = ProtectionAugmentService.modifyAfterReductions(
+                    player,
+                    player.damageSources().generic(),
+                    10.0F
+            );
+            require(Math.abs(duringWindow - 10.0F) < 0.01F,
+                    "Last Stand protection window still split new damage into delayed reservations");
+            require(runtime.augmentationSurvival$getDelayed().isEmpty(),
+                    "new delayed-damage debt was created during Last Stand protection");
         });
 
-        GameTestPlayers.runAfterDelay(helper, interval * 5 + 2, () -> {
+        long finalDelay = interval * 4L + tuning.lastStandInvulnerableTicks() + interval + 5L;
+        GameTestPlayers.runAfterDelay(helper, finalDelay, () -> {
             require(Math.abs(player.getHealth() - 1.0F) < 0.01F,
-                    "the installment immediately after Last Stand bypassed its invulnerability; health="
+                    "old delayed damage killed or damaged the player after Last Stand protection ended; health="
                             + player.getHealth());
+            ProtectionRuntimeStateAccessor runtime = protectionRuntime(player);
+            require(runtime.augmentationSurvival$getDelayed().isEmpty(),
+                    "delayed-damage debt reappeared after Last Stand protection expired");
             GameTestPlayers.succeed(helper);
         });
     }
@@ -197,6 +218,14 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         require(OffensiveTargetContext.isValid(player, ironGolem),
                 "non-allied iron golems must be valid targets for player-owned offensive augments");
         GameTestPlayers.succeed(helper);
+    }
+
+    private static ProtectionRuntimeStateAccessor protectionRuntime(ServerPlayer player) {
+        Object runtime = ProtectionRuntimeAccessor.augmentationSurvival$getRuntime().get(player.getUUID());
+        if (!(runtime instanceof ProtectionRuntimeStateAccessor accessor)) {
+            throw new AssertionError("missing protection runtime for delayed-damage regression");
+        }
+        return accessor;
     }
 
     private static String id(String path) { return PREFIX + path; }
