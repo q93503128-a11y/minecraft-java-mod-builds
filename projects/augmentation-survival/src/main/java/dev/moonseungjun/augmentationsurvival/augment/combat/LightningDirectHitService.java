@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -106,14 +105,13 @@ public final class LightningDirectHitService {
     }
 
     private static void applyDerivedDamage(ServerPlayer attacker, LivingEntity target, float amount) {
-        if (!(amount > 0.0F) || !Float.isFinite(amount) || target.isDeadOrDying()
-                || !(target.level() instanceof ServerLevel level)) {
+        if (!(amount > 0.0F) || !Float.isFinite(amount) || target.isDeadOrDying()) {
             return;
         }
         DamageSource source = attacker.damageSources().playerAttack(attacker);
         CombatProvenanceContext.runAs(
                 CombatProvenance.DERIVED_CHAIN,
-                () -> target.hurtServer(level, source, amount)
+                () -> target.hurtOrSimulate(source, amount)
         );
     }
 
