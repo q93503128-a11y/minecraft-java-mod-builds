@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationGrowthSampler;
@@ -14,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
@@ -21,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 /** Regressions discovered by the 2026-10-31 live-play pass. */
 public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodInvoker {
     private static final String PHASE_SHIFT_ID = AugmentationSurvival.MOD_ID + ":phase_shift";
+    private static final String TIME_ACCELERATION_ID = AugmentationSurvival.MOD_ID + ":time_acceleration";
 
     @GameTest(maxTicks = 60)
     public void phaseShiftSuppressesOnlyInWallDamage(GameTestHelper helper) {
@@ -65,15 +68,47 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest
-    public void timeAccelerationUsesConsistentSixtyPercentSpeedAxes(GameTestHelper helper) {
-        AdvancedActiveTuning.Snapshot tuning = AdvancedActiveTuning.current();
-        require(close(tuning.timeAccelerationMovementBonus(), 0.60D), "movement bonus drifted");
-        require(close(tuning.timeAccelerationAttackSpeedBonus(), 0.60D), "attack speed bonus drifted");
-        require(close(tuning.timeAccelerationMiningBonus(), 0.60D), "mining bonus drifted");
-        require(close(tuning.timeAccelerationItemUseSpeedMultiplier(), 1.60D), "item-use speed is not x1.60");
-        require(close(tuning.timeAccelerationProjectileSpeedMultiplier(), 1.60D), "projectile speed is not x1.60");
-        GameTestPlayers.succeed(helper);
+    @GameTest(maxTicks = 100)
+    public void timeAccelerationAppliesCanonicalRuntimeModifiersAfterFocus(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        AugmentationPlayerStateService.replace(
+                player,
+                AugmentationPlayerState.initial().withAugmentLevel(TIME_ACCELERATION_ID, 1)
+        );
+
+        double movementBefore = player.getAttributeValue(Attributes.MOVEMENT_SPEED);
+        double attackBefore = player.getAttributeValue(Attributes.ATTACK_SPEED);
+        double miningBefore = player.getAttributeValue(Attributes.BLOCK_BREAK_SPEED);
+
+        require(AdvancedActiveAugmentService.tryUse(player, TIME_ACCELERATION_ID),
+                "time acceleration focus did not start");
+        require(!AdvancedActiveAugmentService.isTimeAccelerationActive(player),
+                "time acceleration became active before the three-second focus completed");
+
+        GameTestPlayers.runAfterDelay(helper, 65, () -> {
+            AdvancedActiveTuning.Snapshot tuning = AdvancedActiveTuning.current();
+            require(AdvancedActiveAugmentService.isTimeAccelerationActive(player),
+                    "time acceleration never entered its sustained state after focus");
+            require(close(tuning.timeAccelerationMovementBonus(), 0.60D), "movement tuning drifted");
+            require(close(tuning.timeAccelerationAttackSpeedBonus(), 0.60D), "attack-speed tuning drifted");
+            require(close(tuning.timeAccelerationMiningBonus(), 0.60D), "mining tuning drifted");
+            require(close(tuning.timeAccelerationItemUseSpeedMultiplier(), 1.40D),
+                    "item-use tuning drifted from canonical x1.40");
+            require(close(tuning.timeAccelerationProjectileSpeedMultiplier(), 1.40D),
+                    "projectile tuning drifted from canonical x1.40");
+
+            require(close(player.getAttributeValue(Attributes.MOVEMENT_SPEED), movementBefore * 1.60D),
+                    "live movement-speed attribute did not receive the +60% modifier");
+            require(close(player.getAttributeValue(Attributes.ATTACK_SPEED), attackBefore * 1.60D),
+                    "live attack-speed attribute did not receive the +60% modifier");
+            require(close(player.getAttributeValue(Attributes.BLOCK_BREAK_SPEED), miningBefore * 1.60D),
+                    "live block-break-speed attribute did not receive the +60% modifier");
+            require(AdvancedActiveAugmentService.modifyUseDuration(player, 100) == 72,
+                    "live item-use duration was not shortened by the canonical x1.40 multiplier");
+            require(close(AdvancedActiveAugmentService.modifyOwnedProjectileSpeed(player, 10.0F), 14.0D),
+                    "live owned-projectile speed was not multiplied by the canonical x1.40 multiplier");
+            GameTestPlayers.succeed(helper);
+        });
     }
 
     @GameTest
