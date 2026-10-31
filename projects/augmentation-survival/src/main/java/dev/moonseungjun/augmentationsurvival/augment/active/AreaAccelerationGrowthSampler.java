@@ -23,7 +23,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Smooths Area Acceleration crop growth across time instead of multiplying only the rare vanilla
- * random-tick event that happened to select a crop. The long-run x3/x7 contract is preserved.
+ * random-tick event that happened to select a crop. The long-run configured multiplier is preserved.
  */
 public final class AreaAccelerationGrowthSampler {
     private static final String AREA_ACCELERATION_ID = AugmentationSurvival.MOD_ID + ":area_acceleration";
@@ -57,7 +57,7 @@ public final class AreaAccelerationGrowthSampler {
         for (ServerPlayer owner : server.getPlayerList().getPlayers()) {
             if (AreaAccelerationService.remainingTicks(owner) <= 0) continue;
             int level = AugmentationPlayerStateService.state(owner).level(AREA_ACCELERATION_ID);
-            int multiplier = level >= 2 ? 7 : level > 0 ? 3 : 1;
+            int multiplier = AreaAccelerationService.multiplierForLevel(level);
             if (multiplier <= 1) continue;
 
             active.add(owner.getUUID());
@@ -103,7 +103,7 @@ public final class AreaAccelerationGrowthSampler {
             if (AreaAccelerationService.remainingTicks(other) <= 0) continue;
             if (other.position().distanceToSqr(point) > radiusSq) continue;
             int otherLevel = AugmentationPlayerStateService.state(other).level(AREA_ACCELERATION_ID);
-            int otherMultiplier = otherLevel >= 2 ? 7 : otherLevel > 0 ? 3 : 1;
+            int otherMultiplier = AreaAccelerationService.multiplierForLevel(otherLevel);
             if (otherMultiplier > winnerMultiplier
                     || (otherMultiplier == winnerMultiplier
                     && other.getUUID().compareTo(winner) < 0)) {
