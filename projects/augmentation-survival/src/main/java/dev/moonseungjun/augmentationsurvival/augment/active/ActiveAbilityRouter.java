@@ -51,6 +51,7 @@ public final class ActiveAbilityRouter {
         CloneActiveService.initialize();
         TimeStopIntegrityService.initialize();
         TimeStopBoundaryService.initialize();
+        DivinePunishmentService.initialize();
         for (String augmentId : ALL_ORDER) {
             AugmentCatalog.require(augmentId);
             if (!ActivePresentationService.hasProfile(augmentId)) {
