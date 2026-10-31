@@ -15,6 +15,7 @@
   "profiles": [
     {"id":"vanilla_wither","selector":{"type":"entity","value":"minecraft:wither"},"profile":{"boss":true}},
     {"id":"vanilla_ender_dragon","selector":{"type":"entity","value":"minecraft:ender_dragon"},"profile":{"boss":true}},
+    {"id":"vanilla_warden","selector":{"type":"entity","value":"minecraft:warden"},"profile":{"boss":true}},
 
     {"id":"chronodawn_time_guardian","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:time_guardian"},"profile":{"boss":true}},
     {"id":"chronodawn_chronos_warden","required_mod":"chronodawn","selector":{"type":"entity","value":"chronodawn:chronos_warden"},"profile":{"boss":true}},
