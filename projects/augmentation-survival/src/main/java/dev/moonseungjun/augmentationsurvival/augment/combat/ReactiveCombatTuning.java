@@ -62,7 +62,7 @@ public final class ReactiveCombatTuning {
                 JsonObject invulnerability = object(root, "invulnerability");
                 return new Snapshot(
                         schema,
-                        positive(reflected, "blocked_damage_threshold"),
+                        positiveInts(reflected, "block_count_threshold", 3),
                         fractions(reflected, "damage_fraction", 3),
                         positive(reflected, "wave_range"),
                         coneHalfAngle(reflected, "wave_half_angle_degrees"),
@@ -143,6 +143,19 @@ public final class ReactiveCombatTuning {
         return array;
     }
 
+    private static int[] positiveInts(JsonObject object, String key, int expected) {
+        JsonArray array = array(object, key, expected);
+        int[] values = new int[expected];
+        for (int index = 0; index < expected; index++) {
+            int value = array.get(index).getAsInt();
+            if (value <= 0) {
+                throw new IllegalStateException("Reactive combat array integer must be positive: " + key);
+            }
+            values[index] = value;
+        }
+        return values;
+    }
+
     private static double[] positiveArray(JsonObject object, String key, int expected) {
         JsonArray array = array(object, key, expected);
         double[] values = new double[expected];
@@ -166,6 +179,13 @@ public final class ReactiveCombatTuning {
         return values;
     }
 
+    private static int at(int[] values, int level) {
+        if (level <= 0) {
+            return 0;
+        }
+        return values[Math.min(level, values.length) - 1];
+    }
+
     private static double at(double[] values, int level) {
         if (level <= 0) {
             return 0.0D;
@@ -175,7 +195,7 @@ public final class ReactiveCombatTuning {
 
     public record Snapshot(
             int schemaVersion,
-            double returnBlockedDamageThreshold,
+            int[] returnBlockCountThreshold,
             double[] returnDamageFraction,
             double returnWaveRange,
             double returnWaveHalfAngleDegrees,
@@ -191,6 +211,7 @@ public final class ReactiveCombatTuning {
             int invulnerabilityDurationTicks
     ) {
         public Snapshot {
+            returnBlockCountThreshold = returnBlockCountThreshold.clone();
             returnDamageFraction = returnDamageFraction.clone();
             strongMindDurationReduction = strongMindDurationReduction.clone();
             shieldBurstDamageMultiplier = shieldBurstDamageMultiplier.clone();
@@ -198,6 +219,7 @@ public final class ReactiveCombatTuning {
             retraceDamageFraction = retraceDamageFraction.clone();
         }
 
+        public int returnBlockCountThreshold(int level) { return at(returnBlockCountThreshold, level); }
         public double returnDamageFraction(int level) { return at(returnDamageFraction, level); }
         /** Legacy accessor retained only so dead reflection source remains source-compatible. */
         public double returnSpeedScale(int level) { return returnDamageFraction(level); }
