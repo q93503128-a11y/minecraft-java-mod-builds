@@ -5,9 +5,11 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.augmentationsurvival.augment.WallSlamMeleeRuntime;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.EchoStrikeAfterimageService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.LightningDirectHitService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.SweepingEnhancementService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -58,16 +60,19 @@ abstract class PlayerRootMeleeProvenanceMixin {
         }
 
         if (applied && target instanceof LivingEntity living) {
+            AugmentationPlayerState state = AugmentationPlayerStateService.state(serverPlayer);
             MovementAugmentService.onSuccessfulRootMelee(serverPlayer, living);
             float actualHealthDamage = Float.isFinite(healthBefore)
                     ? Math.max(0.0F, healthBefore - living.getHealth())
                     : 0.0F;
             float referenceDamage = actualHealthDamage > 0.0F ? actualHealthDamage : proposedDamage;
-            LightningDirectHitService.onDirectHit(
+            LightningDirectHitService.onDirectHit(serverPlayer, living, state, referenceDamage);
+            EchoStrikeAfterimageService.onRootMelee(
                     serverPlayer,
                     living,
-                    AugmentationPlayerStateService.state(serverPlayer),
-                    referenceDamage
+                    state,
+                    referenceDamage,
+                    serverPlayer.level().getGameTime()
             );
             WallSlamMeleeRuntime.arm(serverPlayer, living, referenceDamage);
         }
