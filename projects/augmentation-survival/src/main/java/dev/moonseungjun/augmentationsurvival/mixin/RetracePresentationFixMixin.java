@@ -32,8 +32,8 @@ abstract class RetracePresentationFixMixin {
             cir.setReturnValue(new AugmentPresentationCatalog.Entry(
                     "돌려보내기",
                     AugmentPresentationCatalog.Kind.PASSIVE,
-                    "방패로 공격을 막아 내구도가 닳을 때 방어 횟수를 쌓고, 일정 횟수마다 전방으로 반사합니다.",
-                    "방패 내구도가 실제로 닳은 방어만 셉니다. Lv.1 / 2 / 3은 5 / 4 / 3회 방어마다 공격자 방향 7블록, 전체 45° 원뿔 충격파를 방출해 그동안 막은 공격 피해 합계의 60% / 80% / 100%를 돌려줍니다."
+                    "방패로 공격을 막을 때 방어 횟수를 쌓고, 일정 횟수마다 전방으로 반사합니다.",
+                    "Lv.1 / 2 / 3은 방패로 공격을 5 / 4 / 3회 막을 때마다 공격자 방향 7블록, 전체 45° 원뿔 충격파를 방출해 그동안 막은 공격 피해 합계의 60% / 80% / 100%를 돌려줍니다."
             ));
             return;
         }
