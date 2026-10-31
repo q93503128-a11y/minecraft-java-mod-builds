@@ -19,6 +19,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BlocksAttacks;
+import net.minecraft.world.phys.Vec3;
 
 /** Regression coverage for durability-counted Return to Sender at vanilla's shield durability boundary. */
 public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
@@ -42,9 +43,9 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         );
         equipShield(player);
 
-        LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7).withNoFreeWill().spawn();
-        LivingEntity insideCone = helper.spawnMob(EntityTypes.COW, 4, 2, 6).withNoFreeWill().spawn();
-        LivingEntity outsideCone = helper.spawnMob(EntityTypes.COW, 6, 2, 5).withNoFreeWill().spawn();
+        LivingEntity attacker = helper.spawnMob(EntityTypes.RAVAGER, 3, 2, 7).withNoFreeWill().spawn();
+        LivingEntity insideCone = helper.spawnMob(EntityTypes.RAVAGER, 4, 2, 6).withNoFreeWill().spawn();
+        LivingEntity outsideCone = helper.spawnMob(EntityTypes.RAVAGER, 6, 2, 5).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
@@ -77,7 +78,8 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         player.setYRot(0.0F);
         player.setYHeadRot(0.0F);
         equipShield(player);
-        LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 2, 2, 6).withNoFreeWill().spawn();
+        LivingEntity attacker = helper.spawnMob(EntityTypes.RAVAGER, 2, 2, 6).withNoFreeWill().spawn();
+        Vec3 attackerStart = attacker.position();
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
@@ -88,6 +90,8 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                         player,
                         AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, augmentLevel)
                 );
+                attacker.setPos(attackerStart.x, attackerStart.y, attackerStart.z);
+                attacker.setDeltaMovement(Vec3.ZERO);
                 attacker.setHealth(attacker.getMaxHealth());
                 attacker.invulnerableTime = 0;
                 float before = attacker.getHealth();
