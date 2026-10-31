@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "entries": {
+    "sturdiness": {
+      "display_name": "강건함",
+      "kind": "passive",
+      "summary": "최대 체력이 증가합니다.",
+      "detail": "최대 체력이 +2 / +4 / +6 / +8 / +10 증가합니다."
+    },
+    "keen_edge": {
+      "display_name": "날 선 감각",
+      "kind": "passive",
+      "summary": "근접 공격이 더 강해집니다.",
+      "detail": "근접 공격 피해가 4% / 8% / 12% / 16% / 20% 증가합니다."
+    },
+    "precise_aim": {
+      "display_name": "정확한 조준",
+      "kind": "passive",
+      "summary": "투사체 공격이 더 강해집니다.",
+      "detail": "투사체 피해가 4% / 8% / 12% / 16% / 20% 증가합니다."
+    },
+    "tough_skin": {
+      "display_name": "질긴 피부",
+      "kind": "passive",
+      "summary": "받는 피해가 감소합니다.",
+      "detail": "받는 피해가 2% / 4% / 6% / 8% / 10% 감소합니다."
+    },
+    "quick_feet": {
+      "display_name": "빠른 발",
+      "kind": "passive",
+      "summary": "이동 속도가 증가합니다.",
+      "detail": "이동 속도가 3% / 6% / 9% / 12% / 15% 증가합니다."
+    },
+    "light_landing": {
+      "display_name": "가벼운 착지",
+      "kind": "passive",
+      "summary": "낙하 피해가 감소합니다.",
+      "detail": "낙하 피해가 12% / 24% / 36% / 48% / 60% 감소합니다."
+    },
+    "miners_hand": {
+      "display_name": "광부의 손",
+      "kind": "passive",
+      "summary": "블록을 더 빠르게 캡니다.",
+      "detail": "채굴 속도가 4% / 8% / 12% / 16% / 20% 증가합니다."
+    },
+    "logging_knack": {
+      "display_name": "벌목 요령",
+      "kind": "passive",
+      "summary": "원목을 더 빠르게 캡니다.",
+      "detail": "원목 채굴 속도가 10% / 20% / 30% 증가합니다."
+    },
+    "bumper_crop": {
+      "display_name": "풍작",
+      "kind": "passive",
+      "summary": "성숙한 작물을 수확할 때 추가 작물을 얻을 수 있습니다.",
+      "detail": "성숙한 작물을 수확할 때 8% / 16% / 24% / 32% / 40% 확률로 작물을 1개 더 얻습니다."
+    },
+    "seed_saver": {
+      "display_name": "씨앗 챙기기",
+      "kind": "passive",
+      "summary": "작물을 수확할 때 재배 재료를 추가로 얻을 수 있습니다.",
+      "detail": "작물을 수확할 때 15% / 30% / 45% 확률로 재배 재료를 1개 더 얻습니다."
+    },
+    "efficient_metabolism": {
+      "display_name": "적게 먹기",
+      "kind": "passive",
+      "summary": "허기가 더 천천히 줄어듭니다.",
+      "detail": "허기 소모량이 4% / 8% / 12% / 16% / 20% 감소합니다."
+    },
+    "hearty_meal": {
+      "display_name": "든든한 한 끼",
+      "kind": "passive",
+      "summary": "음식으로 얻는 포만도가 증가합니다.",
+      "detail": "음식으로 얻는 포만도가 8% / 16% / 24% 증가합니다."
+    },
+    "webbed_feet": {
+      "display_name": "물갈퀴",
+      "kind": "passive",
+      "summary": "물속에서 더 빠르게 헤엄칩니다.",
+      "detail": "수영 속도가 10% / 20% / 30% 증가합니다."
+    },
+    "fishing_sense": {
+      "display_name": "낚시 감각",
+      "kind": "passive",
+      "summary": "물고기가 더 빨리 입질합니다.",
+      "detail": "낚시 입질을 기다리는 시간이 10% / 20% / 30% 감소합니다."
+    },
+    "long_breath": {
+      "display_name": "숨 오래 참기",
+      "kind": "passive",
+      "summary": "물속에서 숨을 더 오래 참을 수 있습니다.",
+      "detail": "수중에서 산소가 줄어드는 속도가 10% / 20% / 30% 감소합니다."
+    },
+    "strong_lungs": {
+      "display_name": "튼튼한 폐",
+      "kind": "passive",
+      "summary": "익사 피해가 감소합니다.",
+      "detail": "익사 피해가 15% / 30% / 45% 감소합니다."
+    },
+    "cold_adaptation": {
+      "display_name": "추위 적응",
+      "kind": "passive",
+      "summary": "추위에 더 오래 버틸 수 있습니다.",
+      "detail": "빙결이 쌓이는 속도가 15% / 30% / 45% 감소합니다."
+    },
+    "fast_eating": {
+      "display_name": "빨리 먹기",
+      "kind": "passive",
+      "summary": "음식을 더 빠르게 먹습니다.",
+      "detail": "음식을 먹는 시간이 5% / 10% / 15% / 20% / 25% 감소합니다."
+    },
+    "fuel_saver": {
+      "display_name": "연료 절약",
+      "kind": "passive",
+      "summary": "화로 계열에서 연료가 더 오래 탑니다.",
+      "detail": "연료 하나의 연소 시간이 10% / 20% / 30% 증가합니다."
+    },
+    "rapid_strikes": {
+      "display_name": "속공",
+      "kind": "passive",
+      "summary": "공격 속도가 증가합니다.",
+      "detail": "공격 속도가 4% / 8% / 12% / 16% / 20% 증가합니다."
+    }
+  }
+}
