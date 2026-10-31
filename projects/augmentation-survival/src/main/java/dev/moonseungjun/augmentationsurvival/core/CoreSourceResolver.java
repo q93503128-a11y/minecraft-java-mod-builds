@@ -4,9 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,7 +16,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Enemy;
 
 /**
  * Runtime selector resolver for the canonical core-source profile contract.
@@ -24,16 +30,19 @@ public final class CoreSourceResolver {
     private static final String RESOURCE_PATH =
             "data/augmentation_survival/augmentation/core_source_profiles.json";
     private static volatile Snapshot current;
+    private static volatile RuntimeBindings runtime = RuntimeBindings.empty();
 
     private CoreSourceResolver() {
     }
 
     public static void initialize() {
         current = loadBundled();
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> bindRuntime());
         AugmentationSurvival.LOGGER.info(
-                "Loaded core source profiles: {} exact hostiles, {} hostile namespace defaults, {} structure path rules",
+                "Loaded core source profiles: {} exact hostiles, {} hostile namespace defaults, {} dynamic hostile adapters, {} structure path rules",
                 current.exactHostiles().size(),
                 current.hostileNamespaceDefaults().size(),
+                current.dynamicHostileSpecs().size(),
                 current.structurePathRules().size()
         );
     }
@@ -46,16 +55,56 @@ public final class CoreSourceResolver {
         return snapshot;
     }
 
-    public static HostileResolution resolveHostile(Identifier entityId, boolean serverClassifiedHostile) {
+    /**
+     * Resolves a live entity. Runtime boss identity and dynamic external flags take precedence over
+     * the entity type's static profile, so a vanilla mob promoted into an MCEndgame boss/elite does
+     * not keep the ordinary vanilla reward profile.
+     */
+    public static HostileResolution resolveHostile(LivingEntity entity) {
+        Identifier entityId = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        if (entityId == null) {
+            return HostileResolution.none();
+        }
+
         Snapshot snapshot = current();
         String id = entityId.toString();
-
         String eventProfile = snapshot.eventRedirects().get(id);
         if (eventProfile != null) {
             return HostileResolution.event(eventProfile);
         }
-        if (snapshot.bossRedirects().contains(id)) {
+        if (snapshot.bossRedirects().contains(id) || EntityCompatibilityProfileService.isBoss(entity)) {
             return HostileResolution.suppressedBoss();
+        }
+
+        for (DynamicHostileBinding binding : runtime.dynamicHostileBindings()) {
+            if (binding.matches(entity)) {
+                return HostileResolution.mob(binding.mobProfile());
+            }
+        }
+        return resolveStaticHostile(entityId, entity instanceof Enemy, false);
+    }
+
+    /** Static resolver retained for data-contract tests and callers that do not have a live entity. */
+    public static HostileResolution resolveHostile(Identifier entityId, boolean serverClassifiedHostile) {
+        return resolveStaticHostile(entityId, serverClassifiedHostile, true);
+    }
+
+    private static HostileResolution resolveStaticHostile(
+            Identifier entityId,
+            boolean serverClassifiedHostile,
+            boolean includeRedirects
+    ) {
+        Snapshot snapshot = current();
+        String id = entityId.toString();
+
+        if (includeRedirects) {
+            String eventProfile = snapshot.eventRedirects().get(id);
+            if (eventProfile != null) {
+                return HostileResolution.event(eventProfile);
+            }
+            if (snapshot.bossRedirects().contains(id)) {
+                return HostileResolution.suppressedBoss();
+            }
         }
 
         String exact = snapshot.exactHostiles().get(id);
@@ -107,6 +156,53 @@ public final class CoreSourceResolver {
         return namespaceDefault != null ? namespaceDefault : StructureResolution.none();
     }
 
+    private static synchronized void bindRuntime() {
+        Snapshot snapshot = current();
+        List<DynamicHostileBinding> bindings = new ArrayList<>();
+        for (DynamicHostileSpec spec : snapshot.dynamicHostileSpecs()) {
+            if (!FabricLoader.getInstance().isModLoaded(spec.requiredMod())) {
+                continue;
+            }
+            bindings.add(bindDynamicHostile(spec));
+        }
+        runtime = new RuntimeBindings(List.copyOf(bindings));
+        AugmentationSurvival.LOGGER.info(
+                "Bound core source runtime: {} dynamic hostile adapters",
+                bindings.size()
+        );
+    }
+
+    private static DynamicHostileBinding bindDynamicHostile(DynamicHostileSpec spec) {
+        try {
+            ClassLoader loader = CoreSourceResolver.class.getClassLoader();
+            Class<?> accessor = Class.forName(spec.accessorClass(), false, loader);
+            Method method = accessor.getMethod(spec.booleanMethod());
+            if (method.getReturnType() != boolean.class && method.getReturnType() != Boolean.class) {
+                throw new IllegalStateException(
+                        "Dynamic core-source adapter method must return boolean: " + spec.booleanMethod()
+                );
+            }
+            AugmentationSurvival.LOGGER.info(
+                    "Bound dynamic core source {} -> {}#{} as {}",
+                    spec.id(),
+                    spec.accessorClass(),
+                    spec.booleanMethod(),
+                    spec.mobProfile()
+            );
+            return new DynamicHostileBinding(
+                    spec.id(),
+                    spec.mobProfile(),
+                    accessor,
+                    method
+            );
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException(
+                    "Failed to bind required dynamic core-source adapter " + spec.id(),
+                    exception
+            );
+        }
+    }
+
     private static Snapshot loadBundled() {
         try (InputStream stream = CoreSourceResolver.class.getClassLoader().getResourceAsStream(RESOURCE_PATH)) {
             if (stream == null) {
@@ -122,7 +218,7 @@ public final class CoreSourceResolver {
 
     private static Snapshot parse(JsonObject root) {
         int schema = root.get("schema_version").getAsInt();
-        if (schema != 1) {
+        if (schema != 2) {
             throw new IllegalStateException("Unsupported core source schema: " + schema);
         }
 
@@ -192,6 +288,19 @@ public final class CoreSourceResolver {
             }
         }
 
+        List<DynamicHostileSpec> dynamicHostileSpecs = new ArrayList<>();
+        for (JsonElement element : hostiles.getAsJsonArray("dynamic_adapters")) {
+            JsonObject object = element.getAsJsonObject();
+            String profile = requiredMobProfile(object);
+            dynamicHostileSpecs.add(new DynamicHostileSpec(
+                    requiredString(object, "id"),
+                    requiredString(object, "required_mod"),
+                    requiredString(object, "accessor_class"),
+                    requiredString(object, "boolean_method"),
+                    profile
+            ));
+        }
+
         Map<String, String> hostileNamespaceDefaults = new HashMap<>();
         for (JsonElement element : hostiles.getAsJsonArray("namespace_default")) {
             JsonObject object = element.getAsJsonObject();
@@ -214,6 +323,7 @@ public final class CoreSourceResolver {
                 Map.copyOf(exactHostiles),
                 Map.copyOf(eventRedirects),
                 Set.copyOf(bossRedirects),
+                List.copyOf(dynamicHostileSpecs),
                 Map.copyOf(hostileNamespaceDefaults),
                 Set.copyOf(hostileNamespaceExclusions),
                 fallbackProfile
@@ -298,6 +408,7 @@ public final class CoreSourceResolver {
             Map<String, String> exactHostiles,
             Map<String, String> eventRedirects,
             Set<String> bossRedirects,
+            List<DynamicHostileSpec> dynamicHostileSpecs,
             Map<String, String> hostileNamespaceDefaults,
             Set<String> hostileNamespaceExclusions,
             String globalHostileFallbackProfile
@@ -328,6 +439,39 @@ public final class CoreSourceResolver {
 
         public boolean hasDistribution() {
             return distributionProfile != null;
+        }
+    }
+
+    public record DynamicHostileSpec(
+            String id,
+            String requiredMod,
+            String accessorClass,
+            String booleanMethod,
+            String mobProfile
+    ) {
+    }
+
+    private record RuntimeBindings(List<DynamicHostileBinding> dynamicHostileBindings) {
+        private static RuntimeBindings empty() {
+            return new RuntimeBindings(List.of());
+        }
+    }
+
+    private record DynamicHostileBinding(
+            String id,
+            String mobProfile,
+            Class<?> accessorClass,
+            Method booleanMethod
+    ) {
+        private boolean matches(LivingEntity entity) {
+            if (!accessorClass.isInstance(entity)) {
+                return false;
+            }
+            try {
+                return Boolean.TRUE.equals(booleanMethod.invoke(entity));
+            } catch (ReflectiveOperationException exception) {
+                throw new IllegalStateException("Failed to query dynamic core-source adapter " + id, exception);
+            }
         }
     }
 
