@@ -18,6 +18,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BlocksAttacks;
@@ -69,7 +70,7 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
                 AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 3)
         );
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
-        LivingEntity attacker = helper.spawnMob(EntityTypes.HUSK, 3, 2, 7).withNoFreeWill().spawn();
+        LivingEntity attacker = durableCow(helper, 3, 2, 7);
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
@@ -86,6 +87,15 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
                     "돌려보내기 did not restore the target's pre-existing hurt i-frame");
             GameTestPlayers.succeed(helper);
         });
+    }
+
+    private static LivingEntity durableCow(GameTestHelper helper, int x, int y, int z) {
+        LivingEntity cow = helper.spawnMob(EntityTypes.COW, x, y, z).withNoFreeWill().spawn();
+        var maxHealth = cow.getAttribute(Attributes.MAX_HEALTH);
+        require(maxHealth != null, "test cow is missing max-health attribute");
+        maxHealth.setBaseValue(100.0D);
+        cow.setHealth(cow.getMaxHealth());
+        return cow;
     }
 
     private static void blockHit(ServerLevel level, ServerPlayer player, LivingEntity attacker, float damage) {
