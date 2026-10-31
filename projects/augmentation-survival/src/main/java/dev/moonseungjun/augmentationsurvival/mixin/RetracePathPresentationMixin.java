@@ -28,7 +28,7 @@ abstract class RetracePathPresentationMixin {
         int points = Math.max(2, Math.min(12, (int) Math.ceil(length * 4.0D)));
         for (int i = 0; i <= points; i++) {
             double t = i / (double) points;
-            Vec3 point = start.lerp(end, t).add(0.0D, 0.85D, 0.0D);
+            Vec3 point = start.lerp(end, t);
             level.sendParticles(
                     (i & 1) == 0 ? ParticleTypes.PORTAL : ParticleTypes.END_ROD,
                     point.x, point.y, point.z,
