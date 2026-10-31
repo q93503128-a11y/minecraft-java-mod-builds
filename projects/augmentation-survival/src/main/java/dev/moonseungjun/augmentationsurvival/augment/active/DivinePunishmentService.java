@@ -9,18 +9,25 @@ import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProf
 import dev.moonseungjun.augmentationsurvival.mixin.SpecialActiveAugmentServiceInvoker;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.Registries;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /** Dedicated server-authoritative execution path for the mythic percent-health strike. */
 public final class DivinePunishmentService {
@@ -29,8 +36,17 @@ public final class DivinePunishmentService {
             Registries.DAMAGE_TYPE,
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "divine_punishment")
     );
+    private static final List<VisualStrike> VISUAL_STRIKES = new ArrayList<>();
+    private static boolean initialized;
 
     private DivinePunishmentService() {
+    }
+
+    public static void initialize() {
+        if (initialized) return;
+        initialized = true;
+        ServerTickEvents.END_SERVER_TICK.register(DivinePunishmentService::tickVisualStrikes);
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> VISUAL_STRIKES.clear());
     }
 
     public static boolean tryUse(ServerPlayer player) {
@@ -77,7 +93,7 @@ public final class DivinePunishmentService {
                 targetAffected = true;
             }
             if (targetAffected) {
-                emitStrike(level, target);
+                scheduleTripleLightning(level, target.position());
                 affected = true;
             }
         }
@@ -93,25 +109,43 @@ public final class DivinePunishmentService {
         return true;
     }
 
-    private static void emitStrike(ServerLevel level, LivingEntity target) {
-        double x = target.getX();
-        double bottom = target.getY();
-        double top = bottom + Math.max(3.0D, target.getBbHeight() + 4.0D);
-        int segments = 14;
-        for (int i = 0; i <= segments; i++) {
-            double y = bottom + (top - bottom) * i / segments;
-            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, x, y, target.getZ(),
-                    2, 0.08D, 0.08D, 0.08D, 0.01D);
+    private static void scheduleTripleLightning(ServerLevel level, Vec3 position) {
+        long now = level.getGameTime();
+        ResourceKey<Level> dimension = level.dimension();
+        Vec3 fixed = new Vec3(position.x, position.y, position.z);
+        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now));
+        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now + 4L));
+        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now + 8L));
+    }
+
+    private static void tickVisualStrikes(MinecraftServer server) {
+        Iterator<VisualStrike> iterator = VISUAL_STRIKES.iterator();
+        while (iterator.hasNext()) {
+            VisualStrike strike = iterator.next();
+            ServerLevel level = server.getLevel(strike.dimension());
+            if (level == null) {
+                iterator.remove();
+                continue;
+            }
+            if (level.getGameTime() < strike.dueTick()) continue;
+            iterator.remove();
+            spawnVisualLightning(level, strike.position());
         }
-        level.sendParticles(ParticleTypes.END_ROD,
-                x, bottom + target.getBbHeight() * 0.55D, target.getZ(),
-                4, 0.18D, 0.28D, 0.18D, 0.02D);
-        level.playSound(null, target.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT,
-                SoundSource.PLAYERS, 0.75F, 1.15F);
+    }
+
+    private static void spawnVisualLightning(ServerLevel level, Vec3 position) {
+        LightningBolt bolt = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
+        if (bolt == null) return;
+        bolt.setVisualOnly(true);
+        bolt.snapTo(position);
+        level.addFreshEntity(bolt);
     }
 
     private static int boundedLevel(AugmentationPlayerState state) {
         int level = state.level(ID);
         return level <= 0 ? 0 : Math.min(level, AugmentCatalog.require(ID).maxLevel());
+    }
+
+    private record VisualStrike(ResourceKey<Level> dimension, Vec3 position, long dueTick) {
     }
 }
