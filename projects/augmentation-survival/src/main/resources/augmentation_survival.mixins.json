@@ -29,7 +29,7 @@
     "ParrotTamingAugmentMixin", "NautilusTamingAugmentMixin", "HorseTamingAugmentMixin", "EnchantmentResonanceMixin",
     "ItemCombinerMenuAccessor", "AnvilForbiddenMagicMixin", "EnchantmentMenuAugmentAccessor", "PlayerEnchantSeedAccessor",
     "EnchantmentMenuRefreshMixin", "ProtectionRuntimeAccessor", "ProtectionRuntimeStateAccessor", "ProtectionPoolAccessor", "ProtectionLastStandDebtGuardMixin",
-    "PassivePresentationBootstrapMixin", "CombatPassivePresentationMixin", "LastStandReadabilityMixin", "ReactivePassivePresentationMixin", "RetracePresentationFixMixin", "RetracePathPresentationMixin", "LegendaryPresentationFixMixin", "BundleIMythicPresentationMixin",
+    "PassivePresentationBootstrapMixin", "CombatPassivePresentationMixin", "LastStandReadabilityMixin", "ReactivePassivePresentationMixin", "RetracePresentationFixMixin", "RetracePathCenterMixin", "RetracePathPresentationMixin", "LegendaryPresentationFixMixin", "BundleIMythicPresentationMixin",
     "ExpansionPassivePresentationMixin", "LightningRuntimeFixMixin", "PassiveReadabilityBootstrapMixin", "LifeLinkPresentationMixin",
     "FinalAugmentReadabilityMixin", "ProtectionPassiveReadabilityMixin", "ContinuousMiningReadabilityMixin",
     "PassiveProcReadabilityBootstrapMixin", "DurabilityPassiveReadabilityMixin", "ResourceProcReadabilityMixin",
