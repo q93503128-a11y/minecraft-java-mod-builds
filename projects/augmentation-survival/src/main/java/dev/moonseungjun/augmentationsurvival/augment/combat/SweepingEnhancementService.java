@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
@@ -41,8 +42,9 @@ public final class SweepingEnhancementService {
 
     public static AABB expandVanillaSweepBox(Player player, AABB original) {
         if (!(player instanceof ServerPlayer serverPlayer)) return original;
+        AABB scaled = scaleHorizontally(original, bodyScale(serverPlayer));
         double bonus = rangeBonus(level(serverPlayer));
-        return bonus > 0.0D ? original.inflate(bonus, 0.0D, bonus) : original;
+        return bonus > 0.0D ? scaled.inflate(bonus, 0.0D, bonus) : scaled;
     }
 
     public static float modifyVanillaSecondaryDamage(Player player, float damage) {
@@ -62,7 +64,8 @@ public final class SweepingEnhancementService {
     public static double modifyBetterCombatServerRange(Player player, ItemStack stack, double baseRange) {
         if (!(player instanceof ServerPlayer serverPlayer)) return baseRange;
         int level = level(serverPlayer);
-        if (level <= 0) {
+        double bodyScale = bodyScale(serverPlayer);
+        if (level <= 0 && bodyScale <= 1.000001D) {
             CURRENT_GEOMETRY.remove();
             return baseRange;
         }
@@ -74,7 +77,7 @@ public final class SweepingEnhancementService {
             multiplier = invokeNumber(attackRangeMultiplier, attack, 1.0D);
             angle = invokeNumber(attackAngle, attack, 360.0D);
         }
-        double finalRange = Math.max(0.0D, baseRange * multiplier + rangeBonus(level));
+        double finalRange = Math.max(0.0D, baseRange * multiplier * bodyScale + rangeBonus(level));
         double finalAngle = Math.min(360.0D, Math.max(0.0D, angle + angleBonus(level)));
         CURRENT_GEOMETRY.set(new BetterCombatGeometry(
                 serverPlayer.getUUID(),
@@ -120,11 +123,6 @@ public final class SweepingEnhancementService {
 
         ServerPlayer player = current.player();
         int level = level(player);
-        if (level <= 0) {
-            PENDING_HIT.remove();
-            return true;
-        }
-
         BetterCombatGeometry geometry = CURRENT_GEOMETRY.get();
         if (geometry != null
                 && geometry.owner().equals(player.getUUID())
@@ -132,6 +130,10 @@ public final class SweepingEnhancementService {
                 && !insideGeometry(player, current.target(), geometry)) {
             PENDING_HIT.remove();
             return false;
+        }
+        if (level <= 0) {
+            PENDING_HIT.remove();
+            return true;
         }
 
         PENDING_HIT.set(new BetterCombatHit(
@@ -181,6 +183,21 @@ public final class SweepingEnhancementService {
         double maxDifference = geometry.angle() * 0.5D;
         return angleBetween(closestVector, look) <= maxDifference
                 || angleBetween(centerVector, look) <= maxDifference;
+    }
+
+    private static AABB scaleHorizontally(AABB box, double scale) {
+        if (!(scale > 1.000001D) || !Double.isFinite(scale)) return box;
+        double centerX = (box.minX + box.maxX) * 0.5D;
+        double centerZ = (box.minZ + box.maxZ) * 0.5D;
+        double halfX = box.getXsize() * 0.5D * scale;
+        double halfZ = box.getZsize() * 0.5D * scale;
+        return new AABB(centerX - halfX, box.minY, centerZ - halfZ,
+                centerX + halfX, box.maxY, centerZ + halfZ);
+    }
+
+    private static double bodyScale(ServerPlayer player) {
+        double scale = player.getAttributeValue(Attributes.SCALE);
+        return Double.isFinite(scale) ? Math.max(1.0D, scale) : 1.0D;
     }
 
     private static double angleBetween(Vec3 a, Vec3 b) {
