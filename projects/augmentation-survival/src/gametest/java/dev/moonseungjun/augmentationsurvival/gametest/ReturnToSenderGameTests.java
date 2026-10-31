@@ -43,9 +43,9 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         );
         equipShield(player);
 
-        LivingEntity attacker = helper.spawnMob(EntityTypes.RAVAGER, 3, 2, 7).withNoFreeWill().spawn();
-        LivingEntity insideCone = helper.spawnMob(EntityTypes.RAVAGER, 4, 2, 6).withNoFreeWill().spawn();
-        LivingEntity outsideCone = helper.spawnMob(EntityTypes.RAVAGER, 6, 2, 5).withNoFreeWill().spawn();
+        LivingEntity attacker = helper.spawnMob(EntityTypes.HUSK, 3, 2, 7).withNoFreeWill().spawn();
+        LivingEntity insideCone = helper.spawnMob(EntityTypes.HUSK, 4, 2, 6).withNoFreeWill().spawn();
+        LivingEntity outsideCone = helper.spawnMob(EntityTypes.HUSK, 6, 2, 5).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
@@ -78,7 +78,7 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         player.setYRot(0.0F);
         player.setYHeadRot(0.0F);
         equipShield(player);
-        LivingEntity attacker = helper.spawnMob(EntityTypes.RAVAGER, 2, 2, 6).withNoFreeWill().spawn();
+        LivingEntity attacker = helper.spawnMob(EntityTypes.HUSK, 2, 2, 6).withNoFreeWill().spawn();
         Vec3 attackerStart = attacker.position();
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
