@@ -69,7 +69,7 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
                 AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 3)
         );
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
-        LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7).withNoFreeWill().spawn();
+        LivingEntity attacker = helper.spawnMob(EntityTypes.RAVAGER, 3, 2, 7).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
