@@ -5,9 +5,9 @@ import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.TimeStopBoundaryService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.LightningDirectHitService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
-import dev.moonseungjun.augmentationsurvival.mixin.CombatExpansionServiceInvoker;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -78,16 +78,14 @@ public final class MythicLiveFixBatchIGameTests implements CustomTestMethodInvok
         for (int i = 0; i < 4; i++) {
             invokeLightning(player, primary, state, 10.0F);
         }
-        require(CombatExpansionServiceInvoker.augmentationSurvival$lightningHits()
-                        .getOrDefault(player.getUUID(), 0) >= 4,
+        require(LightningDirectHitService.hitCount(player) >= 4,
                 "lightning proc was consumed even though no chain target existed");
 
         LivingEntity secondary = helper.spawnMob(EntityTypes.ZOMBIE, 4, 2, 1).withNoFreeWill().spawn();
         float before = secondary.getHealth();
         invokeLightning(player, primary, state, 10.0F);
         require(secondary.getHealth() < before, "primed lightning did not damage the new chain target");
-        require(CombatExpansionServiceInvoker.augmentationSurvival$lightningHits()
-                        .getOrDefault(player.getUUID(), -1) == 0,
+        require(LightningDirectHitService.hitCount(player) == 0,
                 "successful lightning chain did not consume its hit counter");
         require(!player.level().getEntitiesOfClass(
                 LightningBolt.class,
