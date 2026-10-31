@@ -281,22 +281,38 @@ public final class SurvivalAugmentService {
             AugmentationPlayerState state,
             RuntimeState runtime
     ) {
-        if (boundedLevel(state, AUTO_REFILL_ID) <= 0) {
-            runtime.lastSelectedTemplate = ItemStack.EMPTY;
-            return;
-        }
         Inventory inventory = player.getInventory();
+        int selectedSlot = inventory.getSelectedSlot();
         ItemStack selected = inventory.getSelectedItem();
-        if (!selected.isEmpty()) {
-            runtime.lastSelectedTemplate = selected.copy();
-            runtime.lastSelectedTemplate.setCount(1);
-            return;
-        }
-        if (runtime.lastSelectedTemplate.isEmpty()) {
+
+        if (boundedLevel(state, AUTO_REFILL_ID) <= 0) {
+            runtime.rememberSelected(selectedSlot, selected);
             return;
         }
 
-        int selectedSlot = inventory.getSelectedSlot();
+        // Changing to a different hotbar slot is a player choice, not a depletion event. In
+        // particular, selecting an intentionally empty slot must never pull the previously held
+        // stack out of main inventory.
+        if (selectedSlot != runtime.lastSelectedSlot) {
+            runtime.rememberSelected(selectedSlot, selected);
+            return;
+        }
+
+        if (!selected.isEmpty()) {
+            runtime.rememberSelected(selectedSlot, selected);
+            return;
+        }
+
+        // Only a stackable item that was at exactly one item on the immediately preceding tick is
+        // eligible. This rejects switching to an empty slot, clearing a full stack through inventory
+        // management, and non-stackable tools/weapons while preserving the intended last-item use.
+        if (runtime.lastSelectedTemplate.isEmpty()
+                || runtime.lastSelectedCount != 1
+                || runtime.lastSelectedTemplate.getMaxStackSize() <= 1) {
+            runtime.rememberSelected(selectedSlot, ItemStack.EMPTY);
+            return;
+        }
+
         for (int slot = Inventory.getSelectionSize(); slot < 36; slot++) {
             ItemStack candidate = inventory.getItem(slot);
             if (candidate.isEmpty()
@@ -306,12 +322,14 @@ public final class SurvivalAugmentService {
             inventory.setItem(selectedSlot, candidate.copy());
             inventory.setItem(slot, ItemStack.EMPTY);
             player.inventoryMenu.broadcastChanges();
-            ItemStack replacement = inventory.getSelectedItem();
-            runtime.lastSelectedTemplate = replacement.copy();
-            runtime.lastSelectedTemplate.setCount(1);
+            runtime.rememberSelected(selectedSlot, inventory.getSelectedItem());
             PassiveProcReadabilityService.presentAutoRefill(player);
             return;
         }
+
+        // Do not retain a delayed refill request. If no matching reserve exists at the actual
+        // depletion moment, picking one up later should not unexpectedly populate the hotbar.
+        runtime.rememberSelected(selectedSlot, ItemStack.EMPTY);
     }
 
     private static void applyOxygenBonus(ServerPlayer player, int level) {
@@ -374,14 +392,25 @@ public final class SurvivalAugmentService {
         private double freezeCredit;
         private double regenTickCredit;
         private ItemStack lastSelectedTemplate = ItemStack.EMPTY;
+        private int lastSelectedSlot = -1;
+        private int lastSelectedCount;
 
         private RuntimeState(ServerPlayer player) {
-            ItemStack selected = player.getInventory().getSelectedItem();
-            if (!selected.isEmpty()) {
-                lastSelectedTemplate = selected.copy();
-                lastSelectedTemplate.setCount(1);
-            }
+            Inventory inventory = player.getInventory();
+            rememberSelected(inventory.getSelectedSlot(), inventory.getSelectedItem());
             lastFrozenTicks = player.getTicksFrozen();
+        }
+
+        private void rememberSelected(int slot, ItemStack selected) {
+            lastSelectedSlot = slot;
+            if (selected == null || selected.isEmpty()) {
+                lastSelectedTemplate = ItemStack.EMPTY;
+                lastSelectedCount = 0;
+                return;
+            }
+            lastSelectedTemplate = selected.copy();
+            lastSelectedTemplate.setCount(1);
+            lastSelectedCount = selected.getCount();
         }
     }
 }
