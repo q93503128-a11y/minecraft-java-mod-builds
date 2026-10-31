@@ -69,6 +69,7 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
         LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 8, () -> {
+            require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
             blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
             blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
             attacker.setHealth(attacker.getMaxHealth());
@@ -85,11 +86,12 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
     }
 
     private static void blockHit(ServerLevel level, ServerPlayer player, LivingEntity attacker, float damage) {
-        player.invulnerableTime = 0;
-        float playerBefore = player.getHealth();
-        player.hurtServer(level, player.damageSources().mobAttack(attacker), damage);
-        require(Math.abs(player.getHealth() - playerBefore) <= 0.001F,
-                "setup hit was not fully blocked by the raised shield");
+        int durabilityBefore = player.getOffhandItem().getDamageValue();
+        float blocked = player.applyItemBlocking(level, player.damageSources().mobAttack(attacker), damage);
+        require(blocked >= 3.0F,
+                "raised shield did not enter vanilla blocking path: blocked=" + blocked);
+        require(player.getOffhandItem().getDamageValue() > durabilityBefore,
+                "real shield block did not consume durability");
     }
 
     private static void require(boolean condition, String message) {
