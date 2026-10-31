@@ -22,7 +22,8 @@ public final class LightningPresentationService {
     }
 
     public static void chainStrike(ServerPlayer attacker, Vec3 from, LivingEntity target) {
-        if (attacker == null || target == null || !(attacker.level() instanceof ServerLevel level)) return;
+        if (attacker == null || target == null) return;
+        ServerLevel level = attacker.level();
         Vec3 targetCenter = target.position().add(0.0D, Math.max(0.5D, target.getBbHeight() * 0.55D), 0.0D);
         Vec3 start = from == null ? attacker.getEyePosition() : from;
         line(level, ParticleTypes.ELECTRIC_SPARK, start, targetCenter, 14);
