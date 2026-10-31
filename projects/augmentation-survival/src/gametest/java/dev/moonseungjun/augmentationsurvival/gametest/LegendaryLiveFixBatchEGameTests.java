@@ -89,6 +89,7 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
 
         double movementBefore = player.getAttributeValue(Attributes.MOVEMENT_SPEED);
         double attackBefore = player.getAttributeValue(Attributes.ATTACK_SPEED);
+        double blockBreakBefore = player.getAttributeValue(Attributes.BLOCK_BREAK_SPEED);
         float miningBefore = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
 
         require(AdvancedActiveAugmentService.tryUse(player, TIME_ACCELERATION_ID),
@@ -113,9 +114,11 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
                     "live movement-speed attribute did not receive the +60% modifier");
             require(close(player.getAttributeValue(Attributes.ATTACK_SPEED), attackBefore * 1.60D),
                     "live attack-speed attribute did not receive the +60% modifier");
+            require(close(player.getAttributeValue(Attributes.BLOCK_BREAK_SPEED), blockBreakBefore * 1.60D),
+                    "live block-break-speed attribute did not receive the +60% modifier");
             require(close(SurvivalAugmentService.modifyBlockBreakSpeed(
-                            player, Blocks.STONE.defaultBlockState(), 1.0F), 1.60D),
-                    "server mining-speed calculation did not receive the +60% time-acceleration bonus");
+                            player, Blocks.STONE.defaultBlockState(), 1.0F), 1.0D),
+                    "shared passive mining calculation double-counted time acceleration");
             float miningAfter = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
             require(close(miningAfter, miningBefore * 1.60D),
                     "live final destroy speed did not receive the +60% mining modifier: before="
