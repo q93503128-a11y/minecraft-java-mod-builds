@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.presentation.LightningPresentationService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.mixin.SpecialActiveAugmentServiceInvoker;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -22,9 +23,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -113,9 +111,9 @@ public final class DivinePunishmentService {
         long now = level.getGameTime();
         ResourceKey<Level> dimension = level.dimension();
         Vec3 fixed = new Vec3(position.x, position.y, position.z);
-        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now));
-        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now + 4L));
-        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now + 8L));
+        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now, 0));
+        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now + 4L, 1));
+        VISUAL_STRIKES.add(new VisualStrike(dimension, fixed, now + 8L, 2));
     }
 
     private static void tickVisualStrikes(MinecraftServer server) {
@@ -129,16 +127,8 @@ public final class DivinePunishmentService {
             }
             if (level.getGameTime() < strike.dueTick()) continue;
             iterator.remove();
-            spawnVisualLightning(level, strike.position());
+            LightningPresentationService.divineStrike(level, strike.position(), strike.strikeIndex());
         }
-    }
-
-    private static void spawnVisualLightning(ServerLevel level, Vec3 position) {
-        LightningBolt bolt = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
-        if (bolt == null) return;
-        bolt.setVisualOnly(true);
-        bolt.snapTo(position);
-        level.addFreshEntity(bolt);
     }
 
     private static int boundedLevel(AugmentationPlayerState state) {
@@ -146,6 +136,6 @@ public final class DivinePunishmentService {
         return level <= 0 ? 0 : Math.min(level, AugmentCatalog.require(ID).maxLevel());
     }
 
-    private record VisualStrike(ResourceKey<Level> dimension, Vec3 position, long dueTick) {
+    private record VisualStrike(ResourceKey<Level> dimension, Vec3 position, long dueTick, int strikeIndex) {
     }
 }
