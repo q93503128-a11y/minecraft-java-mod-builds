@@ -60,7 +60,7 @@ public final class LightningDirectHitService {
             float actualDamage
     ) {
         int augmentLevel = Math.max(0, Math.min(3, state.level(LIGHTNING_ID)));
-        if (augmentLevel <= 0 || primaryTarget == null || primaryTarget.isDeadOrDying()) return;
+        if (augmentLevel <= 0 || primaryTarget == null) return;
 
         ExpansionTuning.Snapshot tuning = ExpansionTuning.current();
         int trigger = tuning.lightningTriggerHits(augmentLevel);
