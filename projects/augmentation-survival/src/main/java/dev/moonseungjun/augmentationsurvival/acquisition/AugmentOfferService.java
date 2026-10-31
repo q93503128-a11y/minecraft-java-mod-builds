@@ -49,9 +49,20 @@ public final class AugmentOfferService {
     public static BeginResult beginOffer(ServerPlayer player, AugmentTier requestedTier) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(requestedTier, "requestedTier");
-        MinecraftServer server = requireServer(player);
-        boolean multiplayerEligible = PlayerRescueAugmentService.isMultiplayerEligible(player);
+        return beginOfferForEligibility(
+                player,
+                requestedTier,
+                PlayerRescueAugmentService.isMultiplayerEligible(player)
+        );
+    }
 
+    /** Shared production path with explicit eligibility so stale-offer behavior can be regression-tested in isolation. */
+    private static BeginResult beginOfferForEligibility(
+            ServerPlayer player,
+            AugmentTier requestedTier,
+            boolean multiplayerEligible
+    ) {
+        MinecraftServer server = requireServer(player);
         PendingOffer existing = PENDING.get(player.getUUID());
         if (existing != null) {
             if (server.getTickCount() <= existing.expiresAtTick() && hasCore(player, existing.tier())) {
