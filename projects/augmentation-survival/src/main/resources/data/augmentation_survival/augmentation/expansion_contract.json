@@ -13,7 +13,7 @@
   "combat": {
     "chain_explosion": {"radius": [2.5, 3.0, 3.5], "max_health_fraction": [0.20, 0.30, 0.40], "damage_cap": [12.0, 18.0, 24.0]},
     "lightning": {"trigger_hits": [4, 3, 2], "radius": 7.0, "target_count": [2, 3, 4], "damage_fraction": [0.50, 0.65, 0.80]},
-    "echo_strike": {"trigger_hits": [3, 3, 2], "damage_fraction": [0.50, 0.75, 1.00]},
+    "echo_strike": {"trigger_hits": [1, 1, 1], "damage_fraction": [0.20, 0.40, 0.60]},
     "weakness_mark": {"required_hits": 3, "window_ticks": 100, "duration_ticks": 120, "damage_bonus": [0.08, 0.12, 0.16]},
     "speed_conversion": {"damage_per_movement_percent": [0.004, 0.006, 0.008], "damage_cap": [0.20, 0.30, 0.40], "sprint_bonus_exclusion": 0.30},
     "heavy_strike": {"max_health_fraction": [0.05, 0.075, 0.10], "cooldown_ticks": 80},
