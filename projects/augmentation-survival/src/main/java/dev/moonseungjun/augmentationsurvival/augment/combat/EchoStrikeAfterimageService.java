@@ -110,6 +110,11 @@ public final class EchoStrikeAfterimageService {
                 continue;
             }
 
+            // Echo Strike is a distinct second melee hit, not extra damage folded into the first.
+            // Clear only the first hit's remaining vanilla hurt immunity so the delayed strike can
+            // land. A successful hurtServer call immediately establishes a fresh vanilla i-frame.
+            int previousInvulnerableTime = target.invulnerableTime;
+            target.invulnerableTime = 0;
             boolean applied = CombatProvenanceContext.callAs(
                     CombatProvenance.ECHO,
                     () -> target.hurtServer(
@@ -118,9 +123,11 @@ public final class EchoStrikeAfterimageService {
                             pending.damage()
                     )
             );
-            if (applied) {
-                cueImpact(pending.level(), pending.attackerOrigin(), pending.targetOrigin(), target.getBoundingBox().getCenter());
+            if (!applied) {
+                target.invulnerableTime = previousInvulnerableTime;
+                continue;
             }
+            cueImpact(pending.level(), pending.attackerOrigin(), pending.targetOrigin(), target.getBoundingBox().getCenter());
         }
     }
 
