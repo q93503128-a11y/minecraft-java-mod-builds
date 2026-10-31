@@ -21,6 +21,20 @@ public final class LightningPresentationService {
     private LightningPresentationService() {
     }
 
+    /** Visible threshold cue on the directly struck target; this bolt is presentation-only. */
+    public static void primaryThresholdStrike(ServerPlayer attacker, LivingEntity target) {
+        if (attacker == null || target == null) return;
+        ServerLevel level = attacker.level();
+        Vec3 targetCenter = target.getBoundingBox().getCenter();
+        spawnVisualLightning(level, target.position());
+        ring(level, ParticleTypes.ELECTRIC_SPARK, target.position().add(0.0D, 0.12D, 0.0D), 0.95D, 16);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                targetCenter.x, targetCenter.y, targetCenter.z,
+                12, 0.36D, 0.58D, 0.36D, 0.08D);
+        level.playSound(null, target.getX(), target.getY(), target.getZ(),
+                SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 0.72F, 1.12F);
+    }
+
     public static void chainStrike(ServerPlayer attacker, Vec3 from, LivingEntity target) {
         if (attacker == null || target == null) return;
         ServerLevel level = attacker.level();
