@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.augment.WallSlamMeleeRuntime;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -36,16 +37,29 @@ abstract class PlayerRootMeleeProvenanceMixin {
         }
 
         float healthBefore = target instanceof LivingEntity living ? living.getHealth() : Float.NaN;
-        boolean applied = CombatProvenanceContext.callAs(
-                CombatProvenance.ROOT_MELEE,
-                () -> original.call(target, source, proposedDamage)
-        );
+        boolean applied;
+        LightningDirectHitBridge.enterRootMeleeAttack();
+        try {
+            applied = CombatProvenanceContext.callAs(
+                    CombatProvenance.ROOT_MELEE,
+                    () -> original.call(target, source, proposedDamage)
+            );
+        } finally {
+            LightningDirectHitBridge.leaveRootMeleeAttack();
+        }
+
         if (applied && target instanceof LivingEntity living) {
             MovementAugmentService.onSuccessfulRootMelee(serverPlayer, living);
             float actualHealthDamage = Float.isFinite(healthBefore)
                     ? Math.max(0.0F, healthBefore - living.getHealth())
                     : 0.0F;
             float referenceDamage = actualHealthDamage > 0.0F ? actualHealthDamage : proposedDamage;
+            LightningDirectHitBridge.onDirectHit(
+                    serverPlayer,
+                    living,
+                    AugmentationPlayerStateService.state(serverPlayer),
+                    referenceDamage
+            );
             WallSlamMeleeRuntime.arm(serverPlayer, living, referenceDamage);
         }
         return applied;
