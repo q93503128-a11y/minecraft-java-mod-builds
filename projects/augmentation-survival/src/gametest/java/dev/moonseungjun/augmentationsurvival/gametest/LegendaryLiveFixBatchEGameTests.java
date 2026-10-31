@@ -78,7 +78,7 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
 
         double movementBefore = player.getAttributeValue(Attributes.MOVEMENT_SPEED);
         double attackBefore = player.getAttributeValue(Attributes.ATTACK_SPEED);
-        double miningBefore = player.getAttributeValue(Attributes.BLOCK_BREAK_SPEED);
+        float miningBefore = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
 
         require(AdvancedActiveAugmentService.tryUse(player, TIME_ACCELERATION_ID),
                 "time acceleration focus did not start");
@@ -101,8 +101,8 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
                     "live movement-speed attribute did not receive the +60% modifier");
             require(close(player.getAttributeValue(Attributes.ATTACK_SPEED), attackBefore * 1.60D),
                     "live attack-speed attribute did not receive the +60% modifier");
-            require(close(player.getAttributeValue(Attributes.BLOCK_BREAK_SPEED), miningBefore * 1.60D),
-                    "live block-break-speed attribute did not receive the +60% modifier");
+            require(close(player.getDestroySpeed(Blocks.STONE.defaultBlockState()), miningBefore * 1.60D),
+                    "live final destroy speed did not receive the +60% mining modifier");
             require(AdvancedActiveAugmentService.modifyUseDuration(player, 100) == 72,
                     "live item-use duration was not shortened by the canonical x1.40 multiplier");
             require(close(AdvancedActiveAugmentService.modifyOwnedProjectileSpeed(player, 10.0F), 14.0D),
