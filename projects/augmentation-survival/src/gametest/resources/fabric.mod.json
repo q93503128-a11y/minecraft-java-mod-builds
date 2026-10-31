@@ -43,7 +43,8 @@
       "dev.moonseungjun.augmentationsurvival.gametest.LegendaryPresentationGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.HeroActiveBoundaryGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ProtectionFeedbackBoundaryGameTests",
-      "dev.moonseungjun.augmentationsurvival.gametest.HealingMovementFeelGameTests"
+      "dev.moonseungjun.augmentationsurvival.gametest.HealingMovementFeelGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.ExternalContentIntegrationGameTests"
     ]
   },
   "depends": {
