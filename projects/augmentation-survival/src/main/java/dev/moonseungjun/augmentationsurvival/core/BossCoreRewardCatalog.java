@@ -30,9 +30,10 @@ public final class BossCoreRewardCatalog {
     public static void initialize() {
         current = loadBundled();
         AugmentationSurvival.LOGGER.info(
-                "Loaded boss core reward contract: {} reward bands, {} exact vanilla assignments",
+                "Loaded boss core reward contract: {} reward bands, {} exact vanilla assignments, {} compatibility-profile assignments",
                 current.rewardBands().size(),
-                current.exactAssignments().size()
+                current.exactAssignments().size(),
+                current.compatibilityAssignments().size()
         );
     }
 
@@ -48,6 +49,10 @@ public final class BossCoreRewardCatalog {
         return Optional.ofNullable(current().exactAssignments().get(bossId.toString()));
     }
 
+    public static Optional<Assignment> compatibilityAssignment(String profileId) {
+        return Optional.ofNullable(current().compatibilityAssignments().get(profileId));
+    }
+
     public static List<AugmentTier> rollExactBossReward(
             Identifier bossId,
             boolean firstKill,
@@ -55,6 +60,26 @@ public final class BossCoreRewardCatalog {
     ) {
         Assignment assignment = exactAssignment(bossId)
                 .orElseThrow(() -> new IllegalArgumentException("No exact boss reward assignment: " + bossId));
+        return rollAssignedReward(assignment, firstKill, random);
+    }
+
+    public static List<AugmentTier> rollCompatibilityBossReward(
+            String profileId,
+            boolean firstKill,
+            RandomSource random
+    ) {
+        Assignment assignment = compatibilityAssignment(profileId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No compatibility-profile boss reward assignment: " + profileId
+                ));
+        return rollAssignedReward(assignment, firstKill, random);
+    }
+
+    public static List<AugmentTier> rollAssignedReward(
+            Assignment assignment,
+            boolean firstKill,
+            RandomSource random
+    ) {
         RewardBand band = current().rewardBands().get(assignment.rewardBand());
         if (band == null) {
             throw new IllegalStateException("Missing boss reward band: " + assignment.rewardBand());
@@ -111,7 +136,7 @@ public final class BossCoreRewardCatalog {
 
     private static Catalog parse(JsonObject root) {
         int schema = root.get("schema_version").getAsInt();
-        if (schema != 2) {
+        if (schema != 3) {
             throw new IllegalStateException("Unsupported boss core reward schema: " + schema);
         }
         if (!root.get("exact_weights_defined").getAsBoolean()) {
@@ -140,16 +165,19 @@ public final class BossCoreRewardCatalog {
         for (JsonElement element : root.getAsJsonArray("vanilla_assignments")) {
             JsonObject object = element.getAsJsonObject();
             String source = requiredString(object, "source");
-            String rewardBand = requiredString(object, "reward_band");
-            if (!bands.containsKey(rewardBand)) {
-                throw new IllegalStateException("Unknown boss reward band in assignment: " + rewardBand);
-            }
-            Assignment assignment = new Assignment(
-                    rewardBand,
-                    requiredString(object, "repeat_policy")
-            );
+            Assignment assignment = parseAssignment(object, bands);
             if (assignments.putIfAbsent(source, assignment) != null) {
                 throw new IllegalStateException("Duplicate boss reward assignment: " + source);
+            }
+        }
+
+        Map<String, Assignment> compatibilityAssignments = new LinkedHashMap<>();
+        for (JsonElement element : root.getAsJsonArray("compatibility_profile_assignments")) {
+            JsonObject object = element.getAsJsonObject();
+            String profile = requiredString(object, "profile");
+            Assignment assignment = parseAssignment(object, bands);
+            if (compatibilityAssignments.putIfAbsent(profile, assignment) != null) {
+                throw new IllegalStateException("Duplicate compatibility boss reward assignment: " + profile);
             }
         }
 
@@ -170,7 +198,19 @@ public final class BossCoreRewardCatalog {
                 schema,
                 Collections.unmodifiableMap(bands),
                 Collections.unmodifiableMap(assignments),
+                Collections.unmodifiableMap(compatibilityAssignments),
                 Collections.unmodifiableMap(externalDefaults)
+        );
+    }
+
+    private static Assignment parseAssignment(JsonObject object, Map<String, RewardBand> bands) {
+        String rewardBand = requiredString(object, "reward_band");
+        if (!bands.containsKey(rewardBand)) {
+            throw new IllegalStateException("Unknown boss reward band in assignment: " + rewardBand);
+        }
+        return new Assignment(
+                rewardBand,
+                requiredString(object, "repeat_policy")
         );
     }
 
@@ -215,6 +255,7 @@ public final class BossCoreRewardCatalog {
             int schemaVersion,
             Map<String, RewardBand> rewardBands,
             Map<String, Assignment> exactAssignments,
+            Map<String, Assignment> compatibilityAssignments,
             Map<String, String> externalDefaultRewardBands
     ) {
     }
