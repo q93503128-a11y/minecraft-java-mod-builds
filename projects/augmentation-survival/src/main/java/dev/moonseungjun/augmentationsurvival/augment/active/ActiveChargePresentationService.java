@@ -8,15 +8,19 @@ import java.util.Set;
  * Converts the server-owned cooldown keys into a compact HUD snapshot.
  *
  * <p>The compatible roster mirrors the runtime services that actually implement the canonical
- * Double Charge contract. Toggle, death-resource and mythic actives are deliberately excluded.</p>
+ * Double Charge contract. Toggle, cooldown-less, death-resource and mythic actives are deliberately
+ * excluded.</p>
  */
 public final class ActiveChargePresentationService {
     private static final String DOUBLE_CHARGE_ID = id("double_charge");
+    private static final Set<String> NO_COOLDOWN_PRESENTATION = Set.of(
+            id("threat_suppression"), id("domination")
+    );
     private static final Set<String> DOUBLE_CHARGE_COMPATIBLE = Set.of(
             id("cleanse"), id("pull"), id("swap"), id("shield"), id("temporary_platform"),
             id("berserk"), id("healing_wave"), id("shield_throw"), id("rewind"),
-            id("time_acceleration"), id("clone"), id("phase_shift"), id("domination"),
-            id("gigantification"), id("area_acceleration"), id("revive")
+            id("time_acceleration"), id("clone"), id("phase_shift"),
+            id("area_acceleration"), id("revive")
     );
 
     private ActiveChargePresentationService() {
@@ -27,7 +31,7 @@ public final class ActiveChargePresentationService {
     }
 
     public static Snapshot snapshot(AugmentationPlayerState state, String abilityId, long now) {
-        if (abilityId == null || abilityId.isBlank()) {
+        if (abilityId == null || abilityId.isBlank() || NO_COOLDOWN_PRESENTATION.contains(abilityId)) {
             return Snapshot.EMPTY;
         }
         if (state.level(DOUBLE_CHARGE_ID) > 0 && supportsDoubleCharge(abilityId)) {
