@@ -38,7 +38,7 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
     private static final String ECHO_STRIKE_ID = id("echo_strike");
     private static final String RETRACE_ID = id("retrace");
     private static final int ISOLATED_TIME_STOP_Y = 82;
-    private static final int ISOLATED_ECHO_Y = 122;
+    private static final int ECHO_TEST_Y = 2;
 
     @GameTest(maxTicks = 45)
     public void timeStopFreezesOtherPlayersAndStaysAtCastOrigin(GameTestHelper helper) {
@@ -131,12 +131,12 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
 
     @GameTest(maxTicks = 80)
     public void echoStrikeLandsAsDelayedSecondMeleeHit(GameTestHelper helper) {
-        ServerPlayer attacker = player(helper, 1, ISOLATED_ECHO_Y, 1);
+        ServerPlayer attacker = player(helper, 1, ECHO_TEST_Y, 1);
         AugmentationPlayerStateService.replace(attacker,
                 AugmentationPlayerState.initial().withAugmentLevel(ECHO_STRIKE_ID, 3));
         attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
         LivingEntity target = helper.spawnMob(
-                EntityTypes.ZOMBIE, 2, ISOLATED_ECHO_Y, 1
+                EntityTypes.ZOMBIE, 2, ECHO_TEST_Y, 1
         ).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 20, () -> {
@@ -160,12 +160,12 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
 
     @GameTest(maxTicks = 45)
     public void echoStrikeCountsBetterCombatApprovedSubVanillaChargeHits(GameTestHelper helper) {
-        ServerPlayer attacker = player(helper, 1, ISOLATED_ECHO_Y, 1);
+        ServerPlayer attacker = player(helper, 1, ECHO_TEST_Y, 1);
         AugmentationPlayerStateService.replace(attacker,
                 AugmentationPlayerState.initial().withAugmentLevel(ECHO_STRIKE_ID, 3));
         attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
         LivingEntity target = helper.spawnMob(
-                EntityTypes.ZOMBIE, 2, ISOLATED_ECHO_Y, 1
+                EntityTypes.ZOMBIE, 2, ECHO_TEST_Y, 1
         ).withNoFreeWill().spawn();
         target.setHealth(target.getMaxHealth());
 
