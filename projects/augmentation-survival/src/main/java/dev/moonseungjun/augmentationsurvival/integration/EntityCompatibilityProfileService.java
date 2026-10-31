@@ -407,7 +407,7 @@ public final class EntityCompatibilityProfileService {
                 optionalBoolean(profile, "allow_pull", defaults.allowPull()),
                 pullMultiplier,
                 optionalBoolean(profile, "allow_position_swap", defaults.allowPositionSwap()),
-                optionalBoolean(profile, "allow_time_stop", defaults.allowTimeStop()),
+                optionalBoolean(profile, "allow_timeStop", defaults.allowTimeStop()),
                 optionalBoolean(profile, "allow_stun", defaults.allowStun()),
                 optionalBoolean(profile, "allow_percent_hp_damage", defaults.allowPercentHpDamage()),
                 optionalBoolean(profile, "allow_wall_impact", defaults.allowWallImpact()),
@@ -538,12 +538,13 @@ public final class EntityCompatibilityProfileService {
                 return false;
             }
             synchronized (cache) {
-                Boolean cached = cache.get(entity);
-                if (cached != null) {
-                    return cached;
+                if (Boolean.TRUE.equals(cache.get(entity))) {
+                    return true;
                 }
                 boolean result = invoke(entity);
-                cache.put(entity, result);
+                if (result) {
+                    cache.put(entity, true);
+                }
                 return result;
             }
         }
