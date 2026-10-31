@@ -70,8 +70,8 @@ public final class LegendaryLiveFixBatchBGameTests implements CustomTestMethodIn
         furnace.setItem(1, new ItemStack(Items.COAL));
 
         require(ActiveAbilityRouter.tryUseSlot(player, 0), "area acceleration route failed");
-        require(AreaAccelerationService.multiplierAt(level, furnacePos) == 3,
-                "level-one area acceleration did not expose its x3 runtime multiplier");
+        require(AreaAccelerationService.multiplierAt(level, furnacePos) == 15,
+                "level-one area acceleration did not expose its x15 runtime multiplier");
 
         GameTestPlayers.runAfterDelay(helper, 80, () -> {
             ItemStack output = furnace.getItem(2);
