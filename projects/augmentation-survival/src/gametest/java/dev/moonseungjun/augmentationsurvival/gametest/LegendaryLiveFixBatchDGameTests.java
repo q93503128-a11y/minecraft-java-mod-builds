@@ -22,6 +22,7 @@ import net.minecraft.world.item.Items;
 public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodInvoker {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
+    private static final float DURABILITY_CONSUMING_HIT = 6.0F;
 
     @GameTest(maxTicks = 60)
     public void manuallyClearedActiveStaysUnequippedAfterNewAcquisition(GameTestHelper helper) {
@@ -68,14 +69,14 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
         LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 8, () -> {
-            blockHit(level, player, attacker, 4.0F);
-            blockHit(level, player, attacker, 4.0F);
+            blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
+            blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
             attacker.setHealth(attacker.getMaxHealth());
             attacker.invulnerableTime = 10;
             float before = attacker.getHealth();
-            blockHit(level, player, attacker, 4.0F);
+            blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
             float dealt = before - attacker.getHealth();
-            require(Math.abs(dealt - 12.0F) <= 0.05F,
+            require(Math.abs(dealt - 18.0F) <= 0.05F,
                     "돌려보내기 was swallowed by an existing target hurt i-frame: dealt=" + dealt);
             require(attacker.invulnerableTime >= 10,
                     "돌려보내기 did not restore the target's pre-existing hurt i-frame");
