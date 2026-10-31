@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Observes the exact post-vanilla durability state for both 26.2 BlocksAttacks overloads. */
+/** Observes the exact post-vanilla durability state after a blocking item is damaged. */
 @Mixin(BlocksAttacks.class)
 abstract class BlocksAttacksShieldCompressionMixin {
     @Inject(
@@ -24,22 +24,6 @@ abstract class BlocksAttacksShieldCompressionMixin {
             LivingEntity user,
             InteractionHand hand,
             float damage,
-            CallbackInfo ci
-    ) {
-        ShieldCompressionDurabilityContext.afterVanillaDurabilityStep(user, item, damage);
-    }
-
-    @Inject(
-            method = "hurtBlockingItem(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/InteractionHand;FI)V",
-            at = @At("RETURN")
-    )
-    private void augmentationSurvival$afterBlockingDurabilityFixed(
-            Level level,
-            ItemStack item,
-            LivingEntity user,
-            InteractionHand hand,
-            float damage,
-            int fixedDamage,
             CallbackInfo ci
     ) {
         ShieldCompressionDurabilityContext.afterVanillaDurabilityStep(user, item, damage);
