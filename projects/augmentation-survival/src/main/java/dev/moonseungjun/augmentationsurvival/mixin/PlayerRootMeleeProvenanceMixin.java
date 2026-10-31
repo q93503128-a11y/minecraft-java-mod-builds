@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.augment.WallSlamMeleeRuntime;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
 import dev.moonseungjun.augmentationsurvival.augment.combat.LightningDirectHitService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.SweepingEnhancementService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,13 +40,20 @@ abstract class PlayerRootMeleeProvenanceMixin {
 
         float healthBefore = target instanceof LivingEntity living ? living.getHealth() : Float.NaN;
         boolean applied;
+        boolean betterCombatDirect = SweepingEnhancementService.consumeBetterCombatDirectHit(serverPlayer, target);
         LightningDirectHitService.enterRootMeleeAttack();
+        if (betterCombatDirect) {
+            SweepingEnhancementService.enterBetterCombatDirectDamage();
+        }
         try {
             applied = CombatProvenanceContext.callAs(
                     CombatProvenance.ROOT_MELEE,
                     () -> original.call(target, source, proposedDamage)
             );
         } finally {
+            if (betterCombatDirect) {
+                SweepingEnhancementService.leaveBetterCombatDirectDamage();
+            }
             LightningDirectHitService.leaveRootMeleeAttack();
         }
 

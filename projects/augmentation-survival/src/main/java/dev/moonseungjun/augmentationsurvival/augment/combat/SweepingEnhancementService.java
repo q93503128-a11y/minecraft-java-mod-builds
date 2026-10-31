@@ -25,6 +25,8 @@ public final class SweepingEnhancementService {
     private static final ThreadLocal<BetterCombatTarget> CURRENT_TARGET = new ThreadLocal<>();
     private static final ThreadLocal<BetterCombatGeometry> CURRENT_GEOMETRY = new ThreadLocal<>();
     private static final ThreadLocal<BetterCombatHit> PENDING_HIT = new ThreadLocal<>();
+    private static final ThreadLocal<BetterCombatDirectHit> APPROVED_DIRECT_HIT = new ThreadLocal<>();
+    private static final ThreadLocal<Integer> DIRECT_DAMAGE_DEPTH = ThreadLocal.withInitial(() -> 0);
 
     private static volatile boolean reflectionChecked;
     private static volatile Method getComboCount;
@@ -90,6 +92,7 @@ public final class SweepingEnhancementService {
 
     /** Called from Better Combat's relation lookup before isHitAllowed. */
     public static void noteBetterCombatTarget(Player attacker, Entity target) {
+        APPROVED_DIRECT_HIT.remove();
         if (!(attacker instanceof ServerPlayer serverPlayer) || target == null) return;
         CURRENT_TARGET.set(new BetterCombatTarget(
                 serverPlayer,
@@ -114,13 +117,20 @@ public final class SweepingEnhancementService {
         BetterCombatTarget current = CURRENT_TARGET.get();
         if (!allowed || current == null) {
             PENDING_HIT.remove();
+            APPROVED_DIRECT_HIT.remove();
             return allowed;
         }
         if (current.direct()) {
             PENDING_HIT.remove();
+            APPROVED_DIRECT_HIT.set(new BetterCombatDirectHit(
+                    current.player().getUUID(),
+                    current.target().getId(),
+                    current.player().tickCount
+            ));
             return true;
         }
 
+        APPROVED_DIRECT_HIT.remove();
         ServerPlayer player = current.player();
         int level = level(player);
         BetterCombatGeometry geometry = CURRENT_GEOMETRY.get();
@@ -145,6 +155,34 @@ public final class SweepingEnhancementService {
         return true;
     }
 
+    /** Consumes the exact direct target that Better Combat just approved for Player.attack. */
+    public static boolean consumeBetterCombatDirectHit(Player player, Entity target) {
+        BetterCombatDirectHit hit = APPROVED_DIRECT_HIT.get();
+        if (hit == null || target == null) return false;
+        boolean matches = hit.owner().equals(player.getUUID())
+                && hit.targetId() == target.getId()
+                && hit.tick() == player.tickCount;
+        if (matches || hit.owner().equals(player.getUUID())) {
+            APPROVED_DIRECT_HIT.remove();
+        }
+        return matches;
+    }
+
+    /** Marks only the damage call that came from an already-approved Better Combat direct swing. */
+    public static void enterBetterCombatDirectDamage() {
+        DIRECT_DAMAGE_DEPTH.set(DIRECT_DAMAGE_DEPTH.get() + 1);
+    }
+
+    public static void leaveBetterCombatDirectDamage() {
+        int depth = DIRECT_DAMAGE_DEPTH.get() - 1;
+        if (depth <= 0) DIRECT_DAMAGE_DEPTH.remove();
+        else DIRECT_DAMAGE_DEPTH.set(depth);
+    }
+
+    public static boolean isBetterCombatDirectDamage() {
+        return DIRECT_DAMAGE_DEPTH.get() > 0;
+    }
+
     /** Applies only to the exact Better Combat secondary target armed above. */
     public static float modifyBetterCombatOutgoingDamage(
             LivingEntity victim,
@@ -165,6 +203,8 @@ public final class SweepingEnhancementService {
     public static void clearBetterCombatHit(Player player) {
         BetterCombatHit hit = PENDING_HIT.get();
         if (hit != null && hit.owner().equals(player.getUUID())) PENDING_HIT.remove();
+        BetterCombatDirectHit directHit = APPROVED_DIRECT_HIT.get();
+        if (directHit != null && directHit.owner().equals(player.getUUID())) APPROVED_DIRECT_HIT.remove();
     }
 
     private static boolean insideGeometry(ServerPlayer player, Entity target, BetterCombatGeometry geometry) {
@@ -285,5 +325,8 @@ public final class SweepingEnhancementService {
     }
 
     private record BetterCombatHit(UUID owner, int targetId, int tick, float multiplier) {
+    }
+
+    private record BetterCombatDirectHit(UUID owner, int targetId, int tick) {
     }
 }
