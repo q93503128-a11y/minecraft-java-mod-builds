@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "return_to_sender": {
-    "blocked_damage_threshold": 10.0,
+    "block_count_threshold": [5, 4, 3],
     "damage_fraction": [0.60, 0.80, 1.00],
     "wave_range": 7.0,
     "wave_half_angle_degrees": 22.5
