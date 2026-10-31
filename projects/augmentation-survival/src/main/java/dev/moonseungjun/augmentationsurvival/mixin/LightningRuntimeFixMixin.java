@@ -20,8 +20,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Repairs Lightning's live proc contract: a proc is not consumed when no chain target exists, and a
- * successful chain is represented by a real visual-only vanilla lightning strike.
+ * Repairs Lightning's live proc contract: reaching threshold is always visible on the primary
+ * target, while chain damage is consumed only when an additional hostile target exists.
  */
 @Mixin(value = CombatExpansionService.class, remap = false)
 abstract class LightningRuntimeFixMixin {
@@ -42,9 +42,17 @@ abstract class LightningRuntimeFixMixin {
         ExpansionTuning.Snapshot tuning = ExpansionTuning.current();
         Map<UUID, Integer> counters = CombatExpansionServiceInvoker.augmentationSurvival$lightningHits();
         int trigger = tuning.lightningTriggerHits(augmentLevel);
-        int hits = Math.min(trigger, counters.getOrDefault(attacker.getUUID(), 0) + 1);
+        int previous = counters.getOrDefault(attacker.getUUID(), 0);
+        int hits = Math.min(trigger, previous + 1);
         counters.put(attacker.getUUID(), hits);
         if (hits < trigger) return;
+
+        boolean newlyPrimed = previous < trigger;
+        if (newlyPrimed) {
+            // The threshold itself must be readable even in a one-target test. Presentation only:
+            // the actual augment damage still follows the documented additional-target chain rule.
+            LightningPresentationService.primaryThresholdStrike(attacker, primaryTarget);
+        }
 
         double radius = tuning.lightningRadius();
         double radiusSquared = radius * radius;
