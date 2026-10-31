@@ -103,11 +103,9 @@ public final class ActivePresentationService {
                     ActivePresentationPayload.INSTANT, 0,
                     (float) ExpansionTuning.current().pullRadius(level), ParticleTypes.PORTAL, 0.85F
             );
-            // Shield has its own live gauge; a second duration timer would become misleading under Overtime.
             case "shield" -> new Profile(
                     ActivePresentationPayload.INSTANT, 0, 0.0F, ParticleTypes.END_ROD, 1.15F
             );
-            // The platform is itself the sustained world indicator and can be extended by Overtime.
             case "temporary_platform" -> new Profile(
                     ActivePresentationPayload.INSTANT, 0, 0.0F, ParticleTypes.END_ROD, 1.3F
             );
@@ -119,12 +117,10 @@ public final class ActivePresentationService {
                     ActivePresentationPayload.INSTANT, 0,
                     (float) ExpansionTuning.current().healingWaveRadius(), ParticleTypes.HAPPY_VILLAGER, 1.45F
             );
-            // First phase only. The actual sustained phase is driven by TemporalStateNetworking.
             case "time_acceleration" -> new Profile(
                     ActivePresentationPayload.CHANNEL,
                     AdvancedActiveTuning.current().timeAccelerationFocusTicks(), 0.0F, ParticleTypes.ENCHANT, 1.25F
             );
-            // Actual sustained state is driven by PhaseStateNetworking.
             case "phase_shift" -> new Profile(
                     ActivePresentationPayload.INSTANT, 0, 0.0F, ParticleTypes.PORTAL, 1.55F
             );
@@ -143,7 +139,11 @@ public final class ActivePresentationService {
                     0.0F, ParticleTypes.CRIT, 0.6F
             );
             case "area_acceleration" -> new Profile(
-                    ActivePresentationPayload.SUSTAINED, 30 * 20, 24.0F, ParticleTypes.ENCHANT, 1.35F
+                    ActivePresentationPayload.SUSTAINED,
+                    AreaAccelerationService.durationTicks(),
+                    (float) AreaAccelerationService.radius(),
+                    ParticleTypes.ENCHANT,
+                    1.35F
             );
             case "revive" -> new Profile(
                     ActivePresentationPayload.CHANNEL, 3 * 20, 20.0F, ParticleTypes.HAPPY_VILLAGER, 1.5F
@@ -276,8 +276,6 @@ public final class ActivePresentationService {
     }
 
     private static void sendState(ServerPlayer player, String abilityId, int phase, int durationTicks, float radius) {
-        // World-space readability is gameplay-side state and must not depend on whether a client packet
-        // connection exists (embedded GameTest players and early join windows legitimately have none).
         ActiveRangeTelegraphService.onState(player, abilityId, phase, durationTicks, radius);
         if (player.connection == null || !ServerPlayNetworking.canSend(player, ActivePresentationPayload.TYPE)) return;
         ServerPlayNetworking.send(player, new ActivePresentationPayload(abilityId, phase, durationTicks, radius));
