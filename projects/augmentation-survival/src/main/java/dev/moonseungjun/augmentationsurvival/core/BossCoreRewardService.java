@@ -1,10 +1,12 @@
 package dev.moonseungjun.augmentationsurvival.core;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
@@ -20,12 +22,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Server-authoritative participant rewards for exact boss assignments.
- *
- * <p>The baseline recognizes Wither and Ender Dragon through the authored boss contract. External
- * boss adapters can call the same reward path later after proving an encounter and its participants.</p>
- */
+/** Server-authoritative personal augmentation-core rewards for authored boss encounters. */
 public final class BossCoreRewardService {
     private static final Map<UUID, Set<UUID>> PARTICIPANTS = new HashMap<>();
 
@@ -45,11 +42,7 @@ public final class BossCoreRewardService {
             float damageTaken,
             boolean blocked
     ) {
-        if (blocked || damageTaken <= 0.0F) {
-            return;
-        }
-        Identifier bossId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-        if (bossId == null || BossCoreRewardCatalog.exactAssignment(bossId).isEmpty()) {
+        if (blocked || damageTaken <= 0.0F || resolveRewardTarget(entity).isEmpty()) {
             return;
         }
         ServerPlayer player = resolvePlayer(source);
@@ -65,8 +58,8 @@ public final class BossCoreRewardService {
             LivingEntity killed,
             DamageSource damageSource
     ) {
-        Identifier bossId = BuiltInRegistries.ENTITY_TYPE.getKey(killed.getType());
-        if (bossId == null || BossCoreRewardCatalog.exactAssignment(bossId).isEmpty()) {
+        Optional<RewardTarget> target = resolveRewardTarget(killed);
+        if (target.isEmpty()) {
             return;
         }
 
@@ -88,28 +81,70 @@ public final class BossCoreRewardService {
         for (UUID playerId : participantIds) {
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);
             if (player != null) {
-                rewardExactBoss(player, bossId, level);
+                rewardBoss(player, target.get(), level);
             }
         }
     }
 
+    /** Existing vanilla exact-assignment entry point retained for tests and explicit integrations. */
     public static void rewardExactBoss(
             ServerPlayer player,
             Identifier bossId,
             ServerLevel rewardLevel
     ) {
-        String stableBossId = bossId.toString();
-        boolean firstKill = !AugmentationPlayerStateService.hasBossFirstKillReward(player, stableBossId);
-        var rewards = BossCoreRewardCatalog.rollExactBossReward(
-                bossId,
+        BossCoreRewardCatalog.Assignment assignment = BossCoreRewardCatalog.exactAssignment(bossId)
+                .orElseThrow(() -> new IllegalArgumentException("No exact boss reward assignment: " + bossId));
+        rewardBoss(
+                player,
+                new RewardTarget(bossId.toString(), bossId.toString(), assignment),
+                rewardLevel
+        );
+    }
+
+    private static Optional<RewardTarget> resolveRewardTarget(LivingEntity entity) {
+        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        if (entityId == null) {
+            return Optional.empty();
+        }
+
+        Optional<BossCoreRewardCatalog.Assignment> exact = BossCoreRewardCatalog.exactAssignment(entityId);
+        if (exact.isPresent()) {
+            return Optional.of(new RewardTarget(entityId.toString(), entityId.toString(), exact.get()));
+        }
+
+        Optional<EntityCompatibilityProfileService.Profile> compatibility =
+                EntityCompatibilityProfileService.resolve(entity);
+        if (compatibility.isEmpty() || !compatibility.get().boss()) {
+            return Optional.empty();
+        }
+        String profileId = compatibility.get().id();
+        return BossCoreRewardCatalog.compatibilityAssignment(profileId)
+                .map(assignment -> new RewardTarget(
+                        "compat:" + profileId,
+                        entityId + " via " + profileId,
+                        assignment
+                ));
+    }
+
+    private static void rewardBoss(
+            ServerPlayer player,
+            RewardTarget target,
+            ServerLevel rewardLevel
+    ) {
+        boolean firstKill = !AugmentationPlayerStateService.hasBossFirstKillReward(
+                player,
+                target.firstKillKey()
+        );
+        var rewards = BossCoreRewardCatalog.rollAssignedReward(
+                target.assignment(),
                 firstKill,
                 rewardLevel.getRandom()
         );
         for (AugmentTier tier : rewards) {
-            grantCore(player, tier, stableBossId);
+            grantCore(player, tier, target.logSource());
         }
         if (firstKill) {
-            AugmentationPlayerStateService.markBossFirstKillRewardClaimed(player, stableBossId);
+            AugmentationPlayerStateService.markBossFirstKillRewardClaimed(player, target.firstKillKey());
         }
     }
 
@@ -125,16 +160,21 @@ public final class BossCoreRewardService {
         return resolvePlayer(source);
     }
 
-    private static void grantCore(ServerPlayer player, AugmentTier tier, String bossId) {
+    private static void grantCore(ServerPlayer player, AugmentTier tier, String bossSource) {
         ItemStack stack = new ItemStack(AugmentCoreItems.item(tier));
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
         AugmentationSurvival.LOGGER.debug(
                 "Granted {} augment core to {} from boss {}",
-                tier.id(),
-                player.getGameProfile().name(),
-                bossId
+                tier.id(), player.getGameProfile().name(), bossSource
         );
+    }
+
+    private record RewardTarget(
+            String firstKillKey,
+            String logSource,
+            BossCoreRewardCatalog.Assignment assignment
+    ) {
     }
 }
