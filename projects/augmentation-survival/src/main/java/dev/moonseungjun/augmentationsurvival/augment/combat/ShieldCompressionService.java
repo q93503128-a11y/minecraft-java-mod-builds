@@ -20,7 +20,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
-/** Converts shield-blocked damage into a server-authoritative forward cone shockwave. */
+/** Converts real shield durability-consuming blocks into a server-authoritative forward cone shockwave. */
 public final class ShieldCompressionService {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
@@ -28,59 +28,48 @@ public final class ShieldCompressionService {
             Registries.DAMAGE_TYPE,
             Identifier.fromNamespaceAndPath(AugmentationSurvival.MOD_ID, "shield_compression")
     );
-    private static final Map<ServerPlayer, Double> STORED_BLOCKED_DAMAGE = new WeakHashMap<>();
+    private static final Map<ServerPlayer, BlockAccumulator> STORED_BLOCKS = new WeakHashMap<>();
 
     private ShieldCompressionService() {
     }
 
-    public static void onBlockedDamage(ServerPlayer player, DamageSource source, float blockedDamage) {
-        if (!(blockedDamage > 0.0F) || !Float.isFinite(blockedDamage)) {
-            return;
-        }
+    public static void onDurabilityBlocking(ServerPlayer player, DamageSource source, float incomingDamage) {
+        if (!(incomingDamage > 0.0F) || !Float.isFinite(incomingDamage)) return;
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         int level = boundedLevel(state);
         if (level <= 0) {
-            STORED_BLOCKED_DAMAGE.remove(player);
+            STORED_BLOCKS.remove(player);
             return;
         }
 
         ReactiveCombatTuning.Snapshot tuning = ReactiveCombatTuning.current();
-        double threshold = tuning.returnBlockedDamageThreshold();
-        double stored = STORED_BLOCKED_DAMAGE.getOrDefault(player, 0.0D) + blockedDamage;
-        int pulses = (int) Math.floor(stored / threshold);
-        if (pulses <= 0) {
-            STORED_BLOCKED_DAMAGE.put(player, stored);
+        int threshold = tuning.returnBlockCountThreshold(level);
+        BlockAccumulator previous = STORED_BLOCKS.getOrDefault(player, new BlockAccumulator(0, 0.0D));
+        int blockCount = previous.blockCount() + 1;
+        double blockedDamage = previous.blockedDamage() + incomingDamage;
+        if (blockCount < threshold) {
+            STORED_BLOCKS.put(player, new BlockAccumulator(blockCount, blockedDamage));
             return;
         }
-        STORED_BLOCKED_DAMAGE.put(player, stored - pulses * threshold);
+        STORED_BLOCKS.remove(player);
 
         Entity dealer = source.getEntity() != null ? source.getEntity() : source.getDirectEntity();
         Vec3 origin = player.getEyePosition().add(0.0D, -0.2D, 0.0D);
         Vec3 direction = dealer == null
                 ? player.getLookAngle()
                 : dealer.getBoundingBox().getCenter().subtract(origin);
-        if (direction.lengthSqr() <= 1.0E-7D) {
-            direction = player.getLookAngle();
-        }
-        if (direction.lengthSqr() <= 1.0E-7D) {
-            return;
-        }
+        if (direction.lengthSqr() <= 1.0E-7D) direction = player.getLookAngle();
+        if (direction.lengthSqr() <= 1.0E-7D) return;
         direction = direction.normalize();
 
-        float waveDamage = (float) (pulses * threshold * tuning.returnDamageFraction(level));
+        float waveDamage = (float) Math.min(Float.MAX_VALUE,
+                blockedDamage * tuning.returnDamageFraction(level));
         emitWave(player, origin, direction, waveDamage, tuning);
     }
 
-    private static void emitWave(
-            ServerPlayer player,
-            Vec3 origin,
-            Vec3 direction,
-            float damage,
-            ReactiveCombatTuning.Snapshot tuning
-    ) {
-        if (!(player.level() instanceof ServerLevel level)) {
-            return;
-        }
+    private static void emitWave(ServerPlayer player, Vec3 origin, Vec3 direction, float damage,
+                                 ReactiveCombatTuning.Snapshot tuning) {
+        if (!(player.level() instanceof ServerLevel level)) return;
         double range = tuning.returnWaveRange();
         double rangeSquared = range * range;
         double minimumDot = Math.cos(Math.toRadians(tuning.returnWaveHalfAngleDegrees()));
@@ -93,12 +82,8 @@ public final class ShieldCompressionService {
         )) {
             Vec3 toTarget = target.getBoundingBox().getCenter().subtract(origin);
             double distanceSquared = toTarget.lengthSqr();
-            if (distanceSquared <= 1.0E-7D || distanceSquared > rangeSquared) {
-                continue;
-            }
-            if (direction.dot(toTarget.normalize()) < minimumDot) {
-                continue;
-            }
+            if (distanceSquared <= 1.0E-7D || distanceSquared > rangeSquared) continue;
+            if (direction.dot(toTarget.normalize()) < minimumDot) continue;
 
             int previousInvulnerableTime = target.invulnerableTime;
             target.invulnerableTime = 0;
@@ -113,31 +98,14 @@ public final class ShieldCompressionService {
         }
 
         emitConeParticles(level, origin, direction, range, tuning.returnWaveHalfAngleDegrees());
-        level.playSound(
-                null,
-                player.getX(), player.getY(), player.getZ(),
-                SoundEvents.PLAYER_ATTACK_SWEEP,
-                SoundSource.PLAYERS,
-                0.9F,
-                0.72F
-        );
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.9F, 0.72F);
     }
 
-    /**
-     * Draws the same finite 3D cone used by the damage dot-product check: center line, four side
-     * rails, and the circular far cross-section at tan(halfAngle) * range.
-     */
-    private static void emitConeParticles(
-            ServerLevel level,
-            Vec3 origin,
-            Vec3 direction,
-            double range,
-            double halfAngleDegrees
-    ) {
+    private static void emitConeParticles(ServerLevel level, Vec3 origin, Vec3 direction,
+                                          double range, double halfAngleDegrees) {
         Vec3 right = direction.cross(new Vec3(0.0D, 1.0D, 0.0D));
-        if (right.lengthSqr() <= 1.0E-6D) {
-            right = direction.cross(new Vec3(1.0D, 0.0D, 0.0D));
-        }
+        if (right.lengthSqr() <= 1.0E-6D) right = direction.cross(new Vec3(1.0D, 0.0D, 0.0D));
         right = right.normalize();
         Vec3 up = right.cross(direction).normalize();
         double tangent = Math.tan(Math.toRadians(halfAngleDegrees));
@@ -166,20 +134,16 @@ public final class ShieldCompressionService {
     }
 
     private static void send(ServerLevel level, Vec3 position) {
-        level.sendParticles(
-                ParticleTypes.SONIC_BOOM,
-                position.x, position.y, position.z,
-                1,
-                0.0D, 0.0D, 0.0D,
-                0.0D
-        );
+        level.sendParticles(ParticleTypes.SONIC_BOOM, position.x, position.y, position.z,
+                1, 0.0D, 0.0D, 0.0D, 0.0D);
     }
 
     private static int boundedLevel(AugmentationPlayerState state) {
         int level = state.level(RETURN_TO_SENDER_ID);
-        if (level <= 0) {
-            return 0;
-        }
+        if (level <= 0) return 0;
         return Math.min(level, AugmentCatalog.require(RETURN_TO_SENDER_ID).maxLevel());
+    }
+
+    private record BlockAccumulator(int blockCount, double blockedDamage) {
     }
 }
