@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "status": "canonical-initial-implementation-baseline",
+  "status": "canonical-external-content-integration-baseline",
   "runtime_active": true,
   "exact_weights_defined": true,
   "design_rule": "A content source maps to a tier distribution, never to exactly one fixed tier.",
@@ -48,6 +48,13 @@
       "core_roll_chance": 0.002,
       "weights": { "common": 0.90, "uncommon": 0.10 },
       "require_player_attributed_kill": true
+    },
+    {
+      "id": "progression_hostile",
+      "core_roll_chance": 0.008,
+      "weights": { "common": 0.75, "uncommon": 0.22, "rare": 0.03 },
+      "require_player_attributed_kill": true,
+      "intent": "Dedicated progression-zone hostiles should contribute cores noticeably more often than ordinary overworld mobs without competing with elites, structures, or bosses."
     },
     {
       "id": "special_hostile",
@@ -128,15 +135,15 @@
     },
     {
       "mod_id": "chronodawn",
-      "roles": ["boss_reward", "boss_structure", "dimension_progression"]
+      "roles": ["progression_hostile", "structure_chest", "boss_reward", "boss_structure", "dimension_progression"]
     },
     {
       "mod_id": "worldbosses",
-      "roles": ["boss_reward", "raid_cache", "boss_structure", "boss_dimension"]
+      "roles": ["progression_hostile", "boss_reward", "raid_cache", "boss_structure", "boss_dimension"]
     },
     {
       "mod_id": "mcendgame",
-      "roles": ["repeatable_dungeon_boss", "pinnacle_boss", "endgame_dungeon"]
+      "roles": ["dynamic_dungeon_enemy", "dynamic_elite", "repeatable_dungeon_boss", "pinnacle_boss", "endgame_dungeon"]
     }
   ],
   "source_adjustment_policy": {
