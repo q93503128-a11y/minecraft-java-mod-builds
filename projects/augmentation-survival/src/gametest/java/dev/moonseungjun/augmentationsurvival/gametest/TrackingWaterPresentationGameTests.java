@@ -27,7 +27,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-/** Regressions for tracking, water traversal and repaired player-facing descriptions. */
+/** Regressions for tracking, water traversal and concise hand-authored player-facing descriptions. */
 public final class TrackingWaterPresentationGameTests implements CustomTestMethodInvoker {
     private static final String PREFIX = AugmentationSurvival.MOD_ID + ":";
 
@@ -164,29 +164,31 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
             }
             require(!entry.summary().isBlank() && !entry.detail().isBlank(),
                     augmentId + " has an empty player-facing summary/detail");
+            require(!entry.summary().equals(entry.detail()),
+                    augmentId + " copied the detail verbatim into the summary instead of using a concise manual card line");
         }
 
         String tracking = text("tracking_arrow");
         require(tracking.contains("16") && tracking.contains("45")
                         && tracking.contains("4°") && tracking.contains("6°") && tracking.contains("8°")
-                        && tracking.contains("철골렘") && tracking.contains("아군"),
-                "tracking-arrow description does not state its live range/cone/turn/neutral-target policy");
+                        && tracking.contains("아군이 아닌"),
+                "tracking-arrow description does not state its live range/cone/turn/target policy");
 
         String wall = text("wall_slam");
         require(wall.contains("1초") && wall.contains("30%") && wall.contains("60%") && wall.contains("100%")
-                        && wall.contains("벽 바로 근처"),
-                "wall-slam description does not match its forgiving live wall-contact window");
+                        && wall.contains("벽"),
+                "wall-slam description does not state its wall-contact window and level damage");
 
         String aerial = text("aerial_combo");
         require(aerial.contains("두 번 점프가 없어도") && aerial.contains("같은 대상") && aerial.contains("공중 점프"),
                 "aerial-combo description does not explain standalone repeated air-jump recharge");
 
         AugmentPresentationCatalog.Entry waterEntry = AugmentPresentationCatalog.get(AugmentCatalog.require(id("water_run")));
-        String waterWalk = waterEntry.detail();
+        String waterWalk = waterEntry.summary() + " " + waterEntry.detail();
         require(waterEntry.displayName().equals("수상 보행")
                         && waterWalk.contains("걷") && waterWalk.contains("웅크") && waterWalk.contains("5블록")
-                        && waterWalk.contains("다이빙") && waterWalk.contains("빠져나올"),
-                "Water Walk description does not explain one-way surface/crouch/dive behavior");
+                        && waterWalk.contains("다이빙"),
+                "Water Walk description does not explain surface walking, crouch sinking and dive behavior");
 
         String returnToSender = text("return_to_sender");
         require(!returnToSender.contains("내구도") && returnToSender.contains("방패") && returnToSender.contains("막")
@@ -195,14 +197,15 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
                 "Return to Sender description does not present the player-facing shield-block rule");
 
         String portableRiptide = text("portable_riptide");
-        require(portableRiptide.contains("소모되지") && portableRiptide.contains("회전"),
-                "Portable Riptide description does not state unlimited bucket use and spin behavior");
+        require(portableRiptide.contains("소모되지")
+                        && (portableRiptide.contains("마른 곳") || portableRiptide.contains("비나 물이 없어도")),
+                "Portable Riptide description does not state dry use and unlimited bucket use");
 
         String lastStand = text("last_stand");
         String delayedDamage = text("delayed_damage");
-        require(lastStand.contains("피해 지연") && lastStand.contains("모두 사라")
-                        && delayedDamage.contains("모두 폐기") && delayedDamage.contains("새 예약"),
-                "Last Stand / delayed-damage descriptions do not explain debt clearing and suppression");
+        require(lastStand.contains("피해 지연") && lastStand.contains("사라")
+                        && delayedDamage.contains("20% / 30% / 40%") && delayedDamage.contains("10초"),
+                "Last Stand / delayed-damage descriptions lost the player-relevant debt-clearing or timing rules");
 
         GameTestPlayers.succeed(helper);
     }
