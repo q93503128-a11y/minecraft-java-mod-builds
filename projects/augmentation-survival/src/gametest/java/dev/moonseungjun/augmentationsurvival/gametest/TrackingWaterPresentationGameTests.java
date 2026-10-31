@@ -189,9 +189,10 @@ public final class TrackingWaterPresentationGameTests implements CustomTestMetho
                 "Water Walk description does not explain one-way surface/crouch/dive behavior");
 
         String returnToSender = text("return_to_sender");
-        require(returnToSender.contains("누적 10") && returnToSender.contains("7블록")
-                        && returnToSender.contains("45°") && returnToSender.contains("60% / 80% / 100%"),
-                "Return to Sender description does not match blocked-damage cone compression");
+        require(returnToSender.contains("내구도") && returnToSender.contains("5 / 4 / 3")
+                        && returnToSender.contains("7블록") && returnToSender.contains("45°")
+                        && returnToSender.contains("60% / 80% / 100%"),
+                "Return to Sender description does not match durability-counted cone reflection");
 
         String portableRiptide = text("portable_riptide");
         require(portableRiptide.contains("소모되지") && portableRiptide.contains("회전"),
