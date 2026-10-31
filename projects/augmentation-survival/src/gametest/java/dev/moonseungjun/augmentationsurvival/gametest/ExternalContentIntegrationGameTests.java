@@ -137,8 +137,9 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
         BlockPos playerPos = helper.absolutePos(new BlockPos(2, 2, 2));
         player.setPos(playerPos.getX() + 0.5D, playerPos.getY(), playerPos.getZ() + 0.5D);
 
-        LivingEntity firstBoss = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).withNoFreeWill().spawn();
-        // Prove a pre-promotion false query does not poison the dynamic compatibility cache.
+        // Keep AI enabled here. MCE deliberately activates NoAI dungeon-boss fixtures on tick,
+        // which would turn this reward-routing test into a full boss-generation/health-scaling test.
+        LivingEntity firstBoss = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).spawn();
         require(!EntityCompatibilityProfileService.isBoss(firstBoss),
                 "fresh ordinary zombie unexpectedly classified as an external boss");
         setFlag(firstBoss, MCE_DUNGEON_ENEMY, "mcendgame$setDungeonEnemy", true);
@@ -151,23 +152,25 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
                         == CoreSourceResolver.HostileResolution.Kind.BOSS_SUPPRESSED,
                 "MCE boss was still eligible for generic hostile core rolls");
 
+        firstBoss.setHealth(1.0F);
+        firstBoss.invulnerableTime = 0;
         boolean firstAccepted = firstBoss.hurtServer(
                 helper.getLevel(),
                 helper.getLevel().damageSources().playerAttack(player),
-                1000.0F
+                100.0F
         );
         require(firstAccepted, "lethal player-attributed damage to first MCE boss was rejected");
 
         GameTestPlayers.runAfterDelay(helper, 3, () -> {
             require(!firstBoss.isAlive(),
-                    "first MCE dungeon boss survived the deterministic lethal player damage");
+                    "first MCE dungeon boss survived deterministic lethal player damage");
             int afterFirst = coreCount(player);
             require(afterFirst == 2,
                     "first MCE dungeon boss should grant exactly 2 personal major cores, got " + afterFirst);
             require(lowTierCoreCount(player) == 0,
                     "boss-major reward leaked common/uncommon/rare cores");
 
-            LivingEntity repeatBoss = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).withNoFreeWill().spawn();
+            LivingEntity repeatBoss = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 3).spawn();
             try {
                 setFlag(repeatBoss, MCE_DUNGEON_ENEMY, "mcendgame$setDungeonEnemy", true);
                 setFlag(repeatBoss, MCE_DUNGEON_BOSS, "mcendgame$setDungeonBoss", true);
@@ -176,10 +179,12 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
             }
             require(EntityCompatibilityProfileService.isBoss(repeatBoss),
                     "repeat MCE dungeon boss was not recognized after runtime promotion");
+            repeatBoss.setHealth(1.0F);
+            repeatBoss.invulnerableTime = 0;
             boolean repeatAccepted = repeatBoss.hurtServer(
                     helper.getLevel(),
                     helper.getLevel().damageSources().playerAttack(player),
-                    1000.0F
+                    100.0F
             );
             require(repeatAccepted, "lethal player-attributed damage to repeat MCE boss was rejected");
 
