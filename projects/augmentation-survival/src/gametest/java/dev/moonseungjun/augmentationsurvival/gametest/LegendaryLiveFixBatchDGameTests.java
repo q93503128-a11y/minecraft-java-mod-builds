@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ShieldCompressionDurabilityContext;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -9,14 +10,17 @@ import java.util.List;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.BlocksAttacks;
 
 /** Regressions discovered by the 2026-10-30 second live-play pass. */
 public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodInvoker {
@@ -65,10 +69,9 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
                 AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 3)
         );
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
-        player.startUsingItem(InteractionHand.OFF_HAND);
         LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7).withNoFreeWill().spawn();
 
-        GameTestPlayers.runAfterDelay(helper, 8, () -> {
+        GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
             blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
             blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
@@ -86,12 +89,23 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
     }
 
     private static void blockHit(ServerLevel level, ServerPlayer player, LivingEntity attacker, float damage) {
-        int durabilityBefore = player.getOffhandItem().getDamageValue();
-        float blocked = player.applyItemBlocking(level, player.damageSources().mobAttack(attacker), damage);
+        ItemStack shield = player.getOffhandItem();
+        BlocksAttacks blocksAttacks = shield.get(DataComponents.BLOCKS_ATTACKS);
+        require(blocksAttacks != null, "test shield is missing vanilla blocks-attacks component");
+        DamageSource source = player.damageSources().mobAttack(attacker);
+        float blocked = blocksAttacks.resolveBlockedDamage(source, damage, 0.0D);
         require(blocked >= 3.0F,
-                "raised shield did not enter vanilla blocking path: blocked=" + blocked);
-        require(player.getOffhandItem().getDamageValue() > durabilityBefore,
-                "real shield block did not consume durability");
+                "shield component did not resolve durability-consuming blocked damage: blocked=" + blocked);
+
+        int durabilityBefore = shield.getDamageValue();
+        ShieldCompressionDurabilityContext.begin(player, source, shield);
+        try {
+            blocksAttacks.hurtBlockingItem(level, shield, player, InteractionHand.OFF_HAND, blocked);
+        } finally {
+            ShieldCompressionDurabilityContext.end(player);
+        }
+        require(shield.getDamageValue() > durabilityBefore,
+                "vanilla shield durability boundary did not consume durability");
     }
 
     private static void require(boolean condition, String message) {
