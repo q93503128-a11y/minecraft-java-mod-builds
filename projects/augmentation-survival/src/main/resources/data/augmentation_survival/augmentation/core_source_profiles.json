@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "status": "canonical-source-resolution-baseline",
+  "schema_version": 2,
+  "status": "canonical-external-content-integration-baseline",
   "runtime_active": true,
   "purpose": "Map structure, hostile, event, and boss sources onto the canonical core distribution and boss reward contracts without hardcoding balance weights in runtime code.",
   "contract_refs": {
@@ -8,6 +8,8 @@
     "boss_rewards": "augmentation_survival:augmentation/boss_core_reward_contract.json"
   },
   "selector_precedence": [
+    "event_or_boss_redirect",
+    "dynamic_runtime",
     "exact",
     "path_prefix",
     "namespace_default",
@@ -46,6 +48,54 @@
         "distribution_profile": "dangerous_high",
         "core_roll_multiplier": 0.8,
         "reason": "Late exploration structure with multiple containers and strong traversal pressure."
+      },
+      {
+        "selector": "chronodawn:ancient_ruins",
+        "distribution_profile": "routine_exploration",
+        "core_roll_multiplier": 1.0,
+        "reason": "Verified Chrono Dawn overworld entry structure."
+      },
+      {
+        "selector": "chronodawn:forgotten_library",
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 0.75,
+        "reason": "Verified Chrono Dawn progression structure with multiple loot opportunities."
+      },
+      {
+        "selector": "chronodawn:desert_clock_tower",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.55,
+        "reason": "Boss-gated Chrono Dawn structure; chest rewards supplement rather than replace the guaranteed boss core."
+      },
+      {
+        "selector": "chronodawn:guardian_vault",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.55,
+        "reason": "Boss-gated Chrono Dawn structure; density correction prevents double-paying the encounter."
+      },
+      {
+        "selector": "chronodawn:clockwork_depths",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.55,
+        "reason": "Boss-gated Chrono Dawn structure; density correction prevents double-paying the encounter."
+      },
+      {
+        "selector": "chronodawn:phantom_catacombs",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.55,
+        "reason": "Boss-gated Chrono Dawn structure; density correction prevents double-paying the encounter."
+      },
+      {
+        "selector": "chronodawn:entropy_crypt",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.55,
+        "reason": "Boss-gated Chrono Dawn structure; density correction prevents double-paying the encounter."
+      },
+      {
+        "selector": "chronodawn:master_clock",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.40,
+        "reason": "Final-boss structure chests remain a bonus; direct Time Tyrant rewards carry the encounter progression."
       }
     ],
     "path_prefix": [
@@ -255,6 +305,29 @@
         "suppress_normal_mob_roll": true
       }
     ],
+    "dynamic_adapters": [
+      {
+        "id": "mcendgame_elite",
+        "required_mod": "mcendgame",
+        "accessor_class": "de.fuballer.mcendgame.main.accessor.LivingEntityEliteAccessor",
+        "boolean_method": "mcendgame$isElite",
+        "mob_profile": "elite_hostile"
+      },
+      {
+        "id": "mcendgame_loot_goblin",
+        "required_mod": "mcendgame",
+        "accessor_class": "de.fuballer.mcendgame.main.accessor.LivingEntityLootGoblinAccessor",
+        "boolean_method": "mcendgame$isLootGoblin",
+        "mob_profile": "elite_hostile"
+      },
+      {
+        "id": "mcendgame_dungeon_enemy",
+        "required_mod": "mcendgame",
+        "accessor_class": "de.fuballer.mcendgame.main.accessor.LivingEntityDungeonEnemyAccessor",
+        "boolean_method": "mcendgame$isDungeonEnemy",
+        "mob_profile": "special_hostile"
+      }
+    ],
     "namespace_default": [
       {
         "namespace": "friendsandfoes",
@@ -266,7 +339,19 @@
         "namespace": "illagerinvasion",
         "mob_profile": "special_hostile",
         "condition": "server_classified_hostile_only",
-        "reason": "26.2.x content is combat-focused; individual elite promotions wait for verified registry IDs and measured difficulty."
+        "reason": "Combat-focused Illager Invasion hostiles are intentionally better core sources than ordinary overworld enemies."
+      },
+      {
+        "namespace": "chronodawn",
+        "mob_profile": "progression_hostile",
+        "condition": "server_classified_hostile_only",
+        "reason": "Hostiles in the dedicated Chrono Dawn progression path should contribute cores without replacing structures and bosses."
+      },
+      {
+        "namespace": "worldbosses",
+        "mob_profile": "progression_hostile",
+        "condition": "server_classified_hostile_only",
+        "reason": "Worldbreaker-realm and boss-mod hostiles should remain relevant to the augmentation loop while recognized bosses use direct rewards."
       }
     ],
     "namespace_exclusions": [
@@ -308,22 +393,25 @@
         "repeat_policy": "pinnacle_repeat_weights"
       }
     ],
-    "namespace_default": [
-      {
-        "namespace": "chronodawn",
-        "reward_band": "boss_major",
-        "condition": "recognized_boss_encounter_only"
-      },
-      {
-        "namespace": "worldbosses",
-        "reward_band": "boss_major",
-        "condition": "recognized_boss_encounter_only"
-      },
-      {
-        "namespace": "mcendgame",
-        "reward_band": "boss_major",
-        "condition": "recognized_boss_encounter_only"
-      }
+    "compatibility_profiles": [
+      { "profile": "chronodawn_time_guardian", "reward_band": "boss_major" },
+      { "profile": "chronodawn_chronos_warden", "reward_band": "boss_major" },
+      { "profile": "chronodawn_clockwork_colossus", "reward_band": "boss_major" },
+      { "profile": "chronodawn_entropy_keeper", "reward_band": "boss_major" },
+      { "profile": "chronodawn_temporal_phantom", "reward_band": "boss_major" },
+      { "profile": "chronodawn_time_tyrant", "reward_band": "boss_major" },
+      { "profile": "worldbosses_sylvaron", "reward_band": "boss_major" },
+      { "profile": "worldbosses_aureon", "reward_band": "boss_major" },
+      { "profile": "worldbosses_nekhraz", "reward_band": "boss_major" },
+      { "profile": "worldbosses_varkhul", "reward_band": "boss_major" },
+      { "profile": "worldbosses_morvath", "reward_band": "boss_major" },
+      { "profile": "worldbosses_elyndra", "reward_band": "boss_major" },
+      { "profile": "worldbosses_astrael", "reward_band": "boss_major" },
+      { "profile": "worldbosses_shadow_king", "reward_band": "boss_major" },
+      { "profile": "worldbosses_dragon_mother", "reward_band": "boss_major" },
+      { "profile": "worldbosses_storm_griffin", "reward_band": "boss_major" },
+      { "profile": "worldbosses_shadow_weaver", "reward_band": "boss_major" },
+      { "profile": "mcendgame_dungeon_boss", "reward_band": "boss_major" }
     ],
     "pending_exact_overrides": [
       {
@@ -331,7 +419,21 @@
         "display_name_hint": "Beastweaver",
         "target_reward_band": "boss_pinnacle",
         "active": false,
-        "reason": "Pinnacle candidate is documented, but an exact registry ID was not verified in this source-audit pass. Do not guess it."
+        "reason": "Pinnacle candidate remains deferred until the pinned runtime exposes a stable encounter identity distinct from the generic dungeon-boss flag."
+      },
+      {
+        "mod_id": "chronodawn",
+        "display_name_hint": "Time Tyrant",
+        "target_reward_band": "boss_pinnacle",
+        "active": false,
+        "reason": "Final-boss status is verified, but promotion waits for live difficulty/repeatability measurement rather than being assumed from title alone."
+      },
+      {
+        "mod_id": "worldbosses",
+        "display_name_hint": "Shadow Weaver",
+        "target_reward_band": "boss_pinnacle",
+        "active": false,
+        "reason": "Late progression status is known; direct mythic-rate promotion waits for live encounter measurement."
       }
     ]
   },
@@ -348,6 +450,8 @@
     "illagerinvasion": "The 26.2.x branch and combat entity resource names were inspected, but exact registry registration IDs were not treated as verified; namespace fallback is intentional.",
     "repurposed_structures": "Use namespace and semantic path-family matching instead of an exhaustive generated-variant list; exact variant IDs are deliberately not required for baseline resolution.",
     "dungeons_and_taverns": "The public 26.2 data pack uses namespace nova_structures for structure/loot data. Runtime source matching supports nova_structures directly; the historical mr_dungeons_andtaverns identifier remains as a compatibility alias.",
-    "boss_mods": "External boss namespaces use recognized-encounter adapters and boss_major defaults. No unverified exact boss registry IDs are invented."
+    "chronodawn": "All eight managed structure IDs were verified from Chrono Dawn's shared ManagedStructure source; only these authored progression structures receive structure-core rolls, so renewable/microstructure loot is not promoted into a core farm.",
+    "mcendgame": "Pinned runtime accessors for dungeon-enemy, elite, loot-goblin and dungeon-boss flags were verified from the public MCEndgame source; dynamic state takes precedence over underlying vanilla entity type.",
+    "boss_mods": "External boss rewards are keyed by the already-validated compatibility profile IDs rather than guessed registry IDs."
   }
 }
