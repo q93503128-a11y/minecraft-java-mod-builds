@@ -52,8 +52,10 @@ public final class AreaAccelerationService {
     private static final String COMBAT_CYCLE_ID = id("combat_cycle");
     private static final String OVERTIME_ID = id("overtime");
 
-    private static final int BASE_DURATION_TICKS = 30 * 20;
+    private static final int BASE_DURATION_TICKS = 60 * 20;
     private static final int BASE_COOLDOWN_TICKS = 120 * 20;
+    private static final int LEVEL_ONE_MULTIPLIER = 3;
+    private static final int LEVEL_TWO_MULTIPLIER = 30;
     private static final int RADIUS = 24;
     private static final double RADIUS_SQUARED = RADIUS * RADIUS;
     private static final Map<UUID, AuraWindow> ACTIVE = new HashMap<>();
@@ -118,8 +120,8 @@ public final class AreaAccelerationService {
                     || owner.position().distanceToSqr(position) > RADIUS_SQUARED) {
                 continue;
             }
-            best = Math.max(best, window.level >= 2 ? 7 : 3);
-            if (best >= 7) {
+            best = Math.max(best, multiplierForLevel(window.level));
+            if (best >= LEVEL_TWO_MULTIPLIER) {
                 break;
             }
         }
@@ -139,6 +141,16 @@ public final class AreaAccelerationService {
         if (window == null || player.isDeadOrDying()) return 0;
         long remaining = Math.max(0L, window.endTick - player.level().getGameTime());
         return (int) Math.min(Integer.MAX_VALUE, remaining);
+    }
+
+    public static int durationTicks() {
+        return BASE_DURATION_TICKS;
+    }
+
+    public static int multiplierForLevel(int level) {
+        if (level >= 2) return LEVEL_TWO_MULTIPLIER;
+        if (level > 0) return LEVEL_ONE_MULTIPLIER;
+        return 1;
     }
 
     public static int radius() {
