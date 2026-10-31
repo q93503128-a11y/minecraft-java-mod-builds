@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -31,7 +30,7 @@ public final class BossCoreRewardService {
 
     public static void initialize() {
         ServerLivingEntityEvents.AFTER_DAMAGE.register(BossCoreRewardService::afterDamage);
-        ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(BossCoreRewardService::afterKilledOtherEntity);
+        ServerLivingEntityEvents.AFTER_DEATH.register(BossCoreRewardService::afterDeath);
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> PARTICIPANTS.remove(entity.getUUID()));
     }
 
@@ -52,14 +51,16 @@ public final class BossCoreRewardService {
         }
     }
 
-    private static void afterKilledOtherEntity(
-            ServerLevel level,
-            Entity killer,
-            LivingEntity killed,
-            DamageSource damageSource
-    ) {
+    /**
+     * Death is the authoritative reward boundary. This preserves rewards when a player meaningfully
+     * participated but an authored boss finally dies to a non-entity source such as fire, fall or
+     * another environmental effect. A player final damage source is included even though Fabric's
+     * AFTER_DAMAGE is not fired for the lethal hit.
+     */
+    private static void afterDeath(LivingEntity killed, DamageSource damageSource) {
         Optional<RewardTarget> target = resolveRewardTarget(killed);
-        if (target.isEmpty()) {
+        if (target.isEmpty() || !(killed.level() instanceof ServerLevel level)) {
+            PARTICIPANTS.remove(killed.getUUID());
             return;
         }
 
@@ -69,7 +70,7 @@ public final class BossCoreRewardService {
         } else {
             participantIds = new LinkedHashSet<>(participantIds);
         }
-        ServerPlayer finalKiller = resolvePlayer(killer, damageSource);
+        ServerPlayer finalKiller = resolvePlayer(damageSource);
         if (finalKiller != null) {
             participantIds.add(finalKiller.getUUID());
         }
@@ -151,13 +152,6 @@ public final class BossCoreRewardService {
     private static ServerPlayer resolvePlayer(DamageSource source) {
         Entity sourceEntity = source.getEntity();
         return sourceEntity instanceof ServerPlayer player ? player : null;
-    }
-
-    private static ServerPlayer resolvePlayer(Entity killer, DamageSource source) {
-        if (killer instanceof ServerPlayer player) {
-            return player;
-        }
-        return resolvePlayer(source);
     }
 
     private static void grantCore(ServerPlayer player, AugmentTier tier, String bossSource) {
