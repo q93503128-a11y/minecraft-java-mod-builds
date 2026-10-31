@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "entries": {
+    "extra_piece": {
+      "display_name": "한 조각 더",
+      "kind": "passive",
+      "summary": "광석을 캘 때 추가 드롭을 얻을 수 있습니다.",
+      "detail": "광석을 캘 때 5% / 10% / 15% 확률로 드롭을 1개 더 얻습니다."
+    },
+    "recovery": {
+      "display_name": "회복력",
+      "kind": "passive",
+      "summary": "자연 회복이 더 자주 일어납니다.",
+      "detail": "자연 회복이 10% / 20% / 30% 더 자주 발생합니다."
+    },
+    "catch_breath": {
+      "display_name": "숨 고르기",
+      "kind": "passive",
+      "summary": "잠시 달리지 않으면 이동 속도가 증가합니다.",
+      "detail": "3초 동안 달리지 않으면 이동 속도가 10% / 20% / 30% 증가합니다."
+    },
+    "loot_scoop": {
+      "display_name": "전리품 챙기기",
+      "kind": "passive",
+      "summary": "일반 적을 처치할 때 전리품을 한 번 더 얻을 수 있습니다.",
+      "detail": "일반 몹을 처치할 때 5% / 10% / 15% 확률로 아이템 드롭을 한 번 더 얻습니다."
+    },
+    "nocturnal": {
+      "display_name": "야행성",
+      "kind": "passive",
+      "summary": "밤에는 이동과 채굴이 빨라집니다.",
+      "detail": "밤에 이동 속도와 채굴 속도가 5% / 10% / 15% 증가합니다."
+    },
+    "sun_affinity": {
+      "display_name": "햇빛 체질",
+      "kind": "passive",
+      "summary": "낮에는 더 빠르게 움직이고 자연 회복도 빨라집니다.",
+      "detail": "낮에 이동 속도가 4% / 8% / 12% 증가하고 자연 회복이 5% / 10% / 15% 더 자주 발생합니다."
+    },
+    "last_strength": {
+      "display_name": "마지막 힘",
+      "kind": "passive",
+      "summary": "체력이 낮을수록 공격이 강해집니다.",
+      "detail": "체력이 30% 이하일 때 주는 피해가 10% / 20% / 30% 증가합니다."
+    },
+    "tool_care": {
+      "display_name": "도구 관리",
+      "kind": "passive",
+      "summary": "도구의 내구도가 가끔 닳지 않습니다.",
+      "detail": "도구 내구도가 닳지 않을 확률이 5% / 10% / 15% / 20% / 25% 증가합니다."
+    },
+    "dexterity": {
+      "display_name": "손재주",
+      "kind": "passive",
+      "summary": "각종 채집물을 캘 때 추가 드롭을 얻을 수 있습니다.",
+      "detail": "잎·꽃·대나무·사탕수수·선인장·버섯·덩굴·켈프·해초·베리 덤불·코코아 같은 채집물을 직접 캘 때 10% / 20% / 30% 확률로 드롭을 1개 더 얻습니다."
+    },
+    "treasure_fishing": {
+      "display_name": "보물 낚시",
+      "kind": "passive",
+      "summary": "낚시에서 보물을 건질 확률이 증가합니다.",
+      "detail": "낚시에서 보물이 나올 확률이 2%p / 4%p / 6%p 증가합니다."
+    },
+    "long_reach": {
+      "display_name": "긴 팔",
+      "kind": "passive",
+      "summary": "더 먼 곳의 블록을 설치하거나 상호작용할 수 있습니다.",
+      "detail": "블록 설치와 상호작용 거리가 0.5 / 1.0 / 1.5블록 증가합니다."
+    },
+    "underwater_work": {
+      "display_name": "물속 작업",
+      "kind": "passive",
+      "summary": "물속에서도 블록을 더 빠르게 캡니다.",
+      "detail": "수중 채굴 속도 페널티가 20% / 40% / 60% 감소합니다."
+    },
+    "pickup_hand": {
+      "display_name": "줍는 손",
+      "kind": "passive",
+      "summary": "더 먼 거리의 아이템과 경험치 구슬을 끌어옵니다.",
+      "detail": "아이템과 경험치 구슬을 줍는 거리가 1.5 / 3.0 / 4.5블록 증가합니다."
+    },
+    "brace": {
+      "display_name": "버티기",
+      "kind": "passive",
+      "summary": "공격에 덜 밀려납니다.",
+      "detail": "넉백 저항이 10% / 20% / 30% / 40% / 50% 증가합니다."
+    },
+    "shield_grip": {
+      "display_name": "방패잡이",
+      "kind": "passive",
+      "summary": "방패가 무력화되어도 더 빨리 다시 사용할 수 있습니다.",
+      "detail": "방패가 무력화되는 시간이 15% / 30% / 45% 감소합니다."
+    },
+    "step_up": {
+      "display_name": "성큼걸음",
+      "kind": "passive",
+      "summary": "1블록 높이의 단차를 점프하지 않고 올라갑니다.",
+      "detail": "1블록 높이의 단차를 점프 없이 그대로 걸어 올라갑니다."
+    },
+    "terrain_resistance": {
+      "display_name": "발 안 묶이기",
+      "kind": "passive",
+      "summary": "거미줄이나 소울샌드 같은 지형에 덜 느려집니다.",
+      "detail": "거미줄·소울샌드·꿀 블록 같은 지형의 감속 효과가 15% / 30% / 45% 감소합니다."
+    },
+    "twins": {
+      "display_name": "쌍둥이",
+      "kind": "passive",
+      "summary": "가축을 번식시키면 새끼가 한 마리 더 태어날 수 있습니다.",
+      "detail": "가축 번식에 성공하면 10% / 20% / 30% 확률로 새끼가 한 마리 더 태어납니다."
+    },
+    "long_jump": {
+      "display_name": "멀리뛰기",
+      "kind": "passive",
+      "summary": "달리며 점프할 때 더 멀리 나아갑니다.",
+      "detail": "달리며 점프할 때 수평 추진력이 8% / 16% / 24% 증가합니다."
+    },
+    "ride_current": {
+      "display_name": "물살 타기",
+      "kind": "passive",
+      "summary": "흐르는 물을 타고 더 빠르게 헤엄칩니다.",
+      "detail": "흐르는 물과 같은 방향으로 수영하면 이동 속도가 15% / 30% / 45% 증가합니다."
+    },
+    "urgent_steps": {
+      "display_name": "다급한 발걸음",
+      "kind": "passive",
+      "summary": "피해를 받으면 잠시 이동 속도가 증가합니다.",
+      "detail": "피해를 받으면 3초 동안 이동 속도가 10% / 20% / 30% 증가합니다."
+    },
+    "rider": {
+      "display_name": "기수",
+      "kind": "passive",
+      "summary": "직접 조종하는 지상 탈것이 더 빠르고 높이 뜁니다.",
+      "detail": "직접 조종하는 지상 탈것의 이동 속도와 점프 힘이 10% / 20% / 30% 증가합니다."
+    },
+    "armor_care": {
+      "display_name": "방어구 관리",
+      "kind": "passive",
+      "summary": "피격될 때 방어구의 내구도가 가끔 닳지 않습니다.",
+      "detail": "피격될 때 방어구 내구도가 닳지 않을 확률이 5% / 10% / 15% / 20% / 25% 증가합니다."
+    },
+    "fast_brewing": {
+      "display_name": "빠른 양조",
+      "kind": "passive",
+      "summary": "물약을 더 빠르게 양조합니다.",
+      "detail": "양조 시간이 15% / 30% / 45% 감소합니다."
+    },
+    "taming_knack": {
+      "display_name": "길들이기 요령",
+      "kind": "passive",
+      "summary": "동물을 더 쉽게 길들입니다.",
+      "detail": "동물을 길들일 확률이 1.25배 / 1.5배 / 2배가 됩니다."
+    },
+    "momentum_shift": {
+      "display_name": "관성 전환",
+      "kind": "passive",
+      "summary": "높은 곳에서 착지하면 잠시 이동 속도가 증가합니다.",
+      "detail": "4블록 이상 떨어져 착지하면 3초 동안 이동 속도가 10% / 20% / 30% 증가합니다."
+    },
+    "mantle": {
+      "display_name": "매달리기",
+      "kind": "passive",
+      "summary": "절벽이나 블록 모서리를 붙잡아 올라갑니다.",
+      "detail": "절벽이나 블록 모서리에 매달린 뒤 몸을 끌어올릴 수 있습니다."
+    }
+  }
+}
