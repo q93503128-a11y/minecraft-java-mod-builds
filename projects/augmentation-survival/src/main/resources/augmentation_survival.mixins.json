@@ -18,7 +18,7 @@
     "ItemStackDurabilityAugmentMixin", "FishingHookAugmentMixin", "AnimalBreedingAugmentMixin",
     "LivingEntityJumpPowerAccessor", "AbstractArrowAugmentAccessor", "AbstractArrowAugmentMixin", "ProjectileOffensiveTargetContextMixin",
     "ProjectileWeaponItemAugmentMixin", "UseCooldownMasteryMixin", "TridentPortableRiptideMixin", "ThrownEnderpearlMasteryMixin",
-    "ReactiveCombatReflectedAccessor", "ReturnToSenderDeferralMixin", "ShieldCompressionBlockBoundaryMixin", "ActivePullEntityMixin", "AugmentMenuRerollDebounceMixin",
+    "ReactiveCombatReflectedAccessor", "ReturnToSenderDeferralMixin", "ShieldCompressionBlockBoundaryMixin", "BlocksAttacksShieldCompressionMixin", "ActivePullEntityMixin", "AugmentMenuRerollDebounceMixin",
     "ItemDisplayAugmentAccessor", "ShieldThrowFlightMixin",
     "ActiveAbilityServiceInvoker", "CombatAugmentServiceInvoker", "SpecialActiveAugmentServiceInvoker", "ActiveAbilityOvertimeMixin", "ActiveLoadoutRespawnResyncMixin", "AdvancedActiveLoadoutSyncMixin", "ActiveRangeTelegraphBootstrapMixin", "AreaAccelerationPresentationSyncMixin", "AreaAccelerationGrowthSamplerBootstrapMixin", "RewindSafeDestinationMixin",
     "TimeAccelerationMiningAttributeMixin", "PlayerActionLockMixin", "ServerPlayerGameModeActionLockMixin",
