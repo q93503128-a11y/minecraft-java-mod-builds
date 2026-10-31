@@ -26,6 +26,7 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -154,6 +155,37 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
         });
     }
 
+    @GameTest(maxTicks = 80)
+    public void echoStrikeCountsBetterCombatApprovedSubVanillaChargeHits(GameTestHelper helper) {
+        ServerPlayer attacker = player(helper, 1, 1);
+        AugmentationPlayerStateService.replace(attacker,
+                AugmentationPlayerState.initial().withAugmentLevel(ECHO_STRIKE_ID, 3));
+        attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
+        LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 1).withNoFreeWill().spawn();
+        target.setHealth(target.getMaxHealth());
+
+        attacker.resetOnlyAttackStrengthTicker();
+        runWhenBetterCombatReadyBelowVanillaGate(helper, attacker, 0, 0, () -> {
+            target.invulnerableTime = 0;
+            attackWithBetterCombatContext(attacker, target, 0);
+
+            attacker.resetOnlyAttackStrengthTicker();
+            runWhenBetterCombatReadyBelowVanillaGate(helper, attacker, 1, 0, () -> {
+                target.invulnerableTime = 0;
+                attackWithBetterCombatContext(attacker, target, 1);
+                float afterRootSecondHit = target.getHealth();
+                require(afterRootSecondHit > 0.0F,
+                        "Better Combat echo regression target died before delayed hit could be measured");
+
+                GameTestPlayers.runAfterDelay(helper, 11, () -> {
+                    require(target.getHealth() < afterRootSecondHit,
+                            "Better Combat-approved sub-0.90 melee hits did not trigger Echo Strike");
+                    GameTestPlayers.succeed(helper);
+                });
+            });
+        });
+    }
+
     @GameTest(maxTicks = 20)
     public void retraceIsExcludedFromFutureEpicOffers(GameTestHelper helper) {
         ServerPlayer player = player(helper, 1, 1);
@@ -169,6 +201,71 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
         require(result.status() == AugmentOfferService.BeginStatus.FULLY_MAXED,
                 "retired retrace remained obtainable as the final Epic offer: " + result.candidateIds());
         GameTestPlayers.succeed(helper);
+    }
+
+    private static void runWhenBetterCombatReadyBelowVanillaGate(
+            GameTestHelper helper,
+            ServerPlayer player,
+            int comboCount,
+            int attempts,
+            Runnable action
+    ) {
+        double threshold = betterCombatReadyThreshold(player, comboCount);
+        float betterCombatScale = player.getAttackStrengthScale(0.0F);
+        float vanillaGateScale = player.getAttackStrengthScale(0.5F);
+        if (betterCombatScale >= threshold && vanillaGateScale < 0.90F) {
+            action.run();
+            return;
+        }
+        if (attempts >= 30 || vanillaGateScale >= 0.90F) {
+            throw new AssertionError(
+                    "could not enter Better Combat-valid sub-0.90 attack window: threshold="
+                            + threshold + ", scale0=" + betterCombatScale + ", scale05=" + vanillaGateScale
+            );
+        }
+        GameTestPlayers.runAfterDelay(
+                helper,
+                1,
+                () -> runWhenBetterCombatReadyBelowVanillaGate(
+                        helper, player, comboCount, attempts + 1, action
+                )
+        );
+    }
+
+    private static double betterCombatReadyThreshold(ServerPlayer player, int comboCount) {
+        try {
+            Class<?> helper = Class.forName("net.bettercombat.logic.PlayerAttackHelper");
+            Class<?> handType = Class.forName("net.bettercombat.api.AttackHand");
+            Method currentAttack = helper.getMethod("getCurrentAttack", Player.class, int.class);
+            Method upswingRate = handType.getMethod("upswingRate");
+            Object hand = currentAttack.invoke(null, (Player) player, comboCount);
+            require(hand != null, "Better Combat returned no current wooden-sword attack hand");
+            double upswing = ((Number) upswingRate.invoke(hand)).doubleValue();
+            return 1.0D - Math.max(0.0D, Math.min(1.0D, upswing));
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            throw new AssertionError("Better Combat attack timing reflection failed", exception);
+        }
+    }
+
+    private static void attackWithBetterCombatContext(
+            ServerPlayer attacker,
+            LivingEntity target,
+            int comboCount
+    ) {
+        try {
+            Class<?> properties = Class.forName("net.bettercombat.logic.PlayerAttackProperties");
+            Method setComboCount = properties.getMethod("setComboCount", int.class);
+            setComboCount.invoke(attacker, comboCount);
+            try {
+                require(attacker.getAttackStrengthScale(0.5F) < 0.90F,
+                        "test attack accidentally reached vanilla's 0.90 charge gate");
+                attacker.attack(target);
+            } finally {
+                setComboCount.invoke(attacker, -1);
+            }
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            throw new AssertionError("Better Combat combo context reflection failed", exception);
+        }
     }
 
     private static ServerPlayer player(GameTestHelper helper, int x, int z) {
