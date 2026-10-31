@@ -51,7 +51,7 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
         GameTestPlayers.succeed(helper);
     }
 
-    @GameTest(maxTicks = 60)
+    @GameTest(maxTicks = 80)
     public void returnToSenderShockwaveBypassesExistingTargetHurtIFrames(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         ServerLevel level = helper.getLevel();
@@ -61,28 +61,34 @@ public final class LegendaryLiveFixBatchDGameTests implements CustomTestMethodIn
         player.setYHeadRot(0.0F);
         AugmentationPlayerStateService.replace(
                 player,
-                AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 1)
+                AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 3)
         );
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
         player.startUsingItem(InteractionHand.OFF_HAND);
         LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 8, () -> {
+            blockHit(level, player, attacker, 4.0F);
+            blockHit(level, player, attacker, 4.0F);
             attacker.setHealth(attacker.getMaxHealth());
             attacker.invulnerableTime = 10;
             float before = attacker.getHealth();
-            player.invulnerableTime = 0;
-            float playerBefore = player.getHealth();
-            player.hurtServer(level, player.damageSources().mobAttack(attacker), 10.0F);
-            require(Math.abs(player.getHealth() - playerBefore) <= 0.001F,
-                    "setup hit was not fully blocked by the raised shield");
+            blockHit(level, player, attacker, 4.0F);
             float dealt = before - attacker.getHealth();
-            require(Math.abs(dealt - 6.0F) <= 0.05F,
+            require(Math.abs(dealt - 12.0F) <= 0.05F,
                     "돌려보내기 was swallowed by an existing target hurt i-frame: dealt=" + dealt);
             require(attacker.invulnerableTime >= 10,
                     "돌려보내기 did not restore the target's pre-existing hurt i-frame");
             GameTestPlayers.succeed(helper);
         });
+    }
+
+    private static void blockHit(ServerLevel level, ServerPlayer player, LivingEntity attacker, float damage) {
+        player.invulnerableTime = 0;
+        float playerBefore = player.getHealth();
+        player.hurtServer(level, player.damageSources().mobAttack(attacker), damage);
+        require(Math.abs(player.getHealth() - playerBefore) <= 0.001F,
+                "setup hit was not fully blocked by the raised shield");
     }
 
     private static void require(boolean condition, String message) {
