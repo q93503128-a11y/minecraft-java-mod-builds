@@ -7,6 +7,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldAugment
 import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationGrowthSampler;
 import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationService;
 import dev.moonseungjun.augmentationsurvival.augment.active.RewindSafetyService;
+import dev.moonseungjun.augmentationsurvival.augment.survival.SurvivalAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -72,6 +73,15 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
     @GameTest(maxTicks = 100)
     public void timeAccelerationAppliesCanonicalRuntimeModifiersAfterFocus(GameTestHelper helper) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        ServerLevel level = helper.getLevel();
+        BlockPos floor = helper.absolutePos(new BlockPos(2, 1, 2));
+        BlockPos standing = floor.above();
+        level.setBlockAndUpdate(floor, Blocks.STONE.defaultBlockState());
+        level.setBlockAndUpdate(standing, Blocks.AIR.defaultBlockState());
+        level.setBlockAndUpdate(standing.above(), Blocks.AIR.defaultBlockState());
+        player.teleportTo(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        player.setOnGround(true);
+
         AugmentationPlayerStateService.replace(
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(TIME_ACCELERATION_ID, 1)
@@ -87,6 +97,7 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
                 "time acceleration became active before the three-second focus completed");
 
         GameTestPlayers.runAfterDelay(helper, 65, () -> {
+            player.setOnGround(true);
             AdvancedActiveTuning.Snapshot tuning = AdvancedActiveTuning.current();
             require(AdvancedActiveAugmentService.isTimeAccelerationActive(player),
                     "time acceleration never entered its sustained state after focus");
@@ -102,8 +113,13 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
                     "live movement-speed attribute did not receive the +60% modifier");
             require(close(player.getAttributeValue(Attributes.ATTACK_SPEED), attackBefore * 1.60D),
                     "live attack-speed attribute did not receive the +60% modifier");
-            require(close(player.getDestroySpeed(Blocks.STONE.defaultBlockState()), miningBefore * 1.60D),
-                    "live final destroy speed did not receive the +60% mining modifier");
+            require(close(SurvivalAugmentService.modifyBlockBreakSpeed(
+                            player, Blocks.STONE.defaultBlockState(), 1.0F), 1.60D),
+                    "server mining-speed calculation did not receive the +60% time-acceleration bonus");
+            float miningAfter = player.getDestroySpeed(Blocks.STONE.defaultBlockState());
+            require(close(miningAfter, miningBefore * 1.60D),
+                    "live final destroy speed did not receive the +60% mining modifier: before="
+                            + miningBefore + " after=" + miningAfter);
             require(AdvancedActiveAugmentService.modifyUseDuration(player, 100) == 72,
                     "live item-use duration was not shortened by the canonical x1.40 multiplier");
             require(close(AdvancedActiveAugmentService.modifyOwnedProjectileSpeed(player, 10.0F), 14.0D),
