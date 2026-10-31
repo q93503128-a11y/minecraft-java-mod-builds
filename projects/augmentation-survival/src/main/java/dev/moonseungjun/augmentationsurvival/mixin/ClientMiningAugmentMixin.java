@@ -9,6 +9,7 @@ import dev.moonseungjun.augmentationsurvival.client.ClientAugmentProgressState;
 import dev.moonseungjun.augmentationsurvival.client.ClientInstantMiningState;
 import dev.moonseungjun.augmentationsurvival.client.ClientMiningPredictionState;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,8 +24,11 @@ abstract class ClientMiningAugmentMixin {
     private static final String NOCTURNAL_ID = id("nocturnal");
     private static final String INSTANT_MINING_ID = id("instant_mining");
 
-    @ModifyReturnValue(method = "getDestroySpeed", at = @At("RETURN"))
-    private float augmentationSurvival$predictMiningSpeed(float original, BlockState state) {
+    @ModifyReturnValue(
+            method = "getDestroySpeed(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;)F",
+            at = @At("RETURN")
+    )
+    private float augmentationSurvival$predictMiningSpeed(float original, BlockState state, BlockPos pos) {
         if (!((Object) this instanceof LocalPlayer player) || !(original > 0.0F) || !Float.isFinite(original)) {
             return original;
         }
