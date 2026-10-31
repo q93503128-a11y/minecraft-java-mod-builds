@@ -54,7 +54,7 @@ public final class AreaAccelerationService {
 
     private static final int BASE_DURATION_TICKS = 60 * 20;
     private static final int BASE_COOLDOWN_TICKS = 120 * 20;
-    private static final int LEVEL_ONE_MULTIPLIER = 3;
+    private static final int LEVEL_ONE_MULTIPLIER = 15;
     private static final int LEVEL_TWO_MULTIPLIER = 30;
     private static final int RADIUS = 24;
     private static final double RADIUS_SQUARED = RADIUS * RADIUS;
