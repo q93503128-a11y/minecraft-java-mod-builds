@@ -12,7 +12,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Sparse geometric boundary for the actual server-authoritative time-stop sphere. */
+/** Sparse gray geometric boundary for the actual server-authoritative time-stop sphere. */
 public final class TimeStopBoundaryService {
     private static final Map<UUID, Long> ACTIVE_UNTIL = new HashMap<>();
     private static boolean initialized;
@@ -57,8 +57,10 @@ public final class TimeStopBoundaryService {
                 iterator.remove();
                 continue;
             }
-            if (now % 20L == 0L) {
-                renderSphere(player, SpecialActiveTuning.current().timeStopRadius());
+            if (now % 5L == 0L) {
+                double radius = SpecialActiveTuning.current().timeStopRadius();
+                renderSphere(player, radius);
+                renderGrayField(player, radius);
             }
         }
     }
@@ -74,13 +76,31 @@ public final class TimeStopBoundaryService {
             double angle = Math.PI * 2.0D * i / points;
             double c = Math.cos(angle) * radius;
             double s = Math.sin(angle) * radius;
-            point(level, cx + c, cy, cz + s);      // horizontal great circle
-            point(level, cx + c, cy + s, cz);      // vertical X/Y great circle
-            point(level, cx, cy + c, cz + s);      // vertical Y/Z great circle
+            point(level, cx + c, cy, cz + s, i);
+            point(level, cx + c, cy + s, cz, i);
+            point(level, cx, cy + c, cz + s, i);
         }
     }
 
-    private static void point(ServerLevel level, double x, double y, double z) {
-        level.sendParticles(ParticleTypes.END_ROD, x, y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+    private static void renderGrayField(ServerPlayer player, double radius) {
+        if (!(radius > 0.0D) || !Double.isFinite(radius)) return;
+        ServerLevel level = player.level();
+        double centerY = player.getY() + player.getBbHeight() * 0.5D;
+        double spread = radius * 0.55D;
+        level.sendParticles(
+                ParticleTypes.ASH,
+                player.getX(), centerY, player.getZ(),
+                10, spread, Math.max(1.0D, radius * 0.35D), spread, 0.002D
+        );
+        level.sendParticles(
+                ParticleTypes.WHITE_ASH,
+                player.getX(), centerY, player.getZ(),
+                6, spread, Math.max(1.0D, radius * 0.30D), spread, 0.001D
+        );
+    }
+
+    private static void point(ServerLevel level, double x, double y, double z, int index) {
+        level.sendParticles(index % 2 == 0 ? ParticleTypes.ASH : ParticleTypes.WHITE_ASH,
+                x, y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
     }
 }
