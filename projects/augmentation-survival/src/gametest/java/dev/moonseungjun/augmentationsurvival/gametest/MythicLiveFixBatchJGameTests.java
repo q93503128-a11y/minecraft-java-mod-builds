@@ -8,9 +8,9 @@ import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.TimeStopBoundaryService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.LightningDirectHitService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
-import dev.moonseungjun.augmentationsurvival.mixin.CombatExpansionServiceInvoker;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -93,8 +93,7 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
             attacker.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             primary.invulnerableTime = 0;
             attacker.attack(primary);
-            require(CombatExpansionServiceInvoker.augmentationSurvival$lightningHits()
-                            .getOrDefault(attacker.getUUID(), 0) == 1,
+            require(LightningDirectHitService.hitCount(attacker) == 1,
                     "bare-hand Player.attack did not count as a Lightning direct hit");
 
             float secondaryBefore = secondary.getHealth();
@@ -102,8 +101,7 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
             primary.invulnerableTime = 0;
             attacker.attack(primary);
 
-            require(CombatExpansionServiceInvoker.augmentationSurvival$lightningHits()
-                            .getOrDefault(attacker.getUUID(), -1) == 0,
+            require(LightningDirectHitService.hitCount(attacker) == 0,
                     "wooden-sword Player.attack did not complete the Lv.3 Lightning threshold");
             require(secondary.getHealth() < secondaryBefore,
                     "real melee Lightning threshold did not chain damage to the nearby hostile");
