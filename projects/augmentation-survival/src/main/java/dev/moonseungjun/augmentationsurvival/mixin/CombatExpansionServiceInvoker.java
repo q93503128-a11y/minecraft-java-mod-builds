@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-/** Narrow bridge for the repaired Lightning proc without duplicating the common damage pipeline. */
+/** Narrow bridges into shared combat bookkeeping without duplicating the common damage pipeline. */
 @Mixin(value = CombatExpansionService.class, remap = false)
 public interface CombatExpansionServiceInvoker {
     @Accessor("LIGHTNING_HITS")
@@ -24,6 +25,16 @@ public interface CombatExpansionServiceInvoker {
             LivingEntity target,
             float amount,
             CombatProvenance provenance
+    ) {
+        throw new AssertionError();
+    }
+
+    @Invoker("updateWeaknessMark")
+    static void augmentationSurvival$updateWeaknessMark(
+            ServerPlayer attacker,
+            LivingEntity target,
+            AugmentationPlayerState state,
+            long now
     ) {
         throw new AssertionError();
     }
