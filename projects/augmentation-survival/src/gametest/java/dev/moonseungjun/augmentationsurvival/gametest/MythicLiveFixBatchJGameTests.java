@@ -81,7 +81,7 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
         });
     }
 
-    @GameTest(maxTicks = 30)
+    @GameTest(maxTicks = 55)
     public void lightningCountsBareHandAndWoodenSwordRootMelee(GameTestHelper helper) {
         ServerPlayer attacker = player(helper, 1, 1);
         AugmentationPlayerStateService.replace(attacker,
@@ -96,21 +96,24 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
             require(LightningDirectHitService.hitCount(attacker) == 1,
                     "bare-hand Player.attack did not count as a Lightning direct hit");
 
-            float secondaryBefore = secondary.getHealth();
-            attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
-            primary.invulnerableTime = 0;
-            attacker.attack(primary);
+            // Give vanilla attack strength the same recovery window a real player would have.
+            GameTestPlayers.runAfterDelay(helper, 20, () -> {
+                float secondaryBefore = secondary.getHealth();
+                attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
+                primary.invulnerableTime = 0;
+                attacker.attack(primary);
 
-            require(LightningDirectHitService.hitCount(attacker) == 0,
-                    "wooden-sword Player.attack did not complete the Lv.3 Lightning threshold");
-            require(secondary.getHealth() < secondaryBefore,
-                    "real melee Lightning threshold did not chain damage to the nearby hostile");
-            require(!attacker.level().getEntitiesOfClass(
-                    LightningBolt.class,
-                    primary.getBoundingBox().inflate(2.0D),
-                    bolt -> true
-            ).isEmpty(), "Lightning threshold did not create the primary visual lightning bolt");
-            GameTestPlayers.succeed(helper);
+                require(LightningDirectHitService.hitCount(attacker) == 0,
+                        "wooden-sword Player.attack did not complete the Lv.3 Lightning threshold");
+                require(secondary.getHealth() < secondaryBefore,
+                        "real melee Lightning threshold did not chain damage to the nearby hostile");
+                require(!attacker.level().getEntitiesOfClass(
+                        LightningBolt.class,
+                        primary.getBoundingBox().inflate(2.0D),
+                        bolt -> true
+                ).isEmpty(), "Lightning threshold did not create the primary visual lightning bolt");
+                GameTestPlayers.succeed(helper);
+            });
         });
     }
 
