@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.moonseungjun.augmentationsurvival.augment.WallSlamMeleeRuntime;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenance;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatProvenanceContext;
+import dev.moonseungjun.augmentationsurvival.augment.combat.LightningDirectHitService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,14 +39,14 @@ abstract class PlayerRootMeleeProvenanceMixin {
 
         float healthBefore = target instanceof LivingEntity living ? living.getHealth() : Float.NaN;
         boolean applied;
-        LightningDirectHitBridge.enterRootMeleeAttack();
+        LightningDirectHitService.enterRootMeleeAttack();
         try {
             applied = CombatProvenanceContext.callAs(
                     CombatProvenance.ROOT_MELEE,
                     () -> original.call(target, source, proposedDamage)
             );
         } finally {
-            LightningDirectHitBridge.leaveRootMeleeAttack();
+            LightningDirectHitService.leaveRootMeleeAttack();
         }
 
         if (applied && target instanceof LivingEntity living) {
@@ -54,7 +55,7 @@ abstract class PlayerRootMeleeProvenanceMixin {
                     ? Math.max(0.0F, healthBefore - living.getHealth())
                     : 0.0F;
             float referenceDamage = actualHealthDamage > 0.0F ? actualHealthDamage : proposedDamage;
-            LightningDirectHitBridge.onDirectHit(
+            LightningDirectHitService.onDirectHit(
                     serverPlayer,
                     living,
                     AugmentationPlayerStateService.state(serverPlayer),
