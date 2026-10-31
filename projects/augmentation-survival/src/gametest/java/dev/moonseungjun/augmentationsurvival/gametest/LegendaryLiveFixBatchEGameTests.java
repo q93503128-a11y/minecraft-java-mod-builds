@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveAugmen
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.AdvancedWorldAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationGrowthSampler;
+import dev.moonseungjun.augmentationsurvival.augment.active.AreaAccelerationService;
 import dev.moonseungjun.augmentationsurvival.augment.active.RewindSafetyService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
@@ -112,15 +113,27 @@ public final class LegendaryLiveFixBatchEGameTests implements CustomTestMethodIn
     }
 
     @GameTest
-    public void areaAccelerationGrowthSamplerPreservesThreeAndSevenTimesLongRunBudgets(GameTestHelper helper) {
-        double x3 = AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(3, 3);
-        double x7 = AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(7, 3);
+    public void areaAccelerationGrowthSamplerPreservesThreeAndThirtyTimesLongRunBudgets(GameTestHelper helper) {
+        int randomTickSpeed = 3;
+        int levelOne = AreaAccelerationService.multiplierForLevel(1);
+        int levelTwo = AreaAccelerationService.multiplierForLevel(2);
+        double x3 = AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(levelOne, randomTickSpeed);
+        double x30 = AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(levelTwo, randomTickSpeed);
         require(AreaAccelerationGrowthSampler.spherePointCount() > 0, "area acceleration sphere sampler is empty");
+        require(levelOne == 3, "level-one area acceleration multiplier drifted");
+        require(levelTwo == 30, "level-two area acceleration multiplier is not x30");
+        require(AreaAccelerationService.durationTicks() == 60 * 20,
+                "area acceleration duration is not sixty seconds");
         require(x3 > 0.0D, "level-one area acceleration has no extra crop samples");
-        require(close(x7, x3 * 3.0D), "x7 extra crop budget is not three times the x3 extra budget");
-        require(close(AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(1, 3), 0.0D),
+        require(close(x30, x3 * 14.5D),
+                "x30 extra crop budget does not preserve the configured random-tick multiplier");
+        double extraVisitsPerPosition = x30 * AreaAccelerationService.durationTicks()
+                / AreaAccelerationGrowthSampler.spherePointCount();
+        require(extraVisitsPerPosition >= 25.0D,
+                "level-two area acceleration no longer gives each stationary field position about twenty-five extra growth opportunities");
+        require(close(AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(1, randomTickSpeed), 0.0D),
                 "inactive area acceleration still schedules crop samples");
-        require(close(AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(7, 0), 0.0D),
+        require(close(AreaAccelerationGrowthSampler.exactExtraSamplesPerTick(levelTwo, 0), 0.0D),
                 "randomTickSpeed=0 was not respected");
         GameTestPlayers.succeed(helper);
     }
