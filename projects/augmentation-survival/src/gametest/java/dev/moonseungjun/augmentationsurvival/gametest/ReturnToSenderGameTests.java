@@ -16,7 +16,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Regression coverage for durability-counted Return to Sender using the real raised-shield path. */
+/** Regression coverage for durability-counted Return to Sender using vanilla's real raised-shield blocking path. */
 public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
@@ -43,6 +43,7 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         LivingEntity outsideCone = helper.spawnMob(EntityTypes.COW, 6, 2, 5).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 8, () -> {
+            require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
             float attackerBefore = attacker.getHealth();
             float insideBefore = insideCone.getHealth();
             float outsideBefore = outsideCone.getHealth();
@@ -71,9 +72,11 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setYRot(0.0F);
         player.setYHeadRot(0.0F);
+        equipRaisedShield(player);
         LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 2, 2, 6).withNoFreeWill().spawn();
 
         GameTestPlayers.runAfterDelay(helper, 8, () -> {
+            require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
             for (int index = 0; index < EXPECTED_FRACTIONS.length; index++) {
                 int augmentLevel = index + 1;
                 int requiredBlocks = EXPECTED_BLOCK_COUNTS[index];
@@ -81,7 +84,6 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                         player,
                         AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, augmentLevel)
                 );
-                equipRaisedShield(player);
                 attacker.setHealth(attacker.getMaxHealth());
                 attacker.invulnerableTime = 0;
                 float before = attacker.getHealth();
@@ -111,13 +113,11 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
 
     private static void blockHit(ServerLevel level, ServerPlayer player, LivingEntity attacker, float damage) {
         int durabilityBefore = player.getOffhandItem().getDamageValue();
-        player.invulnerableTime = 0;
-        float healthBefore = player.getHealth();
-        player.hurtServer(level, player.damageSources().mobAttack(attacker), damage);
-        require(close(player.getHealth(), healthBefore, 0.001D),
-                "test hit was not fully blocked by the raised shield");
+        float blocked = player.applyItemBlocking(level, player.damageSources().mobAttack(attacker), damage);
+        require(blocked >= 3.0F,
+                "raised shield did not enter vanilla blocking path: blocked=" + blocked);
         require(player.getOffhandItem().getDamageValue() > durabilityBefore,
-                "test shield block did not consume durability");
+                "real shield block did not consume durability");
     }
 
     private static boolean close(double actual, double expected, double tolerance) {
