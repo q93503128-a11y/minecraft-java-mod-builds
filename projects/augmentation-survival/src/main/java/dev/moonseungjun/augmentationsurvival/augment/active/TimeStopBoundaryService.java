@@ -20,9 +20,10 @@ import net.minecraft.world.phys.Vec3;
 
 /** Fixed world-space boundary for the actual server-authoritative time-stop sphere. */
 public final class TimeStopBoundaryService {
-    private static final DustParticleOptions SHELL_GRAY = new DustParticleOptions(0xAEB7BD, 1.20F);
-    private static final DustParticleOptions SHELL_DARK = new DustParticleOptions(0x68727A, 1.05F);
-    private static final DustParticleOptions INNER_GRAY = new DustParticleOptions(0x879198, 0.82F);
+    private static final DustParticleOptions SHELL_GRAY = new DustParticleOptions(0xAEB7BD, 1.32F);
+    private static final DustParticleOptions SHELL_DARK = new DustParticleOptions(0x68727A, 1.16F);
+    private static final DustParticleOptions SHELL_MIST = new DustParticleOptions(0xC4CACC, 0.92F);
+    private static final DustParticleOptions INNER_GRAY = new DustParticleOptions(0x879198, 0.90F);
     private static final Map<UUID, ActiveField> ACTIVE_FIELDS = new HashMap<>();
     private static boolean initialized;
 
@@ -118,6 +119,7 @@ public final class TimeStopBoundaryService {
             if (now % 5L == 0L) {
                 double radius = SpecialActiveTuning.current().timeStopRadius();
                 renderSphere(field.level(), field.center(), radius, now);
+                renderShellHaze(field.level(), field.center(), radius, now);
                 renderGrayField(field.level(), field.center(), radius, now);
             }
         }
@@ -135,8 +137,10 @@ public final class TimeStopBoundaryService {
             point(level, center.x + c, center.y + s, center.z, i + phase + 1);
             point(level, center.x, center.y + c, center.z + s, i + phase + 2);
         }
-        latitude(level, center, radius, radius * 0.42D, points, phase + 3);
-        latitude(level, center, radius, -radius * 0.42D, points, phase + 5);
+        latitude(level, center, radius, radius * 0.34D, points, phase + 3);
+        latitude(level, center, radius, -radius * 0.34D, points, phase + 5);
+        latitude(level, center, radius, radius * 0.68D, points, phase + 7);
+        latitude(level, center, radius, -radius * 0.68D, points, phase + 9);
     }
 
     private static void latitude(
@@ -158,13 +162,36 @@ public final class TimeStopBoundaryService {
         }
     }
 
+    /** Adds a sparse distributed skin so the boundary reads as a sphere instead of three crossing rings. */
+    private static void renderShellHaze(ServerLevel level, Vec3 center, double radius, long now) {
+        if (!(radius > 0.0D) || !Double.isFinite(radius)) return;
+        int samples = 40;
+        double phase = (now / 5L) * 0.09763107293781749D;
+        for (int i = 0; i < samples; i++) {
+            double u = fract((i + 1) * 0.6180339887498949D + phase * 0.19D);
+            double v = fract((i + 1) * 0.7548776662466927D + phase);
+            double jitter = fract((i + 1) * 0.438579021D + phase * 0.41D);
+            double yUnit = 1.0D - 2.0D * u;
+            double horizontal = Math.sqrt(Math.max(0.0D, 1.0D - yUnit * yUnit));
+            double angle = Math.PI * 2.0D * v;
+            double r = radius * (0.94D + 0.045D * jitter);
+            double x = center.x + Math.cos(angle) * horizontal * r;
+            double y = center.y + yUnit * r;
+            double z = center.z + Math.sin(angle) * horizontal * r;
+            ParticleOptions particle = Math.floorMod(i + (int) (now / 5L), 5) == 0
+                    ? ParticleTypes.WHITE_ASH
+                    : SHELL_MIST;
+            level.sendParticles(particle, x, y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        }
+    }
+
     /**
      * Fills the actual sphere rather than tinting the player's screen. The deterministic rotating
      * sample keeps the volume readable from both inside and outside without spawning an entity mesh.
      */
     private static void renderGrayField(ServerLevel level, Vec3 center, double radius, long now) {
         if (!(radius > 0.0D) || !Double.isFinite(radius)) return;
-        int samples = 48;
+        int samples = 64;
         double phase = (now / 5L) * 0.17320508075688773D;
         for (int i = 0; i < samples; i++) {
             double u = fract((i + 1) * 0.6180339887498949D + phase);

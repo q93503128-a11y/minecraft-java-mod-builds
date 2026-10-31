@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.acquisition;
 
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
+import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -49,22 +50,29 @@ public final class AugmentOfferService {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(requestedTier, "requestedTier");
         MinecraftServer server = requireServer(player);
+        boolean multiplayerEligible = PlayerRescueAugmentService.isMultiplayerEligible(player);
 
         PendingOffer existing = PENDING.get(player.getUUID());
         if (existing != null) {
             if (server.getTickCount() <= existing.expiresAtTick() && hasCore(player, existing.tier())) {
-                return BeginResult.ready(
-                        existing.token(), existing.tier(), existing.candidateIds(),
-                        existing.selectionCount(), existing.rerollsRemaining(), existing.expiresAtTick()
-                );
+                if (candidateSetEligible(existing.candidateIds(), multiplayerEligible)) {
+                    return BeginResult.ready(
+                            existing.token(), existing.tier(), existing.candidateIds(),
+                            existing.selectionCount(), existing.rerollsRemaining(), existing.expiresAtTick()
+                    );
+                }
+                // A co-op-only candidate can become stale when a teammate leaves. Discard the
+                // transaction and continue through the normal non-recursive offer construction path.
+                PENDING.remove(player.getUUID(), existing);
+            } else {
+                PENDING.remove(player.getUUID(), existing);
             }
-            PENDING.remove(player.getUUID(), existing);
         }
 
         if (!hasCore(player, requestedTier)) return BeginResult.noCore();
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        List<AugmentDefinition> eligible = eligibleCandidates(state, requestedTier);
+        List<AugmentDefinition> eligible = eligibleCandidates(state, requestedTier, multiplayerEligible);
         if (eligible.isEmpty()) return BeginResult.fullyMaxed();
 
         eligible = shuffledCopy(eligible, player.getRandom());
@@ -116,12 +124,13 @@ public final class AugmentOfferService {
         }
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
+        boolean multiplayerEligible = PlayerRescueAugmentService.isMultiplayerEligible(player);
         Set<String> current = new HashSet<>(pending.candidateIds());
         List<AugmentDefinition> replacements = rerollPool(
-                state, pending.tier(), current, pending.seenIds(), true
+                state, pending.tier(), current, pending.seenIds(), true, multiplayerEligible
         );
         if (replacements.isEmpty()) {
-            replacements = rerollPool(state, pending.tier(), current, pending.seenIds(), false);
+            replacements = rerollPool(state, pending.tier(), current, pending.seenIds(), false, multiplayerEligible);
         }
         if (replacements.isEmpty()) {
             return RerollResult.invalid(RerollStatus.NO_REPLACEMENT);
@@ -248,10 +257,16 @@ public final class AugmentOfferService {
         return true;
     }
 
-    private static List<AugmentDefinition> eligibleCandidates(AugmentationPlayerState state, AugmentTier tier) {
+    private static List<AugmentDefinition> eligibleCandidates(
+            AugmentationPlayerState state,
+            AugmentTier tier,
+            boolean multiplayerEligible
+    ) {
         ArrayList<AugmentDefinition> eligible = new ArrayList<>();
         for (AugmentDefinition definition : AugmentCatalog.definitions(tier)) {
-            if (!definition.isMaxed(state.level(definition.id()))) eligible.add(definition);
+            if (definition.isMaxed(state.level(definition.id()))) continue;
+            if (!candidateEligible(definition, multiplayerEligible)) continue;
+            eligible.add(definition);
         }
         return eligible;
     }
@@ -261,16 +276,26 @@ public final class AugmentOfferService {
             AugmentTier tier,
             Set<String> currentCandidates,
             Set<String> seenIds,
-            boolean unseenOnly
+            boolean unseenOnly,
+            boolean multiplayerEligible
     ) {
         ArrayList<AugmentDefinition> eligible = new ArrayList<>();
         for (AugmentDefinition definition : AugmentCatalog.definitions(tier)) {
             if (definition.isMaxed(state.level(definition.id()))) continue;
+            if (!candidateEligible(definition, multiplayerEligible)) continue;
             if (currentCandidates.contains(definition.id())) continue;
             if (unseenOnly && seenIds.contains(definition.id())) continue;
             eligible.add(definition);
         }
         return eligible;
+    }
+
+    private static boolean candidateEligible(AugmentDefinition definition, boolean multiplayerEligible) {
+        return multiplayerEligible || !definition.id().equals(PlayerRescueAugmentService.RESCUE_ID);
+    }
+
+    private static boolean candidateSetEligible(List<String> candidateIds, boolean multiplayerEligible) {
+        return multiplayerEligible || !candidateIds.contains(PlayerRescueAugmentService.RESCUE_ID);
     }
 
     private static List<AugmentDefinition> shuffledCopy(List<AugmentDefinition> definitions, RandomSource random) {

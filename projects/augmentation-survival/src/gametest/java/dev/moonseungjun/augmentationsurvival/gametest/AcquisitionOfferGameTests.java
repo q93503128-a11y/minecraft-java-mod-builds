@@ -3,6 +3,8 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.acquisition.AugmentOfferService;
 import dev.moonseungjun.augmentationsurvival.acquisition.CoreUpgradeService;
 import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentDefinition;
+import dev.moonseungjun.augmentationsurvival.augment.combat.PlayerRescueAugmentService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenu;
@@ -17,6 +19,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 
 /** Server-runtime coverage for the core-to-offer acquisition transaction. */
 public final class AcquisitionOfferGameTests implements CustomTestMethodInvoker {
@@ -52,6 +55,42 @@ public final class AcquisitionOfferGameTests implements CustomTestMethodInvoker 
                 "committed offer did not consume exactly one common core");
         require(!AugmentOfferService.hasPendingOffer(player),
                 "committed offer remained pending");
+
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest
+    public void staleCoopOnlyOfferIsDiscardedWithoutRecursiveRepairWhenPlayerBecomesSolo(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        ServerPlayer teammate = GameTestPlayers.survivalPlayer(helper);
+        AugmentOfferService.clearOffer(player);
+
+        AugmentDefinition rescue = AugmentCatalog.require(PlayerRescueAugmentService.RESCUE_ID);
+        AugmentTier rescueTier = rescue.tier();
+        AugmentationPlayerState state = AugmentationPlayerState.initial();
+        for (AugmentDefinition definition : AugmentCatalog.definitions(rescueTier)) {
+            if (!definition.id().equals(PlayerRescueAugmentService.RESCUE_ID)) {
+                state = state.withAugmentLevel(definition.id(), definition.maxLevel());
+            }
+        }
+        AugmentationPlayerStateService.replace(player, state);
+        player.getInventory().clearContent();
+        player.getInventory().add(new ItemStack(AugmentCoreItems.item(rescueTier)));
+
+        AugmentOfferService.BeginResult coopOffer = AugmentOfferService.beginOffer(player, rescueTier);
+        require(coopOffer.status() == AugmentOfferService.BeginStatus.READY,
+                "co-op-only rescue offer could not be constructed before the stale-state transition: " + coopOffer.status());
+        require(coopOffer.candidateIds().equals(List.of(PlayerRescueAugmentService.RESCUE_ID)),
+                "forced co-op offer did not contain exactly the rescue candidate: " + coopOffer.candidateIds());
+
+        teammate.setGameMode(GameType.SPECTATOR);
+        AugmentOfferService.BeginResult soloRefresh = AugmentOfferService.beginOffer(player, rescueTier);
+        require(soloRefresh.status() == AugmentOfferService.BeginStatus.FULLY_MAXED,
+                "stale co-op offer was not discarded into the normal solo eligibility path: " + soloRefresh.status());
+        require(soloRefresh.candidateIds().isEmpty(),
+                "solo refresh retained a co-op-only rescue candidate: " + soloRefresh.candidateIds());
+        require(!AugmentOfferService.hasPendingOffer(player),
+                "stale co-op offer remained pending after solo refresh");
 
         GameTestPlayers.succeed(helper);
     }
