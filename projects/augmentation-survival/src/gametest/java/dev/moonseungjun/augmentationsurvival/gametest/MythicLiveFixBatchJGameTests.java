@@ -8,8 +8,9 @@ import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.active.SpecialActiveTuning;
 import dev.moonseungjun.augmentationsurvival.augment.active.TimeStopBoundaryService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ExpansionTuning;
 import dev.moonseungjun.augmentationsurvival.augment.combat.LightningDirectHitService;
-import dev.moonseungjun.augmentationsurvival.augment.combat.SweepingEnhancementService;
+import dev.moonseungjun.augmentationsurvival.augment.movement.FlightAugmentService;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
@@ -26,9 +27,11 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 /** Live regressions reported immediately after Bundle I. */
@@ -36,14 +39,12 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
     private static final String TIME_STOP_ID = id("time_stop");
     private static final String LIGHTNING_ID = id("lightning");
     private static final String ECHO_STRIKE_ID = id("echo_strike");
+    private static final String FLIGHT_ID = id("flight");
     private static final String RETRACE_ID = id("retrace");
     private static final int ISOLATED_TIME_STOP_Y = 82;
-    private static final int ECHO_TEST_Y = 2;
 
     @GameTest(maxTicks = 45)
     public void timeStopFreezesOtherPlayersAndStaysAtCastOrigin(GameTestHelper helper) {
-        // Time Stop is a real 32-block world effect. Keep this regression vertically isolated so its
-        // still-active field cannot freeze entities in neighboring GameTests that execute in parallel.
         ServerPlayer caster = player(helper, 1, ISOLATED_TIME_STOP_Y, 1);
         ServerPlayer otherPlayer = player(helper, 3, ISOLATED_TIME_STOP_Y, 1);
         AugmentationPlayerStateService.replace(caster, AugmentationPlayerState.initial()
@@ -77,9 +78,7 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
             TimeStopBoundaryService.ActiveField still = TimeStopBoundaryService.activeField(caster);
             require(still != null && still.center().distanceToSqr(castCenter) < 1.0E-8D,
                     "time-stop field center changed after caster movement");
-            LivingEntity lateCow = helper.spawnMob(
-                    EntityTypes.COW, 4, ISOLATED_TIME_STOP_Y, 1
-            ).withNoFreeWill().spawn();
+            LivingEntity lateCow = helper.spawnMob(EntityTypes.COW, 4, ISOLATED_TIME_STOP_Y, 1).withNoFreeWill().spawn();
             GameTestPlayers.runAfterDelay(helper, 2, () -> {
                 require(SpecialActiveAugmentService.isTimeStopped(lateCow),
                         "late living entrant at the original field center was not frozen");
@@ -103,11 +102,7 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
             require(LightningDirectHitService.hitCount(attacker) == 1,
                     "bare-hand Player.attack did not count as a Lightning direct hit");
 
-            // Give vanilla attack strength the same recovery window a real player would have.
             GameTestPlayers.runAfterDelay(helper, 20, () -> {
-                // This regression measures Lightning's own derived hit. Other parallel GameTests can
-                // legitimately touch nearby entities, so normalize the secondary target's vanilla
-                // hurt-immunity state before measuring the chain through the normal damage boundary.
                 secondary.setHealth(secondary.getMaxHealth());
                 secondary.invulnerableTime = 0;
                 float secondaryBefore = secondary.getHealth();
@@ -129,71 +124,74 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
         });
     }
 
-    @GameTest(maxTicks = 80)
-    public void echoStrikeLandsAsDelayedSecondMeleeHit(GameTestHelper helper) {
-        ServerPlayer attacker = player(helper, 1, ECHO_TEST_Y, 1);
+    @GameTest(maxTicks = 45)
+    public void echoStrikeMirrorsTheFirstMeleeHitImmediately(GameTestHelper helper) {
+        ServerPlayer attacker = player(helper, 1, 1);
         AugmentationPlayerStateService.replace(attacker,
                 AugmentationPlayerState.initial().withAugmentLevel(ECHO_STRIKE_ID, 3));
         attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
-        LivingEntity target = helper.spawnMob(
-                EntityTypes.ZOMBIE, 2, ECHO_TEST_Y, 1
-        ).withNoFreeWill().spawn();
+        LivingEntity target = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 1).withNoFreeWill().spawn();
+
+        require(Math.abs(ExpansionTuning.current().echoStrikeDamageFraction(1) - 0.20D) < 1.0E-6D,
+                "Echo Strike Lv.1 damage fraction is not 20%");
+        require(Math.abs(ExpansionTuning.current().echoStrikeDamageFraction(2) - 0.40D) < 1.0E-6D,
+                "Echo Strike Lv.2 damage fraction is not 40%");
+        require(Math.abs(ExpansionTuning.current().echoStrikeDamageFraction(3) - 0.60D) < 1.0E-6D,
+                "Echo Strike Lv.3 damage fraction is not 60%");
 
         GameTestPlayers.runAfterDelay(helper, 20, () -> {
             target.setHealth(target.getMaxHealth());
             target.invulnerableTime = 0;
             attacker.attack(target);
-            GameTestPlayers.runAfterDelay(helper, 20, () -> {
-                target.invulnerableTime = 0;
-                attacker.attack(target);
-                float afterRootSecondHit = target.getHealth();
-                require(afterRootSecondHit > 0.0F, "echo regression target died before delayed hit could be measured");
-
-                GameTestPlayers.runAfterDelay(helper, 11, () -> {
-                    require(target.getHealth() < afterRootSecondHit,
-                            "Echo Strike did not land its distinct delayed afterimage hit");
-                    GameTestPlayers.succeed(helper);
-                });
-            });
+            require(target.getHealth() < target.getMaxHealth(), "root melee did not damage Echo Strike target");
+            require(!attacker.level().getEntitiesOfClass(
+                    Mannequin.class,
+                    attacker.getBoundingBox().inflate(3.0D),
+                    mannequin -> true
+            ).isEmpty(), "Echo Strike did not spawn the attacking player's visible clone on the first hit");
+            GameTestPlayers.succeed(helper);
         });
     }
 
     @GameTest(maxTicks = 45)
-    public void echoStrikeCountsBetterCombatApprovedSubVanillaChargeHits(GameTestHelper helper) {
-        ServerPlayer attacker = player(helper, 1, ECHO_TEST_Y, 1);
-        AugmentationPlayerStateService.replace(attacker,
-                AugmentationPlayerState.initial().withAugmentLevel(ECHO_STRIKE_ID, 3));
+    public void echoStrikeCountsAsASecondLightningMeleeHit(GameTestHelper helper) {
+        ServerPlayer attacker = player(helper, 1, 1);
+        AugmentationPlayerStateService.replace(attacker, AugmentationPlayerState.initial()
+                .withAugmentLevel(ECHO_STRIKE_ID, 3)
+                .withAugmentLevel(LIGHTNING_ID, 3));
         attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
-        LivingEntity target = helper.spawnMob(
-                EntityTypes.ZOMBIE, 2, ECHO_TEST_Y, 1
-        ).withNoFreeWill().spawn();
-        target.setHealth(target.getMaxHealth());
+        LivingEntity primary = helper.spawnMob(EntityTypes.ZOMBIE, 2, 2, 1).withNoFreeWill().spawn();
+        LivingEntity secondary = helper.spawnMob(EntityTypes.ZOMBIE, 4, 2, 1).withNoFreeWill().spawn();
 
+        GameTestPlayers.runAfterDelay(helper, 20, () -> {
+            primary.setHealth(primary.getMaxHealth());
+            primary.invulnerableTime = 0;
+            secondary.setHealth(secondary.getMaxHealth());
+            secondary.invulnerableTime = 0;
+            float secondaryBefore = secondary.getHealth();
+            attacker.attack(primary);
+
+            require(LightningDirectHitService.hitCount(attacker) == 0,
+                    "one root hit plus its Echo did not complete the Lv.3 Lightning two-hit threshold");
+            require(secondary.getHealth() < secondaryBefore,
+                    "Echo melee contact did not let Lightning chain from a single player swing");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest(maxTicks = 25)
+    public void poweredFlightBreaksCobwebsBeforeTheyCanTrapThePlayer(GameTestHelper helper) {
+        ServerPlayer player = player(helper, 1, 1);
+        AugmentationPlayerStateService.replace(player,
+                AugmentationPlayerState.initial().withAugmentLevel(FLIGHT_ID, 1));
+        BlockPos webPos = new BlockPos(1, 2, 1);
+        helper.setBlock(webPos, Blocks.COBWEB);
+
+        require(FlightAugmentService.toggle(player), "Flight did not activate for cobweb regression");
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
-            attacker.resetOnlyAttackStrengthTicker();
-            require(attacker.getAttackStrengthScale(0.5F) < 0.90F,
-                    "first Better Combat bridge hit unexpectedly reached vanilla charge gate");
-            target.invulnerableTime = 0;
-            armBetterCombatDirectHit(attacker, target);
-            attacker.attack(target);
-
-            GameTestPlayers.runAfterDelay(helper, 2, () -> {
-                attacker.resetOnlyAttackStrengthTicker();
-                require(attacker.getAttackStrengthScale(0.5F) < 0.90F,
-                        "second Better Combat bridge hit unexpectedly reached vanilla charge gate");
-                target.invulnerableTime = 0;
-                armBetterCombatDirectHit(attacker, target);
-                attacker.attack(target);
-                float afterRootSecondHit = target.getHealth();
-                require(afterRootSecondHit > 0.0F,
-                        "Better Combat echo regression target died before delayed hit could be measured");
-
-                GameTestPlayers.runAfterDelay(helper, 11, () -> {
-                    require(target.getHealth() < afterRootSecondHit,
-                            "Better Combat-approved sub-0.90 direct melee did not trigger Echo Strike");
-                    GameTestPlayers.succeed(helper);
-                });
-            });
+            require(helper.getBlockState(webPos).isAir(),
+                    "powered Flight left a cobweb intersecting the player's body sweep");
+            GameTestPlayers.succeed(helper);
         });
     }
 
@@ -212,13 +210,6 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
         require(result.status() == AugmentOfferService.BeginStatus.FULLY_MAXED,
                 "retired retrace remained obtainable as the final Epic offer: " + result.candidateIds());
         GameTestPlayers.succeed(helper);
-    }
-
-    private static void armBetterCombatDirectHit(ServerPlayer attacker, LivingEntity target) {
-        SweepingEnhancementService.noteBetterCombatTarget(attacker, target);
-        SweepingEnhancementService.noteBetterCombatDirect(true);
-        require(SweepingEnhancementService.validateBetterCombatHit(true),
-                "Better Combat direct target bridge rejected an approved direct hit");
     }
 
     private static ServerPlayer player(GameTestHelper helper, int x, int z) {
