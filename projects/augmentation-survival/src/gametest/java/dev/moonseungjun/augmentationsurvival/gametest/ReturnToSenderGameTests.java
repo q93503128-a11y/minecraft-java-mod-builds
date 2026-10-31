@@ -16,6 +16,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BlocksAttacks;
@@ -43,9 +44,9 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         );
         equipShield(player);
 
-        LivingEntity attacker = helper.spawnMob(EntityTypes.HUSK, 3, 2, 7).withNoFreeWill().spawn();
-        LivingEntity insideCone = helper.spawnMob(EntityTypes.HUSK, 4, 2, 6).withNoFreeWill().spawn();
-        LivingEntity outsideCone = helper.spawnMob(EntityTypes.HUSK, 6, 2, 5).withNoFreeWill().spawn();
+        LivingEntity attacker = durableCow(helper, 3, 2, 7);
+        LivingEntity insideCone = durableCow(helper, 4, 2, 6);
+        LivingEntity outsideCone = durableCow(helper, 6, 2, 5);
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
@@ -78,7 +79,7 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         player.setYRot(0.0F);
         player.setYHeadRot(0.0F);
         equipShield(player);
-        LivingEntity attacker = helper.spawnMob(EntityTypes.HUSK, 2, 2, 6).withNoFreeWill().spawn();
+        LivingEntity attacker = durableCow(helper, 2, 2, 6);
         Vec3 attackerStart = attacker.position();
 
         GameTestPlayers.runAfterDelay(helper, 2, () -> {
@@ -112,6 +113,15 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
             }
             GameTestPlayers.succeed(helper);
         });
+    }
+
+    private static LivingEntity durableCow(GameTestHelper helper, int x, int y, int z) {
+        LivingEntity cow = helper.spawnMob(EntityTypes.COW, x, y, z).withNoFreeWill().spawn();
+        var maxHealth = cow.getAttribute(Attributes.MAX_HEALTH);
+        require(maxHealth != null, "test cow is missing max-health attribute");
+        maxHealth.setBaseValue(100.0D);
+        cow.setHealth(cow.getMaxHealth());
+        return cow;
     }
 
     private static void equipShield(ServerPlayer player) {
