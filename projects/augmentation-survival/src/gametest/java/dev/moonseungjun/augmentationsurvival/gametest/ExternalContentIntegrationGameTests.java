@@ -151,11 +151,16 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
                         == CoreSourceResolver.HostileResolution.Kind.BOSS_SUPPRESSED,
                 "MCE boss was still eligible for generic hostile core rolls");
 
-        firstBoss.setHealth(1.0F);
-        firstBoss.invulnerableTime = 0;
-        player.attack(firstBoss);
+        boolean firstAccepted = firstBoss.hurtServer(
+                helper.getLevel(),
+                helper.getLevel().damageSources().playerAttack(player),
+                1000.0F
+        );
+        require(firstAccepted, "lethal player-attributed damage to first MCE boss was rejected");
 
         GameTestPlayers.runAfterDelay(helper, 3, () -> {
+            require(!firstBoss.isAlive(),
+                    "first MCE dungeon boss survived the deterministic lethal player damage");
             int afterFirst = coreCount(player);
             require(afterFirst == 2,
                     "first MCE dungeon boss should grant exactly 2 personal major cores, got " + afterFirst);
@@ -169,11 +174,18 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
             } catch (ReflectiveOperationException exception) {
                 throw new AssertionError("Could not flag repeat MCE boss", exception);
             }
-            repeatBoss.setHealth(1.0F);
-            repeatBoss.invulnerableTime = 0;
-            player.attack(repeatBoss);
+            require(EntityCompatibilityProfileService.isBoss(repeatBoss),
+                    "repeat MCE dungeon boss was not recognized after runtime promotion");
+            boolean repeatAccepted = repeatBoss.hurtServer(
+                    helper.getLevel(),
+                    helper.getLevel().damageSources().playerAttack(player),
+                    1000.0F
+            );
+            require(repeatAccepted, "lethal player-attributed damage to repeat MCE boss was rejected");
 
             GameTestPlayers.runAfterDelay(helper, 3, () -> {
+                require(!repeatBoss.isAlive(),
+                        "repeat MCE dungeon boss survived deterministic lethal player damage");
                 int afterRepeat = coreCount(player);
                 require(afterRepeat == 3,
                         "repeat MCE dungeon boss should add exactly 1 core after first-kill bonus, got " + afterRepeat);
