@@ -30,12 +30,20 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.warden.Warden;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /** Server-owned permanent companion runtime for Domination and shared hostile classification. */
 public final class CompanionAugmentService {
     private static final String DOMINATION_ID = id("domination");
     private static final int WARDEN_COMMAND_ANGER = 150;
+    private static final double FOLLOW_OWNER_DISTANCE = 10.0D;
+    private static final double COMBAT_OWNER_LEASH = 24.0D;
+    private static final double COMMAND_OWNER_LEASH = 32.0D;
+    private static final double HARD_RECALL_DISTANCE = 40.0D;
+    private static final double COMBAT_OWNER_LEASH_SQUARED = COMBAT_OWNER_LEASH * COMBAT_OWNER_LEASH;
+    private static final double COMMAND_OWNER_LEASH_SQUARED = COMMAND_OWNER_LEASH * COMMAND_OWNER_LEASH;
+    private static final double HARD_RECALL_DISTANCE_SQUARED = HARD_RECALL_DISTANCE * HARD_RECALL_DISTANCE;
     private static final Map<UUID, Mob> LOADED_DOMINATED = new HashMap<>();
     /** Last living entity deliberately attacked by each owner. It remains the command target until invalid. */
     private static final Map<UUID, OwnerCommandTarget> OWNER_COMMAND_TARGETS = new HashMap<>();
@@ -69,10 +77,19 @@ public final class CompanionAugmentService {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         int level = boundedLevel(state, DOMINATION_ID);
         if (level <= 0) return false;
+        double range = AdvancedWorldTuning.current().dominationRange();
+
+        // Using Domination while aiming at one of your own permanent dominated companions releases
+        // that exact companion. This is intentionally available even while the domination cap is full.
+        Mob owned = findOwnedDominatedLookTarget(player, range);
+        if (owned != null) {
+            return releaseDominated(player, owned);
+        }
+
         MinecraftServer server = player.level().getServer();
         DominationWorldState worldState = worldState(server);
         if (worldState.occupied(player.getUUID()) >= AdvancedWorldTuning.current().dominationCap(level)) return false;
-        Mob target = findLookTarget(player, AdvancedWorldTuning.current().dominationRange());
+        Mob target = findLookTarget(player, range);
         if (target == null) return false;
         target.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.dominatedBy(player.getUUID()));
         target.setPersistenceRequired();
@@ -138,7 +155,10 @@ public final class CompanionAugmentService {
                 target.getUUID(), target.level().dimension()
         ));
         for (Mob companion : LOADED_DOMINATED.values()) {
-            if (!companion.isRemoved() && isOwnedBy(companion, owner.getUUID()) && companion.level() == target.level()) {
+            if (!companion.isRemoved()
+                    && isOwnedBy(companion, owner.getUUID())
+                    && companion.level() == target.level()
+                    && owner.distanceToSqr(target) <= COMMAND_OWNER_LEASH_SQUARED) {
                 applyCombatTarget(companion, target);
             }
         }
@@ -181,6 +201,21 @@ public final class CompanionAugmentService {
         refreshCombatTarget(mob, owner.get(), server);
     }
 
+    private static boolean releaseDominated(ServerPlayer owner, Mob mob) {
+        if (!isOwnedBy(mob, owner.getUUID()) || !(mob.level() instanceof ServerLevel level)) return false;
+        clearCombatTarget(mob, mob.getTarget());
+        mob.getNavigation().stop();
+        if (mob instanceof Warden warden) {
+            warden.clearAnger(owner);
+        }
+        mob.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.initial());
+        mob.setGlowingTag(false);
+        LOADED_DOMINATED.remove(mob.getUUID());
+        MinecraftServer server = level.getServer();
+        setWorldState(server, worldState(server).withDelta(owner.getUUID(), -1));
+        return true;
+    }
+
     private static void tickDominatedCompanions(MinecraftServer server) {
         for (Mob mob : new ArrayList<>(LOADED_DOMINATED.values())) {
             if (mob.isRemoved()) {
@@ -190,14 +225,43 @@ public final class CompanionAugmentService {
             if (!isDominated(mob) || mob.isDeadOrDying()) continue;
             mob.setPersistenceRequired();
             mob.setGlowingTag(true);
-            Optional<UUID> owner = ownerId(mob);
-            if (owner.isEmpty()) continue;
-            refreshCombatTarget(mob, owner.get(), server);
+            Optional<UUID> ownerId = ownerId(mob);
+            if (ownerId.isEmpty()) continue;
+            ServerPlayer owner = server.getPlayerList().getPlayer(ownerId.get());
+
+            if (owner == null || owner.isDeadOrDying() || owner.level() != mob.level()) {
+                clearCombatTarget(mob, mob.getTarget());
+                mob.getNavigation().stop();
+                continue;
+            }
+
+            double ownerDistanceSquared = mob.distanceToSqr(owner);
+            if (ownerDistanceSquared > HARD_RECALL_DISTANCE_SQUARED) {
+                clearCombatTarget(mob, mob.getTarget());
+                recallNearOwner(mob, owner);
+                continue;
+            }
+            if (ownerDistanceSquared > COMBAT_OWNER_LEASH_SQUARED) {
+                clearCombatTarget(mob, mob.getTarget());
+                mob.getNavigation().moveTo(owner, 1.25D);
+                continue;
+            }
+
+            refreshCombatTarget(mob, ownerId.get(), server);
+            if (mob.getTarget() == null && mob.distanceToSqr(owner) > FOLLOW_OWNER_DISTANCE * FOLLOW_OWNER_DISTANCE) {
+                mob.getNavigation().moveTo(owner, 1.15D);
+            }
         }
     }
 
     private static void refreshCombatTarget(Mob mob, UUID ownerId, MinecraftServer server) {
-        LivingEntity commanded = commandTarget(mob, ownerId);
+        ServerPlayer owner = server.getPlayerList().getPlayer(ownerId);
+        if (owner == null || owner.level() != mob.level()) {
+            clearCombatTarget(mob, mob.getTarget());
+            return;
+        }
+
+        LivingEntity commanded = commandTarget(mob, ownerId, server);
         sanitizeWardenAnger(mob, commanded);
         if (commanded != null) {
             applyCombatTarget(mob, commanded);
@@ -205,12 +269,13 @@ public final class CompanionAugmentService {
         }
 
         LivingEntity target = mob.getTarget();
-        if (target != null && !isHostileTarget(mob, target)) {
+        if (target != null && (!isHostileTarget(mob, target)
+                || owner.distanceToSqr(target) > COMBAT_OWNER_LEASH_SQUARED)) {
             clearCombatTarget(mob, target);
             target = null;
         }
         if (target == null) {
-            LivingEntity next = findNearestHostile(mob, ownerId);
+            LivingEntity next = findNearestHostile(mob, owner);
             if (next != null) {
                 applyCombatTarget(mob, next);
             }
@@ -250,31 +315,55 @@ public final class CompanionAugmentService {
         }
     }
 
-    private static LivingEntity commandTarget(Mob companion, UUID ownerId) {
+    private static LivingEntity commandTarget(Mob companion, UUID ownerId, MinecraftServer server) {
         OwnerCommandTarget command = OWNER_COMMAND_TARGETS.get(ownerId);
         if (command == null
                 || !command.dimension().equals(companion.level().dimension())
                 || !(companion.level() instanceof ServerLevel level)) return null;
+        ServerPlayer owner = server.getPlayerList().getPlayer(ownerId);
         Entity found = level.getEntity(command.entityId());
-        if (!(found instanceof LivingEntity living) || living.isDeadOrDying() || living.isRemoved() || areAllied(companion, living)) {
+        if (owner == null
+                || owner.level() != level
+                || !(found instanceof LivingEntity living)
+                || living.isDeadOrDying()
+                || living.isRemoved()
+                || areAllied(companion, living)
+                || owner.distanceToSqr(living) > COMMAND_OWNER_LEASH_SQUARED) {
             OWNER_COMMAND_TARGETS.remove(ownerId, command);
             return null;
         }
         return living;
     }
 
-    private static LivingEntity findNearestHostile(Mob companion, UUID ownerId) {
-        double range = Math.max(8.0D, companion.getAttributeValue(Attributes.FOLLOW_RANGE));
+    private static LivingEntity findNearestHostile(Mob companion, ServerPlayer owner) {
+        double range = Math.min(COMBAT_OWNER_LEASH, Math.max(8.0D, companion.getAttributeValue(Attributes.FOLLOW_RANGE)));
         List<LivingEntity> candidates = companion.level().getEntitiesOfClass(
                 LivingEntity.class,
                 companion.getBoundingBox().inflate(range),
-                candidate -> candidate != companion && !isOwnedBy(candidate, ownerId) && isHostileTarget(companion, candidate)
+                candidate -> candidate != companion
+                        && !isOwnedBy(candidate, owner.getUUID())
+                        && isHostileTarget(companion, candidate)
+                        && owner.distanceToSqr(candidate) <= COMBAT_OWNER_LEASH_SQUARED
         );
         candidates.sort(Comparator.comparingDouble(companion::distanceToSqr));
         return candidates.isEmpty() ? null : candidates.getFirst();
     }
 
+    private static Mob findOwnedDominatedLookTarget(ServerPlayer player, double range) {
+        return findAimedMob(player, range, candidate -> isOwnedBy(candidate, player.getUUID()));
+    }
+
     private static Mob findLookTarget(ServerPlayer player, double range) {
+        return findAimedMob(player, range,
+                candidate -> candidate instanceof Enemy
+                        && !candidate.isDeadOrDying()
+                        && !EntityCompatibilityProfileService.isBoss(candidate)
+                        && EntityCompatibilityProfileService.allowDominate(candidate)
+                        && !isDominated(candidate)
+                        && !(candidate instanceof TamableAnimal tamable && tamable.isTame()));
+    }
+
+    private static Mob findAimedMob(ServerPlayer player, double range, java.util.function.Predicate<Mob> filter) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
         double rangeSquared = range * range;
@@ -283,12 +372,8 @@ public final class CompanionAugmentService {
         List<Mob> nearby = player.level().getEntitiesOfClass(
                 Mob.class,
                 player.getBoundingBox().inflate(range),
-                candidate -> candidate instanceof Enemy
+                candidate -> filter.test(candidate)
                         && !candidate.isDeadOrDying()
-                        && !EntityCompatibilityProfileService.isBoss(candidate)
-                        && EntityCompatibilityProfileService.allowDominate(candidate)
-                        && !isDominated(candidate)
-                        && !(candidate instanceof TamableAnimal tamable && tamable.isTame())
                         && player.distanceToSqr(candidate) <= rangeSquared
                         && player.hasLineOfSight(candidate)
         );
@@ -306,6 +391,30 @@ public final class CompanionAugmentService {
             }
         }
         return best;
+    }
+
+    private static void recallNearOwner(Mob mob, ServerPlayer owner) {
+        if (!(mob.level() instanceof ServerLevel level)) return;
+        Vec3 origin = owner.position();
+        int[][] offsets = {
+                {2, 0}, {-2, 0}, {0, 2}, {0, -2},
+                {2, 2}, {2, -2}, {-2, 2}, {-2, -2},
+                {1, 0}, {-1, 0}, {0, 1}, {0, -1}
+        };
+        for (int dy = 0; dy <= 2; dy++) {
+            for (int[] offset : offsets) {
+                double x = origin.x + offset[0];
+                double y = origin.y + dy;
+                double z = origin.z + offset[1];
+                AABB moved = mob.getBoundingBox().move(x - mob.getX(), y - mob.getY(), z - mob.getZ());
+                if (level.noCollision(mob, moved)) {
+                    mob.teleportTo(x, y, z);
+                    mob.getNavigation().stop();
+                    return;
+                }
+            }
+        }
+        mob.getNavigation().moveTo(owner, 1.25D);
     }
 
     private static DominationWorldState worldState(MinecraftServer server) {
