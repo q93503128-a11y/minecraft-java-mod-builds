@@ -11,9 +11,22 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-/** Explicit player-facing augment text. Design canon is never auto-summarized into cards. */
+/**
+ * Explicit, hand-authored player-facing augment text.
+ *
+ * <p>There is intentionally no mechanical-summary generator and no fallback text path. Every augment must
+ * have a manually written summary and detail entry in one of the tier presentation resources below, or
+ * initialization fails.</p>
+ */
 public final class AugmentPresentationCatalog {
-    private static final String RESOURCE = "data/augmentation_survival/augmentation/augment_presentations.json";
+    private static final String[] RESOURCES = {
+            "data/augmentation_survival/augmentation/presentations/common.json",
+            "data/augmentation_survival/augmentation/presentations/uncommon.json",
+            "data/augmentation_survival/augmentation/presentations/rare.json",
+            "data/augmentation_survival/augmentation/presentations/epic.json",
+            "data/augmentation_survival/augmentation/presentations/legendary.json",
+            "data/augmentation_survival/augmentation/presentations/mythic.json"
+    };
     private static final int SCHEMA_VERSION = 1;
     private static final String[] FORBIDDEN_PLAYER_TERMS = {
             "root", "derived", "compat", "whitelist", "uuid", "namespace", "debug",
@@ -70,35 +83,42 @@ public final class AugmentPresentationCatalog {
 
     private static Map<String, Entry> load() {
         ClassLoader loader = AugmentPresentationCatalog.class.getClassLoader();
-        try (InputStream stream = loader.getResourceAsStream(RESOURCE)) {
+        LinkedHashMap<String, Entry> result = new LinkedHashMap<>();
+        for (String resource : RESOURCES) {
+            loadResource(loader, resource, result);
+        }
+        return result;
+    }
+
+    private static void loadResource(ClassLoader loader, String resource, LinkedHashMap<String, Entry> result) {
+        try (InputStream stream = loader.getResourceAsStream(resource)) {
             if (stream == null) {
-                throw new IllegalStateException("Missing bundled player-facing augment text: " + RESOURCE);
+                throw new IllegalStateException("Missing hand-authored player-facing augment text: " + resource);
             }
             try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
                 JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
-                int schemaVersion = requiredInt(root, "schema_version");
+                int schemaVersion = requiredInt(root, "schema_version", resource);
                 if (schemaVersion != SCHEMA_VERSION) {
-                    throw new IllegalStateException("Unsupported augment presentation schema: " + schemaVersion);
+                    throw new IllegalStateException("Unsupported augment presentation schema in " + resource
+                            + ": " + schemaVersion);
                 }
-                JsonObject rawEntries = requiredObject(root, "entries");
-                LinkedHashMap<String, Entry> result = new LinkedHashMap<>();
+                JsonObject rawEntries = requiredObject(root, "entries", resource);
                 for (Map.Entry<String, JsonElement> raw : rawEntries.entrySet()) {
                     String id = raw.getKey();
                     JsonObject object = raw.getValue().getAsJsonObject();
                     Entry entry = new Entry(
-                            requiredString(object, "display_name"),
-                            Kind.parse(requiredString(object, "kind")),
-                            requiredString(object, "summary"),
-                            requiredString(object, "detail")
+                            requiredString(object, "display_name", resource),
+                            Kind.parse(requiredString(object, "kind", resource)),
+                            requiredString(object, "summary", resource),
+                            requiredString(object, "detail", resource)
                     );
                     if (result.put(id, entry) != null) {
-                        throw new IllegalStateException("Duplicate player-facing augment text id: " + id);
+                        throw new IllegalStateException("Duplicate player-facing augment text id across manual resources: " + id);
                     }
                 }
-                return result;
             }
         } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load player-facing augment text", exception);
+            throw new IllegalStateException("Failed to load hand-authored player-facing augment text: " + resource, exception);
         }
     }
 
@@ -132,30 +152,30 @@ public final class AugmentPresentationCatalog {
         return canonical.replace(" (액티브 · 토글)", "").replace(" (액티브)", "");
     }
 
-    private static JsonObject requiredObject(JsonObject object, String key) {
+    private static JsonObject requiredObject(JsonObject object, String key, String resource) {
         JsonElement element = object.get(key);
         if (element == null || !element.isJsonObject()) {
-            throw new IllegalStateException("Missing JSON object '" + key + "' in " + RESOURCE);
+            throw new IllegalStateException("Missing JSON object '" + key + "' in " + resource);
         }
         return element.getAsJsonObject();
     }
 
-    private static String requiredString(JsonObject object, String key) {
+    private static String requiredString(JsonObject object, String key, String resource) {
         JsonElement element = object.get(key);
         if (element == null || !element.isJsonPrimitive()) {
-            throw new IllegalStateException("Missing string '" + key + "' in " + RESOURCE);
+            throw new IllegalStateException("Missing string '" + key + "' in " + resource);
         }
         String value = element.getAsString();
         if (value.isBlank()) {
-            throw new IllegalStateException("Blank string '" + key + "' in " + RESOURCE);
+            throw new IllegalStateException("Blank string '" + key + "' in " + resource);
         }
         return value;
     }
 
-    private static int requiredInt(JsonObject object, String key) {
+    private static int requiredInt(JsonObject object, String key, String resource) {
         JsonElement element = object.get(key);
         if (element == null || !element.isJsonPrimitive()) {
-            throw new IllegalStateException("Missing integer '" + key + "' in " + RESOURCE);
+            throw new IllegalStateException("Missing integer '" + key + "' in " + resource);
         }
         return element.getAsInt();
     }
