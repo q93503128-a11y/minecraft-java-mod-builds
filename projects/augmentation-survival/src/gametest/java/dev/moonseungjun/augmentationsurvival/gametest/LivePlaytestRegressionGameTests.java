@@ -115,10 +115,12 @@ public final class LivePlaytestRegressionGameTests implements CustomTestMethodIn
         AugmentPresentationCatalog.Entry entry = AugmentPresentationCatalog.get(
                 AugmentCatalog.require(id("retrace"))
         );
-        require(entry.summary().contains("지난 2초") && entry.summary().contains("잔상"),
+        require(entry.summary().contains("이동 경로") && entry.summary().contains("잔상"),
                 "Retrace summary lost the path-rewind mechanic: " + entry.summary());
-        require(entry.detail().contains("50% / 75% / 100%") && entry.detail().contains("5초"),
-                "Retrace detail lost level damage or cooldown information: " + entry.detail());
+        require(entry.detail().contains("지난 2초")
+                        && entry.detail().contains("50% / 75% / 100%")
+                        && entry.detail().contains("5초"),
+                "Retrace detail lost path window, level damage or cooldown information: " + entry.detail());
         require(!entry.summary().contains("ROOT") && !entry.detail().contains("ROOT"),
                 "Retrace player-facing text leaked the internal ROOT term");
         GameTestPlayers.succeed(helper);
