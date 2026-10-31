@@ -1,22 +1,26 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.combat.ShieldCompressionDurabilityContext;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.BlocksAttacks;
 
-/** Regression coverage for durability-counted Return to Sender using vanilla's real raised-shield blocking path. */
+/** Regression coverage for durability-counted Return to Sender at vanilla's shield durability boundary. */
 public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
     private static final String RETURN_TO_SENDER_ID =
             AugmentationSurvival.MOD_ID + ":return_to_sender";
@@ -36,13 +40,13 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                 player,
                 AugmentationPlayerState.initial().withAugmentLevel(RETURN_TO_SENDER_ID, 3)
         );
-        equipRaisedShield(player);
+        equipShield(player);
 
         LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 3, 2, 7).withNoFreeWill().spawn();
         LivingEntity insideCone = helper.spawnMob(EntityTypes.COW, 4, 2, 6).withNoFreeWill().spawn();
         LivingEntity outsideCone = helper.spawnMob(EntityTypes.COW, 6, 2, 5).withNoFreeWill().spawn();
 
-        GameTestPlayers.runAfterDelay(helper, 8, () -> {
+        GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
             float attackerBefore = attacker.getHealth();
             float insideBefore = insideCone.getHealth();
@@ -72,10 +76,10 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setYRot(0.0F);
         player.setYHeadRot(0.0F);
-        equipRaisedShield(player);
+        equipShield(player);
         LivingEntity attacker = helper.spawnMob(EntityTypes.COW, 2, 2, 6).withNoFreeWill().spawn();
 
-        GameTestPlayers.runAfterDelay(helper, 8, () -> {
+        GameTestPlayers.runAfterDelay(helper, 2, () -> {
             require(!player.hasInfiniteMaterials(), "survival test player unexpectedly has infinite materials");
             for (int index = 0; index < EXPECTED_FRACTIONS.length; index++) {
                 int augmentLevel = index + 1;
@@ -106,18 +110,28 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         });
     }
 
-    private static void equipRaisedShield(ServerPlayer player) {
+    private static void equipShield(ServerPlayer player) {
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
-        player.startUsingItem(InteractionHand.OFF_HAND);
     }
 
     private static void blockHit(ServerLevel level, ServerPlayer player, LivingEntity attacker, float damage) {
-        int durabilityBefore = player.getOffhandItem().getDamageValue();
-        float blocked = player.applyItemBlocking(level, player.damageSources().mobAttack(attacker), damage);
+        ItemStack shield = player.getOffhandItem();
+        BlocksAttacks blocksAttacks = shield.get(DataComponents.BLOCKS_ATTACKS);
+        require(blocksAttacks != null, "test shield is missing vanilla blocks-attacks component");
+        DamageSource source = player.damageSources().mobAttack(attacker);
+        float blocked = blocksAttacks.resolveBlockedDamage(source, damage, 0.0D);
         require(blocked >= 3.0F,
-                "raised shield did not enter vanilla blocking path: blocked=" + blocked);
-        require(player.getOffhandItem().getDamageValue() > durabilityBefore,
-                "real shield block did not consume durability");
+                "shield component did not resolve durability-consuming blocked damage: blocked=" + blocked);
+
+        int durabilityBefore = shield.getDamageValue();
+        ShieldCompressionDurabilityContext.begin(player, source, shield);
+        try {
+            blocksAttacks.hurtBlockingItem(level, shield, player, InteractionHand.OFF_HAND, blocked);
+        } finally {
+            ShieldCompressionDurabilityContext.end(player);
+        }
+        require(shield.getDamageValue() > durabilityBefore,
+                "vanilla shield durability boundary did not consume durability");
     }
 
     private static boolean close(double actual, double expected, double tolerance) {
