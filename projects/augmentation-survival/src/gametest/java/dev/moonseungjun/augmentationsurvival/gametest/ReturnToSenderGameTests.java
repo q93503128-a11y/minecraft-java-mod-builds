@@ -22,6 +22,7 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
             AugmentationSurvival.MOD_ID + ":return_to_sender";
     private static final int[] EXPECTED_BLOCK_COUNTS = {5, 4, 3};
     private static final double[] EXPECTED_FRACTIONS = {0.60D, 0.80D, 1.00D};
+    private static final float DURABILITY_CONSUMING_HIT = 6.0F;
 
     @GameTest(maxTicks = 80)
     public void realShieldDurabilityBlocksEmitConeAtLevelThreeThreshold(GameTestHelper helper) {
@@ -46,15 +47,15 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
             float insideBefore = insideCone.getHealth();
             float outsideBefore = outsideCone.getHealth();
 
-            blockHit(level, player, attacker, 4.0F);
-            blockHit(level, player, attacker, 4.0F);
+            blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
+            blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
             require(close(attacker.getHealth(), attackerBefore, 0.001D),
                     "level-three Return to Sender fired before three durability-consuming blocks");
 
-            blockHit(level, player, attacker, 4.0F);
-            require(close(attackerBefore - attacker.getHealth(), 12.0D, 0.05D),
-                    "three durability-consuming blocks did not return the accumulated damage");
-            require(close(insideBefore - insideCone.getHealth(), 12.0D, 0.05D),
+            blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
+            require(close(attackerBefore - attacker.getHealth(), 18.0D, 0.05D),
+                    "three durability-consuming blocks did not return the accumulated blocked damage");
+            require(close(insideBefore - insideCone.getHealth(), 18.0D, 0.05D),
                     "target inside the 45-degree cone was not hit by the shockwave");
             require(close(outsideCone.getHealth(), outsideBefore, 0.001D),
                     "target outside the 45-degree cone was incorrectly hit");
@@ -86,14 +87,14 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                 float before = attacker.getHealth();
 
                 for (int block = 1; block <= requiredBlocks; block++) {
-                    blockHit(level, player, attacker, 4.0F);
+                    blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
                     if (block < requiredBlocks) {
                         require(close(attacker.getHealth(), before, 0.001D),
                                 "level " + augmentLevel + " fired before block " + requiredBlocks);
                     }
                 }
 
-                double expected = requiredBlocks * 4.0D * EXPECTED_FRACTIONS[index];
+                double expected = requiredBlocks * DURABILITY_CONSUMING_HIT * EXPECTED_FRACTIONS[index];
                 double dealt = before - attacker.getHealth();
                 require(close(dealt, expected, 0.05D),
                         "level " + augmentLevel + " reflected damage mismatch: expected="
