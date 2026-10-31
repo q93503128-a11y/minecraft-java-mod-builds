@@ -17,6 +17,7 @@
       "dev.moonseungjun.augmentationsurvival.gametest.CooperativeMobilityGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.AugmentationSurvivalGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.AcquisitionOfferGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.StaleSoloOfferRegressionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.PlaytestRegressionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.DominationPlaytestGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.CommonAugmentGameTests",
