@@ -1,38 +1,38 @@
 package dev.moonseungjun.augmentationsurvival.augment.combat;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
+import dev.moonseungjun.augmentationsurvival.mixin.CombatExpansionServiceInvoker;
+import dev.moonseungjun.augmentationsurvival.mixin.MannequinEchoAccessor;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.Mannequin;
+import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.phys.Vec3;
 
-/** Delayed, server-owned second hit for Echo Strike with a neon afterimage presentation. */
+/** Immediate server-owned Echo Strike hit with a short-lived copy of the attacking player. */
 public final class EchoStrikeAfterimageService {
     private static final String ECHO_STRIKE_ID = AugmentationSurvival.MOD_ID + ":echo_strike";
-    private static final int AFTERIMAGE_DELAY_TICKS = 10;
-    private static final int COUNTER_STALE_TICKS = 20 * 10;
-    private static final DustParticleOptions CYAN = new DustParticleOptions(0x39E7FF, 1.05F);
-    private static final DustParticleOptions MAGENTA = new DustParticleOptions(0xF04BFF, 0.95F);
-    private static final DustParticleOptions PALE = new DustParticleOptions(0xC8F7FF, 0.78F);
-    private static final Map<HitKey, HitCounter> COUNTERS = new HashMap<>();
-    private static final List<PendingEcho> PENDING = new ArrayList<>();
+    private static final int CLONE_LIFETIME_TICKS = 5;
+    private static final ThreadLocal<Boolean> APPLYING_ECHO = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final List<ActiveClone> ACTIVE_CLONES = new ArrayList<>();
     private static boolean initialized;
 
     private EchoStrikeAfterimageService() {
@@ -42,17 +42,21 @@ public final class EchoStrikeAfterimageService {
         if (initialized) return;
         initialized = true;
         ServerTickEvents.END_SERVER_TICK.register(EchoStrikeAfterimageService::tick);
-        ServerPlayerEvents.JOIN.register(EchoStrikeAfterimageService::clearPlayer);
-        ServerPlayerEvents.LEAVE.register(EchoStrikeAfterimageService::clearPlayer);
-        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> clearPlayer(newPlayer));
+        ServerPlayerEvents.JOIN.register(EchoStrikeAfterimageService::clearPlayerClones);
+        ServerPlayerEvents.LEAVE.register(EchoStrikeAfterimageService::clearPlayerClones);
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> clearPlayerClones(newPlayer));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            COUNTERS.clear();
-            PENDING.clear();
+            ACTIVE_CLONES.clear();
+            APPLYING_ECHO.remove();
         });
     }
 
-    /** Called only from the existing fully-charged ROOT_MELEE branch. */
-    public static void onChargedMelee(
+    /**
+     * Mirrors one successful root melee hit. The echo owns its damage and hit-count interactions,
+     * but never executes Player.attack again, so durability, vanilla enchant callbacks and Better
+     * Combat combo state are not consumed twice.
+     */
+    public static void onRootMelee(
             ServerPlayer attacker,
             LivingEntity target,
             AugmentationPlayerState state,
@@ -60,143 +64,123 @@ public final class EchoStrikeAfterimageService {
             long now
     ) {
         int level = Math.max(0, Math.min(3, state.level(ECHO_STRIKE_ID)));
-        if (level <= 0 || target == null || target.isDeadOrDying()
+        if (level <= 0 || Boolean.TRUE.equals(APPLYING_ECHO.get())
+                || target == null || target.isDeadOrDying()
                 || !(baseDamageTaken > 0.0F) || !Float.isFinite(baseDamageTaken)) {
             return;
         }
 
-        HitKey key = new HitKey(attacker.getUUID(), target.getUUID());
-        HitCounter counter = COUNTERS.computeIfAbsent(key, ignored -> new HitCounter());
-        if (counter.lastTick > 0L && now - counter.lastTick > COUNTER_STALE_TICKS) {
-            counter.count = 0;
-        }
-        counter.count++;
-        counter.lastTick = now;
-
-        int trigger = ExpansionTuning.current().echoStrikeTriggerHits(level);
-        if (counter.count < trigger) return;
-        counter.count = 0;
-
         float echoDamage = (float) (baseDamageTaken * ExpansionTuning.current().echoStrikeDamageFraction(level));
-        Vec3 attackerOrigin = attacker.getBoundingBox().getCenter();
-        Vec3 targetOrigin = target.getBoundingBox().getCenter();
-        PENDING.add(new PendingEcho(
-                attacker.getUUID(),
-                target.getUUID(),
-                (ServerLevel) attacker.level(),
-                now + AFTERIMAGE_DELAY_TICKS,
-                echoDamage,
-                attackerOrigin,
-                targetOrigin
-        ));
-        cueDeparture((ServerLevel) attacker.level(), attackerOrigin, targetOrigin);
-    }
+        if (!(echoDamage > 0.0F) || !Float.isFinite(echoDamage)) return;
 
-    private static void tick(MinecraftServer server) {
-        long overworldNow = server.overworld().getGameTime();
-        COUNTERS.entrySet().removeIf(entry -> overworldNow - entry.getValue().lastTick > COUNTER_STALE_TICKS);
+        ServerLevel levelWorld = (ServerLevel) attacker.level();
+        spawnClone(levelWorld, attacker, target, now);
 
-        Iterator<PendingEcho> iterator = PENDING.iterator();
-        while (iterator.hasNext()) {
-            PendingEcho pending = iterator.next();
-            long now = pending.level().getGameTime();
-            if (now < pending.dueTick()) continue;
-            iterator.remove();
-
-            ServerPlayer attacker = server.getPlayerList().getPlayer(pending.attackerId());
-            Entity found = pending.level().getEntity(pending.targetId());
-            if (attacker == null || attacker.isDeadOrDying() || attacker.level() != pending.level()
-                    || !(found instanceof LivingEntity target) || target.isDeadOrDying()) {
-                continue;
-            }
-
-            // Echo Strike is a distinct second melee hit, not extra damage folded into the first.
-            // Clear the first hit's remaining vanilla hurt immunity, then enter the same public
-            // entity-damage boundary used by ordinary attacks/projectiles. A successful second hit
-            // establishes its own fresh vanilla i-frame.
-            int previousInvulnerableTime = target.invulnerableTime;
-            target.invulnerableTime = 0;
-            boolean applied = CombatProvenanceContext.callAs(
+        int previousInvulnerableTime = target.invulnerableTime;
+        target.invulnerableTime = 0;
+        boolean applied;
+        APPLYING_ECHO.set(Boolean.TRUE);
+        try {
+            applied = CombatProvenanceContext.callAs(
                     CombatProvenance.ECHO,
                     () -> target.hurtOrSimulate(
                             attacker.damageSources().playerAttack(attacker),
-                            pending.damage()
+                            echoDamage
                     )
             );
-            if (!applied) {
-                target.invulnerableTime = previousInvulnerableTime;
-                continue;
-            }
-            cueImpact(pending.level(), pending.attackerOrigin(), pending.targetOrigin(), target.getBoundingBox().getCenter());
+        } finally {
+            APPLYING_ECHO.remove();
         }
+        if (!applied) {
+            target.invulnerableTime = previousInvulnerableTime;
+            return;
+        }
+
+        // Echo is a second melee contact for hit-count augments, but not a second raw Player.attack.
+        LightningDirectHitService.onDirectHit(attacker, target, state, echoDamage);
+        CombatExpansionServiceInvoker.augmentationSurvival$updateWeaknessMark(attacker, target, state, now);
+        MovementAugmentService.onSuccessfulRootMelee(attacker, target);
+        cueImpact(levelWorld, target);
     }
 
-    private static void cueDeparture(ServerLevel level, Vec3 from, Vec3 to) {
-        Vec3 direction = to.subtract(from);
-        Vec3 side = perpendicular(direction).scale(0.16D);
-        line(level, PALE, from.add(side), to.add(side), 8);
+    private static void spawnClone(ServerLevel level, ServerPlayer attacker, LivingEntity target, long now) {
+        Mannequin clone = Mannequin.create(EntityTypes.MANNEQUIN, level);
+        if (clone == null) return;
+
+        MannequinEchoAccessor bridge = (MannequinEchoAccessor) (Object) clone;
+        bridge.augmentationSurvival$setProfile(ResolvableProfile.createResolved(attacker.getGameProfile()));
+        bridge.augmentationSurvival$setImmovable(true);
+        bridge.augmentationSurvival$setHideDescription(true);
+
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            clone.setItemSlot(slot, attacker.getItemBySlot(slot).copy());
+        }
+
+        Vec3 look = attacker.getLookAngle();
+        Vec3 horizontal = new Vec3(look.x, 0.0D, look.z);
+        if (horizontal.lengthSqr() < 1.0E-6D) horizontal = new Vec3(0.0D, 0.0D, 1.0D);
+        else horizontal = horizontal.normalize();
+        Vec3 side = new Vec3(-horizontal.z, 0.0D, horizontal.x).scale(0.72D);
+        Vec3 behind = horizontal.scale(-0.22D);
+        Vec3 position = attacker.position().add(side).add(behind);
+
+        clone.setPos(position.x, position.y, position.z);
+        clone.setYRot(attacker.getYRot());
+        clone.setXRot(attacker.getXRot());
+        clone.setYHeadRot(attacker.getYHeadRot());
+        clone.setNoGravity(true);
+        clone.setInvulnerable(true);
+        clone.setSilent(true);
+        clone.noPhysics = true;
+        level.addFreshEntity(clone);
+        clone.swing(InteractionHand.MAIN_HAND);
+        ACTIVE_CLONES.add(new ActiveClone(attacker.getUUID(), clone.getUUID(), level, now + CLONE_LIFETIME_TICKS));
+
+        Vec3 flash = clone.getBoundingBox().getCenter();
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
-                from.x, from.y, from.z,
-                5, 0.18D, 0.24D, 0.18D, 0.025D);
+                flash.x, flash.y, flash.z,
+                7, 0.24D, 0.42D, 0.24D, 0.035D);
     }
 
-    private static void cueImpact(ServerLevel level, Vec3 from, Vec3 oldTarget, Vec3 currentTarget) {
-        Vec3 start = from.lerp(oldTarget, 0.18D);
-        Vec3 direction = currentTarget.subtract(start);
-        Vec3 side = perpendicular(direction).scale(0.22D);
-        line(level, CYAN, start.add(side), currentTarget.add(side), 15);
-        line(level, MAGENTA, start.subtract(side), currentTarget.subtract(side), 15);
-        line(level, PALE, start, currentTarget, 11);
+    private static void cueImpact(ServerLevel level, LivingEntity target) {
+        Vec3 hit = target.getBoundingBox().getCenter();
         level.sendParticles(ParticleTypes.SWEEP_ATTACK,
-                currentTarget.x, currentTarget.y, currentTarget.z,
+                hit.x, hit.y, hit.z,
                 1, 0.0D, 0.0D, 0.0D, 0.0D);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
-                currentTarget.x, currentTarget.y, currentTarget.z,
-                13, 0.34D, 0.42D, 0.34D, 0.08D);
+                hit.x, hit.y, hit.z,
+                8, 0.24D, 0.30D, 0.24D, 0.055D);
         level.playSound(null,
-                currentTarget.x, currentTarget.y, currentTarget.z,
-                SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.72F, 1.48F);
+                hit.x, hit.y, hit.z,
+                SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.62F, 1.38F);
         level.playSound(null,
-                currentTarget.x, currentTarget.y, currentTarget.z,
-                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.36F, 1.78F);
+                hit.x, hit.y, hit.z,
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.28F, 1.72F);
     }
 
-    private static Vec3 perpendicular(Vec3 direction) {
-        Vec3 side = new Vec3(-direction.z, 0.0D, direction.x);
-        return side.lengthSqr() < 1.0E-8D ? new Vec3(1.0D, 0.0D, 0.0D) : side.normalize();
-    }
-
-    private static void line(ServerLevel level, ParticleOptions particle, Vec3 from, Vec3 to, int points) {
-        int count = Math.max(2, points);
-        for (int i = 0; i <= count; i++) {
-            double t = i / (double) count;
-            Vec3 point = from.lerp(to, t);
-            level.sendParticles(particle, point.x, point.y, point.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+    private static void tick(MinecraftServer server) {
+        Iterator<ActiveClone> iterator = ACTIVE_CLONES.iterator();
+        while (iterator.hasNext()) {
+            ActiveClone active = iterator.next();
+            if (active.level().getGameTime() < active.removeTick()) continue;
+            Entity entity = active.level().getEntity(active.cloneId());
+            if (entity != null) entity.discard();
+            iterator.remove();
         }
     }
 
-    private static void clearPlayer(ServerPlayer player) {
-        UUID id = player.getUUID();
-        COUNTERS.entrySet().removeIf(entry -> entry.getKey().attackerId().equals(id));
-        PENDING.removeIf(entry -> entry.attackerId().equals(id));
+    private static void clearPlayerClones(ServerPlayer player) {
+        UUID playerId = player.getUUID();
+        Iterator<ActiveClone> iterator = ACTIVE_CLONES.iterator();
+        while (iterator.hasNext()) {
+            ActiveClone active = iterator.next();
+            if (!active.ownerId().equals(playerId)) continue;
+            Entity entity = active.level().getEntity(active.cloneId());
+            if (entity != null) entity.discard();
+            iterator.remove();
+        }
     }
 
-    private record HitKey(UUID attackerId, UUID targetId) {
-    }
-
-    private static final class HitCounter {
-        private int count;
-        private long lastTick;
-    }
-
-    private record PendingEcho(
-            UUID attackerId,
-            UUID targetId,
-            ServerLevel level,
-            long dueTick,
-            float damage,
-            Vec3 attackerOrigin,
-            Vec3 targetOrigin
-    ) {
+    private record ActiveClone(UUID ownerId, UUID cloneId, ServerLevel level, long removeTick) {
     }
 }
