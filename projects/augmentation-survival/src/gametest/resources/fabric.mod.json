@@ -27,6 +27,7 @@
       "dev.moonseungjun.augmentationsurvival.gametest.LegendaryLiveFixBatchCGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.LegendaryLiveFixBatchDGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.LegendaryLiveFixBatchEGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.MythicLiveFixBatchHGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ReturnToSenderGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.UiInputRegressionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.WallSlamGameTests",
