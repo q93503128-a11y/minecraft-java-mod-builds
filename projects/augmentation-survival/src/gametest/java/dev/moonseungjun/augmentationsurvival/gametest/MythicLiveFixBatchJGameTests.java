@@ -103,6 +103,11 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
 
             // Give vanilla attack strength the same recovery window a real player would have.
             GameTestPlayers.runAfterDelay(helper, 20, () -> {
+                // This regression measures Lightning's own derived hit. Other parallel GameTests can
+                // legitimately touch nearby entities, so normalize the secondary target's vanilla
+                // hurt-immunity state before measuring the chain through the normal damage boundary.
+                secondary.setHealth(secondary.getMaxHealth());
+                secondary.invulnerableTime = 0;
                 float secondaryBefore = secondary.getHealth();
                 attacker.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WOODEN_SWORD));
                 primary.invulnerableTime = 0;
