@@ -1,9 +1,9 @@
 {
-  "schema_version": 2,
-  "status": "canonical-initial-implementation-baseline",
+  "schema_version": 3,
+  "status": "canonical-external-boss-reward-baseline",
   "runtime_active": true,
   "exact_weights_defined": true,
-  "purpose": "Define server-authoritative personal augmentation-core rewards for boss content while preserving original boss rewards.",
+  "purpose": "Define server-authoritative personal augmentation-core rewards for vanilla and explicitly recognized external boss encounters while preserving original boss rewards.",
   "reward_bands": [
     {
       "id": "boss_standard",
@@ -40,6 +40,28 @@
       "repeat_policy": "pinnacle_repeat_weights"
     }
   ],
+  "compatibility_profile_assignments": [
+    { "profile": "chronodawn_time_guardian", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "chronodawn_chronos_warden", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "chronodawn_clockwork_colossus", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "chronodawn_entropy_keeper", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "chronodawn_temporal_phantom", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "chronodawn_time_tyrant", "reward_band": "boss_major", "repeat_policy": "same_band" },
+
+    { "profile": "worldbosses_sylvaron", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_aureon", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_nekhraz", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_varkhul", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_morvath", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_elyndra", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_astrael", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_shadow_king", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_dragon_mother", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_storm_griffin", "reward_band": "boss_major", "repeat_policy": "same_band" },
+    { "profile": "worldbosses_shadow_weaver", "reward_band": "boss_major", "repeat_policy": "same_band" },
+
+    { "profile": "mcendgame_dungeon_boss", "reward_band": "boss_major", "repeat_policy": "same_band" }
+  ],
   "special_nonboss_assignments": [
     {
       "source": "minecraft:elder_guardian",
@@ -60,34 +82,34 @@
       "display_name": "Chrono Dawn",
       "content_summary": "Dedicated time-themed dimension with six authored bosses.",
       "known_major_boss_count": 6,
-      "integration_method": "official BossDefeatedEvents addon API",
+      "integration_method": "shared entity compatibility profiles backed by exact 26.2 boss IDs",
       "source_edit_policy": "allowed_when_needed",
       "license": "LGPL-3.0",
       "default_reward_band": "boss_major",
-      "assignment_policy": "start major; move individual bosses to standard or pinnacle after measured gameplay difficulty"
+      "assignment_policy": "all six verified bosses start major; individual promotion waits for live encounter measurement"
     },
     {
       "mod_id": "worldbosses",
       "display_name": "World Bosses",
       "content_summary": "World shrines, raid caches, a boss dimension, and eleven major boss encounters in the current 2.0.2 content set.",
       "known_major_boss_count": 11,
-      "integration_method": "augmentation-side server death/entity adapter and optional loot/cache injection",
+      "integration_method": "shared runtime-resolved World Bosses compatibility profiles; no third-party JAR modification",
       "source_edit_policy": "do_not_modify_or_redistribute_third_party_jar",
       "license": "All Rights Reserved",
       "default_reward_band": "boss_major",
-      "assignment_policy": "only bosses proven to be final-tier encounters are promoted to boss_pinnacle"
+      "assignment_policy": "all eleven verified boss profiles start major; pinnacle promotion requires measured gameplay evidence"
     },
     {
       "mod_id": "mcendgame",
       "display_name": "MCEndgame",
-      "content_summary": "Repeatable generated endgame dungeons with dungeon bosses and a pinnacle Beastweaver boss event.",
-      "known_major_boss_count": "repeatable dungeon boss pool plus Beastweaver",
-      "integration_method": "augmentation-side server boss adapter; source hook is permitted if required",
+      "content_summary": "Repeatable generated endgame dungeons with dynamically flagged dungeon bosses and a pinnacle Beastweaver progression path.",
+      "known_major_boss_count": "runtime dungeon-boss encounters",
+      "integration_method": "shared dynamic compatibility adapter using MobEntityDungeonBossAccessor#mcendgame$isDungeonBoss",
       "source_edit_policy": "allowed_when_needed",
       "license": "LGPL-3.0-or-later",
       "default_reward_band": "boss_major",
       "pinnacle_candidate": "Beastweaver",
-      "repeat_policy": "repeatable pinnacle encounters use reduced direct mythic weights"
+      "repeat_policy": "generic repeatable dungeon bosses stay major; a separate pinnacle identity is required before direct mythic weights are enabled"
     }
   ],
   "global_rules": {
@@ -95,12 +117,13 @@
     "preserve_original_boss_rewards": true,
     "per_player_reward": true,
     "one_fixed_core_grade_per_boss": false,
-    "first_kill_bonus_is_per_player_per_boss_type": true,
+    "first_kill_bonus_is_per_player_per_authored_boss_profile": true,
     "default_first_kill_bonus_core_count": 1,
     "repeatable_pinnacle_direct_mythic_rate": 0.05,
     "general_loot_multipliers_affect_boss_cores": false,
     "companion_only_kill_grants_direct_boss_reward": false,
-    "participant_eligibility": "server-side encounter participation contract to be implemented; do not use shared ground-drop ownership",
+    "participant_eligibility": "server-side successful-damage participation plus player final-killer inclusion; rewards are personal inventory grants",
+    "external_boss_generic_mob_roll_suppressed": true,
     "design_details": "see CORE_ACQUISITION_DESIGN_2026-10-24.md"
   }
 }
