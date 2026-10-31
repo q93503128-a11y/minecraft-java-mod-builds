@@ -179,7 +179,7 @@ public final class CombatHudClient {
         }
 
         List<ClientActivePresentationState.Entry> allEntries = ClientActivePresentationState.entries();
-        drawCornerStatuses(g, client, screenWidth, allEntries);
+        drawCornerStatuses(g, client, allEntries);
 
         List<ClientActivePresentationState.Entry> entries = allEntries.stream()
                 .filter(entry -> !isCornerStatus(entry.abilityId()))
@@ -207,7 +207,6 @@ public final class CombatHudClient {
     private static void drawCornerStatuses(
             GuiGraphicsExtractor g,
             Minecraft client,
-            int screenWidth,
             List<ClientActivePresentationState.Entry> entries
     ) {
         int y = 8;
@@ -225,7 +224,7 @@ public final class CombatHudClient {
             String label = shortName(id) + suffix;
             int textWidth = client.font.width(label);
             int width = Math.min(116, 23 + textWidth);
-            int x = screenWidth - width - 8;
+            int x = 8;
 
             g.fill(x, y, x + width, y + 18, STATUS_BACK);
             g.fill(x, y, x + 2, y + 18, ACTIVE_FILL);
