@@ -72,7 +72,9 @@ public final class AugmentOfferService {
         if (!hasCore(player, requestedTier)) return BeginResult.noCore();
 
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
-        List<AugmentDefinition> eligible = eligibleCandidates(state, requestedTier, multiplayerEligible);
+        List<AugmentDefinition> eligible = filterPlayerEligibility(
+                eligibleCandidates(state, requestedTier), multiplayerEligible
+        );
         if (eligible.isEmpty()) return BeginResult.fullyMaxed();
 
         eligible = shuffledCopy(eligible, player.getRandom());
@@ -126,11 +128,15 @@ public final class AugmentOfferService {
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
         boolean multiplayerEligible = PlayerRescueAugmentService.isMultiplayerEligible(player);
         Set<String> current = new HashSet<>(pending.candidateIds());
-        List<AugmentDefinition> replacements = rerollPool(
-                state, pending.tier(), current, pending.seenIds(), true, multiplayerEligible
+        List<AugmentDefinition> replacements = filterPlayerEligibility(
+                rerollPool(state, pending.tier(), current, pending.seenIds(), true),
+                multiplayerEligible
         );
         if (replacements.isEmpty()) {
-            replacements = rerollPool(state, pending.tier(), current, pending.seenIds(), false, multiplayerEligible);
+            replacements = filterPlayerEligibility(
+                    rerollPool(state, pending.tier(), current, pending.seenIds(), false),
+                    multiplayerEligible
+            );
         }
         if (replacements.isEmpty()) {
             return RerollResult.invalid(RerollStatus.NO_REPLACEMENT);
@@ -257,16 +263,10 @@ public final class AugmentOfferService {
         return true;
     }
 
-    private static List<AugmentDefinition> eligibleCandidates(
-            AugmentationPlayerState state,
-            AugmentTier tier,
-            boolean multiplayerEligible
-    ) {
+    private static List<AugmentDefinition> eligibleCandidates(AugmentationPlayerState state, AugmentTier tier) {
         ArrayList<AugmentDefinition> eligible = new ArrayList<>();
         for (AugmentDefinition definition : AugmentCatalog.definitions(tier)) {
-            if (definition.isMaxed(state.level(definition.id()))) continue;
-            if (!candidateEligible(definition, multiplayerEligible)) continue;
-            eligible.add(definition);
+            if (!definition.isMaxed(state.level(definition.id()))) eligible.add(definition);
         }
         return eligible;
     }
@@ -276,13 +276,11 @@ public final class AugmentOfferService {
             AugmentTier tier,
             Set<String> currentCandidates,
             Set<String> seenIds,
-            boolean unseenOnly,
-            boolean multiplayerEligible
+            boolean unseenOnly
     ) {
         ArrayList<AugmentDefinition> eligible = new ArrayList<>();
         for (AugmentDefinition definition : AugmentCatalog.definitions(tier)) {
             if (definition.isMaxed(state.level(definition.id()))) continue;
-            if (!candidateEligible(definition, multiplayerEligible)) continue;
             if (currentCandidates.contains(definition.id())) continue;
             if (unseenOnly && seenIds.contains(definition.id())) continue;
             eligible.add(definition);
@@ -290,8 +288,14 @@ public final class AugmentOfferService {
         return eligible;
     }
 
-    private static boolean candidateEligible(AugmentDefinition definition, boolean multiplayerEligible) {
-        return multiplayerEligible || !definition.id().equals(PlayerRescueAugmentService.RESCUE_ID);
+    private static List<AugmentDefinition> filterPlayerEligibility(
+            List<AugmentDefinition> candidates,
+            boolean multiplayerEligible
+    ) {
+        if (multiplayerEligible) return candidates;
+        return candidates.stream()
+                .filter(definition -> !definition.id().equals(PlayerRescueAugmentService.RESCUE_ID))
+                .toList();
     }
 
     private static boolean candidateSetEligible(List<String> candidateIds, boolean multiplayerEligible) {
