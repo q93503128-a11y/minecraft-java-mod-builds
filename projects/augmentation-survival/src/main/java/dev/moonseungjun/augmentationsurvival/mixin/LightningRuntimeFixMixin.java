@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.combat.CombatExpansionService;
+import dev.moonseungjun.augmentationsurvival.augment.combat.LightningDirectHitService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -10,10 +11,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Routes every non-melee root-direct Lightning event through the repaired single-hit bridge. */
+/** Routes every non-melee root-direct Lightning event through the repaired single-hit service. */
 @Mixin(value = CombatExpansionService.class, remap = false)
 abstract class LightningRuntimeFixMixin {
     private static final String LIGHTNING_ID = AugmentationSurvival.MOD_ID + ":lightning";
+
+    @Inject(method = "initialize", at = @At("TAIL"))
+    private static void augmentationSurvival$initializeLightningRuntime(CallbackInfo ci) {
+        LightningDirectHitService.initialize();
+    }
 
     @Inject(method = "triggerLightning", at = @At("HEAD"), cancellable = true)
     private static void augmentationSurvival$repairLightning(
@@ -29,7 +35,7 @@ abstract class LightningRuntimeFixMixin {
 
         // Player.attack is counted exactly once after the wrapped hurt call returns. Suppress the
         // generic AFTER_DAMAGE copy while that same melee hurt call is still on the stack.
-        if (LightningDirectHitBridge.rootMeleeAttackInProgress()) return;
-        LightningDirectHitBridge.onDirectHit(attacker, primaryTarget, state, actualDamage);
+        if (LightningDirectHitService.rootMeleeAttackInProgress()) return;
+        LightningDirectHitService.onDirectHit(attacker, primaryTarget, state, actualDamage);
     }
 }
