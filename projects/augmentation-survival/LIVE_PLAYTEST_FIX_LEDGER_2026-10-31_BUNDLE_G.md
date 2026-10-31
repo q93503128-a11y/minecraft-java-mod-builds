@@ -24,6 +24,25 @@ The card does not describe implementation details such as random-tick sampling o
 - Detail communicates the actual Lv.1 / Lv.2 values as **3배 / 30배**, supported production categories, 24-block radius, 60-second duration and 120-second cooldown.
 - Sustained HUD/profile duration now reads the authoritative `AreaAccelerationService.durationTicks()` value instead of a stale hard-coded 30 seconds.
 
+## Time Acceleration mining regression discovered while validating Bundle G
+
+The stronger Area Acceleration tests exposed an older Time Acceleration mining regression that the previous constant-only checks had missed.
+
+Root cause:
+
+- the main Time Acceleration runtime already applied its +60% mining bonus as a transient vanilla `BLOCK_BREAK_SPEED` attribute modifier;
+- `TimeAccelerationMiningAttributeMixin` immediately removed that modifier;
+- `SurvivalTimeAccelerationMiningMixin` attempted to re-add the bonus through a separate shared mining calculation, but that bridge did not survive into the actual vanilla final destroy-speed result;
+- an attempted two-argument `Player#getDestroySpeed(BlockState, BlockPos)` hook was rejected by the real 26.2 runtime because that overload does not exist on `Player`.
+
+Final repair:
+
+- keep the canonical +60% modifier directly on vanilla `Attributes.BLOCK_BREAK_SPEED`;
+- remove the attribute-stripping and duplicate time-mining bridge mixins;
+- restore the real one-argument `Player#getDestroySpeed(BlockState)` hooks used by the remaining passive/client mining prediction layer;
+- stop manually adding Time Acceleration again on the client, avoiding double application because the server attribute is authoritative and synchronized;
+- regression test now verifies movement +60%, attack speed +60%, `BLOCK_BREAK_SPEED` +60%, final `getDestroySpeed` x1.60, no duplicate shared-mining bonus, item-use x1.40 and owned-projectile x1.40 after the real three-second focus completes.
+
 ## Revive design clarification discovered during the same playtest discussion
 
 Current runtime already records and revives the caster's permanent companions when they are either:
@@ -41,6 +60,21 @@ The allied-player branch is still missing from runtime and remains a separate mu
 
 ## Validation
 
-Bundle G runtime checkpoint: `6e4927db07fdf7643d2d855f4c4d2db11fb400eb`.
+Bundle G verified checkpoint: `2833f6864e39c53e96f3493ccea5db8728cc71f6`.
 
-Workflow #529 is the validation run for this checkpoint. Until it completes successfully, Bundle G must not be marked BUILD VERIFIED or used as the final playtest artifact.
+Workflow **#537** completed successfully:
+
+- **132/132 required GameTests PASS**
+- clean build / dependency checks PASS
+- World Bosses localization capture PASS
+- external Korean localization audit PASS
+- dedicated-server boot smoke PASS
+- client boot smoke PASS
+- verified MRPack generation PASS
+- production JAR structure/checksum PASS
+
+Production JAR SHA-256: `d33698f3745cb2355e3907823b5895a44592148e5459bd41bb560bec22688855`
+
+MRPack SHA-256: `1a7bdfa00a1b539cace7fd48dba86fb714331fac0ce7e4de8b4f999ad43b0da3`
+
+Manual Bundle G playtesting, multiplayer testing and performance profiling remain **NOT RUN**.
