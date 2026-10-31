@@ -36,11 +36,14 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
     private static final String LIGHTNING_ID = id("lightning");
     private static final String ECHO_STRIKE_ID = id("echo_strike");
     private static final String RETRACE_ID = id("retrace");
+    private static final int ISOLATED_TIME_STOP_Y = 82;
 
     @GameTest(maxTicks = 45)
     public void timeStopFreezesOtherPlayersAndStaysAtCastOrigin(GameTestHelper helper) {
-        ServerPlayer caster = player(helper, 1, 1);
-        ServerPlayer otherPlayer = player(helper, 3, 1);
+        // Time Stop is a real 32-block world effect. Keep this regression vertically isolated so its
+        // still-active field cannot freeze entities in neighboring GameTests that execute in parallel.
+        ServerPlayer caster = player(helper, 1, ISOLATED_TIME_STOP_Y, 1);
+        ServerPlayer otherPlayer = player(helper, 3, ISOLATED_TIME_STOP_Y, 1);
         AugmentationPlayerStateService.replace(caster, AugmentationPlayerState.initial()
                 .withAugmentLevel(TIME_STOP_ID, 1)
                 .withActiveSlots(List.of(TIME_STOP_ID)));
@@ -72,7 +75,9 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
             TimeStopBoundaryService.ActiveField still = TimeStopBoundaryService.activeField(caster);
             require(still != null && still.center().distanceToSqr(castCenter) < 1.0E-8D,
                     "time-stop field center changed after caster movement");
-            LivingEntity lateCow = helper.spawnMob(EntityTypes.COW, 4, 2, 1).withNoFreeWill().spawn();
+            LivingEntity lateCow = helper.spawnMob(
+                    EntityTypes.COW, 4, ISOLATED_TIME_STOP_Y, 1
+            ).withNoFreeWill().spawn();
             GameTestPlayers.runAfterDelay(helper, 2, () -> {
                 require(SpecialActiveAugmentService.isTimeStopped(lateCow),
                         "late living entrant at the original field center was not frozen");
@@ -162,8 +167,12 @@ public final class MythicLiveFixBatchJGameTests implements CustomTestMethodInvok
     }
 
     private static ServerPlayer player(GameTestHelper helper, int x, int z) {
+        return player(helper, x, 2, z);
+    }
+
+    private static ServerPlayer player(GameTestHelper helper, int x, int y, int z) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
-        BlockPos anchor = helper.absolutePos(new BlockPos(x, 2, z));
+        BlockPos anchor = helper.absolutePos(new BlockPos(x, y, z));
         player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
         player.setHealth(player.getMaxHealth());
         return player;
