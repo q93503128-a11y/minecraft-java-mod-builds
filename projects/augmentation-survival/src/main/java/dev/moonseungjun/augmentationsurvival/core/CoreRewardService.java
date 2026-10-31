@@ -3,14 +3,11 @@ package dev.moonseungjun.augmentationsurvival.core;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.ItemStack;
 
 /** Server-authoritative combat-sourced augmentation-core rewards. */
@@ -33,15 +30,7 @@ public final class CoreRewardService {
             return;
         }
 
-        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(killed.getType());
-        if (entityId == null) {
-            return;
-        }
-
-        CoreSourceResolver.HostileResolution resolution = CoreSourceResolver.resolveHostile(
-                entityId,
-                killed instanceof Enemy
-        );
+        CoreSourceResolver.HostileResolution resolution = CoreSourceResolver.resolveHostile(killed);
         switch (resolution.kind()) {
             case NONE, BOSS_SUPPRESSED -> {
                 return;
@@ -68,9 +57,7 @@ public final class CoreRewardService {
         }
         AugmentationSurvival.LOGGER.debug(
                 "Granted {} augment core to {} from {}",
-                tier.id(),
-                player.getGameProfile().name(),
-                sourceProfile
+                tier.id(), player.getGameProfile().name(), sourceProfile
         );
     }
 }
