@@ -34,6 +34,9 @@
 - 새 [인형제작대 기획](../../classes/PUPPET_SCALE_AND_WORKBENCH.md)에 따라 **별도 인형제작대 정비 화면 1개**에서 실제 3D 몸체 크기 미리보기, 필요 구조 재료, 경량/중장 공속·크기별 HP·리치, 제작·개조·수리·분해를 제공한다. 기존 4화면 HTML 구조 시안은 변경하지 않는다.
 - 인형의 눈에 보이는 실은 경량 클라이언트 렌더링/거리별 LOD를 검토하고, 성능을 무시한 Display Entity 수십 개 복제로 구현하지 않는다. 실제 16:9/16:10/비표준 GUI scale에서 시각 검수 필요.
 
+- 인형술사 스킬 트리는 [PUPPET_SKILL_TREE.md](../../classes/PUPPET_SKILL_TREE.md)의 3계열/10노드/290랭크 구조 및 [돌파 기능](../../classes/PUPPET_MILESTONES.md)을 서버 모델로 표시. 오래된 정신 지배자 전용 270랭크를 복제하지 않는다.
+- 조종틀 화면/툴팁은 [MARIONETTE_CONTROL_BAR.md](../../classes/MARIONETTE_CONTROL_BAR.md)의 5등급·승급 비용·효과를 읽기만 한다. 최종 UI는 Codex, 비용·슬롯·장착·소유권은 서버에서 판정한다.
+
 ## 화면 상태 검수
 
 - 직업 선택: 선택 전/선택된 상태/잠긴 직업 또는 잠금 없음 정책/확인 취소/8개 직업의 정보량 차이.
