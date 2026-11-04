@@ -20,7 +20,9 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,7 +44,7 @@ public final class ReviveAugmentService {
     private static final String ABILITY_HASTE_ID = id("ability_haste");
     private static final String DOUBLE_CHARGE_ID = id("double_charge");
     private static final String COMBAT_CYCLE_ID = id("combat_cycle");
-    private static final int MARKER_TICKS = 20 * 20;
+    private static final int MARKER_TICKS = 60 * 20;
     private static final int CHANNEL_TICKS = 3 * 20;
     private static final int BASE_COOLDOWN_TICKS = 120 * 20;
     private static final double RANGE = 20.0D;
@@ -61,6 +63,7 @@ public final class ReviveAugmentService {
         ServerPlayerEvents.JOIN.register(player -> CHANNELS.remove(player.getUUID()));
         ServerPlayerEvents.LEAVE.register(player -> CHANNELS.remove(player.getUUID()));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> CHANNELS.remove(newPlayer.getUUID()));
+        ServerLifecycleEvents.SERVER_STARTED.register(ReviveAugmentService::restoreMarkersFromWorld);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             MARKERS.clear();
             CHANNELS.clear();
@@ -90,6 +93,68 @@ public final class ReviveAugmentService {
                 entity.getUUID(), ownerId, entity.getType(), snapshot,
                 level.dimension().identifier().toString(), entity.position(), now + MARKER_TICKS
         ));
+        persistMarkers(level.getServer());
+    }
+
+    public static boolean hasMarker(UUID entityId) {
+        return MARKERS.containsKey(entityId);
+    }
+
+    public static int remainingSeconds(MinecraftServer server, UUID entityId) {
+        ReviveMarker marker = MARKERS.get(entityId);
+        if (marker == null) return 0;
+        long left = marker.expiresAtTick - server.overworld().getGameTime();
+        return (int) Math.max(0, Math.min(60, (left + 19L) / 20L));
+    }
+
+    /** A reserved grave can be released remotely. The caller owns the slot adjustment. */
+    public static void cancelMarker(MinecraftServer server, UUID entityId) {
+        if (MARKERS.remove(entityId) != null) persistMarkers(server);
+    }
+
+    private static void persistMarkers(MinecraftServer server) {
+        Map<String, ReviveWorldState.Grave> graves = new HashMap<>();
+        for (ReviveMarker marker : MARKERS.values()) {
+            graves.put(marker.entityId.toString(), new ReviveWorldState.Grave(
+                    marker.ownerId.toString(),
+                    EntityType.getKey(marker.type).toString(),
+                    marker.snapshot.copy(), marker.dimension,
+                    List.of(marker.position.x, marker.position.y, marker.position.z),
+                    marker.expiresAtTick
+            ));
+        }
+        server.overworld().setAttached(ReviveWorldAttachments.STATE, new ReviveWorldState(graves));
+    }
+
+    private static void restoreMarkersFromWorld(MinecraftServer server) {
+        MARKERS.clear();
+        ReviveWorldState saved = server.overworld().getAttachedOrSet(
+                ReviveWorldAttachments.STATE, ReviveWorldState.initial());
+        boolean changed = false;
+        long now = server.overworld().getGameTime();
+        for (var entry : saved.graves().entrySet()) {
+            try {
+                UUID id = UUID.fromString(entry.getKey());
+                ReviveWorldState.Grave grave = entry.getValue();
+                UUID owner = UUID.fromString(grave.owner());
+                if (grave.expiresAtTick() <= now) {
+                    CompanionAugmentService.expireReservedSlot(server, owner, id);
+                    changed = true;
+                    continue;
+                }
+                if (grave.position().size() != 3) throw new IllegalArgumentException("bad position");
+                EntityType<?> type = BuiltInRegistries.ENTITY_TYPE
+                        .getOptional(Identifier.parse(grave.type())).orElseThrow();
+                MARKERS.put(id, new ReviveMarker(id, owner, type, grave.snapshot().copy(),
+                        grave.dimension(),
+                        new Vec3(grave.position().get(0), grave.position().get(1), grave.position().get(2)),
+                        grave.expiresAtTick()));
+            } catch (RuntimeException invalid) {
+                changed = true;
+                AugmentationSurvival.LOGGER.warn("Ignored invalid saved revive marker {}", entry.getKey());
+            }
+        }
+        if (changed) persistMarkers(server);
     }
 
     public static boolean tryUse(ServerPlayer player) {
@@ -120,7 +185,15 @@ public final class ReviveAugmentService {
 
     private static void tick(MinecraftServer server) {
         long now = server.overworld().getGameTime();
-        MARKERS.values().removeIf(marker -> marker.expiresAtTick <= now);
+        boolean expired = false;
+        for (ReviveMarker marker : List.copyOf(MARKERS.values())) {
+            if (marker.expiresAtTick <= now) {
+                MARKERS.remove(marker.entityId);
+                CompanionAugmentService.expireReservedSlot(server, marker.ownerId, marker.entityId);
+                expired = true;
+            }
+        }
+        if (expired) persistMarkers(server);
         List<UUID> completed = new ArrayList<>();
         for (Map.Entry<UUID, ReviveChannel> entry : CHANNELS.entrySet()) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
@@ -139,6 +212,7 @@ public final class ReviveAugmentService {
                 if (restore(player, marker)) {
                     commitReservation(player, channel.reservation);
                     MARKERS.remove(marker.entityId);
+                    persistMarkers(server);
                     ActivePresentationService.notifyStateAndPulse(
                             player, REVIVE_ID, ActivePresentationPayload.END, 0, 0.0F
                     );
@@ -165,7 +239,7 @@ public final class ReviveAugmentService {
         living.setHealth(Math.max(1.0F, living.getMaxHealth() * 0.5F));
         if (!level.addFreshEntity(created)) return false;
         if (created instanceof Mob mob && CompanionAugmentService.isDominated(mob)) {
-            CompanionAugmentService.onRevivedCompanion(mob);
+            CompanionAugmentService.onRevivedCompanion(mob, marker.entityId);
         }
         return true;
     }

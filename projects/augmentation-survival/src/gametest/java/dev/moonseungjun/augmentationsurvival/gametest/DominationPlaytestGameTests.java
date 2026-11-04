@@ -71,6 +71,47 @@ public final class DominationPlaytestGameTests implements CustomTestMethodInvoke
         GameTestPlayers.succeed(helper);
     }
 
+    @GameTest(maxTicks = 20)
+    public void reservedReviveReplacesEntityWithoutExceedingDominationCap(GameTestHelper helper) {
+        java.util.UUID owner = java.util.UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        java.util.UUID dead = java.util.UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        java.util.UUID revived = java.util.UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var member = new dev.moonseungjun.augmentationsurvival.augment.companion.DominationWorldState.Member(
+                owner.toString(), "minecraft:zombie", "minecraft:overworld", false
+        );
+        var state = dev.moonseungjun.augmentationsurvival.augment.companion.DominationWorldState.initial()
+                .withAcquired(dead, member);
+        require(state.occupied(owner) == 1, "initial domination slot was not allocated");
+        state = state.withDeath(dead, member, true);
+        require(state.occupied(owner) == 1 && state.member(dead).reserved(),
+                "revival slot was not reserved through death");
+        state = state.withRevivedReplacing(dead, revived, member);
+        require(state.occupied(owner) == 1 && state.member(dead) == null
+                && state.member(revived) != null && !state.member(revived).reserved(),
+                "revived companion duplicated slot occupancy or retained old UUID");
+        state = state.withReleased(owner, revived, false);
+        require(state.occupied(owner) == 0 && state.pendingRelease(revived),
+                "remote release did not free the slot and register deferred cleanup");
+        state = state.withClearedPending(revived);
+        require(!state.pendingRelease(revived), "deferred release intent was not consumed");
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest(maxTicks = 20)
+    public void unusedReviveReservationReturnsSlotOnExpiry(GameTestHelper helper) {
+        java.util.UUID owner = java.util.UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        java.util.UUID dead = java.util.UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var member = new dev.moonseungjun.augmentationsurvival.augment.companion.DominationWorldState.Member(
+                owner.toString(), "minecraft:zombie", "minecraft:overworld", false
+        );
+        var state = dev.moonseungjun.augmentationsurvival.augment.companion.DominationWorldState.initial()
+                .withAcquired(dead, member).withDeath(dead, member, true);
+        state = state.withReleased(owner, dead, true);
+        require(state.occupied(owner) == 0 && state.member(dead) == null,
+                "expired or canceled revive must not permanently occupy a slot");
+        GameTestPlayers.succeed(helper);
+    }
+
     private static ServerPlayer player(GameTestHelper helper, int x, int z) {
         ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
         BlockPos anchor = helper.absolutePos(new BlockPos(x, 2, z));

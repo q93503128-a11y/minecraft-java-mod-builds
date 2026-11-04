@@ -29,6 +29,7 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         });
         ClientInvulnerabilityShieldState.initialize();
         ActiveLoadoutClientNetworking.initialize();
+        DominationClientNetworking.initialize();
         CombatHudClient.initialize();
         ConsumptionClientNetworking.initialize();
         TemporalClientNetworking.initialize();

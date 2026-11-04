@@ -33,6 +33,7 @@ import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentS
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.companion.DominationWorldAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.companion.ReviveAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.ReviveWorldAttachments;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityAugmentService;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MobilityUtilityTuning;
 import dev.moonseungjun.augmentationsurvival.augment.movement.MovementAugmentService;
@@ -115,6 +116,7 @@ public final class AugmentationSurvival implements ModInitializer {
         ThreatEntityAttachments.initialize();
         CompanionEntityAttachments.initialize();
         DominationWorldAttachments.initialize();
+        ReviveWorldAttachments.initialize();
         StorageWorldAttachments.initialize();
         SpatialLinkWorldAttachments.initialize();
         AugmentCatalog.initialize();
