@@ -22,7 +22,6 @@ Java: 25
 | 손에 든 발광 아이템 동적 조명 | LambDynamicLights | 4.12.4+26.2 | client-only pinned candidate; smoke verification required |
 | 시간 차원 + 제작형 보스 6종 | Chrono Dawn | 0.12.0 | smoke verified boss candidate |
 | 월드 제단/레이드 캐시/보스 차원 + 주요 보스 11종 | World Bosses | 2.0.2 | smoke verified boss candidate; visual warnings tracked |
-| 반복형 절차 던전 + 던전 보스/후반 보스 | MCEndgame | 1.7.0+26.2 | smoke verified boss candidate; progression overlap tracked |
 
 LambDynamicLights는 클라이언트 시각 편의 모드다. 횃불·랜턴 등 발광 아이템을 손에 들었을 때 주변을 동적으로 밝히지만 서버의 실제 block light, 몹 스폰 조건, 코어 보상 로직은 변경하지 않는다.
 
@@ -93,20 +92,15 @@ Modrinth Maven의 전이 dependency만 믿지 않고 실제 `fabric.mod.json`을
 
 이 모드는 All Rights Reserved이므로 직접 수정본을 재배포하는 방식은 사용하지 않는다.
 
-### MCEndgame — 반복형 던전과 보스
+### MCEndgame — 공식 팩에서 제외 (2026-11-04 결정)
 
-절차 생성되는 후반 던전, 반복 가능한 던전 보스와 Beastweaver 계열 후반 보스 이벤트를 추가한다. 오픈소스 LGPL-3.0-or-later라 필요하면 소스 수준 호환도 가능하다.
+MCEndgame 1.7.0+26.2는 별도 장치/차원에서 반복하는 절차적 던전과 독립 장비 속성·Crystal Forge·던전 레벨·토템 성장 루프를 제공한다. 이는 증강 중심 월드 탐험·생존의 주 성장축과 중복되므로 **공식 핀 목록에서는 제외**한다. 소스에 남은 MCE 호환 어댑터/테스트는 독립 모드를 임의로 파괴하지 않는 선택적(미설치 시 비활성) 통합으로 유지하며, 공식 팩의 필수 종속성으로 다시 도입하지 않는다.
 
-주의점:
-
-- 자체 장비/던전 성장축이 증강과 경쟁할 수 있다.
-- 최종 팩에서는 증강이 주인공이 되도록 자체 보상·진행을 축소/조정할 가능성이 있다.
-- 반복 보스에서 신화 코어가 무한히 쉽게 공급되지 않도록 별도 정책이 필요하다.
-- 기본 설정은 익명 gameplay analytics가 켜져 있으므로 공식 팩 배포 설정에서는 `mcendgame.json`의 `sendAnalytics=false`를 기본으로 두는 방향을 사용한다.
+이 섹션 이전의 Run 1–5, #431 등 기록은 MCE가 포함된 과거 팩의 이력이며 새 22-JAR 조합의 빌드/부팅 성공을 뜻하지 않는다. 새 팩은 별도 CI 및 기존 월드 백업 후 플레이 검증이 필요하다.
 
 ## 5. 실제 JAR에서 확인한 연동 표면
 
-Run 5에서는 22개 외부 JAR을 resolve했다. 이후 LambDynamicLights를 추가해 official pin은 23개가 되었으며, 최신 Build #431에서 pinned dependency inspection과 full-pack dedicated-server/client smoke가 통과했다. 실제 게임에서 동적 조명 동작과 외부 모드별 gameplay/visual 호환을 확인하는 일은 남아 있다.
+Run 5에서는 22개 외부 JAR을 resolve했다. 이후 LambDynamicLights를 추가한 과거 공식 팩은 23개였고 Build #431에서 서버/클라이언트 smoke가 통과했다. 2026-11-04에는 MCEndgame을 공식 팩에서 제외하여 현재 핀 목록은 **22개**가 되었다. 이 변경 후 조합은 새 CI/게임 플레이 검증 전까지 미검증이며, 아래 Run 5 및 #431 수치는 과거 검증 이력이다.
 
 Run 5 대표 결과:
 
