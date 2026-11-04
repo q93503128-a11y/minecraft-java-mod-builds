@@ -92,6 +92,18 @@ public record DominationWorldState(
         );
     }
 
+    /** A revived entity has a fresh UUID; transfer the reserved slot rather than counting twice. */
+    public DominationWorldState withRevivedReplacing(UUID oldId, UUID newId, Member member) {
+        Map<String, Member> next = new HashMap<>(members);
+        Member previous = next.remove(oldId.toString());
+        next.put(newId.toString(), member);
+        return new DominationWorldState(
+                previous != null && previous.reserved()
+                        ? occupiedByOwner : updatedCount(member.owner(), previous == null ? 1 : 0),
+                next, pendingReleases
+        );
+    }
+
     /** Returns one slot exactly once; unloaded mobs are cleared on their next load. */
     public DominationWorldState withReleased(UUID owner, UUID id, boolean entityAlreadyCleared) {
         Member old = members.get(id.toString());
