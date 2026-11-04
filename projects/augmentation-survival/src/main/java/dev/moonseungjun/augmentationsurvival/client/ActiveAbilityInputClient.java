@@ -3,6 +3,7 @@ package dev.moonseungjun.augmentationsurvival.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.client.screen.ActiveLoadoutScreen;
+import dev.moonseungjun.augmentationsurvival.client.screen.DominationManagementScreen;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityRequestPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
