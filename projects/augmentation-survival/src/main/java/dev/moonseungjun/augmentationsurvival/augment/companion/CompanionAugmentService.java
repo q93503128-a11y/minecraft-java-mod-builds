@@ -211,6 +211,21 @@ public final class CompanionAugmentService {
         refreshCombatTarget(mob, owner.get(), server);
     }
 
+    /** Handles new entity UUIDs after revival while retaining a pre-reserved slot. */
+    public static void onRevivedCompanion(Mob mob, UUID deadEntityId) {
+        Optional<UUID> owner = ownerId(mob);
+        if (owner.isEmpty() || !(mob.level() instanceof ServerLevel level)) return;
+        mob.setPersistenceRequired();
+        mob.setGlowingTag(true);
+        clearCombatTarget(mob, mob.getTarget());
+        LOADED_DOMINATED.put(mob.getUUID(), mob);
+        MinecraftServer server = level.getServer();
+        setWorldState(server, worldState(server).withRevivedReplacing(
+                deadEntityId, mob.getUUID(), member(mob, owner.get())
+        ));
+        refreshCombatTarget(mob, owner.get(), server);
+    }
+
     private static boolean releaseDominated(ServerPlayer owner, Mob mob) {
         if (!isOwnedBy(mob, owner.getUUID()) || !(mob.level() instanceof ServerLevel level)) return false;
         clearDominatedMob(mob);
@@ -248,7 +263,7 @@ public final class CompanionAugmentService {
         boolean cleared = loaded != null && !loaded.isRemoved() && isOwnedBy(loaded, owner.getUUID());
         if (cleared) clearDominatedMob(loaded);
         if (entry.reserved()) {
-            ReviveAugmentService.cancelMarker(targetId);
+            ReviveAugmentService.cancelMarker(server, targetId);
             cleared = true; // A dead entity cannot be loaded or return as a dominated mob.
         }
         setWorldState(server, world.withReleased(owner.getUUID(), targetId, cleared));
