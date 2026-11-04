@@ -37,6 +37,7 @@ public final class ActiveLoadoutScreen extends Screen {
     private static final int ACCENT = 0xFF8FC7C3;
     private static final int GOLD = 0xFFE0C279;
 
+    private static final String DOMINATION_ID = "augmentation_survival:domination";
     private int selectedSlot = -1;
     private String selectedAugmentId = "";
     private String hoveredId = "";
@@ -114,6 +115,12 @@ public final class ActiveLoadoutScreen extends Screen {
         if (!l.compact() && l.w() >= 500) status += "  ·  Alt: 증강 모드 ON/OFF";
         status = clip(status, half);
         g.text(font, status, l.x() + l.w() - 13 - font.width(status), l.y() + 11, MUTED, false);
+        if (l.w() >= 450 && ClientAugmentProgressState.level(DOMINATION_ID) > 0) {
+            int buttonX = l.x() + l.w() / 2 - 42;
+            g.fill(buttonX, l.y() + 7, buttonX + 84, l.y() + 27, SURFACE_HI);
+            g.outline(buttonX, l.y() + 7, 84, 20, LINE);
+            g.text(font, "지배 관리", buttonX + 42 - font.width("지배 관리") / 2, l.y() + 13, ACCENT, false);
+        }
     }
 
     private String inspectId() {
@@ -303,6 +310,12 @@ public final class ActiveLoadoutScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         Layout layout = layout();
+        if (layout.w() >= 450 && ClientAugmentProgressState.level(DOMINATION_ID) > 0
+                && event.button() == 0
+                && inside(event.x(), event.y(), layout.x() + layout.w() / 2 - 42, layout.y() + 7, 84, 20)) {
+            minecraft.gui.setScreen(new DominationManagementScreen(true));
+            return true;
+        }
         for (int i = 0; i < 10; i++) {
             int sx = layout.slotStartX() + i * (layout.slotW() + layout.slotGap());
             if (!inside(event.x(), event.y(), sx, layout.slotY(), layout.slotW(), layout.slotH())) continue;
