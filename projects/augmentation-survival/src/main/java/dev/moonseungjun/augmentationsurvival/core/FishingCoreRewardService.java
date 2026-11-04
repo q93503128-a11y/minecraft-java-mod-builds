@@ -6,7 +6,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 
-/** Adds the authored 12% core roll only when the vanilla treasure fishing table resolves. */
+/** Adds the authored treasure core roll when the vanilla treasure fishing table resolves. */
 public final class FishingCoreRewardService {
     private static final Identifier TREASURE_FISHING_TABLE =
             Identifier.fromNamespaceAndPath("minecraft", "gameplay/fishing/treasure");
@@ -20,10 +20,10 @@ public final class FishingCoreRewardService {
             if (!key.identifier().equals(TREASURE_FISHING_TABLE)) {
                 return;
             }
-            CoreDistributionCatalog.DistributionTemplate profile =
-                    CoreDistributionCatalog.current().distributionTemplates().get(PROFILE_ID);
-            if (profile == null) {
-                throw new IllegalStateException("Missing core distribution profile: " + PROFILE_ID);
+            CoreDistributionCatalog.FishingProfile profile =
+                    CoreDistributionCatalog.current().fishingProfile();
+            if (!PROFILE_ID.equals(profile.id())) {
+                throw new IllegalStateException("Unexpected fishing core profile: " + profile.id());
             }
             RandomSource random = context.getRandom();
             if (random.nextDouble() >= profile.coreRollChance()) {

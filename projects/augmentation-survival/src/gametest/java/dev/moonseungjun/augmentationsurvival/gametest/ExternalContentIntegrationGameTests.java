@@ -55,11 +55,58 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
     }
 
     @GameTest(maxTicks = 20)
+    public void coreAcquisitionBalanceAndTreasureFishingProfileAreLoaded(GameTestHelper helper) {
+        CoreDistributionCatalog.Catalog catalog = CoreDistributionCatalog.current();
+        Map<String, Double> structureChances = Map.of(
+                "routine_exploration", 0.13D,
+                "dangerous_mid", 0.17D,
+                "dangerous_high", 0.23D,
+                "pinnacle_cache", 0.40D
+        );
+        for (Map.Entry<String, Double> entry : structureChances.entrySet()) {
+            CoreDistributionCatalog.DistributionTemplate profile = catalog.distributionTemplates().get(entry.getKey());
+            require(profile != null && Math.abs(profile.coreRollChance() - entry.getValue()) < 0.000001D,
+                    "Structure core chance drifted: " + entry.getKey());
+        }
+        require(Math.abs(catalog.distributionTemplates().get("routine_exploration")
+                        .weights().get(AugmentTier.RARE) - 0.05D) < 0.000001D,
+                "Routine structure rare core weight drifted");
+        Map<String, Double> hostileChances = Map.of(
+                "normal_hostile", 0.006D, "progression_hostile", 0.024D,
+                "special_hostile", 0.045D, "elite_hostile", 0.12D
+        );
+        for (Map.Entry<String, Double> entry : hostileChances.entrySet()) {
+            CoreDistributionCatalog.MobProfile profile = catalog.mobProfiles().get(entry.getKey());
+            require(profile != null && Math.abs(profile.coreRollChance() - entry.getValue()) < 0.000001D,
+                    "Hostile core chance drifted: " + entry.getKey());
+        }
+        for (String event : new String[] {"raid_victory", "elder_guardian"}) {
+            CoreDistributionCatalog.EventProfile profile = catalog.eventProfiles().get(event);
+            require(profile != null && profile.guaranteedCoreCount() == 1
+                            && Math.abs(profile.weights().get(AugmentTier.EPIC) - 0.10D) < 0.000001D,
+                    "Event core epic weight drifted: " + event);
+        }
+        CoreDistributionCatalog.EventProfile warden = catalog.eventProfiles().get("warden");
+        require(warden != null && warden.guaranteedCoreCount() == 1
+                        && Math.abs(warden.weights().get(AugmentTier.LEGENDARY) - 0.10D) < 0.000001D
+                        && Math.abs(warden.weights().get(AugmentTier.EPIC) - 0.40D) < 0.000001D,
+                "Warden core reward weights drifted");
+        CoreDistributionCatalog.FishingProfile fishing = catalog.fishingProfile();
+        require(fishing != null && "treasure_fishing".equals(fishing.id())
+                        && "successful_treasure_category_catch".equals(fishing.trigger())
+                        && Math.abs(fishing.coreRollChance() - 0.12D) < 0.000001D
+                        && Math.abs(fishing.weights().get(AugmentTier.RARE) - 0.05D) < 0.000001D
+                        && Math.abs(fishing.weights().get(AugmentTier.UNCOMMON) - 0.25D) < 0.000001D,
+                "Treasure fishing core profile was not bound correctly");
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest(maxTicks = 20)
     public void externalProgressionHostilesAndBossProfilesAreAuthored(GameTestHelper helper) {
         CoreDistributionCatalog.MobProfile progression =
                 CoreDistributionCatalog.current().mobProfiles().get("progression_hostile");
         require(progression != null, "progression_hostile profile is missing");
-        require(Math.abs(progression.coreRollChance() - 0.008D) < 0.000001D,
+        require(Math.abs(progression.coreRollChance() - 0.024D) < 0.000001D,
                 "progression_hostile chance drifted: " + progression.coreRollChance());
 
         CoreSourceResolver.HostileResolution chrono = CoreSourceResolver.resolveHostile(

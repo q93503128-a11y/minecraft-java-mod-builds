@@ -196,11 +196,14 @@ I D I
 
 핵심 시작값:
 
-- routine 구조물 추가 roll 8%
-- dangerous_mid 12%
-- dangerous_high 18%
-- pinnacle_cache 35%
-- 일반 적대몹 player-attributed kill 0.20%
+- routine 구조물 추가 roll 13%
+- dangerous_mid 17%
+- dangerous_high 23%
+- pinnacle_cache 40%
+- 일반 적대몹 player-attributed kill 0.60% (진행 구역 2.4%, 특수 4.5%, 엘리트 12%)
+- 상자 확률에는 기존 구조물 밀도 보정 multiplier 적용
+- 일반 구조물 희귀 5%, 습격/엘더 가디언 영웅 10%, 워든 전설 10%
+- 보물 낚시 코어 확률 12% 유지 (획득 시 일반 70%·고급 25%·희귀 5%)
 - 보스는 등급별 core 1개 보장 + 플레이어별 최초 처치 bonus 1개
 
 Looting/Fortune/풍요/일반 드롭 복제 증강은 progression core를 증폭하지 않는다.

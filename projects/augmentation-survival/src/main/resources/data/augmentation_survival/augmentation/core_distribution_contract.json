@@ -15,28 +15,28 @@
   "distribution_templates": [
     {
       "id": "routine_exploration",
-      "core_roll_chance": 0.08,
+      "core_roll_chance": 0.13,
       "max_core_rolls": 1,
-      "weights": { "common": 0.84, "uncommon": 0.15, "rare": 0.01 },
+      "weights": { "common": 0.80, "uncommon": 0.15, "rare": 0.05 },
       "intent": "Routine exploration is a common/uncommon source with a small rare upside."
     },
     {
       "id": "dangerous_mid",
-      "core_roll_chance": 0.12,
+      "core_roll_chance": 0.17,
       "max_core_rolls": 1,
       "weights": { "uncommon": 0.70, "rare": 0.25, "epic": 0.05 },
       "intent": "Dangerous structures and encounters move progression into uncommon through epic."
     },
     {
       "id": "dangerous_high",
-      "core_roll_chance": 0.18,
+      "core_roll_chance": 0.23,
       "max_core_rolls": 1,
       "weights": { "rare": 0.70, "epic": 0.25, "legendary": 0.05 },
       "intent": "High-risk content directly exposes legendary cores without making them routine."
     },
     {
       "id": "pinnacle_cache",
-      "core_roll_chance": 0.35,
+      "core_roll_chance": 0.4,
       "max_core_rolls": 1,
       "weights": { "legendary": 0.90, "mythic": 0.10 },
       "intent": "Explicit top-end completion caches are legendary-first with a mythic upside."
@@ -45,26 +45,26 @@
   "mob_profiles": [
     {
       "id": "normal_hostile",
-      "core_roll_chance": 0.002,
+      "core_roll_chance": 0.006,
       "weights": { "common": 0.90, "uncommon": 0.10 },
       "require_player_attributed_kill": true
     },
     {
       "id": "progression_hostile",
-      "core_roll_chance": 0.008,
+      "core_roll_chance": 0.024,
       "weights": { "common": 0.75, "uncommon": 0.22, "rare": 0.03 },
       "require_player_attributed_kill": true,
       "intent": "Dedicated progression-zone hostiles should contribute cores noticeably more often than ordinary overworld mobs without competing with elites, structures, or bosses."
     },
     {
       "id": "special_hostile",
-      "core_roll_chance": 0.015,
+      "core_roll_chance": 0.045,
       "weights": { "common": 0.65, "uncommon": 0.30, "rare": 0.05 },
       "require_player_attributed_kill": true
     },
     {
       "id": "elite_hostile",
-      "core_roll_chance": 0.04,
+      "core_roll_chance": 0.12,
       "weights": { "uncommon": 0.65, "rare": 0.30, "epic": 0.05 },
       "require_player_attributed_kill": true
     }
@@ -73,19 +73,19 @@
     {
       "id": "raid_victory",
       "guaranteed_core_count": 1,
-      "weights": { "uncommon": 0.65, "rare": 0.30, "epic": 0.05 },
+      "weights": { "uncommon": 0.60, "rare": 0.30, "epic": 0.10 },
       "per_player_reward": true
     },
     {
       "id": "elder_guardian",
       "guaranteed_core_count": 1,
-      "weights": { "uncommon": 0.50, "rare": 0.45, "epic": 0.05 },
+      "weights": { "uncommon": 0.45, "rare": 0.45, "epic": 0.10 },
       "per_player_reward": true
     },
     {
       "id": "warden",
       "guaranteed_core_count": 1,
-      "weights": { "rare": 0.65, "epic": 0.30, "legendary": 0.05 },
+      "weights": { "rare": 0.50, "epic": 0.40, "legendary": 0.10 },
       "per_player_reward": true
     }
   ],
@@ -93,7 +93,7 @@
     "id": "treasure_fishing",
     "trigger": "successful_treasure_category_catch",
     "core_roll_chance": 0.12,
-    "weights": { "common": 0.70, "uncommon": 0.28, "rare": 0.02 },
+    "weights": { "common": 0.70, "uncommon": 0.25, "rare": 0.05 },
     "preserve_original_loot": true
   },
   "candidate_source_families": [

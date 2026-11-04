@@ -194,11 +194,23 @@ public final class CoreDistributionCatalog {
             putUnique(events, profile.id(), profile, "event profile");
         }
 
+        JsonObject fishingObject = root.getAsJsonObject("fishing_profile");
+        if (fishingObject == null) {
+            throw new IllegalStateException("Missing fishing_profile in core distribution contract");
+        }
+        FishingProfile fishingProfile = new FishingProfile(
+                requireString(fishingObject, "id"),
+                requireString(fishingObject, "trigger"),
+                requireProbability(fishingObject, "core_roll_chance"),
+                parseWeights(fishingObject.getAsJsonObject("weights"))
+        );
+
         return new Catalog(
                 schemaVersion,
                 Collections.unmodifiableMap(templates),
                 Collections.unmodifiableMap(mobs),
-                Collections.unmodifiableMap(events)
+                Collections.unmodifiableMap(events),
+                fishingProfile
         );
     }
 
@@ -256,7 +268,8 @@ public final class CoreDistributionCatalog {
             int schemaVersion,
             Map<String, DistributionTemplate> distributionTemplates,
             Map<String, MobProfile> mobProfiles,
-            Map<String, EventProfile> eventProfiles
+            Map<String, EventProfile> eventProfiles,
+            FishingProfile fishingProfile
     ) {
     }
 
@@ -281,6 +294,14 @@ public final class CoreDistributionCatalog {
             int guaranteedCoreCount,
             Map<AugmentTier, Double> weights,
             boolean perPlayerReward
+    ) {
+    }
+
+    public record FishingProfile(
+            String id,
+            String trigger,
+            double coreRollChance,
+            Map<AugmentTier, Double> weights
     ) {
     }
 }
