@@ -92,6 +92,8 @@
    - 인형술사 초기 기획: [골격·행동 장치·구동핵, 인형 수리와 액티브 초안](./classes/PUPPETEER.md).
    - 인형술사 재료 루프: [초기 원자재/3부품 조립/상위 보강/수리·분해 회수 경제](./classes/PUPPET_CRAFTING_ECONOMY.md).
    - 인형술사 27특화 조합: [골격/무장/구동핵, 9개 기본 모션, 역할별 AI 및 잠정 전투 수치](./classes/PUPPET_COMBAT_MATRIX.md).
+   - 패시브 성장: [인형술사 290랭크 스킬 트리](./classes/PUPPET_SKILL_TREE.md) / [10개 노드 돌파 효과](./classes/PUPPET_MILESTONES.md).
+   - 전용 조종틀 장비: [마리오네트 조종틀 5등급 승급·효과·원자재](./classes/MARIONETTE_CONTROL_BAR.md).
    - 몸체 크기/인형제작대: [경량 공속 보정, 재료에 따라 3블록 크기로 확장, 단일 인형제작대 조립·강화·분해](./classes/PUPPET_SCALE_AND_WORKBENCH.md). 세부 수치 미확정, UI 시안 원본 보존.
 3. 직업별 자동 스탯 성장과 레벨 상한 없는 장기 성장 곡선
 4. 지배 계산식(장악 진행, 정신력 회복/유지, 지배 해제와 CC 상호작용) 및 외부 보스 AI 호환 정책
