@@ -13,6 +13,7 @@ Status: 논의 내용 정리 및 미확정 후보 기록. **여기에 없는 숫
 - [정신 지배자 패시브 트리·성장형 동시 지배 한도 (v2)](./classes/SKILL_TREE.md): 이전 3~5랭크 안은 사용자의 피드백으로 철회하고 **20~40랭크, 총 270랭크** 후보로 확장. 성장형 동시 지배 한도·추가 부담 공식과 연동. **랭크·수치·돌파 효과는 최종 미확정**.
 - [외부 게임·Minecraft 모드의 패시브 성장 사례 조사](./classes/PASSIVE_PROGRESSION_RESEARCH.md): Diablo III/IV, Path of Exile, Minecraft RPG Skill Tree, Simply Skills, Pufferfish's Skills 등의 비교를 바탕으로 한 장기 성장 후보. **설계 조사이지 밸런스 실증이 아님**.
 - [외부 사례 기반 패시브 돌파 효과 상세 설계](./classes/MILESTONE_DESIGN.md): Last Epoch Dread Shade·Grim Dawn Devotion 등의 구체 메커니즘에서 원리를 참고해 **정신 지배자 패시브 10종의 랭크별 돌파 기능, 조건, 대가, 서버 상태 경계**를 정리했다. **신규 수치·효과는 사용자 검토 전 초안**.
+- [지배체 조작·생존·저장 설계안](./classes/CONTROL_AND_PERSISTENCE.md): 관리키 1개, 개별 동행/대기/해제·피해 허용, 전체 동행/대기, 거리 이탈/로그아웃/죽음/청크 언로드 시 원본 개체 저장, 소유권·UUID·멀티플레이·성능 경계. **개별 정책과 키는 미확정**.
 - 다른 일곱 직업은 정신 지배자 기획을 검토한 뒤 순차적으로 설계한다.
 
 ## 직업의 차별점
