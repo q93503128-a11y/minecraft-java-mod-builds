@@ -4,6 +4,11 @@
 
 ## 활성 프로젝트
 
+- [`anomalous-classes`](./anomalous-classes/) — 《이능 직업 서바이벌》(가칭), 정신 지배자·인형술사·기생술사·결계술사·계약술사·군체술사·중력술사·공명술사 8종의 이능 직업과 공통 RPG 성장 시스템을 결합한 Minecraft Java 서바이벌 모드
+  - 상태: `DESIGN IN PROGRESS / NO SOURCE BOOTSTRAP YET`
+  - 정본 시작점: [`anomalous-classes/PROJECT.md`](./anomalous-classes/PROJECT.md), [`anomalous-classes/GAME_DESIGN.md`](./anomalous-classes/GAME_DESIGN.md)
+  - 고유 장비 등급명·버전·로더는 미확정, 외부 몬스터 활용 검토 중
+
 - [`augmentation-survival`](./augmentation-survival/) — 정식 명칭 미정, Minecraft 장기 서바이벌에 등급별 증강과 강한 파워 판타지를 결합하는 증강 중심 모드
   - 상태: `DESIGN CANON BUILDING / NO SOURCE BOOTSTRAP YET`
   - 정본 시작점: [`augmentation-survival/PROJECT.md`](./augmentation-survival/PROJECT.md), [`augmentation-survival/GAME_DESIGN.md`](./augmentation-survival/GAME_DESIGN.md)
