@@ -96,7 +96,7 @@
    - 인형술사 액티브와 레벨 성장: [무료 기본 명령과 3액티브, 플레이어·인형의 자동 스탯 성장](./classes/PUPPET_ACTIVES_AND_GROWTH.md). 전투 수치·쿨타임은 설계 후보.
    - 전용 조종틀 장비: [마리오네트 조종틀 5등급 승급·효과·원자재](./classes/MARIONETTE_CONTROL_BAR.md).
    - 몸체 크기/인형제작대: [경량 공속 보정, 재료에 따라 3블록 크기로 확장, 단일 인형제작대 조립·강화·분해](./classes/PUPPET_SCALE_AND_WORKBENCH.md). 세부 수치 미확정, UI 시안 원본 보존.
-   - 세 번째 직업 기생술사: [허약한 인간형·실숙주 기생·직접 조종·종간 이전](./classes/PARASITE_MORPHER.md), [영구 생체 데이터 성장 스탯·강한 숙주 최소 요구치 설계](./classes/PARASITE_BIODATA_GROWTH.md). 구체 HP/공격 보정/요구 BD 값은 검증 전. [이전 3기관 채취형 초안](./classes/PARASITE_MORPHER_V1_ARCHIVE.md)은 참조 기록으로 보존.
+   - 세 번째 직업 기생술사: [허약한 인간형·실숙주 기생·직접 조종·종간 이전](./classes/PARASITE_MORPHER.md), [영구 생체 데이터 성장 스탯·강한 숙주 최소 요구치](./classes/PARASITE_BIODATA_GROWTH.md), [BD 획득·종별 숙련·실제 침투 저항 판정](./classes/PARASITE_BIODATA_ACQUISITION_AND_INTRUSION.md). 구체 수급량/HP 보정/요구 BD·침투 시간은 검증 전. [이전 3기관 채취형 초안](./classes/PARASITE_MORPHER_V1_ARCHIVE.md)은 참조 기록으로 보존.
 3. 직업별 자동 스탯 성장과 레벨 상한 없는 장기 성장 곡선
 4. 지배 계산식(장악 진행, 정신력 회복/유지, 지배 해제와 CC 상호작용) 및 외부 보스 AI 호환 정책
 5. 실제 외부 모드 후보/버전/로더 비교
