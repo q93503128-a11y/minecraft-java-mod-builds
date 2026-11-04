@@ -2,6 +2,10 @@ name: Build Augmentation Survival Pack
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'projects/augmentation-survival/**'
+      - '.github/workflows/build-augmentation-survival.yml'
   push:
     branches: [main]
     paths:
@@ -42,8 +46,17 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          ./gradlew --no-daemon clean build inspectPackDependencies verifyPackRuntimeClasspath \
+          ./gradlew --no-daemon clean assemble inspectPackDependencies verifyPackRuntimeClasspath \
             -PaugmentationPackRuntime=true --stacktrace 2>&1 | tee "$RUNNER_TEMP/augmentation-survival-build.log"
+
+      - name: Run required GameTests (independent from artifact generation)
+        id: gametest
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon runGameTest \
+            -PaugmentationPackRuntime=true --stacktrace 2>&1 | tee "$RUNNER_TEMP/augmentation-survival-gametest.log"
 
       - name: Capture World Bosses localization contract
         id: worldbosses_localization
@@ -418,6 +431,7 @@ jobs:
           RUN_SHA: ${{ github.sha }}
           TOOLCHAIN_OUTCOME: ${{ steps.toolchain.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
+          GAMETEST_OUTCOME: ${{ steps.gametest.outcome }}
           WORLDBOSSES_OUTCOME: ${{ steps.worldbosses_localization.outcome }}
           LOCALIZATION_OUTCOME: ${{ steps.external_localization.outcome }}
           SERVER_OUTCOME: ${{ steps.server.outcome }}
@@ -430,6 +444,7 @@ jobs:
           mkdir -p "$report_dir/raw-log-staging"
           [[ ! -f "$RUNNER_TEMP/augmentation-survival-toolchain.log" ]] || cp "$RUNNER_TEMP/augmentation-survival-toolchain.log" "$report_dir/raw-log-staging/toolchain.log"
           [[ ! -f "$RUNNER_TEMP/augmentation-survival-build.log" ]] || cp "$RUNNER_TEMP/augmentation-survival-build.log" "$report_dir/raw-log-staging/build.log"
+          [[ ! -f "$RUNNER_TEMP/augmentation-survival-gametest.log" ]] || cp "$RUNNER_TEMP/augmentation-survival-gametest.log" "$report_dir/raw-log-staging/gametest.log"
           if [[ -d "$report_dir" ]]; then
             find "$report_dir" -maxdepth 1 -type f \( -name '*.log' -o -name '*.txt' \) -exec cp -f {} "$report_dir/raw-log-staging/" \;
           fi
@@ -459,7 +474,7 @@ jobs:
           if pack_sums:
               pack_line = pack_sums[-1].read_text(encoding='utf-8').strip()
 
-          build_log = logs / 'augmentation-survival-build.log'
+          build_log = logs / 'augmentation-survival-gametest.log'
           game_tests = 'not recorded'
           if build_log.exists():
               match = re.search(r'All (\d+) required tests passed', build_log.read_text(encoding='utf-8', errors='replace'))
@@ -482,7 +497,8 @@ jobs:
               '## Verification',
               '',
               f"- Toolchain check: {result('TOOLCHAIN_OUTCOME')}",
-              f"- `clean build`, pack dependency checks, and GameTests: {result('BUILD_OUTCOME')} ({game_tests})",
+              f"- `clean assemble` and pinned pack dependency checks: {result('BUILD_OUTCOME')}",
+              f"- Required GameTests: {result('GAMETEST_OUTCOME')} ({game_tests})",
               f"- World Bosses localization capture: {result('WORLDBOSSES_OUTCOME')}",
               f"- External Korean localization audit: {result('LOCALIZATION_OUTCOME')}",
               f"- Dedicated server boot smoke: {result('SERVER_OUTCOME')}",
@@ -509,5 +525,16 @@ jobs:
             projects/augmentation-survival/build/libs/*.jar
             projects/augmentation-survival/build/libs/*.sha256
             projects/augmentation-survival/build/distributions/**
+
+      - name: Enforce required GameTest gate after artifact upload
+        if: always()
+        shell: bash
+        env:
+          TEST_OUTCOME: ${{ steps.gametest.outcome }}
+        run: |
+          if [[ "$TEST_OUTCOME" != "success" ]]; then
+            echo "::error::Required GameTests did not all pass. Build artifacts are diagnostic and are NOT verified for release."
+            exit 1
+          fi
           if-no-files-found: warn
           retention-days: 14
