@@ -25,6 +25,8 @@ public final class ClientPerceptionState {
     private static final int RED = 0xFFFF4A4A;
     private static final int REVIVE = 0xFFE6F2FF;
     private static final VoxelShape UNIT_SHAPE = Shapes.block();
+    private static final VoxelShape GRAVE_STONE = Shapes.box(0.25D, 0.10D, 0.25D, 0.75D, 0.94D, 0.75D);
+    private static final VoxelShape GRAVE_BASE = Shapes.box(0.13D, 0.02D, 0.13D, 0.87D, 0.22D, 0.87D);
     private static int oreSenseLevel;
     private static boolean enchantRefreshOwned;
     private static int sweepingEnhancementLevel;
@@ -113,7 +115,20 @@ public final class ClientPerceptionState {
         Vec3 camera = context.levelState().cameraRenderState.pos;
         renderPositions(context, exposedOrePositions, camera, CYAN);
         renderPositions(context, chestPositions, camera, GOLD);
-        renderPositions(context, reviveMarkerPositions, camera, REVIVE);
+        renderGraves(context, camera);
+    }
+
+    private static void renderGraves(LevelRenderContext context, Vec3 camera) {
+        PoseStack stack = context.poseStack();
+        for (BlockPos pos : reviveMarkerPositions) {
+            stack.pushPose();
+            stack.translate(pos.getX() - camera.x, pos.getY() - camera.y, pos.getZ() - camera.z);
+            context.submitNodeCollector().submitShapeOutline(
+                    stack, GRAVE_BASE, RenderTypes.linesTranslucent(), 0xB7DDE9F0, 1.0F, true);
+            context.submitNodeCollector().submitShapeOutline(
+                    stack, GRAVE_STONE, RenderTypes.linesTranslucent(), REVIVE, 1.0F, true);
+            stack.popPose();
+        }
     }
 
     private static void renderPositions(LevelRenderContext context, List<BlockPos> positions, Vec3 camera, int color) {
