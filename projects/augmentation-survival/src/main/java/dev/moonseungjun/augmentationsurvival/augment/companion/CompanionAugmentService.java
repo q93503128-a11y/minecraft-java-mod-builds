@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import net.minecraft.world.entity.EntityType;
 import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -54,11 +55,19 @@ public final class CompanionAugmentService {
     public static void initialize() {
         AugmentCatalog.require(DOMINATION_ID);
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
-            if (entity instanceof Mob mob && isDominated(mob)) {
-                mob.setPersistenceRequired();
-                mob.setGlowingTag(true);
-                LOADED_DOMINATED.put(mob.getUUID(), mob);
+            if (!(entity instanceof Mob mob) || !isDominated(mob)) return;
+            MinecraftServer server = level.getServer();
+            DominationWorldState state = worldState(server);
+            if (state.pendingRelease(mob.getUUID())) {
+                clearDominatedMob(mob);
+                setWorldState(server, state.withClearedPending(mob.getUUID()));
+                return;
             }
+            UUID owner = ownerId(mob).orElseThrow();
+            mob.setPersistenceRequired();
+            mob.setGlowingTag(true);
+            LOADED_DOMINATED.put(mob.getUUID(), mob);
+            setWorldState(server, state.withLoaded(mob.getUUID(), member(mob, owner)));
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> LOADED_DOMINATED.remove(entity.getUUID()));
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamageTaken, damageTaken, blocked) -> {
@@ -99,7 +108,7 @@ public final class CompanionAugmentService {
             warden.clearAnger(player);
         }
         LOADED_DOMINATED.put(target.getUUID(), target);
-        setWorldState(server, worldState.withDelta(player.getUUID(), 1));
+        setWorldState(server, worldState.withAcquired(target.getUUID(), member(target, player.getUUID())));
         refreshCombatTarget(target, player.getUUID(), server);
         return true;
     }
@@ -183,7 +192,8 @@ public final class CompanionAugmentService {
         if (owner.isPresent() && entity.level() instanceof ServerLevel level) {
             LOADED_DOMINATED.remove(entity.getUUID());
             MinecraftServer server = level.getServer();
-            setWorldState(server, worldState(server).withDelta(owner.get(), -1));
+            setWorldState(server, worldState(server).withDeath(entity.getUUID(),
+                    member(entity, owner.get()), ReviveAugmentService.hasMarker(entity.getUUID())));
         }
         OWNER_COMMAND_TARGETS.entrySet().removeIf(entry -> entry.getValue().entityId().equals(entity.getUUID()));
     }
@@ -197,23 +207,71 @@ public final class CompanionAugmentService {
         clearCombatTarget(mob, mob.getTarget());
         LOADED_DOMINATED.put(mob.getUUID(), mob);
         MinecraftServer server = level.getServer();
-        setWorldState(server, worldState(server).withDelta(owner.get(), 1));
+        setWorldState(server, worldState(server).withRevived(mob.getUUID(), member(mob, owner.get())));
         refreshCombatTarget(mob, owner.get(), server);
     }
 
     private static boolean releaseDominated(ServerPlayer owner, Mob mob) {
         if (!isOwnedBy(mob, owner.getUUID()) || !(mob.level() instanceof ServerLevel level)) return false;
+        clearDominatedMob(mob);
+        MinecraftServer server = level.getServer();
+        setWorldState(server, worldState(server).withReleased(owner.getUUID(), mob.getUUID(), true));
+        return true;
+    }
+
+    private static DominationWorldState.Member member(LivingEntity entity, UUID owner) {
+        return new DominationWorldState.Member(
+                owner.toString(), EntityType.getKey(entity.getType()).toString(),
+                entity.level().dimension().identifier().toString(), false
+        );
+    }
+
+    private static void clearDominatedMob(Mob mob) {
         clearCombatTarget(mob, mob.getTarget());
         mob.getNavigation().stop();
-        if (mob instanceof Warden warden) {
-            warden.clearAnger(owner);
-        }
         mob.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.initial());
         mob.setGlowingTag(false);
         LOADED_DOMINATED.remove(mob.getUUID());
-        MinecraftServer server = level.getServer();
-        setWorldState(server, worldState(server).withDelta(owner.getUUID(), -1));
+    }
+
+    public static DominationWorldState roster(MinecraftServer server) {
+        return worldState(server);
+    }
+
+    /** Server-authoritative remote release. Never force-loads a dimension or chunk. */
+    public static boolean remoteRelease(ServerPlayer owner, UUID targetId) {
+        MinecraftServer server = owner.level().getServer();
+        DominationWorldState world = worldState(server);
+        DominationWorldState.Member entry = world.member(targetId);
+        if (entry == null || !entry.owner().equals(owner.getUUID().toString())) return false;
+        Mob loaded = LOADED_DOMINATED.get(targetId);
+        boolean cleared = loaded != null && !loaded.isRemoved() && isOwnedBy(loaded, owner.getUUID());
+        if (cleared) clearDominatedMob(loaded);
+        if (entry.reserved()) {
+            ReviveAugmentService.cancelMarker(targetId);
+            cleared = true; // A dead entity cannot be loaded or return as a dominated mob.
+        }
+        setWorldState(server, world.withReleased(owner.getUUID(), targetId, cleared));
         return true;
+    }
+
+    public static int remoteReleaseAll(ServerPlayer owner) {
+        int released = 0;
+        for (var entry : List.copyOf(worldState(owner.level().getServer()).membersOf(owner.getUUID()))) {
+            try {
+                if (remoteRelease(owner, UUID.fromString(entry.getKey()))) released++;
+            } catch (IllegalArgumentException ignored) {
+                // Malformed historical identifiers never allow releasing someone else's entity.
+            }
+        }
+        return released;
+    }
+
+    public static void expireReservedSlot(MinecraftServer server, UUID owner, UUID entityId) {
+        DominationWorldState world = worldState(server);
+        DominationWorldState.Member entry = world.member(entityId);
+        if (entry == null || !entry.reserved() || !entry.owner().equals(owner.toString())) return;
+        setWorldState(server, world.withReleased(owner, entityId, true));
     }
 
     private static void tickDominatedCompanions(MinecraftServer server) {
