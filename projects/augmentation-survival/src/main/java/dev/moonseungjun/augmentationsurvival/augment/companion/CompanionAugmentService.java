@@ -253,6 +253,11 @@ public final class CompanionAugmentService {
         return worldState(server);
     }
 
+    public static boolean isLoadedCompanion(UUID id, UUID ownerId) {
+        Mob mob = LOADED_DOMINATED.get(id);
+        return mob != null && !mob.isRemoved() && isOwnedBy(mob, ownerId);
+    }
+
     /** Server-authoritative remote release. Never force-loads a dimension or chunk. */
     public static boolean remoteRelease(ServerPlayer owner, UUID targetId) {
         MinecraftServer server = owner.level().getServer();
