@@ -175,7 +175,13 @@ public final class MythicLiveFixBatchHGameTests implements CustomTestMethodInvok
         require(FlightAugmentService.toggle(player), "powered flight did not activate");
         GameTestPlayers.runAfterDelay(helper, 4, () -> {
             require(cow.getHealth() < before,
-                    "powered-flight body impact crossed a neutral mob without collision damage");
+                    "powered-flight body impact crossed a neutral mob without collision damage"
+                    + ": phase=" + FlightAugmentService.phase(player)
+                    + ", flightActive=" + FlightAugmentService.isActive(player)
+                    + ", playerPos=" + player.position()
+                    + ", cowPos=" + cow.position()
+                    + ", playerVelocity=" + player.getDeltaMovement()
+                    + ", healthBefore=" + before + ", healthAfter=" + cow.getHealth());
             GameTestPlayers.succeed(helper);
         });
     }
