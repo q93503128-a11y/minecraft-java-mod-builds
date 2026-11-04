@@ -21,7 +21,8 @@ Status: 논의 내용 정리 및 미확정 후보 기록. **여기에 없는 숫
 - [외부 게임·Minecraft 모드의 패시브 성장 사례 조사](./classes/PASSIVE_PROGRESSION_RESEARCH.md): Diablo III/IV, Path of Exile, Minecraft RPG Skill Tree, Simply Skills, Pufferfish's Skills 등의 비교를 바탕으로 한 장기 성장 후보. **설계 조사이지 밸런스 실증이 아님**.
 - [외부 사례 기반 패시브 돌파 효과 상세 설계](./classes/MILESTONE_DESIGN.md): Last Epoch Dread Shade·Grim Dawn Devotion 등의 구체 메커니즘에서 원리를 참고해 **정신 지배자 패시브 10종의 랭크별 돌파 기능, 조건, 대가, 서버 상태 경계**를 정리했다. **신규 수치·효과는 사용자 검토 전 초안**.
 - [지배체 조작·생존·저장 설계안](./classes/CONTROL_AND_PERSISTENCE.md): 관리키 1개, 개별 동행/대기/해제·피해 허용, 전체 동행/대기, 거리 이탈/로그아웃/죽음/청크 언로드 시 원본 개체 저장, 소유권·UUID·멀티플레이·성능 경계. **개별 정책과 키는 미확정**.
-- 다른 일곱 직업은 정신 지배자 기획을 검토한 뒤 순차적으로 설계한다.
+- [인형술사 — 제작·개조형 전투 직업 상세 초안](./classes/PUPPETEER.md): 외부 모드와 RPG 사례를 비교해 골격/행동 장치/구동핵 3요소, 소수 인형의 자동 전투, 수리·파손·회수, 액티브 후보, 장기 패시브(290랭크 초안), '인형 제어 장치' 5등급 방향을 정리했다. **구체 구조·숫자·명칭은 사용자 검토 전 제안**.
+- 인형술사를 제외한 다른 여섯 직업도 각자 기획한 뒤 공용 직업 UI·API 계약에 연결한다.
 
 ## 직업의 차별점
 
