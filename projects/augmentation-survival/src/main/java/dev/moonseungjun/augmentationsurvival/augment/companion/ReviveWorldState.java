@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 
 /** Persistent pending companion resurrection markers, including their entity snapshots. */
 public record ReviveWorldState(Map<String, Grave> graves) {
@@ -20,12 +22,12 @@ public record ReviveWorldState(Map<String, Grave> graves) {
         return new ReviveWorldState(Map.of());
     }
 
-    public record Grave(String owner, String type, String snapshot, String dimension,
+    public record Grave(String owner, String type, CompoundTag snapshot, String dimension,
                         List<Double> position, long expiresAtTick) {
         public static final Codec<Grave> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Codec.STRING.fieldOf("owner").forGetter(Grave::owner),
                 Codec.STRING.fieldOf("type").forGetter(Grave::type),
-                Codec.STRING.fieldOf("snapshot").forGetter(Grave::snapshot),
+                TagParser.LENIENT_CODEC.fieldOf("snapshot").forGetter(Grave::snapshot),
                 Codec.STRING.fieldOf("dimension").forGetter(Grave::dimension),
                 Codec.DOUBLE.listOf().fieldOf("position").forGetter(Grave::position),
                 Codec.LONG.fieldOf("expires_at").forGetter(Grave::expiresAtTick)
