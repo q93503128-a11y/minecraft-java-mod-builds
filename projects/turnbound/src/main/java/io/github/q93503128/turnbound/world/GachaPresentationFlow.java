@@ -18,7 +18,7 @@ public final class GachaPresentationFlow {
         }
     }
 
-    private static final int RITUAL_TICKS = 18;
+    private static final int RITUAL_TICKS = 7;
 
     private final List<Pull> pulls;
     private final int highestStars;
@@ -113,39 +113,41 @@ public final class GachaPresentationFlow {
 
     private static int omenTicks(int stars) {
         return switch (stars) {
-            case 5 -> 18;
-            case 4 -> 15;
-            case 3 -> 12;
-            default -> 10;
-        };
-    }
-
-    private static int breakTicks(int stars) {
-        return switch (stars) {
-            case 5 -> 13;
-            case 4 -> 9;
-            case 3 -> 7;
-            default -> 6;
-        };
-    }
-
-    private static int silhouetteTicks(int stars) {
-        return switch (stars) {
-            case 5 -> 12;
-            case 4 -> 9;
-            case 3 -> 7;
+            case 5 -> 14;
+            case 4 -> 10;
+            case 3 -> 8;
             case 2 -> 6;
             default -> 5;
         };
     }
 
+    private static int breakTicks(int stars) {
+        return switch (stars) {
+            case 5 -> 10;
+            case 4 -> 7;
+            case 3 -> 5;
+            case 2 -> 4;
+            default -> 3;
+        };
+    }
+
+    private static int silhouetteTicks(int stars) {
+        return switch (stars) {
+            case 5 -> 10;
+            case 4 -> 7;
+            case 3 -> 5;
+            case 2 -> 4;
+            default -> 3;
+        };
+    }
+
     private static int revealTicks(int stars) {
         return switch (stars) {
-            case 5 -> 13;
+            case 5 -> 14;
             case 4 -> 10;
-            case 3 -> 8;
-            case 2 -> 7;
-            default -> 6;
+            case 3 -> 7;
+            case 2 -> 6;
+            default -> 5;
         };
     }
 }

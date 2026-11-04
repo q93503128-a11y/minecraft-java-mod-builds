@@ -3,3 +3,4 @@
 /run/
 /.idea/
 *.iml
+/src/main/resources/assets/turnbound/textures/gui/summon/

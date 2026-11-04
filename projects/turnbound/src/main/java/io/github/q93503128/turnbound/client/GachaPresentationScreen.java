@@ -19,12 +19,12 @@ import java.util.List;
  * The character image is a build-time bake from the production GeckoLib model/texture; no live entity is rendered.
  */
 public final class GachaPresentationScreen extends Screen {
-    static final int TEXT = 0xFFF4F0E6;
-    static final int SECONDARY = 0xFFAEB7C6;
-    static final int MUTED = 0xFF707987;
-    static final int GREEN = 0xFF62D39A;
-    static final int GOLD = 0xFFFFC857;
-    static final int PURPLE = 0xFFC794FF;
+    static final int TEXT = 0xFF352B20;
+    static final int SECONDARY = 0xFF675744;
+    static final int MUTED = 0xFF75634E;
+    static final int GREEN = 0xFF456C48;
+    static final int GOLD = 0xFF8A5B18;
+    static final int PURPLE = 0xFF63458A;
     private static final int BACKDROP = 0xFF050815;
 
     public record Pull(
@@ -196,7 +196,6 @@ public final class GachaPresentationScreen extends Screen {
         g.fill(0, 0, width, height, BACKDROP);
         SummonLayerRenderer.fullScreen(g, SummonAssets.BG_ARCHIVE, width, height);
         SummonPresentationRenderer.render(this, g);
-        SummonLayerRenderer.fullScreen(g, SummonAssets.VEIL_SOFT, width, height);
         super.extractRenderState(g, mouseX, mouseY, partialTick);
     }
 

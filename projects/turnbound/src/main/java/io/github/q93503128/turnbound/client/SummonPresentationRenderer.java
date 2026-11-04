@@ -2,8 +2,9 @@ package io.github.q93503128.turnbound.client;
 
 import io.github.q93503128.turnbound.world.GachaPresentationFlow;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
 
-/** Visual-only renderer for the 2D summon cinematic. State ownership stays in GachaPresentationScreen/Flow. */
+/** Composes authored page and character artwork; state ownership stays in GachaPresentationFlow. */
 final class SummonPresentationRenderer {
     private static final long TICK_NANOS = 50_000_000L;
     private static GachaPresentationScreen clockScreen;
@@ -14,357 +15,284 @@ final class SummonPresentationRenderer {
 
     private SummonPresentationRenderer() {}
 
-    static void render(GachaPresentationScreen screen, GuiGraphicsExtractor g) {
+    static void render(GachaPresentationScreen screen, GuiGraphicsExtractor graphics) {
         GachaPresentationFlow flow = screen.flowView();
         if (flow.summary()) {
-            drawSummary(screen, g);
+            drawSummary(screen, graphics);
             return;
         }
 
         float progress = visualProgress(screen, flow);
         switch (flow.stage()) {
-            case RITUAL -> drawRitual(screen, g, progress);
-            case OMEN -> drawOmen(screen, g, progress);
-            case BREAK -> drawBreak(screen, g, progress);
-            case SILHOUETTE -> drawCharacter(screen, g, true, false, progress);
-            case REVEAL -> drawCharacter(screen, g, false, true, progress);
-            case HOLD -> drawCharacter(screen, g, false, false, 1.0F);
+            case RITUAL -> drawRitual(screen, graphics, progress);
+            case OMEN -> drawOmen(screen, graphics, progress);
+            case BREAK -> drawBreak(screen, graphics, progress);
+            case SILHOUETTE -> drawSilhouette(screen, graphics, progress);
+            case REVEAL -> drawCharacter(screen, graphics, true, progress);
+            case HOLD -> drawCharacter(screen, graphics, false, 1.0F);
             case SUMMARY -> { }
         }
-        drawCinematicHud(screen, g);
+        drawCinematicHud(screen, graphics);
     }
 
-    private static void drawRitual(GachaPresentationScreen s, GuiGraphicsExtractor g, float progress) {
-        float eased = SummonEasing.easeOutCubic(progress);
-        float ambient = ambientWave(0.80);
-        int cx = s.screenWidth() / 2;
-        int cy = s.screenHeight() / 2 - 4;
-        int base = Math.max(142, Math.min(310, Math.min(s.screenWidth(), s.screenHeight()) * 62 / 100));
-        int sigil = Math.round(base * (0.92F + 0.08F * eased));
-
-        SummonLayerRenderer.centered(g, SummonAssets.SIGIL_BACK, cx, cy, sigil, sigil);
-        SummonLayerRenderer.centered(g, SummonAssets.FLARE_CYAN, cx, cy,
-                Math.min(s.screenWidth() - 18, base * 2 + 80), Math.max(54, base / 3));
-        SummonLayerRenderer.fullScreen(g, SummonAssets.SHARDS_CYAN, s.screenWidth(), s.screenHeight());
-
-        int crystalH = Math.round(base * (0.66F + 0.08F * eased));
-        int crystalW = crystalH * 72 / 100;
-        int lift = Math.round(14.0F * (1.0F - eased) + (ambient - 0.5F) * 4.0F);
-        SummonLayerRenderer.centered(g, SummonAssets.CRYSTAL, cx, cy + lift, crystalW, crystalH);
-
-        int page = Math.max(15, base / 12);
-        int spread = Math.max(64, base / 2);
-        SummonLayerRenderer.sprite(g, SummonAssets.PAGE,
-                cx - spread - page, cy - base / 5 + Math.round(6 * ambient), page * 4 / 3, page);
-        SummonLayerRenderer.sprite(g, SummonAssets.PAGE,
-                cx + spread, cy + base / 7 - Math.round(5 * ambient), page * 4 / 3, page);
-
-        centerText(s, g, "기록이 공명합니다",
-                Math.min(s.screenHeight() - 42, cy + base / 2 + 14),
-                withAlpha(GachaPresentationScreen.SECONDARY, fadeIn(progress, 0.12F, 0.52F)), true);
+    private static void drawRitual(GachaPresentationScreen screen, GuiGraphicsExtractor graphics, float progress) {
+        screen.text(graphics, "정령의 기록", 18, 17, GachaPresentationScreen.TEXT, true);
+        centerText(screen, graphics, "페이지가 열립니다", screen.screenHeight() / 2,
+                withAlpha(GachaPresentationScreen.SECONDARY, fadeIn(progress, 0.08F, 0.78F)), false);
     }
 
-    private static void drawOmen(GachaPresentationScreen s, GuiGraphicsExtractor g, float progress) {
-        GachaPresentationFlow f = s.flowView();
-        int omenStars = f.omenStars();
-        int cx = s.screenWidth() / 2;
-        int cy = s.screenHeight() / 2 - 2;
-        int base = Math.max(150, Math.min(330, Math.min(s.screenWidth(), s.screenHeight()) * 67 / 100));
-        float pulse = 0.98F + 0.045F * SummonEasing.pulse(progress);
-        int sigil = Math.round(base * pulse);
+    private static void drawOmen(GachaPresentationScreen screen, GuiGraphicsExtractor graphics, float progress) {
+        GachaPresentationFlow flow = screen.flowView();
+        int omenStars = flow.omenStars();
+        drawRarityWash(graphics, omenStars, screen.screenWidth(), screen.screenHeight());
 
-        SummonLayerRenderer.fullScreen(g, SummonAssets.shards(omenStars), s.screenWidth(), s.screenHeight());
-        SummonLayerRenderer.centered(g, SummonAssets.SIGIL_BACK, cx, cy, sigil, sigil);
-        SummonLayerRenderer.centered(g, SummonAssets.flare(omenStars), cx, cy,
-                Math.min(s.screenWidth() - 12, base * 2 + 100), Math.max(58, base / 3));
-        SummonLayerRenderer.centered(g, omenStars >= 4 ? SummonAssets.OMEN_VIOLET : SummonAssets.RADIAL_GLOW,
-                cx, cy, base + 118, base + 118);
-
-        int crystalH = Math.round(base * 0.70F);
-        SummonLayerRenderer.centered(g, SummonAssets.CRYSTAL, cx, cy,
-                crystalH * 72 / 100, crystalH);
-
-        int wash = Math.round((omenStars >= 4 ? 32.0F : 20.0F) * SummonEasing.pulse(progress));
-        g.fill(0, 0, s.screenWidth(), s.screenHeight(),
-                omenStars >= 4 ? (wash << 24) | 0x005A2879 : (wash << 24) | 0x001A5271);
-
-        centerText(s, g, omenStars >= 4 ? "공명이 변질됩니다" : "기록이 응답합니다",
-                Math.min(s.screenHeight() - 42, cy + base / 2 + 14),
-                withAlpha(GachaPresentationScreen.TEXT, fadeIn(progress, 0.08F, 0.34F)), true);
+        String copy = omenStars >= 4 ? "잉크가 색을 기억합니다" : "기록이 응답합니다";
+        centerText(screen, graphics, copy, screen.screenHeight() / 2,
+                withAlpha(GachaPresentationScreen.TEXT, fadeIn(progress, 0.10F, 0.62F)), true);
     }
 
-    private static void drawBreak(GachaPresentationScreen s, GuiGraphicsExtractor g, float progress) {
-        GachaPresentationFlow f = s.flowView();
-        int cx = s.screenWidth() / 2;
-        int cy = s.screenHeight() / 2;
-        int base = Math.max(166, Math.min(350, Math.min(s.screenWidth(), s.screenHeight()) * 70 / 100));
-        boolean gold = f.highestStars() >= 5 && f.fiveStarUpgrade();
-        int stars = gold ? 5 : f.breakDisplayStars();
-        float burst = SummonEasing.easeOutCubic(progress);
+    private static void drawBreak(GachaPresentationScreen screen, GuiGraphicsExtractor graphics, float progress) {
+        GachaPresentationFlow flow = screen.flowView();
+        boolean goldUpgrade = flow.fiveStarUpgrade();
+        int stars = flow.breakDisplayStars();
+        drawRarityWash(graphics, stars, screen.screenWidth(), screen.screenHeight());
 
-        SummonLayerRenderer.fullScreen(g, SummonAssets.shards(stars), s.screenWidth(), s.screenHeight());
-        SummonLayerRenderer.centered(g, SummonAssets.SIGIL_BACK, cx, cy,
-                Math.round(base * (0.86F + 0.20F * burst)), Math.round(base * (0.86F + 0.20F * burst)));
-        SummonLayerRenderer.centered(g, SummonAssets.flare(stars), cx, cy,
-                Math.min(s.screenWidth() + 80, base * 3), Math.max(72, base / 2));
-        int burstSize = Math.round((base + 86) * (0.80F + 0.40F * burst));
-        SummonLayerRenderer.centered(g, gold ? SummonAssets.BREAK_GOLD : SummonAssets.OMEN_VIOLET,
-                cx, cy, burstSize, burstSize);
-
-        int crystalH = Math.max(42, Math.round(base * (0.76F - 0.28F * burst)));
-        SummonLayerRenderer.centered(g, SummonAssets.CRYSTAL, cx, cy,
-                crystalH * 72 / 100, crystalH);
-
-        float flash = 1.0F - Math.min(1.0F, progress / 0.30F);
-        int flashAlpha = Math.round((gold ? 205 : stars >= 4 ? 124 : 80) * flash);
+        SummonVisualSpec.Spec visual = SummonVisualSpec.forStars(stars);
+        float flashProgress = Math.max(0.0F, 1.0F - progress / 0.36F);
+        int flashAlpha = Math.round(visual.breakFlashAlpha() * flashProgress);
         if (flashAlpha > 0) {
-            g.fill(0, 0, s.screenWidth(), s.screenHeight(),
-                    gold ? (flashAlpha << 24) | 0x00FFF0B0 : (flashAlpha << 24) | 0x00B57DFF);
+            graphics.fill(0, 0, screen.screenWidth(), screen.screenHeight(),
+                    withAlpha(visual.accent(), flashAlpha));
         }
-        if (gold) {
-            centerText(s, g, "★★★★★",
-                    Math.min(s.screenHeight() - 46, cy + base / 2 - 1),
-                    withAlpha(GachaPresentationScreen.GOLD, fadeIn(progress, 0.16F, 0.46F)), true);
+
+        if (goldUpgrade) {
+            centerText(screen, graphics, "★★★★★", screen.screenHeight() / 2 + 118,
+                    withAlpha(GachaPresentationScreen.GOLD, fadeIn(progress, 0.42F, 0.78F)), true);
         }
     }
 
-    private static void drawCharacter(GachaPresentationScreen s, GuiGraphicsExtractor g,
-                                      boolean silhouette, boolean revealMotion, float progress) {
-        GachaPresentationScreen.Pull pull = s.currentPull();
+    private static void drawSilhouette(GachaPresentationScreen screen, GuiGraphicsExtractor graphics, float progress) {
+        GachaPresentationScreen.Pull pull = screen.currentPull();
         if (pull == null) return;
 
-        CharacterLayout layout = characterLayout(s);
-        int stars = pull.stars();
-        int accent = GachaPresentationScreen.starColor(stars);
-        float ambient = ambientWave(1.35);
-        float settle = silhouette ? SummonEasing.easeOutCubic(progress)
-                : revealMotion ? SummonEasing.easeOutCubic(progress) : 1.0F;
-        int shakeX = revealMotion ? rarityShake(stars, progress, true) : 0;
-        int shakeY = revealMotion ? rarityShake(stars, progress, false) : 0;
+        CharacterLayout layout = characterLayout(screen);
+        drawRarityWash(graphics, pull.stars(), screen.screenWidth(), screen.screenHeight());
 
-        int glowX = layout.portraitX() + layout.portraitW() / 2 + shakeX;
-        int glowY = layout.portraitY() + layout.portraitH() / 2 + shakeY;
-        int flareW = Math.min(s.screenWidth() + 90, Math.max(layout.portraitW() * 3, s.screenWidth() * 2 / 3));
-        int flareH = Math.max(62, layout.portraitH() / 3);
+        float settle = SummonEasing.easeOutCubic(progress);
+        float scale = 0.90F + 0.10F * settle;
+        int portraitW = Math.round(layout.portraitW() * scale);
+        int portraitH = Math.round(layout.portraitH() * scale);
+        int portraitX = layout.portraitX() + (layout.portraitW() - portraitW) / 2
+                + Math.round(18.0F * (1.0F - settle));
+        int portraitY = layout.portraitY() + (layout.portraitH() - portraitH) / 2;
+        float rarityScale = SummonVisualSpec.forStars(pull.stars()).portraitScale();
+        SummonLayerRenderer.portrait(graphics, pull.characterId(), true,
+                portraitX, portraitY, portraitW, portraitH, rarityScale);
 
-        SummonLayerRenderer.fullScreen(g, SummonAssets.shards(stars), s.screenWidth(), s.screenHeight());
-        int sigil = Math.max(layout.portraitW() + 68, Math.min(layout.portraitH(), layout.portraitW() * 2));
-        SummonLayerRenderer.centered(g, SummonAssets.SIGIL_BACK, glowX, glowY, sigil, sigil);
-        SummonLayerRenderer.centered(g, SummonAssets.flare(stars), glowX, glowY, flareW, flareH);
-
-        int portraitW = layout.portraitW();
-        int portraitH = layout.portraitH();
-        int portraitX = layout.portraitX();
-        int portraitY = layout.portraitY() + Math.round((ambient - 0.5F) * 3.0F);
-
-        if (silhouette) {
-            float scale = 0.90F + 0.10F * settle;
-            int w = Math.round(portraitW * scale);
-            int h = Math.round(portraitH * scale);
-            portraitX += (portraitW - w) / 2 + Math.round(18.0F * (1.0F - settle));
-            portraitY += (portraitH - h) / 2 + Math.round(7.0F * (1.0F - settle));
-            portraitW = w;
-            portraitH = h;
-        } else if (revealMotion) {
-            float scale = 1.075F - 0.075F * settle;
-            int w = Math.round(portraitW * scale);
-            int h = Math.round(portraitH * scale);
-            portraitX += (portraitW - w) / 2 + Math.round(22.0F * (1.0F - settle)) + shakeX;
-            portraitY += (portraitH - h) / 2 + shakeY;
-            portraitW = w;
-            portraitH = h;
-        }
-
-        SummonLayerRenderer.portrait(g, pull.characterId(), silhouette,
-                portraitX, portraitY, portraitW, portraitH);
-
-        if (!silhouette && revealMotion) {
-            int sweepW = Math.max(126, layout.portraitW() * 5 / 4);
-            int sweepX = layout.portraitX() - sweepW
-                    + Math.round((layout.portraitW() + sweepW * 2.0F) * SummonEasing.easeInOutCubic(progress));
-            SummonLayerRenderer.sprite(g, SummonAssets.LIGHT_SWEEP, sweepX,
-                    layout.portraitY() + layout.portraitH() / 4,
-                    sweepW, Math.max(42, layout.portraitH() / 3));
-
-            float flash = 1.0F - Math.min(1.0F, progress / 0.18F);
-            int flashAlpha = Math.round((stars >= 5 ? 178 : stars >= 4 ? 112 : 70) * flash);
-            if (flashAlpha > 0) {
-                g.fill(0, 0, s.screenWidth(), s.screenHeight(), withAlpha(accent, flashAlpha));
-            }
-        }
-
-        drawRevealCopy(s, g, pull, layout, silhouette, revealMotion, progress);
+        screen.text(graphics, "페이지 너머의 인연", layout.textX(), layout.textY(),
+                GachaPresentationScreen.SECONDARY, true);
     }
 
-    private static void drawRevealCopy(GachaPresentationScreen s, GuiGraphicsExtractor g,
+    private static void drawCharacter(GachaPresentationScreen screen, GuiGraphicsExtractor graphics,
+                                      boolean revealMotion, float progress) {
+        GachaPresentationScreen.Pull pull = screen.currentPull();
+        if (pull == null) return;
+
+        CharacterLayout layout = characterLayout(screen);
+        drawRarityWash(graphics, pull.stars(), screen.screenWidth(), screen.screenHeight());
+
+        float settle = revealMotion ? SummonEasing.easeOutCubic(progress) : 1.0F;
+        float scale = revealMotion ? 1.045F - 0.045F * settle : 1.0F;
+        int portraitW = Math.round(layout.portraitW() * scale);
+        int portraitH = Math.round(layout.portraitH() * scale);
+        int portraitX = layout.portraitX() + (layout.portraitW() - portraitW) / 2
+                + (revealMotion ? Math.round(22.0F * (1.0F - settle)) : 0);
+        int portraitY = layout.portraitY() + (layout.portraitH() - portraitH) / 2;
+        float rarityScale = SummonVisualSpec.forStars(pull.stars()).portraitScale();
+        SummonLayerRenderer.portrait(graphics, pull.characterId(), false,
+                portraitX, portraitY, portraitW, portraitH, rarityScale);
+
+        drawRevealCopy(screen, graphics, pull, layout, revealMotion, progress);
+    }
+
+    private static void drawRevealCopy(GachaPresentationScreen screen, GuiGraphicsExtractor graphics,
                                        GachaPresentationScreen.Pull pull, CharacterLayout layout,
-                                       boolean silhouette, boolean revealMotion, float progress) {
-        int tx = layout.textX();
-        int ty = layout.textY();
-        int accent = GachaPresentationScreen.starColor(pull.stars());
+                                       boolean revealMotion, float progress) {
+        int x = layout.textX();
+        int y = layout.textY();
+        int color = GachaPresentationScreen.starColor(pull.stars());
+        int labelAlpha = revealMotion ? fadeIn(progress, 0.08F, 0.38F) : 255;
+        int nameAlpha = revealMotion ? fadeIn(progress, 0.24F, 0.58F) : 255;
+        int resultAlpha = revealMotion ? fadeIn(progress, 0.46F, 0.82F) : 255;
 
-        if (silhouette) {
-            int alpha = fadeIn(progress, 0.20F, 0.62F);
-            s.text(g, "기록 해독 중", tx, ty,
-                    withAlpha(GachaPresentationScreen.SECONDARY, alpha), false);
-            g.fill(tx, ty + 18, tx + Math.min(layout.textW(), 110), ty + 19,
-                    withAlpha(accent, alpha / 2));
-            return;
-        }
-
-        int rarityAlpha = revealMotion ? fadeIn(progress, 0.10F, 0.34F) : 255;
-        int nameAlpha = revealMotion ? fadeIn(progress, 0.28F, 0.58F) : 255;
-        int detailAlpha = revealMotion ? fadeIn(progress, 0.52F, 0.86F) : 255;
-        String headline = pull.newlyOwned() ? "새로운 동료" : "기록 재현";
-
-        s.text(g, headline, tx, ty,
-                withAlpha(pull.newlyOwned() ? GachaPresentationScreen.GREEN : GachaPresentationScreen.SECONDARY,
-                        rarityAlpha), true);
-        s.text(g, GachaPresentationScreen.stars(pull.stars()), tx, ty + 22,
-                withAlpha(accent, rarityAlpha), true);
-        g.fill(tx, ty + 42, tx + Math.min(layout.textW(), 148), ty + 44,
-                withAlpha(accent, Math.max(0, rarityAlpha * 2 / 3)));
-        s.text(g, GachaPresentationScreen.characterName(pull.characterId()), tx, ty + 54,
+        String headline = pull.newlyOwned() ? "새로운 동료" : "중복 기록";
+        screen.text(graphics, headline, x, y,
+                withAlpha(pull.newlyOwned() ? GachaPresentationScreen.GREEN : GachaPresentationScreen.PURPLE,
+                        labelAlpha), true);
+        screen.text(graphics, GachaPresentationScreen.stars(pull.stars()), x, y + 26,
+                withAlpha(color, labelAlpha), true);
+        screen.text(graphics, GachaPresentationScreen.characterName(pull.characterId()), x, y + 54,
                 withAlpha(GachaPresentationScreen.TEXT, nameAlpha), true);
 
         String result = pull.newlyOwned() ? "새로운 인연이 기록되었습니다"
                 : GachaPresentationScreen.duplicateResult(pull);
-        s.text(g, UiTextLayout.fit(result, Math.max(96, layout.textW())), tx, ty + 78,
+        String fittedResult = UiTextLayout.fit(result, layout.textW());
+        screen.text(graphics, fittedResult, x, y + 86,
                 withAlpha(pull.newlyOwned() ? GachaPresentationScreen.SECONDARY : GachaPresentationScreen.PURPLE,
-                        detailAlpha), false);
+                        resultAlpha), false);
 
         if (!revealMotion) {
-            String hint = s.flowView().lastPull()
-                    ? (s.flowView().pullCount() <= 1 ? "Enter / Space · 확인" : "Enter / Space · 결과 보기")
+            String hint = screen.flowView().lastPull()
+                    ? (screen.flowView().pullCount() <= 1 ? "Enter / Space · 확인" : "Enter / Space · 결과 보기")
                     : "Enter / Space · 다음";
-            s.text(g, hint, tx, Math.min(s.screenHeight() - 46, ty + 108),
-                    GachaPresentationScreen.MUTED, false);
+            screen.text(graphics, UiTextLayout.fit(hint, layout.textW()), x,
+                    Math.min(screen.screenHeight() - 48, y + 118), GachaPresentationScreen.MUTED, false);
         }
     }
 
-    private static void drawCinematicHud(GachaPresentationScreen s, GuiGraphicsExtractor g) {
-        if (s.flowView().stage().ordinal() >= GachaPresentationFlow.Stage.SILHOUETTE.ordinal()) {
-            String progress = (s.flowView().currentIndex() + 1) + " / " + Math.max(1, s.flowView().pullCount());
-            int x = Math.max(14, s.screenWidth() - 102 - s.textWidth(progress));
-            s.text(g, progress, x, 17, GachaPresentationScreen.SECONDARY, true);
+    private static void drawCinematicHud(GachaPresentationScreen screen, GuiGraphicsExtractor graphics) {
+        if (screen.flowView().stage().ordinal() >= GachaPresentationFlow.Stage.SILHOUETTE.ordinal()) {
+            String progress = (screen.flowView().currentIndex() + 1) + " / "
+                    + Math.max(1, screen.flowView().pullCount());
+            int x = Math.max(14, screen.screenWidth() - 118 - screen.textWidth(progress));
+            screen.text(graphics, progress, x, 17, GachaPresentationScreen.SECONDARY, true);
         } else {
-            s.text(g, "정령의 기록", 18, 17, GachaPresentationScreen.TEXT, true);
+            screen.text(graphics, "정령의 기록", 18, 17, GachaPresentationScreen.TEXT, true);
         }
     }
 
-    private static void drawSummary(GachaPresentationScreen s, GuiGraphicsExtractor g) {
-        GachaPresentationScreen.Batch batch = s.batchView();
+    private static void drawSummary(GachaPresentationScreen screen, GuiGraphicsExtractor graphics) {
+        GachaPresentationScreen.Batch batch = screen.batchView();
         int highest = 1;
         for (GachaPresentationScreen.Pull pull : batch.pulls()) highest = Math.max(highest, pull.stars());
-        SummonLayerRenderer.fullScreen(g, SummonAssets.shards(highest), s.screenWidth(), s.screenHeight());
+        drawRarityWash(graphics, highest, screen.screenWidth(), screen.screenHeight());
 
         String title = batch.pulls().size() <= 1 ? "소환 결과" : batch.pulls().size() + "회 소환 결과";
-        s.text(g, title, 18, 17, GachaPresentationScreen.TEXT, true);
-        s.text(g, "크리스탈 -" + batch.crystalSpent(), 18, 33, GachaPresentationScreen.SECONDARY, false);
-        if (batch.pulls().size() <= 1) drawSingleSummary(s, g);
-        else drawMultiSummary(s, g);
+        screen.text(graphics, title, 18, 16, GachaPresentationScreen.TEXT, true);
+        screen.text(graphics, "크리스탈 -" + batch.crystalSpent(), 18, 33,
+                GachaPresentationScreen.SECONDARY, false);
+        if (batch.pulls().size() <= 1) drawSingleSummary(screen, graphics);
+        else drawMultiSummary(screen, graphics);
     }
 
-    private static void drawSingleSummary(GachaPresentationScreen s, GuiGraphicsExtractor g) {
-        if (s.batchView().pulls().isEmpty()) return;
-        GachaPresentationScreen.Pull pull = s.batchView().pulls().getFirst();
-        CharacterLayout layout = characterLayout(s);
-        int cx = layout.portraitX() + layout.portraitW() / 2;
-        int cy = layout.portraitY() + layout.portraitH() / 2;
-        SummonLayerRenderer.centered(g, SummonAssets.flare(pull.stars()), cx, cy,
-                Math.min(s.screenWidth(), layout.portraitW() * 3), Math.max(64, layout.portraitH() / 3));
-        SummonLayerRenderer.portrait(g, pull.characterId(), false,
-                layout.portraitX(), layout.portraitY(), layout.portraitW(), layout.portraitH());
-        int tx = layout.textX();
-        int ty = layout.textY();
-        int accent = GachaPresentationScreen.starColor(pull.stars());
-        s.text(g, GachaPresentationScreen.stars(pull.stars()), tx, ty, accent, true);
-        s.text(g, GachaPresentationScreen.characterName(pull.characterId()), tx, ty + 26,
+    private static void drawSingleSummary(GachaPresentationScreen screen, GuiGraphicsExtractor graphics) {
+        if (screen.batchView().pulls().isEmpty()) return;
+        GachaPresentationScreen.Pull pull = screen.batchView().pulls().getFirst();
+        CharacterLayout layout = characterLayout(screen);
+        float rarityScale = SummonVisualSpec.forStars(pull.stars()).portraitScale();
+        SummonLayerRenderer.portrait(graphics, pull.characterId(), false,
+                layout.portraitX(), layout.portraitY(), layout.portraitW(), layout.portraitH(), rarityScale);
+
+        int x = layout.textX();
+        int y = layout.textY();
+        screen.text(graphics, GachaPresentationScreen.stars(pull.stars()), x, y,
+                GachaPresentationScreen.starColor(pull.stars()), true);
+        screen.text(graphics, GachaPresentationScreen.characterName(pull.characterId()), x, y + 30,
                 GachaPresentationScreen.TEXT, true);
-        s.text(g, pull.newlyOwned() ? "새로운 동료" : GachaPresentationScreen.duplicateResult(pull),
-                tx, ty + 50, pull.newlyOwned() ? GachaPresentationScreen.GREEN : GachaPresentationScreen.PURPLE, false);
-        s.text(g, "Enter / Space · 닫기", tx, ty + 84, GachaPresentationScreen.MUTED, false);
+        screen.text(graphics, UiTextLayout.fit(pull.newlyOwned() ? "새로운 동료"
+                        : GachaPresentationScreen.duplicateResult(pull), layout.textW()),
+                x, y + 58, pull.newlyOwned() ? GachaPresentationScreen.GREEN : GachaPresentationScreen.PURPLE, false);
+        screen.text(graphics, "Enter / Space · 닫기", x,
+                Math.min(screen.screenHeight() - 48, y + 92), GachaPresentationScreen.MUTED, false);
     }
 
-    private static void drawMultiSummary(GachaPresentationScreen s, GuiGraphicsExtractor g) {
-        int count = s.batchView().pulls().size();
+    private static void drawMultiSummary(GachaPresentationScreen screen, GuiGraphicsExtractor graphics) {
+        int count = screen.batchView().pulls().size();
         if (count <= 0) return;
 
-        int cols = count >= 8 ? 5 : count >= 5 ? 5 : Math.max(1, count);
-        int rows = (count + cols - 1) / cols;
-        int gap = s.screenWidth() < 520 ? 4 : 7;
-        int top = 48;
-        int side = s.screenWidth() < 520 ? 10 : 20;
-        int bottom = 24;
-        int availableW = Math.max(120, s.screenWidth() - side * 2);
-        int availableH = Math.max(90, s.screenHeight() - top - bottom);
+        int columns = count >= 5 ? 5 : count;
+        int rows = (count + columns - 1) / columns;
+        int gap = screen.screenWidth() < 520 ? 3 : 8;
+        int side = screen.screenWidth() < 520 ? 7 : 24;
+        int top = 50;
+        int bottom = 18;
+        int availableWidth = Math.max(1, screen.screenWidth() - side * 2);
+        int availableHeight = Math.max(1, screen.screenHeight() - top - bottom);
 
-        int cardW = Math.max(52, (availableW - gap * (cols - 1)) / cols);
-        int cardH = Math.max(68, (availableH - gap * (rows - 1)) / rows);
-        int gridW = cols * cardW + (cols - 1) * gap;
-        int gridH = rows * cardH + (rows - 1) * gap;
-        int startX = (s.screenWidth() - gridW) / 2;
-        int startY = top + Math.max(0, (availableH - gridH) / 2);
+        int cardWidth = Math.max(1, (availableWidth - gap * (columns - 1)) / columns);
+        int cardHeight = Math.max(1, (availableHeight - gap * (rows - 1)) / rows);
+        int gridWidth = columns * cardWidth + (columns - 1) * gap;
+        int gridHeight = rows * cardHeight + (rows - 1) * gap;
+        int startX = (screen.screenWidth() - gridWidth) / 2;
+        int startY = top + Math.max(0, (availableHeight - gridHeight) / 2);
 
         for (int i = 0; i < count; i++) {
-            GachaPresentationScreen.Pull pull = s.batchView().pulls().get(i);
-            int x = startX + (i % cols) * (cardW + gap);
-            int y = startY + (i / cols) * (cardH + gap);
+            GachaPresentationScreen.Pull pull = screen.batchView().pulls().get(i);
+            int x = startX + (i % columns) * (cardWidth + gap);
+            int y = startY + (i / columns) * (cardHeight + gap);
+            int frameWidth = Math.min(cardWidth, cardHeight * 2 / 3);
+            int frameX = x + (cardWidth - frameWidth) / 2;
+            SummonLayerRenderer.sprite(graphics, SummonAssets.card(pull.stars()),
+                    frameX, y, frameWidth, cardHeight);
 
-            if (pull.stars() >= 5) {
-                SummonLayerRenderer.centered(g, SummonAssets.FLARE_GOLD,
-                        x + cardW / 2, y + cardH / 2, cardW + 42, Math.max(32, cardH / 2));
+            int labelBlock = Math.min(cardHeight - 1, Math.max(44, cardHeight / 3));
+            int portraitMaxHeight = Math.max(1, cardHeight - labelBlock - 8);
+            int portraitMaxWidth = Math.max(1, frameWidth - 8);
+            int portraitWidth = Math.min(portraitMaxWidth, portraitMaxHeight * 2 / 3);
+            int portraitHeight = portraitWidth * 3 / 2;
+            if (portraitHeight > portraitMaxHeight) {
+                portraitHeight = portraitMaxHeight;
+                portraitWidth = portraitHeight * 2 / 3;
             }
-            SummonLayerRenderer.sprite(g, SummonAssets.card(pull.stars()), x, y, cardW, cardH);
+            int portraitX = x + (cardWidth - portraitWidth) / 2;
+            int portraitY = y + 3 + Math.max(0, (portraitMaxHeight - portraitHeight) / 2);
+            float rarityScale = SummonVisualSpec.forStars(pull.stars()).portraitScale();
+            SummonLayerRenderer.portrait(graphics, pull.characterId(), false,
+                    portraitX, portraitY, portraitWidth, portraitHeight, rarityScale);
 
-            int reservedText = 28;
-            int maxPortraitH = Math.max(28, cardH - reservedText - 7);
-            int maxPortraitW = Math.max(20, cardW - 10);
-            int portraitW = Math.min(maxPortraitW, maxPortraitH * 2 / 3);
-            int portraitH = portraitW * 3 / 2;
-            if (portraitH > maxPortraitH) {
-                portraitH = maxPortraitH;
-                portraitW = portraitH * 2 / 3;
-            }
-            int px = x + (cardW - portraitW) / 2;
-            int py = y + 5 + Math.max(0, (maxPortraitH - portraitH) / 2);
-            SummonLayerRenderer.portrait(g, pull.characterId(), false, px, py, portraitW, portraitH);
+            int nameY = y + cardHeight - 45;
+            String name = UiTextLayout.fit(GachaPresentationScreen.characterName(pull.characterId()),
+                    Math.max(1, frameWidth - 8));
+            screen.text(graphics, name, x + (cardWidth - screen.textWidth(name)) / 2, nameY,
+                    GachaPresentationScreen.TEXT, true);
 
-            int labelY = y + cardH - 27;
-            g.fill(x + 6, labelY - 2, x + cardW - 6, y + cardH - 6, 0xB8060A12);
-            String characterName = UiTextLayout.fit(GachaPresentationScreen.characterName(pull.characterId()),
-                    Math.max(26, cardW - 10));
-            s.text(g, characterName, x + (cardW - s.textWidth(characterName)) / 2,
-                    labelY, GachaPresentationScreen.TEXT, true);
-            String rarity = GachaPresentationScreen.stars(pull.stars());
-            s.text(g, rarity, x + (cardW - s.textWidth(rarity)) / 2,
-                    labelY + 11, GachaPresentationScreen.starColor(pull.stars()), false);
+            String rarity = frameWidth < 72 ? "★" + pull.stars() : GachaPresentationScreen.stars(pull.stars());
+            rarity = UiTextLayout.fit(rarity, Math.max(1, frameWidth - 8));
+            screen.text(graphics, rarity, x + (cardWidth - screen.textWidth(rarity)) / 2, nameY + 12,
+                    GachaPresentationScreen.starColor(pull.stars()), false);
 
-            if (pull.newlyOwned()) {
-                s.text(g, "NEW", x + 6, y + 7, GachaPresentationScreen.GOLD, true);
-            }
+            String status = pull.newlyOwned() ? "NEW" : "중복";
+            status = UiTextLayout.fit(status, Math.max(1, frameWidth - 8));
+            int statusColor = pull.newlyOwned() ? GachaPresentationScreen.GREEN : GachaPresentationScreen.PURPLE;
+            screen.text(graphics, status, x + (cardWidth - screen.textWidth(status)) / 2, nameY + 24,
+                    statusColor, false);
+
+            String reward = pull.newlyOwned() ? "신규 영입"
+                    : pull.bonusLevelGranted() > 0 ? "+레벨 " + pull.bonusLevelGranted()
+                    : pull.essence() > 0 ? "정수 +" + pull.essence() : "레벨 MAX";
+            reward = UiTextLayout.fit(reward, Math.max(1, frameWidth - 8));
+            screen.text(graphics, reward, x + (cardWidth - screen.textWidth(reward)) / 2, nameY + 35,
+                    statusColor, false);
         }
     }
 
-    private static CharacterLayout characterLayout(GachaPresentationScreen s) {
-        int margin = s.screenWidth() < 520 ? 14 : 30;
-        int top = 30;
-        int bottom = 38;
-        int usableH = Math.max(130, s.screenHeight() - top - bottom);
-        int maxPortraitW = Math.max(96, s.screenWidth() * (s.screenWidth() < 520 ? 38 : 44) / 100);
-        int portraitW = Math.min(maxPortraitW, usableH * 2 / 3);
-        int portraitH = portraitW * 3 / 2;
-        if (portraitH > usableH) {
-            portraitH = usableH;
-            portraitW = portraitH * 2 / 3;
+    private static CharacterLayout characterLayout(GachaPresentationScreen screen) {
+        int width = screen.screenWidth();
+        int height = screen.screenHeight();
+        int margin = width < 520 ? 14 : 32;
+        int top = 36;
+        int bottom = 42;
+        int usableHeight = Math.max(96, height - top - bottom);
+        int maxPortraitWidth = Math.max(1, width * (width < 520 ? 42 : 44) / 100);
+        int portraitWidth = Math.min(maxPortraitWidth, usableHeight * 2 / 3);
+        int portraitHeight = Math.max(1, portraitWidth * 3 / 2);
+        if (portraitHeight > usableHeight) {
+            portraitHeight = usableHeight;
+            portraitWidth = Math.max(1, portraitHeight * 2 / 3);
         }
 
-        int portraitX = s.screenWidth() - margin - portraitW;
-        int portraitY = top + (usableH - portraitH) / 2;
-        int textX = margin + 4;
-        int textW = Math.max(96, portraitX - textX - 18);
-        int textY = top + Math.max(20, usableH / 2 - 57);
-        return new CharacterLayout(portraitX, portraitY, portraitW, portraitH, textX, textY, textW);
+        int portraitX = Math.max(0, width - margin - portraitWidth);
+        int portraitY = top + Math.max(0, (usableHeight - portraitHeight) / 2);
+        int textX = margin + 2;
+        int textWidth = Math.max(1, Math.min(460, portraitX - textX - 20));
+        int textY = top + Math.max(14, usableHeight / 2 - 58);
+        return new CharacterLayout(portraitX, portraitY, portraitWidth, portraitHeight,
+                textX, textY, textWidth);
+    }
+
+    private static void drawRarityWash(GuiGraphicsExtractor graphics, int stars, int width, int height) {
+        Identifier wash = SummonAssets.rarityWash(stars);
+        if (wash != null) SummonLayerRenderer.fullScreen(graphics, wash, width, height);
     }
 
     private static float visualProgress(GachaPresentationScreen screen, GachaPresentationFlow flow) {
@@ -385,17 +313,6 @@ final class SummonPresentationRenderer {
         return Math.max(0.0F, Math.min(1.0F, (flow.stageTick() + subTick) / duration));
     }
 
-    private static float ambientWave(double seconds) {
-        return (float) ((Math.sin(System.nanoTime() / 1_000_000_000.0 / seconds * Math.PI * 2.0) + 1.0) * 0.5);
-    }
-
-    private static int rarityShake(int stars, float progress, boolean horizontal) {
-        if (stars < 4 || progress > 0.24F) return 0;
-        float strength = (stars >= 5 ? 4.0F : 2.0F) * (1.0F - progress / 0.24F);
-        double phase = System.nanoTime() / 14_000_000.0 + (horizontal ? 0.0 : 1.7);
-        return Math.round((float) Math.sin(phase) * strength);
-    }
-
     private static int fadeIn(float progress, float start, float end) {
         if (progress <= start) return 0;
         if (progress >= end) return 255;
@@ -407,9 +324,9 @@ final class SummonPresentationRenderer {
         return (Math.max(0, Math.min(255, alpha)) << 24) | (color & 0x00FFFFFF);
     }
 
-    private static void centerText(GachaPresentationScreen s, GuiGraphicsExtractor g,
+    private static void centerText(GachaPresentationScreen screen, GuiGraphicsExtractor graphics,
                                    String text, int y, int color, boolean shadow) {
-        s.text(g, text, s.screenWidth() / 2 - s.textWidth(text) / 2, y, color, shadow);
+        screen.text(graphics, text, screen.screenWidth() / 2 - screen.textWidth(text) / 2, y, color, shadow);
     }
 
     private record CharacterLayout(int portraitX, int portraitY, int portraitW, int portraitH,

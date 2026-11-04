@@ -5,34 +5,14 @@ import net.minecraft.resources.Identifier;
 
 import java.util.Locale;
 
-/** Resource ids for the deterministic 2D summon asset pipeline. */
+/** Resource ids for authored summon artwork and model-referenced portrait illustrations. */
 final class SummonAssets {
     static final Identifier BG_ARCHIVE = texture("bg_archive.png");
-    static final Identifier CRYSTAL = texture("crystal.png");
-    static final Identifier RUNE_CIRCLE = texture("rune_circle.png");
-    static final Identifier ORBIT_A = texture("orbit_a.png");
-    static final Identifier ORBIT_B = texture("orbit_b.png");
-    static final Identifier RADIAL_GLOW = texture("radial_glow.png");
-    static final Identifier OMEN_VIOLET = texture("omen_violet.png");
-    static final Identifier BREAK_GOLD = texture("break_gold.png");
-    static final Identifier LIGHT_SWEEP = texture("light_sweep.png");
-    static final Identifier VIGNETTE = texture("vignette.png");
-    static final Identifier PAGE = texture("page.png");
-
-    // Second-pass cinematic layers. These are deliberately reusable across every summon result.
-    static final Identifier SIGIL_BACK = texture("sigil_back.png");
-    static final Identifier FLARE_CYAN = texture("flare_cyan.png");
-    static final Identifier FLARE_VIOLET = texture("flare_violet.png");
-    static final Identifier FLARE_GOLD = texture("flare_gold.png");
-    static final Identifier SHARDS_CYAN = texture("shards_cyan.png");
-    static final Identifier SHARDS_VIOLET = texture("shards_violet.png");
-    static final Identifier SHARDS_GOLD = texture("shards_gold.png");
-    static final Identifier VEIL_SOFT = texture("veil_soft.png");
-
+    static final Identifier WASH_VIOLET = texture("wash_violet.png");
+    static final Identifier WASH_GOLD = texture("wash_gold.png");
     static final Identifier CARD_COMMON = texture("card_common.png");
     static final Identifier CARD_RARE = texture("card_rare.png");
     static final Identifier CARD_LEGENDARY = texture("card_legendary.png");
-    static final Identifier NEW_TAG = texture("new_tag.png");
 
     private SummonAssets() {}
 
@@ -50,16 +30,10 @@ final class SummonAssets {
         return CARD_COMMON;
     }
 
-    static Identifier flare(int stars) {
-        if (stars >= 5) return FLARE_GOLD;
-        if (stars >= 4) return FLARE_VIOLET;
-        return FLARE_CYAN;
-    }
-
-    static Identifier shards(int stars) {
-        if (stars >= 5) return SHARDS_GOLD;
-        if (stars >= 4) return SHARDS_VIOLET;
-        return SHARDS_CYAN;
+    static Identifier rarityWash(int stars) {
+        if (stars >= 5) return WASH_GOLD;
+        if (stars >= 4) return WASH_VIOLET;
+        return null;
     }
 
     private static Identifier texture(String file) {

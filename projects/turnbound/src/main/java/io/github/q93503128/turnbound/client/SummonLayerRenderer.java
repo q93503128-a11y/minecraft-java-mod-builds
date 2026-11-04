@@ -22,9 +22,15 @@ final class SummonLayerRenderer {
 
     static void portrait(GuiGraphicsExtractor graphics, String characterId, boolean silhouette,
                          int x, int y, int width, int height) {
+        portrait(graphics, characterId, silhouette, x, y, width, height, 1.0F);
+    }
+
+    static void portrait(GuiGraphicsExtractor graphics, String characterId, boolean silhouette,
+                         int x, int y, int width, int height, float rarityScale) {
         SummonPortraitSpec.Spec spec = SummonPortraitSpec.forCharacter(characterId);
-        int scaledW = Math.max(1, Math.round(width * spec.scale()));
-        int scaledH = Math.max(1, Math.round(height * spec.scale()));
+        float scale = spec.scale() * Math.max(0.88F, Math.min(1.12F, rarityScale));
+        int scaledW = Math.max(1, Math.round(width * scale));
+        int scaledH = Math.max(1, Math.round(height * scale));
         int dx = Math.round(width * spec.xBias());
         int dy = Math.round(height * spec.yBias());
         int px = x + (width - scaledW) / 2 + dx;

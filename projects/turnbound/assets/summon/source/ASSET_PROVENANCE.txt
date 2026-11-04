@@ -1,0 +1,25 @@
+TURNBOUND summon presentation artwork
+=====================================
+
+All PNG files in this source folder were generated for this project with OpenAI
+ImageGen in Codex on 2026-11-04. No third-party game art, downloaded textures,
+or external stock assets are included.
+
+The archive folio, rarity washes, and parchment card surfaces were made as new
+artwork. The 12 character portraits use renders of this project's existing
+GeckoLib model geometry and texture atlases as identity references. The renders
+were produced by the prior build-time preview tool before that tool was replaced.
+The illustrations preserve each model's visible palette, silhouette, and
+equipment, then add painted material detail and facial features absent from the
+source models. They are authored illustrations, not exact 3D renders.
+
+Files:
+- archive-folio.png: full-screen open archive scene.
+- wash-violet.png, wash-gold.png: rarity-specific page-edge treatments.
+- card-common.png, card-rare.png, card-legendary.png: 10-pull result card surfaces.
+- portraits/p01.png through portraits/p08.png: TURNBOUND hero portrait cutouts.
+- portraits/f01.png through portraits/f04.png: TURNBOUND filler portrait cutouts.
+
+License/source note: no external asset license is required because these are
+project-specific generated outputs based on the project's own model and texture
+resources. Use is subject to the account terms that apply to the ImageGen output.

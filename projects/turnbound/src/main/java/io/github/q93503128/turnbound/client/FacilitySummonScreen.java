@@ -119,48 +119,49 @@ final class FacilitySummonScreen extends FacilityScreen {
         SummonLayerRenderer.fullScreen(g, SummonAssets.BG_ARCHIVE, width, height);
         if (page == Page.SUMMON) renderSummonPage(g);
         else renderExchangePage(g);
-        SummonLayerRenderer.fullScreen(g, SummonAssets.VEIL_SOFT, width, height);
     }
 
     private void renderSummonPage(GuiGraphicsExtractor g) {
         var state = ClientMetaState.snapshot();
-        long now = System.nanoTime();
-        float ambient = (float) ((Math.sin(now / 850_000_000.0) + 1.0) * 0.5);
-
-        int cx = width / 2;
-        int cy = height / 2 - 4;
-        int sigil = Math.max(142, Math.min((int) (height * 0.76F), (int) (width * 0.48F)));
-        int flareW = Math.min(width - 24, Math.max(240, sigil * 2));
-        int flareH = Math.max(54, sigil / 3);
-
-        SummonLayerRenderer.centered(g, SummonAssets.SIGIL_BACK, cx, cy, sigil, sigil);
-        SummonLayerRenderer.centered(g, SummonAssets.FLARE_CYAN, cx, cy,
-                flareW, flareH + Math.round(10 * ambient));
-        SummonLayerRenderer.fullScreen(g, SummonAssets.SHARDS_CYAN, width, height);
-
-        int crystalH = Math.max(96, Math.round(sigil * (0.58F + ambient * 0.018F)));
-        int crystalW = crystalH * 72 / 100;
-        int lift = Math.round((ambient - 0.5F) * 6.0F);
-        SummonLayerRenderer.centered(g, SummonAssets.CRYSTAL, cx, cy + lift, crystalW, crystalH);
-
-        g.text(font, Component.literal("정령의 기록"), 18, 39, GachaPresentationScreen.TEXT, true);
+        g.text(font, Component.literal("정령의 기록"), 18, 42, GachaPresentationScreen.TEXT, true);
         g.text(font, Component.literal("기록에 응답한 동료와 새로운 인연을 맺습니다."),
-                18, 56, GachaPresentationScreen.SECONDARY, false);
-        g.text(font, Component.literal("★5 3%   ·   ★4 12%"), 18, 76, GachaPresentationScreen.GOLD, true);
+                18, 60, GachaPresentationScreen.SECONDARY, false);
+        g.text(font, Component.literal("★5 3%   ·   ★4 12%"), 18, 80, GachaPresentationScreen.GOLD, true);
 
         String crystal = "크리스탈 " + state.crystal();
         String pity = "★5 천장 " + state.fiveStarPity() + "/" + GachaCatalog.HARD_PITY;
         int hudW = Math.max(font.width(crystal), font.width(pity));
         int hx = Math.max(18, width - hudW - 18);
-        g.text(font, Component.literal(crystal), hx, 41, GachaPresentationScreen.TEXT, true);
-        g.text(font, Component.literal(pity), hx, 57, GachaPresentationScreen.SECONDARY, false);
+        g.text(font, Component.literal(crystal), hx, 42, GachaPresentationScreen.TEXT, true);
+        g.text(font, Component.literal(pity), hx, 59, GachaPresentationScreen.SECONDARY, false);
+
+        int portraitBottom = height - (width < 620 ? 70 : 82);
+        int portraitHeight = Math.max(84, Math.min(Math.round(height * 0.66F), Math.round(width * 0.32F)));
+        if (width < 620) {
+            int singleHeight = Math.min(portraitHeight, Math.round(width * 0.50F));
+            drawPortrait(g, "P02", width * 3 / 4, portraitBottom, singleHeight);
+        } else {
+            drawPortrait(g, "P01", width / 2 - portraitHeight * 43 / 100,
+                    portraitBottom, portraitHeight * 3 / 4);
+            drawPortrait(g, "P02", width / 2, portraitBottom, portraitHeight);
+            drawPortrait(g, "P05", width / 2 + portraitHeight * 43 / 100,
+                    portraitBottom, portraitHeight * 3 / 4);
+        }
 
         if (state.starterArchiveAvailable()) {
             String starter = "첫 10회는 ★4 이상 동료가 반드시 응답합니다";
-            g.text(font, Component.literal(UiTextLayout.fit(starter, Math.max(120, width - 80))),
-                    Math.max(16, width / 2 - font.width(UiTextLayout.fit(starter, Math.max(120, width - 80))) / 2),
-                    height - 51, GachaPresentationScreen.PURPLE, true);
+            String fit = UiTextLayout.fit(starter, Math.max(1, width - 28));
+            g.text(font, Component.literal(fit), Math.max(14, width / 2 - font.width(fit) / 2),
+                    height - 54, GachaPresentationScreen.PURPLE, true);
         }
+    }
+
+    private static void drawPortrait(GuiGraphicsExtractor graphics, String characterId,
+                                     int centerX, int bottomY, int portraitHeight) {
+        int safeHeight = Math.max(1, portraitHeight);
+        int portraitWidth = safeHeight * 2 / 3;
+        SummonLayerRenderer.portrait(graphics, characterId, false,
+                centerX - portraitWidth / 2, bottomY - safeHeight, portraitWidth, safeHeight);
     }
 
     private void renderExchangePage(GuiGraphicsExtractor g) {
@@ -169,9 +170,9 @@ final class FacilitySummonScreen extends FacilityScreen {
         int x = (width - panelW) / 2;
         int y = 50;
         TurnboundUiSkin.panel(g, x, y, panelW, panelH);
-        g.text(font, Component.literal("별의 정수"), x + 14, y + 12, GachaPresentationScreen.TEXT, true);
+        g.text(font, Component.literal("별의 정수"), x + 14, y + 12, TurnboundUiTokens.TEXT_PRIMARY, true);
         g.text(font, Component.literal("보유한 ★4/★5 동료의 기록을 강화하거나 크리스탈로 교환합니다."),
-                x + 14, y + 28, GachaPresentationScreen.SECONDARY, false);
+                x + 14, y + 28, TurnboundUiTokens.TEXT_SECONDARY, false);
     }
 
     private void switchPage(Page next) {

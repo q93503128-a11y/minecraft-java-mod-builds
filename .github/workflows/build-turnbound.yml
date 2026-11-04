@@ -26,17 +26,22 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Generate 2D summon assets
+      - name: Install authored summon artwork
         working-directory: projects/turnbound
         run: |
           python3 tools/generate_summon_assets.py --root . --output src/main/resources
-          python3 tools/generate_summon_fx_v2.py --root . --output src/main/resources
       - name: Test and build TURNBOUND
         working-directory: projects/turnbound
-        run: gradle clean test build oneClickPack --stacktrace
+        shell: bash
+        run: |
+          echo 'IN PROGRESS' > build.status
+          set -o pipefail
+          gradle clean test build oneClickPack --stacktrace 2>&1 | tee gradle-build.log
+          echo 'PASS' > build.status
       - name: Smoke-test NeoForge server load
         working-directory: projects/turnbound
         run: |
+          echo 'IN PROGRESS' > server-smoke.status
           mkdir -p run/server
           printf 'eula=true\n' > run/server/eula.txt
           setsid gradle runServer --no-daemon > server-smoke.log 2>&1 &
@@ -56,14 +61,25 @@ jobs:
           test "$started" -eq 1
           kill -TERM -- "-$pid" 2>/dev/null || true
           wait "$pid" 2>/dev/null || true
+          echo 'PASS' > server-smoke.status
       - name: Verify built JAR
         working-directory: projects/turnbound
         run: |
+          echo 'IN PROGRESS' > jar-verification.status
           expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
           jar_file="build/libs/turnbound-${expected_version}.jar"
-          test -f "$jar_file"
+          test -s "$jar_file"
           echo "Verifying $jar_file"
           jar tf "$jar_file" > jar-contents.txt
+          if duplicate_entries="$(LC_ALL=C sort jar-contents.txt | uniq -d)" && [ -n "$duplicate_entries" ]; then
+            echo "Duplicate ZIP entries found:"
+            echo "$duplicate_entries"
+            exit 1
+          fi
+          if grep -Eq '(^|/)(src|docs)/|\.java$|\.md$' jar-contents.txt; then
+            echo "Development source or documentation found in JAR"
+            exit 1
+          fi
           grep -qx 'META-INF/neoforge.mods.toml' jar-contents.txt
           grep -qx 'io/github/q93503128/turnbound/Turnbound.class' jar-contents.txt
           grep -qx 'data/turnbound/characters/v04.json' jar-contents.txt
@@ -71,10 +87,19 @@ jobs:
           grep -qx 'data/turnbound/equipment/v04.json' jar-contents.txt
           grep -qx 'data/turnbound/battles/v04.json' jar-contents.txt
           grep -qx 'assets/turnbound/textures/gui/summon/bg_archive.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/sigil_back.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/flare_gold.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/wash_violet.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/wash_gold.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/card_common.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/card_rare.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/card_legendary.png' jar-contents.txt
           grep -qx 'assets/turnbound/textures/gui/summon/portraits/p02.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/portraits/p02_silhouette.png' jar-contents.txt
+          grep -qx 'assets/turnbound/textures/gui/summon/portraits/p05.png' jar-contents.txt
           grep -qx 'assets/turnbound/textures/gui/summon/portraits/f04.png' jar-contents.txt
+          for portrait in p01 p02 p03 p04 p05 p06 p07 p08 f01 f02 f03 f04; do
+            grep -qx "assets/turnbound/textures/gui/summon/portraits/${portrait}.png" jar-contents.txt
+            grep -qx "assets/turnbound/textures/gui/summon/portraits/${portrait}_silhouette.png" jar-contents.txt
+          done
           unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
           grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
           grep -Fq "version=\"${expected_version}\"" <(tr -d ' ' < built-neoforge.mods.toml)
@@ -83,10 +108,12 @@ jobs:
           unzip -p "$jar_file" META-INF/MANIFEST.MF > built-manifest.mf
           grep -q '^Implementation-Title: TURNBOUND' built-manifest.mf
           grep -Fq "Implementation-Version: ${expected_version}" built-manifest.mf
-          sha256sum "$jar_file"
+          sha256sum "$jar_file" | tee "$jar_file.sha256"
+          echo 'PASS' > jar-verification.status
       - name: Verify one-click Modrinth pack
         working-directory: projects/turnbound
         run: |
+          echo 'IN PROGRESS' > mrpack-verification.status
           expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
           pack_file="build/distributions/TURNBOUND-oneclick-${expected_version}.mrpack"
           test -f "$pack_file"
@@ -116,12 +143,83 @@ jobs:
           assert jm['fileSize'] > 1_000_000
           PY
           echo "Verifying $pack_file"
-          sha256sum "$pack_file"
+          sha256sum "$pack_file" | tee "$pack_file.sha256"
+          echo 'PASS' > mrpack-verification.status
+      - name: Prepare build report and raw logs
+        if: always()
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
+          jar_file="build/libs/turnbound-${expected_version}.jar"
+          pack_file="build/distributions/TURNBOUND-oneclick-${expected_version}.mrpack"
+          release_dir="build/release"
+          log_dir="$release_dir/raw-logs"
+          mkdir -p "$log_dir"
+          for file in gradle-build.log server-smoke.log build.status server-smoke.status jar-verification.status mrpack-verification.status jar-contents.txt mrpack-contents.txt built-neoforge.mods.toml built-manifest.mf built-modrinth.index.json; do
+            if [ -f "$file" ]; then cp "$file" "$log_dir/"; fi
+          done
+          for file in gradle-build.log server-smoke.log; do
+            if [ ! -f "$file" ]; then printf '%s\n' 'NOT RUN' > "$log_dir/$file"; fi
+          done
+          (cd build && zip -qr release/raw-logs.zip release/raw-logs)
+          build_status=NOT_RUN
+          if grep -q 'BUILD SUCCESSFUL' gradle-build.log 2>/dev/null; then build_status=PASS; fi
+          if grep -q 'BUILD FAILED' gradle-build.log 2>/dev/null; then build_status=FAIL; fi
+          status_from_marker() {
+            if [ ! -f "$1" ]; then echo 'NOT RUN'; return; fi
+            if [ "$(cat "$1")" = PASS ]; then echo PASS; else echo FAIL; fi
+          }
+          server_status="$(status_from_marker server-smoke.status)"
+          jar_status="$(status_from_marker jar-verification.status)"
+          pack_status="$(status_from_marker mrpack-verification.status)"
+          jar_sha=NOT_GENERATED
+          pack_sha=NOT_GENERATED
+          if [ -f "$jar_file.sha256" ]; then jar_sha="$(cut -d' ' -f1 "$jar_file.sha256")"; fi
+          if [ -f "$pack_file.sha256" ]; then pack_sha="$(cut -d' ' -f1 "$pack_file.sha256")"; fi
+          java_version="$(java -version 2>&1 | head -n 1 | tr -d '\r' || echo unknown)"
+          gradle_version="$(gradle --version 2>/dev/null | sed -n 's/^Gradle //p' | head -n 1 || echo unknown)"
+          first_failure=""
+          if [ "$build_status" = FAIL ]; then
+            first_failure="$(grep -m1 -E 'Execution failed for task|Could not resolve|error:|There were failing tests|BUILD FAILED' gradle-build.log || true)"
+            if [ -z "$first_failure" ]; then first_failure='See gradle-build.log in raw-logs.zip.'; fi
+          fi
+          cat > "$release_dir/BUILD_AND_RUNTIME_REPORT.md" <<EOF
+          # TURNBOUND build and runtime report
+
+          - Version: ${expected_version}
+          - Java: ${java_version}
+          - Gradle: ${gradle_version}
+          - Build and tests: ${build_status} (gradle clean test build oneClickPack --stacktrace)
+          - Datagen: NOT SUPPORTED (no datagen task is configured)
+          - GameTest: NOT SUPPORTED (no GameTest run task is configured)
+          - Dedicated server smoke test: ${server_status}
+          - Client visual test: NOT RUN in the headless CI runner
+          - JAR inspection: ${jar_status} (metadata, compiled classes, assets, data, unique ZIP entries, manifest version)
+          - JAR SHA-256: ${jar_sha}
+          - Modrinth pack validation: ${pack_status}
+          - Modrinth pack SHA-256: ${pack_sha}
+          - First build failure: ${first_failure:-NONE}
+
+          ## Artifacts
+
+          - ${jar_file}
+          - ${jar_file}.sha256
+          - ${pack_file}
+          - ${pack_file}.sha256
+          - ${release_dir}/raw-logs.zip
+          EOF
       - name: Upload JAR and one-click pack
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: turnbound-v04-workbranch
           path: |
             projects/turnbound/build/libs/*.jar
+            projects/turnbound/build/libs/*.jar.sha256
             projects/turnbound/build/distributions/*.mrpack
+            projects/turnbound/build/distributions/*.mrpack.sha256
+            projects/turnbound/build/release/BUILD_AND_RUNTIME_REPORT.md
+            projects/turnbound/build/release/raw-logs.zip
           if-no-files-found: error
