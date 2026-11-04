@@ -2,7 +2,7 @@
 
 > 2026-11-04 / **DESIGN PROPOSAL / ALL NUMBERS UNTESTED**. 이 문서는 기존 결정인 **허약한 인간형**, **실제 살아 있는 숙주 1기의 직접 조종**, **돼지 등 약한 생물에서 시작**, **생체 데이터(BD) 영구 누적 성장**, **다른 종으로 이전해도 BD 보존**, **높은 BD가 있어야 강한 숙주에 기생 가능**을 상세화한다. 실제 제작/빌드/밸런스 검증 완료가 아니다.
 >
-> 정본 참조: [기생술사 v3](./PARASITE_MORPHER.md), [인간형·BD 능력치/숙주별 최소치](./PARASITE_BIODATA_GROWTH.md), [공용 RPG 성장](../GAME_DESIGN.md), [아군/소유자 판정](../ALLY_RELATIONS.md).
+> 정본 참조: [현행 기생술사 v6](./PARASITE_MORPHER.md), [인간형·BD 능력치/숙주별 최소치](./PARASITE_BIODATA_GROWTH.md), [공용 RPG 성장](../GAME_DESIGN.md), [아군/소유자 판정](../ALLY_RELATIONS.md).
 
 ## 1. 단 하나의 영구 BD 수치 — 얻지만 소비하지 않는다
 
