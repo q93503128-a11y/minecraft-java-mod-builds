@@ -35,7 +35,7 @@
 
 1. **정신 지배자** — 정신력을 사용해 적대 몬스터·중립 생물·주민·철 골렘·동물 및 외부 모드 보스 등 다양한 생명체의 지배를 시도한다. 강할수록 지배 난도가 매우 높고, 유지 중에도 정신력이 지속 소모된다. 플레이어 지배 가능 여부는 미결정.
 2. **인형술사** — 재료로 마리오네트를 제작·강화·분해하고 **조종틀과 인형을 잇는 실**로 자동 운용한다. 후반에는 3기 이상 다수 운용 가능. 무쿨타임 표적 지정 명령, 같은 팀 플레이어·소환물과 인형 간 양방향 오폭 방지가 핵심 규칙.
-3. **기생술사** — **인간형으로 돌아다닐 수 있지만 숙주가 없으면 전투력이 매우 약하다.** 돼지 같은 생물에 실제로 기생해 숙주 몸으로 생활·직접 전투하면서 **생체 데이터를 성장형 능력치로 영구 축적**한다. 더 강한 생물에게는 **최소 생체 데이터 요구치를 충족해야만 기생 시도 가능**하며, 요구치 충족 후에도 저항/성공 여부를 판정한다. 다른 종으로 옮겨도 데이터·종별 숙련 보존. 숙주는 동시에 1기 직접 조종. **숙주가 죽으면 허약한 인간형으로 튀어나오며 기본적으로 일정 시간 재기생 불가, 패시브 투자로 즉시 재기생 시도 가능한 횟수 확대**. [현행 기생술사 v5](./classes/PARASITE_MORPHER.md), [생체 데이터 성장·기생 요구치](./classes/PARASITE_BIODATA_GROWTH.md), [숙주 사망·긴급 재기생](./classes/PARASITE_HOST_DEATH_AND_TRANSFER.md). 이전 3기관 장착형은 [옛 초안](./classes/PARASITE_MORPHER_V1_ARCHIVE.md)으로만 보존.
+3. **기생술사** — **인간형으로 돌아다닐 수 있지만 숙주가 없으면 전투력이 매우 약하다.** 돼지 같은 생물에 실제로 기생해 숙주 몸으로 생활·직접 전투하면서 **생체 데이터를 성장형 능력치로 영구 축적**한다. 더 강한 생물에게는 **최소 생체 데이터 요구치를 충족해야만 기생 시도 가능**하며, 요구치 충족 후에도 저항/성공 여부를 판정한다. 다른 종으로 옮겨도 데이터·종별 숙련 보존. 숙주는 동시에 1기 직접 조종. **숙주가 죽으면 허약한 인간형으로 튀어나오며 기본적으로 일정 시간 재기생 불가, 패시브 투자로 즉시 재기생 시도 가능한 횟수 확대**. [현행 기생술사 v6](./classes/PARASITE_MORPHER.md), [생체 데이터 성장·기생 요구치](./classes/PARASITE_BIODATA_GROWTH.md), [숙주 사망·긴급 재기생](./classes/PARASITE_HOST_DEATH_AND_TRANSFER.md). 이전 3기관 장착형은 [옛 초안](./classes/PARASITE_MORPHER_V1_ARCHIVE.md)으로만 보존.
 4. **결계술사** — 방어·공격·구속 및 공간 장악 결계를 사용한다.
 5. **계약술사** — 대가와 위험을 지불하며 강력한 능력을 사용한다.
 6. **군체술사** — 작은 생물 군단을 빠르게 증식하고 전투 중 소모한다. 소모가 지나치게 빨라 군단 형성이 불가능해서도, 초반부터 무제한 폭증해서도 안 된다. 개별 지휘/관리 강제하지 않는다.
@@ -96,7 +96,7 @@
    - 인형술사 액티브와 레벨 성장: [무료 기본 명령과 3액티브, 플레이어·인형의 자동 스탯 성장](./classes/PUPPET_ACTIVES_AND_GROWTH.md). 전투 수치·쿨타임은 설계 후보.
    - 전용 조종틀 장비: [마리오네트 조종틀 5등급 승급·효과·원자재](./classes/MARIONETTE_CONTROL_BAR.md).
    - 몸체 크기/인형제작대: [경량 공속 보정, 재료에 따라 3블록 크기로 확장, 단일 인형제작대 조립·강화·분해](./classes/PUPPET_SCALE_AND_WORKBENCH.md). 세부 수치 미확정, UI 시안 원본 보존.
-   - 세 번째 직업 기생술사: [허약한 인간형·실숙주 기생·직접 조종·종간 이전](./classes/PARASITE_MORPHER.md), [영구 BD 성장·숙주 요구치](./classes/PARASITE_BIODATA_GROWTH.md), [BD 획득·종별 숙련·침투 저항](./classes/PARASITE_BIODATA_ACQUISITION_AND_INTRUSION.md), [숙주 죽음·긴급 재기생](./classes/PARASITE_HOST_DEATH_AND_TRANSFER.md), [침투/공생/생존 285랭크 패시브 트리](./classes/PARASITE_SKILL_TREE.md), [액티브 3종/기본 조작](./classes/PARASITE_ACTIVES.md). 구체 수급량/HP 보정/재사용 대기/요구 BD·침투·사망 재기생 제한 시간은 검증 전. [이전 3기관 채취형 초안](./classes/PARASITE_MORPHER_V1_ARCHIVE.md)은 참조 기록으로 보존.
+   - 세 번째 직업 기생술사: [허약한 인간형·실숙주 기생·직접 조종·종간 이전](./classes/PARASITE_MORPHER.md), [영구 BD 성장·숙주 요구치](./classes/PARASITE_BIODATA_GROWTH.md), [BD 획득·종별 숙련·침투 저항](./classes/PARASITE_BIODATA_ACQUISITION_AND_INTRUSION.md), [숙주 죽음·긴급 재기생](./classes/PARASITE_HOST_DEATH_AND_TRANSFER.md), [침투/공생/생존 285랭크 패시브 트리](./classes/PARASITE_SKILL_TREE.md), [액티브 3종/기본 조작](./classes/PARASITE_ACTIVES.md), [다른 숙주에서도 모든 배운 종족 특성 계승](./classes/PARASITE_TRAIT_INHERITANCE.md), [공생 핵 장비 5등급](./classes/PARASITE_SYMBIOSIS_CORE.md). 계승 기술/크리퍼 자폭·쿨타임·장비 레시피/보너스는 검증 전. [이전 3기관 채취형 초안](./classes/PARASITE_MORPHER_V1_ARCHIVE.md)은 참조 기록으로 보존. [이전 3기관 채취형 초안](./classes/PARASITE_MORPHER_V1_ARCHIVE.md)은 참조 기록으로 보존.
 3. 직업별 자동 스탯 성장과 레벨 상한 없는 장기 성장 곡선
 4. 지배 계산식(장악 진행, 정신력 회복/유지, 지배 해제와 CC 상호작용) 및 외부 보스 AI 호환 정책
 5. 실제 외부 모드 후보/버전/로더 비교
