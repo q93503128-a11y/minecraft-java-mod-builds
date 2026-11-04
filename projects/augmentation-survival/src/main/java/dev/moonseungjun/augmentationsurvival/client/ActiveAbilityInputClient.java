@@ -71,7 +71,14 @@ public final class ActiveAbilityInputClient {
             for (int index = 0; index < SLOT_KEYS.length; index++) {
                 boolean down = InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
                 if (modeEnabled && down && !SLOT_WAS_DOWN[index]) {
-                    ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
+                    boolean shift = InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
+                            || InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+                    if (shift && "augmentation_survival:domination".equals(ClientActiveLoadoutState.slot(index))
+                            && ClientAugmentProgressState.level("augmentation_survival:domination") > 0) {
+                        client.gui.setScreen(new DominationManagementScreen(false));
+                    } else {
+                        ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
+                    }
                 }
                 SLOT_WAS_DOWN[index] = down;
             }
