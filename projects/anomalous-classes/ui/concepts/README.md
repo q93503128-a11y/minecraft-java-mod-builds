@@ -35,7 +35,7 @@
 - 인형의 눈에 보이는 실은 경량 클라이언트 렌더링/거리별 LOD를 검토하고, 성능을 무시한 Display Entity 수십 개 복제로 구현하지 않는다. 실제 16:9/16:10/비표준 GUI scale에서 시각 검수 필요.
 
 - 인형술사 스킬 트리는 [PUPPET_SKILL_TREE.md](../../classes/PUPPET_SKILL_TREE.md)의 3계열/10노드/290랭크 구조 및 [돌파 기능](../../classes/PUPPET_MILESTONES.md)을 서버 모델로 표시. 오래된 정신 지배자 전용 270랭크를 복제하지 않는다.
-- 조종틀 화면/툴팁은 [MARIONETTE_CONTROL_BAR.md](../../classes/MARIONETTE_CONTROL_BAR.md)의 5등급·승급 비용·효과를 읽기만 한다. 최종 UI는 Codex, 비용·슬롯·장착·소유권은 서버에서 판정한다.
+- 조종틀 화면/툴팁은 [MARIONETTE_CONTROL_BAR.md](../../classes/MARIONETTE_CONTROL_BAR.md)의 5등급·승급 비용·효과를 읽기만 한다. **등급별 동시 조종 수 +1~+5기, 인형 공격력·최대 체력 % 증가만 표기**한다. 이전 시안의 명령 거리·반응/연결 특수 보너스는 표시하지 않는다. 최종 UI는 Codex, 비용·슬롯·장착·소유권은 서버에서 판정한다.
 
 ## 화면 상태 검수
 
