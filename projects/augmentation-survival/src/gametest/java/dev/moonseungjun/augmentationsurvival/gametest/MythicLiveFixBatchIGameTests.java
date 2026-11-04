@@ -39,6 +39,11 @@ public final class MythicLiveFixBatchIGameTests implements CustomTestMethodInvok
                 "warden was still treated as a normal/elite augment target instead of a boss");
         require(!EntityCompatibilityProfileService.allowDominate(warden),
                 "boss-classified warden remained dominatable");
+        LivingEntity elderGuardian = helper.spawnMob(EntityTypes.ELDER_GUARDIAN, 5, 2, 3).withNoFreeWill().spawn();
+        require(!EntityCompatibilityProfileService.isBoss(elderGuardian),
+                "elder guardian domination immunity unintentionally promoted it to an authored boss");
+        require(!EntityCompatibilityProfileService.allowDominate(elderGuardian),
+                "elder guardian must be domination-immune without changing its reward classification");
         GameTestPlayers.succeed(helper);
     }
 

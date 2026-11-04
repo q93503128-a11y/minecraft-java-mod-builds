@@ -36,7 +36,6 @@ DOWNLOADS: dict[str, str] = {
     "yBW8D80W-XVsaQXSm.jar": "https://api.modrinth.com/maven/maven/modrinth/yBW8D80W/XVsaQXSm/yBW8D80W-XVsaQXSm.jar",
     "chrono-dawn-1414198-9145359.jar": "https://cursemaven.com/curse/maven/chrono-dawn-1414198/9145359/chrono-dawn-1414198-9145359.jar",
     "world-bosses-1545677-9254111.jar": "https://cursemaven.com/curse/maven/world-bosses-1545677/9254111/world-bosses-1545677-9254111.jar",
-    "yJtKNlKW-HnEQE9aE.jar": "https://api.modrinth.com/maven/maven/modrinth/yJtKNlKW/HnEQE9aE/yJtKNlKW-HnEQE9aE.jar",
     "G1hIVOrD-SmfwDCLg.jar": "https://api.modrinth.com/maven/maven/modrinth/G1hIVOrD/SmfwDCLg/G1hIVOrD-SmfwDCLg.jar",
     "QAGBst4M-KU5rZUAR.jar": "https://api.modrinth.com/maven/maven/modrinth/QAGBst4M/KU5rZUAR/QAGBst4M-KU5rZUAR.jar",
     "ohNO6lps-rSd3GiG8.jar": "https://api.modrinth.com/maven/maven/modrinth/ohNO6lps/rSd3GiG8/ohNO6lps-rSd3GiG8.jar",
@@ -73,8 +72,9 @@ def inventory_files() -> list[str]:
         match = re.search(r"(?:^|\t)file=([^\t]+)", line)
         if match:
             names.append(match.group(1))
-    if len(names) != 23 or len(set(names)) != 23:
-        fail(f"expected 23 unique external artifacts, got {len(names)}")
+    expected_count = len(DOWNLOADS) - 1  # Fabric API is resolved separately.
+    if len(names) != expected_count or len(set(names)) != expected_count:
+        fail(f"expected {expected_count} unique external artifacts, got {len(names)}")
     return sorted(names)
 
 
@@ -163,26 +163,23 @@ def build() -> Path:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     output = OUT_DIR / f"augmentation-survival-{MOD_VERSION}.mrpack"
     own_arc = f"overrides/mods/{own_jar.name}"
-    analytics_arc = "overrides/config/mcendgame.json"
     terralith_arc = "overrides/config/terralith.json"
     readme_arc = "overrides/AUGMENTATION_SURVIVAL_PACK.txt"
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         archive.writestr("modrinth.index.json", json.dumps(index, ensure_ascii=False, indent=2) + "\n")
         archive.write(own_jar, own_arc)
-        archive.writestr(analytics_arc, json.dumps({"sendAnalytics": False}, indent=2) + "\n")
         archive.writestr(terralith_arc, json.dumps(terralith_config, indent=2) + "\n")
         archive.writestr(
             readme_arc,
             "Augmentation Survival\n"
             f"Minecraft {MC_VERSION} / Fabric Loader {LOADER_VERSION}\n"
             "External mods are downloaded from their pinned source repositories by the launcher.\n"
-            "MCEndgame analytics is disabled by the included config override.\n"
             "Terralith's first-world intro message is disabled by the included config override.\n",
         )
 
     with zipfile.ZipFile(output) as archive:
         names = archive.namelist()
-        if (names.count("modrinth.index.json") != 1 or own_arc not in names or analytics_arc not in names or terralith_arc not in names):
+        if (names.count("modrinth.index.json") != 1 or own_arc not in names or terralith_arc not in names):
             fail("required mrpack entries are missing")
         third_party_overrides = [
             name for name in names
@@ -191,10 +188,10 @@ def build() -> Path:
         if third_party_overrides:
             fail(f"third-party jars were embedded: {third_party_overrides}")
         parsed = json.loads(archive.read("modrinth.index.json"))
-        if parsed.get("formatVersion") != 1 or len(parsed.get("files", [])) != 24:
+        if parsed.get("formatVersion") != 1 or len(parsed.get("files", [])) != len(DOWNLOADS):
             fail("invalid Modrinth index structure or dependency count")
-        if json.loads(archive.read(analytics_arc)).get("sendAnalytics") is not False:
-            fail("MCEndgame analytics override is not disabled")
+        if any("yJtKNlKW" in str(entry) or "mcendgame" in str(entry).lower() for entry in parsed["files"]):
+            fail("excluded MCEndgame entry remains in official pack index")
         terralith = json.loads(archive.read(terralith_arc))
         if terralith.get("modules", {}).get("intro_message") is not False:
             fail("Terralith intro message override is not disabled")
@@ -209,10 +206,9 @@ def build() -> Path:
         f"file={output.name}\n"
         f"bytes={output.stat().st_size}\n"
         f"sha256={sha256}\n"
-        "external_files=24\n"
+        f"external_files={len(DOWNLOADS)}\n"
         "embedded_third_party_jars=0\n"
         f"embedded_project_jar={own_jar.name}\n"
-        "mcendgame_sendAnalytics=false\n"
         "terralith_intro_message=false\n",
         encoding="utf-8",
     )

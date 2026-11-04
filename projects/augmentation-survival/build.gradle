@@ -28,7 +28,6 @@ def pinnedPackArtifacts = [
         [name: 'LambDynamicLights', coord: "maven.modrinth:yBW8D80W:${project.lamb_dynamic_lights_version_id}"],
         [name: 'Chrono Dawn', coord: "curse.maven:chrono-dawn-1414198:${project.chronodawn_curse_file}"],
         [name: 'World Bosses', coord: "curse.maven:world-bosses-1545677:${project.world_bosses_curse_file}"],
-        [name: 'MCEndgame', coord: "maven.modrinth:yJtKNlKW:${project.mcendgame_version_id}"],
         [name: 'Resourceful Lib', coord: "maven.modrinth:G1hIVOrD:${project.resourceful_lib_version_id}"],
         [name: 'Puzzles Lib', coord: "maven.modrinth:QAGBst4M:${project.puzzles_lib_version_id}"],
         [name: 'Forge Config API Port', coord: "maven.modrinth:ohNO6lps:${project.forge_config_api_port_version_id}"],
