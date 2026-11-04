@@ -61,8 +61,14 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
 
             float hostileHealth = hostile.getHealth();
             DamageSource companionAttack = hostile.damageSources().mobAttack(dominated);
+            require(CompanionAugmentService.mayDominatedMobDamage(dominated, hostile),
+                    "dominated companion damage was rejected by the explicit target policy");
+            hostile.invulnerableTime = 0; // Independent test hit must not inherit an AI i-frame.
             boolean hostileApplied = hostile.hurtServer(level, companionAttack, 4.0F);
-            require(hostileApplied, "dominated companion could not damage a hostile target");
+            require(hostileApplied, "dominated companion could not damage a hostile target: "
+                    + "dead=" + hostile.isDeadOrDying()
+                    + ", invulnerableTime=" + hostile.invulnerableTime
+                    + ", health=" + hostile.getHealth());
             require(hostile.getHealth() < hostileHealth,
                     "dominated companion attack did not reduce hostile health");
             GameTestPlayers.succeed(helper);
