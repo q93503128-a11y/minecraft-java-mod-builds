@@ -14,14 +14,15 @@
 
 ### A. 골격/몸체 = 이동·피격·공격 거리
 
-| 골격 | 전장 역할 | 초반 기본 최대 HP | 기본 방어력 지표 | 이동속도 계수 | 기본 공격 위력 계수 | 모델/동작 |
-|---|---|---:|---:|---:|---:|---|
-| 경량 | 추격·회피·적 후방 견제 | 24 | 0 | 1.20 | 0.95 | 얇은 관절, 큰 보폭, 좌우 회피 |
-| 균형 | 보편적 공방·전선 유지 | 32 | 2 | 1.00 | 1.00 | 안정된 체중 이동, 팔 모듈 강조 |
-| 중장 | 전선 유지·넉백 저항·받아내기 | 46 | 6 | 0.78 | 1.08 | 두꺼운 골격, 느린 관절·큰 반동 |
+| 골격 | 전장 역할 | 초반 기본 최대 HP | 기본 방어력 지표 | 이동속도 계수 | 기본 공격 위력 계수 | **공격 간격 계수** | 모델/동작 |
+|---|---|---:|---:|---:|---:|---:|---|
+| 경량 | 추격·회피·적 후방 견제 | 24 | 0 | 1.20 | 0.95 | **0.88** | 얇은 관절, 큰 보폭, 좌우 회피 |
+| 균형 | 보편적 공방·전선 유지 | 32 | 2 | 1.00 | 1.00 | **1.00** | 안정된 체중 이동, 팔 모듈 강조 |
+| 중장 | 전선 유지·넉백 저항·받아내기 | 46 | 6 | 0.78 | 1.08 | **1.14** | 두꺼운 골격, 느린 관절·큰 반동 |
 
 - 숫자는 Minecraft 20 HP와 비교할 수 있도록 적은 **초기 가상 지표**이며 실제 바닐라/다른 모드 전투에 적용 검증 전이다.
 - 속도 계수는 **인형 전용 기준 이동속도에 곱하는 배율**이고 블록/초 또는 실제 엔티티 속성 값으로 확정한 것이 아니다.
+- **골격 공속 후보**: 경량 ×0.88, 균형 ×1.00, 중장 ×1.14; 구동핵과 실제 크기 배율에 곱으로 적용. 소재 추가 투입과 키·피격박스의 관계, 인형제작대는 [PUPPET_SCALE_AND_WORKBENCH.md](./PUPPET_SCALE_AND_WORKBENCH.md)에 정리.
 - 골격이 무조건 '세 단계 상위 티어'가 되는 구조 금지: 빠른 경량형은 고레벨에도 추격, 중장형은 고레벨에도 차단에 특화.
 - '회피'는 클라이언트 전용 눈속임이 아니라 서버 물리 이동/공격 판정과 연결되는 개별 트리거여야 한다. 공격을 확률로 무효화하는 경우는 PvP와 공격 호환성 검증 필요.
 
@@ -93,23 +94,23 @@
 
 ### 기본 공격 및 HP 계산 (검증 전)
 
-- `MaxHP = SkeletonHP * CoreHpMultiplier * (1 + GrowthHp + MaterialHpBonus)`
-- `AttackDamage = DeviceBaseDamage * SkeletonAttackMultiplier * CoreDamageMultiplier * (1 + GrowthAttack + MaterialAttackBonus)`
-- `AttackInterval = DeviceBaseInterval * CoreAttackIntervalMultiplier * (1 + MaterialIntervalModifier)`
+- `MaxHP = SkeletonHP * CoreHpMultiplier * SizeHpMultiplier * (1 + GrowthHp + MaterialHpBonus)`
+- `AttackDamage = DeviceBaseDamage * SkeletonAttackMultiplier * CoreDamageMultiplier * SizeDamageMultiplier * (1 + GrowthAttack + MaterialAttackBonus)`
+- `AttackInterval = DeviceBaseInterval * SkeletonIntervalFactor * CoreAttackIntervalMultiplier * SizeIntervalFactor * (1 + MaterialIntervalModifier) * ValidatedProgressionModifiers`
 - `IncomingEnemyDamage = MitigateArmor(rawDamage, SkeletonArmor, MaterialArmor) * CoreIncomingDamageMultiplier * otherValidatedDefenses`
-- `MoveSpeed = BasePuppetMoveSpeed * SkeletonMoveMultiplier * MaterialMoveMultiplier`
+- `MoveSpeed = BasePuppetMoveSpeed * SkeletonMoveMultiplier * SizeMoveMultiplier * MaterialMoveMultiplier`
 - `CoreHpMultiplier`: 신속 0.90, 그 외 1.00; `CoreDamageMultiplier`: 고출력 1.28, 그 외 1.00; `CoreAttackIntervalMultiplier`: 신속 0.82 / 안정 1.06 / 고출력 1.12; `CoreIncomingDamageMultiplier`: 안정 0.86 / 고출력 1.10 / 신속 1.00.
 - `GrowthHp`, `GrowthAttack`은 직업 레벨·인형 강화·패시브에서 오는 유효 성장량. **아직 별도 수치 공식/상한을 결정하지 않았으며, 최대 레벨을 고정 제한하는 의미가 아니다**.
 - 최초 1회 구성 시 바닐라/기타 모드 공용 HP 및 공격속도 특성을 직접 오염하지 않고, **인형 전용 데이터**로 구성해 저장. 부품 교체 시 체력 비율·상태 이상·공격 내부 타이머를 무상 회복/초기화시키지 않는다.
 - 장비·패시브·소재의 공격/방어 보정 곱 순서는 반드시 고정. 계산값 오버플로/NaN/0 간격 및 극고레벨 성능은 검증해야 한다.
 
-### 예시 3개, 레벨/부품 추가 강화 없음
+### 예시 3개, 레벨/부품 추가 강화 없음 (몸체 높이 1.5블록 기준)
 
 | 예시 인형 | HP 지표 | 기본 타격 피해 | 기본 공격 간격 | 단순 명목 DPS |
 |---|---:|---:|---:|---:|
-| 경량 + 칼날 + 신속 | 21.6 | 4.75 | 1.025초 | 약 4.63 |
+| 경량 + 칼날 + 신속 | 21.6 | 4.75 | **0.902초** | **약 5.27** |
 | 균형 + 투사기 + 고출력 | 32 | 5.12 | 1.848초 | 약 2.77 |
-| 중장 + 방패 + 안정 | 46 | 2.70 | 2.014초 | 약 1.34 |
+| 중장 + 방패 + 안정 | 46 | 2.70 | **2.296초** | **약 1.18** |
 
 - DPS는 적 방어/명중/이동·원거리 투사체/방패 차단을 모두 무시한 **공격 수치 비교**라 실제 게임 성능 우열을 뜻하지 않는다.
 - 원거리/방어 전술은 단순 DPS가 낮아도 안전한 공격/팀 생존·표적 유지로 가치를 가질 수 있어야 한다.
