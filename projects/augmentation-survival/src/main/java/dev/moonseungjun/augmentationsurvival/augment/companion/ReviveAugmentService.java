@@ -239,7 +239,7 @@ public final class ReviveAugmentService {
         living.setHealth(Math.max(1.0F, living.getMaxHealth() * 0.5F));
         if (!level.addFreshEntity(created)) return false;
         if (created instanceof Mob mob && CompanionAugmentService.isDominated(mob)) {
-            CompanionAugmentService.onRevivedCompanion(mob);
+            CompanionAugmentService.onRevivedCompanion(mob, marker.entityId);
         }
         return true;
     }
