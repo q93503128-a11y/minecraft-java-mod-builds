@@ -16,7 +16,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "PsPYpoCC"
     },
     {
       "id": "mowzies_mobs",
@@ -26,7 +27,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "xgAXTl17"
     },
     {
       "id": "born_in_chaos",
@@ -36,7 +38,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "ttcWWp3r"
     },
     {
       "id": "mutant_monsters",
@@ -46,7 +49,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "dauEcrnZ"
     },
     {
       "id": "yungs_better_dungeons",
@@ -56,7 +60,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "65IL2kKI"
     },
     {
       "id": "in_control",
@@ -66,7 +71,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "22Tx0R5U"
     },
     {
       "id": "reworked_locator_bar",
@@ -76,7 +82,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "Yi2Vr03m"
     },
     {
       "id": "lambdynamiclights",
@@ -86,7 +93,8 @@
       "env": {
         "client": "required",
         "server": "unsupported"
-      }
+      },
+      "version_id": "nztg2oS2"
     },
     {
       "id": "jei",
@@ -96,7 +104,8 @@
       "env": {
         "client": "required",
         "server": "optional"
-      }
+      },
+      "version_id": "1vC6z8wV"
     }
   ],
   "libraries": [
@@ -108,7 +117,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "yohfFbgD"
     },
     {
       "id": "lionfish_api",
@@ -118,7 +128,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "fTRMVgyZ"
     },
     {
       "id": "geckolib",
@@ -128,7 +139,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "Grwn5rUB"
     },
     {
       "id": "puzzles_lib",
@@ -138,7 +150,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "qbF2d7Ma"
     },
     {
       "id": "yungs_api",
@@ -148,7 +161,8 @@
       "env": {
         "client": "required",
         "server": "required"
-      }
+      },
+      "version_id": "2prKITKh"
     },
     {
       "id": "mezzconfig",
@@ -158,7 +172,8 @@
       "env": {
         "client": "required",
         "server": "optional"
-      }
+      },
+      "version_id": "sL7Ghaz1"
     }
   ]
 }
