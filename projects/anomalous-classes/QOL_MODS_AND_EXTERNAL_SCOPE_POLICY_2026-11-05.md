@@ -2,6 +2,8 @@
 
 > 2026-11-05 공개 배포 페이지/제작사 설명 대조. **RESEARCH ONLY — NOT INSTALLED / NOT CO-LOAD TESTED.** [프로젝트 정본](./PROJECT.md), [게임 기획](./GAME_DESIGN.md), [외부 몹·보스/던전 후보](./EXTERNAL_MOD_ECOSYSTEM_RESEARCH_2026-11-05.md)와 함께 읽는다. Minecraft **1.21.1 NeoForge는 유력 후보지만 아직 미확정**. 직업 7·8의 상세 기획 보류도 유지.
 
+> **최신 외부 모드팩 설계 선정(2026-11-05):** [설계 고정 목록](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md) 참조. **Locator Bar (Reworked), LambDynamicLights, JEI**를 첫 구성 기능 모드로 선정했고 **PlayerLocatorPlus·RyoamicLights(역할 중복), Crafting Tweaks+Balm(선택 제작 편의)**은 기본 제외. **JEI는 개별 Ctrl+O로 아이템 목록 숨김; 바닐라 레시피북 버튼을 전체 강제로 제거하지 않는다**. MC1.21.1/NeoForge21.1.x/Java21 **설계상 고정, 실행 테스트 미수행**.
+
 ## 2026-11-05 JEI 표시 선택 확인 및 전체 성장 통합
 
 - [공통 생존·경험치/레벨·보상·난이도 통합](./CORE_GAMEPLAY_GROWTH_REWARDS_DIFFICULTY_V1.md)과 함께 외부 QOL을 유지하되 **별도 RPG 성장축은 금지**.
