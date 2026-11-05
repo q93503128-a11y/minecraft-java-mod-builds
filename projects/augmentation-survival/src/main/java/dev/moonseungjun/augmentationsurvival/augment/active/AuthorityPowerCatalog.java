@@ -6,7 +6,7 @@ import java.util.Locale;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 
-/** Player-facing descriptions of the exact twenty-four server-supported authority packages. */
+/** Player-facing descriptions of the 26 explicitly bound boss authority packages. */
 public final class AuthorityPowerCatalog {
     public record Entry(String id, String group, String bossName, String effect) { }
 
@@ -15,11 +15,11 @@ public final class AuthorityPowerCatalog {
             new Entry("vanilla_ender_dragon", "바닐라", "엔더 드래곤", "6블록 근접 충격파와 넉백. 바라보는 방향 12블록·70도 범위에 드래곤 브레스 피해."),
             new Entry("vanilla_warden", "바닐라", "워든", "1.7초 충전 후 벽을 관통하는 음파 공격. 단일 적에게 고유 음파 피해와 강한 넉백."),
             new Entry("vanilla_elder_guardian", "바닐라", "엘더 가디언", "50블록 내 적에게 광역 채굴 피로 III의 저주. 몹 전투용 둔화·나약함 8초."),
-            new Entry("chronodawn_time_guardian", "Chrono Dawn", "Time Guardian", "적 뒤로 순간이동한 뒤 0.75초 후 착지 지점 4블록에 시간 왜곡 충격파. 둔화 II·채굴 피로 I 4초."),
+            new Entry("chronodawn_time_guardian", "Chrono Dawn", "Time Guardian", "원본 Time Blast 원거리탄·적 뒤 순간이동, 0.75초 뒤 4블록 시간 왜곡 충격파. 둔화 II·채굴 피로 I."),
             new Entry("chronodawn_chronos_warden", "Chrono Dawn", "Chronos Warden", "4블록 지면 강타 후 5초 석화 자세. 전방·측면 공격 피해 80% 감소, 후방 공격은 그대로 받습니다."),
             new Entry("chronodawn_clockwork_colossus", "Chrono Dawn", "Clockwork Colossus", "원본 톱니바퀴 투사체를 발사하고 전방 10블록에 충격파. 신속 II·최대체력 15% 회복. 외부 모드 미설치 시 단발 공격으로 대체."),
-            new Entry("chronodawn_temporal_phantom", "Chrono Dawn", "Temporal Phantom", "2초간 근접 공격 30% 위상 회피(발동 후 5초 재회피 제한), 뒤로 순간이동 공격·둔화, 전투 분신 2체 소환."),
-            new Entry("chronodawn_entropy_keeper", "Chrono Dawn", "Entropy Keeper", "대상 발밑에 3×3 부패 지대 5초 생성. 지대 안의 적에게 둔화 II·독 I을 반복 적용합니다."),
+            new Entry("chronodawn_temporal_phantom", "Chrono Dawn", "Temporal Phantom", "원본 Time Blast(Warp Bolt) 발사·적 뒤 순간이동 타격. 2초 위상 회피: 근접 공격 30% 회피 확률, 성공 후 5초 재회피 제한."),
+            new Entry("chronodawn_entropy_keeper", "Chrono Dawn", "Entropy Keeper", "대상 발밑 3×3 부패 지대 5초(둔화 II·독 I). 2초 후 6블록 엔트로피 폭발·시듦 II 10초·넉백."),
             new Entry("chronodawn_time_tyrant", "Chrono Dawn", "Time Tyrant", "3초간 둔화 V 시간왜곡, 적 뒤 순간이동·신속 II·광역 공격, 체력 10% 회복과 8초간 투사체 피해 70% 감소."),
             new Entry("worldbosses_sylvaron", "World Bosses", "Sylvaron", "저항 I 4초. 7블록 안의 적에게 강한 둔화·나약함·독과 피해."),
             new Entry("worldbosses_aureon", "World Bosses", "Aureon", "18블록 내 대상 집중 공격. 7블록 안에 둔화·발광·광역 피해."),

@@ -80,6 +80,7 @@ public final class AuthorityTheftService {
     private static final Map<UUID, Long> PHANTOM_PHASE_WINDOW = new HashMap<>();
     private static final Map<UUID, Long> PHANTOM_PHASE_DODGE_COOLDOWN = new HashMap<>();
     private static final List<PendingTimeDistortion> PENDING_TIME_DISTORTION = new ArrayList<>();
+    private static final List<PendingEntropyBurst> PENDING_ENTROPY_BURST = new ArrayList<>();
     private static final List<RotField> ACTIVE_ROT_FIELDS = new ArrayList<>();
     private static final int CHRONOS_STANCE_TICKS = 100;
     private static final int TIME_GUARDIAN_POST_BLINK_TICKS = 15;
@@ -144,6 +145,7 @@ public final class AuthorityTheftService {
             PENDING_SONIC.clear();
             PENDING_AUTHORITY_HITS.clear();
             PENDING_TIME_DISTORTION.clear();
+            PENDING_ENTROPY_BURST.clear();
             ACTIVE_ROT_FIELDS.clear();
         });
     }
@@ -398,8 +400,13 @@ public final class AuthorityTheftService {
     private static void releaseTimeGuardian(ServerPlayer player) {
         LivingEntity target = nearestHostile(player, 20.0D);
         if (target == null) return;
+        // Original Time Guardian uses the same Time Blast projectile as Temporal Phantom.
+        if (!ChronoDawnAuthorityProjectileBridge.shootTimeBlast(player, target)) {
+            hurt(player, target, scaledDamage(player, 0.60D, 4.0D));
+            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 1));
+            target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 0));
+        }
         blinkBehind(player, target, 3.0D);
-        target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 0));
         ServerLevel level = player.level();
         Vec3 impactCenter = player.position();
         long due = level.getGameTime() + TIME_GUARDIAN_POST_BLINK_TICKS;
@@ -452,18 +459,23 @@ public final class AuthorityTheftService {
         lineParticles(player, look, ParticleTypes.ELECTRIC_SPARK, 10);
     }
 
-    /** Temporal Phantom: probabilistic 2-second physical dodge, warp and blink strike. */
+    /** Temporal Phantom: phase dodge, original Time Blast/Warp Bolt and blink strike. */
     private static void releaseTemporalPhantom(ServerPlayer player) {
         PHANTOM_PHASE_WINDOW.put(player.getUUID(), player.level().getGameTime() + 40L);
         LivingEntity target = nearestHostile(player, 20.0D);
         if (target != null) {
-            hurt(player, target, scaledDamage(player, 0.8D, 4.0D));
-            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 1));
-            target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 0));
+            if (!ChronoDawnAuthorityProjectileBridge.shootTimeBlast(player, target)) {
+                hurt(player, target, scaledDamage(player, 0.8D, 4.0D));
+                target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 1));
+                target.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 0));
+            }
             if (blinkBehind(player, target, 6.0D)) hurt(player, target, 8.0F);
         }
-        spawnAuthorityEchoes(player, 2, 20.0F, 4.0D, 15 * 20);
-        particles(player, ParticleTypes.PORTAL, 60, 3.0D);
+        // The source's clone summon method is TODO: do not present synthetic combat clones
+        // as a stolen canonical boss skill.
+        particles(player, ParticleTypes.PORTAL, 42, 3.0D);
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.85F, 1.3F);
     }
 
     /** Entropy Keeper: persistent 3x3 corruption patch (not a generic instant poison burst). */
@@ -475,6 +487,11 @@ public final class AuthorityTheftService {
         long now = level.getGameTime();
         ACTIVE_ROT_FIELDS.add(new RotField(player.getUUID(), level.dimension(), anchor,
                 now + ROT_FIELD_TICKS, now));
+        // The original Entropy Keeper follows its 3x3 rot with a distinct 6-block burst.
+        // Telegraph that burst instead of hiding it inside the immediate poison pulse.
+        PENDING_ENTROPY_BURST.add(new PendingEntropyBurst(player.getUUID(),
+                level.dimension(), anchor.getCenter(), now + 40L));
+        ringParticles(level, anchor.getCenter(), 6.0D, ParticleTypes.SCULK_SOUL, 32);
         patchParticles(level, anchor);
         level.playSound(null, anchor, SoundEvents.BEACON_DEACTIVATE,
                 SoundSource.PLAYERS, 0.8F, 0.65F);
@@ -856,6 +873,35 @@ public final class AuthorityTheftService {
             level.playSound(null, BlockPos.containing(cast.center()), SoundEvents.BEACON_ACTIVATE,
                     SoundSource.PLAYERS, 0.85F, 1.0F);
         }
+        // Entropy Keeper's source signature: 6-block explosion, Wither II for 10s, high knockback.
+        Iterator<PendingEntropyBurst> bursts = PENDING_ENTROPY_BURST.iterator();
+        while (bursts.hasNext()) {
+            PendingEntropyBurst burst = bursts.next();
+            ServerPlayer caster = server.getPlayerList().getPlayer(burst.ownerId());
+            if (caster == null || caster.isDeadOrDying()
+                    || !caster.level().dimension().equals(burst.dimension())) {
+                bursts.remove();
+                continue;
+            }
+            if (caster.level().getGameTime() < burst.dueTick()) continue;
+            bursts.remove();
+            for (LivingEntity enemy : hostilesNear(caster, burst.center(), 6.0D)) {
+                hurt(caster, enemy, 10.0F);
+                enemy.addEffect(new MobEffectInstance(MobEffects.WITHER, 200, 1));
+                Vec3 away = enemy.position().subtract(burst.center());
+                if (away.lengthSqr() > 1.0E-6D) {
+                    Vec3 push = away.normalize().scale(1.5D);
+                    enemy.push(push.x, Math.max(0.3D, push.y), push.z);
+                }
+            }
+            caster.level().sendParticles(ParticleTypes.EXPLOSION,
+                    burst.center().x, burst.center().y + 1.0D, burst.center().z,
+                    20, 2.0D, 0.8D, 2.0D, 0.06D);
+            ringParticles(caster.level(), burst.center(), 6.0D, ParticleTypes.SCULK_SOUL, 36);
+            caster.level().playSound(null, BlockPos.containing(burst.center()), SoundEvents.GENERIC_EXPLODE,
+                    SoundSource.PLAYERS, 1.2F, 0.7F);
+        }
+
         // A temporary 3x3 rot field with repeated spatial effects, no world-block modification.
         Iterator<RotField> patches = ACTIVE_ROT_FIELDS.iterator();
         while (patches.hasNext()) {
@@ -935,6 +981,9 @@ public final class AuthorityTheftService {
     }
 
     private record PendingTimeDistortion(
+            UUID ownerId, ResourceKey<Level> dimension, Vec3 center, long dueTick) { }
+
+    private record PendingEntropyBurst(
             UUID ownerId, ResourceKey<Level> dimension, Vec3 center, long dueTick) { }
 
     private static final class RotField {

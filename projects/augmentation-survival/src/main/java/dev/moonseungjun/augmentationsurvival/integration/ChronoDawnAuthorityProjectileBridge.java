@@ -13,7 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Runtime-only adapter to Chrono Dawn's original gear projectile (LGPL-3.0).
+ * Runtime-only adapters to Chrono Dawn's original projectile entities (LGPL-3.0).
  * No external mod source or art is embedded; the original registered entity
  * supplies flight, spinning mesh, collision and sound when Chrono Dawn is loaded.
  *
@@ -22,7 +22,9 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class ChronoDawnAuthorityProjectileBridge {
     private static final String GEAR = "com.chronodawn.entities.projectiles.GearProjectileEntity";
-    private static boolean warned;
+    private static final String TIME_BLAST = "com.chronodawn.entities.projectiles.TimeBlastEntity";
+    private static boolean gearWarned;
+    private static boolean timeBlastWarned;
 
     private ChronoDawnAuthorityProjectileBridge() { }
 
@@ -43,10 +45,39 @@ public final class ChronoDawnAuthorityProjectileBridge {
             shoot.invoke(projectile, offset.x, offset.y + horizontal * 0.1D, offset.z, 1.5F, 1.0F);
             return level.addFreshEntity((Entity) projectile);
         } catch (ReflectiveOperationException | LinkageError ex) {
-            if (!warned) {
-                warned = true;
+            if (!gearWarned) {
+                gearWarned = true;
                 AugmentationSurvival.LOGGER.warn(
                         "Chrono Dawn 26.2 Gear Projectile adapter unavailable; using vanilla-safe fallback", ex);
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Both the Time Guardian and Temporal Phantom fire this exact Chrono Dawn entity.
+     * Their original Warp Bolt is TimeBlastEntity, not a separately registered projectile.
+     */
+    public static boolean shootTimeBlast(ServerPlayer player, LivingEntity target) {
+        if (!FabricLoader.getInstance().isModLoaded("chronodawn")) return false;
+        if (target.isDeadOrDying() || target.level() != player.level()) return false;
+        ServerLevel level = player.level();
+        try {
+            Class<?> projectileClass = Class.forName(TIME_BLAST);
+            Constructor<?> constructor = projectileClass.getConstructor(Level.class, LivingEntity.class);
+            Object spawned = constructor.newInstance(level, player);
+            if (!(spawned instanceof Projectile projectile)) return false;
+            Vec3 origin = player.getEyePosition();
+            projectile.setPos(origin.x, origin.y, origin.z);
+            Vec3 aim = target.getBoundingBox().getCenter().subtract(origin);
+            if (aim.lengthSqr() <= 1.0E-6D) return false;
+            projectile.setDeltaMovement(aim.normalize().scale(1.5D));
+            return level.addFreshEntity((Entity) projectile);
+        } catch (ReflectiveOperationException | LinkageError ex) {
+            if (!timeBlastWarned) {
+                timeBlastWarned = true;
+                AugmentationSurvival.LOGGER.warn(
+                        "Chrono Dawn 26.2 Time Blast adapter unavailable; using server-safe fallback", ex);
             }
             return false;
         }
