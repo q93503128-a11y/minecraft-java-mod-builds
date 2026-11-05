@@ -28,6 +28,8 @@ abstract class DominatedSlimeContactMixin {
     private void augmentationSurvival$dominatedSlimeContact(Entity entity, CallbackInfo ci) {
         AbstractCubeMob cube = (AbstractCubeMob) (Object) this;
         if (!(cube instanceof Slime || cube instanceof MagmaCube)) return;
+        // Small vanilla slimes are harmless; magma cubes retain their own contact damage.
+        if (cube instanceof Slime slime && slime.getSize() <= 1) return;
         if (!(cube.level() instanceof ServerLevel) || !CompanionAugmentService.isDominated(cube)) return;
         if (!(entity instanceof LivingEntity target) || cube.getTarget() != target
                 || !CompanionAugmentService.mayDominatedMobDamage(cube, target)) return;
