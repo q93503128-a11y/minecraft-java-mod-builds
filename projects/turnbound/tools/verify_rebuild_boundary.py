@@ -29,9 +29,9 @@ RETIRED_CLIENT_CLASSES = (
 )
 RUNTIME_CLIENT_PREFIX = "io/github/q93503128/turnbound/client/"
 AUTO_ANNOTATION = re.compile(
-    r"^\\s*@(?:Mod\\.)?EventBusSubscriber\\b|"
-    r"^\\s*@JourneyMapPlugin\\b|"
-    r"^\\s*@net\\.neoforged\\.fml\\.common\\.Mod\\.EventBusSubscriber\\b",
+    r"^\s*@(?:Mod\.)?EventBusSubscriber\b|"
+    r"^\s*@JourneyMapPlugin\b|"
+    r"^\s*@net\.neoforged\.fml\.common\.Mod\.EventBusSubscriber\b",
     re.MULTILINE,
 )
 
