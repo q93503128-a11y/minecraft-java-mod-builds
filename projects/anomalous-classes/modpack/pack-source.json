@@ -1,0 +1,164 @@
+{
+  "schema": "anomalous-classes-modrinth-pack-source-v1",
+  "name": "이능 직업 서바이벌 — 외부 모드팩 기반",
+  "summary": "Vanilla survival with 9 selected gameplay/utility mods and their 6 declared libraries. Class mod development is separate.",
+  "version_id": "anomalous-classes-external-baseline-0.1.0",
+  "minecraft": "1.21.1",
+  "neoforge": "21.1.244",
+  "java": "21",
+  "user_requirements": "9 selected mods and 6 libraries, no bundled third-party jars, do not normalize class boss matchups",
+  "mods": [
+    {
+      "id": "l_enders_cataclysm",
+      "slug": "l_enders-cataclysm",
+      "release": "3.33",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "mowzies_mobs",
+      "slug": "mowzies-mobs",
+      "release": "1.8.2",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "born_in_chaos",
+      "slug": "borninchaos",
+      "release": "1.7.6",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "mutant_monsters",
+      "slug": "mutant-monsters",
+      "release": "v21.1.1-1.21.1-NeoForge",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "yungs_better_dungeons",
+      "slug": "yungs-better-dungeons",
+      "release": "1.21.1-NeoForge-5.1.2",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "in_control",
+      "slug": "in-control",
+      "release": "1.21-10.3.1",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "reworked_locator_bar",
+      "slug": "reworked-locator-bar",
+      "release": "1.2.2+1.21.1-neoforge",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "lambdynamiclights",
+      "slug": "lambdynamiclights",
+      "release": "4.8.9+1.21.1",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "unsupported"
+      }
+    },
+    {
+      "id": "jei",
+      "slug": "jei",
+      "release": "19.70.0.469",
+      "role": "mod",
+      "env": {
+        "client": "required",
+        "server": "optional"
+      }
+    }
+  ],
+  "libraries": [
+    {
+      "id": "curios",
+      "slug": "curios",
+      "release": "9.5.1+1.21.1",
+      "role": "library",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "lionfish_api",
+      "slug": "lionfish-api",
+      "release": "3.1",
+      "role": "library",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "geckolib",
+      "slug": "geckolib",
+      "release": "4.9.3",
+      "role": "library",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "puzzles_lib",
+      "slug": "puzzles-lib",
+      "release": "21.1.56",
+      "role": "library",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "yungs_api",
+      "slug": "yungs-api",
+      "release": "1.21.1-NeoForge-5.1.9",
+      "role": "library",
+      "env": {
+        "client": "required",
+        "server": "required"
+      }
+    },
+    {
+      "id": "mezzconfig",
+      "slug": "mezzconfig",
+      "release": "0.6.10",
+      "role": "library",
+      "env": {
+        "client": "required",
+        "server": "optional"
+      }
+    }
+  ]
+}
