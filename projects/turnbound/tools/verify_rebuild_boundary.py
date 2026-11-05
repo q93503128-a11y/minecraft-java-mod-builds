@@ -16,6 +16,15 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTENT = ROOT / "src" / "main" / "resources" / "data" / "turnbound"
 JAVA = ROOT / "src" / "main" / "java"
 EMPTY_FIELDS = ("characters", "enemies", "quests", "equipment", "encounters", "regions")
+RETIRED_JAVA_LIST = ROOT / "tools" / "retired_legacy_java_classes.txt"
+
+
+def retired_java_paths() -> list[str]:
+    return [
+        line.strip() for line in RETIRED_JAVA_LIST.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+
 RETIRED_CLIENT_CLASSES = (
     "DrehmalAutoInstaller",
     "DrehmalInstallScreen",
@@ -56,6 +65,10 @@ def source_errors() -> list[str]:
         except (ValueError, OSError) as error:
             errors.append(f"Unreadable foundation content manifest: {error}")
 
+    for relative_path in retired_java_paths():
+        if (JAVA / "io/github/q93503128/turnbound" / relative_path).exists():
+            errors.append(f"Retired Java source has returned: {relative_path}")
+
     for java in JAVA.rglob("*.java"):
         source = java.read_text(encoding="utf-8")
         for match in AUTO_ANNOTATION.finditer(source):
@@ -81,6 +94,12 @@ def jar_errors(path: Path) -> list[str]:
         # ZIP directory entries are not authored data; only validate actual files.
         files = {entry.filename for entry in jar.infolist() if not entry.is_dir()}
     errors = []
+    for relative_path in retired_java_paths():
+        class_stem = "io/github/q93503128/turnbound/" + relative_path.removesuffix(".java")
+        if any(name == class_stem + ".class" or name.startswith(class_stem + "$")
+               for name in files):
+            errors.append(f"Retired Java bytecode has returned: {relative_path}")
+
     if "data/turnbound/rebuild/foundation_v1.json" not in files:
         errors.append("Blank content manifest missing from JAR")
     for name in RETIRED_CLIENT_CLASSES:

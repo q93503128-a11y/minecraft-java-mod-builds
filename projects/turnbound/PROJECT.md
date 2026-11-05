@@ -92,3 +92,9 @@
 - Content-first milestone: **BLANK BUILD/SERVER BASELINE VERIFIED**. This is suitable for agreeing on the new player-facing game's direction, but NOT certified as PLAYTESTED, client-load-safe or multiplayer-safe.
 - Remaining technical cleanup: break historical compile/test references to old world, NPC/quest UI and character-specific battle Java before physically retiring source files. Do not move NeoForge Java classes into the standard JUnit test sourceSet; the failed #1048 already demonstrated an invalid classpath.
 - Next real-world acceptance: install the one-click artifact in a completely separate Minecraft 26.2 test instance, create a fresh world, observe no legacy onboarding/download or terrain writes, log in/reconnect/respawn and confirm the empty rebuild attachment safely persists. Test multiple connected players separately. NEVER use the old world/save as the first playtest.
+
+## Java source cleanup checkpoint — 2026-11-05
+- Removed 48 disconnected, untested-and-unreferenced retired Java classes, including the dormant Drehmal auto-installer and obsolete user-facing field/facility/summon UI, without removing any historical JUnit test source. Source recovery is guaranteed by the frozen legacy branch.
+- Exact retired source names are tracked under `tools/retired_legacy_java_classes.txt`, with both Java-source and packaged-bytecode CI regression checks.
+- Remaining old Java modules have compile-time dependencies on preserved combat/session/world protocols or historical tests, and must be isolated deliberately before deletion.
+- CI success on this checkpoint verifies a blank-data/dedicated-server foundation, NOT Minecraft client launch, player-login persistence, or multiplayer gameplay. The production-ready-for-co-design decision must distinguish this from client-playtest readiness.
