@@ -68,6 +68,14 @@ public final class AuthorityTheftService {
     private static final Map<UUID, Long> WITHER_ARMOR = new HashMap<>();
     private static final List<PendingPackage> PENDING_PACKAGES = new ArrayList<>();
     private static final List<PendingSonic> PENDING_SONIC = new ArrayList<>();
+    // Temporary source-faithful signatures. All three are server-owned and never saved.
+    private static final Map<UUID, Long> CHRONOS_STONE_STANCE = new HashMap<>();
+    private static final List<PendingTimeDistortion> PENDING_TIME_DISTORTION = new ArrayList<>();
+    private static final List<RotField> ACTIVE_ROT_FIELDS = new ArrayList<>();
+    private static final int CHRONOS_STANCE_TICKS = 100;
+    private static final int TIME_GUARDIAN_POST_BLINK_TICKS = 15;
+    private static final int ROT_FIELD_TICKS = 100;
+    private static final int ROT_FIELD_PULSE_TICKS = 10;
 
     private static final Set<String> VANILLA_PACKAGES = Set.of(
             "vanilla_wither",
@@ -114,13 +122,16 @@ public final class AuthorityTheftService {
         CloneEntityTypes.initialize();
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(AuthorityTheftService::afterKill);
         ServerTickEvents.END_SERVER_TICK.register(AuthorityTheftService::tickPending);
-        ServerPlayerEvents.JOIN.register(player -> WITHER_ARMOR.remove(player.getUUID()));
-        ServerPlayerEvents.AFTER_RESPAWN.register((previous, player, alive) -> WITHER_ARMOR.remove(player.getUUID()));
-        ServerPlayerEvents.LEAVE.register(player -> WITHER_ARMOR.remove(player.getUUID()));
+        ServerPlayerEvents.JOIN.register(player -> clearTransientProtections(player.getUUID()));
+        ServerPlayerEvents.AFTER_RESPAWN.register((previous, player, alive) -> clearTransientProtections(player.getUUID()));
+        ServerPlayerEvents.LEAVE.register(player -> clearTransientProtections(player.getUUID()));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             WITHER_ARMOR.clear();
+            CHRONOS_STONE_STANCE.clear();
             PENDING_PACKAGES.clear();
             PENDING_SONIC.clear();
+            PENDING_TIME_DISTORTION.clear();
+            ACTIVE_ROT_FIELDS.clear();
         });
     }
 
@@ -185,6 +196,24 @@ public final class AuthorityTheftService {
 
     public static boolean isEnabled(AugmentationPlayerState state, String id) {
         return state.hasStolenAuthority(id) && state.persistentInt(DISABLED_PREFIX + id) == 0;
+    }
+
+    private static void clearTransientProtections(UUID playerId) {
+        WITHER_ARMOR.remove(playerId);
+        CHRONOS_STONE_STANCE.remove(playerId);
+    }
+
+    /** Source Chronos Warden: 80% front/side protection, unchanged damage through rear weak spot. */
+    public static float modifyChronosStoneStanceDamage(ServerPlayer player, DamageSource source, float incoming) {
+        if (incoming <= 0.0F || CHRONOS_STONE_STANCE.getOrDefault(player.getUUID(), 0L)
+                <= player.level().getGameTime()) return incoming;
+        Entity attacker = source.getEntity() != null ? source.getEntity() : source.getDirectEntity();
+        if (attacker == null || attacker == player) return incoming;
+        Vec3 direction = attacker.position().subtract(player.position());
+        Vec3 facing = flatLook(player);
+        Vec3 horizontal = new Vec3(direction.x, 0.0D, direction.z);
+        if (horizontal.lengthSqr() < 1.0E-6D) return incoming;
+        return facing.dot(horizontal.normalize()) < 0.0D ? incoming : incoming * 0.20F;
     }
 
     public static boolean blocksWitherProjectile(ServerPlayer player, DamageSource source) {
@@ -326,32 +355,35 @@ public final class AuthorityTheftService {
         particles(player, PowerParticleOption.create(ParticleTypes.DRAGON_BREATH, 1.0F), 120, 8.0D);
     }
 
-    /** Time Guardian: blink pressure + temporal distortion AoE + slowed primary target. */
+    /** Time Guardian: blink first, then its original 15-tick recovery and timed 4-block distortion. */
     private static void releaseTimeGuardian(ServerPlayer player) {
         LivingEntity target = nearestHostile(player, 20.0D);
-        if (target != null) {
-            blinkBehind(player, target, 3.0D);
-            target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 0));
-        }
-        float damage = scaledDamage(player, 0.75D, 2.0D);
-        for (LivingEntity enemy : hostiles(player, 4.0D)) {
-            hurt(player, enemy, damage);
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 1));
-            enemy.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 80, 0));
-        }
-        particles(player, ParticleTypes.WITCH, 48, 4.0D);
+        if (target == null) return;
+        blinkBehind(player, target, 3.0D);
+        target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 0));
+        ServerLevel level = player.level();
+        Vec3 impactCenter = player.position();
+        long due = level.getGameTime() + TIME_GUARDIAN_POST_BLINK_TICKS;
+        PENDING_TIME_DISTORTION.add(new PendingTimeDistortion(
+                player.getUUID(), level.dimension(), impactCenter, due));
+        ringParticles(level, impactCenter, 4.0D, ParticleTypes.WITCH, 24);
+        level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE,
+                SoundSource.PLAYERS, 0.85F, 1.25F);
     }
 
-    /** Chronos Warden: five-second stone stance and the source boss's 4-block ground slam. */
+    /** Chronos Warden: visible four-block ground slam followed by facing-sensitive Stone Stance. */
     private static void releaseChronosWarden(ServerPlayer player) {
-        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 100, 3));
+        ServerLevel level = player.level();
         for (LivingEntity enemy : hostiles(player, 4.0D)) {
             hurt(player, enemy, 2.0F);
             pushAway(player, enemy, 1.15D, 0.45D);
+            enemy.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 1));
         }
-        LivingEntity primary = nearestHostile(player, 5.0D);
-        if (primary != null) primary.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 100, 1));
-        particles(player, ParticleTypes.SOUL, 56, 4.0D);
+        CHRONOS_STONE_STANCE.put(player.getUUID(), level.getGameTime() + CHRONOS_STANCE_TICKS);
+        player.addEffect(new MobEffectInstance(MobEffects.GLOWING, CHRONOS_STANCE_TICKS, 0, false, false));
+        ringParticles(level, player.position(), 4.0D, ParticleTypes.SOUL, 32);
+        level.playSound(null, player.blockPosition(), SoundEvents.ANVIL_LAND,
+                SoundSource.PLAYERS, 0.8F, 0.7F);
     }
 
     /** Clockwork Colossus: overcharge, repair protocol, gear strike and linear ground shockwave. */
@@ -388,26 +420,18 @@ public final class AuthorityTheftService {
         particles(player, ParticleTypes.PORTAL, 60, 3.0D);
     }
 
-    /** Entropy Keeper: decay aura, temporal rot and the source boss's 6-block entropy burst. */
+    /** Entropy Keeper: persistent 3x3 corruption patch (not a generic instant poison burst). */
     private static void releaseEntropyKeeper(ServerPlayer player) {
         LivingEntity primary = nearestHostile(player, 16.0D);
-        if (primary != null) {
-            for (LivingEntity enemy : player.level().getEntitiesOfClass(
-                    LivingEntity.class,
-                    primary.getBoundingBox().inflate(2.0D),
-                    candidate -> CompanionAugmentService.isHostileTarget(player, candidate))) {
-                enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 1));
-                enemy.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 0));
-            }
-        }
-        for (LivingEntity enemy : hostiles(player, 6.0D)) {
-            if (player.distanceToSqr(enemy) <= 16.0D) {
-                enemy.addEffect(new MobEffectInstance(MobEffects.WITHER, 60, 0));
-            }
-            hurt(player, enemy, 10.0F);
-            enemy.addEffect(new MobEffectInstance(MobEffects.WITHER, 200, 1));
-        }
-        particles(player, ParticleTypes.SCULK_SOUL, 70, 6.0D);
+        if (primary == null) return;
+        ServerLevel level = player.level();
+        BlockPos anchor = primary.blockPosition();
+        long now = level.getGameTime();
+        ACTIVE_ROT_FIELDS.add(new RotField(player.getUUID(), level.dimension(), anchor,
+                now + ROT_FIELD_TICKS, now));
+        patchParticles(level, anchor);
+        level.playSound(null, anchor, SoundEvents.BEACON_DEACTIVATE,
+                SoundSource.PLAYERS, 0.8F, 0.65F);
     }
 
     /** Time Tyrant: time stop, teleport, acceleration, AoE pressure and one-shot time reversal heal. */
@@ -684,6 +708,7 @@ public final class AuthorityTheftService {
         particles(player, ParticleTypes.SPORE_BLOSSOM_AIR, 130, 9.0D);
     }
 
+    /** Tick each spawned signature independently; no per-tick whole-world entity scan. */
     private static void tickPending(MinecraftServer server) {
         Iterator<PendingPackage> packageIterator = PENDING_PACKAGES.iterator();
         while (packageIterator.hasNext()) {
@@ -731,6 +756,57 @@ public final class AuthorityTheftService {
                 target.push(pushNorm.x * 2.5D, 0.5D, pushNorm.z * 2.5D);
             }
         }
+        // Delayed Time Guardian hit: exact 15-tick boss recovery and fixed-area telegraph.
+        Iterator<PendingTimeDistortion> distortions = PENDING_TIME_DISTORTION.iterator();
+        while (distortions.hasNext()) {
+            PendingTimeDistortion cast = distortions.next();
+            ServerPlayer caster = server.getPlayerList().getPlayer(cast.ownerId());
+            if (caster == null || caster.isDeadOrDying()
+                    || !caster.level().dimension().equals(cast.dimension())) {
+                distortions.remove();
+                continue;
+            }
+            if (caster.level().getGameTime() < cast.dueTick()) continue;
+            distortions.remove();
+            ServerLevel level = caster.level();
+            for (LivingEntity enemy : hostilesNear(caster, cast.center(), 4.0D)) {
+                hurt(caster, enemy, scaledDamage(caster, 0.75D, 2.0D));
+                enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 1));
+                enemy.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 80, 0));
+            }
+            ringParticles(level, cast.center(), 4.0D, ParticleTypes.WITCH, 40);
+            level.playSound(null, BlockPos.containing(cast.center()), SoundEvents.BEACON_ACTIVATE,
+                    SoundSource.PLAYERS, 0.85F, 1.0F);
+        }
+        // A temporary 3x3 rot field with repeated spatial effects, no world-block modification.
+        Iterator<RotField> patches = ACTIVE_ROT_FIELDS.iterator();
+        while (patches.hasNext()) {
+            RotField patch = patches.next();
+            ServerPlayer caster = server.getPlayerList().getPlayer(patch.ownerId);
+            if (caster == null || caster.isDeadOrDying()
+                    || !caster.level().dimension().equals(patch.dimension)
+                    || caster.level().getGameTime() >= patch.expiryTick) {
+                patches.remove();
+                continue;
+            }
+            long now = caster.level().getGameTime();
+            if (now < patch.nextPulseTick) continue;
+            patch.nextPulseTick = now + ROT_FIELD_PULSE_TICKS;
+            AABB region = new AABB(patch.anchor.getX() - 1, patch.anchor.getY() - 0.4D,
+                    patch.anchor.getZ() - 1, patch.anchor.getX() + 2,
+                    patch.anchor.getY() + 2.0D, patch.anchor.getZ() + 2);
+            for (LivingEntity enemy : caster.level().getEntitiesOfClass(
+                    LivingEntity.class, region,
+                    e -> CompanionAugmentService.isHostileTarget(caster, e))) {
+                enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 1));
+                enemy.addEffect(new MobEffectInstance(MobEffects.POISON, 60, 0));
+            }
+            patchParticles(caster.level(), patch.anchor);
+        }
+        CHRONOS_STONE_STANCE.entrySet().removeIf(entry -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            return player == null || player.isDeadOrDying() || player.level().getGameTime() >= entry.getValue();
+        });
         WITHER_ARMOR.entrySet().removeIf(entry -> {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null || player.isDeadOrDying() || entry.getValue() <= player.level().getGameTime()) {
@@ -743,6 +819,25 @@ public final class AuthorityTheftService {
             }
             return false;
         });
+    }
+
+    private record PendingTimeDistortion(
+            UUID ownerId, ResourceKey<Level> dimension, Vec3 center, long dueTick) { }
+
+    private static final class RotField {
+        private final UUID ownerId;
+        private final ResourceKey<Level> dimension;
+        private final BlockPos anchor;
+        private final long expiryTick;
+        private long nextPulseTick;
+        private RotField(UUID ownerId, ResourceKey<Level> dimension,
+                         BlockPos anchor, long expiryTick, long nextPulseTick) {
+            this.ownerId = ownerId;
+            this.dimension = dimension;
+            this.anchor = anchor;
+            this.expiryTick = expiryTick;
+            this.nextPulseTick = nextPulseTick;
+        }
     }
 
     private record PendingPackage(UUID playerId, ResourceKey<Level> dimension,
@@ -817,6 +912,37 @@ public final class AuthorityTheftService {
             }
         }
         return false;
+    }
+
+    private static List<LivingEntity> hostilesNear(ServerPlayer player, Vec3 center, double radius) {
+        double radiusSquared = radius * radius;
+        return player.level().getEntitiesOfClass(LivingEntity.class,
+                AABB.ofSize(center, radius * 2.0D, radius * 2.0D, radius * 2.0D),
+                e -> CompanionAugmentService.isHostileTarget(player, e)
+                        && e.position().distanceToSqr(center) <= radiusSquared);
+    }
+
+    /** Readable, low-cost ground ring; max 40 particles per cast. */
+    private static void ringParticles(ServerLevel level, Vec3 center, double radius,
+                                      net.minecraft.core.particles.ParticleOptions particle, int points) {
+        for (int i = 0; i < points; i++) {
+            double angle = Math.PI * 2.0D * i / points;
+            level.sendParticles(particle,
+                    center.x + Math.cos(angle) * radius, center.y + 0.12D,
+                    center.z + Math.sin(angle) * radius,
+                    1, 0.0D, 0.04D, 0.0D, 0.0D);
+        }
+    }
+
+    private static void patchParticles(ServerLevel level, BlockPos anchor) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                level.sendParticles(ParticleTypes.SCULK_SOUL,
+                        anchor.getX() + dx + 0.5D, anchor.getY() + 0.15D,
+                        anchor.getZ() + dz + 0.5D,
+                        1, 0.2D, 0.0D, 0.2D, 0.0D);
+            }
+        }
     }
 
     private static List<LivingEntity> hostiles(ServerPlayer player, double radius) {
