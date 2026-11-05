@@ -129,3 +129,10 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Commit `f19710f2469519c6c53a01b36c31aedd365e3cf6`, GitHub Actions https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41987155431: JUnit/Gradle PASS; NeoForge server smoke PASS; JAR inspection PASS; MRPACK inspection PASS.
 - Current commit changed only through this following documentation update; no user-client, respawn, or multiplayer playtest was performed. Mark those **NOT TESTED** even though static ownership and admission unit tests passed.
 - The code-phase deliverable is a blank, isolated foundation with explicit persistence boundaries and partial reusable combat extraction, **not a complete finished Java cleanup or playable RPG**.
+
+## Blank-production CI boundary — 2026-11-05
+- The content-free production JAR now excludes nine retired Drehmal client/bootstrap/repair class families (including nested classes), while the original historical Java sources remain available for regression tests. Core battle/party/network code and the protected profile lifecycle are retained.
+- Added `tools/verify_rebuild_boundary.py` executed before Gradle build and again during JAR inspection. Source audit checks that only the one empty production catalog exists and no legacy auto subscriber has been re-enabled. JAR audit rejects old authored assets/data and bundled old auto-downloader/world-repair binaries.
+- Initial run #1060 exposed a JAR-audit false positive caused by ZIP directory entries. The scanner was fixed to inspect actual files only and its event-annotation detection was corrected. No source, tests or gameplay were deleted to make verification pass.
+- Final source SHA: `1a901f9237a84828f113b3ba0a89d7bdec42b0b0`. [Build #1062](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42014459244): **BUILD/TEST PASS, SERVER SMOKE PASS, JAR PASS, PACK PASS**. Client and multiplayer were NOT TESTED.
+- **Readiness wording:** empty-content production artifact is verified; source-level legacy cleanup is incomplete, and readiness to PLAY in a Minecraft client still requires a separate test in a fresh world.
