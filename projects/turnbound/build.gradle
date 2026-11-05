@@ -75,6 +75,20 @@ neoForge.ideSyncTask generateModMetadata
 
 // The retired hero texture generator is deliberately not part of the blank-content build.
 
+// Preserve historical full-PNG texture validation without shipping a retired hero image.
+var prepareLegacyHeroFixture = tasks.register('prepareLegacyHeroFixture') {
+    def inputFile = file('src/test/resources/legacy/elysia.png.b64')
+    def outputDir = layout.buildDirectory.dir('generated/testResources/legacyHero')
+    inputs.file inputFile
+    outputs.dir outputDir
+    doLast {
+        def outputFile = outputDir.get().file('assets/turnbound/textures/entity/hero/elysia.png').asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.bytes = java.util.Base64.getDecoder().decode(inputFile.getText('UTF-8').trim())
+    }
+}
+sourceSets.test.resources.srcDir prepareLegacyHeroFixture
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release = 25

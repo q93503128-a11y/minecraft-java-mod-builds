@@ -1,6 +1,7 @@
 package io.github.q93503128.turnbound;
 
 import com.mojang.logging.LogUtils;
+import io.github.q93503128.turnbound.content.RebuildContentCatalog;
 import io.github.q93503128.turnbound.presentation.DrabyelServiceActors;
 import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
 import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
@@ -25,6 +26,7 @@ public final class Turnbound {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public Turnbound(IEventBus modEventBus) {
+        RebuildContentCatalog.requireEmptyProductionCatalog();
         // Keep persistent registration identities so old saves are not needlessly reinterpreted.
         TurnboundAttachments.register(modEventBus);
         TurnboundSounds.SOUND_EVENTS.register(modEventBus);

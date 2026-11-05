@@ -56,3 +56,11 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - The generated Modrinth pack no longer writes the Drehmal opt-in marker or advertises a world download; obsolete Elysia texture regeneration was removed from build tasks.
 - Inactive legacy classes/JSON/resources remain in source for staged removal. This is not yet a physically empty content catalog, and no existing save is migrated or overwritten by the new entrypoints.
 - Build/CI and actual Minecraft client confirmation must be recorded separately; an inactive entrypoint by itself is not proof of successful gameplay.
+
+## First physical content removal — 2026-11-05
+- 27 legacy content JSON files under `src/main/resources/data/turnbound/` have been relocated byte-for-byte under `src/test/resources/data/turnbound/` so historic tests can validate legacy logic without shipping those datasets to players. Source original is preserved in prior branch.
+- `data/turnbound/rebuild/foundation_v1.json` is the new production catalog with **zero** authored characters, enemies, quests, equipment, encounters and regions.
+- `RebuildContentCatalog` validates that all six production content arrays remain empty at mod initialization; this prevents accidentally loading unapproved auto-generated replacement content.
+- Legacy Elysia .b64 input is test-only; `prepareLegacyHeroFixture` produces the historically expected PNG only in test resources, not in the final JAR.
+- CI checks the shipped JAR does not contain any of the retired JSON namespaces. Legacy Java code and legacy art remain as staged cleanup tasks, not active gameplay.
+- This phase does not wipe player saves. The old campaign loader is not invoked at login on the rebuild branch.

@@ -79,8 +79,12 @@ jobs:
           fi
           grep -qx 'META-INF/neoforge.mods.toml' jar-contents.txt
           grep -qx 'io/github/q93503128/turnbound/Turnbound.class' jar-contents.txt
-          grep -q '^data/turnbound/' jar-contents.txt
+          grep -qx 'data/turnbound/rebuild/foundation_v1.json' jar-contents.txt
           grep -q '^assets/turnbound/' jar-contents.txt
+          if grep -Eq '^data/turnbound/(characters|enemies|equipment|quests|battles|world|regions|signatures|passives|skills|statuses|loot|growth)/' jar-contents.txt; then
+            echo "Retired authored content data is still packaged"
+            exit 1
+          fi
           unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
           grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
           grep -Fq "version=\"${expected_version}\"" <(tr -d ' ' < built-neoforge.mods.toml)
