@@ -124,3 +124,8 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Added `RebuildSessionOwnership` to link each loaded UUID to its actual ServerPlayer object. A rejected duplicate connection cannot save to its own attachment or clear another connection's live campaign on tick/logout.
 - `PlayerEvent.Clone` transfers the connection owner when Minecraft replaces the player object during respawn; NeoForge attachment `copyOnDeath` still owns persisted data copying.
 - Tests cover duplicate claims, unauthorized logout, legitimate release, clone transfer and server-clear behavior. Real connected-player and multiplayer tests still require Minecraft client execution.
+
+## Build #1059 confirmed checkpoint — 2026-11-05
+- Commit `f19710f2469519c6c53a01b36c31aedd365e3cf6`, GitHub Actions https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41987155431: JUnit/Gradle PASS; NeoForge server smoke PASS; JAR inspection PASS; MRPACK inspection PASS.
+- Current commit changed only through this following documentation update; no user-client, respawn, or multiplayer playtest was performed. Mark those **NOT TESTED** even though static ownership and admission unit tests passed.
+- The code-phase deliverable is a blank, isolated foundation with explicit persistence boundaries and partial reusable combat extraction, **not a complete finished Java cleanup or playable RPG**.
