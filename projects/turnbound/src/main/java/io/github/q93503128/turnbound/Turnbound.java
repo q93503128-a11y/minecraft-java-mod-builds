@@ -2,11 +2,6 @@ package io.github.q93503128.turnbound;
 
 import com.mojang.logging.LogUtils;
 import io.github.q93503128.turnbound.content.RebuildContentCatalog;
-import io.github.q93503128.turnbound.presentation.DrabyelServiceActors;
-import io.github.q93503128.turnbound.presentation.SignatureBattleActors;
-import io.github.q93503128.turnbound.presentation.TurnboundBattleActors;
-import io.github.q93503128.turnbound.presentation.TurnboundMounts;
-import io.github.q93503128.turnbound.presentation.TurnboundVisualItems;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.MultiplayerPartyNetwork;
 import io.github.q93503128.turnbound.world.TurnboundAttachments;
@@ -27,16 +22,10 @@ public final class Turnbound {
 
     public Turnbound(IEventBus modEventBus) {
         RebuildContentCatalog.requireEmptyProductionCatalog();
-        // Keep persistent registration identities so old saves are not needlessly reinterpreted.
+        // Preserve only generic player-profile schema and data transport identifiers.
         TurnboundAttachments.register(modEventBus);
-        TurnboundSounds.SOUND_EVENTS.register(modEventBus);
-        TurnboundVisualItems.register(modEventBus);
-        TurnboundBattleActors.register(modEventBus);
-        SignatureBattleActors.register(modEventBus);
-        DrabyelServiceActors.register(modEventBus);
-        TurnboundMounts.register(modEventBus);
 
-        // Generic battle and party network protocols remain registered for the later rebuilt content.
+        // Keep generic battle and party protocols, but no retired actor/item/sound registries.
         modEventBus.addListener(BattleNetwork::register);
         modEventBus.addListener(MultiplayerPartyNetwork::register);
         LOGGER.info("TURNBOUND content-rebuild foundation initialized; retired authored gameplay remains inactive");

@@ -88,7 +88,7 @@ public final class DrabyelServiceActors {
     private static Identifier texture(Spec spec){return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID,spec.texturePath());}
     private static Identifier animation(){return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID,"npc/drabyel_service");}
 
-    @EventBusSubscriber(modid=Turnbound.MOD_ID,value=Dist.CLIENT)
+    /* Legacy renderer subscriber intentionally detached from rebuild runtime. */
     public static final class ClientEvents{
         private ClientEvents(){}
         @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers event){

@@ -32,7 +32,8 @@
 - Legacy world/quest/gameplay lifecycle, Drehmal auto-installer, old HUD/camera boot path and initial content activation have been detached from the active client/server entrypoints.
 - All 27 old authored `data/turnbound` JSON files have been moved from `src/main/resources` to `src/test/resources`; historical tests can use them, **released JARs cannot**.
 - The production catalog `data/turnbound/rebuild/foundation_v1.json` deliberately contains zero characters, enemies, quests, equipment, encounters and regions. Runtime initialization validates this.
-- The old Java classes and many model/texture/audio resources **still remain in the source and portions of the JAR**. Their safe removal and replacement is unfinished. Historic registration identities are currently retained for migration safety; don't claim total cleanup.
+- All 223 former `assets/turnbound` files (models, textures, animations, audio and legacy UI) have moved to test resources. The rebuild JAR excludes them. Registrations for retired actor entities, mounts, held items and old sounds were removed from the active mod entrypoint; associated legacy renderer subscribers and presentation isolation subscriber have been detached.
+- Legacy Java classes **still compile into the JAR**. Their dependency-safe physical removal remains unfinished; do not claim complete source cleanup.
 - Current blank foundation is not a playable RPG. Minecraft client gameplay and multiplayer were not verified for this rebuild.
 
 ## Validation
@@ -42,8 +43,8 @@
 - The old one-click pack no longer downloads or repairs Drehmal, and should be installed separately from the old production instance.
 
 ## Next executable cleanup gates
-1. Remove remaining authored entity/item registrations and stale content-specific Java dependencies safely, preserving the generic battle, network and persistence engines.
-2. Retire old models/textures/audio from production only after all renderer/registry references are detached; retain required third-party asset license records.
+1. Remove remaining authored-content Java classes and stale dependency chains, preserving the generic battle, network and persistence engines.
+2. Verify no unwanted static/event registry callbacks reactivate old content; retain required third-party asset license records.
 3. Confirm new-game empty state and block accidental use of old player save state; prove no content/world mutation at client and server bootstrap.
 4. Validate meaningful code units with relevant tests, one integrated build per checkpoint, dedicated-server smoke, and eventual client/multiplayer playtest.
 5. After foundation verification, jointly agree on new game systems, region flow, characters, equipment and quests.

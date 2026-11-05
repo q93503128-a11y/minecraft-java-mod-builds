@@ -61,7 +61,7 @@ public final class TurnboundMounts {
         return mount;
     }
 
-    @EventBusSubscriber(modid = Turnbound.MOD_ID, value = Dist.CLIENT)
+    /* Legacy renderer subscriber intentionally detached from rebuild runtime. */
     public static final class ClientEvents {
         private ClientEvents() {}
 

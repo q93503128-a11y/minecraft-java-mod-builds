@@ -21,7 +21,7 @@ import java.util.UUID;
  * <p>Actual battle characters are shared-world spectacle and are visible to nearby players. Owner-only helper
  * markers stay private so focus/target UI cannot leak across clients. Explicit private actors remain supported.</p>
  */
-@EventBusSubscriber(modid = Turnbound.MOD_ID)
+/* Retired battle presentation isolation is not subscribed in the empty-content runtime. */
 public final class PersonalPresentationIsolation {
     private static final ThreadLocal<UUID> PRESENTATION_OWNER = new ThreadLocal<>();
 

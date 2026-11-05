@@ -137,7 +137,7 @@ public final class SignatureBattleActors {
         return Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "hero/" + spec.animationPath());
     }
 
-    @EventBusSubscriber(modid = Turnbound.MOD_ID, value = Dist.CLIENT)
+    /* Legacy renderer subscriber intentionally detached from rebuild runtime. */
     public static final class ClientEvents {
         private ClientEvents() { }
         @SubscribeEvent public static void renderers(EntityRenderersEvent.RegisterRenderers event) {

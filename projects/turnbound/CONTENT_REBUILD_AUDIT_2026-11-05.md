@@ -64,3 +64,12 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Legacy Elysia .b64 input is test-only; `prepareLegacyHeroFixture` produces the historically expected PNG only in test resources, not in the final JAR.
 - CI checks the shipped JAR does not contain any of the retired JSON namespaces. Legacy Java code and legacy art remain as staged cleanup tasks, not active gameplay.
 - This phase does not wipe player saves. The old campaign loader is not invoked at login on the rebuild branch.
+
+## Asset and legacy registry retirement checkpoint — 2026-11-05
+- All 223 original `src/main/resources/assets` files relocated unchanged (same Git blob hashes) to `src/test/resources/assets`; previous commit and legacy branch remain recovery sources. Includes models, animations, textures, old UI graphics and music/SFX. Existing resource-level tests keep their historical fixture inputs.
+- Active `Turnbound` entrypoint no longer registers P/F/enemy/boss entity types, signature actor types, Drabyel service actors, Roadhorn mount, legacy held weapons, or any retired sound event IDs.
+- Legacy GeckoLib renderer auto-subscribers were disconnected in `TurnboundBattleActors`, `SignatureBattleActors`, `DrabyelServiceActors`, `TurnboundMounts`. `PersonalPresentationIsolation` global world event subscriber was disconnected too, to avoid affecting ordinary vanilla worlds.
+- Classes remain for dependency-backed test contracts until the generic modules can be separated without compile-time or runtime breakage. These inert source classes are not considered new production content.
+- JAR verification now refuses any `assets/turnbound/` entry, in addition to retired data namespaces.
+- Preserved `META-INF/licenses` and `THIRD_PARTY` provenance. Existing character and world definitions still exist only as test fixtures.
+- Client and multiplayer playtests remain NOT TESTED until explicitly performed; CI cannot establish appearance or world safety on its own.
