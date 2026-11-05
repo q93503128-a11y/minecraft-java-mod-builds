@@ -39,6 +39,11 @@
 - **설정 예시:** `config/craftingtweaks-common.toml`의 client 항목 `hideVanillaCraftingGuide = true` (설치한 버전이 자동 생성한 실제 구성 파일의 값·섹션 우선). 같은 페이지에 가이드 오프셋과 `mode` (Crafting Tweaks 버튼/핫키 조절) 값도 존재하므로 **`mode=DISABLED`가 바닐라 레시피북 자체를 끄는 설정이라고 오해하지 않도록**.
 - 레시피북 **표시 버튼을 감추는 것**과 원래 레시피 데이터/제작 가능 여부를 **삭제하는 것**은 다르다. JEI가 보인다고 실제 재료·보상 요구나 기술 사용 권한을 풀어주지 않음.
 
+## 3.1 경험치 바와 RPG 레벨 최신 확정
+
+- [무제한 레벨 및 XP 분리 수치 비교](./RPG_XP_LEVEL_SKILLPOINTS_BALANCE_V1.md): **바닐라 XP 바/레벨은 바닐라 인챈트·수선 경험치를 그대로 표시**, 우리 이능 RPG 레벨은 별도 서버 성장 상태. **같은 XP 바를 RPG 레벨로 덮어쓰지 않는다**.
+- 같은 모드팩의 JEI는 개인별 `Ctrl+O`로 아이템 목록 UI 숨김 가능하고, 멀티 Locator Bar는 **바닐라 XP HUD와 겹칠 때 우선순위/가독성**을 실제 화면에서 확인한다. RPG 레벨 표시의 정확한 위치는 미정.
+
 ## 4. 멀티 플레이어 위치 바의 게임 시스템/UI 규칙
 
 - **1.21.6 이후 Java는 바닐라 Locator Bar 기능이 있지만 현재 유력 후보 1.21.1에는 기본으로 없다.** 1.21.1용 별도 모드를 검토하는 이유. [Minecraft Wiki: Locator Bar](https://minecraft.wiki/w/Locator_Bar).
