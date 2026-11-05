@@ -30,6 +30,7 @@ public final class Turnbound {
         // No old world builder, player shell or campaign importer is registered.
         NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onPlayerLogout);
+        NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onPlayerClone);
         NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onServerStopping);
 

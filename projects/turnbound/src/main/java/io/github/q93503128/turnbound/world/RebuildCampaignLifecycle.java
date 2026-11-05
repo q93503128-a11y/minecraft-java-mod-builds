@@ -18,6 +18,7 @@ import java.util.UUID;
  */
 public final class RebuildCampaignLifecycle {
     private static final int AUTOSAVE_TICKS = 100;
+    private static final RebuildSessionOwnership<ServerPlayer> OWNERS = new RebuildSessionOwnership<>();
 
     private RebuildCampaignLifecycle() {}
 
@@ -27,7 +28,7 @@ public final class RebuildCampaignLifecycle {
         // Never discard an already-loaded UUID's runtime on admission failure.
         // Only state allocated by this login attempt may be cleaned in its catch branch.
         boolean allocatedByLogin = false;
-        if (CampaignProgressStore.hasRuntime(playerId)) {
+        if (CampaignProgressStore.hasRuntime(playerId) || OWNERS.hasOwner(playerId)) {
             Turnbound.LOGGER.error("TURNBOUND rebuild login rejected duplicate live runtime for {}", playerId);
             player.connection.disconnect(Component.literal(
                     "TURNBOUND의 이전 접속 상태가 서버에 남아 있습니다. 기존 진행 상태를 보호하기 위해 접속이 제한되었습니다."));
@@ -65,6 +66,9 @@ public final class RebuildCampaignLifecycle {
                 allocatedByLogin = true;
                 persist(player);
             }
+            if (!OWNERS.claim(playerId, player)) {
+                throw new IllegalStateException("Duplicate session ownership at rebuild login");
+            }
         } catch (RuntimeException exception) {
             // Never replace malformed attached data or an already-loaded UUID with an empty profile.
             if (allocatedByLogin) CampaignProgressStore.removeRuntime(playerId);
@@ -74,8 +78,17 @@ public final class RebuildCampaignLifecycle {
         }
     }
 
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        if (!(event.getOriginal() instanceof ServerPlayer original)
+                || !(event.getEntity() instanceof ServerPlayer clone)) return;
+        if (original.getUUID().equals(clone.getUUID())) {
+            OWNERS.transfer(original.getUUID(), original, clone);
+        }
+    }
+
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!OWNERS.owns(player.getUUID(), player)) return;
         if (player.tickCount % AUTOSAVE_TICKS != 0) return;
         if (!CampaignProgressStore.isEmptyRebuildGame(player.getUUID())
                 || !CampaignProgressStore.isDirty(player.getUUID())) return;
@@ -88,11 +101,13 @@ public final class RebuildCampaignLifecycle {
 
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!OWNERS.owns(player.getUUID(), player)) return;
         try {
             if (CampaignProgressStore.isEmptyRebuildGame(player.getUUID())) persist(player);
         } catch (RuntimeException exception) {
             Turnbound.LOGGER.error("TURNBOUND rebuild logout save failed for {}", player.getUUID(), exception);
         } finally {
+            OWNERS.release(player.getUUID(), player);
             CampaignProgressStore.removeRuntime(player.getUUID());
         }
     }
@@ -100,11 +115,13 @@ public final class RebuildCampaignLifecycle {
     public static void onServerStopping(ServerStoppingEvent event) {
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             try {
-                if (CampaignProgressStore.isEmptyRebuildGame(player.getUUID())) persist(player);
+                if (OWNERS.owns(player.getUUID(), player)
+                        && CampaignProgressStore.isEmptyRebuildGame(player.getUUID())) persist(player);
             } catch (RuntimeException exception) {
                 Turnbound.LOGGER.error("TURNBOUND rebuild shutdown save failed for {}", player.getUUID(), exception);
             }
         }
+        OWNERS.clear();
         CampaignProgressStore.clearRuntime();
     }
 

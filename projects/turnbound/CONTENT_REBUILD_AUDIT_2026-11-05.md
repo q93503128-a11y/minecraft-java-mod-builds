@@ -119,3 +119,8 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 
 ## Duplicate runtime admission protection — 2026-11-05
 - A duplicate same-UUID login is now rejected **before** any legacy/rebuild attachment read; its existing in-memory runtime remains intact. The login exception handler removes only a runtime allocated by that specific login attempt, preventing accidental deletion of an unflushed live profile.
+
+## Runtime owner-identity protection — 2026-11-05
+- Added `RebuildSessionOwnership` to link each loaded UUID to its actual ServerPlayer object. A rejected duplicate connection cannot save to its own attachment or clear another connection's live campaign on tick/logout.
+- `PlayerEvent.Clone` transfers the connection owner when Minecraft replaces the player object during respawn; NeoForge attachment `copyOnDeath` still owns persisted data copying.
+- Tests cover duplicate claims, unauthorized logout, legitimate release, clone transfer and server-clear behavior. Real connected-player and multiplayer tests still require Minecraft client execution.
