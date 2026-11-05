@@ -100,3 +100,7 @@
 - CI success on this checkpoint verifies a blank-data/dedicated-server foundation, NOT Minecraft client launch, player-login persistence, or multiplayer gameplay. The production-ready-for-co-design decision must distinguish this from client-playtest readiness.
 
 - Build #1064 revealed a compile-time reference from retained unused `BattlePlayerRenderPolicy` to retired `SummonCameraController`. Both were disconnected from the live and test roots. Removed `BattlePlayerRenderPolicy` too rather than retaining a broken reference or replacing behavior with a stub. Total isolated Java files removed: **49**.
+
+## Blank-world manual acceptance gate — 2026-11-05
+- Build TURNBOUND #1065 PASS after physical removal of 49 isolated old Java classes, retaining all existing tests and generic core systems. Source SHA: `3fc091ca58b2f6d8e2bc0c50333379e69e2ae20e`.
+- Fresh Minecraft client acceptance procedure and evidence checklist: `REBUILD_FRESH_WORLD_ACCEPTANCE.md`. Actual fresh-world login, restart, death and multiplayer remain **NOT TESTED**, regardless of any headless client-boot result.
