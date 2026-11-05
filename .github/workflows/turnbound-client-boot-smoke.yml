@@ -1,0 +1,89 @@
+name: TURNBOUND Client Boot Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-client-boot-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  client-boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+      - name: Prepare software OpenGL virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            xvfb x11-utils libgl1-mesa-dri libgl1 libxrandr2 libxi6 \
+            libxcursor1 libxinerama1 libasound2t64 imagemagick
+      - name: Launch NeoForge Minecraft development client and detect window
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          set -uo pipefail
+          export DISPLAY=:98
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export GALLIUM_DRIVER=llvmpipe
+          Xvfb "$DISPLAY" -screen 0 1280x720x24 +extension GLX +render -noreset -nolisten tcp > xvfb.log 2>&1 &
+          xvfb_pid=$!
+          sleep 3
+
+          # The dev client runs with only the current source set, not a stored user world.
+          timeout -s TERM -k 10s 420s gradle runClient --no-daemon > client-boot.log 2>&1 &
+          launch_pid=$!
+          success=0
+          init_seen=0
+          for i in $(seq 1 330); do
+            if grep -Fq 'TURNBOUND content-rebuild foundation initialized' client-boot.log 2>/dev/null; then
+              init_seen=1
+            fi
+            if [ "$init_seen" -eq 1 ] && xwininfo -root -tree 2>/dev/null | grep -Eiq 'Minecraft'; then
+              sleep 6
+              if kill -0 "$launch_pid" 2>/dev/null; then
+                success=1
+                echo "CLIENT BOOT SMOKE PASS: TURNBOUND registered; Minecraft graphical window detected and remained alive"
+              fi
+              break
+            fi
+            if ! kill -0 "$launch_pid" 2>/dev/null; then
+              echo "Client exited before successful boot detection"
+              break
+            fi
+            sleep 1
+          done
+          xwininfo -root -tree > client-window-tree.txt 2>&1 || true
+          import -window root client-boot.png 2>/dev/null || true
+          kill "$launch_pid" 2>/dev/null || true
+          kill "$xvfb_pid" 2>/dev/null || true
+          if [ "$success" -ne 1 ]; then
+            echo "CLIENT BOOT SMOKE NOT VERIFIED: inspect client-boot.log and client-window-tree.txt"
+            tail -160 client-boot.log || true
+            exit 1
+          fi
+      - name: Upload graphical startup evidence and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-client-boot-smoke
+          path: |
+            projects/turnbound/client-boot.log
+            projects/turnbound/client-window-tree.txt
+            projects/turnbound/client-boot.png
+            projects/turnbound/xvfb.log
+            projects/turnbound/run/client/logs/latest.log
+          if-no-files-found: warn
