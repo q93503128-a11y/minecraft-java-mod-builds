@@ -150,3 +150,22 @@ Java source 컴파일 성공과 GameTest 통과를 반드시 분리하여 보고
 2. Chrono Dawn Time Blast/gear projectile의 실제 model & collision, 동료·중립 대상 안전, 26.2 pinned version runtime check.
 3. 권능 다수 누적 시 동시 타격·넉백·teleport 충돌과 512건 히트 큐 캡/8초 만료 정책, 소유자별 fairness를 profiling 및 플레이로 확인.
 4. 기존 3개 GameTest는 좁은 재현 검증으로 실제 버그와 테스트 환경 차이를 분리하고, 실패를 무시해 artifact 생성하도록 우회하지 말 것.
+
+## 2026-11-05 World Bosses 잔여 8종 — 다음 구현 단위 (실제 반영 범위)
+
+### 실제 반영: 원래 8종 중 4종 (코드 `7902e9453b44d03c5233fd458213d679926290e8`)
+- Sylvaron: 적 위치 반경 5의 4초 지속형 뿌리·포자 지대. 적에게 Slowness IV, Poison I, Weakness I, 주기적 authority damage(2); 시전자 Resistance I. 원래 공개 "nature/root/spore" 설명을 바탕으로 독립 해석.
+- Nekhraz: 고정 중심 반경 5.5 모래폭풍(어둠/둔화)과 25틱 뒤 안전 순간이동 후 대상 타격(9). 공개 "sandstorm/burrow strike"를 모티브로 독립 구현.
+- Morvath: 시전자 중심 Fear Pulse(어둠/나약함/넉백), 20틱 이후 14틱마다 최대 4 피해 영혼 흡수. 실제 target HP 감소가 있어야만 최대 2 HP 회복; 무적시간·피해 무효에서는 공짜 회복 금지.
+- Elyndra: 적 위치를 기준으로 반경 6.5 공허 속박·끌어당김을 약 2초간 실시한 뒤 9 피해와 수직 넉백. 공개 "void/rift/tether" 모티브.
+- 독자 `WorldBossWildAuthorityService`가 서버 tick 1회에만 호출되어 대기 기술을 처리하며 서버 정지 시 리셋. 전역 필드 최대 40개/시전자 최대 4개/펄스당 적 최대 32명. 타 플레이어 소유 지배몹/중립몹 제외. 임의 지형 변경 없음.
+- 기존 권능 ID/토글/쿨타임 120초/저장 계약 유지.
+- CurseForge World Bosses 공식 1.3.0 설명: `https://www.curseforge.com/minecraft/mc-mods/world-bosses/files/8288335`; 원본 코드는 확인되지 않았으며 이 모드의 2.0.2는 All Rights Reserved. 실제 원본 메서드·피해량을 복제했다고 주장하지 않음.
+
+### 미완료: Worldbreaker Realm 4종
+`Shadow King`, `Dragon Mother`, `Storm Griffin`, `Shadow Weaver`는 **이번 커밋에서 변경하지 않았음**. 기존 권능 해방 메서드를 유지. 다음 작업 시 공개 설명에 있는 Soul Bolt / Shadow Step / raised warriors / darkness nova, aerial fireball & crushing dive, marked lightning and wing gust, thread bind/three puppets/light-breakable veil을 별개의 전투 패턴으로 구현. 원본의 비공개 AI, 텍스처, 라이선스 미확인 자산 복제는 금지. 기능에 맞는 목록 문구와 시각 판정을 함께 업데이트.
+
+### 검증
+- `7902e945...`의 CI에서는 기존 3건 GameTest 실패 상태로 Java compile 통과.
+- 추가한 `AuthoritySignatureGameTests` 2종(Sylvaron 적/중립 동물 분리, Morvath 중립 동물 보호)을 포함한 최신 검증 결과는 `c3613594...` 빌드 `41950767620`에서 확인 필요.
+- 전체 BUILD VERIFIED/JAR PRODUCED/PLAYTESTED/MULTIPLAYER TESTED는 아직 NO. 기존 지배 공격, 비행 충돌, 돌려보내기 GameTest 세 건은 독립 조사 대상.
