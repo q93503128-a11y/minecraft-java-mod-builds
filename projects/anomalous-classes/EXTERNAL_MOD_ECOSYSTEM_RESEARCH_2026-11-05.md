@@ -2,6 +2,8 @@
 
 > 조사일 **2026-11-05** / **RESEARCHED FROM PUBLIC PROJECT/FILE LISTINGS, NOT INSTALLED OR CO-LOADED**. 정본은 [PROJECT](./PROJECT.md), [GAME_DESIGN](./GAME_DESIGN.md), [기획 통합 감사](./DESIGN_CONSOLIDATION_AUDIT_2026-11-05.md). **모드 버전과 로더는 아직 선정하지 않았음**. 외부 페이지의 지원 범위가 넓더라도 **각 Minecraft 버전/로더 조합의 실 다운로드 파일·종속 라이브러리와 게임 내 동작은 별도 검증**한다. **중력술사·공명술사 상세 설계는 사용자 지시로 보류**, 8직업 목록에서 삭제하지 않는다.
 
+> **2026-11-05 이후 최신 선정 결정:** 본 문서는 **과거의 전체 후보 조사 기록**으로 보존한다. [실제 첫 통합 시험용 1.21.1 NeoForge **모드팩 설계 선정 정본**](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md)과 [선정·필수 의존성 JSON](./modpack/EXTERNAL_MODS_DESIGN_LOCK_V1.json)이 최신이다. 9개 기능 모드·필수 라이브러리 6개를 설계상 선정했고 Alex's Mobs Continued/Caves Continued·중복 던전·독립 RPG/전투 개편/난도 스케일러는 초기 제외한다. **출시 파일의 일부 최신 배포는 베타, 런타임/서버 호환·성능·보스 스펙은 아직 직접 검증하지 않음**. 원본 파일 본문 중 '아직 버전·로더 미선정'은 연구 작성 시점 상태.
+
 ## 2026-11-05 추가 선별 원칙 및 QOL 요구
 
 [**Locator Bar·LambDynamicLights·JEI·Crafting Tweaks/Balm 비교 및 외부 RPG 성장 축 금지 규칙**](./QOL_MODS_AND_EXTERNAL_SCOPE_POLICY_2026-11-05.md) 참조. 사용자 추가 요청은 **멀티 친구 방향을 경험치 바에 표시, 손 횃불 이동 조명, 모드 조합법 검색/바닐라 레시피북 숨김**. **외부 모드가 별도 RPG 레벨·스탯/직업·스킬트리/재화 등으로 이 게임 고유 성장 루프를 덮어쓰는 것은 피한다.** 사소한 갑옷/인챈트 강화는 기존 성장과 충돌하지 않는 범위에서만 검토. 현재 후보는 공개 파일/설정만 확인, 설치·동시 로딩 전.
