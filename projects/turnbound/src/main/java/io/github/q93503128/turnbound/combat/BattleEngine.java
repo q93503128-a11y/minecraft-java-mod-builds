@@ -50,7 +50,7 @@ public final class BattleEngine {
         CombatantState actor = state.combatant(actorId);
         SkillDefinition skill = actor.definition().skill(skillId);
         BattleActionValidator.validateActor(actor, skill);
-        List<CombatantState> targets = resolveTargets(actor, skill, requestedTargetIds);
+        List<CombatantState> targets = BattleTargetResolver.resolve(state, actor, skill, requestedTargetIds);
         BattleActionValidator.validateTargets(state, actor, skill, targets);
 
         reactions.clear();
@@ -95,61 +95,6 @@ public final class BattleEngine {
         refreshBossPackRules();
         state.setCurrentActorId(null);
         state.addEvent(new BattleEvent("TURN_END", actorId, actorId, 0, skillId));
-    }
-
-    private List<CombatantState> resolveTargets(CombatantState actor, SkillDefinition skill, String[] ids) {
-        return switch (skill.targetRule()) {
-            case SELF -> List.of(actor);
-            case ALLY_ALL -> state.living(actor.side());
-            case ENEMY_ALL -> state.living(actor.side().opposite());
-            case ALLY_SINGLE -> List.of(single(ids, actor.side(), false, actor));
-            case ENEMY_SINGLE -> List.of(single(ids, actor.side().opposite(), false, actor));
-            case ENEMY_TWO -> enemyTwo(ids, actor);
-            case DEAD_ALLY_SINGLE -> List.of(single(ids, actor.side(), true, actor));
-        };
-    }
-
-    private List<CombatantState> enemyTwo(String[] ids, CombatantState actor) {
-        List<CombatantState> living = state.living(actor.side().opposite());
-        int required = Math.min(2, living.size());
-        if (required < 1 || ids.length != required) {
-            throw new IllegalArgumentException("Enemy-two skill requires " + required + " distinct living target(s)");
-        }
-        List<CombatantState> targets = new ArrayList<>(required);
-        Set<String> seen = new HashSet<>();
-        for (String id : ids) {
-            if (id == null || id.isBlank() || !seen.add(id)) {
-                throw new IllegalArgumentException("Enemy-two targets must be distinct");
-            }
-            CombatantState target = state.combatant(id);
-            if (target.side() != actor.side().opposite() || target.downed()) {
-                throw new IllegalArgumentException("Invalid enemy-two target");
-            }
-            targets.add(target);
-        }
-        StatusInstance taunt = actor.status("taunt");
-        if (taunt != null) {
-            CombatantState taunter = state.find(taunt.sourceId());
-            if (taunter != null && !taunter.downed() && taunter.side() == actor.side().opposite()
-                    && !targets.contains(taunter)) {
-                throw new IllegalArgumentException("Taunt requires including " + taunter.instanceId());
-            }
-        }
-        return List.copyOf(targets);
-    }
-
-    private CombatantState single(String[] ids, CombatantSide side, boolean down, CombatantState actor) {
-        if (ids.length != 1) throw new IllegalArgumentException("Exactly one target required");
-        CombatantState target = state.combatant(ids[0]);
-        if (target.side() != side || target.downed() != down) throw new IllegalArgumentException("Invalid target");
-        StatusInstance taunt = actor.status("taunt");
-        if (!down && side == actor.side().opposite() && taunt != null) {
-            CombatantState taunter = state.find(taunt.sourceId());
-            if (taunter != null && !taunter.downed() && taunter.side() == side && target != taunter) {
-                throw new IllegalArgumentException("Taunt requires targeting " + taunter.instanceId());
-            }
-        }
-        return target;
     }
 
     private void applyEffect(CombatantState actor, SkillDefinition skill, List<CombatantState> targets,

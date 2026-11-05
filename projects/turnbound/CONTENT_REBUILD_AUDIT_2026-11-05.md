@@ -111,3 +111,8 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 
 ## Existing attachment non-materialization correction — 2026-11-05
 - Uses NeoForge `hasData` before reading either attachment so merely checking for a legacy player does not materialize an empty default in the old `campaign_profile` slot. The rebuild never invokes the legacy attachment's `setData` or `removeData`.
+
+## Generic combat targeting extraction — 2026-11-05
+- Moved former BattleEngine target-selection logic into content-independent `BattleTargetResolver` without changing skill IDs, taunt constraints, target count, team/downed constraints or error paths. BattleEngine now delegates before `BattleActionValidator.validateTargets`.
+- Added authored-character-independent tests for SELF, ally/enemy single/all, double-target duplicate/size handling, downed ally targeting and taunt validation.
+- This is a real shared engine extraction; legacy active/passive, boss phase, summon, equipment and authored-character hooks remain inside the historic resolver and still require further refactoring.
