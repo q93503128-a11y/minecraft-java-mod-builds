@@ -53,7 +53,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Dedicated Mythic authority channel. Supported boss identities are permanently stolen on the
- * first root-direct kill, then every stolen package is released in one server-authoritative burst.
+ * first root-direct kill; an enabled subset is replayed in a server-paced authority chain.
  */
 public final class AuthorityTheftService {
     public static final String AUTHORITY_THEFT_ID = id("authority_theft");
@@ -67,6 +67,8 @@ public final class AuthorityTheftService {
     private static final ResourceKey<DamageType> SONIC_DAMAGE = ResourceKey.create(
             Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath("minecraft", "sonic_boom"));
     private static final Map<UUID, Long> WITHER_ARMOR = new HashMap<>();
+    // Time Tyrant's original 70% projectile mitigation, limited to 8s on player activation.
+    private static final Map<UUID, Long> TIME_TYRANT_AEGIS = new HashMap<>();
     private static final List<PendingPackage> PENDING_PACKAGES = new ArrayList<>();
     private static final List<PendingSonic> PENDING_SONIC = new ArrayList<>();
     // Temporary source-faithful signatures. All three are server-owned and never saved.
@@ -130,6 +132,7 @@ public final class AuthorityTheftService {
         ServerPlayerEvents.LEAVE.register(player -> clearTransientProtections(player.getUUID()));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             WITHER_ARMOR.clear();
+            TIME_TYRANT_AEGIS.clear();
             CHRONOS_STONE_STANCE.clear();
             PHANTOM_PHASE_WINDOW.clear();
             PHANTOM_PHASE_DODGE_COOLDOWN.clear();
@@ -205,22 +208,29 @@ public final class AuthorityTheftService {
 
     private static void clearTransientProtections(UUID playerId) {
         WITHER_ARMOR.remove(playerId);
+        TIME_TYRANT_AEGIS.remove(playerId);
         CHRONOS_STONE_STANCE.remove(playerId);
         PHANTOM_PHASE_WINDOW.remove(playerId);
         PHANTOM_PHASE_DODGE_COOLDOWN.remove(playerId);
     }
 
-    /** Source Chronos Warden: 80% front/side protection, unchanged damage through rear weak spot. */
-    public static float modifyChronosStoneStanceDamage(ServerPlayer player, DamageSource source, float incoming) {
-        if (incoming <= 0.0F || CHRONOS_STONE_STANCE.getOrDefault(player.getUUID(), 0L)
-                <= player.level().getGameTime()) return incoming;
+    /** Chronos Warden directional stone stance + Time Tyrant projectile resistance. */
+    public static float modifyAuthorityIncomingDamage(ServerPlayer player, DamageSource source, float incoming) {
+        if (incoming <= 0.0F) return incoming;
+        long now = player.level().getGameTime();
+        float damage = incoming;
+        if (TIME_TYRANT_AEGIS.getOrDefault(player.getUUID(), 0L) > now
+                && source.typeHolder().is(DamageTypeTags.IS_PROJECTILE)) {
+            damage *= 0.30F; // 70% reduction, as in the original Time Tyrant.
+        }
+        if (CHRONOS_STONE_STANCE.getOrDefault(player.getUUID(), 0L) <= now) return damage;
         Entity attacker = source.getEntity() != null ? source.getEntity() : source.getDirectEntity();
-        if (attacker == null || attacker == player) return incoming;
+        if (attacker == null || attacker == player) return damage;
         Vec3 direction = attacker.position().subtract(player.position());
         Vec3 facing = flatLook(player);
         Vec3 horizontal = new Vec3(direction.x, 0.0D, direction.z);
-        if (horizontal.lengthSqr() < 1.0E-6D) return incoming;
-        return facing.dot(horizontal.normalize()) < 0.0D ? incoming : incoming * 0.20F;
+        if (horizontal.lengthSqr() < 1.0E-6D) return damage;
+        return facing.dot(horizontal.normalize()) < 0.0D ? damage : damage * 0.20F;
     }
 
     /**
@@ -467,6 +477,8 @@ public final class AuthorityTheftService {
 
     /** Time Tyrant: time stop, teleport, acceleration, AoE pressure and one-shot time reversal heal. */
     private static void releaseTimeTyrant(ServerPlayer player) {
+        // The source boss keeps 70% projectile resistance; stolen authority grants it for 8s.
+        TIME_TYRANT_AEGIS.put(player.getUUID(), player.level().getGameTime() + 160L);
         LivingEntity target = nearestHostile(player, 24.0D);
         if (target != null) {
             target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 4));
@@ -478,7 +490,8 @@ public final class AuthorityTheftService {
             enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 2));
         }
         player.heal(player.getMaxHealth() * 0.10F);
-        particles(player, ParticleTypes.PORTAL, 100, 5.0D);
+        ringParticles(player.level(), player.position(), 5.0D, ParticleTypes.WITCH, 32);
+        particles(player, ParticleTypes.PORTAL, 40, 5.0D);
     }
 
     /** Sylvaron: root bind, spore pressure and a short nature-fortification pulse. */
@@ -845,6 +858,11 @@ public final class AuthorityTheftService {
         CHRONOS_STONE_STANCE.entrySet().removeIf(entry -> {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             return player == null || player.isDeadOrDying() || player.level().getGameTime() >= entry.getValue();
+        });
+        TIME_TYRANT_AEGIS.entrySet().removeIf(entry -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            return player == null || player.isDeadOrDying()
+                    || player.level().getGameTime() >= entry.getValue();
         });
         WITHER_ARMOR.entrySet().removeIf(entry -> {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());

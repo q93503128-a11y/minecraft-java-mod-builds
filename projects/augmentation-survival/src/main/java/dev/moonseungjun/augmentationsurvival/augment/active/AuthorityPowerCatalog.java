@@ -20,7 +20,7 @@ public final class AuthorityPowerCatalog {
             new Entry("chronodawn_clockwork_colossus", "Chrono Dawn", "Clockwork Colossus", "원본 톱니바퀴 투사체를 발사하고 전방 10블록에 충격파. 신속 II·최대체력 15% 회복. 외부 모드 미설치 시 단발 공격으로 대체."),
             new Entry("chronodawn_temporal_phantom", "Chrono Dawn", "Temporal Phantom", "2초간 근접 공격 30% 위상 회피(발동 후 5초 재회피 제한), 뒤로 순간이동 공격·둔화, 전투 분신 2체 소환."),
             new Entry("chronodawn_entropy_keeper", "Chrono Dawn", "Entropy Keeper", "대상 발밑에 3×3 부패 지대 5초 생성. 지대 안의 적에게 둔화 II·독 I을 반복 적용합니다."),
-            new Entry("chronodawn_time_tyrant", "Chrono Dawn", "Time Tyrant", "대상 강한 둔화·순간이동. 신속 II 8초, 5블록 광역 공격, 최대체력 10% 회복."),
+            new Entry("chronodawn_time_tyrant", "Chrono Dawn", "Time Tyrant", "3초간 둔화 V 시간왜곡, 적 뒤 순간이동·신속 II·광역 공격, 체력 10% 회복과 8초간 투사체 피해 70% 감소."),
             new Entry("worldbosses_sylvaron", "World Bosses", "Sylvaron", "저항 I 4초. 7블록 안의 적에게 강한 둔화·나약함·독과 피해."),
             new Entry("worldbosses_aureon", "World Bosses", "Aureon", "18블록 내 대상 집중 공격. 7블록 안에 둔화·발광·광역 피해."),
             new Entry("worldbosses_nekhraz", "World Bosses", "Nekhraz", "8블록 주변 적에게 어둠·둔화. 대상 뒤로 순간이동해 강타하고 띄움."),

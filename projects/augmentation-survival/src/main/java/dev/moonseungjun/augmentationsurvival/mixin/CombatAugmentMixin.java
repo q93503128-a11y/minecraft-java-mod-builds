@@ -54,7 +54,7 @@ abstract class CombatAugmentMixin {
                 advanced
         );
         if ((Object) this instanceof ServerPlayer victim) {
-            return AuthorityTheftService.modifyChronosStoneStanceDamage(victim, source, result);
+            return AuthorityTheftService.modifyAuthorityIncomingDamage(victim, source, result);
         }
         return result;
     }
