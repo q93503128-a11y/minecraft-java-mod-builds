@@ -71,3 +71,43 @@ Minecraft 26.2 / Fabric, `projects/augmentation-survival/`, 확인 시작 main `
 3. 체력 기반 대체 버프는 원본 시그니처가 검증되지 않을 때만, 해당 UI에 대체형이라고 정확히 표시. 보스 분류와 코어 확률/보상을 혼합하지 않음.
 4. `J` 개별 토글·서버 쿨다운·기존 획득 목록은 보존. 실제 테스트 전 BUILD/PLAYTESTED로 표시하지 말 것.
 5. 플레이어 피드백: 비행 피해와 지배는 수동 플레이에서 작동 관측. 실패한 GameTest는 테스트 조건/전투 경계 차이를 독립 조사하고 기능 실패라고 단정하지 않음. 방패 반사는 사용자가 추가 확인 예정.
+
+## 2026-11-05 원본 권능 이식 1차 코드 결과
+
+**기준 코드 커밋:** `24ed51b` (docs 추가 이전)
+**대상:** 권능 탈취 / Chrono Dawn 6종 / server-authoritative J 체인 / HUD 작은 표시.
+**검증:** 26.2 compileJava, compileGametestJava, GameTest, dedicated server, client render는 각각 실행 로그 확인 전까지 완료 주장 금지. 기존 기본 GameTest 3건(지배 공격·비행 충돌·돌려보내기)은 플레이에서 정상 관측된 기능과 별도로 지속 조사.
+
+### Chrono Dawn
+| 보스 | 새 구현 | 정확성/잔여 제한 |
+|---|---|---|
+| Time Guardian | 안전 순간이동 후 15틱 준비 시간, 착지 지점 4블록 시간왜곡 피해 + 둔화 II + 채굴 피로 | 실제 Time Blast 투사체는 아직 추가하지 않음. 후딜레이 및 효과는 26.2 원본 메서드 기반 |
+| Chronos Warden | 4블록 지면 충격파 + 100틱 Stone Stance. 시선 기준 전방·측면 피해 80% 감소, 후방은 전량 받음 | 원본은 공격 불가·이동 중지; 플레이어용으로 조작을 보존하는 적응형 시전. 피해 감소는 LivingEntity hurtServer 공통 경계에서 처리 |
+| Clockwork Colossus | Chrono Dawn 설치 시 LGPL 원본 GearProjectileEntity를 런타임에서 생성해 발사 (속도 1.5, 실제 회전 렌더/충돌). 부재 시 기존 단발 공격. 선형 충격파/15% 수리 유지 | 원본 소스/텍스처 번들하지 않음. 버전별 reflective adapter 동작·동료 충돌·원본 투사체 피해 수치 인게임 검수 필요 |
+| Temporal Phantom | 2초 물리 공격 회피 창, 히트당 30% 회피, 성공 후 5초 재회피 제한. 기존 순간이동·분신 유지 | 원본 Phase Shift의 확률을 반영했으나 original Warp Bolt 실투사체와 별개. clone은 해당 원본 메서드에 TODO가 남아 있으므로 프로젝트 독자 구현으로 구분 |
+| Entropy Keeper | 적의 발밑에 3×3, 5초 지속 부패 지대. 10틱마다 내부 적에게 둔화 II와 독 I 갱신, 바닥 보존 | 원본 부패 지대 패턴을 충실히 반영. 원본 장비 내구도 부식 및 저체력 Entropy Burst는 권능 시퀀스에 아직 통합하지 않음 |
+| Time Tyrant | 원본 3초 둔화 V/순간이동/광역 기술/체력 10% 회복에 8초 투사체 피해 70% 감소 추가 | 원본은 체력이 낮을 때 1회 회복, 플레이어용은 120초 재사용마다 회복. 이 차이를 플레이어 수치 안내에 반영 |
+
+Source: `https://github.com/ksoichiro/ChronoDawn/tree/main/common/26.2/src/main/java/com/chronodawn/entities/bosses` 
+Gear projectile: `https://github.com/ksoichiro/ChronoDawn/blob/main/common/26.2/src/main/java/com/chronodawn/entities/projectiles/GearProjectileEntity.java`
+Chrono Dawn 소스 LGPL-3.0; reflection adapter가 원본 설치된 게임에서 해당 모드 엔티티를 호출할 뿐, 비공개/라이선스 불명 자산을 JAR에 직접 포함하지 않음.
+
+### J 다중 피해 충돌 완화
+- `J`는 획득·활성화된 권능만 서버가 12틱 간격으로 예약하는 기존 방식 보존.
+- 공통 authority `hurt`와 Warden 음파 경로에서 대상의 `invulnerableTime`이 양수라면 타격을 폐기하지 않고 UUID/차원/소유자 정보로 지연 예약.
+- 후속 서버 tick이 정상 무적시간 종료 후 `hurtServer`에 다시 넘기며, 방어구/저항/보호막을 강제 우회하지 않음. 8초 제한, 최대 512건, 사망·차원 변경·대상 해제·친화 전환 시 폐기.
+- Chrono Dawn 원본 projectile은 외부 모드 자체의 hit pipeline을 사용하므로 이 공통 지연 적용의 예외. 별도 인게임 검증 필요.
+- 주의: 모든 시그니처의 시각 충돌/이동 간섭을 해결한 것은 아님. 전체 26종 동시 해방, 피해 합산, 멀티플레이는 NOT PLAYTESTED.
+
+### 새 자동 테스트
+`AuthoritySignatureGameTests`: (1) 26개 권능 ID 고유성/지원/설명, (2) 모든 권능을 끄면 J가 쿨타임을 소비하지 않으며 다시 켜면 서버 권한으로 120초 쿨타임을 예약.
+테스트 실행을 위해 `src/gametest/resources/fabric.mod.json`의 `fabric-gametest` entrypoint 등록이 필요하며, 2026-11-05 소스에서 등록함.
+Java source 컴파일 성공과 GameTest 통과를 반드시 분리하여 보고할 것.
+
+### 아직 남은 본편 작업
+1. World Bosses 11종: 원본 소스 미공개/ARR이므로 공식 Wiki/배포 설명으로 검증한 시그니처를 독립적으로 player-use 구현. 특히 Thunder Cage, Flame Prison, Fear Pulse, Shadow King 영혼탄/소환, Dragon Mother 공중 화염, Storm Griffin 지정 지점 낙뢰, Shadow Weaver 실/분신/빛 약점.
+2. Chrono Dawn 잔여 3개: Time Blast, Warp Bolt, 장비 부식/Entropy Burst. source code signature에 맞춰 추가.
+3. 임시 버프 기반 fallback을 실제 source-verified 시그니처로 점진 교체하되 다른 효과는 임의 제거하지 않음.
+4. J 다중 권능 순서·가독성, 외부 HUD 간섭, 26종 동시 극단 입력, 다른 플레이어/아군 보호를 인게임에서 검증.
+5. 핵심 권능 발동에 고유 사운드/VFX 피드백 추가. 고정 효과를 vanilla particle 1종으로 대체하는 데서 멈추지 않는다.
+6. 기존 3개 GameTest 실패는 기존 기능 제거 없이 별도로 근본 수정.
