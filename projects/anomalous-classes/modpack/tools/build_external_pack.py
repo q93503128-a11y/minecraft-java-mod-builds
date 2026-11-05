@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import pathlib
 import re
@@ -86,6 +87,58 @@ def pick_version(spec: dict, minecraft: str):
     }
 
 
+def inspect_jar_metadata(z: zipfile.ZipFile, rec_id: str, *, depth: int = 0) -> dict:
+    """Inspect an actual NeoForge mod, including official Jar-in-Jar wrappers."""
+    if depth > 2:
+        raise ValueError(f"{rec_id}: unsupported deeply nested Jar-in-Jar")
+    if z.testzip() is not None:
+        raise ValueError(f"{rec_id}: invalid JAR ZIP")
+    names = set(z.namelist())
+    metadata = next((p for p in ("META-INF/neoforge.mods.toml", "META-INF/mods.toml") if p in names), None)
+    if metadata is not None:
+        d = tomllib.loads(z.read(metadata).decode("utf-8-sig"))
+        ids = [m["modId"] for m in d.get("mods", []) if "modId" in m]
+        if not ids:
+            raise ValueError(f"{rec_id}: no modId declared by {metadata}")
+        required = []
+        for owner, deps in d.get("dependencies", {}).items():
+            if owner not in ids:
+                continue
+            for dep in deps:
+                if dep.get("type", "required" if dep.get("mandatory", False) else "optional") == "required":
+                    required.append(dep.get("modId", ""))
+        return {"mod_ids": ids, "required": sorted(set(required)), "metadata": metadata}
+
+    jarjar_metadata = "META-INF/jarjar/metadata.json"
+    if jarjar_metadata not in names:
+        raise ValueError(f"{rec_id}: no NeoForge mods.toml or declared Jar-in-Jar metadata")
+    descriptor = json.loads(z.read(jarjar_metadata))
+    jars = descriptor.get("jars", [])
+    if not jars or len(jars) > 8:
+        raise ValueError(f"{rec_id}: empty or unreasonably large Jar-in-Jar descriptor")
+    found = []
+    for jar in jars:
+        nested_name = jar.get("path", "")
+        if not (isinstance(nested_name, str) and
+                nested_name.startswith("META-INF/jarjar/") and
+                nested_name.endswith(".jar") and
+                ".." not in nested_name.split("/") and nested_name in names):
+            raise ValueError(f"{rec_id}: missing or unsafe Jar-in-Jar resource {nested_name!r}")
+        info = z.getinfo(nested_name)
+        if info.file_size > 100 * 1024 * 1024:
+            raise ValueError(f"{rec_id}: nested JAR exceeds safety limit")
+        with zipfile.ZipFile(io.BytesIO(z.read(nested_name))) as nested:
+            details = inspect_jar_metadata(nested, rec_id, depth=depth + 1)
+            details["metadata"] = nested_name + "!" + details["metadata"]
+            found.append(details)
+    ids = [mod for details in found for mod in details["mod_ids"]]
+    required = sorted({dep for details in found for dep in details["required"]})
+    if len(set(ids)) != len(ids):
+        raise ValueError(f"{rec_id}: duplicate mod IDs in Jar-in-Jar dependencies")
+    return {"mod_ids": ids, "required": required,
+            "metadata": ", ".join(details["metadata"] for details in found)}
+
+
 def download_and_validate(rec: dict, path: pathlib.Path):
     data = fetch_bytes(rec["url"])
     expected_size = rec.get("size")
@@ -98,26 +151,8 @@ def download_and_validate(rec: dict, path: pathlib.Path):
         raise ValueError(f"{rec['id']}: SHA1 mismatch")
     path.write_bytes(data)
     with zipfile.ZipFile(path) as z:
-        if z.testzip() is not None:
-            raise ValueError(f"{rec['id']}: corrupted JAR ZIP contents")
-        names = set(z.namelist())
-        metadata = "META-INF/neoforge.mods.toml" if "META-INF/neoforge.mods.toml" in names else "META-INF/mods.toml"
-        if metadata not in names:
-            raise ValueError(f"{rec['id']}: NeoForge metadata not found")
-        d = tomllib.loads(z.read(metadata).decode("utf-8-sig"))
-        mods = d.get("mods", [])
-        ids = [m["modId"] for m in mods if "modId" in m]
-        if not ids:
-            raise ValueError(f"{rec['id']}: no declared modId in {metadata}")
-        required = []
-        for owner, deps in d.get("dependencies", {}).items():
-            if owner not in ids:
-                continue
-            for dep in deps:
-                if dep.get("type", "required" if dep.get("mandatory", False) else "optional") == "required":
-                    required.append(dep.get("modId", ""))
-        return {"mod_ids": ids, "required": sorted(set(required)), "metadata": metadata,
-                "sha256": hashlib.sha256(data).hexdigest(), "byte_size": len(data)}
+        details = inspect_jar_metadata(z, rec["id"])
+    return {**details, "sha256": hashlib.sha256(data).hexdigest(), "byte_size": len(data)}
 
 
 def check_declared_dependencies(resolved: list[dict]):
