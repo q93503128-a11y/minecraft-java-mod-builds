@@ -195,7 +195,7 @@ public final class WorldBossAuthorityPatternService {
                 24, 3.0D, 0.5D, 3.0D, 0.08D);
         drawRing(level, center, 9.0D, 0.3D, ParticleTypes.END_ROD, 48);
         level.playSound(null, BlockPos.containing(center),
-                SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 1.25F, 0.60F);
+                SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.25F, 0.60F);
     }
 
     private static void renderPattern(ServerLevel level, Pattern pattern, long now) {

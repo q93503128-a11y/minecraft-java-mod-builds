@@ -491,8 +491,8 @@ public final class AuthorityTheftService {
         // The original Entropy Keeper follows its 3x3 rot with a distinct 6-block burst.
         // Telegraph that burst instead of hiding it inside the immediate poison pulse.
         PENDING_ENTROPY_BURST.add(new PendingEntropyBurst(player.getUUID(),
-                level.dimension(), anchor.getCenter(), now + 40L));
-        ringParticles(level, anchor.getCenter(), 6.0D, ParticleTypes.SCULK_SOUL, 32);
+                level.dimension(), new Vec3(anchor.getX() + 0.5D, anchor.getY() + 0.5D, anchor.getZ() + 0.5D), now + 40L));
+        ringParticles(level, new Vec3(anchor.getX() + 0.5D, anchor.getY() + 0.5D, anchor.getZ() + 0.5D), 6.0D, ParticleTypes.SCULK_SOUL, 32);
         patchParticles(level, anchor);
         level.playSound(null, anchor, SoundEvents.BEACON_DEACTIVATE,
                 SoundSource.PLAYERS, 0.8F, 0.65F);
@@ -883,7 +883,7 @@ public final class AuthorityTheftService {
                     burst.center().x, burst.center().y + 1.0D, burst.center().z,
                     20, 2.0D, 0.8D, 2.0D, 0.06D);
             ringParticles(caster.level(), burst.center(), 6.0D, ParticleTypes.SCULK_SOUL, 36);
-            caster.level().playSound(null, BlockPos.containing(burst.center()), SoundEvents.GENERIC_EXPLODE,
+            caster.level().playSound(null, BlockPos.containing(burst.center()), SoundEvents.GENERIC_EXPLODE.value(),
                     SoundSource.PLAYERS, 1.2F, 0.7F);
         }
 
