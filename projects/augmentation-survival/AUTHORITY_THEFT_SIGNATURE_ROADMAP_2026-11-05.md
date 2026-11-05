@@ -111,3 +111,42 @@ Java source 컴파일 성공과 GameTest 통과를 반드시 분리하여 보고
 4. J 다중 권능 순서·가독성, 외부 HUD 간섭, 26종 동시 극단 입력, 다른 플레이어/아군 보호를 인게임에서 검증.
 5. 핵심 권능 발동에 고유 사운드/VFX 피드백 추가. 고정 효과를 vanilla particle 1종으로 대체하는 데서 멈추지 않는다.
 6. 기존 3개 GameTest 실패는 기존 기능 제거 없이 별도로 근본 수정.
+
+## 2026-11-05 권능 탈취 2차 구현 및 검증
+
+### 코딩 기준
+- 본 작업 시작 시 remote `main`: `54eb529f90313e80134ca7254cc208bfe5947b30`.
+- 이번 작업 최종 코드/테스트 HEAD: `1bcf327703f909b0c350fa7b64c489936e254701` (문서 정리 시 main은 다른 작업으로 전진 가능).
+- 범위: `projects/augmentation-survival/`. 기존 `J` 발동, `Shift+J` 토글, 저장된 권능 ID 및 120초 전역 쿨다운 유지. 다른 모드 프로젝트 수정 없음.
+
+### Chrono Dawn 실제 26.2 소스 기반
+- source: `https://github.com/ksoichiro/ChronoDawn` main `cf217e99c8959b569437eca5be93f178a978a0c6`. Runtime installed version `0.12.0`과 동일 코드인지 별도로 JAR-level 확인 필요.
+- `TemporalPhantomEntity.performRangedAttack`: **Warp Bolt라는 별도 엔티티가 없음**. 실제 `TimeBlastEntity`를 소환해 속도 1.5로 발사. 원본 상태효과 Slowness II 5s / Mining Fatigue I 5s.
+- `ChronoDawnAuthorityProjectileBridge.shootTimeBlast` 추가: 모드가 로드돼 있으면 original registered `com.chronodawn.entities.projectiles.TimeBlastEntity` 객체를 reflection으로 생성해 Player 소유 투사체로 발사. 서버 런타임에서만 클래스 결합, 원본 코드/리소스를 이 모드 JAR에 포함하지 않음. 미설치/호환 불가 시 기존 단발 공격+디버프 대체. `releaseTimeGuardian`과 `releaseTemporalPhantom`에 사용.
+- Temporal Phantom의 `summonPhantomClones` 원본 26.2 구현은 TODO이므로, 근거 없는 자체 `CombatCloneEntity` 2체를 원본 권능으로 표시/발동하던 부분은 제거. 물리 회피 30%+뒤쪽 순간이동/원본 투사체는 유지.
+- Entropy Keeper: 원본 `placeTemporalRot` 기반 3×3 5초 장판 + 원본 `performEntropyBurst` 기반 **2초 예고 뒤 반경 6 피해 10/시듦 II 10초/넉백**을 같은 권능에 추가. 블록 파괴 없음. 장비 내구도 부식은 타 플레이어 장비 파괴 리스크 때문에 아직 도입하지 않음.
+- 원본 source-license LGPL-3.0: 이 모드는 실행 중 원본 설치 엔티티를 호출하기만 하며 소스/모델/음원을 복제·번들하지 않음.
+
+### World Bosses 2.0.2 구현: 공식 공개 능력명 기준 독립 해석
+- source-of-truth: CurseForge 1.3.0 공개 changelog (Thunder Cage, Flame Prison, Primordial Chains, Cataclysm Nova) 및 pinned 2.0.2 변경기록.
+- 실제 World Bosses 내부 Java 메서드/정확한 피해량과 시간은 **확인할 수 없었음**. 아래 시간/피해/사거리는 우리 모드 플레이어용 밸런스이며 원본과 동일한 코드라는 주장을 하지 않음.
+- `WorldBossAuthorityPatternService`: 서버에서만 약 5초간 지속하는 `THUNDER_CAGE`, `FLAME_PRISON` 및 경고 후 1.3초 뒤 폭발하는 `CATACLYSM_NOVA`의 상태·판정·연출을 소유자 UUID/차원별 관리. 전용 boss service tick을 중복 등록하지 않고 `AuthorityTheftService.tickPending` 내부에서 호출. 종료/로그아웃/사망/차원 변경 시 대기 상태 정리. Max 48 active global / 4 per caster, 48 targets per pulse 제한.
+- Aureon: 초기 단일 번개 타격 + 대상 중심 반경 4의 5초 'Thunder Cage'. 1초 경고 후 14틱 간격으로 피해 4 + Slowness III/Glowing. 전용 전기 실린더 텔레그래프·낙뢰 사운드.
+- Varkhul: 중심 대상에게 Infernal Chains(Slowness V/Weakness II), 5초 Flame Prison 반경 3.7. 18틱마다 연소/지속 피해 3/둔화 III, 경계에 접근한 적은 소폭 안쪽으로 끌림. 지형의 블록을 교체하거나 발화시키지 않음.
+- Astrael: Primordial Chains로 반경 9 적에게 Slowness IV/Weakness II, 26틱 진행형 링 경고 뒤 고정 앵커에서 Cataclysm Nova 피해 11/넉백. 저항 II·신속 II·화염 저항 버프 유지.
+- 화면에 보이는 구속 영역과 실제 판정은 반경 기준으로 연결. 현재 particle-only VFX이므로 실제 모델/텍스처·전용 애니메이션/사운드 퀄리티는 향후 playtest 후 개선 필요.
+- 전체 11종 World Bosses 중 위 3종만 이번에 독자적인 지속형 원본 명칭 패턴으로 대체. 나머지 8종은 기존 범용 효과 구현 상태로 남음.
+
+### 자동 검증 및 테스트
+- Commit `1bcf327703f909b0c350fa7b64c489936e254701`, GitHub Actions run `41947456201`.
+- `compileJava`: **PASS**.
+- `compileGametestJava`: **PASS**.
+- `runGameTest`: **157 / 160 PASS, 3 FAIL**. 새 2개 `AuthoritySignatureGameTests`: Aureon (적 피해·중립 동물 비피해), Astrael (지연 공격 결과) 모두 PASS.
+- 기존 실패 3건 그대로: `domination_behavior_game_tests_domination_converts_enemy_into_persistent_combat_ally`, `mythic_live_fix_batch_hgame_tests_powered_flight_body_collision_also_damages_neutral_mobs`, `return_to_sender_game_tests_real_shield_durability_blocks_emit_cone_at_level_three_threshold`. 사용자 수동 플레이에서는 비행·지배가 동작함을 관찰했으므로 코드 고장으로 단정하지 않음.
+- `BUILD VERIFIED`: NO (GameTest 실패로 전체 workflow 종료). `JAR PRODUCED`: NOT VERIFIED. `PLAYTESTED`: NO. `MULTIPLAYER TESTED`: NO. World Bosses 패턴 타격·HUD 스크린샷/Chrono original projectile 동작도 client playtest 전.
+
+### 다음 집중 범위
+1. World Bosses: Morvath Fear Pulse/Soul Drain, Sylvaron root/spore, Nekhraz sandstorm/burrow, Elyndra rift/tether, Worldbreaker Realm 4 boss의 공개 기술을 각각 **범위와 타이밍을 시각적으로 보여주는 방식**으로 리팩터링. ARR 모드의 미공개 코드 복제 금지.
+2. Chrono Dawn Time Blast/gear projectile의 실제 model & collision, 동료·중립 대상 안전, 26.2 pinned version runtime check.
+3. 권능 다수 누적 시 동시 타격·넉백·teleport 충돌과 512건 히트 큐 캡/8초 만료 정책, 소유자별 fairness를 profiling 및 플레이로 확인.
+4. 기존 3개 GameTest는 좁은 재현 검증으로 실제 버그와 테스트 환경 차이를 분리하고, 실패를 무시해 artifact 생성하도록 우회하지 말 것.
