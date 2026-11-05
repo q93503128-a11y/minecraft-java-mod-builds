@@ -39,6 +39,7 @@ jobs:
           python tools/build_external_pack.py --offline-check
       - name: Resolve exact releases and validate upstream JARs
         run: |
+          set -euo pipefail
           python tools/build_external_pack.py \
             --download-jars \
             --server-dir "${RUNNER_TEMP}/anomalous-pack-server" \
