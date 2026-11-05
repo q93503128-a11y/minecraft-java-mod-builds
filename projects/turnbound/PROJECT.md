@@ -37,10 +37,10 @@
 - Current blank foundation is not a playable RPG. Minecraft client gameplay and multiplayer were not verified for this rebuild.
 
 ## Validation
-- Build TURNBOUND #1045: Gradle build/tests PASS; dedicated-server smoke PASS; JAR inspection PASS; Modrinth pack validation PASS.
-- CI run: https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41977185198
+- Build TURNBOUND #1049 (rollback verified): Gradle build/tests PASS; dedicated-server smoke PASS; JAR inspection PASS; Modrinth pack validation PASS. This validates the restored runtime code plus production-data/asset removal.
+- CI run: https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41980378906
 - JAR from this run is a foundation artifact, **not a released playable game**. Never claim it was client playtested.
-- The old one-click pack no longer downloads or repairs Drehmal, and should be installed separately from the old production instance.
+- The one-click rebuild pack no longer downloads or repairs Drehmal, and should be installed separately from the old production instance.
 
 ## Next executable cleanup gates
 1. Remove remaining authored-content Java classes and stale dependency chains, preserving the generic battle, network and persistence engines.
@@ -54,3 +54,8 @@
 - Commercial references for important UI and animations, with licensing documented.
 - No no-op compatibility hacks, deletion of still-relevant tests just to pass CI, fake APIs, or hidden save loss.
 - Distinguish CODE REVIEWED, TESTED, BUILD VERIFIED, PLAYTESTED, MULTIPLAYER TESTED honestly.
+
+## Additional cleanup checkpoint (2026-11-05)
+- Detached the last identified legacy world-level auto-subscriber `FieldEncounterPresentationBridge` to prevent obsolete encounter-marker polling and actor replacement.
+- Removed old summon source portraits and presentation images (18 PNGs, approx. 37.4 MB) and their unused generation script from the active workbranch. Original bytes remain recoverable from Git history; asset provenance was moved to `legacy/ASSET_PROVENANCE_summon.txt`.
+- Historical NeoForge/Minecraft Java classes are still retained in the main compile source set until their shared runtime dependencies can be properly extracted. Do NOT move these classes into the ordinary JUnit `test` source set: Build #1048 failed because that source set lacked the transformed game API. The attempted move was completely rolled back in #1049.

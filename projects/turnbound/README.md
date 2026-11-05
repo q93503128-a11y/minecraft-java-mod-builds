@@ -9,7 +9,7 @@ The old characters, quests, story, bosses, equipment and Drehmal-based gameplay 
 - Build stack: Minecraft Java 26.2, NeoForge 26.2.0.62, Java 25, Gradle 9.2.1.
 - Canon: [PROJECT.md](PROJECT.md).
 - Dependency audit and removal gates: [CONTENT_REBUILD_AUDIT_2026-11-05.md](CONTENT_REBUILD_AUDIT_2026-11-05.md).
-- Last validated foundation: [GitHub Actions Build TURNBOUND #1045](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41977185198).
+- Last validated foundation: [GitHub Actions Build TURNBOUND #1049](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41980378906).
 - Validation: Tests/build, dedicated-server smoke, JAR and pack checks PASS; client gameplay and multiplayer NOT TESTED.
 - The rebuild pack intentionally does not install or modify Drehmal. Do not replace the legacy JAR in an existing world without a separate save-migration decision.
 

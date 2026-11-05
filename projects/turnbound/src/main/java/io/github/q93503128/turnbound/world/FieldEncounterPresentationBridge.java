@@ -25,7 +25,7 @@ import java.util.UUID;
  * Replaces legacy field encounter markers with the same authored actor assets used in battle.
  * The ArmorStand remains as the server-side encounter anchor so chapter progression code does not fork.
  */
-@EventBusSubscriber(modid = Turnbound.MOD_ID)
+/* The retired field-encounter marker handler is not subscribed in the content-free runtime. */
 public final class FieldEncounterPresentationBridge {
     private static final double SCAN_RADIUS = 176.0;
     private static final double CLEANUP_RADIUS_SQ = 208.0 * 208.0;
