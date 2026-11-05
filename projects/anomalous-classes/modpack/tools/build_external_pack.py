@@ -89,8 +89,8 @@ def pick_version(spec: dict, minecraft: str):
 
 def inspect_jar_metadata(z: zipfile.ZipFile, rec_id: str, *, depth: int = 0) -> dict:
     """Inspect root NeoForge metadata AND declared embedded Jar-in-Jar mods."""
-    if depth > 2:
-        raise ValueError(f"{rec_id}: unsupported deeply nested Jar-in-Jar")
+    if depth > 8:
+        raise ValueError(f"{rec_id}: excessive Jar-in-Jar nesting (max 8)")
     if z.testzip() is not None:
         raise ValueError(f"{rec_id}: invalid JAR ZIP")
     names = set(z.namelist())
