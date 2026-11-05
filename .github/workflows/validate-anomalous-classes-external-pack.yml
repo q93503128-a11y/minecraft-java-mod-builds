@@ -58,6 +58,10 @@ jobs:
           cd "${RUNNER_TEMP}/anomalous-pack-server"
           java -jar "${RUNNER_TEMP}/${INSTALLER}" --installServer 2>&1 | tee "${RUNNER_TEMP}/neoforge-install.log"
           test -f run.sh
+          # This is an isolated CI world, not an externally hosted server.
+          # In Control! requires config/incontrol on first use.
+          mkdir -p config/incontrol
+          printf 'motd=Anomalous Classes compatibility smoke\n' > server.properties
           printf 'eula=true\n' > eula.txt
       - name: Start and shut down dedicated server
         run: |
@@ -88,6 +92,22 @@ jobs:
                       proc.wait(timeout=20)
           lines = logfile.read_text(encoding="utf-8", errors="replace").splitlines()
           print("\n".join(lines[-140:]))
+          for jar in sorted((work / "mods").glob("*.jar")):
+              if f'Found mod file "{jar.name}"' not in "\n".join(lines):
+                  print(f"FAILED: NeoForge did not discover {jar.name}")
+                  success = False
+          if "Error writing areas.json!" in "\n".join(lines):
+              print("FAILED: In Control! could not write its default rules")
+              success = False
+          if "Failed to load properties from file: server.properties" in "\n".join(lines):
+              print("FAILED: server.properties was not prepared")
+              success = False
+          areas = work / "config" / "incontrol" / "areas.json"
+          if not areas.is_file() or not isinstance(__import__("json").loads(areas.read_text()), list):
+              print("FAILED: In Control! default areas.json missing or malformed")
+              success = False
+          print(f"SERVER-REQUIRED MOD DISCOVERY: {len(list((work / 'mods').glob('*.jar')))} checked")
+          print(f"IN CONTROL DEFAULT RULES VERIFIED: {areas.is_file()}")
           print(f"DEDICATED SERVER BOOT VERIFIED: {success}")
           if not success:
               sys.exit(1)
