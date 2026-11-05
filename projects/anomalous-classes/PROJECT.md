@@ -1,6 +1,15 @@
 # 이능 직업 서바이벌 (working title)
 
-> 이 게임은 독립 신규 Minecraft Java 서바이벌 RPG 모드이다. `augmentation-survival`, `openworld-rpg` 등 다른 프로젝트의 소스나 설계를 자동으로 상속하지 않는다. 정식 게임명과 기술 스택은 아직 선택하지 않았다.
+> 이 게임은 독립 신규 Minecraft Java 서바이벌 RPG 모드이다. `augmentation-survival`, `openworld-rpg` 등 다른 프로젝트의 소스나 설계를 자동으로 상속하지 않는다. 정식 게임명은 아직 미정이다. **외부 모드팩 설계의 Minecraft/loader/Java 조합은 1.21.1/NeoForge 21.1.x/Java 21로 선정했으며 런타임 미검증이다.**
+
+## 2026-11-05 외부 모드팩 구성 **설계 확정** — 최신 상태
+
+[**외부 모드 9종·필수 라이브러리 6종·제외 사유·보스 HP/기믹·런타임 QA 게이트**](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md) · [기계적으로 확인 가능한 설계 모드 목록](./modpack/EXTERNAL_MODS_DESIGN_LOCK_V1.json)
+
+- **기획 기준 Minecraft 1.21.1 / NeoForge 21.1.x / Java 21**. 세부 NeoForge 패치·직접 실행한 정확한 JAR·해시는 **아직 확정/검증 전**. 기존 문서의 'MC/로더 미선정'은 작성 시점 기록이며 본 절이 최신 설계 우선.
+- **첫 통합 시험 대상 모드 9개:** Cataclysm, Mowzie's Mobs, Born in Chaos, Mutant Monsters, YUNG's Better Dungeons, In Control!, Locator Bar (Reworked), LambDynamicLights, JEI. **필수 라이브러리 6종:** Curios API, Lionfish API, GeckoLib, Puzzles Lib, YUNG's API, MezzConfig. **추가 잠재 의존성은 실파일 검증 전**.
+- **첫 구성 제외:** Alex's Mobs/Caves Continued(버전 미지원이 아니라 초반 통합 및 대형 콘텐츠/숙주 QA 부담), Graveyard/When Dungeons Arise/Lost Castle(월드젠 중복), Epic Fight/Better Combat(전투 핵심 변경), Iron's Spells/Ars Nouveau/Apotheosis(별도 RPG 성장축), Improved Mobs/기타 난도 스케일러(생존·성장 충돌), 중복 위치/동적 조명 모드, Crafting Tweaks+Balm(사용자에게 필수 아님). 사용자의 작은 방어구 강화 허용은 유지하며 새로운 독립 RPG 장비 강화를 강제하지 않는다.
+- **기획상 구성만 확정.** 실제 파일 동시 로딩/독립 서버/새 월드/보스의 지배·기생/군체·결계 피격/몹 스폰/아이템·FPS/TPS/멀티·배포권한은 **NOT TESTED**. 적의 체력/공격 스펙은 제작자 설명·커뮤니티 자료이며 1.21.1 JAR 직접 측정과 구분한다.
 
 ## 프로젝트 식별 / 빌드 상태
 
@@ -8,22 +17,22 @@
 - Mod ID: 미정
 - Namespace: 미정
 - Mod version: 미정 (기획 단계)
-- Minecraft: 미정 (외부 모드 생태계 확인 후 선택)
-- Java: 미정
-- Loader: 미정 (Fabric/NeoForge 등을 실제 요구와 호환성에 따라 비교)
-- Loader version: 미정
+- Minecraft: **1.21.1 (모드팩 DESIGN LOCK, 실제 빌드·클라/서버 미검증)**
+- Java: **21 (설계 선정, 툴체인 실검증 전)**
+- Loader: **NeoForge (모드팩 설계 선정)**
+- Loader version: **21.1.x 계열; 정확한 패치 릴리스 및 실 JAR 핀 고정 미완료**
 - Gradle: 미정
 - Build plugin: 미정
 - Final JAR: 없음
 - Existing-world compatibility: 구현 시작 시 정의
-- Required dependencies: 미정
-- Optional external mods: 외부 몬스터 모드 적극 검토, 미선정
+- Required dependencies: **게임 본체 개발용 의존성 별도 미정; 외부 모드팩 라이브러리 6종은 [설계 목록](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md) 참조**
+- Optional external mods: **모드팩 설계 9기능 모드 + 6 라이브러리 선정, [정본](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md)**
 - Forbidden bundled dependencies: 사용·재배포 권한 없는 코드 및 자산
 - Datagen task: 미구성
 - GameTest task: 미구성
 - Server smoke-test task: 미구성
 - Client smoke-test task: 미구성
-- Status: `DESIGN IN PROGRESS / NO SOURCE BOOTSTRAP / NOT BUILT / NOT PLAYTESTED`
+- Status: `DESIGN IN PROGRESS / EXTERNAL MODPACK DESIGN LOCKED / NO SOURCE BOOTSTRAP / NOT CO-LOADED / NOT BUILT / NOT PLAYTESTED`
 
 ## 현재 작업 판정 — 2026-11-05 최신 통합 감사
 
