@@ -1,5 +1,16 @@
 # TURNBOUND Project Contract
 
+## Current instruction: retire authored TURNBOUND content (2026-11-05)
+
+This user decision supersedes all older requirements to preserve P01–P08, F01–F04, old quests, story, enemies, bosses, equipment, NPCs, Drehmal and Aster/Radia world-specific content.
+
+- Rebuild ALL player-facing authored content from a blank slate. Do not reuse old character names, roles, appearances or skills unless the user later approves an individual concept.
+- Characters, equipment and quests must be designed jointly with the user, not autonomously by agents. Core direction: exploration, story, strategic turn combat and collection/growth in balance.
+- Keep reusable engineering: fixed-point TurnScheduler, generic combat effects, server-authoritative sessions, safe multiplayer/reconnect/settlement, persistence and tests.
+- Existing gameplay, saves and test fixtures remain intact in the frozen original branch at 1877b9ef59c86d8e8271e43e0b1f6b8657dc174f. Work only on the turnbound-content-rebuild branch until a verified successor exists.
+- CURRENT STATUS: Dependency audit complete to initial blocker level; content deletion NOT YET IMPLEMENTED. See CONTENT_REBUILD_AUDIT_2026-11-05.md. Old sections below are historical and must not direct new character/story authoring.
+
+
 ## Identity
 - Path: `projects/turnbound/`
 - Mod ID: `turnbound`

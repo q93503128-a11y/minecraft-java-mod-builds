@@ -1,5 +1,10 @@
 # TURNBOUND
 
+> Current scope (2026-11-05): **Complete content rebuild, not a continuation of the legacy P01–P08 / Drehmal storyline.**
+> The content-rebuild branch is an audit-stage fork of the last verified game and does NOT yet contain a wiped game.
+> See CONTENT_REBUILD_AUDIT_2026-11-05.md and the current directive at the top of PROJECT.md.
+
+
 Minecraft Java 26.2 / NeoForge 기반 3D 파티 턴제 RPG.
 
 ## Current direction
