@@ -77,6 +77,9 @@ public final class PlayerProfile {
     private PlayerProfile() {}
     public static PlayerProfile newGame() { PlayerProfile profile = new PlayerProfile(); profile.gold = 5_000; return profile; }
 
+    /** An unseeded profile for the content rebuild. Legacy newGame() remains unchanged for old-save tests. */
+    public static PlayerProfile newEmptyRebuildGame() { return new PlayerProfile(); }
+
     public static PlayerProfile restore(Snapshot snapshot) {
         PlayerProfile profile = new PlayerProfile();
         profile.gold=snapshot.gold(); profile.summonCrystal=snapshot.summonCrystal(); profile.starEssence=snapshot.starEssence(); profile.awakeningCore=snapshot.awakeningCore();

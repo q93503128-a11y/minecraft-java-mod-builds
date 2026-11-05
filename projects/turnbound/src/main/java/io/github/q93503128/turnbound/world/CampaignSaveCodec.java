@@ -23,6 +23,9 @@ import java.util.Set;
 /** Versioned campaign save codec with explicit v0.4 -> v1 compatibility migration. */
 public final class CampaignSaveCodec {
     public static final int SCHEMA_VERSION = 6;
+    /** Deliberately distinct from the old campaign save format and attachment. */
+    public static final int REBUILD_SCHEMA_VERSION = 7;
+    private static final String REBUILD_KIND = "turnbound-empty-foundation";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final List<String> DEFAULT_PARTY = List.of("P01", "P03", "P04", "P08");
 
@@ -43,12 +46,53 @@ public final class CampaignSaveCodec {
         return GSON.toJson(root);
     }
 
+    /**
+     * Explicitly serialize the blank foundation. Never rewrite a legacy campaign with this method.
+     * Content-bearing rebuild saves will require a separately reviewed schema upgrade.
+     */
+    public static String encodeRebuild(CampaignProgressStore.Snapshot snapshot) {
+        requireEmptyRebuild(snapshot);
+        JsonObject root = JsonParser.parseString(encode(snapshot)).getAsJsonObject();
+        root.addProperty("schemaVersion", REBUILD_SCHEMA_VERSION);
+        root.addProperty("saveKind", REBUILD_KIND);
+        return GSON.toJson(root);
+    }
+
+    public static CampaignProgressStore.Snapshot decodeRebuild(String json) {
+        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+        if (!root.has("schemaVersion") || root.get("schemaVersion").getAsInt() != REBUILD_SCHEMA_VERSION
+                || !root.has("saveKind") || !REBUILD_KIND.equals(root.get("saveKind").getAsString()))
+            throw new IllegalStateException("Not a TURNBOUND rebuild save; legacy campaign remains untouched");
+        return decode(json);
+    }
+
+    private static void requireEmptyRebuild(CampaignProgressStore.Snapshot snapshot) {
+        PlayerProfile.Snapshot profile = snapshot.profile();
+        if (profile.gold() != 0 || profile.summonCrystal() != 0 || profile.starEssence() != 0
+                || profile.awakeningCore() != 0 || !profile.ownedCharacters().isEmpty()
+                || profile.fiveStarPity() != 0 || profile.starterArchiveUnlocked() || profile.starterArchiveUsed()
+                || !profile.summonHistory().isEmpty() || !profile.pendingDuplicates().isEmpty()
+                || profile.partyPresets().stream().anyMatch(p -> !p.isEmpty())
+                || !snapshot.activeParty().isEmpty() || !snapshot.characters().isEmpty()
+                || !snapshot.growth().isEmpty() || !snapshot.clearedEncounters().isEmpty()
+                || !snapshot.orphanedCharacterIds().isEmpty() || !snapshot.orphanedEquipmentIds().isEmpty()
+                || !snapshot.equipment().equals(EquipmentInventory.Snapshot.empty())
+                || !snapshot.quests().equals(QuestProgress.Snapshot.empty())) {
+            throw new IllegalStateException("Rebuild foundation cannot contain retired or unapproved content");
+        }
+    }
+
     public static CampaignProgressStore.Snapshot decode(String json) {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         int schema = root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 1;
-        if (schema != 1 && schema != 4 && schema != 5 && schema != SCHEMA_VERSION) {
+        if (schema != 1 && schema != 4 && schema != 5 && schema != SCHEMA_VERSION
+                && schema != REBUILD_SCHEMA_VERSION) {
             throw new IllegalStateException("Unsupported TURNBOUND campaign save schema " + schema);
         }
+
+        if (schema == REBUILD_SCHEMA_VERSION && (!root.has("saveKind")
+                || !REBUILD_KIND.equals(root.get("saveKind").getAsString())))
+            throw new IllegalStateException("Rebuild save marker is missing or invalid");
 
         Set<String> orphanedCharacters = new LinkedHashSet<>();
         Set<String> orphanedEquipment = new LinkedHashSet<>();
@@ -70,13 +114,17 @@ public final class CampaignSaveCodec {
         EquipmentInventory.Snapshot equipment = equipmentDecode.snapshot();
         QuestProgress.Snapshot quests = schema >= 4 && root.has("quests")
                 ? decodeQuests(root.getAsJsonObject("quests")) : QuestProgress.Snapshot.empty();
-        List<String> activeParty = decodeParty(optionalArray(root, "activeParty"), profile.snapshot(), orphanedCharacters);
+        List<String> activeParty = decodeParty(optionalArray(root, "activeParty"), profile.snapshot(), orphanedCharacters,
+                schema == REBUILD_SCHEMA_VERSION);
 
         Set<String> cleared = stringSet(optionalArray(root, "clearedEncounters"));
         orphanedCharacters.addAll(stringSet(optionalArray(root, "orphanedCharacterIds")));
         orphanedEquipment.addAll(stringSet(optionalArray(root, "orphanedEquipmentIds")));
-        return new CampaignProgressStore.Snapshot(profile.snapshot(), characters, growth, equipment, quests,
+        CampaignProgressStore.Snapshot result = new CampaignProgressStore.Snapshot(
+                profile.snapshot(), characters, growth, equipment, quests,
                 activeParty, cleared, orphanedCharacters, orphanedEquipment);
+        if (schema == REBUILD_SCHEMA_VERSION) requireEmptyRebuild(result);
+        return result;
     }
 
     private static JsonObject encodeProfile(PlayerProfile.Snapshot profile) {
@@ -163,7 +211,8 @@ public final class CampaignSaveCodec {
                 optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false), history, presets, pendingChoices), orphaned);
     }
 
-    private static List<String> decodeParty(JsonArray raw, PlayerProfile.Snapshot profile, Set<String> orphaned) {
+    private static List<String> decodeParty(JsonArray raw, PlayerProfile.Snapshot profile, Set<String> orphaned,
+                                             boolean allowEmpty) {
         LinkedHashSet<String> party = new LinkedHashSet<>();
         for (JsonElement element : raw) {
             String id = element.getAsString();
@@ -177,7 +226,8 @@ public final class CampaignSaveCodec {
             for (String id : DEFAULT_PARTY) if (profile.ownedCharacters().contains(id)) party.add(id);
             if (party.isEmpty()) for (String id : profile.ownedCharacters()) { party.add(id); if (party.size() >= 4) break; }
         }
-        if (party.isEmpty()) throw new IllegalStateException("TURNBOUND save contains no usable party character");
+        if (party.isEmpty() && !allowEmpty)
+            throw new IllegalStateException("TURNBOUND legacy save contains no usable party character");
         return List.copyOf(party);
     }
 

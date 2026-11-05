@@ -27,6 +27,17 @@ public final class TurnboundAttachments {
                     .copyOnDeath()
                     .build());
 
+    /**
+     * Independent slot for the blank-content rebuild. The legacy campaign_profile is never migrated,
+     * cleared or overwritten by this registration. No login handler is attached until the save gate is tested.
+     */
+    public static final Supplier<AttachmentType<String>> REBUILD_CAMPAIGN_PROFILE = ATTACHMENT_TYPES.register(
+            "rebuild_campaign_profile",
+            () -> AttachmentType.builder(() -> "")
+                    .serialize(Codec.STRING.fieldOf("rebuildCampaign"))
+                    .copyOnDeath()
+                    .build());
+
     private TurnboundAttachments() {}
 
     public static void register(IEventBus modEventBus) {

@@ -90,3 +90,10 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Preserve source/provenance attribution at `legacy/ASSET_PROVENANCE_summon.txt`; the previous code/image blobs remain in the frozen legacy Git commit and previous rebuild history. The new game must not reuse them without user review.
 - `FieldEncounterPresentationBridge` still existed in Java main and declared a `@EventBusSubscriber` despite prior entrypoint removal. Detaching this annotation prevents automatic player-tick scanning or modifying obsolete encounter armor stands in ordinary worlds. Generic source retained because other current Java compilation units reference it.
 - Verified prior rollback checkpoint: Build TURNBOUND #1049 PASS (tests/build, server smoke, JAR and pack inspection). The new raw-art/subscriber change requires a separate CI confirmation and has not yet been built as of writing this line.
+
+## Explicit empty player/save foundation checkpoint — 2026-11-05
+- Added opt-in empty rebuild profile initialization with zero money/characters/party and no writes to existing loaded UUIDs; archived story-seeded new-game behavior stays in the historical test path only.
+- Introduced strict rebuild schema 7 (saveKind `turnbound-empty-foundation`), rejecting all old v1–v6 saves and all authored or orphaned content for this blank foundation. Legacy save codec remains readable for historical tests, and an empty old schema remains invalid instead of silently migrating to a blank profile.
+- Added separate `rebuild_campaign_profile` NeoForge attachment ID. **Not wired to player login or automatic save**; client/server end-to-end load/save testing and explicit old-world migration policy remain required before activation.
+- Guarded legacy summon entrypoints for empty rebuild profiles; preserve existing legacy gacha tests without changing their reward tables. This is a new technical boundary, not a design decision for the future summon system.
+- Added focused empty-profile, invalid schema, gacha gate, and save-round-trip tests. Remaining old Java catalog/world and battle dependencies are still present; do not claim they were removed.

@@ -280,7 +280,8 @@ public final class CampaignProgressStore {
         List<String> validated = validateParty(progress.profile.snapshot(), characterIds);
         progress.activeParty.clear();
         progress.activeParty.addAll(validated);
-        recordQuestEvent(progress, QuestProgress.Event.partyConfirm(Set.copyOf(validated)));
+        if (!progress.rebuildFoundation)
+            recordQuestEvent(progress, QuestProgress.Event.partyConfirm(Set.copyOf(validated)));
         progress.dirty = true;
     }
 
@@ -313,6 +314,8 @@ public final class CampaignProgressStore {
 
     public static GachaService.BatchResult summonStandard(UUID playerId, int count) {
         PlayerProgress progress = player(playerId);
+        if (progress.rebuildFoundation)
+            throw new IllegalStateException("No characters are available in the rebuild catalog");
         GachaService.BatchResult result = switch (count) {
             case 1 -> GACHA.summonStandardSingle(progress.profile);
             case 10 -> GACHA.summonStandardTen(progress.profile);
@@ -325,6 +328,8 @@ public final class CampaignProgressStore {
 
     public static GachaService.BatchResult summonStarter(UUID playerId) {
         PlayerProgress progress = player(playerId);
+        if (progress.rebuildFoundation)
+            throw new IllegalStateException("No characters are available in the rebuild catalog");
         GachaService.BatchResult result = GACHA.summonStarterTen(progress.profile);
         result = applySummonProgression(progress, result);
         progress.dirty = true;
@@ -532,6 +537,38 @@ public final class CampaignProgressStore {
     public static List<String> equipmentRules(UUID playerId, String characterId) { return player(playerId).equipment.fixedRules(characterId); }
 
     public static void ensureNewGame(UUID playerId) { player(playerId); }
+
+    /**
+     * Establish an empty rebuild profile only when this UUID has no loaded runtime.
+     * An existing campaign is never reset implicitly. The rebuild has no approved roster or economy yet.
+     */
+    public static boolean startEmptyRebuildGame(UUID playerId) {
+        if (playerId == null) throw new IllegalArgumentException("Missing player id");
+        if (PLAYERS.containsKey(playerId)) return false;
+        PlayerProgress progress = new PlayerProgress(false);
+        progress.profile = PlayerProfile.newEmptyRebuildGame();
+        progress.rebuildFoundation = true;
+        progress.dirty = true;
+        PLAYERS.put(playerId, progress);
+        return true;
+    }
+
+    /** Restore only the dedicated rebuild schema. Never interpret a legacy v1-v6 save as a rebuild. */
+    public static void restoreEmptyRebuildGame(UUID playerId, String savedJson) {
+        if (playerId == null || PLAYERS.containsKey(playerId))
+            throw new IllegalStateException("Cannot replace an already loaded campaign");
+        Snapshot restored = CampaignSaveCodec.decodeRebuild(savedJson);
+        restore(playerId, restored);
+        PLAYERS.get(playerId).rebuildFoundation = true;
+    }
+
+    /** The caller persists this only to the separate rebuild attachment, not campaign_profile. */
+    public static String encodeEmptyRebuildGame(UUID playerId) {
+        PlayerProgress progress = PLAYERS.get(playerId);
+        if (progress == null || !progress.rebuildFoundation)
+            throw new IllegalStateException("No rebuild campaign is loaded");
+        return CampaignSaveCodec.encodeRebuild(snapshot(playerId));
+    }
 
     /** Temporary pre-release session reset hook. Remove its caller before release completion. */
     public static void resetToNewGame(UUID playerId) {
@@ -774,7 +811,11 @@ public final class CampaignProgressStore {
     }
 
     private static List<String> validateParty(PlayerProfile.Snapshot profile, List<String> requested) {
-        if (requested == null || requested.isEmpty() || requested.size() > 4) throw new IllegalArgumentException("Party requires 1-4 characters");
+        if (requested == null || requested.size() > 4) throw new IllegalArgumentException("Party requires 1-4 characters");
+        if (requested.isEmpty()) {
+            if (!profile.ownedCharacters().isEmpty()) throw new IllegalArgumentException("Owned characters require a party");
+            return List.of();
+        }
         LinkedHashSet<String> unique = new LinkedHashSet<>(requested);
         if (unique.size() != requested.size()) throw new IllegalArgumentException("Party cannot contain duplicate characters");
         for (String id : unique) if (!profile.ownedCharacters().contains(id)) throw new IllegalArgumentException("Party character is not owned: " + id);
@@ -794,6 +835,7 @@ public final class CampaignProgressStore {
         private EquipmentInventory equipment = EquipmentInventory.empty();
         private QuestProgress quests = QuestProgress.empty();
         private boolean dirty;
+        private boolean rebuildFoundation;
 
         private PlayerProgress() { this(true); }
 
