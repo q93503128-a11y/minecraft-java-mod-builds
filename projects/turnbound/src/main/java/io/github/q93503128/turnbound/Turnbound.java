@@ -5,6 +5,8 @@ import io.github.q93503128.turnbound.content.RebuildContentCatalog;
 import io.github.q93503128.turnbound.session.BattleNetwork;
 import io.github.q93503128.turnbound.session.MultiplayerPartyNetwork;
 import io.github.q93503128.turnbound.world.TurnboundAttachments;
+import io.github.q93503128.turnbound.world.RebuildCampaignLifecycle;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
@@ -24,6 +26,12 @@ public final class Turnbound {
         RebuildContentCatalog.requireEmptyProductionCatalog();
         // Preserve only generic player-profile schema and data transport identifiers.
         TurnboundAttachments.register(modEventBus);
+        // The only active world-facing lifecycle is the protected empty-profile attachment.
+        // No old world builder, player shell or campaign importer is registered.
+        NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onPlayerLogin);
+        NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onPlayerLogout);
+        NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(RebuildCampaignLifecycle::onServerStopping);
 
         // Keep generic battle and party protocols, but no retired actor/item/sound registries.
         modEventBus.addListener(BattleNetwork::register);

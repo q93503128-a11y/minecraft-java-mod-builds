@@ -101,3 +101,10 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 ## Rebuild encounter entry gate — 2026-11-05
 - Added server-side fail-closed checks in BattleSessionManager (solo/training/arena/shared) and SharedBattleSessionManager for any loaded rebuild foundation profile, before arena/session/client mutations. No legacy battle can be spawned for that profile through those routes.
 - Existing hardcoded combat-specific rules in BattleEngine are retained and must be separated from reusable rules in a deliberate next phase; do not delete blindly or advertise the old engine as content-independent.
+
+## Rebuild player lifecycle registration — 2026-11-05
+- Explicitly registered only `RebuildCampaignLifecycle` for NeoForge login, 100-tick dirty save, logout and server-stopping. Legacy campaign loader and map/quest hooks remain unregistered.
+- Pure `RebuildSaveAdmission` checks empty vs rebuild vs legacy attachment/JSON/.bak; legacy or conflicting identifiers are refused with a non-destructive disconnect. The rebuild entrypoint reads no legacy payload and writes solely `rebuild_campaign_profile` (schema 7), via validation-before-setData. NeoForge `copyOnDeath` owns death-copy semantics.
+- Verify client login/logout, world restart and death attachment behavior in an isolated NEW test world. CI dedicated server smoke does not test joined players or multiplayer. Do not promise proven world/save compatibility yet.
+- Extracted `CombatMath.calculateDamage` as a pure stat/formula boundary, keeping exact historical semantics via BattleEngine delegation; all legacy-specific combat triggers are still in the old engine and need further coherent extraction.
+- **Still not physically removed:** old map builders, character-specific battle rules, unused client screens, historical catalog readers and test-bound Java classes. Removing these safely requires separating current test and compile references; ordinary Gradle JUnit source-set migration was invalid (#1048).

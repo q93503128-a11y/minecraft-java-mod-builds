@@ -69,3 +69,10 @@
 ## Legacy encounter boundary — 2026-11-05
 - Explicit empty rebuild runtime refuses retired solo/training/encounter battle creation before UI/world transitions. Shared battle creation refuses if any participant has an empty rebuild profile. The historical combat engine and its existing tests remain untouched for future generic extraction.
 - The current battle engine still has dozens of hardcoded old ability/character/boss rules. This guard is safety isolation, **not** proof that the generic engine has been extracted or that a playable new battle exists.
+
+## Protected server session and arithmetic extraction — 2026-11-05
+- The only active server gameplay hooks are now the rebuild profile login, 100-tick dirty autosave, logout, and server-stop lifecycle; no world builder or old quest/encounter entrypoint is re-enabled.
+- The login admission gate refuses any existing `campaign_profile` attachment or legacy JSON/.bak file. A conflicting legacy + rebuild save also fails closed; no automatic old save migration, quarantine, reset or overwrite is attempted. New profiles are allocated only with no old data and persist to `rebuild_campaign_profile` (NeoForge attachment `copyOnDeath`).
+- Schema-7 malformed rebuild saves cause disconnect rather than destructive reset. Client restart/respawn, actual multiplayer, and old-world visual safety remain NOT PLAYTESTED. Legacy worlds must not be used for rebuild playtests.
+- Damage arithmetic is factored into content-independent `CombatMath` and the old `BattleEngine.calculateDamage` delegates to it for compatibility. The remaining legacy character/boss rules in BattleEngine are still present and must be addressed as an entire combat-behavior extraction, not by deleting tests.
+- Old `CampaignPersistence` is preserved for archival tests but not registered for this rebuild. A future authored-content schema needs a separate reviewed storage migration from the strict empty schema 7.

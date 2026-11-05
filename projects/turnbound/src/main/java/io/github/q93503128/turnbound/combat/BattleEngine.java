@@ -1289,10 +1289,9 @@ public final class BattleEngine {
         for (String id : new ArrayList<>(actor.cooldownsView().keySet())) if (!id.equals(used)) actor.setCooldown(id, actor.cooldown(id) - 1);
     }
 
+    /** Legacy compatibility entrypoint, routed through the reusable content-independent formula. */
     public static int calculateDamage(int attack, int defense, double potency) {
-        double reduction = defense / (double)(defense + 4L * Math.max(1, attack));
-        reduction = Math.min(0.65, Math.max(0, reduction));
-        return Math.max(1, (int)Math.floor(attack * potency * (1 - reduction)));
+        return CombatMath.calculateDamage(attack, defense, potency);
     }
 
     private record DamagePlan(CombatantState target, int amount, double potency) {}

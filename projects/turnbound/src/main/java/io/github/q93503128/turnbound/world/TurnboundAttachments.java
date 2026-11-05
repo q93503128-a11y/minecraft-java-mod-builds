@@ -29,7 +29,8 @@ public final class TurnboundAttachments {
 
     /**
      * Independent slot for the blank-content rebuild. The legacy campaign_profile is never migrated,
-     * cleared or overwritten by this registration. No login handler is attached until the save gate is tested.
+     * cleared or overwritten by this registration. The rebuild lifecycle alone reads/writes this slot,
+     * and refuses old-save worlds instead of silently migrating them.
      */
     public static final Supplier<AttachmentType<String>> REBUILD_CAMPAIGN_PROFILE = ATTACHMENT_TYPES.register(
             "rebuild_campaign_profile",
