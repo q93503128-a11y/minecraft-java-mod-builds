@@ -39,6 +39,7 @@ public final class AugmentationSurvivalClient implements ClientModInitializer {
         MovementInputClient.initialize();
         ActiveAbilityInputClient.initialize();
         AuthorityTheftInputClient.initialize();
+        DominationManagementClient.initialize();
         StorageInputClient.initialize();
         SpatialLinkClientNetworking.initialize();
         SpatialLinkInputClient.initialize();

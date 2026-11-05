@@ -18,6 +18,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -54,10 +55,26 @@ public final class CompanionAugmentService {
     public static void initialize() {
         AugmentCatalog.require(DOMINATION_ID);
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
-            if (entity instanceof Mob mob && isDominated(mob)) {
-                mob.setPersistenceRequired();
-                mob.setGlowingTag(true);
-                LOADED_DOMINATED.put(mob.getUUID(), mob);
+            if (entity instanceof Mob mob && level instanceof ServerLevel serverLevel) {
+                DominationWorldState saved = worldState(serverLevel.getServer());
+                if (saved.pending(mob.getUUID())) {
+                    mob.setAttached(CompanionEntityAttachments.ENTITY_STATE, CompanionEntityState.initial());
+                    mob.setGlowingTag(false);
+                    mob.setTarget(null);
+                    setWorldState(serverLevel.getServer(), saved.consumePending(mob.getUUID()));
+                    return;
+                }
+                if (isDominated(mob)) {
+                    mob.setPersistenceRequired();
+                    mob.setGlowingTag(true);
+                    LOADED_DOMINATED.put(mob.getUUID(), mob);
+                    ownerId(mob).ifPresent(id -> {
+                        DominationWorldState latest = worldState(serverLevel.getServer());
+                        if (latest.companions(id).stream().noneMatch(record -> record.uuid().equals(mob.getUUID().toString()))) {
+                            setWorldState(serverLevel.getServer(), latest.withCompanion(id, rosterRecord(mob)));
+                        }
+                    });
+                }
             }
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> LOADED_DOMINATED.remove(entity.getUUID()));
@@ -99,7 +116,8 @@ public final class CompanionAugmentService {
             warden.clearAnger(player);
         }
         LOADED_DOMINATED.put(target.getUUID(), target);
-        setWorldState(server, worldState.withDelta(player.getUUID(), 1));
+        setWorldState(server, worldState.withDelta(player.getUUID(), 1)
+                .withCompanion(player.getUUID(), rosterRecord(target)));
         refreshCombatTarget(target, player.getUUID(), server);
         return true;
     }
@@ -183,7 +201,8 @@ public final class CompanionAugmentService {
         if (owner.isPresent() && entity.level() instanceof ServerLevel level) {
             LOADED_DOMINATED.remove(entity.getUUID());
             MinecraftServer server = level.getServer();
-            setWorldState(server, worldState(server).withDelta(owner.get(), -1));
+            setWorldState(server, worldState(server).withDelta(owner.get(), -1)
+                    .withoutCompanion(owner.get(), entity.getUUID(), false));
         }
         OWNER_COMMAND_TARGETS.entrySet().removeIf(entry -> entry.getValue().entityId().equals(entity.getUUID()));
     }
@@ -197,7 +216,8 @@ public final class CompanionAugmentService {
         clearCombatTarget(mob, mob.getTarget());
         LOADED_DOMINATED.put(mob.getUUID(), mob);
         MinecraftServer server = level.getServer();
-        setWorldState(server, worldState(server).withDelta(owner.get(), 1));
+        setWorldState(server, worldState(server).withDelta(owner.get(), 1)
+                .withCompanion(owner.get(), rosterRecord(mob)));
         refreshCombatTarget(mob, owner.get(), server);
     }
 
@@ -212,8 +232,40 @@ public final class CompanionAugmentService {
         mob.setGlowingTag(false);
         LOADED_DOMINATED.remove(mob.getUUID());
         MinecraftServer server = level.getServer();
-        setWorldState(server, worldState(server).withDelta(owner.getUUID(), -1));
+        setWorldState(server, worldState(server).withDelta(owner.getUUID(), -1)
+                .withoutCompanion(owner.getUUID(), mob.getUUID(), false));
         return true;
+    }
+
+    /** Read-only list used by the server to show all loaded and saved companions. */
+    public static DominationWorldState ownerRoster(ServerPlayer owner) {
+        return worldState(owner.level().getServer());
+    }
+
+    public static boolean releaseOwnedCompanion(ServerPlayer owner, UUID entityId) {
+        Mob loaded = LOADED_DOMINATED.get(entityId);
+        if (loaded != null && isOwnedBy(loaded, owner.getUUID())) {
+            return releaseDominated(owner, loaded);
+        }
+        MinecraftServer server = owner.level().getServer();
+        DominationWorldState saved = worldState(server);
+        boolean present = saved.companions(owner.getUUID()).stream()
+                .anyMatch(record -> record.uuid().equals(entityId.toString()));
+        if (!present) return false;
+        // If the chunk is unloaded, remove the slot immediately and clear the entity attachment
+        // the next time it loads. The pending marker is saved across server restarts.
+        setWorldState(server, saved.withDelta(owner.getUUID(), -1)
+                .withoutCompanion(owner.getUUID(), entityId, true));
+        return true;
+    }
+
+    private static DominationWorldState.CompanionRecord rosterRecord(Mob mob) {
+        var key = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        return new DominationWorldState.CompanionRecord(
+                mob.getUUID().toString(),
+                key == null ? "minecraft:unknown" : key.toString(),
+                mob.getDisplayName().getString(),
+                mob.level().dimension().identifier().toString());
     }
 
     private static void tickDominatedCompanions(MinecraftServer server) {

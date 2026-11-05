@@ -80,6 +80,7 @@ import dev.moonseungjun.augmentationsurvival.menu.AugmentDeviceMenus;
 import dev.moonseungjun.augmentationsurvival.menu.AugmentStorageMenus;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityNetworking;
 import dev.moonseungjun.augmentationsurvival.network.AuthorityTheftNetworking;
+import dev.moonseungjun.augmentationsurvival.network.DominationManagementNetworking;
 import dev.moonseungjun.augmentationsurvival.network.ConsumptionNetworking;
 import dev.moonseungjun.augmentationsurvival.network.MovementNetworking;
 import dev.moonseungjun.augmentationsurvival.network.SpatialLinkNetworking;
@@ -171,6 +172,7 @@ public final class AugmentationSurvival implements ModInitializer {
         AdvancedUtilityAugmentService.initialize();
         ActiveAbilityNetworking.initialize();
         AuthorityTheftNetworking.initialize();
+        DominationManagementNetworking.initialize();
         StorageNetworking.initialize();
         SpatialLinkNetworking.initialize();
         MovementTuning.initialize();

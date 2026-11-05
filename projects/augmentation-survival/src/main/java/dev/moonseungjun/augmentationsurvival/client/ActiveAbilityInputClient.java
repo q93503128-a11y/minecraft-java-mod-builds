@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.client.screen.ActiveLoadoutScreen;
 import dev.moonseungjun.augmentationsurvival.network.ActiveAbilityRequestPayload;
+import dev.moonseungjun.augmentationsurvival.network.DominationManagementRequestPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -70,7 +71,14 @@ public final class ActiveAbilityInputClient {
             for (int index = 0; index < SLOT_KEYS.length; index++) {
                 boolean down = InputConstants.isKeyDown(client.getWindow(), SLOT_KEYS[index]);
                 if (modeEnabled && down && !SLOT_WAS_DOWN[index]) {
-                    ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
+                    boolean shift = InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)
+                            || InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT);
+                    if (shift && (AugmentationSurvival.MOD_ID + ":domination")
+                            .equals(ClientActiveLoadoutState.slot(index))) {
+                        ClientPlayNetworking.send(new DominationManagementRequestPayload(true, ""));
+                    } else {
+                        ClientPlayNetworking.send(new ActiveAbilityRequestPayload(index));
+                    }
                 }
                 SLOT_WAS_DOWN[index] = down;
             }
