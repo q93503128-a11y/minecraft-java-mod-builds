@@ -3,7 +3,7 @@
   "id": "moon_test",
   "version": "${version}",
   "name": "테스트",
-  "description": "문승준 Minecraft Java 실험용 테스트 짬처리통.",
+  "description": "음양태극 마법 스킬과 렌더링 실험.",
   "authors": ["Moonseungjun"],
   "license": "MIT",
   "environment": "*",
@@ -12,13 +12,14 @@
       "dev.moonseungjun.testmod.TestMod"
     ],
     "client": [
-      "dev.moonseungjun.testmod.client.GachaClient"
+      "dev.moonseungjun.testmod.client.YinYangClient"
     ]
   },
   "depends": {
     "fabricloader": ">=0.19.5",
     "minecraft": "~26.3",
     "java": ">=25",
-    "fabric-api": "*"
+    "fabric-api": "*",
+    "player_animation_library": ">=1.2.8"
   }
 }

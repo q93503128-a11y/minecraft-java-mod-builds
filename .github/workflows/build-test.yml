@@ -55,19 +55,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="build/libs/test-0.3.0.jar"
+          JAR="build/libs/test-0.4.0.jar"
           test -s "$JAR"
           python - <<'PY'
           import zipfile
-          jar = 'build/libs/test-0.3.0.jar'
+          jar = 'build/libs/test-0.4.0.jar'
           with zipfile.ZipFile(jar) as z:
               names = z.namelist()
               assert 'fabric.mod.json' in names, 'fabric.mod.json missing'
               assert 'dev/moonseungjun/testmod/TestMod.class' in names, 'main initializer missing'
-              assert 'dev/moonseungjun/testmod/client/GachaClient.class' in names, 'gacha client initializer missing'
-              assert 'dev/moonseungjun/testmod/client/GachaCinematicScreen.class' in names, 'gacha screen missing'
+              assert 'dev/moonseungjun/testmod/client/YinYangClient.class' in names, 'skill client initializer missing'
+              assert 'dev/moonseungjun/testmod/client/YinYangRenderer.class' in names, 'world-space renderer missing'
+              assert 'dev/moonseungjun/testmod/network/SkillNetworking.class' in names, 'server network handler missing'
               assert any(n.startswith('assets/moon_test/') for n in names), 'assets namespace missing'
-              assert not any('starfall' in n.lower() for n in names), 'deleted starfall experiment leaked into jar'
+              assert 'assets/moon_test/player_animations/yin_yang.json' in names, 'PAL animation asset missing'
+              assert not any('Gacha' in n or 'gacha' in n.lower() for n in names), 'deleted gacha experiment leaked into jar'
+              assert not any(n.startswith('com/zigythebird/') for n in names), 'PAL dependency must remain external, not bundled'
               assert not any(n.endswith('.java') for n in names), 'source .java leaked into runtime JAR'
               assert len(names) == len(set(names)), 'duplicate ZIP entries found'
           PY
@@ -77,22 +80,25 @@ jobs:
           # Test Build and Runtime Report
 
           - Commit: ${GITHUB_SHA}
-          - Project: test 0.3.0
-          - Experiment: dimensional vault gacha cinematic
+          - Project: test 0.4.0
+          - Experiment: Yin-Yang Taiji
           - Minecraft: 26.3
           - Java: 25
           - Fabric Loader: 0.19.5
           - Fabric API: 0.162.0+26.3
+          - Required animation dependency: Player Animation Library 1.2.8+26.3 (external, not bundled)
           - Gradle: 9.6.0
           - Fabric Loom: 1.17.20
           - Clean build: PASS
           - JAR structure check: PASS
-          - Deleted starfall leakage check: PASS
+          - Removed gacha legacy leakage check: PASS
           - SHA-256: ${SHA}
           - Datagen: NOT RUN (not provided)
           - GameTest: NOT RUN (not provided)
           - Dedicated server smoke test: NOT RUN
           - Client smoke test: NOT RUN
+          - In-game first-person and third-person visual review: NOT RUN
+          - Multiplayer test: NOT RUN
           - PLAYTESTED: NO
           - MULTIPLAYER TESTED: NO
           EOF
@@ -101,7 +107,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-0.3.0-logs
+          name: test-0.4.0-logs
           path: projects/test/build/raw-logs.zip
           if-no-files-found: warn
           retention-days: 14
@@ -110,10 +116,10 @@ jobs:
         if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: test-0.3.0-deliverables
+          name: test-0.4.0-deliverables
           path: |
-            projects/test/build/libs/test-0.3.0.jar
-            projects/test/build/libs/test-0.3.0.jar.sha256
+            projects/test/build/libs/test-0.4.0.jar
+            projects/test/build/libs/test-0.4.0.jar.sha256
             projects/test/BUILD_AND_RUNTIME_REPORT.md
           if-no-files-found: error
           retention-days: 30

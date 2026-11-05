@@ -12,11 +12,22 @@ base {
 
 repositories {
     mavenCentral()
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter { includeGroup "maven.modrinth" }
+    }
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // PAL 1.2.8 is published for Minecraft 26.3 and provides player-bone animation.
+    implementation "maven.modrinth:ha1mEyJS:xJ30QmpE"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
 
