@@ -73,3 +73,8 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - JAR verification now refuses any `assets/turnbound/` entry, in addition to retired data namespaces.
 - Preserved `META-INF/licenses` and `THIRD_PARTY` provenance. Existing character and world definitions still exist only as test fixtures.
 - Client and multiplayer playtests remain NOT TESTED until explicitly performed; CI cannot establish appearance or world safety on its own.
+
+## Client residual-hook retirement — 2026-11-05
+- Removed `@JourneyMapPlugin` from the old world marker plugin so JourneyMap cannot auto-initialize the obsolete Drehmal/Aster marker layer. Future custom-map integration requires an explicitly reviewed new plugin.
+- Disconnected `ClientAudioPlayback::onTick` from the client event bus. No retired soundtrack will replace vanilla Minecraft music in an empty development world.
+- The client audio payload codec/handler remains registered for future server-authoritative battle audio, but there is no active authored battle/music producer in the blank-content runtime.

@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-@JourneyMapPlugin(apiVersion = "2.0.0")
+/* Former Drehmal/Aster marker plugin is not auto-discovered in the empty-content build. */
 public final class TurnboundJourneyMapPlugin implements IClientPlugin {
     private static final String FIELD_ENEMY_TAG = "turnbound_drehmal_field_enemy";
     private static final List<MarkerOverlay> LABEL_OVERLAYS = new ArrayList<>();

@@ -1,7 +1,6 @@
 package io.github.q93503128.turnbound;
 
 import io.github.q93503128.turnbound.client.ClientAudioNetwork;
-import io.github.q93503128.turnbound.client.ClientAudioPlayback;
 import io.github.q93503128.turnbound.client.ClientBattleNetwork;
 import io.github.q93503128.turnbound.client.ClientMultiplayerPartyNetwork;
 import net.neoforged.api.distmarker.Dist;
@@ -19,6 +18,5 @@ public final class TurnboundClient {
         modEventBus.addListener(ClientBattleNetwork::register);
         modEventBus.addListener(ClientMultiplayerPartyNetwork::register);
         modEventBus.addListener(ClientAudioNetwork::register);
-        NeoForge.EVENT_BUS.addListener(ClientAudioPlayback::onTick);
     }
 }
