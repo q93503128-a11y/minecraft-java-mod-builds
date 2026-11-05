@@ -78,6 +78,8 @@ class EmptyRebuildCampaignTest {
         try {
             CampaignProgressStore.startEmptyRebuildGame(id);
             String rebuild = CampaignProgressStore.encodeEmptyRebuildGame(id);
+            assertThrows(IllegalStateException.class, () -> CampaignSaveCodec.decode(rebuild),
+                    "old campaign_profile reader must refuse dedicated rebuild saves");
             String masqueradingAsLegacy = rebuild.replace("\"schemaVersion\": 7", "\"schemaVersion\": 6");
             assertThrows(IllegalStateException.class, () -> CampaignSaveCodec.decode(masqueradingAsLegacy));
             assertThrows(IllegalStateException.class, () -> CampaignSaveCodec.decodeRebuild(masqueradingAsLegacy));

@@ -63,7 +63,7 @@ public final class CampaignSaveCodec {
         if (!root.has("schemaVersion") || root.get("schemaVersion").getAsInt() != REBUILD_SCHEMA_VERSION
                 || !root.has("saveKind") || !REBUILD_KIND.equals(root.get("saveKind").getAsString()))
             throw new IllegalStateException("Not a TURNBOUND rebuild save; legacy campaign remains untouched");
-        return decode(json);
+        return decodeInternal(json, true);
     }
 
     private static void requireEmptyRebuild(CampaignProgressStore.Snapshot snapshot) {
@@ -82,7 +82,12 @@ public final class CampaignSaveCodec {
         }
     }
 
+    /** Historical campaign reader: never accept a rebuild payload in the old attachment. */
     public static CampaignProgressStore.Snapshot decode(String json) {
+        return decodeInternal(json, false);
+    }
+
+    private static CampaignProgressStore.Snapshot decodeInternal(String json, boolean acceptRebuild) {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         int schema = root.has("schemaVersion") ? root.get("schemaVersion").getAsInt() : 1;
         if (schema != 1 && schema != 4 && schema != 5 && schema != SCHEMA_VERSION
@@ -90,7 +95,7 @@ public final class CampaignSaveCodec {
             throw new IllegalStateException("Unsupported TURNBOUND campaign save schema " + schema);
         }
 
-        if (schema == REBUILD_SCHEMA_VERSION && (!root.has("saveKind")
+        if (schema == REBUILD_SCHEMA_VERSION && (!acceptRebuild || !root.has("saveKind")
                 || !REBUILD_KIND.equals(root.get("saveKind").getAsString())))
             throw new IllegalStateException("Rebuild save marker is missing or invalid");
 
