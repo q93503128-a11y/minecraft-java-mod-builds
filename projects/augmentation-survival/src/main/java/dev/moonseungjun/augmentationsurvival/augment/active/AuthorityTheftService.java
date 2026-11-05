@@ -148,6 +148,7 @@ public final class AuthorityTheftService {
             PENDING_ENTROPY_BURST.clear();
             ACTIVE_ROT_FIELDS.clear();
             WorldBossAuthorityPatternService.reset();
+            WorldBossWildAuthorityService.reset();
         });
     }
 
@@ -517,16 +518,9 @@ public final class AuthorityTheftService {
         particles(player, ParticleTypes.PORTAL, 40, 5.0D);
     }
 
-    /** Sylvaron: root bind, spore pressure and a short nature-fortification pulse. */
+    /** Sylvaron: persistent roots and spores with a nature-fortification pulse. */
     private static void releaseSylvaron(ServerPlayer player) {
-        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 0));
-        for (LivingEntity enemy : hostiles(player, 7.0D)) {
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 3));
-            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 0));
-            enemy.addEffect(new MobEffectInstance(MobEffects.POISON, 80, 0));
-            hurt(player, enemy, scaledDamage(player, 0.45D, 3.0D));
-        }
-        particles(player, ParticleTypes.WITCH, 72, 7.0D);
+        WorldBossWildAuthorityService.castSylvaron(player);
     }
 
     /** Aureon: named Thunder Cage becomes a fixed-area, telegraphed storm enclosure. */
@@ -537,18 +531,9 @@ public final class AuthorityTheftService {
         hurt(player, primary, scaledDamage(player, 0.85D, 7.0D));
     }
 
-    /** Nekhraz: sandstorm impairment followed by a burrow-style strike on the primary target. */
+    /** Nekhraz: obscuring sandstorm followed by a delayed, safe burrow strike. */
     private static void releaseNekhraz(ServerPlayer player) {
-        for (LivingEntity enemy : hostiles(player, 8.0D)) {
-            enemy.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 1));
-        }
-        LivingEntity target = nearestHostile(player, 18.0D);
-        if (target != null && blinkBehind(player, target, 2.5D)) {
-            hurt(player, target, scaledDamage(player, 1.15D, 9.0D));
-            target.push(0.0D, 0.55D, 0.0D);
-        }
-        particles(player, ParticleTypes.WITCH, 76, 8.0D);
+        WorldBossWildAuthorityService.castNekhraz(player);
     }
 
     /** Varkhul: inferred independent Infernal Chains + persistent Flame Prison. */
@@ -560,31 +545,14 @@ public final class AuthorityTheftService {
         WorldBossAuthorityPatternService.castFlamePrison(player, primary);
     }
 
-    /** Morvath: fear pulse plus soul drain converted into player healing. */
+    /** Morvath: fear wave followed by soul drain that only heals on actual HP loss. */
     private static void releaseMorvath(ServerPlayer player) {
-        for (LivingEntity enemy : hostiles(player, 8.0D)) {
-            enemy.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0));
-            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 1));
-            pushAway(player, enemy, 0.75D, 0.15D);
-        }
-        LivingEntity target = nearestHostile(player, 16.0D);
-        if (target != null) {
-            float damage = scaledDamage(player, 0.9D, 7.0D);
-            hurt(player, target, damage);
-            player.heal(Math.min(player.getMaxHealth() * 0.15F, damage * 0.5F));
-        }
-        particles(player, ParticleTypes.SOUL, 86, 8.0D);
+        WorldBossWildAuthorityService.castMorvath(player);
     }
 
-    /** Elyndra: void tether pulls enemies inward before a rift burst launches them. */
+    /** Elyndra: fixed void tether and delayed rift rupture. */
     private static void releaseElyndra(ServerPlayer player) {
-        for (LivingEntity enemy : hostiles(player, 9.0D)) {
-            pullToward(player, enemy, 0.8D);
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 1));
-            hurt(player, enemy, scaledDamage(player, 0.5D, 4.0D));
-            enemy.push(0.0D, 0.45D, 0.0D);
-        }
-        particles(player, ParticleTypes.PORTAL, 110, 9.0D);
+        WorldBossWildAuthorityService.castElyndra(player);
     }
 
     /** Astrael: bind enemies with Primordial Chains before the warned Cataclysm Nova. */
@@ -761,6 +729,7 @@ public final class AuthorityTheftService {
     /** Tick each spawned signature independently; no per-tick whole-world entity scan. */
     private static void tickPending(MinecraftServer server) {
         WorldBossAuthorityPatternService.tick(server);
+        WorldBossWildAuthorityService.tick(server);
         Iterator<PendingPackage> packageIterator = PENDING_PACKAGES.iterator();
         while (packageIterator.hasNext()) {
             PendingPackage pending = packageIterator.next();
@@ -1037,7 +1006,7 @@ public final class AuthorityTheftService {
         }
     }
 
-    private static boolean blinkBehind(ServerPlayer player, LivingEntity target, double distance) {
+    static boolean blinkBehind(ServerPlayer player, LivingEntity target, double distance) {
         if (!(player.level() instanceof ServerLevel level)) return false;
         Vec3 targetLook = target.getLookAngle();
         Vec3 flatTargetLook = new Vec3(targetLook.x, 0.0D, targetLook.z);
@@ -1116,6 +1085,20 @@ public final class AuthorityTheftService {
 
     static void hurt(ServerPlayer player, LivingEntity target, float damage) {
         applyOrDelayAuthorityHit(player, target, damage, false);
+    }
+
+    /** Health recovery is based on health actually lost, not merely requested damage. */
+    static float drainLife(ServerPlayer caster, LivingEntity target, float amount, float fraction) {
+        if (target.isDeadOrDying() || !CompanionAugmentService.isHostileTarget(caster, target)
+                || target.invulnerableTime > 0) return 0.0F;
+        float previous = target.getHealth();
+        boolean hit = CombatProvenanceContext.callAs(CombatProvenance.AUTHORITY,
+                () -> target.hurtServer(caster.level(), caster.damageSources().playerAttack(caster), amount));
+        if (!hit) return 0.0F;
+        float lost = Math.max(0.0F, previous - target.getHealth());
+        float healed = Math.min(2.0F, lost * Math.max(0.0F, fraction));
+        if (healed > 0.0F) caster.heal(healed);
+        return healed;
     }
 
     private static void applyOrDelayAuthorityHit(ServerPlayer player, LivingEntity target,
