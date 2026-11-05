@@ -3,6 +3,8 @@ package dev.moonseungjun.augmentationsurvival.gametest;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.active.ActiveAbilityRouter;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityAttachments;
+import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionEntityState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.lang.reflect.Method;
@@ -16,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.cubemob.Slime;
 
 /** Behavioral proof for permanent domination ownership, alliance and combat targeting. */
 public final class DominationBehaviorGameTests implements CustomTestMethodInvoker {
@@ -67,6 +70,39 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
                     "dominated companion attack did not reduce hostile health");
             GameTestPlayers.succeed(helper);
         });
+    }
+
+
+    @GameTest(maxTicks = 80)
+    public void dominatedSlimeUsesOriginalTouchDamageOnlyAgainstApprovedTarget(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        Slime slime = helper.spawnMob(EntityTypes.SLIME, 3, 2, 3).withNoFreeWill().spawn();
+        slime.setSize(2, true);
+        Mob zombie = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 3).withNoFreeWill().spawn();
+        Mob cow = helper.spawnMob(EntityTypes.COW, 3, 2, 3).withNoFreeWill().spawn();
+        slime.setAttached(CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(player.getUUID()));
+
+        slime.setTarget(zombie);
+        float zombieHp = zombie.getHealth();
+        slime.push(zombie);
+        require(zombie.getHealth() < zombieHp,
+                "dominated medium slime could not use its vanilla contact attack on a hostile mob");
+
+        slime.setTarget(cow);
+        float cowHp = cow.getHealth();
+        slime.push(cow);
+        require(Math.abs(cow.getHealth() - cowHp) < 0.001F,
+                "dominated slime attacked a neutral cow without an owner command");
+
+        zombie.invulnerableTime = 0;
+        slime.setSize(1, true);
+        slime.setTarget(zombie);
+        float smallTargetHp = zombie.getHealth();
+        slime.push(zombie);
+        require(Math.abs(zombie.getHealth() - smallTargetHp) < 0.001F,
+                "small vanilla slime incorrectly gained damaging contact");
+        GameTestPlayers.succeed(helper);
     }
 
     private static void require(boolean condition, String message) {
