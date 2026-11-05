@@ -227,7 +227,7 @@ public final class AuthorityTheftService {
     public static float modifyAuthorityIncomingDamage(ServerPlayer player, DamageSource source, float incoming) {
         if (incoming <= 0.0F) return incoming;
         long now = player.level().getGameTime();
-        float damage = incoming;
+        float damage = WorldBossAuthorityPatternService.modifyShadowVeilDamage(player, incoming);
         if (TIME_TYRANT_AEGIS.getOrDefault(player.getUUID(), 0L) > now
                 && source.typeHolder().is(DamageTypeTags.IS_PROJECTILE)) {
             damage *= 0.30F; // 70% reduction, as in the original Time Tyrant.
@@ -563,76 +563,41 @@ public final class AuthorityTheftService {
         WorldBossAuthorityPatternService.castPrimordialNova(player);
     }
 
-    /** Shadow King: soul bolt, shadow step, raised shadow warriors and darkness nova. */
+    /** Traveling soul bolt, shadow step, warned nova and two summoned warriors. */
     private static void releaseShadowKing(ServerPlayer player) {
-        LivingEntity target = nearestHostile(player, 20.0D);
-        if (target != null) {
-            hurt(player, target, scaledDamage(player, 1.0D, 8.0D));
-            blinkBehind(player, target, 4.0D);
-        }
-        for (LivingEntity enemy : hostiles(player, 7.0D)) {
-            enemy.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0));
-            hurt(player, enemy, scaledDamage(player, 0.5D, 4.0D));
-        }
+        WorldBossAuthorityPatternService.castShadowKing(player, nearestHostile(player, 20.0D));
         spawnAuthorityEchoes(player, 2, 18.0F, 4.0D, 12 * 20);
-        particles(player, ParticleTypes.SOUL, 96, 7.0D);
     }
 
-    /** Dragon Mother: fire breath cone, tail sweep, aerial fireball pressure and brood echoes. */
+    /** Fire breath and tail sweep; three separate aerial impacts follow the marked target. */
     private static void releaseDragonMother(ServerPlayer player) {
         Vec3 look = flatLook(player);
         for (LivingEntity enemy : hostiles(player, 10.0D)) {
             Vec3 offset = enemy.position().subtract(player.position());
             double forward = offset.dot(look);
-            if (forward >= 0.0D && forward <= 10.0D) {
-                double lateral = Math.abs(offset.x * -look.z + offset.z * look.x);
-                if (lateral <= Math.max(1.5D, forward * 0.45D)) {
-                    enemy.igniteForSeconds(5.0F);
-                    hurt(player, enemy, scaledDamage(player, 0.8D, 6.0D));
-                }
+            double lateral = Math.abs(offset.x * -look.z + offset.z * look.x);
+            if (forward >= 0.0D && forward <= 10.0D
+                    && lateral <= Math.max(1.5D, forward * 0.45D)) {
+                enemy.igniteForSeconds(5.0F);
+                hurt(player, enemy, scaledDamage(player, 0.8D, 6.0D));
             }
-            if (player.distanceToSqr(enemy) <= 16.0D) {
-                pushAway(player, enemy, 1.25D, 0.35D);
-            }
+            if (player.distanceToSqr(enemy) <= 16.0D) pushAway(player, enemy, 1.25D, 0.35D);
         }
-        LivingEntity target = nearestHostile(player, 20.0D);
-        if (target != null) {
-            target.igniteForSeconds(7.0F);
-            hurt(player, target, scaledDamage(player, 1.0D, 8.0D));
-        }
+        WorldBossAuthorityPatternService.castDragonFireRain(player, nearestHostile(player, 20.0D));
         spawnAuthorityEchoes(player, 2, 14.0F, 3.5D, 10 * 20);
-        particles(player, ParticleTypes.FLAME, 110, 8.0D);
     }
 
-    /** Storm Griffin: wing gust plus lightning pressure on marked nearby enemies. */
+    /** Wind knockback and three dodgeable, marked-ground lightning strikes. */
     private static void releaseStormGriffin(ServerPlayer player) {
-        for (LivingEntity enemy : hostiles(player, 9.0D)) {
+        for (LivingEntity enemy : hostiles(player, 9.0D))
             pushAway(player, enemy, 1.65D, 0.55D);
-            enemy.addEffect(new MobEffectInstance(MobEffects.GLOWING, 100, 0));
-            hurt(player, enemy, scaledDamage(player, 0.75D, 6.0D));
-        }
-        LivingEntity target = nearestHostile(player, 18.0D);
-        if (target != null) hurt(player, target, scaledDamage(player, 1.2D, 10.0D));
-        particles(player, ParticleTypes.ELECTRIC_SPARK, 120, 9.0D);
+        WorldBossAuthorityPatternService.castStormStrike(player);
     }
 
-    /** Shadow Weaver: binding threads, shadow clones, puppet powers and a short protective veil. */
+    /** Threads, puppet burst, light-sensitive veil and three shadow echoes. */
     private static void releaseShadowWeaver(ServerPlayer player) {
-        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 80, 2));
-        for (LivingEntity enemy : hostiles(player, 8.0D)) {
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 4));
-            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 1));
-            hurt(player, enemy, scaledDamage(player, 0.55D, 4.0D));
-        }
+        WorldBossAuthorityPatternService.castShadowWeaver(player, nearestHostile(player, 18.0D));
         spawnAuthorityEchoes(player, 3, 16.0F, 4.0D, 12 * 20);
-        LivingEntity target = nearestHostile(player, 18.0D);
-        if (target != null) {
-            target.igniteForSeconds(4.0F);
-            hurt(player, target, scaledDamage(player, 1.1D, 9.0D));
-            target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 80, 0));
-        }
-        particles(player, ParticleTypes.PORTAL, 120, 8.0D);
-        particles(player, ParticleTypes.ELECTRIC_SPARK, 70, 8.0D);
     }
 
     /** MCEndgame Arachne: web shot, three-pull hook bind and the 4x3 frontal melee sweep. */
