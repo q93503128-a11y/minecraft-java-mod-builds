@@ -25,3 +25,7 @@ Current verified technical baseline: `3fc091ca58b2f6d8e2bc0c50333379e69e2ae20e`,
 - A separate Linux/Xvfb development-client window check runs at [TURNBOUND Client Boot Smoke](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-client-boot-smoke.yml). It confirms only graphical client boot, not fresh-world playability.
 - Do **not** label the client PLAYTESTED until items 3–7 have been observed in a real client. Do **not** label MULTIPLAYER TESTED until item 8 has been observed with two real clients.
 - Content design discussion can begin on the verified **blank build/server baseline**, but game-play readiness requires these real-client checks.
+
+## Automated client boot evidence (2026-11-05)
+- [GitHub Actions TURNBOUND Client Boot Smoke #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42018332635): **PASS**. Linux Xvfb plus software OpenGL: Minecraft window detected with TURNBOUND mod initialized; artifact includes client startup logs, window tree and screenshot.
+- This does not perform the human fresh-world and two-client checks above. Those remain **NOT TESTED** until someone actually runs them in a clean Minecraft instance.
