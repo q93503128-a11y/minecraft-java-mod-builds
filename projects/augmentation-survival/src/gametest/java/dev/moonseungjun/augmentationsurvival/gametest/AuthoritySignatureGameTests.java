@@ -5,6 +5,7 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityTheftServic
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashSet;
+import java.lang.reflect.Method;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -59,5 +60,10 @@ public final class AuthoritySignatureGameTests implements CustomTestMethodInvoke
 
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
+    }
+
+    @Override
+    public void invokeTestMethod(GameTestHelper helper, Method method) throws ReflectiveOperationException {
+        GameTestPlayers.invoke(this, helper, method);
     }
 }
