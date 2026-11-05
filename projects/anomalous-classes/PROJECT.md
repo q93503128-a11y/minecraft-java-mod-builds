@@ -2,7 +2,19 @@
 
 > 이 게임은 독립 신규 Minecraft Java 서바이벌 RPG 모드이다. `augmentation-survival`, `openworld-rpg` 등 다른 프로젝트의 소스나 설계를 자동으로 상속하지 않는다. 정식 게임명은 아직 미정이다. **외부 모드팩 설계의 Minecraft/loader/Java 조합은 1.21.1/NeoForge 21.1.x/Java 21로 선정했으며 런타임 미검증이다.**
 
-## 2026-11-05 외부 모드팩 구성 **설계 확정** — 최신 상태
+## 2026-11-05 외부 모드팩 **실제 생성·서버 스모크 통과** — 현재 최신 상태
+
+[**외부 모드팩 설치 방법·검증과 미검증의 경계**](./EXTERNAL_MODPACK_INSTALL_AND_VERIFICATION_2026-11-05.md) · [정확한 9+6 릴리스/버전 ID 및 실행 설정](./modpack/pack-source.json) · [CI 성공 #41989226541](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41989226541) · [`.mrpack` 산출물](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41989226541/artifacts/13397253687)
+
+- **현재 확정 실행 기반: Minecraft Java 1.21.1 / NeoForge 21.1.244 / Java 21.** 외부 기능 모드 9개 + 라이브러리 6개 정확한 Modrinth 버전 ID 고정.
+- **외부 JAR 15/15 원격 파일 조회·다운로드·SHA·NeoForge root/embedded modId 및 필요한 종속성 확인 완료.** 공용 저장소에 제3자 원본 JAR 재배포하지 않고 Modrinth 인덱스 `.mrpack` 제작.
+- **전용 서버 최소 부팅 PASS:** NeoForge 설치·서버용 JAR 12개 탐색·첫 월드 `Done`·정상 정지, In Control! 첫 설정 `areas.json` 정상 생성 확인. 자동 CI는 로그를 공개하며, 런타임 클라이언트·실제 사용자 접속·몬스터 전투·월드젠/드롭·FPS/TPS·멀티는 **NOT TESTED**.
+- **우리 이능 직업 게임 본체는 여전히 기획 단계:** 아직 Mod ID·Gradle/Java source·게임 본체 JAR 없음. 외부 모드팩 설치를 **6직업 구현 완료/종결 밸런스 실전 완료**로 혼동하지 않는다.
+- **다음 작업 정본:** [Lv300~301 여섯 직업 범용 전력 산술/필수 게임플레이 실험](./GENERAL_PURPOSE_LEVEL300_301_READINESS_MATRIX_V1.md). [범용 밸런스 정책](./GENERAL_PURPOSE_ENDGAME_BALANCE_POLICY_V3.md)을 우선하며 **자연스러운 직업 상성 유지, 특수 보스별 전용 평준화 금지**.
+- 아래 2026-11-05 **DESIGN LOCK / NOT CO-LOADED** 표현은 당시 기획 단계의 기록이다. 외부 모드팩의 최신 사실은 이 상단 절과 위 검증 결과가 우선. 오래된 서술을 코드 제거·폐기 근거로 사용하지 않는다.
+
+---
+## 2026-11-05 외부 모드팩 구성 **설계 확정** — 과거 설계 단계 기록
 
 [**외부 모드 9종·필수 라이브러리 6종·제외 사유·보스 HP/기믹·런타임 QA 게이트**](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md) · [기계적으로 확인 가능한 설계 모드 목록](./modpack/EXTERNAL_MODS_DESIGN_LOCK_V1.json)
 
