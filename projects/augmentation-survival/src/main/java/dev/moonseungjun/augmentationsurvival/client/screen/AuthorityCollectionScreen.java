@@ -2,6 +2,9 @@ package dev.moonseungjun.augmentationsurvival.client.screen;
 
 import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityPowerCatalog;
 import dev.moonseungjun.augmentationsurvival.network.AuthorityCollectionPayload;
+import dev.moonseungjun.augmentationsurvival.network.AuthorityTogglePayload;
+import dev.moonseungjun.augmentationsurvival.client.ClientAuthorityCooldownState;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,20 +25,29 @@ public final class AuthorityCollectionScreen extends Screen {
     private static final int BORDER = 0xFF586963;
     private static final int HIGHLIGHT = 0xFFBF8961;
 
-    private final Set<String> owned;
-    private final int remainingCooldownTicks;
+    private Set<String> owned;
+    private Set<String> disabled;
+    private List<AuthorityPowerCatalog.Entry> entries;
     private String selectedId;
     private int page;
 
     public AuthorityCollectionScreen(AuthorityCollectionPayload snapshot) {
         super(Component.literal("탈취한 권능"));
         this.owned = Set.copyOf(snapshot.ownedIds());
-        this.remainingCooldownTicks = snapshot.remainingCooldownTicks();
+        this.disabled = Set.copyOf(snapshot.disabledIds());
+        this.entries = AuthorityPowerCatalog.available(snapshot.ownedIds());
         this.selectedId = AuthorityPowerCatalog.ENTRIES.stream()
                 .filter(entry -> owned.contains(entry.id()))
                 .map(AuthorityPowerCatalog.Entry::id)
                 .findFirst()
                 .orElse(AuthorityPowerCatalog.ENTRIES.getFirst().id());
+    }
+
+    /** Apply server-confirmed toggles without discarding scroll or selection. */
+    public void applySnapshot(AuthorityCollectionPayload snapshot) {
+        owned = Set.copyOf(snapshot.ownedIds());
+        disabled = Set.copyOf(snapshot.disabledIds());
+        entries = AuthorityPowerCatalog.available(snapshot.ownedIds());
     }
 
     @Override
@@ -48,18 +60,18 @@ public final class AuthorityCollectionScreen extends Screen {
         g.fill(layout.x() + 2, layout.y() + 2, layout.x() + layout.w() - 2, layout.y() + 4, HIGHLIGHT);
 
         g.text(font, "탈취한 권능", layout.x() + 13, layout.y() + 13, TEXT, false);
-        String total = owned.size() + " / " + AuthorityPowerCatalog.ENTRIES.size() + " 획득";
+        String total = owned.size() + " / " + entries.size() + " 획득";
         g.text(font, total, layout.x() + layout.w() - 13 - font.width(total),
                 layout.y() + 13, OWNED, false);
         g.fill(layout.x() + 11, layout.y() + 32,
                 layout.x() + layout.w() - 11, layout.y() + 33, BORDER);
 
-        int pages = Math.max(1, (AuthorityPowerCatalog.ENTRIES.size() + layout.rows() - 1) / layout.rows());
+        int pages = Math.max(1, (entries.size() + layout.rows() - 1) / layout.rows());
         page = Math.max(0, Math.min(page, pages - 1));
         for (int index = 0; index < layout.rows(); index++) {
             int absolute = page * layout.rows() + index;
-            if (absolute >= AuthorityPowerCatalog.ENTRIES.size()) break;
-            AuthorityPowerCatalog.Entry entry = AuthorityPowerCatalog.ENTRIES.get(absolute);
+            if (absolute >= entries.size()) break;
+            AuthorityPowerCatalog.Entry entry = entries.get(absolute);
             int y = layout.listY() + index * layout.rowHeight();
             boolean acquired = owned.contains(entry.id());
             boolean selected = entry.id().equals(selectedId);
@@ -69,11 +81,11 @@ public final class AuthorityCollectionScreen extends Screen {
             g.fill(layout.listX(), y, layout.listX() + 3, y + layout.rowHeight() - 2,
                     acquired ? OWNED : MISSING);
             String label = (acquired ? "◆ " : "◇ ") + entry.bossName();
-            String state = acquired ? "획득" : "미획득";
-            g.text(font, fit(label, layout.listW() - 67), layout.listX() + 10, y + 6,
+            String state = acquired ? (disabled.contains(entry.id()) ? "해방 꺼짐" : "해방 켜짐") : "미획득";
+            g.text(font, fit(label, layout.listW() - 100), layout.listX() + 10, y + 6,
                     acquired ? TEXT : MUTED, false);
             g.text(font, state, layout.listX() + layout.listW() - 9 - font.width(state),
-                    y + 6, acquired ? OWNED : MISSING, false);
+                    y + 6, acquired ? (disabled.contains(entry.id()) ? MUTED : OWNED) : MISSING, false);
         }
         int navY = layout.listY() + layout.rows() * layout.rowHeight() + 2;
         g.text(font, "‹ 이전", layout.listX() + 5, navY, page > 0 ? TEXT : MISSING, false);
@@ -90,7 +102,8 @@ public final class AuthorityCollectionScreen extends Screen {
                     layout.detailsX() + 7, layout.detailsY() + 23, TEXT, false);
             g.fill(layout.detailsX() + 7, layout.detailsY() + 43,
                     layout.detailsX() + layout.detailsW() - 7, layout.detailsY() + 44, BORDER);
-            String status = owned.contains(selected.id()) ? "획득한 권능" : "아직 탈취하지 못한 권능";
+            String status = !owned.contains(selected.id()) ? "아직 탈취하지 못한 권능"
+                    : disabled.contains(selected.id()) ? "획득 · J 해방에서 제외됨" : "획득 · J 해방에 포함됨";
             g.text(font, status, layout.detailsX() + 7, layout.detailsY() + 53,
                     owned.contains(selected.id()) ? OWNED : MUTED, false);
             List<String> lines = wrap(selected.effect(), layout.detailsW() - 16);
@@ -101,10 +114,9 @@ public final class AuthorityCollectionScreen extends Screen {
         }
         int footerY = layout.y() + layout.h() - 31;
         g.fill(layout.x() + 12, footerY - 6, layout.x() + layout.w() - 12, footerY - 5, BORDER);
-        String cooldown = remainingCooldownTicks > 0
-                ? "해방 대기 " + ((remainingCooldownTicks + 19) / 20) + "초 (조회 시점)"
-                : "해방 준비됨";
-        g.text(font, fit("J: 모든 획득 권능 동시 해방 · 재사용 120초", layout.w() - 24),
+        int remaining = ClientAuthorityCooldownState.remainingSeconds();
+        String cooldown = remaining > 0 ? "해방 대기 " + remaining + "초" : "해방 준비됨";
+        g.text(font, fit("J: 켠 권능 해방 · 목록 우측을 클릭해 켜기/끄기 · 재사용 120초", layout.w() - 24),
                 layout.x() + 13, footerY, TEXT, false);
         g.text(font, fit(cooldown + " · Esc: 닫기", layout.w() - 24),
                 layout.x() + 13, footerY + 12, MUTED, false);
@@ -117,8 +129,14 @@ public final class AuthorityCollectionScreen extends Screen {
                 layout.listW(), layout.rows() * layout.rowHeight())) {
             int index = (int) (event.y() - layout.listY()) / layout.rowHeight();
             int absolute = page * layout.rows() + index;
-            if (index >= 0 && absolute < AuthorityPowerCatalog.ENTRIES.size()) {
-                selectedId = AuthorityPowerCatalog.ENTRIES.get(absolute).id();
+            if (index >= 0 && absolute < entries.size()) {
+                AuthorityPowerCatalog.Entry entry = entries.get(absolute);
+                selectedId = entry.id();
+                if (owned.contains(entry.id())
+                        && event.x() >= layout.listX() + layout.listW() - 96) {
+                    ClientPlayNetworking.send(new AuthorityTogglePayload(
+                            entry.id(), disabled.contains(entry.id())));
+                }
                 return true;
             }
         }
@@ -129,7 +147,7 @@ public final class AuthorityCollectionScreen extends Screen {
         }
         if (inside(event.x(), event.y(), layout.listX() + layout.listW() * 2 / 3, navY,
                 layout.listW() / 3, 18)) {
-            page = Math.min(Math.max(0, (AuthorityPowerCatalog.ENTRIES.size() - 1) / layout.rows()), page + 1);
+            page = Math.min(Math.max(0, (entries.size() - 1) / layout.rows()), page + 1);
             return true;
         }
         return super.mouseClicked(event, doubleClick);

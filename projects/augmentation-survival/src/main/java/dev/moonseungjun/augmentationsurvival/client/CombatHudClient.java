@@ -65,7 +65,19 @@ public final class CombatHudClient {
         int sh = client.getWindow().getGuiScaledHeight();
         boolean mode = ActiveAbilityInputClient.isModeDown();
         if (mode) drawSkills(g, client, sw / 2 - 89, sh - 67);
+        drawAuthorityCooldown(g, client, sw / 2 + 97, sh - (mode ? 67 : 49));
         drawActiveFeedback(g, client, sw, sh, mode);
+    }
+
+    private static void drawAuthorityCooldown(GuiGraphicsExtractor g, Minecraft client, int x, int y) {
+        if (ClientAuthorityCooldownState.ownedCount() <= 0) return;
+        int cd = ClientAuthorityCooldownState.remainingSeconds();
+        boolean disabled = ClientAuthorityCooldownState.enabledCount() <= 0;
+        String label = disabled ? "J 꺼짐" : cd > 0 ? "J " + cd + "초" : "J 준비";
+        int w = Math.max(48, client.font.width(label) + 10);
+        g.fill(x, y, x + w, y + 13, 0xCF142127);
+        g.outline(x, y, w, 13, disabled ? 0xFF5B6368 : cd > 0 ? 0xFFAE8559 : 0xFF85BCB0);
+        g.text(client.font, label, x + 5, y + 3, disabled ? MUTED : TEXT, true);
     }
 
     private static boolean canRender(Minecraft client) {

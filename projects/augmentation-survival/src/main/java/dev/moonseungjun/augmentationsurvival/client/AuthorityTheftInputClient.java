@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.client.screen.AuthorityCollectionScreen;
 import dev.moonseungjun.augmentationsurvival.network.AuthorityCollectionPayload;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import dev.moonseungjun.augmentationsurvival.network.AuthorityReleasePayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -27,10 +28,15 @@ public final class AuthorityTheftInputClient {
     public static void initialize() {
         ClientPlayNetworking.registerGlobalReceiver(AuthorityCollectionPayload.TYPE, (payload, context) -> {
             var client = context.client();
-            if (client.player != null && ClientAugmentProgressState.level(AUTHORITY_THEFT_ID) > 0) {
+            ClientAuthorityCooldownState.apply(payload);
+            if (client.gui.screen() instanceof AuthorityCollectionScreen screen) {
+                screen.applySnapshot(payload);
+            } else if (payload.openScreen() && client.player != null
+                    && ClientAugmentProgressState.level(AUTHORITY_THEFT_ID) > 0) {
                 client.gui.setScreen(new AuthorityCollectionScreen(payload));
             }
         });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ClientAuthorityCooldownState.clear());
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             boolean down = client.player != null && client.gui.screen() == null && AUTHORITY_KEY.isDown();
             boolean unlocked = ClientAugmentProgressState.level(AUTHORITY_THEFT_ID) > 0;
