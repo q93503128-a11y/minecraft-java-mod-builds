@@ -1,0 +1,192 @@
+{
+  "schema": "anomalous-classes-external-modpack-design-v1",
+  "verified_on": "2026-11-05",
+  "project": "projects/anomalous-classes",
+  "decision_status": "DESIGN_LOCKED_ONLY_NOT_TESTED",
+  "environment": {
+    "minecraft": "1.21.1",
+    "loader": "NeoForge",
+    "loader_version": "21.1.x",
+    "java": "21",
+    "runtime": "NOT_TESTED",
+    "precise_loader_patch": "NOT_PINNED",
+    "file_hashes": "NOT_VERIFIED"
+  },
+  "rules": [
+    "No separate RPG level, job, class or skill tree",
+    "No full combat-engine replacement",
+    "No duplicate locator HUD / dynamic lights / recipe browser",
+    "Preserve vanilla XP and separate custom RPG XP",
+    "User's JEI list UI can be hidden individually with Ctrl+O",
+    "No distribution of third-party JARs without redistribution rights"
+  ],
+  "mods": [
+    {
+      "id": "l_enders_cataclysm",
+      "name": "L_Ender's Cataclysm",
+      "release": "3.33",
+      "side": "both",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/lendercataclysm",
+      "requires": [
+        "curios",
+        "lionfish_api"
+      ],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "mowzies_mobs",
+      "name": "Mowzie's Mobs",
+      "release": "1.8.2",
+      "side": "both",
+      "source": "https://modrinth.com/mod/mowzies-mobs/version/1.8.2",
+      "requires": [
+        "geckolib"
+      ],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "born_in_chaos",
+      "name": "Born in Chaos",
+      "release": "1.7.6",
+      "side": "both",
+      "source": "https://modrinth.com/mod/borninchaos/version/1.7.6",
+      "requires": [
+        "geckolib"
+      ],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "mutant_monsters",
+      "name": "Mutant Monsters",
+      "release": "v21.1.1-1.21.1-NeoForge",
+      "side": "both",
+      "source": "https://modrinth.com/mod/mutant-monsters/version/v21.1.1-1.21.1-NeoForge",
+      "requires": [
+        "puzzles_lib"
+      ],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "yungs_better_dungeons",
+      "name": "YUNG's Better Dungeons",
+      "release": "1.21.1-NeoForge-5.1.2",
+      "side": "both",
+      "source": "https://modrinth.com/mod/yungs-better-dungeons/version/1.21.1-NeoForge-5.1.2",
+      "requires": [
+        "yungs_api"
+      ],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "in_control",
+      "name": "In Control!",
+      "release": "1.21-10.3.1",
+      "side": "server",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/in-control/files/all?page=1&version=1.21.1",
+      "requires": [],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "reworked_locator_bar",
+      "name": "Locator Bar (Reworked)",
+      "release": "1.2.2+1.21.1-neoforge",
+      "side": "verify_client_server_requirement",
+      "source": "https://modrinth.com/mod/reworked-locator-bar/version/1.2.2%2B1.21.1-neoforge",
+      "requires": [],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "lambdynamiclights",
+      "name": "LambDynamicLights",
+      "release": "4.8.9+1.21.1",
+      "side": "client",
+      "source": "https://modrinth.com/mod/lambdynamiclights/version/4.8.9%2B1.21.1",
+      "requires": [],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    },
+    {
+      "id": "jei",
+      "name": "Just Enough Items",
+      "release": "19.70.0.469",
+      "side": "client_with_optional_server",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/jei/files/all",
+      "requires": [
+        "mezzconfig"
+      ],
+      "status": "DESIGN_SELECTED_NOT_COLOADED"
+    }
+  ],
+  "libraries": [
+    {
+      "id": "curios",
+      "name": "Curios API",
+      "release": "9.5.1+1.21.1",
+      "source": "https://modrinth.com/mod/curios/version/9.5.1%2B1.21.1",
+      "status": "REQUIRED_BY_SELECTED_MOD_NOT_INSTALLED"
+    },
+    {
+      "id": "lionfish_api",
+      "name": "Lionfish API",
+      "release": "3.1",
+      "source": "https://modrinth.com/mod/lionfish-api/version/3.1",
+      "status": "REQUIRED_BY_SELECTED_MOD_NOT_INSTALLED"
+    },
+    {
+      "id": "geckolib",
+      "name": "GeckoLib",
+      "release": "4.9.3",
+      "source": "https://modrinth.com/mod/geckolib/version/Grwn5rUB",
+      "status": "REQUIRED_BY_SELECTED_MOD_NOT_INSTALLED"
+    },
+    {
+      "id": "puzzles_lib",
+      "name": "Puzzles Lib",
+      "release": "21.1.56",
+      "source": "https://modrinth.com/mod/puzzles-lib/version/21.1.56",
+      "status": "REQUIRED_BY_SELECTED_MOD_NOT_INSTALLED"
+    },
+    {
+      "id": "yungs_api",
+      "name": "YUNG's API",
+      "release": "1.21.1-NeoForge-5.1.9",
+      "source": "https://modrinth.com/mod/yungs-api/version/1.21.1-NeoForge-5.1.9",
+      "status": "REQUIRED_BY_SELECTED_MOD_NOT_INSTALLED"
+    },
+    {
+      "id": "mezzconfig",
+      "name": "MezzConfig",
+      "release": "0.6.10",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/mezzconfig/files/9374030",
+      "status": "REQUIRED_BY_SELECTED_MOD_NOT_INSTALLED"
+    }
+  ],
+  "not_in_baseline": [
+    "Alex's Mobs Continued",
+    "Alex's Caves Continued",
+    "The Graveyard",
+    "When Dungeons Arise",
+    "The Lost Castle",
+    "Epic Fight",
+    "Better Combat",
+    "Iron's Spells 'n Spellbooks",
+    "Ars Nouveau",
+    "Apotheosis",
+    "Improved Mobs",
+    "Silent's Power Scale",
+    "Mob Champions",
+    "PlayerLocatorPlus NeoForged",
+    "RyoamicLights",
+    "Crafting Tweaks",
+    "Balm"
+  ],
+  "runtime_gates": [
+    "verify exact release files and transitive dependencies",
+    "singleplayer and dedicated server boot",
+    "world generation and spawn density",
+    "boss phase and percent-health damage",
+    "domination host-parasite puppet barrier pact swarm interaction",
+    "JEI HUD locator light client settings",
+    "2/8/20-player and FPS/TPS",
+    "redistribution policy and SHA256 checksums"
+  ]
+}
