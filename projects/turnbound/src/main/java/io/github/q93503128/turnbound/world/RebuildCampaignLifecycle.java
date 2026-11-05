@@ -24,6 +24,15 @@ public final class RebuildCampaignLifecycle {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         UUID playerId = player.getUUID();
+        // Never discard an already-loaded UUID's runtime on admission failure.
+        // Only state allocated by this login attempt may be cleaned in its catch branch.
+        boolean allocatedByLogin = false;
+        if (CampaignProgressStore.hasRuntime(playerId)) {
+            Turnbound.LOGGER.error("TURNBOUND rebuild login rejected duplicate live runtime for {}", playerId);
+            player.connection.disconnect(Component.literal(
+                    "TURNBOUND의 이전 접속 상태가 서버에 남아 있습니다. 기존 진행 상태를 보호하기 위해 접속이 제한되었습니다."));
+            return;
+        }
         try {
             Path original = CampaignPersistence.playerFile(player);
             boolean oldFile = Files.exists(original)
@@ -46,20 +55,19 @@ public final class RebuildCampaignLifecycle {
                         "TURNBOUND의 이전 저장 데이터가 발견되었습니다. 이 버전은 새로운 월드에서 시작해야 합니다. 기존 데이터는 변경하지 않았습니다."));
                 return;
             }
-            if (CampaignProgressStore.hasRuntime(playerId)) {
-                throw new IllegalStateException("A player runtime already exists at rebuild login");
-            }
             if (decision == RebuildSaveAdmission.Decision.RESTORE_REBUILD) {
                 CampaignProgressStore.restoreEmptyRebuildGame(playerId, rebuild);
+                allocatedByLogin = true;
             } else {
                 if (!CampaignProgressStore.startEmptyRebuildGame(playerId)) {
                     throw new IllegalStateException("Failed to allocate fresh rebuild runtime");
                 }
+                allocatedByLogin = true;
                 persist(player);
             }
         } catch (RuntimeException exception) {
-            // Never replace malformed or unsupported attached data with a blank profile.
-            CampaignProgressStore.removeRuntime(playerId);
+            // Never replace malformed attached data or an already-loaded UUID with an empty profile.
+            if (allocatedByLogin) CampaignProgressStore.removeRuntime(playerId);
             Turnbound.LOGGER.error("TURNBOUND rebuild profile login rejected for {}", playerId, exception);
             player.connection.disconnect(Component.literal(
                     "TURNBOUND 저장 데이터를 안전하게 불러오지 못했습니다. 기존 데이터는 변경하지 않았습니다."));
