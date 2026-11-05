@@ -102,3 +102,9 @@ Minecraft 장기 서바이벌에서 149종 증강을 계속 얻고 축적하는 
 - 스크린샷 비교는 **화면+각 입력 상태**를 기록하고 결함 이름(OVERFLOW, OVERLAP, CLIPPED_TEXT, MISALIGNED_HITBOX, EMPTY_SPACE, INACCESSIBLE_ACTION)을 붙여 수정 추적. Layout debug bounds 검사는 개발 테스트 화면/로그에서만 사용하고 출시 사용자 UI에는 개발자 문구를 넣지 않는다.
 - 중요한 버튼을 직접 클릭해 상태 변경이 서버에서 확인되는지 검사. 단순 화면 캡처, mockup, 컴파일, CI 성공은 UI 정상 동작의 충분조건이 아님.
 - 특정 크기·언어·목록 상태에서 문제가 하나라도 재현되면 해당 화면은 **UI VISUAL REVIEW: FAIL**. 원인 수정 후 관련 전체 해상도/GUI scale 매트릭스 재검증. 승인 이전의 임시 시안과 부분 스크린샷만으로 통과 처리하지 않는다.
+
+### 지배 특수 몹 AI 관련 실제 코드 후속 상태
+- 2026-11-05 본 문서의 원래 "원인 가설·미수정" 기록 이후, `CompanionAugmentService` 강제 탐색을 Slime/MagmaCube/SulfurCube 공통 부모(`AbstractCubeMob`) 및 Guardian/Elder Guardian에서 피하고, 지배 중 이미 동일한 대상이면 `setTarget` 중복 갱신을 생략하도록 수정함.
+- `DominatedSlimeContactMixin`은 Minecraft 26.2의 `AbstractCubeMob#push`를 대상으로 하되 실제 Slime/MagmaCube만 허용. 소유자 명령 또는 적대 타깃이 실제로 충돌한 경우만 원본 `dealDamage` 호출. 소형 슬라임 크기 1은 무해하게 유지.
+- 회귀 테스트 `dominatedSlimeUsesOriginalTouchDamageOnlyAgainstApprovedTarget` 결과 PASS. CI `41960522979`: Java 컴파일 PASS, GameTest 162/165 PASS; 기존 지배 동료 타격·비행 충돌·돌려보내기 3건 FAIL.
+- 가디언 원래 레이저 실제 충전/타격 및 모드팩 수중 테스트는 **NOT PLAYTESTED**, 해결 완료 아님. 더 자세한 증거는 `DOMINATION_SPECIAL_AI_REPAIR_2026-11-05.md` 확인.
