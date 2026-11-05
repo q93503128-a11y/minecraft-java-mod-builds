@@ -35,16 +35,24 @@ class StarEssenceExchangeTest {
     }
 
     @Test
-    void ownedFourStarSelectorCreatesDuplicateRewardAndPlusLevel() {
+    void ownedFourStarSelectorQueuesExclusiveDuplicateChoiceAndHonorsLevelCap() {
         restore(1_000, Map.of("P01", new CharacterProgression.State(60, 0, 9)));
 
         var first = CampaignProgressStore.exchangeEssenceCharacter(playerId, 4, "P01");
         assertEquals(450, first.essenceSpent());
         assertEquals(0, first.essenceRefunded());
-        assertEquals(1, first.bonusLevelGranted());
-        assertEquals(10, first.bonusLevelAfter());
+        assertEquals(0, first.bonusLevelGranted(), "selector must not automatically grant bonus levels");
+        assertEquals(9, first.bonusLevelAfter());
         assertEquals(550, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(9, CampaignProgressStore.character(playerId, "P01").bonusLevel());
+        assertEquals(1, CampaignProgressStore.snapshot(playerId).profile().pendingDuplicates().get("P01").intValue());
+
+        var chosen = CampaignProgressStore.chooseDuplicateReward(
+                playerId, "P01", CampaignProgressStore.DuplicateRewardChoice.LEVEL);
+        assertEquals(1, chosen.bonusLevelGranted());
         assertEquals(10, CampaignProgressStore.character(playerId, "P01").bonusLevel());
+        assertEquals(550, CampaignProgressStore.currency(playerId, PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(0, CampaignProgressStore.snapshot(playerId).profile().pendingDuplicates().size());
 
         assertThrows(IllegalStateException.class,
                 () -> CampaignProgressStore.exchangeEssenceCharacter(playerId, 4, "P01"));
