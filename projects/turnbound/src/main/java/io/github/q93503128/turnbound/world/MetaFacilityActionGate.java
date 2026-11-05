@@ -10,7 +10,7 @@ public final class MetaFacilityActionGate {
         if (rawCommand == null || rawCommand.isBlank()) return "";
         String action = rawCommand.split("\\|", -1)[0];
         return switch (action) {
-            case "SUMMON1", "SUMMON10", "STARTER", "ESSENCE_CRYSTAL", "ESSENCE_PICK4", "ESSENCE_PICK5" -> "SUMMON";
+            case "SUMMON1", "SUMMON10", "STARTER", "ESSENCE_CRYSTAL", "ESSENCE_PICK4", "ESSENCE_PICK5", "DUP_LEVEL", "DUP_ESSENCE" -> "SUMMON";
             case "BUY", "SELL" -> "MARKET";
             case "ENHANCE" -> "FORGE";
             default -> "";
@@ -21,7 +21,7 @@ public final class MetaFacilityActionGate {
         if (player == null || rawCommand == null || rawCommand.isBlank()) return "";
         String action = rawCommand.split("\\|", -1)[0];
         return switch (action) {
-            case "SUMMON1", "SUMMON10", "STARTER", "ESSENCE_CRYSTAL", "ESSENCE_PICK4", "ESSENCE_PICK5" ->
+            case "SUMMON1", "SUMMON10", "STARTER", "ESSENCE_CRYSTAL", "ESSENCE_PICK4", "ESSENCE_PICK5", "DUP_LEVEL", "DUP_ESSENCE" ->
                     nearDrabyel(player, "SUMMON") || nearLegacy(player, -56.0, 8.0, 22.0)
                             ? "" : "소환은 정령 소환 시설에서만 이용할 수 있습니다.";
             case "BUY", "SELL" ->

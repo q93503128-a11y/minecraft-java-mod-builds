@@ -135,4 +135,22 @@ class GachaServiceTest {
                 12_345, 900, 150, 1, Set.of("P01", "F03"), 64, true, false));
         assertEquals(profile.snapshot(), PlayerProfile.restore(profile.snapshot()).snapshot());
     }
+
+    @Test
+    void duplicateChoiceTokensArePersistentAndConsumedOnlyOnce() {
+        PlayerProfile profile = PlayerProfile.newGame();
+        assertTrue(profile.acquireCharacter("P01").newlyOwned());
+        profile.queueDuplicateChoice("P01");
+        profile.queueDuplicateChoice("P01");
+        PlayerProfile restored = PlayerProfile.restore(profile.snapshot());
+        assertEquals(2, restored.pendingDuplicateCount("P01"));
+        restored.consumeDuplicateChoice("P01", 100, 0, 0);
+        assertEquals(100, restored.currency(PlayerProfile.Currency.STAR_ESSENCE));
+        assertEquals(1, restored.pendingDuplicateCount("P01"));
+        restored.consumeDuplicateChoice("P01", 0, 1, 1);
+        assertEquals(0, restored.pendingDuplicateCount("P01"));
+        assertThrows(IllegalStateException.class, () -> restored.consumeDuplicateChoice("P01", 100, 0, 1));
+        assertEquals(100, restored.currency(PlayerProfile.Currency.STAR_ESSENCE));
+    }
+
 }

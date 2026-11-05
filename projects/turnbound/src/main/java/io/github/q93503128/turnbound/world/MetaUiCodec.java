@@ -24,6 +24,8 @@ public final class MetaUiCodec {
                 .append(row.equippedCharacterId()).append('|').append(row.mainType()).append('|').append(row.mainValue()).append('|')
                 .append(row.subType()).append('|').append(row.subValue()).append('|').append(row.mainAt20()).append('|').append(row.subAt20()).append('|')
                 .append(row.salePrice()).append('|').append(row.sellable()?1:0).append('\n');
+        for (var row : snapshot.pendingDuplicates()) out.append("DP|").append(row.characterId()).append('|')
+                .append(row.nativeStars()).append('|').append(row.count()).append('|').append(row.bonusLevel()).append('\n');
         for (var row : snapshot.pendingEquipment()) out.append("IR|").append(row.instanceId()).append('|').append(row.itemId()).append('|')
                 .append(safe(row.name())).append('|').append(row.tier()).append('|').append(row.slot()).append('|').append(row.salePrice()).append('|')
                 .append(row.claimable()?1:0).append('|').append(row.immediateSellable()?1:0).append('\n');

@@ -3,6 +3,8 @@ package io.github.q93503128.turnbound.progression;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 /** Server-authoritative v0.4 player economy/collection state. */
@@ -22,7 +24,7 @@ public final class PlayerProfile {
             long gold, long summonCrystal, long starEssence, long awakeningCore,
             Set<String> ownedCharacters, int fiveStarPity,
             boolean starterArchiveUnlocked, boolean starterArchiveUsed,
-            List<SummonHistory> summonHistory, List<List<String>> partyPresets) {
+            List<SummonHistory> summonHistory, List<List<String>> partyPresets, Map<String, Integer> pendingDuplicates) {
         public Snapshot(long gold, long summonCrystal, long starEssence, long awakeningCore,
                         Set<String> ownedCharacters, int fiveStarPity,
                         boolean starterArchiveUnlocked, boolean starterArchiveUsed) {
@@ -35,6 +37,13 @@ public final class PlayerProfile {
                         List<SummonHistory> summonHistory) {
             this(gold, summonCrystal, starEssence, awakeningCore, ownedCharacters, fiveStarPity,
                     starterArchiveUnlocked, starterArchiveUsed, summonHistory, emptyPresets());
+        }
+        public Snapshot(long gold, long summonCrystal, long starEssence, long awakeningCore,
+                        Set<String> ownedCharacters, int fiveStarPity,
+                        boolean starterArchiveUnlocked, boolean starterArchiveUsed,
+                        List<SummonHistory> summonHistory, List<List<String>> partyPresets) {
+            this(gold, summonCrystal, starEssence, awakeningCore, ownedCharacters, fiveStarPity,
+                    starterArchiveUnlocked, starterArchiveUsed, summonHistory, partyPresets, Map.of());
         }
         public Snapshot {
             if (gold < 0 || summonCrystal < 0 || starEssence < 0 || awakeningCore < 0) throw new IllegalArgumentException("Negative TURNBOUND currency");
@@ -49,12 +58,18 @@ public final class PlayerProfile {
                 summonHistory = summonHistory.subList(summonHistory.size() - GachaCatalog.HISTORY_LIMIT, summonHistory.size());
             }
             partyPresets = normalizePresets(partyPresets, ownedCharacters);
+            pendingDuplicates = Map.copyOf(pendingDuplicates == null ? Map.of() : pendingDuplicates);
+            for (var entry : pendingDuplicates.entrySet()) {
+                if (!ownedCharacters.contains(entry.getKey()) || entry.getValue() == null || entry.getValue() <= 0)
+                    throw new IllegalArgumentException("Invalid pending duplicate choice");
+            }
         }
     }
 
     private long gold, summonCrystal, starEssence, awakeningCore;
     private final Set<String> ownedCharacters = new LinkedHashSet<>();
     private final List<SummonHistory> summonHistory = new ArrayList<>();
+    private final Map<String, Integer> pendingDuplicates = new LinkedHashMap<>();
     private final List<List<String>> partyPresets = new ArrayList<>(emptyPresets());
     private int fiveStarPity;
     private boolean starterArchiveUnlocked, starterArchiveUsed;
@@ -68,11 +83,12 @@ public final class PlayerProfile {
         profile.ownedCharacters.addAll(snapshot.ownedCharacters()); profile.fiveStarPity=snapshot.fiveStarPity();
         profile.starterArchiveUnlocked=snapshot.starterArchiveUnlocked(); profile.starterArchiveUsed=snapshot.starterArchiveUsed();
         profile.summonHistory.addAll(snapshot.summonHistory());
+        profile.pendingDuplicates.putAll(snapshot.pendingDuplicates());
         profile.partyPresets.clear(); profile.partyPresets.addAll(snapshot.partyPresets());
         return profile;
     }
 
-    public Snapshot snapshot() { return new Snapshot(gold,summonCrystal,starEssence,awakeningCore,ownedCharacters,fiveStarPity,starterArchiveUnlocked,starterArchiveUsed,summonHistory,partyPresets); }
+    public Snapshot snapshot() { return new Snapshot(gold,summonCrystal,starEssence,awakeningCore,ownedCharacters,fiveStarPity,starterArchiveUnlocked,starterArchiveUsed,summonHistory,partyPresets,pendingDuplicates); }
 
     public long currency(Currency currency) { return switch (currency) { case GOLD->gold; case SUMMON_CRYSTAL->summonCrystal; case STAR_ESSENCE->starEssence; case AWAKENING_CORE->awakeningCore; }; }
     public void grant(Currency currency,long amount) {
@@ -90,6 +106,32 @@ public final class PlayerProfile {
         if(ownedCharacters.add(characterId)) return new Acquisition(characterId,stars,true,0);
         return new Acquisition(characterId,stars,false,0);
     }
+    public Map<String, Integer> pendingDuplicates() { return Map.copyOf(pendingDuplicates); }
+    public int pendingDuplicateCount(String characterId) { return pendingDuplicates.getOrDefault(characterId, 0); }
+    public void queueDuplicateChoice(String characterId) {
+        if (!owns(characterId)) throw new IllegalArgumentException("Duplicate choice requires an owned character");
+        pendingDuplicates.merge(characterId, 1, Math::addExact);
+    }
+    public void consumeDuplicateChoice(String characterId, int essence, int bonusGranted, int bonusAfter) {
+        int count = pendingDuplicateCount(characterId);
+        if (count <= 0) throw new IllegalStateException("No pending duplicate reward for character");
+        if (essence < 0 || bonusGranted < 0 || bonusGranted > 1 || (essence > 0) == (bonusGranted > 0))
+            throw new IllegalArgumentException("Choose exactly one duplicate reward");
+        if (essence > 0) grant(Currency.STAR_ESSENCE, essence);
+        if (count == 1) pendingDuplicates.remove(characterId);
+        else pendingDuplicates.put(characterId, count - 1);
+        // Reconcile the most recent unresolved receipt while it is still in the bounded history.
+        for (int i = summonHistory.size() - 1; i >= 0; i--) {
+            SummonHistory row = summonHistory.get(i);
+            if (!row.newlyOwned() && row.characterId().equals(characterId)
+                    && row.starEssenceGranted() == 0 && row.bonusLevelGranted() == 0) {
+                summonHistory.set(i, new SummonHistory(row.characterId(), row.nativeStars(), false,
+                        essence, row.pityAfter(), bonusGranted, bonusAfter));
+                break;
+            }
+        }
+    }
+
     public int fiveStarPity(){return fiveStarPity;} public List<SummonHistory> summonHistory(){return List.copyOf(summonHistory);}
     void recordSummonRarity(int nativeStars){if(nativeStars==5) fiveStarPity=0; else fiveStarPity=Math.min(GachaCatalog.HARD_PITY-1,fiveStarPity+1);}
     void recordSummonHistory(Acquisition acquisition) {

@@ -203,4 +203,22 @@ class CampaignSaveCodecTest {
         assertThrows(IllegalStateException.class,
                 () -> CampaignSaveCodec.decode(json.replace("\"schemaVersion\": 6", "\"schemaVersion\": 999")));
     }
+
+    @Test
+    void pendingDuplicateChoicesSurvivePersistenceAndGoldMigration() {
+        Set<String> owned = Set.of("P01");
+        PlayerProfile.Snapshot profile = new PlayerProfile.Snapshot(
+                7_000, 0, 0, 0, owned, 0, false, false,
+                List.of(), List.of(List.of(), List.of(), List.of()), Map.of("P01", 3));
+        CampaignProgressStore.Snapshot source = new CampaignProgressStore.Snapshot(
+                profile,
+                Map.of("P01", new CharacterProgression.State(25, 0, 2)),
+                Map.of("P01", CharacterGrowthRules.initial("P01")),
+                EquipmentInventory.Snapshot.empty(), QuestProgress.Snapshot.empty(),
+                Set.of(), Set.of(), Set.of());
+        CampaignProgressStore.Snapshot decoded = CampaignSaveCodec.decode(CampaignSaveCodec.encode(source));
+        assertEquals(3, decoded.profile().pendingDuplicates().get("P01").intValue());
+        assertEquals(source, decoded);
+    }
+
 }

@@ -229,7 +229,7 @@ public final class GachaPresentationScreen extends Screen {
     static String duplicateResult(Pull pull) {
         if (pull.bonusLevelGranted() > 0) return "+레벨 +" + pull.bonusLevelGranted() + " · 누적 +" + pull.bonusLevelAfter();
         if (pull.essence() > 0) return "별의 정수 +" + pull.essence();
-        return "보유 중";
+        return "중복 보상 선택 대기";
     }
 
     private void playStageEntry(GachaPresentationFlow.Stage stage) {

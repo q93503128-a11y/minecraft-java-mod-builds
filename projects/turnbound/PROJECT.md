@@ -109,9 +109,24 @@ Confirmed Standard Archive baseline restored on 2026-09-26:
 
 Do not revert this table to a ★3~★5-only pool without a new explicit user decision.
 
-## Duplicate +Level canon — 2026-09-29
+## Current duplicate reward selection canon — 2026-11-05
 
-Latest explicit user decision:
+Later explicit user decision supersedes the automatic duplicate-reward rules recorded below.
+
+- Every duplicate copy offers one exclusive choice: **+Level +1** for that character, OR its native-rarity **Star Essence**.
+- Never grant both for the same copy.
+- The choice is server-authoritative and remains pending across save/reload/reconnect until claimed.
+- Multiple duplicate copies generate independent choices, including within a 10-pull.
+- The user selects an available reward at the summon facility; +Level cannot exceed +10.
+- Copies received after a character is already +10 grant only Star Essence, without a redundant choice.
+- Base XP still caps at Lv60; bonus-level reaches +10 and effective Lv70. HP/ATK/DEF extend through the existing curve, SPD does not scale.
+- Lv60 gates use the base XP level. This choice does not decide nativeStar/currentStar/promotion/★6/Awakening.
+- The ★4/★5 permanent Essence selector produces an unresolved duplicate reward choice rather than automatically increasing +Level.
+- PvE double-KO (no surviving party allies and no surviving enemies) counts as party defeat; it must not produce victory rewards.
+
+## Historical duplicate +Level canon — 2026-09-29 (superseded for reward choice)
+
+Previous decision, retained only for historical traceability:
 - a duplicate character keeps its existing rarity-based Star Essence reward
 - the same duplicate also grants that character **+Level +1**
 - +Level is independent from battle/quest XP and the base Lv60 cap

@@ -115,4 +115,17 @@ final class BattleEngineTest {
         }
         assertNotEquals(BattleOutcome.RUNNING,state.outcome());
     }
+
+    @Test
+    void doubleKnockoutDoesNotGrantPveVictory() {
+        CombatantState ally = new CombatantState("ally", unit("ALLY", 100, 10, 10, 100), CombatantSide.ALLY, 0);
+        CombatantState enemy = new CombatantState("enemy", unit("ENEMY", 100, 10, 10, 100), CombatantSide.ENEMY, 1);
+        BattleState state = new BattleState(List.of(ally, enemy));
+        ally.forceDown();
+        enemy.forceDown();
+        assertEquals(BattleOutcome.ENEMY_VICTORY, state.outcome());
+        ally.revive(0.30);
+        assertEquals(BattleOutcome.ALLY_VICTORY, state.outcome());
+    }
+
 }

@@ -13,9 +13,10 @@ import java.util.Comparator;
 
 /** Physical summon archive. Pull presentation is a separate full-screen 2D cinematic. */
 final class FacilitySummonScreen extends FacilityScreen {
-    private enum Page { SUMMON, EXCHANGE }
+    private enum Page { SUMMON, EXCHANGE, DUPLICATES }
 
     private Page page = Page.SUMMON;
+    private int duplicatePage;
 
     FacilitySummonScreen() {
         super("정령의 기록", 0xFFC794FF, 500, 270, 376, 232);
@@ -34,7 +35,7 @@ final class FacilitySummonScreen extends FacilityScreen {
     @Override
     protected void buildFacility() {
         int tabGap = 5;
-        int tabW = Math.min(92, Math.max(70, (width - 34 - tabGap) / 4));
+        int tabW = Math.min(92, Math.max(70, (width - 34 - tabGap * 2) / 3));
         int tabY = 13;
         int tabX = 16;
         var summonTab = new BattleHudButton(tabX, tabY, tabW, 18,
@@ -45,9 +46,17 @@ final class FacilitySummonScreen extends FacilityScreen {
                 Component.literal("별의 정수"), 0xFFC794FF, ignored -> switchPage(Page.EXCHANGE));
         exchangeTab.active = page != Page.EXCHANGE;
         addRenderableWidget(exchangeTab);
+        int pendingCount = ClientMetaState.snapshot().pendingDuplicates().stream()
+                .mapToInt(ClientMetaState.PendingDuplicateRow::count).sum();
+        var duplicateTab = new BattleHudButton(tabX + (tabW + tabGap) * 2, tabY, tabW, 18,
+                Component.literal("중복 보상" + (pendingCount > 0 ? " " + pendingCount : "")), 0xFFFFC857,
+                ignored -> switchPage(Page.DUPLICATES));
+        duplicateTab.active = page != Page.DUPLICATES;
+        addRenderableWidget(duplicateTab);
 
         if (page == Page.SUMMON) buildSummonControls();
-        else buildExchangeControls();
+        else if (page == Page.EXCHANGE) buildExchangeControls();
+        else buildDuplicateControls();
     }
 
     private void buildSummonControls() {
@@ -113,12 +122,71 @@ final class FacilitySummonScreen extends FacilityScreen {
         }
     }
 
+    private void buildDuplicateControls() {
+        var state = ClientMetaState.snapshot();
+        var pending = state.pendingDuplicates();
+        int rowCount = Math.max(1, (height - 110) / 38);
+        int pages = Math.max(1, (pending.size() + rowCount - 1) / rowCount);
+        duplicatePage = Math.min(duplicatePage, pages - 1);
+        int widthAvailable = Math.min(520, width - 30);
+        int panelX = (width - widthAvailable) / 2;
+        int buttonGap = 6;
+        int twoButtonsW = widthAvailable - 24;
+        int choiceW = (twoButtonsW - buttonGap) / 2;
+        for (int index = duplicatePage * rowCount; index < Math.min(pending.size(), (duplicatePage + 1) * rowCount); index++) {
+            var row = pending.get(index);
+            int y = 92 + (index - duplicatePage * rowCount) * 38;
+            var level = new BattleHudButton(panelX + 12, y, choiceW, 18,
+                    Component.literal("+레벨 1 (현재 +" + row.bonusLevel() + ")"), 0xFF6DC6FF,
+                    ignored -> send("DUP_LEVEL|" + row.characterId()));
+            level.active = row.bonusLevel() < GrowthRulesV1.duplicateBonusMax();
+            addRenderableWidget(level);
+            var essence = new BattleHudButton(panelX + 12 + choiceW + buttonGap, y, choiceW, 18,
+                    Component.literal("별의 정수 +" + GachaCatalog.duplicateEssence(row.nativeStars())), 0xFFC794FF,
+                    ignored -> send("DUP_ESSENCE|" + row.characterId()));
+            addRenderableWidget(essence);
+        }
+        if (pages > 1) {
+            int y = height - 28;
+            var previous = new BattleHudButton(panelX + 12, y, 78, 18,
+                    Component.literal("이전"), 0xFFC794FF, ignored -> { duplicatePage--; refreshSnapshot(); });
+            previous.active = duplicatePage > 0;
+            addRenderableWidget(previous);
+            var next = new BattleHudButton(panelX + widthAvailable - 90, y, 78, 18,
+                    Component.literal("다음"), 0xFFC794FF, ignored -> { duplicatePage++; refreshSnapshot(); });
+            next.active = duplicatePage + 1 < pages;
+            addRenderableWidget(next);
+        }
+    }
+
+    private void renderDuplicatePage(GuiGraphicsExtractor g) {
+        int panelW = Math.min(520, width - 30);
+        int x = (width - panelW) / 2;
+        g.text(font, Component.literal("중복 동료 보상"), x + 12, 49, GachaPresentationScreen.TEXT, true);
+        g.text(font, Component.literal("각 중복마다 +레벨 또는 별의 정수 중 하나를 선택합니다."),
+                x + 12, 64, GachaPresentationScreen.SECONDARY, false);
+        var pending = ClientMetaState.snapshot().pendingDuplicates();
+        int rows = Math.max(1, (height - 110) / 38);
+        if (pending.isEmpty()) {
+            g.text(font, Component.literal("선택할 중복 보상이 없습니다."), x + 12, 92,
+                    GachaPresentationScreen.SECONDARY, false);
+        }
+        for (int i = duplicatePage * rows; i < Math.min(pending.size(), (duplicatePage + 1) * rows); i++) {
+            var row = pending.get(i);
+            String name = GachaPresentationScreen.characterName(row.characterId());
+            String label = "★" + row.nativeStars() + " " + name + " · 선택 " + row.count() + "회";
+            g.text(font, Component.literal(UiTextLayout.fit(label, panelW - 24)),
+                    x + 12, 81 + (i - duplicatePage * rows) * 38, GachaPresentationScreen.TEXT, false);
+        }
+    }
+
     @Override
     protected void renderFacility(@NotNull GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, width, height, 0xFF050815);
         SummonLayerRenderer.fullScreen(g, SummonAssets.BG_ARCHIVE, width, height);
         if (page == Page.SUMMON) renderSummonPage(g);
-        else renderExchangePage(g);
+        else if (page == Page.EXCHANGE) renderExchangePage(g);
+        else renderDuplicatePage(g);
     }
 
     private void renderSummonPage(GuiGraphicsExtractor g) {

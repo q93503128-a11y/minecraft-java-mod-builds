@@ -102,6 +102,10 @@ public final class CampaignSaveCodec {
             history.add(item);
         }
         out.add("summonHistory", history);
+        JsonObject pendingChoices = new JsonObject();
+        profile.pendingDuplicates().entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> pendingChoices.addProperty(entry.getKey(), entry.getValue()));
+        out.add("pendingDuplicateChoices", pendingChoices);
         JsonArray presets = new JsonArray();
         for (List<String> preset : profile.partyPresets()) presets.add(strings(preset));
         out.add("partyPresets", presets);
@@ -143,10 +147,20 @@ public final class CampaignSaveCodec {
             if (presets.size() >= PlayerProfile.PARTY_PRESET_COUNT) break;
         }
         while (presets.size() < PlayerProfile.PARTY_PRESET_COUNT) presets.add(List.of());
+        Map<String, Integer> pendingChoices = new LinkedHashMap<>();
+        if (raw.has("pendingDuplicateChoices")) {
+            JsonObject pending = raw.getAsJsonObject("pendingDuplicateChoices");
+            for (var entry : pending.entrySet()) {
+                if (!known.contains(entry.getKey())) throw new IllegalArgumentException("Unknown pending duplicate character " + entry.getKey());
+                int count = entry.getValue().getAsInt();
+                if (count <= 0) throw new IllegalArgumentException("Invalid pending duplicate count");
+                pendingChoices.put(entry.getKey(), count);
+            }
+        }
         return new ProfileDecode(new PlayerProfile.Snapshot(
                 optionalLong(raw, "gold", 5_000), optionalLong(raw, "summonCrystal", 0), optionalLong(raw, "starEssence", 0),
                 optionalLong(raw, "awakeningCore", 0), known, optionalInt(raw, "fiveStarPity", 0),
-                optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false), history, presets), orphaned);
+                optionalBoolean(raw, "starterArchiveUnlocked", false), optionalBoolean(raw, "starterArchiveUsed", false), history, presets, pendingChoices), orphaned);
     }
 
     private static List<String> decodeParty(JsonArray raw, PlayerProfile.Snapshot profile, Set<String> orphaned) {
@@ -311,7 +325,7 @@ public final class CampaignSaveCodec {
         PlayerProfile.Snapshot migrated = new PlayerProfile.Snapshot(
                 Math.addExact(p.gold(), refund), p.summonCrystal(), p.starEssence(), p.awakeningCore(),
                 p.ownedCharacters(), p.fiveStarPity(), p.starterArchiveUnlocked(), p.starterArchiveUsed(),
-                p.summonHistory(), p.partyPresets());
+                p.summonHistory(), p.partyPresets(), p.pendingDuplicates());
         return new ProfileDecode(migrated, profile.orphanedCharacters());
     }
 

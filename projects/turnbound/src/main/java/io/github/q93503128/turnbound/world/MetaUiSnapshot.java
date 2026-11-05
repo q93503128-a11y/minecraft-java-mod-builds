@@ -10,7 +10,7 @@ public record MetaUiSnapshot(
         List<CharacterRow> characters, List<EquipmentRow> equipment,
         List<EndgameRow> endgame, List<ChallengeRow> challenges, List<RegionQuestRow> regionQuests,
         List<ArchiveRow> archiveHistory, List<ShopRow> shopItems, List<CodexRow> codex,
-        List<PendingEquipmentRow> pendingEquipment) {
+        List<PendingEquipmentRow> pendingEquipment, List<PendingDuplicateRow> pendingDuplicates) {
     public MetaUiSnapshot(
             long gold, long crystal, long starEssence, long awakeningCore, int partyCp, boolean riftUnlocked,
             int fiveStarPity, boolean starterArchiveAvailable,
@@ -20,7 +20,20 @@ public record MetaUiSnapshot(
             List<ArchiveRow> archiveHistory, List<ShopRow> shopItems, List<CodexRow> codex) {
         this(gold, crystal, starEssence, awakeningCore, partyCp, riftUnlocked, fiveStarPity, starterArchiveAvailable,
                 activeParty, partyPresets, characters, equipment, endgame, challenges, regionQuests,
-                archiveHistory, shopItems, codex, List.of());
+                archiveHistory, shopItems, codex, List.of(), List.of());
+    }
+
+    public MetaUiSnapshot(
+            long gold, long crystal, long starEssence, long awakeningCore, int partyCp, boolean riftUnlocked,
+            int fiveStarPity, boolean starterArchiveAvailable,
+            List<String> activeParty, List<List<String>> partyPresets,
+            List<CharacterRow> characters, List<EquipmentRow> equipment,
+            List<EndgameRow> endgame, List<ChallengeRow> challenges, List<RegionQuestRow> regionQuests,
+            List<ArchiveRow> archiveHistory, List<ShopRow> shopItems, List<CodexRow> codex,
+            List<PendingEquipmentRow> pendingEquipment) {
+        this(gold, crystal, starEssence, awakeningCore, partyCp, riftUnlocked, fiveStarPity, starterArchiveAvailable,
+                activeParty, partyPresets, characters, equipment, endgame, challenges, regionQuests,
+                archiveHistory, shopItems, codex, pendingEquipment, List.of());
     }
 
     public MetaUiSnapshot {
@@ -35,6 +48,7 @@ public record MetaUiSnapshot(
         shopItems = List.copyOf(shopItems);
         codex = List.copyOf(codex);
         pendingEquipment = List.copyOf(pendingEquipment == null ? List.of() : pendingEquipment);
+        pendingDuplicates = List.copyOf(pendingDuplicates == null ? List.of() : pendingDuplicates);
     }
 
     public record CharacterRow(
@@ -54,6 +68,8 @@ public record MetaUiSnapshot(
             String instanceId, String itemId, String name, String tier, String slot, int enhancement,
             String equippedCharacterId, String mainType, double mainValue, String subType, double subValue,
             double mainAt20, double subAt20, int salePrice, boolean sellable) {}
+
+    public record PendingDuplicateRow(String characterId, int nativeStars, int count, int bonusLevel) {}
 
     public record PendingEquipmentRow(
             String instanceId, String itemId, String name, String tier, String slot,

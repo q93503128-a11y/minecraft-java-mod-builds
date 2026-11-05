@@ -49,23 +49,9 @@ public final class BattleEngine {
         if (!actorId.equals(state.currentActorId())) throw new IllegalStateException("Not current actor: " + actorId);
         CombatantState actor = state.combatant(actorId);
         SkillDefinition skill = actor.definition().skill(skillId);
-        if (actor.downed() || actor.cooldown(skillId) > 0) throw new IllegalStateException("Actor unavailable or skill on cooldown");
-        if (actor.hasStatus("action_disable")) throw new IllegalStateException("Actor is action-disabled");
-        if (actor.hasStatus("silence") && !skill.isBasic()) throw new IllegalStateException("Actor is silenced");
-
+        BattleActionValidator.validateActor(actor, skill);
         List<CombatantState> targets = resolveTargets(actor, skill, requestedTargetIds);
-        if (skill.hasRule("SELF_FORBIDDEN") && targets.contains(actor)) throw new IllegalArgumentException("Skill cannot target self");
-        if (skill.hasRule("OTHER_ALLY_IF_AVAILABLE") && targets.contains(actor)
-                && state.living(actor.side()).stream().anyMatch(unit -> unit != actor && !unit.definition().summon())) {
-            throw new IllegalArgumentException("Skill requires another ally while one is available");
-        }
-        if (skill.hasRule("P08_FURY_60") && actor.counter("fury") < 60) {
-            throw new IllegalStateException("Not enough Fury");
-        }
-        if (actor.definition().id().equals("P07") && skill.id().equals("p07_summon_toto")
-                && livingP07Summon(actor) == null) {
-            throw new IllegalStateException("Contract partner is unavailable");
-        }
+        BattleActionValidator.validateTargets(state, actor, skill, targets);
 
         reactions.clear();
         reactionExecutionsThisAction = 0;

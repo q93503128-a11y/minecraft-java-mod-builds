@@ -98,6 +98,8 @@ public final class BattleState {
     }
 
     public BattleOutcome outcome() {
+        // A completely downed party cannot claim a PvE victory, even when the last enemy falls too.
+        if (living(CombatantSide.ALLY).isEmpty() && living(CombatantSide.ENEMY).isEmpty()) return BattleOutcome.ENEMY_VICTORY;
         if (living(CombatantSide.ENEMY).isEmpty()) return BattleOutcome.ALLY_VICTORY;
         if (living(CombatantSide.ALLY).isEmpty()) {
             boolean pendingReturn = combatants.stream().anyMatch(c -> c.side() == CombatantSide.ALLY && c.downed()

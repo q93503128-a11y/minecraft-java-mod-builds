@@ -368,10 +368,10 @@ public final class CampaignProgressStore {
         if (acquisition.newlyOwned()) {
             throw new IllegalStateException("Essence selector exposed an unowned character without a story unlock");
         }
-        DuplicateBonus bonus = grantDuplicateBonus(progress, characterId);
+        progress.profile.queueDuplicateChoice(characterId);
         progress.dirty = true;
         return new EssenceExchangeResult("CHARACTER", characterId, nativeStars, cost,
-                acquisition.starEssenceGranted(), 0, bonus.granted(), bonus.after());
+                acquisition.starEssenceGranted(), 0, 0, duplicateState.bonusLevel());
     }
 
     public static List<String> essenceChoiceCharacters(UUID playerId, int nativeStars) {
@@ -674,19 +674,47 @@ public final class CampaignProgressStore {
             }
 
             initializeCharacter(progress, pull.characterId());
-            DuplicateBonus bonus = grantDuplicateBonus(progress, pull.characterId());
+            CharacterProgression.State current = requireCharacter(progress, pull.characterId());
             int essence = 0;
-            if (bonus.granted() == 0) {
+            if (current.bonusLevel() >= GrowthRulesV1.duplicateBonusMax()) {
+                // Level is already capped; Essence is the only valid result.
                 essence = GachaCatalog.duplicateEssence(pull.nativeStars());
                 progress.profile.grant(PlayerProfile.Currency.STAR_ESSENCE, essence);
+            } else {
+                progress.profile.queueDuplicateChoice(pull.characterId());
             }
             resolved.add(new GachaService.PullResult(
                     pull.characterId(), pull.nativeStars(), false, essence, pull.pityAfter(),
-                    bonus.granted(), bonus.after()));
+                    0, current.bonusLevel()));
         }
         GachaService.BatchResult enriched = new GachaService.BatchResult(resolved, result.crystalSpent());
         progress.profile.annotateRecentSummonBonuses(enriched.pulls());
         return enriched;
+    }
+
+    public enum DuplicateRewardChoice { LEVEL, ESSENCE }
+    public record DuplicateChoiceResult(String characterId, DuplicateRewardChoice choice,
+                                         int essenceGranted, int bonusLevelGranted, int bonusLevelAfter) {}
+
+    public static DuplicateChoiceResult chooseDuplicateReward(UUID playerId, String characterId,
+                                                               DuplicateRewardChoice choice) {
+        PlayerProgress progress = player(playerId);
+        if (choice == null || characterId == null || progress.profile.pendingDuplicateCount(characterId) <= 0)
+            throw new IllegalStateException("No pending duplicate reward for character");
+        CharacterProgression.State before = requireCharacter(progress, characterId);
+        if (choice == DuplicateRewardChoice.LEVEL) {
+            if (before.bonusLevel() >= GrowthRulesV1.duplicateBonusMax())
+                throw new IllegalStateException("Duplicate bonus level is already at maximum");
+            CharacterProgression.State after = before.grantDuplicateBonus();
+            progress.profile.consumeDuplicateChoice(characterId, 0, 1, after.bonusLevel());
+            progress.characters.put(characterId, after);
+            progress.dirty = true;
+            return new DuplicateChoiceResult(characterId, choice, 0, 1, after.bonusLevel());
+        }
+        int essence = GachaCatalog.duplicateEssence(GachaCatalog.nativeStars(characterId));
+        progress.profile.consumeDuplicateChoice(characterId, essence, 0, before.bonusLevel());
+        progress.dirty = true;
+        return new DuplicateChoiceResult(characterId, choice, essence, 0, before.bonusLevel());
     }
 
     private record DuplicateBonus(int granted, int after) {}

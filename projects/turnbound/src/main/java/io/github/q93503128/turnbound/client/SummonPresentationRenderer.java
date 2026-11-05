@@ -259,7 +259,7 @@ final class SummonPresentationRenderer {
 
             String reward = pull.newlyOwned() ? "신규 영입"
                     : pull.bonusLevelGranted() > 0 ? "+레벨 " + pull.bonusLevelGranted()
-                    : pull.essence() > 0 ? "정수 +" + pull.essence() : "레벨 MAX";
+                    : pull.essence() > 0 ? "정수 +" + pull.essence() : "보상 선택 대기";
             reward = UiTextLayout.fit(reward, Math.max(1, frameWidth - 8));
             screen.text(graphics, reward, x + (cardWidth - screen.textWidth(reward)) / 2, nameY + 35,
                     statusColor, false);

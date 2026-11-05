@@ -999,7 +999,7 @@ public final class MetaMenuScreen extends Screen {
                 int index=s.archiveHistory().size()-1-(archiveLogScroll+row);
                 if(index<0)break;
                 var r=s.archiveHistory().get(index);
-                String duplicate=r.bonusLevelGranted()>0?" · +레벨 +1 (+"+r.bonusLevelAfter()+")":" · +레벨 MAX · 별의 정수 +"+r.essenceGranted();
+                String duplicate=r.bonusLevelGranted()>0?" · +레벨 +1 (+"+r.bonusLevelAfter()+")":r.essenceGranted()>0?" · 별의 정수 +"+r.essenceGranted():" · 중복 보상 선택 대기";
                 String text="★"+r.nativeStars()+" · "+r.name()+(r.newlyOwned()?" · 신규":duplicate);
                 g.text(font,Component.literal(UiTextLayout.fit(text,panelWidth-32)),left+16,yy,r.newlyOwned()?GREEN:SECONDARY,false);
                 yy+=18;
