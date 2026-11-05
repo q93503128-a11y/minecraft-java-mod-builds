@@ -129,6 +129,17 @@ def check_declared_dependencies(resolved: list[dict]):
             if d.get("dependency_type") != "required":
                 continue
             if d.get("project_id") and d["project_id"] not in project_ids:
+                # Upstream metadata of LambDynamicLights 4.8.9 lists Fabric API
+                # even for the NeoForge release. The maintainer's NeoForge
+                # installation instructions explicitly say it works by itself:
+                # https://github.com/LambdAurora/LambDynamicLights
+                # Do not install Fabric API into NeoForge. JAR metadata is
+                # still checked in download_and_validate/check_mod_ids.
+                if rec["id"] == "lambdynamiclights" and d["project_id"] == "P7dR8mSH":
+                    print("UPSTREAM METADATA EXCEPTION (NeoForge): "
+                          "LambDynamicLights lists Fabric API; ignoring "
+                          "cross-loader Modrinth dependency only.", flush=True)
+                    continue
                 deps.append({"project_id": d["project_id"], "version_id": d.get("version_id")})
         if deps:
             missing[rec["id"]] = deps
