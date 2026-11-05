@@ -1,5 +1,11 @@
 # 《이능 직업 서바이벌》 — 6직업 공통 플레이 루프·레벨/보상·외부 모드 난이도 통합 v1
 
+## 2026-11-05 **D04 사용자 확정** — Lv300 약 30시간, 사냥 전용 노가다 금지
+
+**확정:** 한 직업을 일반적으로 육성해 **Lv300 종결급**에 도달하는 목표는 **탐험·채굴·제작/건축·생존·정상 전투·직업 고유 활동을 자연스럽게 섞은 약 30시간의 유효 플레이**다. 30시간 사냥만 하는 플레이를 강제하지 않으며, 접속 시간 30시간에 자동으로 레벨이 지급되는 시스템도 아니다. 직업별 XP/레벨/SP 독립·1SP/레벨·바닐라 XP 별개·무한 레벨 유지. 상세 XP 보상 이벤트·악용 방지/직업 간 편차·Lv25/100/200 시간 **시험 후보**는 [30시간 혼합 서바이벌 성장 템포 기획](./RPG_XP_30H_MIXED_SURVIVAL_PACING_V1.md) 참고. 정확한 수치/XP 곡선은 PLAYTEST-PENDING이며 이전의 '플레이시간 미정/사냥 중심 추천' 문구가 있으면 이 확정이 우선한다.
+
+
+
 > 작성 2026-11-05 · **DESIGN PROPOSAL / NO NEW PLAYER NUMBERS APPROVED / NO CODE, NO IN-GAME TEST.** 현재 `main`의 [PROJECT.md](./PROJECT.md), [GAME_DESIGN.md](./GAME_DESIGN.md), [기획 통합 감사](./DESIGN_CONSOLIDATION_AUDIT_2026-11-05.md), [외부 몬스터·보스·던전 조사](./EXTERNAL_MOD_ECOSYSTEM_RESEARCH_2026-11-05.md), [QOL 및 독립 RPG 성장축 제한](./QOL_MODS_AND_EXTERNAL_SCOPE_POLICY_2026-11-05.md) 기준. 여섯 상세 설계 직업만 이번 공통 게임 루프의 검수 대상으로 삼되 **중력술사·공명술사는 8직업 목록에 유지하고 상세 설계 보류**, 삭제/재기획하지 않는다. 정식 Minecraft 버전/loader·모드팩은 미정(현재 1.21.1 NeoForge 유력 후보).
 
 ## 0. 현행 사용자 결정 vs 이번 신규 제안
