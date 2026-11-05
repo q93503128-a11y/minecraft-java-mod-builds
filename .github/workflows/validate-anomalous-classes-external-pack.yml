@@ -1,0 +1,105 @@
+name: Validate Anomalous Classes External Modpack
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/anomalous-classes/modpack/**'
+      - '.github/workflows/validate-anomalous-classes-external-pack.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: anomalous-classes-external-pack
+  cancel-in-progress: false
+
+jobs:
+  resolve-download-and-server-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: projects/anomalous-classes/modpack
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify manifests and runtime
+        run: |
+          java -version
+          python --version
+          python -m py_compile tools/build_external_pack.py
+          python tools/build_external_pack.py --offline-check
+      - name: Resolve exact releases and validate upstream JARs
+        run: |
+          python tools/build_external_pack.py \
+            --download-jars \
+            --server-dir "${RUNNER_TEMP}/anomalous-pack-server" \
+            --output "${RUNNER_TEMP}/anomalous-pack-out" 2>&1 | tee "${RUNNER_TEMP}/modpack-validation.log"
+      - name: Verify NeoForge official installer and install server
+        run: |
+          set -euo pipefail
+          VERSION=21.1.244
+          BASE="https://maven.neoforged.net/releases/net/neoforged/neoforge/${VERSION}"
+          INSTALLER="neoforge-${VERSION}-installer.jar"
+          curl -fL --retry 3 "${BASE}/${INSTALLER}" -o "${RUNNER_TEMP}/${INSTALLER}"
+          curl -fL --retry 3 "${BASE}/${INSTALLER}.sha256" -o "${RUNNER_TEMP}/installer.sha256"
+          ACTUAL="$(sha256sum "${RUNNER_TEMP}/${INSTALLER}" | awk '{print $1}')"
+          EXPECTED="$(head -c 64 "${RUNNER_TEMP}/installer.sha256")"
+          test "${ACTUAL}" = "${EXPECTED}"
+          cd "${RUNNER_TEMP}/anomalous-pack-server"
+          java -jar "${RUNNER_TEMP}/${INSTALLER}" --installServer 2>&1 | tee "${RUNNER_TEMP}/neoforge-install.log"
+          test -f run.sh
+          printf 'eula=true\n' > eula.txt
+      - name: Start and shut down dedicated server
+        run: |
+          python - <<'PY'
+          import pathlib, re, subprocess, time, os, sys
+          work = pathlib.Path(os.environ["RUNNER_TEMP"]) / "anomalous-pack-server"
+          logfile = pathlib.Path(os.environ["RUNNER_TEMP"]) / "neoforge-server-smoke.log"
+          success = False
+          with logfile.open("w", encoding="utf-8") as f:
+              proc = subprocess.Popen(["bash", "run.sh", "nogui"], cwd=work,
+                                      stdin=subprocess.PIPE, stdout=f, stderr=subprocess.STDOUT)
+              deadline = time.monotonic() + 250
+              while time.monotonic() < deadline:
+                  if proc.poll() is not None:
+                      break
+                  log = logfile.read_text(encoding="utf-8", errors="replace")
+                  if re.search(r"\bDone \([0-9.]+s\)! For help", log):
+                      success = True
+                      break
+                  time.sleep(2)
+              if proc.poll() is None:
+                  proc.stdin.write(b"stop\n")
+                  proc.stdin.flush()
+                  try:
+                      proc.wait(timeout=45)
+                  except subprocess.TimeoutExpired:
+                      proc.kill()
+                      proc.wait(timeout=20)
+          lines = logfile.read_text(encoding="utf-8", errors="replace").splitlines()
+          print("\n".join(lines[-140:]))
+          print(f"DEDICATED SERVER BOOT VERIFIED: {success}")
+          if not success:
+              sys.exit(1)
+          PY
+      - name: Export only manifests and logs (no third-party JARs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anomalous-classes-external-pack-validation-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/anomalous-pack-out/
+            ${{ runner.temp }}/modpack-validation.log
+            ${{ runner.temp }}/neoforge-install.log
+            ${{ runner.temp }}/neoforge-server-smoke.log
+          if-no-files-found: warn
+          retention-days: 14
