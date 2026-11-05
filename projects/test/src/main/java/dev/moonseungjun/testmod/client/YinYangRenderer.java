@@ -108,11 +108,12 @@ public final class YinYangRenderer {
             quad(out,world,rotate(tr,r*(float)Math.cos(a),r*(float)Math.sin(a),-d),rotate(tr,r*(float)Math.cos(b),r*(float)Math.sin(b),-d),
                     rotate(tr,r*(float)Math.cos(b),r*(float)Math.sin(b),d),rotate(tr,r*(float)Math.cos(a),r*(float)Math.sin(a),d),GOLD);
         }
-        dot(out,world,turn.last(),0,r*.5F,r*.102F,-d-.012F,INK); dot(out,world,turn.last(),0,-r*.5F,r*.102F,-d-.012F,PEARL); ring(out,world,r*.96F,r,GOLD);
+        dot(out,world,turn.last(),0,r*.5F,r*.102F,-d-.012F,INK); dot(out,world,turn.last(),0,-r*.5F,r*.102F,-d-.012F,PEARL);
+        ring(out,world,turn.last(),r*.96F,r,GOLD);
     }
     private static float sCurve(float y,float r) { return y>=0?(float)Math.sqrt(Math.max(0,y*(r-y))):-(float)Math.sqrt(Math.max(0,-y*(r+y))); }
     private static Vec3 rotate(PoseStack.Pose p,float x,float y,float z) { var m=p.pose(); return new Vec3(m.m00()*x+m.m10()*y+m.m20()*z,m.m01()*x+m.m11()*y+m.m21()*z,m.m02()*x+m.m12()*y+m.m22()*z); }
-    private static void dot(VertexConsumer out,PoseStack.Pose world,PoseStack turn,float x,float y,float r,float z,int color) {
+    private static void dot(VertexConsumer out,PoseStack.Pose world,PoseStack.Pose turn,float x,float y,float r,float z,int color) {
         for(int i=0;i<32;i++){float a=(float)(Math.PI*2*i/32),b=(float)(Math.PI*2*(i+1)/32);quad(out,world,rotate(turn,x,y,z),rotate(turn,x+r*(float)Math.cos(a),y+r*(float)Math.sin(a),z),rotate(turn,x+r*(float)Math.cos(b),y+r*(float)Math.sin(b),z),rotate(turn,x,y,z-.01F),color);}
     }
     private static void sphere(VertexConsumer out,PoseStack.Pose p,float r,int color) {
@@ -124,7 +125,10 @@ public final class YinYangRenderer {
         for(int i=0;i<=48;i++){float a=(float)(Math.PI*2*i/48+phase);Vec3 v=rotate(tr.last(),r*(float)Math.cos(a),r*(float)Math.sin(a),0);if(last!=null){Vec3 mid=last.add(v).scale(.5),t=v.subtract(last).normalize().scale(.018);quad(out,pose,mid.subtract(t),mid.add(t),v.add(t),v.subtract(t),color);}last=v;}
     }
     private static void ring(VertexConsumer out,PoseStack.Pose p,float inner,float outer,int color) {
-        for(int i=0;i<64;i++){float a=(float)(Math.PI*2*i/64),b=(float)(Math.PI*2*(i+1)/64);quad(out,p,new Vec3(inner*Math.cos(a),inner*Math.sin(a),0),new Vec3(outer*Math.cos(a),outer*Math.sin(a),0),new Vec3(outer*Math.cos(b),outer*Math.sin(b),0),new Vec3(inner*Math.cos(b),inner*Math.sin(b),0),color);}
+        ring(out,p,null,inner,outer,color);
+    }
+    private static void ring(VertexConsumer out,PoseStack.Pose p,PoseStack.Pose turn,float inner,float outer,int color) {
+        for(int i=0;i<64;i++){float a=(float)(Math.PI*2*i/64),b=(float)(Math.PI*2*(i+1)/64);Vec3 v0=new Vec3(inner*Math.cos(a),inner*Math.sin(a),0),v1=new Vec3(outer*Math.cos(a),outer*Math.sin(a),0),v2=new Vec3(outer*Math.cos(b),outer*Math.sin(b),0),v3=new Vec3(inner*Math.cos(b),inner*Math.sin(b),0);quad(out,p,turn==null?v0:rotate(turn,(float)v0.x,(float)v0.y,(float)v0.z),turn==null?v1:rotate(turn,(float)v1.x,(float)v1.y,(float)v1.z),turn==null?v2:rotate(turn,(float)v2.x,(float)v2.y,(float)v2.z),turn==null?v3:rotate(turn,(float)v3.x,(float)v3.y,(float)v3.z),color);}
     }
     private static void sphereAt(VertexConsumer out,PoseStack.Pose p,float x,float y,float z,float r,int color) {
         for(int i=0;i<8;i++){float a=(float)(Math.PI*2*i/8),b=(float)(Math.PI*2*(i+1)/8);quad(out,p,new Vec3(x,y,z+r),new Vec3(x+Math.cos(a)*r,y+Math.sin(a)*r,z),new Vec3(x+Math.cos(b)*r,y+Math.sin(b)*r,z),new Vec3(x,y,z-r),color);}
