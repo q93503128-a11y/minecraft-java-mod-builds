@@ -118,7 +118,7 @@ def inspect_jar_metadata(z: zipfile.ZipFile, rec_id: str, *, depth: int = 0) -> 
         for jar in jars:
             nested_name = jar.get("path", "")
             if not (isinstance(nested_name, str) and
-                    nested_name.startswith("META-INF/jarjar/") and
+                    nested_name.startswith(("META-INF/jarjar/", "META-INF/jars/")) and
                     nested_name.endswith(".jar") and
                     ".." not in nested_name.split("/") and nested_name in names):
                 raise ValueError(f"{rec_id}: missing or unsafe Jar-in-Jar resource {nested_name!r}")
