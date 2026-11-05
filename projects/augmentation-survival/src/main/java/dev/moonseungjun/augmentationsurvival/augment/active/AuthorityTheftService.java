@@ -71,6 +71,10 @@ public final class AuthorityTheftService {
     private static final Map<UUID, Long> TIME_TYRANT_AEGIS = new HashMap<>();
     private static final List<PendingPackage> PENDING_PACKAGES = new ArrayList<>();
     private static final List<PendingSonic> PENDING_SONIC = new ArrayList<>();
+    /** Real damage requests delayed until their target's normal hurt immunity expires. */
+    private static final List<PendingAuthorityHit> PENDING_AUTHORITY_HITS = new ArrayList<>();
+    private static final int MAX_DELAYED_AUTHORITY_HITS = 512;
+    private static final int PENDING_HIT_EXPIRY_TICKS = 8 * 20;
     // Temporary source-faithful signatures. All three are server-owned and never saved.
     private static final Map<UUID, Long> CHRONOS_STONE_STANCE = new HashMap<>();
     private static final Map<UUID, Long> PHANTOM_PHASE_WINDOW = new HashMap<>();
@@ -138,6 +142,7 @@ public final class AuthorityTheftService {
             PHANTOM_PHASE_DODGE_COOLDOWN.clear();
             PENDING_PACKAGES.clear();
             PENDING_SONIC.clear();
+            PENDING_AUTHORITY_HITS.clear();
             PENDING_TIME_DISTORTION.clear();
             ACTIVE_ROT_FIELDS.clear();
         });
@@ -792,13 +797,42 @@ public final class AuthorityTheftService {
             }
             level.playSound(null, caster.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM,
                     SoundSource.PLAYERS, 1.0F, 1.0F);
-            CombatProvenanceContext.runAs(CombatProvenance.AUTHORITY,
-                    () -> target.hurtServer(level, caster.damageSources().source(SONIC_DAMAGE, null, caster), 10.0F));
+            applyOrDelayAuthorityHit(caster, target, 10.0F, true);
             Vec3 push = target.position().subtract(caster.position());
             if (push.lengthSqr() > 1.0E-6D) {
                 Vec3 pushNorm = push.normalize();
                 target.push(pushNorm.x * 2.5D, 0.5D, pushNorm.z * 2.5D);
             }
+        }
+        // Honor vanilla/boss hit invulnerability without dropping legitimate chained authority hits.
+        Iterator<PendingAuthorityHit> delayedHits = PENDING_AUTHORITY_HITS.iterator();
+        while (delayedHits.hasNext()) {
+            PendingAuthorityHit hit = delayedHits.next();
+            ServerPlayer caster = server.getPlayerList().getPlayer(hit.ownerId);
+            if (caster == null || caster.isDeadOrDying()
+                    || !caster.level().dimension().equals(hit.dimension)) {
+                delayedHits.remove();
+                continue;
+            }
+            long now = caster.level().getGameTime();
+            if (now > hit.expiryTick) {
+                delayedHits.remove();
+                continue;
+            }
+            if (now < hit.nextTryTick) continue;
+            Entity entity = caster.level().getEntity(hit.targetId);
+            if (!(entity instanceof LivingEntity target)
+                    || !CompanionAugmentService.isHostileTarget(caster, target)) {
+                delayedHits.remove();
+                continue;
+            }
+            if (target.invulnerableTime > 0) {
+                hit.nextTryTick = now + Math.max(1, target.invulnerableTime);
+                continue;
+            }
+            // Target's ordinary damage pipeline still decides armor, shields, resists, and cancellation.
+            applyAuthorityHitNow(caster, target, hit.damage, hit.sonic);
+            delayedHits.remove();
         }
         // Delayed Time Guardian hit: exact 15-tick boss recovery and fixed-area telegraph.
         Iterator<PendingTimeDistortion> distortions = PENDING_TIME_DISTORTION.iterator();
@@ -876,6 +910,28 @@ public final class AuthorityTheftService {
             }
             return false;
         });
+    }
+
+    /** Target-specific queued damage; retry times never bypass the normal hurt boundary. */
+    private static final class PendingAuthorityHit {
+        private final UUID ownerId;
+        private final ResourceKey<Level> dimension;
+        private final UUID targetId;
+        private final float damage;
+        private final boolean sonic;
+        private final long expiryTick;
+        private long nextTryTick;
+
+        private PendingAuthorityHit(UUID ownerId, ResourceKey<Level> dimension, UUID targetId,
+                                    float damage, boolean sonic, long expiryTick, long nextTryTick) {
+            this.ownerId = ownerId;
+            this.dimension = dimension;
+            this.targetId = targetId;
+            this.damage = damage;
+            this.sonic = sonic;
+            this.expiryTick = expiryTick;
+            this.nextTryTick = nextTryTick;
+        }
     }
 
     private record PendingTimeDistortion(
@@ -1025,11 +1081,30 @@ public final class AuthorityTheftService {
     }
 
     private static void hurt(ServerPlayer player, LivingEntity target, float damage) {
-        if (!(player.level() instanceof ServerLevel level) || damage <= 0.0F) return;
-        CombatProvenanceContext.runAs(
-                CombatProvenance.AUTHORITY,
-                () -> target.hurtServer(level, player.damageSources().playerAttack(player), damage)
-        );
+        applyOrDelayAuthorityHit(player, target, damage, false);
+    }
+
+    private static void applyOrDelayAuthorityHit(ServerPlayer player, LivingEntity target,
+                                                  float damage, boolean sonic) {
+        if (damage <= 0.0F || target.isDeadOrDying()
+                || !CompanionAugmentService.isHostileTarget(player, target)) return;
+        if (target.invulnerableTime > 0 && PENDING_AUTHORITY_HITS.size() < MAX_DELAYED_AUTHORITY_HITS) {
+            long now = player.level().getGameTime();
+            PENDING_AUTHORITY_HITS.add(new PendingAuthorityHit(player.getUUID(), player.level().dimension(),
+                    target.getUUID(), damage, sonic, now + PENDING_HIT_EXPIRY_TICKS,
+                    now + Math.max(1, target.invulnerableTime)));
+            return;
+        }
+        applyAuthorityHitNow(player, target, damage, sonic);
+    }
+
+    private static void applyAuthorityHitNow(ServerPlayer player, LivingEntity target,
+                                              float damage, boolean sonic) {
+        ServerLevel level = player.level();
+        CombatProvenanceContext.runAs(CombatProvenance.AUTHORITY, () -> target.hurtServer(level,
+                sonic ? player.damageSources().source(SONIC_DAMAGE, null, player)
+                        : player.damageSources().playerAttack(player),
+                damage));
     }
 
     private static float scaledDamage(ServerPlayer player, double multiplier, double floor) {
