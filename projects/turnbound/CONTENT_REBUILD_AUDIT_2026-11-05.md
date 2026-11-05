@@ -78,3 +78,11 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Removed `@JourneyMapPlugin` from the old world marker plugin so JourneyMap cannot auto-initialize the obsolete Drehmal/Aster marker layer. Future custom-map integration requires an explicitly reviewed new plugin.
 - Disconnected `ClientAudioPlayback::onTick` from the client event bus. No retired soundtrack will replace vanilla Minecraft music in an empty development world.
 - The client audio payload codec/handler remains registered for future server-authoritative battle audio, but there is no active authored battle/music producer in the blank-content runtime.
+
+## Unreachable legacy Java archive boundary — 2026-11-05
+- By examining compiled TURNBOUND build #1039 Java class references and overriding the since-changed production client/server entrypoint roots, 79 retired class source files were selected as **candidate unreferenced** by the running foundation. This historical bytecode graph is a conservative selection aid, not independent proof of runtime safety.
+- The 79 source files were moved unchanged to `src/test/java` with package identities retained, keeping historical JUnit compatibility but removing them from the distributable JAR. Counts: old client code 55; world 19; content 2; session 1; command 1; old sound registry class 1.
+- Includes the obsolete Drehmal installer and migration UI, prior summon/meta/quest screens, JourneyMap marker plugin, old field-enemy subscriber, direct world-edit builders and old mod commands.
+- Test-only legacy source still requires client compile dependencies; Gradle now supplies JourneyMap API and UI Lib on `testCompileOnly`. Production dependencies are unchanged.
+- The production JAR CI checks absence of representative retired classes and continued presence of `TurnScheduler`, `TurnboundAttachments`, `BattleNetwork`, and the mod entrypoint.
+- A successful build establishes source-reference consistency only. The remaining old `world` / `presentation` / `content` Java dependencies require further structural extraction, and Minecraft client/multiplayer behavior is not yet playtested.

@@ -35,6 +35,9 @@ dependencies {
     // UI Lib is client-only. Server/common classes must never import it.
     compileOnly "maven.modrinth:AOEDs9Al:${uilib_version_id}"
     compileOnly "info.journeymap:journeymap-api-neoforge:26.2-2.0.0"
+    // Retired v0.4 source fixtures are compiled only by JUnit and still require their original client APIs.
+    testCompileOnly "maven.modrinth:AOEDs9Al:${uilib_version_id}"
+    testCompileOnly "info.journeymap:journeymap-api-neoforge:26.2-2.0.0"
     journeyMapPack "maven.modrinth:lfHFW1mp:${journeymap_version_id}"
     implementation "maven.modrinth:8BmcQJ2H:${geckolib_version_id}"
 

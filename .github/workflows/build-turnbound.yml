@@ -79,6 +79,15 @@ jobs:
           fi
           grep -qx 'META-INF/neoforge.mods.toml' jar-contents.txt
           grep -qx 'io/github/q93503128/turnbound/Turnbound.class' jar-contents.txt
+          grep -qx 'io/github/q93503128/turnbound/combat/TurnScheduler.class' jar-contents.txt
+          grep -qx 'io/github/q93503128/turnbound/world/TurnboundAttachments.class' jar-contents.txt
+          grep -qx 'io/github/q93503128/turnbound/session/BattleNetwork.class' jar-contents.txt
+          for obsolete in             'io/github/q93503128/turnbound/client/DrehmalAutoInstaller.class'             'io/github/q93503128/turnbound/client/MetaMenuScreen.class'             'io/github/q93503128/turnbound/client/TurnboundJourneyMapPlugin.class'             'io/github/q93503128/turnbound/world/FieldEncounterPresentationBridge.class'             'io/github/q93503128/turnbound/command/TurnboundCommands.class'             'io/github/q93503128/turnbound/TurnboundSounds.class'; do
+            if grep -qx "$obsolete" jar-contents.txt; then
+              echo "Retired Java class packaged: $obsolete"
+              exit 1
+            fi
+          done
           grep -qx 'data/turnbound/rebuild/foundation_v1.json' jar-contents.txt
           if grep -Eq '^io/github/q93503128/turnbound/.*\.png$' jar-contents.txt; then
             echo "Unexpected embedded PNG in compiled class output"
