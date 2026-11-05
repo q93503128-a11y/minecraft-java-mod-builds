@@ -33,6 +33,7 @@ jobs:
         run: |
           echo 'IN PROGRESS' > build.status
           python3 tools/verify_rebuild_boundary.py --sources
+          python3 tools/audit_rebuild_java_dependencies.py
           set -o pipefail
           gradle clean test build oneClickPack --stacktrace 2>&1 | tee gradle-build.log
           echo 'PASS' > build.status
