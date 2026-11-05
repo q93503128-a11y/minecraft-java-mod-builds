@@ -130,6 +130,11 @@ def inspect_jar_metadata(z: zipfile.ZipFile, rec_id: str, *, depth: int = 0) -> 
                 details["metadata"] = nested_name + "!" + details["metadata"]
                 found.append(details)
     if not found:
+        # NeoForge Jar-in-Jar also bundles plain Java libraries; they may
+        # legitimately contain classes but no mod metadata or mod ID.
+        # This is permitted ONLY inside an already verified outer JAR.
+        if depth > 0:
+            return {"mod_ids": [], "required": [], "metadata": "non-mod Java library"}
         raise ValueError(f"{rec_id}: no NeoForge mods.toml or declared Jar-in-Jar metadata")
     ids = [mod for details in found for mod in details["mod_ids"]]
     required = sorted({dep for details in found for dep in details["required"]})
