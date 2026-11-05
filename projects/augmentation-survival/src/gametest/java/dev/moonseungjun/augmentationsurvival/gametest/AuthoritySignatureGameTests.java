@@ -102,6 +102,45 @@ public final class AuthoritySignatureGameTests implements CustomTestMethodInvoke
             GameTestPlayers.succeed(helper);
         });
     }
+
+    @GameTest(maxTicks = 75)
+    public void sylvaronRootsBindEnemiesWithoutPoisoningNeutralAnimals(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
+        player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
+        LivingEntity zombie = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 2).withNoFreeWill().spawn();
+        LivingEntity cow = helper.spawnMob(EntityTypes.COW, 3, 2, 3).withNoFreeWill().spawn();
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(AuthorityTheftService.AUTHORITY_THEFT_ID, 1)
+                .withStolenAuthority("worldbosses_sylvaron"));
+        require(AuthorityTheftService.tryRelease(player), "Sylvaron authority failed to start");
+        GameTestPlayers.runAfterDelay(helper, 38, () -> {
+            require(zombie.hasEffect(MobEffects.POISON), "Sylvaron spore field did not poison its hostile target");
+            require(!cow.hasEffect(MobEffects.POISON), "Sylvaron poisoned a neutral animal");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest(maxTicks = 85)
+    public void morvathFearSoulDrainPreservesNeutralAnimalHealth(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        BlockPos anchor = helper.absolutePos(new BlockPos(1, 2, 1));
+        player.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
+        LivingEntity zombie = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 2).withNoFreeWill().spawn();
+        LivingEntity cow = helper.spawnMob(EntityTypes.COW, 3, 2, 4).withNoFreeWill().spawn();
+        float cowStart = cow.getHealth();
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(AuthorityTheftService.AUTHORITY_THEFT_ID, 1)
+                .withStolenAuthority("worldbosses_morvath"));
+        require(AuthorityTheftService.tryRelease(player), "Morvath authority failed to start");
+        GameTestPlayers.runAfterDelay(helper, 55, () -> {
+            require(zombie.hasEffect(MobEffects.WEAKNESS), "Fear Pulse did not weaken an enemy");
+            require(Math.abs(cow.getHealth() - cowStart) < 0.001F,
+                    "Morvath soul drain harmed a neutral animal");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }
