@@ -37,3 +37,23 @@ Do not implement this proposal until the game's actual world style, party/collec
 
 ## Next collaborative decision
 Choose the **world topology and party fantasy** before creating names, kits, rarity tables, dungeon lists or story beats. Once decided, document a small vertical slice with measurable art/UX, mechanical, save and multiplayer acceptance, and then delegate suitable visual-production tasks to Codex.
+
+## User-proposed direction — 2026-11-06 (new conversation, NOT final detailed GDD)
+The user proposed integrating RPG content into the normal generated Minecraft overworld, **combining survival and turn-based combat**, retiring mandatory story progression in favor of **NPC/job-board contracts**, and removing **all vanilla creatures**. Treat this as the currently preferred design direction; detailed gameplay architecture, exceptions and content still require agreement.
+
+### Working design interpretation
+- Preserve vanilla terrain generation, mining, crafting, building, farming and exploration. Add authored RPG villages, ruins, dungeons and points of interest without assuming an old imported world.
+- Replace vanilla **living mobs** with authored TURNBOUND wildlife, enemies, boss encounters and civilian service NPCs. Do not accidentally remove players, nonliving utility entities, drops, projectiles, displays or vehicles. The stated "all vanilla creatures" potentially includes passive livestock, fish, villagers, golems, Nether/End mobs and bosses; audit the full list before implementation, rather than assuming only hostile spawns.
+- Do not disable mobs into an empty ecosystem before replacement animals, food sources, leather/wool equivalents, progression drops, trading/service NPCs, access to Nether/End materials and vanilla recipes have viable alternatives.
+- World and other players continue running in real time; only participants are managed by a turn-battle session with server-authoritative protection from outside damage, arena/world interaction exploits and cross-player contention. No global tick pause.
+- Avoid a mandatory linear story. Use purposeful contract categories (hunt, gather, exploration, boss bounty) and meaningful resource or equipment rewards; avoid repetitive menu chores and disconnected currencies.
+- Align one coherent economy: survival crafting must help exploration/turn combat; battle drops/contracts must help survival progress. Preserve the user choice of what to do next.
+- PvE player role/party identity is **not settled**: player fights directly vs player collects/recruits a party vs hybrid. This determines how survival HP, held weapons, armor, buffs, companions and turn-based skills interact. Do not implement these as an assumed default.
+- Avoid legacy authored character/boss/quest resurrection from dormant source. Reusable engine code is allowed only after separating old hardcoding.
+
+### Relevant external reference
+- Pixelmon has a server-side `allow-vanilla-mobs` option defaulting false, and uses overworld encounters with turn-based battles. Its docs explicitly note that some spawner/egg/dragon paths differ from the ordinary spawn toggle, underscoring the need to audit non-natural spawning separately. Reference for product-level behavior, NOT a drop-in NeoForge 26.2 implementation: https://pixelmonmod.com/wiki/Config
+- NeoForge entity and spawning documentation for later implementation planning: https://docs.neoforged.net/docs/entities/
+
+### Next single collaborative decision
+Choose who takes actions in combat: **the player avatar**, **collected/recruited party members**, or **both**. Only after this decide first creatures, equipment relationships, combat presentation, contracts, and the smallest playable slice. Do not begin a mass spawn replacement before a sufficient substitute ecosystem exists.
