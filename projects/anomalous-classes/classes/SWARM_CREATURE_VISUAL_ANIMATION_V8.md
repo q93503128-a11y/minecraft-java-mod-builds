@@ -102,6 +102,8 @@
 | **GeckoLib Modrinth** https://modrinth.com/mod/Geckolib | animated 3D entity·sound/particle keyframes 등 지원 및 공개 라이선스 표기 | 최신 MC/loader 호환성을 소스 구현 시 재검증, 모든 클라이언트 인스턴스에 GeckoLib Animator를 개별 돌린다는 뜻 X |
 | **Voxel moth visual reference** https://sketchfab.com/kellenravsten/collections/minecraft-stuff-6525ea8c495849fdbd3b81976a82a61f | Minecraft 스타일에서 날개·눈·마디가 짧은 실루엣으로도 읽힌다는 시각 참고 | **reference only**, 모델 파일·텍스처 직접 취득/재배포 허가 확인 전 불가 |
 
+> **2026-11-05 크기 확정 방향:** 모델 본체 약 **0.2블록**이 최신 사용자 제안. 실제 생물 외형과 군집 피격 판정·투사체·적 AI가 맞는지는 [0.2블록 군체 기술 검증 계획](./SWARM_TECHNICAL_FEASIBILITY_GATE_V9.md)의 G1~G7을 따른다. 여기에 등장하는 다른 미확정 모델·날개폭/시각 인스턴스 숫자·성능은 실제 테스트 전 확정하지 않는다.
+
 ## 8. 첫 제작 범위/우선 QA — 전체 모델팩부터 만들지 않는다
 
 **첫 화면/플레이 수직 슬라이스 제작 목표:**
