@@ -169,3 +169,31 @@ Java source 컴파일 성공과 GameTest 통과를 반드시 분리하여 보고
 - `7902e945...`의 CI에서는 기존 3건 GameTest 실패 상태로 Java compile 통과.
 - 추가한 `AuthoritySignatureGameTests` 2종(Sylvaron 적/중립 동물 분리, Morvath 중립 동물 보호)을 포함한 최신 검증 결과는 `c3613594...` 빌드 `41950767620`에서 확인 필요.
 - 전체 BUILD VERIFIED/JAR PRODUCED/PLAYTESTED/MULTIPLAYER TESTED는 아직 NO. 기존 지배 공격, 비행 충돌, 돌려보내기 GameTest 세 건은 독립 조사 대상.
+
+## 2026-11-05 Worldbreaker Realm 4종 권능 개편 (코드 검증 완료 / 실제 플레이 미검증)
+
+### 구현 기준
+- `WorldBossAuthorityPatternService`의 서버 기반 소유자 UUID·차원별 패턴에 4개 Kind를 추가. 타 플레이어의 공격 요청으로 타격을 결정하지 않으며, 기존 `AuthorityTheftService.hurt`로 피해를 전달한다.
+- 원본 World Bosses 내부 Java 소스는 비공개/All Rights Reserved이며 아래는 2.0.2 공개 설명을 바탕으로 독립 구현한 player-use adaptation. 원본 수치·모델/텍스처/애니메이션과 동일하다는 뜻 아님.
+- 공식 Worldbreaker Realm 소개: `https://www.curseforge.com/minecraft/mc-mods/world-bosses/files/9002411`.
+- 기존 `stolenAuthorityBossIds`/enabled flags/120s J cooldown/해방 12틱 간격/CombatCloneEntity 소환 유지.
+
+| 권능 | 실제 변경 | 확인할 한계 |
+|---|---|---|
+| Shadow King | 영혼탄 비행 파티클 18틱 → 타격 8/안전 Shadow Step/어둠 → 22틱 뒤 고정 중심 7블록 darkness nova(4). Shadow Warriors 역할의 기존 2 combat echoes 유지 | 진짜 신규 투사체 모델은 없음. 비행은 고정 궤적 파티클이며 충돌 물리/LOS는 별도 검수 필요 |
+| Dragon Mother | 기존 전방 화염 브레스(10블록)·4블록 꼬리 밀치기 보존. 이후 적 위치 중심에 표식 3개로 23/37/51틱 화염 낙하(반경 2.7/피해 7/점화). 기존 2 brood echoes 유지 | 본체 공중 dive 이동과 실제 fireball entity는 없음. 보여지는 경고 범위와 실제 타격 반경 일치 확인 |
+| Storm Griffin | 기존 근거리 돌풍/넉백 보존. 18블록 적 최대 3곳에 표식(반경 3) 후 26틱 지연된 피해 10과 전기 이펙트 | 표식은 cast 순간 좌표 고정이라 적이 피할 수 있음. 모델 있는 실제 번개 엔티티는 소환하지 않음(지형/우호 대상 안전) |
+| Shadow Weaver | 12틱마다 실속박 4회 + 4회째 5블록 puppet burst(피해 9, 시듦이 아닌 darkness+점화), 기존 3 combat echoes. 플레이어에게 120틱 veil(암흑: 피해 55% 감소, 밝기 ≥12이면 무효) | 빛 반응은 정확히 raw local brightness 조건. 체력/보호막 피드백 UI, 구조적 VFX 모델, 차원 전환 및 멀티플레이 시각 검수는 미진행 |
+
+### 회귀 검증
+- 이 단위 코드 commit: `9e1acbc63cce15c555096eb89bcbadb32bfa0c19`, `11a691aea238f788d22519983edb9d24ea57aac1`, `95b3be9b6fecff80427070767d9585915c416971`.
+- 테스트 추가·Sylvaron fixture 수정: `b4684eb10453fca9268a46155a9e271ccc345ec2`.
+- GitHub Actions run: `41952190374`. Java compile PASS, **161 / 164 GameTest PASS**, new Storm Griffin target safety + Shadow King Darkness + corrected Sylvaron poison fixture PASS.
+- 기존 미해결 3건: `domination_behavior_game_tests_domination_converts_enemy_into_persistent_combat_ally`, `mythic_live_fix_batch_hgame_tests_powered_flight_body_collision_also_damages_neutral_mobs`, `return_to_sender_game_tests_real_shield_durability_blocks_emit_cone_at_level_three_threshold`.
+- **BUILD VERIFIED: NO** (mandatory GameTest fail). **JAR PRODUCED: NOT VERIFIED**, **PLAYTESTED: NO**, **MULTIPLAYER TESTED: NO**. CI 통과를 위해 기존 테스트를 끄거나 공격 판정을 축소하지 않음.
+
+### 후속 품질 게이트
+1. Minecraft client에서 11 World Bosses의 J 해방 전체 순서와 충돌/지연 피해·CC stacking을 playtest. 실제 위험한 VFX 프레임 드랍/외부 HUD 경합도 검수.
+2. 모델/텍스처/전용 사운드/애니메이션이 필요한 핵심 시그니처의 외부 자산을 라이선스 확인 후 활용.
+3. Shadow Weaver veil을 차원 이동/재로그인 때 끊는 조건, 여러 패키지 방어 효과의 중첩, 신화 권능 설명과 쿨타임 가독성을 특히 확인.
+4. 기존 3개 GameTest의 첫 원인을 플레이 검증과 함께 좁혀 수정. 위 3건은 코드상 미해결로 유지.
