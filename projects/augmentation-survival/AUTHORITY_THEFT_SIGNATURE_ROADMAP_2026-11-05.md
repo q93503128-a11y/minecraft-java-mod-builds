@@ -41,3 +41,33 @@ Minecraft 26.2 / Fabric, `projects/augmentation-survival/`, 확인 시작 main `
 7. Chrono Dawn 6종 원본 소스(https://github.com/ksoichiro/ChronoDawn)와 설계 비교 및 signature-by-signature 이식.
 8. World Bosses 11종은 공개 설명·허가 범위 확인 후 별도 이식. 원본 저작물 무단 복사 금지. MCEndgame은 현재 공식 모드팩 제외 상태라 conditional adapter만 유지.
 9. 1~7번 전체 UI는 별도 `UI_REDESIGN_DIRECTION_2026-11-05.md` 기준에 따라 Minecraft 실제 화면으로 검수. 이번 권능/지배 조회 화면 추가가 전체 GUI 리뉴얼 완료를 의미하지 않음.
+
+## 실제 원본 패턴 추가 대조 (2026-11-05, source-backed)
+
+### 시각 HUD 위치 및 노출 우선순위
+- 현 `CombatHudClient.extractSkills`: 일반 스킬 모드에서 스킬바 `(sw/2 - 89, sh - 67)`, J 카운트 `(sw/2 + 97, sh - 67)`; 두 UI 경계 사이 약 8 GUI 픽셀. 스킬 모드 해제 시 J는 `(sw/2+97, sh-49)`. 기존 스킬 슬롯을 직접 덮지는 않으나 게임 월드 일부를 가리고, 외부 HUD와 충돌할 가능성은 별도 시각 검수 필요.
+- UI 정제 목표: 상시 큰 텍스트보다 쿨타임 중 경과 초, 준비 시 작은 J 상태 표시. 낮은 GUI scale / 좁은 화면 / 다른 HUD 공존 확인.
+
+### Chrono Dawn 26.2 원본 보스 코드와 대조
+외부 원본 코드: `https://github.com/ksoichiro/ChronoDawn/tree/main/common/26.2/src/main/java/com/chronodawn/entities/bosses` (조회 당시 main `cf217e99c8959b569437eca5be93f178a978a0c6`). 체크포인트. 정확히 현재 모드팩에 pinned된 빌드와 소스가 같은지도 검증해야 함.
+
+| 보스 | 원본 26.2 구현 확인 | 현재 권능 재현 부족/필수 수정 |
+| --- | --- | --- |
+| Time Guardian | 2페이즈 안전 순간이동, 15틱 후딜, 4초 계열 시간 왜곡 광역 피해+Slowness II+Mining Fatigue, 원거리 Time Blast | 단순 순간이동/둔화 묶음이 아닌 실제 경고·위치 안전 검사·타격 시점·시각화를 재현 |
+| Chronos Warden | 지면 강타, 2페이즈 5초 Stone Stance, 전후방에 따른 피해 감소 | 기존 5초 Resistance IV + 충격파는 원본의 방향 방어/자세를 보존하지 않음. 차등 방어와 짧은 준비 모션 필요 |
+| Clockwork Colossus | Gear Shot 실제 투사체(8초 주기), 과충전, 40% HP에서 1회 15% 수리, 선형 Ground Slam | 현 신속/회복/선형 공격 패키지에서 핵심 Gear Shot 누락. 플레이어 소유 투사체 판정·모델/텍스처를 먼저 검토 |
+| Temporal Phantom | 30% 물리 회피(2초), Warp Bolt / Time Blast, 후방 Blink Strike; 소환 분신은 메서드 내부 TODO 표기 존재 | 현재 자체 제작한 분신을 원본에서 확정된 기술로 오인하지 말 것. 회피·탄환·안전 순간이동의 실제 동작 우선 |
+| Entropy Keeper | 근접 장비 부식(내구도), 3×3 부패 지대(Slowness II/Poison I), 엔트로피 폭발(6블록·Wither II) | 현 즉시 광역 독/시듦과 달리 **지속 영역** 및 부식 표현이 핵심. 타 플레이어 장비 손상은 PvP/권한 확인 선행 |
+| Time Tyrant | 원본 Time Stop은 실제 시간 정지 필드가 아니라 Slowness V 3초; 순간이동+가속, AoE, 저체력 10% 회복, 투사체 70% 피해 감소 | 기존 '둔화'는 원본과 일부 일치. 이름만 보고 실제 필드 정지를 강제하지 말 것. 회복·시간 둔화 타이밍/연출 일치가 우선 |
+
+### World Bosses 기술명 근거 및 라이선스
+- 공식 CurseForge/변경기록: `https://www.curseforge.com/minecraft/mc-mods/world-bosses/files/8288335` — 1.3.0 기술 강화: Astrael `Primordial Chains`, `Cataclysm Nova`; Varkhul `Infernal Chains`, `Flame Prison`; Aureon `Thunder Cage`; Morvath `Fear Pulse`, `Soul Drain`; Sylvaron nature/root/spore; Nekhraz sandstorm/burrow; Elyndra void/rift/tether.
+- 2.0.2 배포 노트: `https://www.curseforge.com/minecraft/mc-mods/world-bosses/files/9258424`. 원본 소스 공개 저장소는 검증하지 못했고 배포 라이선스는 All Rights Reserved. 공개 설명을 참고하여 독립 구현하고 JAR 디컴파일 결과를 허가 없이 복제하지 않는다.
+- 공식 위키만 담긴 `Moekki/World-Bosses` 저장소는 현재 소스코드 저장소로 확인되지 않음. 보스별 실제 판정/연출이 불명확하면 `source verified`로 표시하지 말 것.
+
+### 게임성 개선 필수 조건
+1. 24/26개 능력을 단순 즉시 피해/파티클/버프 묶음으로 두지 말 것. 실제 보스별 시그니처 식별→서버 공격 경계→전용 모델/VFX/사운드→타격 감각 순서로 개편.
+2. 현재 `PACKAGE_SPACING_TICKS=12`는 같은 틱 피해 중첩을 줄이는 완화책일 뿐이며, 획득량이 많을수록 `J` 해방이 지나치게 길어질 수 있음. 스킬별 액션 타입과 hit-window를 재설계하면서 텔레포트·넉백·피해 중첩을 실측.
+3. 체력 기반 대체 버프는 원본 시그니처가 검증되지 않을 때만, 해당 UI에 대체형이라고 정확히 표시. 보스 분류와 코어 확률/보상을 혼합하지 않음.
+4. `J` 개별 토글·서버 쿨다운·기존 획득 목록은 보존. 실제 테스트 전 BUILD/PLAYTESTED로 표시하지 말 것.
+5. 플레이어 피드백: 비행 피해와 지배는 수동 플레이에서 작동 관측. 실패한 GameTest는 테스트 조건/전투 경계 차이를 독립 조사하고 기능 실패라고 단정하지 않음. 방패 반사는 사용자가 추가 확인 예정.
