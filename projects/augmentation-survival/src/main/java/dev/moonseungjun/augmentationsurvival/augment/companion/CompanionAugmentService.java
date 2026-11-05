@@ -30,6 +30,8 @@ import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.Guardian;
+import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -350,10 +352,16 @@ public final class CompanionAugmentService {
         if (companion instanceof Warden warden) {
             warden.increaseAngerAt(target, WARDEN_COMMAND_ANGER, false);
             warden.setAttackTarget(target);
-        } else {
+        } else if (companion.getTarget() != target) {
+            // Resetting a current target every tick can interrupt attack goal windups.
             companion.setTarget(target);
         }
-        companion.getNavigation().moveTo(target, 1.15D);
+        // Slime/MagmaCube use a hopping MoveControl, not standard pathfinding.
+        // Guardian/ElderGuardian must own navigation while charging their vanilla beam.
+        // In particular, never issue a fresh forced path each tick during owner commands.
+        if (!(companion instanceof Slime) && !(companion instanceof Guardian)) {
+            companion.getNavigation().moveTo(target, 1.15D);
+        }
     }
 
     private static void clearCombatTarget(Mob companion, LivingEntity previousTarget) {
