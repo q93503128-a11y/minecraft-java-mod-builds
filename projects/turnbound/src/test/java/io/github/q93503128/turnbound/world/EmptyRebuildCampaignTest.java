@@ -17,6 +17,7 @@ class EmptyRebuildCampaignTest {
             assertTrue(CampaignProgressStore.startEmptyRebuildGame(id));
             assertFalse(CampaignProgressStore.startEmptyRebuildGame(id), "must never replace an already loaded profile");
             assertTrue(CampaignProgressStore.hasRuntime(id));
+            assertTrue(CampaignProgressStore.isEmptyRebuildGame(id));
             assertTrue(CampaignProgressStore.ownedCharacters(id).isEmpty());
             assertTrue(CampaignProgressStore.activeParty(id).isEmpty());
             assertEquals(0, CampaignProgressStore.gold(id));
@@ -65,6 +66,7 @@ class EmptyRebuildCampaignTest {
                     () -> CampaignProgressStore.restoreEmptyRebuildGame(legacyId, oldSave),
                     "an existing runtime may not be overwritten");
             assertTrue(CampaignProgressStore.ownedCharacters(legacyId).contains("P01"));
+            assertFalse(CampaignProgressStore.isEmptyRebuildGame(legacyId));
         } finally {
             CampaignProgressStore.removeRuntime(legacyId);
         }

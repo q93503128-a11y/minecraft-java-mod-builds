@@ -97,3 +97,7 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Added separate `rebuild_campaign_profile` NeoForge attachment ID. **Not wired to player login or automatic save**; client/server end-to-end load/save testing and explicit old-world migration policy remain required before activation.
 - Guarded legacy summon entrypoints for empty rebuild profiles; preserve existing legacy gacha tests without changing their reward tables. This is a new technical boundary, not a design decision for the future summon system.
 - Added focused empty-profile, invalid schema, gacha gate, and save-round-trip tests. Remaining old Java catalog/world and battle dependencies are still present; do not claim they were removed.
+
+## Rebuild encounter entry gate — 2026-11-05
+- Added server-side fail-closed checks in BattleSessionManager (solo/training/arena/shared) and SharedBattleSessionManager for any loaded rebuild foundation profile, before arena/session/client mutations. No legacy battle can be spawned for that profile through those routes.
+- Existing hardcoded combat-specific rules in BattleEngine are retained and must be separated from reusable rules in a deliberate next phase; do not delete blindly or advertise the old engine as content-independent.

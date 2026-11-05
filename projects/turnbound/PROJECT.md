@@ -65,3 +65,7 @@
 - The new save codec uses schema **7** with `saveKind=turnbound-empty-foundation`, rejects authored content and reads no legacy save as a rebuild. Storage is reserved under the distinct NeoForge `rebuild_campaign_profile` attachment; the legacy `campaign_profile` remains untouched.
 - Until server login/logout and migration policy are separately implemented and playtested, the new rebuild attachment has **no automatic read/write lifecycle**. No current work claims end-to-end persistence in a launched client.
 - New rebuild profiles contain no characters, party, rewards or currencies. Legacy gacha calls are rejected for those runtime instances; legacy engine/test fixtures remain available for historical regression tests.
+
+## Legacy encounter boundary — 2026-11-05
+- Explicit empty rebuild runtime refuses retired solo/training/encounter battle creation before UI/world transitions. Shared battle creation refuses if any participant has an empty rebuild profile. The historical combat engine and its existing tests remain untouched for future generic extraction.
+- The current battle engine still has dozens of hardcoded old ability/character/boss rules. This guard is safety isolation, **not** proof that the generic engine has been extracted or that a playable new battle exists.

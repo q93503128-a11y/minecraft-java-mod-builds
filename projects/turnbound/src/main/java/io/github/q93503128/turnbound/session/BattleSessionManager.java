@@ -6,6 +6,7 @@ import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.EndgameEncounterCatalog;
 import io.github.q93503128.turnbound.presentation.PersonalPresentationIsolation;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
+import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.FieldNetwork;
 import io.github.q93503128.turnbound.world.RewardGrantService;
@@ -25,6 +26,7 @@ public final class BattleSessionManager {
     private BattleSessionManager() {}
 
     public static void start(ServerPlayer player) {
+        rejectRetiredBattleForRebuild(player.getUUID());
         if (SharedBattleSessionManager.exists(player.getUUID())) return;
         if (!endAndPersist(player, false)) return;
         prepareClientTransition(player);
@@ -38,6 +40,7 @@ public final class BattleSessionManager {
     }
 
     public static void startEncounter(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed) {
+        rejectRetiredBattleForRebuild(player.getUUID());
         if (SharedBattleSessionManager.exists(player.getUUID())) return;
         if (!endAndPersist(player, false)) return;
         boolean endgame = EndgameEncounterCatalog.contains(encounterId);
@@ -56,6 +59,7 @@ public final class BattleSessionManager {
 
     public static boolean startEncounterAt(ServerPlayer player, String encounterId, boolean autoAllowed, boolean speedAllowed,
                                            Vec3 center, float yaw) {
+        if (CampaignProgressStore.isEmptyRebuildGame(player.getUUID())) return false;
         if (SharedBattleSessionManager.exists(player.getUUID())) return false;
         BattleArenaLocator.Arena arena = BattleArenaLocator.fixedIfOpen(player, center, yaw);
         if (arena == null || !endAndPersist(player, false)) return false;
@@ -75,7 +79,14 @@ public final class BattleSessionManager {
     public static boolean startSharedEncounterAt(java.util.List<ServerPlayer> participants, UUID initiatorId,
                                                  String encounterId, boolean autoAllowed, boolean speedAllowed,
                                                  Vec3 center, float yaw) {
+        if (participants == null || participants.stream().anyMatch(p ->
+                p != null && CampaignProgressStore.isEmptyRebuildGame(p.getUUID()))) return false;
         return SharedBattleSessionManager.startEncounterAt(participants, initiatorId, encounterId, autoAllowed, speedAllowed, center, yaw);
+    }
+
+    private static void rejectRetiredBattleForRebuild(UUID playerId) {
+        if (CampaignProgressStore.isEmptyRebuildGame(playerId))
+            throw new IllegalStateException("No authored battles are available in the rebuild");
     }
 
     /** Read-only production-survey probe. Never starts a battle or mutates encounter state. */

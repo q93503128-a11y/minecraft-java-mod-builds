@@ -576,6 +576,12 @@ public final class CampaignProgressStore {
         PLAYERS.put(playerId, new PlayerProgress());
     }
     public static boolean hasRuntime(UUID playerId) { return playerId != null && PLAYERS.containsKey(playerId); }
+
+    /** Fail-closed entry gate: an empty content rebuild must never use retired encounter/hero factories. */
+    public static boolean isEmptyRebuildGame(UUID playerId) {
+        PlayerProgress progress = PLAYERS.get(playerId);
+        return progress != null && progress.rebuildFoundation;
+    }
     public static boolean isDirty(UUID playerId) { PlayerProgress progress = PLAYERS.get(playerId); return progress != null && progress.dirty; }
     public static void markClean(UUID playerId) { PlayerProgress progress = PLAYERS.get(playerId); if (progress != null) progress.dirty = false; }
     public static void markDirty(UUID playerId) { PlayerProgress progress = PLAYERS.get(playerId); if (progress != null) progress.dirty = true; }

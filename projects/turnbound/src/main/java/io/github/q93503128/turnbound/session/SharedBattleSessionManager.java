@@ -5,6 +5,7 @@ import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.CampaignEncounterCatalog;
 import io.github.q93503128.turnbound.combat.SharedBattleFactory;
 import io.github.q93503128.turnbound.world.CampaignPersistence;
+import io.github.q93503128.turnbound.world.CampaignProgressStore;
 import io.github.q93503128.turnbound.world.ExternalWorldBootstrap;
 import io.github.q93503128.turnbound.world.RewardGrantService;
 import io.github.q93503128.turnbound.world.WorldSessionRouter;
@@ -39,6 +40,7 @@ final class SharedBattleSessionManager {
         LinkedHashMap<UUID,ServerPlayer> unique=new LinkedHashMap<>();
         for(ServerPlayer p:participants){
             if(p==null||unique.putIfAbsent(p.getUUID(),p)!=null)return false;
+            if(CampaignProgressStore.isEmptyRebuildGame(p.getUUID()))return false;
             if(exists(p.getUUID())||BattleSessionManager.privateExists(p.getUUID()))return false;
         }
         ServerPlayer initiator=unique.get(initiatorId);
