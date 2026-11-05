@@ -9,6 +9,7 @@ import dev.moonseungjun.augmentationsurvival.augment.companion.CloneEntityTypes;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CombatCloneEntity;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
+import dev.moonseungjun.augmentationsurvival.integration.ChronoDawnAuthorityProjectileBridge;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
@@ -70,6 +71,8 @@ public final class AuthorityTheftService {
     private static final List<PendingSonic> PENDING_SONIC = new ArrayList<>();
     // Temporary source-faithful signatures. All three are server-owned and never saved.
     private static final Map<UUID, Long> CHRONOS_STONE_STANCE = new HashMap<>();
+    private static final Map<UUID, Long> PHANTOM_PHASE_WINDOW = new HashMap<>();
+    private static final Map<UUID, Long> PHANTOM_PHASE_DODGE_COOLDOWN = new HashMap<>();
     private static final List<PendingTimeDistortion> PENDING_TIME_DISTORTION = new ArrayList<>();
     private static final List<RotField> ACTIVE_ROT_FIELDS = new ArrayList<>();
     private static final int CHRONOS_STANCE_TICKS = 100;
@@ -128,6 +131,8 @@ public final class AuthorityTheftService {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             WITHER_ARMOR.clear();
             CHRONOS_STONE_STANCE.clear();
+            PHANTOM_PHASE_WINDOW.clear();
+            PHANTOM_PHASE_DODGE_COOLDOWN.clear();
             PENDING_PACKAGES.clear();
             PENDING_SONIC.clear();
             PENDING_TIME_DISTORTION.clear();
@@ -201,6 +206,8 @@ public final class AuthorityTheftService {
     private static void clearTransientProtections(UUID playerId) {
         WITHER_ARMOR.remove(playerId);
         CHRONOS_STONE_STANCE.remove(playerId);
+        PHANTOM_PHASE_WINDOW.remove(playerId);
+        PHANTOM_PHASE_DODGE_COOLDOWN.remove(playerId);
     }
 
     /** Source Chronos Warden: 80% front/side protection, unchanged damage through rear weak spot. */
@@ -214,6 +221,23 @@ public final class AuthorityTheftService {
         Vec3 horizontal = new Vec3(direction.x, 0.0D, direction.z);
         if (horizontal.lengthSqr() < 1.0E-6D) return incoming;
         return facing.dot(horizontal.normalize()) < 0.0D ? incoming : incoming * 0.20F;
+    }
+
+    /**
+     * Temporal Phantom's original 30% physical-dodge proc during a 2s phase window.
+     * This is a server-side damage cancellation, not a free Resistance V effect.
+     */
+    public static boolean tryTemporalPhantomDodge(ServerPlayer player, DamageSource source) {
+        long now = player.level().getGameTime();
+        if (PHANTOM_PHASE_WINDOW.getOrDefault(player.getUUID(), 0L) <= now
+                || PHANTOM_PHASE_DODGE_COOLDOWN.getOrDefault(player.getUUID(), 0L) > now
+                || !(source.getDirectEntity() instanceof LivingEntity)
+                || player.getRandom().nextFloat() >= 0.30F) return false;
+        PHANTOM_PHASE_DODGE_COOLDOWN.put(player.getUUID(), now + 100L);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT,
+                SoundSource.PLAYERS, 0.85F, 1.35F);
+        particles(player, ParticleTypes.PORTAL, 24, 2.0D);
+        return true;
     }
 
     public static boolean blocksWitherProjectile(ServerPlayer player, DamageSource source) {
@@ -391,7 +415,14 @@ public final class AuthorityTheftService {
         player.addEffect(new MobEffectInstance(MobEffects.SPEED, 160, 1));
         player.heal(player.getMaxHealth() * 0.15F);
         LivingEntity primary = nearestHostile(player, 16.0D);
-        if (primary != null) hurt(player, primary, 8.0F);
+        if (primary != null) {
+            // Use the actual registered Chrono Dawn spinning gear and physics when installed.
+            if (!ChronoDawnAuthorityProjectileBridge.shootGear(player, primary)) {
+                // Old saves can still contain this authority without Chrono Dawn present.
+                hurt(player, primary, 8.0F);
+                particles(player, ParticleTypes.CRIT, 12, 2.5D);
+            }
+        }
 
         Vec3 look = flatLook(player);
         for (LivingEntity enemy : hostiles(player, 11.0D)) {
@@ -406,9 +437,9 @@ public final class AuthorityTheftService {
         lineParticles(player, look, ParticleTypes.ELECTRIC_SPARK, 10);
     }
 
-    /** Temporal Phantom: phase shift, warp debuff, two 15-second combat echoes and blink strike. */
+    /** Temporal Phantom: probabilistic 2-second physical dodge, warp and blink strike. */
     private static void releaseTemporalPhantom(ServerPlayer player) {
-        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 40, 4));
+        PHANTOM_PHASE_WINDOW.put(player.getUUID(), player.level().getGameTime() + 40L);
         LivingEntity target = nearestHostile(player, 20.0D);
         if (target != null) {
             hurt(player, target, scaledDamage(player, 0.8D, 4.0D));
@@ -803,6 +834,14 @@ public final class AuthorityTheftService {
             }
             patchParticles(caster.level(), patch.anchor);
         }
+        PHANTOM_PHASE_WINDOW.entrySet().removeIf(entry -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            return player == null || player.isDeadOrDying() || player.level().getGameTime() >= entry.getValue();
+        });
+        PHANTOM_PHASE_DODGE_COOLDOWN.entrySet().removeIf(entry -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            return player == null || player.isDeadOrDying() || player.level().getGameTime() >= entry.getValue();
+        });
         CHRONOS_STONE_STANCE.entrySet().removeIf(entry -> {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             return player == null || player.isDeadOrDying() || player.level().getGameTime() >= entry.getValue();

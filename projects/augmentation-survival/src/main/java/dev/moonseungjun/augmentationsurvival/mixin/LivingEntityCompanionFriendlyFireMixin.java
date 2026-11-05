@@ -24,7 +24,9 @@ abstract class LivingEntityCompanionFriendlyFireMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         LivingEntity self = (LivingEntity) (Object) this;
-        if (self instanceof ServerPlayer defender && AuthorityTheftService.blocksWitherProjectile(defender, source)) {
+        if (self instanceof ServerPlayer defender && (
+                AuthorityTheftService.blocksWitherProjectile(defender, source)
+                        || AuthorityTheftService.tryTemporalPhantomDodge(defender, source))) {
             cir.setReturnValue(false);
             return;
         }
