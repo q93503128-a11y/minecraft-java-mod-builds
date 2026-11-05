@@ -5,6 +5,9 @@ import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityTheftServic
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.HashSet;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
 import java.lang.reflect.Method;
 import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -58,6 +61,48 @@ public final class AuthoritySignatureGameTests implements CustomTestMethodInvoke
         GameTestPlayers.succeed(helper);
     }
 
+
+    @GameTest
+    public void aureonCageDamagesHostilesWithoutHarmingNearbyAnimals(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        BlockPos at = helper.absolutePos(new BlockPos(1, 2, 1));
+        player.setPos(at.getX() + 0.5D, at.getY(), at.getZ() + 0.5D);
+        LivingEntity zombie = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 2).withNoFreeWill().spawn();
+        LivingEntity cow = helper.spawnMob(EntityTypes.COW, 3, 2, 4).withNoFreeWill().spawn();
+        float zombieHp = zombie.getHealth();
+        float cowHp = cow.getHealth();
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(AuthorityTheftService.AUTHORITY_THEFT_ID, 1)
+                .withStolenAuthority("worldbosses_aureon"));
+        require(AuthorityTheftService.tryRelease(player), "Aureon authority did not activate");
+        GameTestPlayers.runAfterDelay(helper, 45, () -> {
+            require(zombie.getHealth() < zombieHp, "Thunder Cage did not damage the hostile target");
+            require(Math.abs(cow.getHealth() - cowHp) < 0.001F,
+                    "Thunder Cage harmed a nearby neutral animal");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest
+    public void astraelNovaDealsDelayedDamageRatherThanInvisibleInstantHit(GameTestHelper helper) {
+        ServerPlayer player = GameTestPlayers.survivalPlayer(helper);
+        BlockPos at = helper.absolutePos(new BlockPos(1, 2, 1));
+        player.setPos(at.getX() + 0.5D, at.getY(), at.getZ() + 0.5D);
+        LivingEntity zombie = helper.spawnMob(EntityTypes.ZOMBIE, 3, 2, 3).withNoFreeWill().spawn();
+        float before = zombie.getHealth();
+        AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial()
+                .withAugmentLevel(AuthorityTheftService.AUTHORITY_THEFT_ID, 1)
+                .withStolenAuthority("worldbosses_astrael"));
+        require(AuthorityTheftService.tryRelease(player), "Astrael authority did not activate");
+        GameTestPlayers.runAfterDelay(helper, 10, () -> {
+            require(Math.abs(zombie.getHealth() - before) < 0.001F,
+                    "Cataclysm Nova damaged its target before the warning ended");
+        });
+        GameTestPlayers.runAfterDelay(helper, 42, () -> {
+            require(zombie.getHealth() < before, "Cataclysm Nova never dealt delayed damage");
+            GameTestPlayers.succeed(helper);
+        });
+    }
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }
