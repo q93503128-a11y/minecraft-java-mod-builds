@@ -30,6 +30,22 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
             xvfb x11-utils libgl1-mesa-dri libgl1 libxrandr2 libxi6 \
             libxcursor1 libxinerama1 libasound2t64 imagemagick
+      - name: Stage required JourneyMap dependency for the development client
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          # prepareOneClickPack already resolves the exact JourneyMap artifact and checksum.
+          # Its Modrinth index names an external download, while runClient needs a real
+          # client-side mod JAR in run/client/mods rather than a production-pack index.
+          gradle --no-daemon prepareOneClickPack
+          cache_dir="$HOME/.gradle/caches/modules-2/files-2.1/maven.modrinth/lfHFW1mp"
+          test -d "$cache_dir"
+          jar_file="$(find "$cache_dir" -type f -name '*.jar' | sort | head -n 1)"
+          test -s "$jar_file"
+          mkdir -p run/client/mods
+          cp "$jar_file" run/client/mods/journeymap-neoforge-26.2-6.0.8.jar
+          echo "Staged client-only JourneyMap: $(sha256sum run/client/mods/journeymap-neoforge-26.2-6.0.8.jar | cut -d' ' -f1)"
       - name: Launch NeoForge Minecraft development client and detect window
         working-directory: projects/turnbound
         shell: bash
@@ -60,7 +76,10 @@ jobs:
               fi
               break
             fi
-            if ! kill -0 "$launch_pid" 2>/dev/null; then
+            # A finished bash child may remain as a zombie until reaped, making
+            # kill -0 misleadingly return success after an immediate FML failure.
+            proc_state="$(ps -o stat= -p "$launch_pid" 2>/dev/null | tr -d ' ' || true)"
+            if [ -z "$proc_state" ] || [[ "$proc_state" == Z* ]]; then
               echo "Client exited before successful boot detection"
               break
             fi
