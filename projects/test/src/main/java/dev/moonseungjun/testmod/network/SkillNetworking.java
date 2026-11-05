@@ -17,12 +17,13 @@ public final class SkillNetworking {
     }
 
     public static void registerCommon() {
-        PayloadTypeRegistry.playC2S().register(CastRequestPayload.TYPE, CastRequestPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(CastStartedPayload.TYPE, CastStartedPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(CastRequestPayload.TYPE, CastRequestPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(CastStartedPayload.TYPE, CastStartedPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(CastRequestPayload.TYPE, (payload, context) -> {
             ServerPlayer caster = context.player();
-            long now = caster.serverLevel().getGameTime();
+            var level = caster.level();
+            long now = level.getGameTime();
             long previous = LAST_CAST_TICK.getOrDefault(caster.getUUID(), Long.MIN_VALUE / 2);
             if (!caster.isAlive() || caster.isSpectator() || now - previous < CAST_LOCK_TICKS) {
                 return;
@@ -30,7 +31,7 @@ public final class SkillNetworking {
 
             LAST_CAST_TICK.put(caster.getUUID(), now);
             CastStartedPayload started = new CastStartedPayload(caster.getUUID());
-            for (ServerPlayer viewer : caster.serverLevel().players()) {
+            for (ServerPlayer viewer : level.players()) {
                 ServerPlayNetworking.send(viewer, started);
             }
         });
