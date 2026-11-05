@@ -105,7 +105,25 @@ test {
     }
 }
 
+// Keep historical Minecraft/NeoForge sources compiled for regression tests while ensuring
+// that the abandoned Drehmal downloader/repair UI cannot ship in the rebuild JAR.
+// This does NOT declare all old Java gameplay physically removed; its cleanup is separate.
+def retiredDrehmalClientClassNames = [
+    'DrehmalAutoInstaller',
+    'DrehmalInstallScreen',
+    'DrehmalBootstrapManifest',
+    'DrehmalInstallFiles',
+    'Drehmal26_2CompatMigrator',
+    'Drehmal26_2ResourcePackMigrator',
+    'DrehmalResourceRepairDiscovery',
+    'ClientWorldLoadingBootstrap',
+    'WorldLoadingScreen'
+]
+
 jar {
+    retiredDrehmalClientClassNames.each { className ->
+        exclude("io/github/q93503128/turnbound/client/${className}*.class")
+    }
     manifest {
         attributes(
             'Specification-Title': mod_name,
