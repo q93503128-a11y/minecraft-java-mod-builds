@@ -94,7 +94,9 @@
 - Next real-world acceptance: install the one-click artifact in a completely separate Minecraft 26.2 test instance, create a fresh world, observe no legacy onboarding/download or terrain writes, log in/reconnect/respawn and confirm the empty rebuild attachment safely persists. Test multiple connected players separately. NEVER use the old world/save as the first playtest.
 
 ## Java source cleanup checkpoint — 2026-11-05
-- Removed 48 disconnected, untested-and-unreferenced retired Java classes, including the dormant Drehmal auto-installer and obsolete user-facing field/facility/summon UI, without removing any historical JUnit test source. Source recovery is guaranteed by the frozen legacy branch.
+- removed 49 disconnected, untested-and-unreferenced retired Java classes, including the dormant Drehmal auto-installer and obsolete user-facing field/facility/summon UI, without removing any historical JUnit test source. Source recovery is guaranteed by the frozen legacy branch.
 - Exact retired source names are tracked under `tools/retired_legacy_java_classes.txt`, with both Java-source and packaged-bytecode CI regression checks.
 - Remaining old Java modules have compile-time dependencies on preserved combat/session/world protocols or historical tests, and must be isolated deliberately before deletion.
 - CI success on this checkpoint verifies a blank-data/dedicated-server foundation, NOT Minecraft client launch, player-login persistence, or multiplayer gameplay. The production-ready-for-co-design decision must distinguish this from client-playtest readiness.
+
+- Build #1064 revealed a compile-time reference from retained unused `BattlePlayerRenderPolicy` to retired `SummonCameraController`. Both were disconnected from the live and test roots. Removed `BattlePlayerRenderPolicy` too rather than retaining a broken reference or replacing behavior with a stub. Total isolated Java files removed: **49**.

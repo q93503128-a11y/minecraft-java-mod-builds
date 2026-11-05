@@ -1,5 +1,6 @@
 # Java classes physically retired from the content-rebuild branch.
-# Their original source is recoverable in turnbound-alpha17-full-v04 and historical Git commits.
+# Original sources are recoverable in turnbound-alpha17-full-v04 and historical Git commits.
+client/BattlePlayerRenderPolicy.java
 client/ClientFieldNetwork.java
 client/ClientMetaNetwork.java
 client/ClientQuestTargetOutlineState.java

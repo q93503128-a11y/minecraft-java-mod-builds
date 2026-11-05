@@ -143,3 +143,5 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Retained six potentially reusable orphaned utility classes for separate review: `BattleInteractionGuard`, `BattlePlayerRenderPolicy`, `BattleStatusLayer`, `FieldInteractionGuard`, `PlayerShellRules`, `SummonEasing`.
 - `tools/retired_legacy_java_classes.txt` lists the exact retired sources. `verify_rebuild_boundary.py` now fails CI if their .java files or JAR .class files return.
 - This phase does NOT remove still-referenced historical world/quest/character logic from the legacy battle and session module. Only verified isolated clusters were removed. New-world client playtest and real multiplayer remain NOT TESTED pending manual Minecraft runtime confirmation.
+
+- Build #1064 revealed a compile-time reference from retained unused `BattlePlayerRenderPolicy` to retired `SummonCameraController`. Both were disconnected from the live and test roots. Removed `BattlePlayerRenderPolicy` too rather than retaining a broken reference or replacing behavior with a stub. Total isolated Java files removed: **49**.
