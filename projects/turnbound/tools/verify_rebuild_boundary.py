@@ -78,7 +78,8 @@ def jar_errors(path: Path) -> list[str]:
     if not path.is_file():
         return [f"Missing JAR: {path}"]
     with zipfile.ZipFile(path) as jar:
-        files = set(jar.namelist())
+        # ZIP directory entries are not authored data; only validate actual files.
+        files = {entry.filename for entry in jar.infolist() if not entry.is_dir()}
     errors = []
     if "data/turnbound/rebuild/foundation_v1.json" not in files:
         errors.append("Blank content manifest missing from JAR")
