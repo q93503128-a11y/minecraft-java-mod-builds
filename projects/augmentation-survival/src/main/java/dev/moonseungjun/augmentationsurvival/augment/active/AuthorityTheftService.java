@@ -147,6 +147,7 @@ public final class AuthorityTheftService {
             PENDING_TIME_DISTORTION.clear();
             PENDING_ENTROPY_BURST.clear();
             ACTIVE_ROT_FIELDS.clear();
+            WorldBossAuthorityPatternService.reset();
         });
     }
 
@@ -528,16 +529,12 @@ public final class AuthorityTheftService {
         particles(player, ParticleTypes.WITCH, 72, 7.0D);
     }
 
-    /** Aureon: thunder cage around nearby enemies and a concentrated storm strike. */
+    /** Aureon: named Thunder Cage becomes a fixed-area, telegraphed storm enclosure. */
     private static void releaseAureon(ServerPlayer player) {
         LivingEntity primary = nearestHostile(player, 18.0D);
-        if (primary != null) hurt(player, primary, scaledDamage(player, 1.25D, 10.0D));
-        for (LivingEntity enemy : hostiles(player, 7.0D)) {
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 70, 2));
-            enemy.addEffect(new MobEffectInstance(MobEffects.GLOWING, 100, 0));
-            hurt(player, enemy, scaledDamage(player, 0.55D, 4.0D));
-        }
-        particles(player, ParticleTypes.ELECTRIC_SPARK, 96, 7.0D);
+        if (primary == null) return;
+        WorldBossAuthorityPatternService.castThunderCage(player, primary);
+        hurt(player, primary, scaledDamage(player, 0.85D, 7.0D));
     }
 
     /** Nekhraz: sandstorm impairment followed by a burrow-style strike on the primary target. */
@@ -554,19 +551,13 @@ public final class AuthorityTheftService {
         particles(player, ParticleTypes.WITCH, 76, 8.0D);
     }
 
-    /** Varkhul: infernal chains and a flame-prison burst. */
+    /** Varkhul: inferred independent Infernal Chains + persistent Flame Prison. */
     private static void releaseVarkhul(ServerPlayer player) {
         LivingEntity primary = nearestHostile(player, 16.0D);
-        if (primary != null) {
-            primary.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 4));
-            primary.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
-        }
-        for (LivingEntity enemy : hostiles(player, 6.0D)) {
-            enemy.igniteForSeconds(6.0F);
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 2));
-            hurt(player, enemy, scaledDamage(player, 0.7D, 6.0D));
-        }
-        particles(player, ParticleTypes.FLAME, 90, 6.0D);
+        if (primary == null) return;
+        primary.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 4));
+        primary.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
+        WorldBossAuthorityPatternService.castFlamePrison(player, primary);
     }
 
     /** Morvath: fear pulse plus soul drain converted into player healing. */
@@ -596,19 +587,12 @@ public final class AuthorityTheftService {
         particles(player, ParticleTypes.PORTAL, 110, 9.0D);
     }
 
-    /** Astrael: primordial chains, elemental shift and Cataclysm Nova. */
+    /** Astrael: bind enemies with Primordial Chains before the warned Cataclysm Nova. */
     private static void releaseAstrael(ServerPlayer player) {
         player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 120, 1));
         player.addEffect(new MobEffectInstance(MobEffects.SPEED, 120, 1));
         player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 120, 0));
-        for (LivingEntity enemy : hostiles(player, 9.0D)) {
-            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 3));
-            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1));
-            hurt(player, enemy, scaledDamage(player, 1.0D, 9.0D));
-            pushAway(player, enemy, 1.1D, 0.35D);
-        }
-        particles(player, ParticleTypes.ELECTRIC_SPARK, 120, 9.0D);
-        particles(player, ParticleTypes.PORTAL, 80, 9.0D);
+        WorldBossAuthorityPatternService.castPrimordialNova(player);
     }
 
     /** Shadow King: soul bolt, shadow step, raised shadow warriors and darkness nova. */
@@ -776,6 +760,7 @@ public final class AuthorityTheftService {
 
     /** Tick each spawned signature independently; no per-tick whole-world entity scan. */
     private static void tickPending(MinecraftServer server) {
+        WorldBossAuthorityPatternService.tick(server);
         Iterator<PendingPackage> packageIterator = PENDING_PACKAGES.iterator();
         while (packageIterator.hasNext()) {
             PendingPackage pending = packageIterator.next();
@@ -1129,7 +1114,7 @@ public final class AuthorityTheftService {
         return best;
     }
 
-    private static void hurt(ServerPlayer player, LivingEntity target, float damage) {
+    static void hurt(ServerPlayer player, LivingEntity target, float damage) {
         applyOrDelayAuthorityHit(player, target, damage, false);
     }
 
