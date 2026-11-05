@@ -28,7 +28,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import dev.moonseungjun.augmentationsurvival.network.AuthorityTheftNetworking;
@@ -136,7 +136,7 @@ public final class AuthorityTheftService {
         EntityCompatibilityProfileService.resolve(killed).ifPresent(profile -> {
             // Elder Guardians are explicitly special non-boss encounters in core rewards. That
             // classification is preserved; only the authority channel accepts their signature.
-            if (!profile.boss() && killed.getType() != EntityType.ELDER_GUARDIAN) return;
+            if (!profile.boss() && killed.getType() != EntityTypes.ELDER_GUARDIAN) return;
             String resolvedId = resolvePackageId(profile.id(), killed);
             String packageId = supports(resolvedId) ? resolvedId : fallbackId(killed);
             if (packageId == null || !supports(packageId)) return;
