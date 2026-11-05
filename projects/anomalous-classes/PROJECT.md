@@ -2,6 +2,10 @@
 
 > 이 게임은 독립 신규 Minecraft Java 서바이벌 RPG 모드이다. `augmentation-survival`, `openworld-rpg` 등 다른 프로젝트의 소스나 설계를 자동으로 상속하지 않는다. 정식 게임명은 아직 미정이다. **외부 모드팩 설계의 Minecraft/loader/Java 조합은 1.21.1/NeoForge 21.1.x/Java 21로 선정했으며 런타임 미검증이다.**
 
+## 2026-11-05 6직업 기획 완성도·시안 준비 최신 감사
+
+[**6직업 상세 기획 / 확정·미승인 구분 / 공통 미결정·시각 시안 우선순위**](./DESIGN_COMPLETENESS_AND_PREVISUAL_AUDIT_2026-11-05.md)를 먼저 본다. **6직업 콘셉트와 핵심 능력은 충분히 설계되었으나 전체 기획·최종 시각 자산/화면·클라이언트 플레이는 미완료**. 상세 보류 중력/공명 2직업을 삭제하지 않는다. 구현 전에 직업 선택·HUD·고유 능력 연출의 시각적 정체성을 먼저 승인하며, 공통 성장/직업 변경·멀티·자원 등 주요 미결정은 자동 확정하지 않는다.
+
 ## 2026-11-05 외부 모드팩 **실제 생성·서버 스모크 통과** — 현재 최신 상태
 
 [**외부 모드팩 설치 방법·검증과 미검증의 경계**](./EXTERNAL_MODPACK_INSTALL_AND_VERIFICATION_2026-11-05.md) · [정확한 9+6 릴리스/버전 ID 및 실행 설정](./modpack/pack-source.json) · [CI 성공 #41989226541](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41989226541) · [`.mrpack` 산출물](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41989226541/artifacts/13397253687)
