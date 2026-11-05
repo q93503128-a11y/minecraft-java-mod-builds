@@ -1,5 +1,8 @@
 # 《이능 직업 서바이벌》 Lv301 능력 중심 종결 비교 및 외부 보스 대응 매트릭스 v2
 
+> **후속 사용자 지침(2026-11-05):** 특수 보스별 TTK·상성 평준화를 목표로 하지 않는다. 아래 개별 보스 대응표는 **기술 호환·버그 점검을 위한 참고 시나리오**이지 직업별 피해/HP 보정표가 아니다. **최신 범용 밸런스 정본:** [GENERAL_PURPOSE_ENDGAME_BALANCE_POLICY_V3.md](./GENERAL_PURPOSE_ENDGAME_BALANCE_POLICY_V3.md). 자연스러운 성능 차이와 유불리는 유지하며, 구조적 불균형·버그에 한해 조정한다.
+
+
 > 2026-11-05 · **설계 검토 / 시험값만 / 사용자 최종 수치 승인 전 / 미구현·미실행**.
 > 현재 원격 `main`: `948eb2593363f6469d6bf6850311bcfefd39c52a` 확인 후 작성. 전 단계 [Lv300 여섯 직업 수치 비교 v1](./LEVEL_300_SIX_CLASS_ENDGAME_BALANCE_BENCHMARK_V1.md)의 단순 본체/원시 DPS 논리를 **능력·직접조작·부하·광역·생존/복구·서바이벌 용도까지 확장**한다. 원래 직업 스킬을 재설계하거나 이미 기록된 수치 제안을 자동 확정하지 않는다.
 
@@ -106,4 +109,4 @@
 
 **후속 과제:** ① 선정 모드 **정확한 JAR**으로 보스 단위별 `config`/원본 코드·등록 속성/피해 타입/실제 spawn·drop 검증 ② 위 능력 표를 기준으로 **직업별 상태/AI 어댑터 기술 타당성 테스트 설계** ③ 플레이 후 Lv300/301의 상대 전력을 조정. 수정 목표는 **캐릭터/직업의 재미**이지 수치 같게 맞추는 일이 아니다.
 
-**검증 상태:** CODE REVIEWED(기존 **문서 내용만** 읽음); NUMERIC PROPOSALS CALCULATED; PUBLIC SOURCE RESEARCHED; ACTUAL `3.33/1.8.2` JAR CODE/CONFIG NOT INSPECTED; MOD COLOAD NOT TESTED; GAME MOD NOT IMPLEMENTED; BUILD NOT RUN; JAR NOT PRODUCED; PLAYTEST NOT RUN; MULTIPLAYER NOT TESTED.
+**검증 상태:** DOCUMENTS REVIEWED(기존 **기획 문서만** 읽음); NUMERIC PROPOSALS CALCULATED; PUBLIC SOURCE RESEARCHED; ACTUAL `3.33/1.8.2` JAR CODE/CONFIG NOT INSPECTED; MOD COLOAD NOT TESTED; GAME MOD NOT IMPLEMENTED; BUILD NOT RUN; JAR NOT PRODUCED; PLAYTEST NOT RUN; MULTIPLAYER NOT TESTED.
