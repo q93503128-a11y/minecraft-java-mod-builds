@@ -28,8 +28,12 @@ public final class RebuildCampaignLifecycle {
             Path original = CampaignPersistence.playerFile(player);
             boolean oldFile = Files.exists(original)
                     || Files.exists(original.resolveSibling(original.getFileName() + ".bak"));
-            String legacy = player.getData(TurnboundAttachments.CAMPAIGN_PROFILE);
-            String rebuild = player.getData(TurnboundAttachments.REBUILD_CAMPAIGN_PROFILE);
+            // getData() materializes an attachment's default. Never create an empty
+            // legacy campaign attachment just to inspect an otherwise fresh player.
+            String legacy = player.hasData(TurnboundAttachments.CAMPAIGN_PROFILE)
+                    ? player.getData(TurnboundAttachments.CAMPAIGN_PROFILE) : "";
+            String rebuild = player.hasData(TurnboundAttachments.REBUILD_CAMPAIGN_PROFILE)
+                    ? player.getData(TurnboundAttachments.REBUILD_CAMPAIGN_PROFILE) : "";
             RebuildSaveAdmission.Decision decision = RebuildSaveAdmission.decide(
                     rebuild != null && !rebuild.isBlank(),
                     legacy != null && !legacy.isBlank(),

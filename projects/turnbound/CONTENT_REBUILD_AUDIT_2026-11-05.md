@@ -108,3 +108,6 @@ Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR T
 - Verify client login/logout, world restart and death attachment behavior in an isolated NEW test world. CI dedicated server smoke does not test joined players or multiplayer. Do not promise proven world/save compatibility yet.
 - Extracted `CombatMath.calculateDamage` as a pure stat/formula boundary, keeping exact historical semantics via BattleEngine delegation; all legacy-specific combat triggers are still in the old engine and need further coherent extraction.
 - **Still not physically removed:** old map builders, character-specific battle rules, unused client screens, historical catalog readers and test-bound Java classes. Removing these safely requires separating current test and compile references; ordinary Gradle JUnit source-set migration was invalid (#1048).
+
+## Existing attachment non-materialization correction — 2026-11-05
+- Uses NeoForge `hasData` before reading either attachment so merely checking for a legacy player does not materialize an empty default in the old `campaign_profile` slot. The rebuild never invokes the legacy attachment's `setData` or `removeData`.
