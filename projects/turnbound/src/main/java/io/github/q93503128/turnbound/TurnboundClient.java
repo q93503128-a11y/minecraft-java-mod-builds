@@ -1,58 +1,24 @@
 package io.github.q93503128.turnbound;
 
-import io.github.q93503128.turnbound.client.BattleCameraController;
-import io.github.q93503128.turnbound.client.BattlePlayerRenderPolicy;
-import io.github.q93503128.turnbound.client.BattleStatusLayer;
 import io.github.q93503128.turnbound.client.ClientAudioNetwork;
 import io.github.q93503128.turnbound.client.ClientAudioPlayback;
 import io.github.q93503128.turnbound.client.ClientBattleNetwork;
-import io.github.q93503128.turnbound.client.ClientFieldNetwork;
-import io.github.q93503128.turnbound.client.ClientQuestTargetOutlineState;
-import io.github.q93503128.turnbound.client.ClientMetaNetwork;
 import io.github.q93503128.turnbound.client.ClientMultiplayerPartyNetwork;
-import io.github.q93503128.turnbound.client.ClientUiFeedbackLayer;
-import io.github.q93503128.turnbound.client.ClientWorldLoadingBootstrap;
-import io.github.q93503128.turnbound.client.DrehmalAutoInstaller;
-import io.github.q93503128.turnbound.client.FastTravelTransitionLayer;
-import io.github.q93503128.turnbound.client.FieldInteractionPromptLayer;
-import io.github.q93503128.turnbound.client.FieldLocationBannerLayer;
-import io.github.q93503128.turnbound.client.MetaMenuKeyHandler;
-import io.github.q93503128.turnbound.client.QuestGuideLayer;
-import io.github.q93503128.turnbound.client.VanillaHudPolicy;
-import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
+/**
+ * Minimal client registration for the content-rebuild foundation.
+ * There is no legacy world installer, forced loading UI, quest guide, camera override or HUD suppression.
+ */
 @Mod(value = Turnbound.MOD_ID, dist = Dist.CLIENT)
 public final class TurnboundClient {
     public TurnboundClient(IEventBus modEventBus) {
-        DrehmalAutoInstaller.repairExistingWorldBeforeResourceLoad();
         modEventBus.addListener(ClientBattleNetwork::register);
-        modEventBus.addListener(ClientFieldNetwork::register);
-        modEventBus.addListener(ClientMetaNetwork::register);
         modEventBus.addListener(ClientMultiplayerPartyNetwork::register);
         modEventBus.addListener(ClientAudioNetwork::register);
-        modEventBus.addListener((RegisterGuiLayersEvent event) -> {
-            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "location_banner"), new FieldLocationBannerLayer());
-            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "interaction_prompt"), new FieldInteractionPromptLayer());
-            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "quest_guide"), new QuestGuideLayer());
-            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "battle_status"), new BattleStatusLayer());
-            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "ui_feedback"), new ClientUiFeedbackLayer());
-            event.registerAboveAll(Identifier.fromNamespaceAndPath(Turnbound.MOD_ID, "fast_travel_transition"), new FastTravelTransitionLayer());
-        });
-        NeoForge.EVENT_BUS.addListener(VanillaHudPolicy::onGuiLayer);
-        NeoForge.EVENT_BUS.addListener(BattleCameraController::onDetachedCameraDistance);
-        NeoForge.EVENT_BUS.addListener(BattleCameraController::onCameraAngles);
-        NeoForge.EVENT_BUS.addListener(BattleCameraController::onFov);
-        NeoForge.EVENT_BUS.addListener(BattlePlayerRenderPolicy::onRenderPlayer);
-        NeoForge.EVENT_BUS.addListener(MetaMenuKeyHandler::onKey);
-        NeoForge.EVENT_BUS.addListener(DrehmalAutoInstaller::onTick);
-        NeoForge.EVENT_BUS.addListener(ClientWorldLoadingBootstrap::onTick);
-        NeoForge.EVENT_BUS.addListener(ClientQuestTargetOutlineState::onTick);
-        NeoForge.EVENT_BUS.addListener(FastTravelTransitionLayer::onTick);
         NeoForge.EVENT_BUS.addListener(ClientAudioPlayback::onTick);
     }
 }

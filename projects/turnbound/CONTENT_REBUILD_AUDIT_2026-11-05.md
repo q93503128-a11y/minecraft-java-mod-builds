@@ -49,3 +49,10 @@ G. Only after the clean foundation is technically verified, decide new area and 
 - Save identities are persistent; missing catalog entries must fail safely without destroying old player progress.
 
 Validation: AUDITED STATICALLY; CONTENT REMOVAL NOT STARTED; BUILD NOT RUN FOR THIS BRANCH; CLIENT / MULTIPLAYER NOT TESTED.
+
+## Foundation registration pass — 2026-11-05
+- The mod entrypoint no longer runs old quest / world / player-shell tick/login handlers, field or meta commands, or old world building. Stable entity IDs, attachments, battle protocol and party protocol remain registered pending migration.
+- The client entrypoint no longer invokes the Drehmal installer or repair path, old field/quest UI, loading screen, camera overrides, or HUD suppression. Generic battle/party/audio network registrations remain.
+- The generated Modrinth pack no longer writes the Drehmal opt-in marker or advertises a world download; obsolete Elysia texture regeneration was removed from build tasks.
+- Inactive legacy classes/JSON/resources remain in source for staged removal. This is not yet a physically empty content catalog, and no existing save is migrated or overwritten by the new entrypoints.
+- Build/CI and actual Minecraft client confirmation must be recorded separately; an inactive entrypoint by itself is not proof of successful gameplay.

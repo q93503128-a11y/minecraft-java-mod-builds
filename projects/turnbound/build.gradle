@@ -73,26 +73,7 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
-// GitHub's text-only connector cannot reliably preserve arbitrary PNG bytes. Keep the repaired
-// Elysia texture as canonical Base64 text and deterministically restore the exact PNG for every
-// build/run. This also prevents malformed ancillary/trailing chunks from reappearing.
-var generateElysiaTexture = tasks.register('generateElysiaTexture') {
-    def inputFile = file('src/main/resources/assets/turnbound/textures/entity/hero/elysia.png.b64')
-    def outputDir = layout.buildDirectory.dir('generated/resources/elysia')
-    inputs.file inputFile
-    outputs.dir outputDir
-    doLast {
-        def outputFile = outputDir.get().file('assets/turnbound/textures/entity/hero/elysia.png').asFile
-        outputFile.parentFile.mkdirs()
-        outputFile.bytes = java.util.Base64.getDecoder().decode(inputFile.getText('UTF-8').trim())
-    }
-}
-sourceSets.main.resources.srcDir generateElysiaTexture
-neoForge.ideSyncTask generateElysiaTexture
-
-tasks.withType(ProcessResources).configureEach {
-    exclude 'assets/turnbound/textures/entity/hero/elysia.png.b64'
-}
+// The retired hero texture generator is deliberately not part of the blank-content build.
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
@@ -176,27 +157,14 @@ tasks.register('prepareOneClickPack') {
             rename { 'GeckoLib-MIT.txt' }
         }
 
-        new File(config, 'one_click_drehmal.txt').setText(
-                'turnbound:drehmal_apotheosis_2_2_2f\nversion=2.2.2f\n',
-                'UTF-8')
+        // No world installer marker: the rebuild pack must never download or modify Drehmal worlds.
 
-        String readme = '''TURNBOUND one-click test pack
+        String readme = '''TURNBOUND content-rebuild foundation
 
-첫 설치:
-- 이 모드팩을 한 번만 새 인스턴스로 가져옵니다.
-- 첫 실행 시 TURNBOUND가 Drehmal: APOTHEOSIS 2.2.2f 공식 GitHub 배포 파일을 직접 다운로드/검증합니다.
-- 약 4.18 GB를 다운로드하며 설치/압축 해제를 위해 약 10 GB 여유 공간을 권장합니다.
-- 월드와 전용 resources.zip은 같은 인스턴스의 saves 폴더에 남습니다.
-- 수동 Drehmal 다운로드, saves 복사, /turnbound world bind_drehmal 입력은 필요하지 않습니다.
-
-이후 TURNBOUND 업데이트:
-- 새 모드팩 인스턴스를 만들지 않습니다.
-- 같은 인스턴스의 mods 폴더에서 기존 turnbound-*.jar만 새 JAR로 교체합니다.
-- 설치된 Drehmal 월드/리소스는 다시 다운로드하지 않습니다.
-- 맵 버전을 의도적으로 바꾸거나 필수 설치 파일을 삭제한 경우에만 다시 준비가 필요합니다.
-
-Drehmal 원본 맵/리소스는 이 mrpack 안에 포함되어 있지 않으며 공식 배포처에서 첫 실행에 직접 내려받습니다.
-GeckoLib 5.5.3 NeoForge 런타임은 MIT 라이선스로 모드팩에 포함됩니다.
+This pack intentionally contains no playable TURNBOUND roster, quests or authored world.
+The previous Drehmal world download/install is retired on this branch.
+Use a separate test instance and world. Existing saves are not migrated or overwritten.
+The foundation retains common multiplayer/battle protocols while new content is jointly designed.
 '''
         new File(root, 'overrides/README-TURNBOUND.txt').setText(readme, 'UTF-8')
 
@@ -221,8 +189,8 @@ GeckoLib 5.5.3 NeoForge 런타임은 MIT 라이선스로 모드팩에 포함됩�
                 formatVersion: 1,
                 game: 'minecraft',
                 versionId: mod_version,
-                name: "TURNBOUND ${mod_version} One-click Test",
-                summary: 'TURNBOUND 26.2 NeoForge test pack with JourneyMap and first-run official Drehmal bootstrap',
+                name: "TURNBOUND ${mod_version} Content Rebuild Foundation",
+                summary: 'TURNBOUND 26.2 NeoForge content-rebuild foundation (no legacy world installer)',
                 files: [journeyMapFile],
                 dependencies: [
                         minecraft: minecraft_version,
