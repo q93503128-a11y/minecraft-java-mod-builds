@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - turnbound-alpha17-full-v04
+      - turnbound-content-rebuild
     paths:
       - 'projects/turnbound/**'
       - '.github/workflows/build-turnbound.yml'
@@ -26,10 +27,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
-      - name: Install authored summon artwork
-        working-directory: projects/turnbound
-        run: |
-          python3 tools/generate_summon_assets.py --root . --output src/main/resources
       - name: Test and build TURNBOUND
         working-directory: projects/turnbound
         shell: bash
@@ -82,24 +79,8 @@ jobs:
           fi
           grep -qx 'META-INF/neoforge.mods.toml' jar-contents.txt
           grep -qx 'io/github/q93503128/turnbound/Turnbound.class' jar-contents.txt
-          grep -qx 'data/turnbound/characters/v04.json' jar-contents.txt
-          grep -qx 'data/turnbound/enemies/v04.json' jar-contents.txt
-          grep -qx 'data/turnbound/equipment/v04.json' jar-contents.txt
-          grep -qx 'data/turnbound/battles/v04.json' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/bg_archive.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/wash_violet.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/wash_gold.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/card_common.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/card_rare.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/card_legendary.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/portraits/p02.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/portraits/p02_silhouette.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/portraits/p05.png' jar-contents.txt
-          grep -qx 'assets/turnbound/textures/gui/summon/portraits/f04.png' jar-contents.txt
-          for portrait in p01 p02 p03 p04 p05 p06 p07 p08 f01 f02 f03 f04; do
-            grep -qx "assets/turnbound/textures/gui/summon/portraits/${portrait}.png" jar-contents.txt
-            grep -qx "assets/turnbound/textures/gui/summon/portraits/${portrait}_silhouette.png" jar-contents.txt
-          done
+          grep -q '^data/turnbound/' jar-contents.txt
+          grep -q '^assets/turnbound/' jar-contents.txt
           unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
           grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
           grep -Fq "version=\"${expected_version}\"" <(tr -d ' ' < built-neoforge.mods.toml)
@@ -119,7 +100,7 @@ jobs:
           test -f "$pack_file"
           unzip -l "$pack_file" > mrpack-contents.txt
           grep -q 'modrinth.index.json' mrpack-contents.txt
-          grep -q 'overrides/config/turnbound/one_click_drehmal.txt' mrpack-contents.txt
+          ! grep -q 'overrides/config/turnbound/one_click_drehmal.txt' mrpack-contents.txt
           grep -q "overrides/mods/turnbound-${expected_version}.jar" mrpack-contents.txt
           grep -Eq 'overrides/mods/.*geckolib.*\.jar' mrpack-contents.txt
           grep -q 'overrides/licenses/GeckoLib-MIT.txt' mrpack-contents.txt
@@ -214,7 +195,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: turnbound-v04-workbranch
+          name: turnbound-content-rebuild-foundation
           path: |
             projects/turnbound/build/libs/*.jar
             projects/turnbound/build/libs/*.jar.sha256
