@@ -11,8 +11,27 @@ import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentS
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
+import java.util.UUID;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.Level;
+import dev.moonseungjun.augmentationsurvival.network.AuthorityTheftNetworking;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -40,10 +59,21 @@ public final class AuthorityTheftService {
     private static final String COOLDOWN_KEY = AUTHORITY_THEFT_ID + "#release";
     private static final int COOLDOWN_TICKS = 120 * 20;
     private static final String MCENDGAME_DYNAMIC_PROFILE = "mcendgame_dungeon_boss";
+    public static final String DISABLED_PREFIX = "authority_disabled/";
+    public static final String FALLBACK_PREFIX = "boss_entity/";
+    private static final int PACKAGE_SPACING_TICKS = 12;
+    private static final int WITHER_ARMOR_TICKS = 8 * 20;
+    private static final ResourceKey<DamageType> SONIC_DAMAGE = ResourceKey.create(
+            Registries.DAMAGE_TYPE, Identifier.fromNamespaceAndPath("minecraft", "sonic_boom"));
+    private static final Map<UUID, Long> WITHER_ARMOR = new HashMap<>();
+    private static final List<PendingPackage> PENDING_PACKAGES = new ArrayList<>();
+    private static final List<PendingSonic> PENDING_SONIC = new ArrayList<>();
 
     private static final Set<String> VANILLA_PACKAGES = Set.of(
             "vanilla_wither",
-            "vanilla_ender_dragon"
+            "vanilla_ender_dragon",
+            "vanilla_warden",
+            "vanilla_elder_guardian"
     );
 
     private static final Set<String> CHRONO_DAWN_PACKAGES = Set.of(
@@ -83,6 +113,15 @@ public final class AuthorityTheftService {
         AugmentCatalog.require(AUTHORITY_THEFT_ID);
         CloneEntityTypes.initialize();
         ServerEntityCombatEvents.AFTER_KILLED_OTHER_ENTITY.register(AuthorityTheftService::afterKill);
+        ServerTickEvents.END_SERVER_TICK.register(AuthorityTheftService::tickPending);
+        ServerPlayerEvents.JOIN.register(player -> WITHER_ARMOR.remove(player.getUUID()));
+        ServerPlayerEvents.AFTER_RESPAWN.register((previous, player, alive) -> WITHER_ARMOR.remove(player.getUUID()));
+        ServerPlayerEvents.LEAVE.register(player -> WITHER_ARMOR.remove(player.getUUID()));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            WITHER_ARMOR.clear();
+            PENDING_PACKAGES.clear();
+            PENDING_SONIC.clear();
+        });
     }
 
     private static void afterKill(
@@ -95,13 +134,26 @@ public final class AuthorityTheftService {
         if (AugmentationPlayerStateService.state(player).level(AUTHORITY_THEFT_ID) <= 0) return;
         if (!CombatProvenanceContext.resolve(source).isRootDirect()) return;
         EntityCompatibilityProfileService.resolve(killed).ifPresent(profile -> {
-            if (!profile.boss()) return;
-            String packageId = resolvePackageId(profile.id(), killed);
+            // Elder Guardians are explicitly special non-boss encounters in core rewards. That
+            // classification is preserved; only the authority channel accepts their signature.
+            if (!profile.boss() && killed.getType() != EntityType.ELDER_GUARDIAN) return;
+            String resolvedId = resolvePackageId(profile.id(), killed);
+            String packageId = supports(resolvedId) ? resolvedId : fallbackId(killed);
             if (packageId == null || !supports(packageId)) return;
             AugmentationPlayerState before = AugmentationPlayerStateService.state(player);
             AugmentationPlayerState next = before.withStolenAuthority(packageId);
             if (next.equals(before)) return;
+            if (packageId.startsWith(FALLBACK_PREFIX)) {
+                // When no inspectable signature exists, grant an honest scaled attribute echo.
+                int health = Math.max(1, Math.min(2048, Math.round(killed.getMaxHealth())));
+                var attribute = killed.getAttribute(Attributes.ATTACK_DAMAGE);
+                int damage = Math.max(1, Math.min(64, (int) Math.ceil(
+                        attribute == null ? 2.0D : attribute.getValue())));
+                next = next.withPersistentInt("authority_health/" + packageId, health)
+                        .withPersistentInt("authority_damage/" + packageId, damage);
+            }
             AugmentationPlayerStateService.replace(player, next);
+            AuthorityTheftNetworking.sendCollection(player, false);
             player.sendSystemMessage(Component.translatable(
                     "message.augmentation_survival.authority_theft.stolen",
                     killed.getDisplayName()
@@ -110,7 +162,10 @@ public final class AuthorityTheftService {
     }
 
     private static String resolvePackageId(String profileId, LivingEntity killed) {
-        if (!MCENDGAME_DYNAMIC_PROFILE.equals(profileId)) return profileId;
+        if (!MCENDGAME_DYNAMIC_PROFILE.equals(profileId)) {
+            return "vanilla_elder_guardian_domination_immune".equals(profileId)
+                    ? "vanilla_elder_guardian" : profileId;
+        }
         Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(killed.getType());
         if (entityId == null || !"mcendgame".equals(entityId.getNamespace())) return null;
         return switch (entityId.getPath()) {
@@ -123,6 +178,20 @@ public final class AuthorityTheftService {
         };
     }
 
+    private static String fallbackId(LivingEntity boss) {
+        Identifier typeId = BuiltInRegistries.ENTITY_TYPE.getKey(boss.getType());
+        return typeId == null ? null : FALLBACK_PREFIX + typeId;
+    }
+
+    public static boolean isEnabled(AugmentationPlayerState state, String id) {
+        return state.hasStolenAuthority(id) && state.persistentInt(DISABLED_PREFIX + id) == 0;
+    }
+
+    public static boolean blocksWitherProjectile(ServerPlayer player, DamageSource source) {
+        return WITHER_ARMOR.getOrDefault(player.getUUID(), 0L) > player.level().getGameTime()
+                && source.typeHolder().is(DamageTypeTags.IS_PROJECTILE);
+    }
+
     public static boolean tryRelease(ServerPlayer player) {
         if (player.isDeadOrDying()) return false;
         AugmentationPlayerState state = AugmentationPlayerStateService.state(player);
@@ -130,18 +199,25 @@ public final class AuthorityTheftService {
         long now = player.level().getGameTime();
         if (state.cooldownReadyTick(COOLDOWN_KEY) > now) return false;
 
-        int released = 0;
-        for (String bossId : state.stolenAuthorityBossIds()) {
-            if (releasePackage(player, bossId)) released++;
+        // The acquired packages are a persistent collection. A disabled package is not queued.
+        // Spread signatures over time so successive hits do not disappear into the same hurt window.
+        List<String> enabled = state.stolenAuthorityBossIds().stream()
+                .filter(id -> supports(id) && isEnabled(state, id)).toList();
+        if (enabled.isEmpty()) return false;
+        long due = now;
+        for (String id : enabled) {
+            PENDING_PACKAGES.add(new PendingPackage(player.getUUID(), player.level().dimension(), id, due));
+            due += PACKAGE_SPACING_TICKS;
         }
-        if (released <= 0) return false;
 
-        AugmentationPlayerState latest = AugmentationPlayerStateService.state(player);
-        AugmentationPlayerStateService.replace(player, latest.withCooldownReadyTick(COOLDOWN_KEY, now + COOLDOWN_TICKS));
-        player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.0F, 0.65F);
+        AugmentationPlayerStateService.replace(player,
+                state.withCooldownReadyTick(COOLDOWN_KEY, now + COOLDOWN_TICKS));
+        AuthorityTheftNetworking.sendCollection(player, false);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE,
+                SoundSource.PLAYERS, 1.0F, 0.65F);
         if (player.level() instanceof ServerLevel level) {
-            level.sendParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1.0D, player.getZ(),
-                    90, 0.8D, 1.1D, 0.8D, 0.15D);
+            level.sendParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1.0D,
+                    player.getZ(), 40, 0.8D, 1.0D, 0.8D, 0.10D);
         }
         return true;
     }
@@ -150,13 +226,17 @@ public final class AuthorityTheftService {
         return VANILLA_PACKAGES.contains(bossId)
                 || CHRONO_DAWN_PACKAGES.contains(bossId)
                 || WORLD_BOSSES_PACKAGES.contains(bossId)
-                || MCENDGAME_PACKAGES.contains(bossId);
+                || MCENDGAME_PACKAGES.contains(bossId)
+                || (bossId != null && bossId.startsWith(FALLBACK_PREFIX)
+                    && bossId.length() > FALLBACK_PREFIX.length());
     }
 
     private static boolean releasePackage(ServerPlayer player, String bossId) {
         return switch (bossId) {
             case "vanilla_wither" -> { releaseWither(player); yield true; }
             case "vanilla_ender_dragon" -> { releaseEnderDragon(player); yield true; }
+            case "vanilla_warden" -> { releaseWarden(player); yield true; }
+            case "vanilla_elder_guardian" -> { releaseElderGuardian(player); yield true; }
             case "chronodawn_time_guardian" -> { releaseTimeGuardian(player); yield true; }
             case "chronodawn_chronos_warden" -> { releaseChronosWarden(player); yield true; }
             case "chronodawn_clockwork_colossus" -> { releaseClockworkColossus(player); yield true; }
@@ -179,27 +259,58 @@ public final class AuthorityTheftService {
             case "mcendgame_elf_duelist" -> { releaseElfDuelist(player); yield true; }
             case "mcendgame_beakburn" -> { releaseBeakburn(player); yield true; }
             case "mcendgame_beastweaver" -> { releaseBeastweaver(player); yield true; }
-            default -> false;
+            default -> {
+                if (bossId.startsWith(FALLBACK_PREFIX)) {
+                    releaseFallback(player, bossId);
+                    yield true;
+                }
+                yield false;
+            }
         };
     }
 
-    /** Vanilla Wither: three-target wither pressure, close detonation and one native regeneration pulse. */
+    /** Wither Armor: the original second-phase signature blocks projectile damage for eight seconds. */
     private static void releaseWither(ServerPlayer player) {
-        List<LivingEntity> targets = hostiles(player, 24.0D).stream()
-                .sorted((left, right) -> Double.compare(player.distanceToSqr(left), player.distanceToSqr(right)))
-                .limit(3)
-                .toList();
-        for (LivingEntity target : targets) {
-            hurt(player, target, scaledDamage(player, 0.85D, 8.0D));
-            target.addEffect(new MobEffectInstance(MobEffects.WITHER, 160, 1));
+        WITHER_ARMOR.put(player.getUUID(), player.level().getGameTime() + WITHER_ARMOR_TICKS);
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.WITHER_AMBIENT, SoundSource.PLAYERS, 0.85F, 0.65F);
+        particles(player, ParticleTypes.SOUL, 46, 3.0D);
+    }
+
+    /** Warden sonic boom: explicit charge, obstruction-piercing beam, vanilla sonic damage type. */
+    private static void releaseWarden(ServerPlayer player) {
+        LivingEntity target = nearestHostile(player, 15.0D);
+        if (target == null) return;
+        // Preserve the Warden's roughly 1.7s warning before its unblockable sound damage.
+        PENDING_SONIC.add(new PendingSonic(player.getUUID(), player.level().dimension(),
+                target.getUUID(), player.level().getGameTime() + 34));
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 0.95F, 1.0F);
+        particles(player, ParticleTypes.SCULK_SOUL, 28, 2.0D);
+    }
+
+    /** Elder Guardian's area curse. Mob-target CC adapts the fatigue curse to combat AI. */
+    private static void releaseElderGuardian(ServerPlayer player) {
+        for (LivingEntity enemy : hostiles(player, 50.0D)) {
+            enemy.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 160, 2));
+            enemy.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 160, 1));
+            enemy.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 1));
         }
-        for (LivingEntity enemy : hostiles(player, 5.0D)) {
-            hurt(player, enemy, scaledDamage(player, 0.45D, 4.0D));
-            pushAway(player, enemy, 0.8D, 0.25D);
-        }
-        player.heal(1.0F);
-        player.level().playSound(null, player.blockPosition(), SoundEvents.WITHER_SHOOT, SoundSource.PLAYERS, 0.9F, 0.8F);
-        particles(player, ParticleTypes.SOUL, 110, 6.0D);
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.ELDER_GUARDIAN_CURSE, SoundSource.PLAYERS, 1.0F, 1.0F);
+        particles(player, ParticleTypes.ELDER_GUARDIAN, 1, 1.0D);
+    }
+
+    /** Explicitly labelled non-signature fallback for a profile-defined boss with no bound pattern. */
+    private static void releaseFallback(ServerPlayer player, String id) {
+        AugmentationPlayerState saved = AugmentationPlayerStateService.state(player);
+        int hp = saved.persistentInt("authority_health/" + id);
+        int attack = saved.persistentInt("authority_damage/" + id);
+        int resistance = hp >= 200 ? 1 : 0;
+        int strength = attack >= 16 ? 1 : 0;
+        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 120, resistance));
+        player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 120, strength));
+        particles(player, ParticleTypes.ENCHANT, 34, 3.0D);
     }
 
     /** Vanilla Ender Dragon: charge knockback followed by a dragon-breath cone. */
@@ -572,6 +683,72 @@ public final class AuthorityTheftService {
         player.level().playSound(null, player.blockPosition(), SoundEvents.RAVAGER_AMBIENT, SoundSource.PLAYERS, 0.8F, 0.9F);
         particles(player, ParticleTypes.SPORE_BLOSSOM_AIR, 130, 9.0D);
     }
+
+    private static void tickPending(MinecraftServer server) {
+        Iterator<PendingPackage> packageIterator = PENDING_PACKAGES.iterator();
+        while (packageIterator.hasNext()) {
+            PendingPackage pending = packageIterator.next();
+            ServerPlayer caster = server.getPlayerList().getPlayer(pending.playerId());
+            if (caster == null || caster.isDeadOrDying() || caster.level().dimension() != pending.dimension()) {
+                packageIterator.remove();
+                continue;
+            }
+            if (caster.level().getGameTime() < pending.dueTick()) continue;
+            packageIterator.remove();
+            if (AugmentationPlayerStateService.state(caster).level(AUTHORITY_THEFT_ID) > 0) {
+                releasePackage(caster, pending.packageId());
+            }
+        }
+        Iterator<PendingSonic> sonicIterator = PENDING_SONIC.iterator();
+        while (sonicIterator.hasNext()) {
+            PendingSonic pending = sonicIterator.next();
+            ServerPlayer caster = server.getPlayerList().getPlayer(pending.playerId());
+            if (caster == null || caster.isDeadOrDying() || caster.level().dimension() != pending.dimension()) {
+                sonicIterator.remove();
+                continue;
+            }
+            if (caster.level().getGameTime() < pending.dueTick()) continue;
+            sonicIterator.remove();
+            Entity entity = caster.level().getEntity(pending.targetId());
+            if (!(entity instanceof LivingEntity target) || target.isDeadOrDying()
+                    || caster.distanceToSqr(target) > 15.0D * 15.0D
+                    || !CompanionAugmentService.isHostileTarget(caster, target)) continue;
+            ServerLevel level = caster.level();
+            Vec3 source = caster.getEyePosition();
+            Vec3 direction = target.getBoundingBox().getCenter().subtract(source);
+            for (int step = 1; step <= 12; step++) {
+                Vec3 position = source.add(direction.scale(step / 12.0D));
+                level.sendParticles(ParticleTypes.SONIC_BOOM, position.x, position.y, position.z,
+                        1, 0.0D, 0.0D, 0.0D, 0.0D);
+            }
+            level.playSound(null, caster.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM,
+                    SoundSource.PLAYERS, 1.0F, 1.0F);
+            CombatProvenanceContext.runAs(CombatProvenance.AUTHORITY,
+                    () -> target.hurtServer(level, caster.damageSources().source(SONIC_DAMAGE, null, caster), 10.0F));
+            Vec3 push = target.position().subtract(caster.position());
+            if (push.lengthSqr() > 1.0E-6D) {
+                Vec3 pushNorm = push.normalize();
+                target.push(pushNorm.x * 2.5D, 0.5D, pushNorm.z * 2.5D);
+            }
+        }
+        WITHER_ARMOR.entrySet().removeIf(entry -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player == null || player.isDeadOrDying() || entry.getValue() <= player.level().getGameTime()) {
+                return true;
+            }
+            if (player.level().getGameTime() % 12L == 0L) {
+                ((ServerLevel) player.level()).sendParticles(ParticleTypes.SOUL,
+                        player.getX(), player.getY() + 1.0D, player.getZ(),
+                        5, 0.55D, 0.8D, 0.55D, 0.02D);
+            }
+            return false;
+        });
+    }
+
+    private record PendingPackage(UUID playerId, ResourceKey<Level> dimension,
+                                  String packageId, long dueTick) { }
+    private record PendingSonic(UUID playerId, ResourceKey<Level> dimension,
+                                UUID targetId, long dueTick) { }
 
     private static int deflectDuelistProjectiles(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return 0;

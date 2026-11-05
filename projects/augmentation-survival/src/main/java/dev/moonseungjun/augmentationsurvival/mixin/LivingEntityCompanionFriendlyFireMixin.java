@@ -1,6 +1,7 @@
 package dev.moonseungjun.augmentationsurvival.mixin;
 
 import dev.moonseungjun.augmentationsurvival.augment.active.CloneActiveService;
+import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityTheftService;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,6 +24,10 @@ abstract class LivingEntityCompanionFriendlyFireMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         LivingEntity self = (LivingEntity) (Object) this;
+        if (self instanceof ServerPlayer defender && AuthorityTheftService.blocksWitherProjectile(defender, source)) {
+            cir.setReturnValue(false);
+            return;
+        }
         Entity dealer = source.getEntity();
         if (dealer != null && (
                 CompanionAugmentService.areAllied(dealer, self)

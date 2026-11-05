@@ -1,14 +1,20 @@
 package dev.moonseungjun.augmentationsurvival.augment.active;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 
 /** Player-facing descriptions of the exact twenty-four server-supported authority packages. */
 public final class AuthorityPowerCatalog {
     public record Entry(String id, String group, String bossName, String effect) { }
 
     public static final List<Entry> ENTRIES = List.of(
-            new Entry("vanilla_wither", "바닐라", "위더", "24블록 내 적 최대 3명에게 공격·시듦 II(8초). 근접 5블록 폭발·넉백, 자신 체력 1 회복."),
+            new Entry("vanilla_wither", "바닐라", "위더", "위더의 2페이즈 보호막을 해방해 8초간 투사체 피해를 무효화합니다."),
             new Entry("vanilla_ender_dragon", "바닐라", "엔더 드래곤", "6블록 근접 충격파와 넉백. 바라보는 방향 12블록·70도 범위에 드래곤 브레스 피해."),
+            new Entry("vanilla_warden", "바닐라", "워든", "1.7초 충전 후 벽을 관통하는 음파 공격. 단일 적에게 고유 음파 피해와 강한 넉백."),
+            new Entry("vanilla_elder_guardian", "바닐라", "엘더 가디언", "50블록 내 적에게 광역 채굴 피로 III의 저주. 몹 전투용 둔화·나약함 8초."),
             new Entry("chronodawn_time_guardian", "Chrono Dawn", "Time Guardian", "적 뒤로 순간이동, 대상 둔화. 주변 4블록에 시간 둔화·채굴 피로와 광역 피해."),
             new Entry("chronodawn_chronos_warden", "Chrono Dawn", "Chronos Warden", "저항 IV 5초. 주변 4블록에 충격파·넉백, 가까운 대상에게 채굴 피로."),
             new Entry("chronodawn_clockwork_colossus", "Chrono Dawn", "Clockwork Colossus", "신속 II 8초, 최대체력 15% 회복. 가까운 대상 타격과 전방 10블록 지면 충격파."),
@@ -39,6 +45,27 @@ public final class AuthorityPowerCatalog {
         for (Entry entry : ENTRIES) {
             if (entry.id().equals(id)) return entry;
         }
+        if (id != null && id.startsWith(AuthorityTheftService.FALLBACK_PREFIX)) {
+            String entity = id.substring(AuthorityTheftService.FALLBACK_PREFIX.length());
+            String display = entity;
+            Identifier key = Identifier.tryParse(entity);
+            if (key != null && BuiltInRegistries.ENTITY_TYPE.containsKey(key)) {
+                display = BuiltInRegistries.ENTITY_TYPE.getValue(key).getDescription().getString();
+            }
+            return new Entry(id, "기타 보스", display,
+                    "원본 고유 패턴이 아직 확인되지 않아 보스의 체력·공격력을 반영한 6초 전투 강화로 대체합니다.");
+        }
         return null;
+    }
+
+    public static List<Entry> available(List<String> owned) {
+        ArrayList<Entry> entries = new ArrayList<>(ENTRIES);
+        for (String id : owned) {
+            Entry entry = find(id);
+            if (entry != null && entries.stream().noneMatch(value -> value.id().equals(id))) {
+                entries.add(entry);
+            }
+        }
+        return List.copyOf(entries);
     }
 }
