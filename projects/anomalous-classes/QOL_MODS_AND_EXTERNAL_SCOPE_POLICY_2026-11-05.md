@@ -2,6 +2,13 @@
 
 > 2026-11-05 공개 배포 페이지/제작사 설명 대조. **RESEARCH ONLY — NOT INSTALLED / NOT CO-LOAD TESTED.** [프로젝트 정본](./PROJECT.md), [게임 기획](./GAME_DESIGN.md), [외부 몹·보스/던전 후보](./EXTERNAL_MOD_ECOSYSTEM_RESEARCH_2026-11-05.md)와 함께 읽는다. Minecraft **1.21.1 NeoForge는 유력 후보지만 아직 미확정**. 직업 7·8의 상세 기획 보류도 유지.
 
+## 2026-11-05 JEI 표시 선택 확인 및 전체 성장 통합
+
+- [공통 생존·경험치/레벨·보상·난이도 통합](./CORE_GAMEPLAY_GROWTH_REWARDS_DIFFICULTY_V1.md)과 함께 외부 QOL을 유지하되 **별도 RPG 성장축은 금지**.
+- **사용자 확인:** JEI를 같은 모드팩에서 쓰더라도 필요 없는 플레이어는 **`Ctrl+O`로 JEI 목록/검색 UI를 숨기면 충분**하므로 JEI 제거/전체 서버 강제 비활성화 요구 없음. 숨기기와 JEI jar 언로드/제작법 조회 자체 사용 불가 상태를 혼동하지 않음.
+- **바닐라 책**은 JEI와 별개. 아이콘 버튼 숨김은 Crafting Tweaks + Balm의 개별 선택 옵션이며 모든 플레이어에게 강제할지 미확정. 우리 전용 제작/매개체/제단은 JEI 레시피 화면과 연계 검토.
+- 멀티 위치 바와 바닐라 XP/이 게임 RPG 레벨 HUD는 서로 가리지 않도록 게임 클라이언트에서 검증한다.
+
 ## 1. 사용자 최신 요구사항
 
 **진행에 추가할 편의성 후보**
