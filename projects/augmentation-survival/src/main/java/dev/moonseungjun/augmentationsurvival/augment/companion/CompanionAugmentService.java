@@ -31,7 +31,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Guardian;
-import net.minecraft.world.entity.monster.Slime;
+import net.minecraft.world.entity.monster.cubemob.AbstractCubeMob;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -359,7 +359,7 @@ public final class CompanionAugmentService {
         // Slime/MagmaCube use a hopping MoveControl, not standard pathfinding.
         // Guardian/ElderGuardian must own navigation while charging their vanilla beam.
         // In particular, never issue a fresh forced path each tick during owner commands.
-        if (!(companion instanceof Slime) && !(companion instanceof Guardian)) {
+        if (!(companion instanceof AbstractCubeMob) && !(companion instanceof Guardian)) {
             companion.getNavigation().moveTo(target, 1.15D);
         }
     }
