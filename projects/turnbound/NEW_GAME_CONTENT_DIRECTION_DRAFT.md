@@ -1,5 +1,21 @@
 # TURNBOUND — New Player-Facing Game Content Direction (discussion draft)
 
+## Confirmed preservation of TURNBOUND turn-combat system — 2026-11-06
+**User decision: preserve the established TURNBOUND battle system; do not redesign the entire combat engine for the new survival-world game.**
+
+Retain the proven generic combat contract from legacy TURNBOUND as a system, not old character content:
+- **Four playable character actors maximum**, player avatar not a combat actor (latest party choice).
+- **Deterministic fixed-point 1000 Turn Gauge scheduler.** When Gauge reaches 1000, action is available; each normal action subtracts 1000; overflow survives. SPEED/SPD influences future Gauge fill and thus action frequency, not merely initial turn order. Preserve natural successive turns when legitimately earned.
+- **Battle logic pauses during manual player action/target selection**. Runtime actors, turn-order preview, and AUTO must use the same authoritative scheduler, not separate approximate systems.
+- Keep **Basic (CD 0), active skill cooldowns, passive/reaction and other general effect mechanisms**, target validation, buffs/debuffs, healing, status/Gauge manipulation, and server-authoritative damage/settlement, as long as the generic implementation is still appropriate. Keep player decisions meaningful and avoid reaction recursion.
+- Preserve the player-facing convenience design of **AUTO and 1x/2x presentation speed** without altering the actual underlying action economics. Actual initial AUTO policies and exact controls may need UI reimplementation/revalidation after the blank-content reset.
+- Retain old generic battle tests and network/save safety boundaries; do not restore old cast-specific skill definitions, boss hardcoding, retired story/quests, old landscapes, retired 3D assets, or previous numerical balance by default.
+- The user requested preservation of the **battle system**, not automatic reapproval of prior native character kits, duplicate progression bonuses, equipment stats, gacha probabilities, enemy lineup, playtime targets or world geometry.
+- Implementation boundary: the current shipped rebuild is still an **empty playable-content foundation**. Most generic combat types survive but the live authoring/battle entrypoint is intentionally disabled and historical character-specific branches are present in source. Preserving a design is **NOT** proof of a working new-game field battle; an appropriate integration, test pass and actual Minecraft playtest remain required.
+- Historical supporting reference: `turnbound-alpha17-full-v04:projects/turnbound/02_BALANCE_RULES_v1.md` sections 1–2, 21. Old 1000-Gauge and fixed-point `TurnScheduler`, plus action cooldowns and AUTO/1x/2x semantics, are reference behavior; old numerical tuning not new canon.
+- Follow-up co-design: clarify how combat rewards/party progression integrate with vanilla survival and how a player avatar's world-state is protected during field battle. Do not move straight to building a detailed first region or entire roster before core integration decisions.
+
+
 Status: PARTIALLY CONFIRMED — native ★1–★5, four-character party, ordinary ★3 starter selection and overworld field battle are decided. Characters, kits, numeric balance, encounter triggering and visual implementation remain undecided.
 
 ## New confirmed wildlife and dungeon decisions — 2026-11-06
