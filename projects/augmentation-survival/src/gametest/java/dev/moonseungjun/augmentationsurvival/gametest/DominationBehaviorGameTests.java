@@ -105,6 +105,42 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
         GameTestPlayers.succeed(helper);
     }
 
+    @GameTest(maxTicks = 50)
+    public void dominatedCreeperSelfRemovalReclaimsTheSlot(GameTestHelper helper) {
+        ServerPlayer owner = GameTestPlayers.survivalPlayer(helper);
+        Mob creeper = helper.spawnMob(EntityTypes.CREEPER, 2, 2, 2).withNoFreeWill().spawn();
+        creeper.setAttached(CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(owner.getUUID()));
+        CompanionAugmentService.onRevivedCompanion(creeper);
+        require(CompanionAugmentService.ownerRoster(owner).occupied(owner.getUUID()) > 0,
+                "dominated creeper never claimed a slot");
+        creeper.discard(); // A creeper explosion uses the same removal reason, not LivingEntity.die.
+        GameTestPlayers.runAfterDelay(helper, 4, () -> {
+            require(CompanionAugmentService.ownerRoster(owner).companions(owner.getUUID()).stream()
+                            .noneMatch(record -> record.uuid().equals(creeper.getUUID().toString())),
+                    "self-discarded creeper remains in the saved roster");
+            require(CompanionAugmentService.ownerRoster(owner).occupied(owner.getUUID()) == 0,
+                    "self-discarded creeper still occupies a domination slot");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest(maxTicks = 50)
+    public void hostileIllagerRetaliatesAgainstDominatedIllager(GameTestHelper helper) {
+        ServerPlayer owner = GameTestPlayers.survivalPlayer(helper);
+        Mob ally = helper.spawnMob(EntityTypes.EVOKER, 2, 2, 2).withNoFreeWill().spawn();
+        Mob defender = helper.spawnMob(EntityTypes.EVOKER, 3, 2, 2).withNoFreeWill().spawn();
+        ally.setAttached(CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(owner.getUUID()));
+        CompanionAugmentService.onRevivedCompanion(ally);
+        require(!ally.isAlliedTo(defender), "controlled illager still allied with hostile illager");
+        require(!defender.isAlliedTo(ally), "hostile illager still considers controlled illager allied");
+        defender.hurtServer((ServerLevel) owner.level(), defender.damageSources().mobAttack(ally), 2.0F);
+        require(defender.getTarget() == ally,
+                "hostile illager did not retaliate against controlled illager damage");
+        GameTestPlayers.succeed(helper);
+    }
+
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }

@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
@@ -79,7 +80,16 @@ public final class CompanionAugmentService {
                 }
             }
         });
-        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> LOADED_DOMINATED.remove(entity.getUUID()));
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
+            // A creeper removes itself with DISCARD after its fuse; LivingEntity.die never runs.
+            // Distinguish permanent removal from CHUNK_UNLOAD/dimension transfer.
+            if (entity instanceof Mob mob && isDominated(mob)
+                    && (entity.getRemovalReason() == Entity.RemovalReason.DISCARDED
+                        || entity.getRemovalReason() == Entity.RemovalReason.KILLED)) {
+                onActualDeath(mob);
+            }
+            LOADED_DOMINATED.remove(entity.getUUID());
+        });
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamageTaken, damageTaken, blocked) -> {
             if (!blocked && damageTaken > 0.0F && source.getEntity() instanceof ServerPlayer owner) {
                 recordOwnerAttack(owner, entity);
@@ -203,8 +213,15 @@ public final class CompanionAugmentService {
         if (owner.isPresent() && entity.level() instanceof ServerLevel level) {
             LOADED_DOMINATED.remove(entity.getUUID());
             MinecraftServer server = level.getServer();
-            setWorldState(server, worldState(server).withDelta(owner.get(), -1)
-                    .withoutCompanion(owner.get(), entity.getUUID(), false));
+            DominationWorldState saved = worldState(server);
+            // Both die() and the permanent entity-removal callback can observe the same entity.
+            // Reclaim occupancy only once, and never charge an unindexed owner twice.
+            boolean recorded = saved.companions(owner.get()).stream()
+                    .anyMatch(record -> record.uuid().equals(entity.getUUID().toString()));
+            if (recorded) {
+                setWorldState(server, saved.withDelta(owner.get(), -1)
+                        .withoutCompanion(owner.get(), entity.getUUID(), false));
+            }
         }
         OWNER_COMMAND_TARGETS.entrySet().removeIf(entry -> entry.getValue().entityId().equals(entity.getUUID()));
     }
@@ -218,7 +235,10 @@ public final class CompanionAugmentService {
         clearCombatTarget(mob, mob.getTarget());
         LOADED_DOMINATED.put(mob.getUUID(), mob);
         MinecraftServer server = level.getServer();
-        setWorldState(server, worldState(server).withDelta(owner.get(), 1)
+        DominationWorldState saved = worldState(server);
+        boolean recorded = saved.companions(owner.get()).stream()
+                .anyMatch(record -> record.uuid().equals(mob.getUUID().toString()));
+        setWorldState(server, (recorded ? saved : saved.withDelta(owner.get(), 1))
                 .withCompanion(owner.get(), rosterRecord(mob)));
         refreshCombatTarget(mob, owner.get(), server);
     }
@@ -297,13 +317,13 @@ public final class CompanionAugmentService {
             }
             if (ownerDistanceSquared > COMBAT_OWNER_LEASH_SQUARED) {
                 clearCombatTarget(mob, mob.getTarget());
-                mob.getNavigation().moveTo(owner, 1.25D);
+                followOwner(mob, owner, 1.25D);
                 continue;
             }
 
             refreshCombatTarget(mob, ownerId.get(), server);
             if (mob.getTarget() == null && mob.distanceToSqr(owner) > FOLLOW_OWNER_DISTANCE * FOLLOW_OWNER_DISTANCE) {
-                mob.getNavigation().moveTo(owner, 1.15D);
+                followOwner(mob, owner, 1.15D);
             }
         }
     }
@@ -333,7 +353,7 @@ public final class CompanionAugmentService {
             if (next != null) {
                 applyCombatTarget(mob, next);
             }
-        } else if (mob instanceof Warden) {
+        } else if (mob instanceof Warden || hasBrainDrivenCombat(mob)) {
             applyCombatTarget(mob, target);
         }
     }
@@ -352,14 +372,19 @@ public final class CompanionAugmentService {
         if (companion instanceof Warden warden) {
             warden.increaseAngerAt(target, WARDEN_COMMAND_ANGER, false);
             warden.setAttackTarget(target);
-        } else if (companion.getTarget() != target) {
-            // Resetting a current target every tick can interrupt attack goal windups.
-            companion.setTarget(target);
+        } else {
+            if (companion.getTarget() != target) {
+                // Never restart the ongoing native attack sequence on an unchanged target.
+                companion.setTarget(target);
+            }
+            updateBrainTarget(companion, target);
         }
-        // Slime/MagmaCube use a hopping MoveControl, not standard pathfinding.
-        // Guardian/ElderGuardian must own navigation while charging their vanilla beam.
-        // In particular, never issue a fresh forced path each tick during owner commands.
-        if (!(companion instanceof AbstractCubeMob) && !(companion instanceof Guardian)) {
+        // Dedicated move controls (guardian laser, blaze volley, vex charge, cube hopping,
+        // piglin brain combat) must never be overridden by the generic melee navigator.
+        if (!(companion instanceof AbstractCubeMob) && !(companion instanceof Guardian)
+                && companion.getType() != EntityTypes.BLAZE
+                && companion.getType() != EntityTypes.VEX
+                && !hasBrainDrivenCombat(companion)) {
             companion.getNavigation().moveTo(target, 1.15D);
         }
     }
@@ -372,7 +397,45 @@ public final class CompanionAugmentService {
             warden.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
         } else {
             companion.setTarget(null);
+            updateBrainTarget(companion, null);
         }
+    }
+
+    private static boolean hasBrainDrivenCombat(Mob mob) {
+        return mob.getType() == EntityTypes.PIGLIN
+                || mob.getType() == EntityTypes.PIGLIN_BRUTE
+                || mob.getType() == EntityTypes.HOGLIN
+                || mob.getType() == EntityTypes.ZOGLIN;
+    }
+
+    private static void updateBrainTarget(Mob mob, LivingEntity target) {
+        if (!hasBrainDrivenCombat(mob)) return;
+        if (target == null) {
+            mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+        } else {
+            mob.getBrain().setMemory(MemoryModuleType.ATTACK_TARGET, target);
+        }
+    }
+
+    private static void followOwner(Mob mob, ServerPlayer owner, double speed) {
+        if (mob.getType() == EntityTypes.VEX || mob.getType() == EntityTypes.BLAZE) {
+            mob.getMoveControl().setWantedPosition(owner.getX(), owner.getY() + 1.0D, owner.getZ(), speed);
+        } else {
+            mob.getNavigation().moveTo(owner, speed);
+        }
+    }
+
+    /** Hostile mobs must be able to retaliate against a dominated attacker, even of their own species. */
+    public static void onDominatedAttackLanded(Mob attacker, LivingEntity victim) {
+        if (!(victim instanceof Mob defender) || !isDominated(attacker)
+                || !isHostileEntity(defender) || areAllied(defender, attacker)
+                || defender.isDeadOrDying() || attacker.isDeadOrDying()) {
+            return;
+        }
+        if (defender.getTarget() != attacker) {
+            defender.setTarget(attacker);
+        }
+        updateBrainTarget(defender, attacker);
     }
 
     private static LivingEntity commandTarget(Mob companion, UUID ownerId, MinecraftServer server) {

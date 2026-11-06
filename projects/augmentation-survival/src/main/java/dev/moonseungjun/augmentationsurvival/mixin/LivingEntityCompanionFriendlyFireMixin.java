@@ -52,6 +52,9 @@ abstract class LivingEntityCompanionFriendlyFireMixin {
         LivingEntity self = (LivingEntity) (Object) this;
         if (source.getEntity() instanceof ServerPlayer player) {
             CompanionAugmentService.recordOwnerAttack(player, self);
+        } else if (source.getEntity() instanceof net.minecraft.world.entity.Mob attacker
+                && CompanionAugmentService.isDominated(attacker)) {
+            CompanionAugmentService.onDominatedAttackLanded(attacker, self);
         }
     }
 }

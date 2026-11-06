@@ -16,7 +16,13 @@ abstract class EntityCompanionAllyMixin {
             CallbackInfoReturnable<Boolean> cir
     ) {
         Entity self = (Entity) (Object) this;
-        if (CompanionAugmentService.areAllied(self, other)) {
+        // A dominated illager/piglin/etc is no longer part of its former hostile faction.
+        // Opposing controlled/uncontrolled enemies may attack each other; owner bonds stay intact.
+        if (CompanionAugmentService.isDominated(self) != CompanionAugmentService.isDominated(other)
+                && self instanceof net.minecraft.world.entity.monster.Enemy
+                && other instanceof net.minecraft.world.entity.monster.Enemy) {
+            cir.setReturnValue(false);
+        } else if (CompanionAugmentService.areAllied(self, other)) {
             cir.setReturnValue(true);
         }
     }
