@@ -65,6 +65,7 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
             float hostileHealth = hostile.getHealth();
             // This assertion exercises the damage boundary; an earlier real attack can have
             // started vanilla hurt immunity before this deliberate test strike.
+            resetRealHurtCooldown(hostile);
             hostile.invulnerableTime = 0;
             DamageSource companionAttack = hostile.damageSources().mobAttack(dominated);
             boolean hostileApplied = hostile.hurtServer(level, companionAttack, 4.0F);
@@ -149,6 +150,18 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
         require(defender.getTarget() == ally,
                 "hostile illager did not retaliate against controlled illager damage");
         GameTestPlayers.succeed(helper);
+    }
+
+    private static void resetRealHurtCooldown(net.minecraft.world.entity.LivingEntity entity) {
+        // 26.2 damage cooldown is separate from Entity.invulnerableTime.
+        // Ensure this boundary test checks damage policy, not a prior vanilla hit's immunity window.
+        try {
+            var field = net.minecraft.world.entity.LivingEntity.class.getDeclaredField("damageCooldownTime");
+            field.setAccessible(true);
+            field.setInt(entity, 0);
+        } catch (ReflectiveOperationException ex) {
+            throw new AssertionError("Unable to reset 26.2 LivingEntity damageCooldownTime", ex);
+        }
     }
 
     private static void require(boolean condition, String message) {

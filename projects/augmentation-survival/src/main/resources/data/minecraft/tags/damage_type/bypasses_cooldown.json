@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "augmentation_survival:divine_punishment"
+    "augmentation_survival:divine_punishment",
+    "augmentation_survival:shield_compression"
   ]
 }
