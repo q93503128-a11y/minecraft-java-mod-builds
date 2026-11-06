@@ -1,5 +1,29 @@
 # TURNBOUND — New Player-Facing Game Content Direction (discussion draft)
 
+## Growth pillars retained for the new survival game — 2026-11-06
+**User decision:** Keep **all four existing TURNBOUND growth pillars** in the redesigned Minecraft survival + party-turn-RPG: (1) character XP/levels, (2) gear/equipment, (3) awakening, (4) duplicate character rewards. Do NOT discard one for convenience or blindly reinvent the system.
+
+### Preserved system shape (legacy baseline to carry forward)
+- **Character levels:** retain battle/contract XP progression. Historical baseline: base Lv1–60, independent duplicate bonus +0–+10, effective maximum Lv70. The precise numeric curve and pacing are balance review items for the new survival loop.
+- **Equipment:** retain the three ordinary character equipment slots: weapon, armor and accessory. Retain the concept of character-specific signature gear as a distinct optional slot/mechanic; it is not permission to automatically restore old signature items or character kits. Historical enhancement target: +0–+10 with no random failures or destruction. Specific stat values, Gold costs and recipes require adaptation to survival.
+- **Awakening:** retain the once-per-character mechanical evolution concept; make it a meaningful kit option rather than only a flat stat multiplier. The old activation path depending on mandatory main-story or character-story quests is INCOMPATIBLE with the now-confirmed job-board/nonlinear game direction and must be redesigned (e.g. gameplay accomplishments/optional challenge), not silently copied.
+- **Duplicate gacha characters:** preserve meaningful choice between **one additional bonus level** (up to the cap) **OR native-rarity Star Essence** per duplicate; not both. At the +level cap, Essence-only is the prior baseline. Preserve unclaimed selection state safely across save/reconnect. Whether old Essence conversion shop/costs are retained is a separate economy review; no mandatory duplicate copies to unlock a unit's core skills.
+- **Native rarity remains ★1–★5 only.** A possible ★6 promotion/awakening relationship is separate and still undecided.
+
+### Survival integration requirements (proposals to design, not approved numbers)
+- Mine/forage/craft resources should help produce, enhance or trade useful **party** equipment. The Minecraft player avatar remains an explorer/crafter, not a combat actor, so do not accidentally transfer vanilla weapon damage into the turn battle as avatar damage.
+- Turn battles and optional contracts award character XP and useful equipment resources; ruins/dungeons/bosses can provide signature/awakening-related objectives and rarer upgrade materials.
+- Vanilla character experience, raw ores, survival resources and RPG progression must not spawn several duplicated, unnecessary currencies or repetitive processing steps.
+- Existing fixed-point Gauge / party-only four-character combat is retained. A complete new-game save system for characters, equipment, duplicate pending choices and awakening will need an explicit migration from the current intentionally empty rebuild profile.
+
+### Boundaries / verification
+- The user confirmed retention of the **systems**. Old character names, kits, specific gear items, story unlocks, rarities per character, numerical XP/stat balance, drop rates, previous map and quests remain retired unless explicitly newly approved.
+- Source references: frozen TURNBOUND `turnbound-alpha17-full-v04`, `02_BALANCE_RULES_v1.md` sections 9–11 and 16–17 plus prior `PROJECT.md` duplicate-choice policy. These are historical detailed baselines, not active new content.
+- This commit updates **planning documents only**; there is no newly implemented party progression, awakening UI, equipment integration, or duplicate selection, and no build or playtest performed for this doc-only change.
+
+### Next design dependency
+- Before first-region production: decide the **resource/reward bridge** from ordinary survival mining, crafting, hunting, ruins, dungeons and NPC contracts into the four retained growth systems, ensuring neither survival nor tactical combat is made optional/pointless.
+
 ## Confirmed preservation of TURNBOUND turn-combat system — 2026-11-06
 **User decision: preserve the established TURNBOUND battle system; do not redesign the entire combat engine for the new survival-world game.**
 
