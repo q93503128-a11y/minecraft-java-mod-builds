@@ -431,3 +431,34 @@ Before implementing, co-design **the contract lifecycle**, **frequency/eligibili
 - New initial design specifics (checkpoints, dungeon structure bounds, UI, single-player pause semantics, actual time source, multiplayer interactions and playtest balancing) require implementation review. Online clock includes connection time; no AFK penalty or AFK-exclusion rule is approved.
 - This is **design-only**; no running Java timer, lockout gate, persistence migration, structure registry, GUI, automated test, build or live Minecraft playtest has been performed.
 
+
+## Dungeon room fog-of-war, compulsory entered-room combat and layered rewards — 2026-11-06
+
+### User-approved direction
+- Keep each generated dungeon's **unexplored room contents undisclosed**. Before entering a room, players should not receive exact lists of enemies, rewards or full room types through a map/menu. Discover room content on entry. The dungeon's broad danger/grade may remain visible for fair risk assessment, but the exact encounter is a surprise.
+- **Entering a combat room initiates a battle; the player cannot simply cross it as if the combat did not exist.** That local forced encounter is distinct from the otherwise optional choice to enter that room or explore another branch. Not every room must contain combat.
+- **Offer layered rewards**: individual victorious encounters, battle-room completion, treasure/reward chambers, major dungeon objective clear, and an extra full-clear reward for thoroughly clearing the dungeon. The user suggested these as reward mechanisms to design further; exact content, stacking rule and award quantities are NOT approved.
+- Preserve prior user choice: players can clear the main route only or enter extra rooms and finish every battle for additional rewards; small ruins can lack a boss while major dungeons contain bosses; generated world instances vary theme modules, room graph and difficulty.
+- Preserve prior 3-party-defeat limit **per player + specific physical dungeon**, followed by **30 minutes of cumulative connected playtime** lockout at that same dungeon only (not real-world wall-clock or permanent ban), and loss-free checkpoint return.
+
+### Recommended interpretations and safety rules — subject to subsequent approval
+- **Entry trigger:** do not auto-start a battle merely because a procedural room loads or a chunk appears. Trigger once when the actual exploring player intentionally crosses a recognized combat-room threshold / engages the combat-room representative, without allowing the player to run straight through uncleared guarded objectives.
+- **Escape not silently abolished:** the user proposed probabilistic flee earlier, but final flee odds and whether dungeon rooms allow flee remain UNRESOLVED. If flee is permitted, a successful attempt exits combat without battle/room/full-clear rewards and does not count as a defeat; an uncleared combat room stays uncleared. If fleeing is prohibited in a room, communicate that limitation before the decision is committed. Do not treat 'combat automatically starts on entry' as blanket approval to ban every flee action.
+- **Fair discovery:** hide room specifics, not broad dungeon threat. Give atmosphere/indirect danger cues where appropriate without a menu revealing exact rewards. Avoid deceptive rooms that kill a low-level party instantly with no reasonable option to avoid the dungeon itself.
+- **Full-clear criterion:** recommend all reachable generated combat-room victories + main dungeon objective, rather than demanding impossible-to-find secret caches, irrelevant safe rooms or constantly respawning field mobs. Count completion at a stable generated-instance ID with stable per-room IDs. Rooms with no battle may offer exploration loot and should not block full-clear unless they carry a clear main objective.
+- **Layered payout coherence:** an enemy defeat and battle-room clear can be distinct milestone events, but do not mechanically award the *same* loot twice. Gem and rare-material sources must be rationed across basic/side/full-clear rewards with server-idempotent per-player or shared-loot semantics to prevent overpayment, relog farming or PvE multiplayer disputes.
+- **Traversal bypass:** Minecraft players can mine/place blocks, fly or teleport. Do not convert the whole dungeon into indestructible no-build zones by default. Server-owned guarded objectives/loot can be claimed only after encounter victory, regardless of reaching a physical reward room by an alternate path.
+- **Seeded generated truth:** room type, placement, reward identity and combat selection must be generated/stored persistently per dungeon instance and not rerolled on reopen, relog, interaction spam or retry. In multiplayer the physical world/layout is shared; whether cleared-room states and major rewards are personal or shared needs further design.
+- **Anti-chain-combat UX:** battle must not trigger just from standing still after battle resolution; mark room completed and provide safe breathing room. Thresholds and door behavior must support player movement and camera visibility on real world geometry. Exact interactions/visuals await actual Minecraft playtest.
+- **Dungeon loss rule:** only final party defeats add 1 to that individual's 3-loss counter; successful combat, voluntarily leaving and successful escape do not. Rewards already legitimately claimed should remain after later defeats; no inventory/currency loss.
+
+### Next design issues still open
+- Definition of a valid 'room entry' in an editable survival world and the interaction between fight triggering, escape and physical exiting.
+- Which specific room categories to implement; randomization weights, number of encounters, main-goal variability and how often a dungeon can be all-cleared.
+- Whether major treasure chambers are reachable without fighting, whether full-clear reward can be re-earned, first-clear versus replay benefits and whether older dungeon instances replenish.
+- Exact Gold/gem/material allocation across ordinary kills, room rewards and main/full-clear rewards, and quest overlap — only after content pacing is designed.
+- Multiplay looting policy, per-player versus party clear credit, instance locking & checkpoint resolution.
+
+### Status
+Documentation only; no combat-room trigger, loot-room actor, procedural reveal masking, reward settlement, full-clear state, Java tests, new JAR or Minecraft playtest was run here.
+
