@@ -108,3 +108,10 @@ Crafted items should **support the four-character turn party**, while vanilla su
 **Not implemented:** new six-rank level-cap enforcement, star-promotion flow, material recipe engine, forge block, forge UI, monster component loot, integration tests or any new JAR.
 
 Next collaborative unit: approve forge workflow and resource quality model; then separately resolve star-promotion and duplicate effective level behavior. Do not begin producing first playable route or visual assets for an unapproved crafting system.
+
+## Confirmed duplicate-level option A — 2026-11-06
+- Latest user choice: a character's current star rank limits only base XP level: star 1=Lv10, 2=Lv20, 3=Lv30, 4=Lv40, 5=Lv50, 6=Lv60. Native rarity remains 1–5 stars; rank 6 is progression-only.
+- Existing duplicate reward: choose either +1 bonus level or native-rarity Star Essence per copy. Bonus levels cap at +10 and accumulate separately from base XP.
+- Effective combat level = base XP level + duplicate bonus level, even if that exceeds the current-star base XP cap. Example: star 1, base Lv10 + bonus 3 gives effective Lv13; star 6, base Lv60 + bonus 10 gives effective Lv70.
+- Bonus levels do not independently promote star rank, increase the XP cap or substitute for star-promotion requirements. Promotion prerequisites, costs, exact stat curve and final UI display remain undecided.
+- This supersedes earlier statements marking bonus-level/cap interaction unresolved, but does not approve any new runtime feature or assert testing. Documentation only.
