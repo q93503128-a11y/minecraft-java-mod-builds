@@ -1,5 +1,11 @@
 # TURNBOUND — Summon Gacha and Currency Reward Design
 
+## Current approved dungeon replay reward policy — 2026-11-06
+- **No dungeon enemy, room or treasure refills before a clear; after a clear a one-hour dungeon replay cooldown is applied. Re-clearing after eligibility receives the same reward value and schedule as the first run, without a repeat-clear reduction.** All-enemy full clear and its reward may be earned again each eligible cycle.
+- One-hour replay cooldown clock mode (online-only or wall-clock) remains open; the unrelated 3-defeat dungeon access ban is explicitly 30 online minutes.
+- Exact gem amounts and settlement ownership still need balancing/implementation; this is only a design change. Source: `DUNGEON_GAMEPLAY_STRUCTURE_REFERENCE_AND_OPTIONS_DRAFT.md`.
+
+
 ## Confirmed native draw probabilities and flexible initial roster size — 2026-11-06
 **Latest user decision, overriding earlier unresolved odds and provisional market comparisons:**
 
@@ -55,7 +61,7 @@ The particular slot-selection and RNG-call procedure must not let the ten-pull g
 
 **User-approved primary sources**
 - **Contracts / job board:** hunting, surveying, dungeon commissions and meaningful rotating *in-world objectives* (not daily-login chores). Exact job types, completion awards and repeatability still require detailed design.
-- **Dungeons:** meaningful clear rewards; design first clear separately from repeat clears to protect replay value without making one corridor the optimal gacha printer.
+- **Dungeons:** meaningful full-value rewards on every eligible run. The user approved one-hour gating rather than reducing replay payouts; prevent early refill and duplicated rewards.
 
 **Other candidate sources (NOT user-approved payout policy)**
 - First defeat of elites, dungeon guardians and world bosses.
