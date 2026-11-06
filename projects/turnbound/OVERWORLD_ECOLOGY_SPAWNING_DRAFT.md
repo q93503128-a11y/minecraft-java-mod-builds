@@ -167,3 +167,9 @@ Exit gate: player can roam standard overworld regions without repetitive compuls
 - Exact biome-specific spawn density, limits, night difficulty, chase distances and cooldown durations.
 
 No source changes, Java compile/build, JAR, client playtest or multiplayer test were run for this **documentation-only** design checkpoint.
+
+## Dungeon exploration design reference checkpoint — 2026-11-06
+- Deeper dungeon design research and **unapproved proposed gameplay structure** recorded in `DUNGEON_GAMEPLAY_STRUCTURE_REFERENCE_AND_OPTIONS_DRAFT.md`.
+- External inspirations: YUNG's Better Dungeons (recognizable layered themed structures), When Dungeons Arise (discoverable spectacle with authored modular pieces), Vault Hunters (varied dungeon objectives); do not copy code/assets or claim current TURNBOUND 26.2 compatibility.
+- **No new dungeon mechanic has yet been user-approved by this research alone.** Next co-design pivot: whether every dungeon needs a boss or only the major ones; preserve dungeon discoverability without mandatory quests, meaningful gems and reward ownership, loss-free defeat, and same-world party turn battles.
+- Design/documentation work only, no Java changes or tests/build/playtest.
