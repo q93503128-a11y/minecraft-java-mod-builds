@@ -57,3 +57,19 @@ The user proposed integrating RPG content into the normal generated Minecraft ov
 
 ### Next single collaborative decision
 Choose who takes actions in combat: **the player avatar**, **collected/recruited party members**, or **both**. Only after this decide first creatures, equipment relationships, combat presentation, contracts, and the smallest playable slice. Do not begin a mass spawn replacement before a sufficient substitute ecosystem exists.
+
+## Confirmed direction — player-centered survival and scarce recruitment (2026-11-06)
+User-selected design direction:
+- Hybrid turn combat: the **player avatar participates as the main actor**, with recruited companions potentially fighting alongside them.
+- **Early game revolves around the player alone**. Companions are meaningful long-term goals rather than an immediately filled starting squad.
+- Recruiting party members should be **quite difficult/rare**. The player described a party capped at **four people**, but whether four is inclusive of the player or refers to up to four recruited companions is NOT YET SPECIFIED.
+- Preserve survival identity: the player still builds, mines, crafts and explores; companion recruitment increases tactical options instead of replacing player agency.
+- Characters, identities, class roles, recruitment requirements, party-sharing rules and numerical combat balance are NOT approved yet.
+
+Design proposals for joint review (not canon):
+- Make recruiting hard through distinct exploration discoveries, meaningful contracts, difficult encounters and/or conditions, not merely extremely low random drops or tedious repetitive affection clicks.
+- Pace recruits as progression milestones; reward new tactical roles or synergies rather than a flat damage multiplier. Ensure solo play remains interesting and viable in the opening, and the player remains useful at full capacity.
+- Avoid permanent escort-pathfinding chores: companion overworld follow, storage and battle representation need deliberate server-authoritative design with no unwanted teleport exploits.
+- Multiplayer: whether human players and recruited companions compete for the same four combat slots is still unresolved; do not assume solo-party rules automatically apply to co-op.
+
+Immediate decision required before setting combat capacity: Does the **4-person limit include the player** (player + 3 companions), or mean **player + up to 4 companions**?
