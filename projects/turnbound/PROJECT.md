@@ -176,3 +176,8 @@
 - This is a **documented design decision only**; no hostile monster spawning or field contact battle has been re-enabled in the blank-build runtime.
 
 - Gate for the first playable slice: a player must be able to travel normal routes without being repeatedly forced into consecutive turn battles; playtest for both avoiding enemies and intentionally engaging them. This is an experience requirement, not a promise that any actual density tuning has been tested.
+
+## Monster ecology/spawning planning checkpoint — 2026-11-06
+- User agreed to the next design step: preserve ordinary survival traversal with mostly peaceful/neutral custom wildlife, place sparse avoidable hostile field groups, and increase intentional combat pressure in caves/ruins/dungeons. All vanilla living creatures are intended to be replaced eventually.
+- Design source: `OVERWORLD_ECOLOGY_SPAWNING_DRAFT.md`. Contains proposed ecology-zone roles, explicit anti-spam combat acceptance, vanilla-material replacement matrix, NeoForge spawn-gate approach and small vertical-slice milestones.
+- Spawn density numbers/weights, actual new entity kinds, loot tables and dimensions remain **NOT APPROVED/NOT IMPLEMENTED**. No Java source/resources were altered, and no build/CI was necessary for this docs-only checkpoint.

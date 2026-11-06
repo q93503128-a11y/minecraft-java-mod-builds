@@ -2,6 +2,12 @@
 
 Status: PARTIALLY CONFIRMED — native ★1–★5, four-character party, ordinary ★3 starter selection and overworld field battle are decided. Characters, kits, numeric balance, encounter triggering and visual implementation remain undecided.
 
+## Monster ecology and spawn-direction checkpoint — 2026-11-06
+- User approved designing low-friction vanilla-world ecology: peaceful/neutral authored wildlife on normal routes, sparse avoidable R_PG hostile representatives, and higher intentional battle pressure near ruins/dungeons.
+- **Confirmed design goal**: no repeated forced contact battles while ordinary survival traveling. World atmosphere must not be achieved by mass-spawning hostile mobs.
+- Detailed proposal, replacement resource checklist, biome-level spawn plan, trial telemetry and unresolved choices: `OVERWORLD_ECOLOGY_SPAWNING_DRAFT.md`.
+- Spawn caps, numerical rates, exact mobs, first biome and actual vanilla-spawn replacement hooks remain proposed/unimplemented, not finalized canon.
+
 ## Confirmed R_PG-style visual contact and low-friction traversal — 2026-11-06
 
 ### User-confirmed encounter trigger (CANON DIRECTION)
