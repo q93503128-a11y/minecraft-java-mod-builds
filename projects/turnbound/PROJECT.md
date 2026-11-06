@@ -144,3 +144,35 @@
 - This is a design choice only. The current content-empty build has **not implemented or playtested** this new field encounter flow. Legacy world-combat source must not be treated as approved behavior without review.
 
 - Next co-design decision: specify the **encounter trigger** without making ordinary Minecraft movement or resource gathering produce unavoidable repetitive battles. Then specify avatar protection/retreat and multiplayer authority before implementing a complete field battle.
+
+## Confirmed R_PG-style visual contact and low-friction traversal — 2026-11-06
+
+### User-confirmed encounter trigger (CANON DIRECTION)
+- Reuse the older TURNBOUND **R_PG-style overworld enemy reaction**, not the recently offered attack/interact/proximity-selection alternatives.
+- A visible hostile field monster **notices the player**, displays a readable **`!` alert**, briefly reacts, and **chases**. **Physical contact triggers a 4-character-party turn-based battle on the current terrain**. No separate preparation menu and no special battle-interact key.
+- Escape should remain meaningful: a chasing monster disengages if the player gets far enough / breaks pursuit conditions and returns to its patrol or territory.
+- **Critical user concern:** if the overworld becomes thick with mobs, ordinary travel must not force constant, frustrating turn battles. Traversal comfort is a design acceptance requirement, not an optional polish item.
+
+### Anti-frustration measures — recommended for review, NOT numeric canon
+1. **Spawn policy by area:** Roads, starting points, settlements, bases and ordinary routes should have safe travel/breathing stretches; dangerous ruins, dungeons and optional hostile territories can have more pressure. Do not populate every section of every road with a forced battle.
+2. **Fewer representative field groups:** One visible field creature/group can represent a multi-enemy turn encounter, so battle complexity does not require equivalent counts of chasing field entities. Avoid overlapping aggro groups that chain player into several battles.
+3. **Avoidance readability:** Enemies should be visible before contact when plausible. Alert is a brief warning, not instant teleport into combat; line-of-sight and bounded chasing make circumventing monsters legitimate.
+4. **Retreat and re-aggro:** Chases end when leaving territory or losing pursuit. Returning creatures have a brief re-alert grace; avoid permanent endless chase, including across base/settlement boundaries.
+5. **After-battle breathing room:** A defeated field group must not instantly respawn/retrigger on the same spot. Other nearby enemies should not ambush a player in the immediate transition back from the battle UI. Exact respawn/cooldown behavior must be validated for fairness and farming balance.
+6. **Ambient versus hostile wildlife:** Although user wants all vanilla living mobs replaced, **not every authored animal should auto-aggro**. Distinguish peaceful/neutral wildlife from aggressive opponents so gathering and traveling remain possible.
+7. **Multiplayer and authority:** One player/group cannot claim multiple overlapping battle sessions; server adjudicates contacts, parties, return-to-field positions and collision with spectators. The rest of the server world must not pause.
+
+### Historical implementation reference (NOT approved new numeric balance)
+- Legacy branch `turnbound-alpha17-full-v04`: `world/DrehmalFieldEncounterPolicy.java` records the older R_PG reference sequence: see in field → alert beat → chase/contact → battle, with no pre-battle menu.
+- `world/FieldEncounterRules.java` used PATROL/ALERT/RETURN and, historically, 10-block alert, 15-block disengage, 18-block home leash, 2.6-block contact and 60-tick return grace. Those are historical code constants **not automatically the new game settings**.
+- The old `ENCOUNTER_ENEMY_PLACEMENT_v1.md` explicitly forbade monster corridors, repeated roadblocks, invisible battle triggers and rapid nearby respawns, and permitted field representatives to stand for a multi-opponent battle. **Do not transfer old Drehmal-specific map, mobs, routes or coordinates.**
+
+### Still open before coding
+- Where/how new hostile ecology spawns in the vanilla-generated overworld, including light levels and player-built safe areas; tuning maximum simultaneous nearby hostile groups and aggro frequency.
+- What counts as escape when climbing, swimming, flying, mining or crossing a region boundary.
+- Field battle protection, third-party interference, post-combat positioning and how a player avatar (not a combat actor) is represented during battle.
+- Whether several visible monsters join a single battle when clustered and what happens when multiple players contact a group.
+- Exact detection, chase, respawn and grace numbers are **UNDECIDED**. Validate against real survival traversal rather than copying legacy 20–35-second common respawns.
+- This is a **documented design decision only**; no hostile monster spawning or field contact battle has been re-enabled in the blank-build runtime.
+
+- Gate for the first playable slice: a player must be able to travel normal routes without being repeatedly forced into consecutive turn battles; playtest for both avoiding enemies and intentionally engaging them. This is an experience requirement, not a promise that any actual density tuning has been tested.
