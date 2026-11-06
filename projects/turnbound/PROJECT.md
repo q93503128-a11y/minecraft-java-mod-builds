@@ -227,3 +227,24 @@ Retain the proven generic combat contract from legacy TURNBOUND as a system, not
 
 ### Next design dependency
 - Before first-region production: decide the **resource/reward bridge** from ordinary survival mining, crafting, hunting, ruins, dungeons and NPC contracts into the four retained growth systems, ensuring neither survival nor tactical combat is made optional/pointless.
+
+## Updated star-based level caps and forging direction — 2026-11-06
+
+### User decisions: DO NOT silently revert
+- **Current star rank sets the normal character level cap:** ★1 Lv10, ★2 Lv20, ★3 Lv30, ★4 Lv40, ★5 Lv50, ★6 Lv60. Formula: `baseLevelCap(currentStars) = 10 * clamp(currentStars, 1, 6)`.
+- **Native rarity is ★1–★5 only** (gacha identity); the sixth star is an achievable *growth/promotion* rank, NOT a native ★6 gacha rarity. This resolves the earlier uncertainty about whether a ★6 growth rank is in scope, but does **not** determine promotion costs, eligibility, number of ascensions, star-stat modifiers or resource recipes.
+- Prior legacy v1 active growth applied a flat base Lv60 and effective Lv70 when duplicate +level was counted; `CanonicalData.levelCap(stars)` still contained 10/20/30/40/50/60 as a largely unused legacy helper. **The user's latest decision supersedes that flat-cap interpretation** for the new game. Do not treat the presence of the old helper as proof that the new rank-based cap is already in live runtime.
+- Keep previously approved duplicate acquisition bonus level OR Star Essence option as a growth pillar; **the stacking and UI semantics of duplicate bonus +0–+10 versus the new star-specific base-level limits remain to be reconciled before code and balancing**. Do not silently force a level-70 base cap, auto-award +levels or let duplicate bonuses bypass a promotion gate without an explicit rule.
+
+### User-requested equipment direction
+- **Change the primary normal gear acquisition loop from direct finished-equipment drops to material-based crafting at a forge/blacksmith.**
+- Players obtain ore/metal and other useful materials through vanilla survival mining and exploration; authored TURNBOUND creatures drop distinctive components, while dungeon/elite/boss rewards offer rare special materials or recipe discoveries.
+- **Better ingredients yield better or meaningfully more specialized equipment**, but the effect should be inspectable (visible recipe/preview), balanced and relevant to actual four-character turn combat rather than a random hidden power roll.
+- Preserve existing character equipment identity (weapon/armor/accessory ordinary slots, optionally character-specific signature gear, and the already selected enhancement system). Do not automatically copy retired equipment identities, recipes, numerical stats or old direct-drop economy.
+- Exact forge station type, whether it is NPC-operated/buildable, crafting formulas, ore-compatibility, item tiers, traits, required materials and upgrade costs are **proposed, not yet approved**.
+- Full equipment design proposal and integration constraints: `SURVIVAL_FORGE_AND_STAR_GROWTH_DRAFT.md`.
+- **This update is documentation only:** NO equipment recipes, forge UI, new materials, star-cap runtime, promotion or test/JAR is implemented or verified.
+
+### Next design dependency
+Decide forge workflow and how the basic survival materials / monster trophies produce weapon, armor and accessory options without excessive crafting steps; then reconcile level caps with duplicate bonuses and star promotion. Avoid switching to first-region production before these relationships are coherent.
+
