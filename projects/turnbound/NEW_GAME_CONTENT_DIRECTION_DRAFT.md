@@ -1,5 +1,19 @@
 # TURNBOUND — New Player-Facing Game Content Direction (discussion draft)
 
+## Confirmed summon guarantee and reward sources — 2026-11-06
+- **Every 10-pull batch guarantees at least one native ★4-or-★5 character.** The batch may contain more high-rarity results naturally. A ★5 counts toward this guaranteed ★4+ slot; do not silently promise an additional ★4 on top of a ★5.
+- **Every 50th individual draw is guaranteed native ★5**: 50, 100, 150, 200, ...; this is a **fixed milestone** guarantee, not a conventional pity counter that resets after obtaining ★5.
+- **An early ★5 never resets or advances the fixed 50-draw schedule**. Example: ★5 on draw 27 still guarantees draw 50; ★5 on draw 49 still guarantees draw 50. Within a 10-pull, a scheduled guaranteed ★5 also satisfies the ★4+ batch guarantee.
+- Both single and batch pulls contribute their actual individual draws to the same cumulative milestone count. The batch-specific ★4+ guarantee is explicitly associated with the **10-pull action**; no separate ten-consecutive-single-pulls ★4+ promise has been authorized.
+- Gacha's possible native ranks remain **★1–★5**; rank ★6 exists only through character promotion. Initial starter choice is one of three ordinary native ★3 characters in the normal obtainable roster.
+- **Summon currency comes principally from NPC/job-board contracts and dungeons.** Elite/boss first-clears and substantial discoveries are viable proposed secondary sources; exact payout amounts and whether repeat-clears award summon currency remain undecided.
+- Prior frozen legacy 65-soft/80-hard pity and any ★5-on-early-draw reset logic **DO NOT apply** to this new approved scheme. Do not copy old numerical summon odds or 300-crystal costs without a separate explicit balance decision.
+- Retain earlier duplicate character handling: reward choice of a +1 duplicate bonus level (up to +10) OR native-star essence, unless later explicitly changed.
+- Still unapproved: native-rarity probability weights, exact summons cost, currency/item names, how/where the UI opens, cross-pool/banner account rules if multiple pools ever exist, any additional ★4 guarantee on singles, and precise repeatable reward anti-grind policy.
+- Save the per-player cumulative draw count and enforce reward settlement server-side when implementing. Never award guaranteed draws twice on interrupted transactions. These are design/implementation criteria, **not evidence that summons are live**.
+- This is **documentation only**, not new summon code, resource drops, tests, server runtime, JAR or playtest. Full draft: `SUMMON_GACHA_AND_REWARD_ECONOMY_DRAFT.md`.
+
+
 ## User-approved sequential star promotion — 2026-11-06
 - **Promotion is available when a character reaches the CURRENT STAR RANK'S BASE XP LEVEL CAP** and the player spends the required **promotion materials obtained through monster encounters and dungeons**. This is an AND condition, not either/or.
 - Rank grows **one star at a time** (★1→★2→★3→★4→★5→★6). All native ★1–★5 characters are eligible to grow eventually to ★6. No native ★6 draws.
