@@ -379,14 +379,10 @@ public final class CompanionAugmentService {
             }
             updateBrainTarget(companion, target);
         }
-        // Dedicated move controls (guardian laser, blaze volley, vex charge, cube hopping,
-        // piglin brain combat) must never be overridden by the generic melee navigator.
-        if (!(companion instanceof AbstractCubeMob) && !(companion instanceof Guardian)
-                && companion.getType() != EntityTypes.BLAZE
-                && companion.getType() != EntityTypes.VEX
-                && !hasBrainDrivenCombat(companion)) {
-            companion.getNavigation().moveTo(target, 1.15D);
-        }
+        // Let the mob's original Goal / Brain own attack movement and attack cadence.
+        // Forcing Navigation.moveTo here turns ranged and flight mobs into melee pursuers,
+        // and interrupts vanilla beam charging, volleys, and hopping movement.
+        // Fallback follow/recall is handled only while idle or outside the owner leash.
     }
 
     private static void clearCombatTarget(Mob companion, LivingEntity previousTarget) {

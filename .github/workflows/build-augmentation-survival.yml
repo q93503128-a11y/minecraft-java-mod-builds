@@ -45,6 +45,12 @@ jobs:
           ./gradlew --no-daemon clean build inspectPackDependencies verifyPackRuntimeClasspath \
             -PaugmentationPackRuntime=true --stacktrace 2>&1 | tee "$RUNNER_TEMP/augmentation-survival-build.log"
 
+      - name: Inspect pinned World Bosses cache integration surface
+        if: always() && steps.toolchain.outcome == 'success'
+        shell: bash
+        run: |
+          python3 tools/inspect_worldbosses_cache.py
+
       - name: Capture World Bosses localization contract
         id: worldbosses_localization
         shell: bash
