@@ -69,6 +69,13 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                             + " victimPos=" + insideCone.position()
                             + " playerPos=" + player.position()
                             + " score=" + debugAccumulator(player)
+                            + " eligibleEntities=" + level.getEntitiesOfClass(
+                                    LivingEntity.class, player.getBoundingBox().inflate(7.0D),
+                                    candidate -> dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext
+                                            .isValid(player, candidate)).size()
+                            + " directGeneric=" + insideCone.hurtServer(
+                                    level, insideCone.damageSources().generic(), 2.0F)
+                            + " cowInvulnerable=" + insideCone.isInvulnerable()
                             + " canHitAttacker="
                             + dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext.isValid(player, attacker)
                             + " canHitInside="
