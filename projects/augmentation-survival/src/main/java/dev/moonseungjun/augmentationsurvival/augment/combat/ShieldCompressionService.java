@@ -85,13 +85,18 @@ public final class ShieldCompressionService {
             if (distanceSquared <= 1.0E-7D || distanceSquared > rangeSquared) continue;
             if (direction.dot(toTarget.normalize()) < minimumDot) continue;
 
-            // In Minecraft 26.2, damageCooldownTime is not Entity.invulnerableTime.
-            // shield_compression bypasses the actual hurt cooldown via the vanilla
-            // damage-type tag; preserve unrelated invulnerability state.
-            CombatProvenanceContext.runAs(
-                    CombatProvenance.DERIVED_AOE,
-                    () -> target.hurtServer(level, waveSource, damage)
-            );
+            // Preserve the 26.2 entity hurt cooldown boundary for the derived
+            // wave without changing any unrelated source's damage pipeline.
+            int previousInvulnerableTime = target.invulnerableTime;
+            target.invulnerableTime = 0;
+            try {
+                CombatProvenanceContext.runAs(
+                        CombatProvenance.DERIVED_AOE,
+                        () -> target.hurtServer(level, waveSource, damage)
+                );
+            } finally {
+                target.invulnerableTime = Math.max(target.invulnerableTime, previousInvulnerableTime);
+            }
         }
 
         emitConeParticles(level, origin, direction, range, tuning.returnWaveHalfAngleDegrees());

@@ -67,7 +67,16 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
                             + " outside=" + (outsideBefore - outsideCone.getHealth())
                             + " attackerPos=" + attacker.position()
                             + " victimPos=" + insideCone.position()
-                            + " playerPos=" + player.position());
+                            + " playerPos=" + player.position()
+                            + " score=" + debugAccumulator(player)
+                            + " canHitAttacker="
+                            + dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext.isValid(player, attacker)
+                            + " canHitInside="
+                            + dev.moonseungjun.augmentationsurvival.augment.combat.OffensiveTargetContext.isValid(player, insideCone)
+                            + " range="
+                            + dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning.current().returnWaveRange()
+                            + " angle="
+                            + dev.moonseungjun.augmentationsurvival.augment.combat.ReactiveCombatTuning.current().returnWaveHalfAngleDegrees());
             require(close(insideBefore - insideCone.getHealth(), 18.0D, 0.05D),
                     "target inside the 45-degree cone was not hit by the shockwave");
             require(close(outsideCone.getHealth(), outsideBefore, 0.001D),
@@ -152,6 +161,18 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
         }
         require(shield.getDamageValue() > durabilityBefore,
                 "vanilla shield durability boundary did not consume durability");
+    }
+
+    private static String debugAccumulator(ServerPlayer player) {
+        try {
+            var field = dev.moonseungjun.augmentationsurvival.augment.combat.ShieldCompressionService.class
+                    .getDeclaredField("STORED_BLOCKS");
+            field.setAccessible(true);
+            var map = (java.util.Map<?, ?>) field.get(null);
+            return String.valueOf(map.get(player));
+        } catch (ReflectiveOperationException ex) {
+            return "unavailable:" + ex.getClass().getSimpleName();
+        }
     }
 
     private static boolean close(double actual, double expected, double tolerance) {
