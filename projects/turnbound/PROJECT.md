@@ -263,3 +263,13 @@ Decide forge workflow and how the basic survival materials / monster trophies pr
 - Effective combat level = base XP level + duplicate bonus level, even if that exceeds the current-star base XP cap. Example: star 1, base Lv10 + bonus 3 gives effective Lv13; star 6, base Lv60 + bonus 10 gives effective Lv70.
 - Bonus levels do not independently promote star rank, increase the XP cap or substitute for star-promotion requirements. Promotion prerequisites, costs, exact stat curve and final UI display remain undecided.
 - This supersedes earlier statements marking bonus-level/cap interaction unresolved, but does not approve any new runtime feature or assert testing. Documentation only.
+
+## User-approved sequential star promotion — 2026-11-06
+- **Promotion is available when a character reaches the CURRENT STAR RANK'S BASE XP LEVEL CAP** and the player spends the required **promotion materials obtained through monster encounters and dungeons**. This is an AND condition, not either/or.
+- Rank grows **one star at a time** (★1→★2→★3→★4→★5→★6). All native ★1–★5 characters are eligible to grow eventually to ★6. No native ★6 draws.
+- Each current star rank has an independent normal base XP ceiling: ★1 Lv10, ★2 Lv20, ★3 Lv30, ★4 Lv40, ★5 Lv50, ★6 Lv60. Example: ★3 Lv30 (+5 duplicate levels) may ascend to ★4 after paying the appropriate materials; its normal base XP ceiling then becomes Lv40.
+- **Duplicate bonus levels do NOT satisfy the base XP cap requirement:** ★3 Lv25(+5) has effective combat level 30 but still cannot promote until its actual base XP level reaches 30.
+- Promotion raises `currentStars` and the **base XP cap** but must not change immutable `nativeStars`, remove already-earned +bonus levels, or automatically restore old character assets/old balance.
+- **No specific costs are approved yet**: promotion-material names, quantities, the split between ordinary monsters, elites and dungeons, any optional Gold component, future star stat changes, level/XP carry behavior and relation to once-only Awakening need separate design.
+- Promotion should create meaningful mining/monster/dungeon gameplay without overwhelming inventory with one new currency per star or requiring repetitive mandatory dungeon grinding. Proposed UX/recipe implementation is not an approved final design.
+- **DESIGN ONLY:** no actual rank-promotion screen, save schema or verified playable progression exists in the current empty-content build; no code/build/CI work was requested here.
