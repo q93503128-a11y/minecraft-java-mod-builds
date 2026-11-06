@@ -117,3 +117,12 @@
 - Gacha draw acquisition sources, currencies, odds, rarities, duplicate handling, guarantees, character roles and co-op limits are undecided. No paid draws were requested.
 - This is design documentation only, **not an implemented five-participant party or working gacha**. Existing historical battle capacity and the empty save schema require later implementation and testing.
 - The details and open choices are in NEW_GAME_CONTENT_DIRECTION_DRAFT.md.
+
+## Updated confirmed solo party and starter choice — 2026-11-06
+**OVERRIDES the earlier 2026-11-06 player-plus-four-companion entry above.**
+- User shifted combat back to the original party-only format: **up to 4 gacha character actors**, **player avatar excluded from turn combat**. Player remains responsible for vanilla-world exploration, mining, building, crafting and survival.
+- **First-start choice: exactly one of three normal native ★3 characters.** They are normal characters, NOT exclusive starter classes, not stat-boosted, and not permanently inaccessible to gacha. The two unselected choices remain available from regular character acquisition.
+- Characters' names, role kits, new star rarity ceiling, gacha probabilities, starter UI and saved first-choice/one-time claim mechanics remain unimplemented and require design/verification. No old retired characters automatically reused.
+- HISTORICAL evidence (legacy `turnbound-alpha17-full-v04`): `PROJECT.md`, `02_BALANCE_RULES_v1.md`, `03_CHARACTER_DESIGN_v1.md` defined **native ★1–★5**. The proposed ★6 promotion/Awakening relationship remained unresolved, and old `CanonicalData.levelCap` supporting an integer 6 is **not proof of approved ★6 native rarity**.
+- This is only a planning/documentation checkpoint; do not claim any starter selection or populated four-character roster currently functions in the released empty foundation.
+- Refer to `NEW_GAME_CONTENT_DIRECTION_DRAFT.md` latest selected combat direction section for the current design; superseded historical sections remain for traceability, not authority.

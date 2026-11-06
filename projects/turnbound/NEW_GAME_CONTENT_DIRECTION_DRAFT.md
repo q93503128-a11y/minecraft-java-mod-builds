@@ -1,6 +1,16 @@
 # TURNBOUND — New Player-Facing Game Content Direction (discussion draft)
 
-Status: DISCUSSION DRAFT — no proposed setting, character, ability, quest or map style is approved canon.
+Status: PARTIALLY CONFIRMED — user-confirmed solo combat structure and starter selection below; character identities, numerical balance and rarity ceiling remain undecided.
+
+## Latest selected combat and starter direction — 2026-11-06 (overrides older player-plus-companions notes)
+- **Solo turn-based combat is performed by a party of up to 4 gacha-acquired characters. The Minecraft player avatar explores/builds/survives but is NOT a combat party actor.**
+- **On the first game start, offer a choice of exactly one of three ordinary native ★3 characters.** The selected character joins the player's collection and can be used in combat. No special starter status, exclusive abilities, bonus stats, or permanently unique power.
+- The two unselected options should remain obtainable through the regular character-acquisition system, just like the chosen character; starter choices are ordinary roster characters, not a separate special tier.
+- **Prior player-avatar-plus-four-companions / five-actor limit is superseded for the current design.** The present solo party limit is 4 characters; no player avatar in turn battles.
+- Character identity, exact skills, initial distribution and gacha rates have **NOT** been approved. Do not recycle retired P01–P08/F01–F04 by default.
+- The user asked about ★1–★6. Historical TURNBOUND design (legacy branch `turnbound-alpha17-full-v04`, `PROJECT.md`, `02_BALANCE_RULES_v1.md`, `03_CHARACTER_DESIGN_v1.md`) explicitly defined **native ★1–★5**. ★6 promotion / Awakening semantics were discussed but **not settled as a sixth native summon rarity**. The new game's rarity range is pending a new user decision.
+- These are **planning decisions only**; starter selection, party roster and gacha have not been implemented into the blank-runtime build.
+
 Date: 2026-11-05. Branch: turnbound-content-rebuild.
 Project: existing TURNBOUND; NOT TURNBOUND: RE.
 
@@ -58,19 +68,19 @@ The user proposed integrating RPG content into the normal generated Minecraft ov
 ### Next collaborative decision
 Player + up to four gacha-drawn companions is confirmed. Next decide player battle action flow and the sources/costs of drawing companions. Do not begin mass vanilla mob replacement until a substitute ecosystem can support survival.
 
-## Confirmed direction — player-first survival with companion gacha (2026-11-06)
+## Superseded discussion record — former player-plus-companion concept (2026-11-06)
 
 Approved by the user:
-- Combat is hybrid: the player avatar fights directly as the central actor, supported by recruited characters.
+- SUPERSEDED: earlier hybrid player-avatar combat proposal; the current player avatar does not act as a turn combatant.
 - Early gameplay is primarily solo; there is no mandatory starter companion.
-- **Solo active-party maximum is five: one player avatar plus up to four companions.** The four companion slots do not include the player.
-- **Companions are acquired by character gacha/draws.** The earlier proposal for difficult exploration-based recruitment is withdrawn and must not be treated as canon.
+- SUPERSEDED: the earlier five-person concept (one player + four companions) was replaced by the current four-character-only combat party described at the top.
+- Continuing decision: characters are obtained by gacha, except for the first ordinary three-star choice.
 - Survival activities, turn-based encounters, exploration and optional job-board contracts should form one coherent gameplay loop. The gacha economy should eventually connect to this loop.
 
 Unsettled implementation/design details:
 - Companion roster, classes, individual skills, summon currency, how draws are earned, costs, rates, rarity, duplicate handling, guarantees and pity.
 - Whether gacha is exclusively in-game or has any optional monetization (do not assume monetization).
-- How players' equipment/HP/progression work in turn-based encounters and how companions appear in-world.
+- The survival player's health/equipment remains relevant outside the turn battle; how character-specific gear and status effects interact with survival, and how party members appear in-world, remains to be designed.
 - Cooperative battle capacity and whether each human participant brings an independent roster; the five-member limit is the solo player's active-party limit.
 
 Implementation status: this is a **design decision only**. The empty-foundation version does not have a working 5-actor battle or gacha. Existing legacy four-ally engine caps must be adapted before shipping a full new-game party; do not silently claim this is already implemented.
