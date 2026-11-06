@@ -109,3 +109,11 @@
 - [Client Boot Smoke #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42018332635) PASS: headless Linux client created a Minecraft window after the TURNBOUND mod registered. Client-only JourneyMap from the modpack was staged for the dev-run environment. This is CLIENT BOOT SMOKE VERIFIED, not PLAYTESTED.
 - **Blank technical base now verified through:** Build TURNBOUND #1065 (JUnit/build/dedicated server/JAR/mrpack), source and runtime legacy-data guard, physically retired 49 unreferenced legacy Java classes, and headless client window creation.
 - **Still gated before full ready-for-play claim:** real client fresh-world entry, logout/rejoin, restart, /kill & respawn and actual two-person multiplayer; source-reference cleanup for the remaining old world and character-specific BattleEngine branches. Do not claim legacy code fully removed.
+
+## Approved party size and gacha direction — 2026-11-06
+- **Confirmed:** Player-avatar-centric hybrid survival/turn combat. Starting play is player-driven, with companion acquisition via **gacha**, not mandatory difficult exploration or recruitment quests.
+- **Solo active-party capacity: 1 player + up to 4 companions = 5 combat participants.** The four slots EXCLUDE the player.
+- The prior 'very difficult/rare companion recruitment' proposal is superseded.
+- Gacha draw acquisition sources, currencies, odds, rarities, duplicate handling, guarantees, character roles and co-op limits are undecided. No paid draws were requested.
+- This is design documentation only, **not an implemented five-participant party or working gacha**. Existing historical battle capacity and the empty save schema require later implementation and testing.
+- The details and open choices are in NEW_GAME_CONTENT_DIRECTION_DRAFT.md.

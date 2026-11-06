@@ -30,13 +30,13 @@ Do not implement this proposal until the game's actual world style, party/collec
 
 ## Open design decisions — explicitly NOT SETTLED
 1. **World topology:** (A) expanded vanilla overworld with authored locations, (B) hand-built authored overworld, (C) hub-connected crafted regions; assess travel feel, build/art assets and multiplayer.
-2. **Player/party identity:** playable roster acquisition vs persistent main character plus recruited companions, and active party controls. Do not reuse abandoned roster design.
+2. **Player/party identity:** SOLVED for solo: player avatar fights with up to four gacha companions (five total). Exact battle roles, roster UI and multiplayer combining remain open.
 3. **Combat encounter presentation:** seamless field-to-turn battle vs distinct contained arena; reconcile visible world foes, spectators, shared-party ownership and interaction.
 4. **Progression loop:** what tangible decisions rewards enable, and what prevents farming fatigue. Do not introduce multiple overlapping currencies by default.
 5. **Creative direction:** narrative tone, geographic theme, visual identity, character art source and how the world visually communicates danger/progress.
 
 ## Next collaborative decision
-Choose the **world topology and party fantasy** before creating names, kits, rarity tables, dungeon lists or story beats. Once decided, document a small vertical slice with measurable art/UX, mechanical, save and multiplayer acceptance, and then delegate suitable visual-production tasks to Codex.
+The world direction is vanilla-generated overworld with authored RPG locations; solo combat uses player avatar + up to four gacha companions. Co-design player combat and in-game draw resources before specifying the first playable slice.
 
 ## User-proposed direction — 2026-11-06 (new conversation, NOT final detailed GDD)
 The user proposed integrating RPG content into the normal generated Minecraft overworld, **combining survival and turn-based combat**, retiring mandatory story progression in favor of **NPC/job-board contracts**, and removing **all vanilla creatures**. Treat this as the currently preferred design direction; detailed gameplay architecture, exceptions and content still require agreement.
@@ -48,28 +48,31 @@ The user proposed integrating RPG content into the normal generated Minecraft ov
 - World and other players continue running in real time; only participants are managed by a turn-battle session with server-authoritative protection from outside damage, arena/world interaction exploits and cross-player contention. No global tick pause.
 - Avoid a mandatory linear story. Use purposeful contract categories (hunt, gather, exploration, boss bounty) and meaningful resource or equipment rewards; avoid repetitive menu chores and disconnected currencies.
 - Align one coherent economy: survival crafting must help exploration/turn combat; battle drops/contracts must help survival progress. Preserve the user choice of what to do next.
-- PvE player role/party identity is **not settled**: player fights directly vs player collects/recruits a party vs hybrid. This determines how survival HP, held weapons, armor, buffs, companions and turn-based skills interact. Do not implement these as an assumed default.
+- PvE solo-party structure is decided: the player fights directly, with up to four companions obtained through gacha. Survival HP, equipment, companion abilities and multiplayer composition still require design.
 - Avoid legacy authored character/boss/quest resurrection from dormant source. Reusable engine code is allowed only after separating old hardcoding.
 
 ### Relevant external reference
 - Pixelmon has a server-side `allow-vanilla-mobs` option defaulting false, and uses overworld encounters with turn-based battles. Its docs explicitly note that some spawner/egg/dragon paths differ from the ordinary spawn toggle, underscoring the need to audit non-natural spawning separately. Reference for product-level behavior, NOT a drop-in NeoForge 26.2 implementation: https://pixelmonmod.com/wiki/Config
 - NeoForge entity and spawning documentation for later implementation planning: https://docs.neoforged.net/docs/entities/
 
-### Next single collaborative decision
-Choose who takes actions in combat: **the player avatar**, **collected/recruited party members**, or **both**. Only after this decide first creatures, equipment relationships, combat presentation, contracts, and the smallest playable slice. Do not begin a mass spawn replacement before a sufficient substitute ecosystem exists.
+### Next collaborative decision
+Player + up to four gacha-drawn companions is confirmed. Next decide player battle action flow and the sources/costs of drawing companions. Do not begin mass vanilla mob replacement until a substitute ecosystem can support survival.
 
-## Confirmed direction — player-centered survival and scarce recruitment (2026-11-06)
-User-selected design direction:
-- Hybrid turn combat: the **player avatar participates as the main actor**, with recruited companions potentially fighting alongside them.
-- **Early game revolves around the player alone**. Companions are meaningful long-term goals rather than an immediately filled starting squad.
-- Recruiting party members should be **quite difficult/rare**. The player described a party capped at **four people**, but whether four is inclusive of the player or refers to up to four recruited companions is NOT YET SPECIFIED.
-- Preserve survival identity: the player still builds, mines, crafts and explores; companion recruitment increases tactical options instead of replacing player agency.
-- Characters, identities, class roles, recruitment requirements, party-sharing rules and numerical combat balance are NOT approved yet.
+## Confirmed direction — player-first survival with companion gacha (2026-11-06)
 
-Design proposals for joint review (not canon):
-- Make recruiting hard through distinct exploration discoveries, meaningful contracts, difficult encounters and/or conditions, not merely extremely low random drops or tedious repetitive affection clicks.
-- Pace recruits as progression milestones; reward new tactical roles or synergies rather than a flat damage multiplier. Ensure solo play remains interesting and viable in the opening, and the player remains useful at full capacity.
-- Avoid permanent escort-pathfinding chores: companion overworld follow, storage and battle representation need deliberate server-authoritative design with no unwanted teleport exploits.
-- Multiplayer: whether human players and recruited companions compete for the same four combat slots is still unresolved; do not assume solo-party rules automatically apply to co-op.
+Approved by the user:
+- Combat is hybrid: the player avatar fights directly as the central actor, supported by recruited characters.
+- Early gameplay is primarily solo; there is no mandatory starter companion.
+- **Solo active-party maximum is five: one player avatar plus up to four companions.** The four companion slots do not include the player.
+- **Companions are acquired by character gacha/draws.** The earlier proposal for difficult exploration-based recruitment is withdrawn and must not be treated as canon.
+- Survival activities, turn-based encounters, exploration and optional job-board contracts should form one coherent gameplay loop. The gacha economy should eventually connect to this loop.
 
-Immediate decision required before setting combat capacity: Does the **4-person limit include the player** (player + 3 companions), or mean **player + up to 4 companions**?
+Unsettled implementation/design details:
+- Companion roster, classes, individual skills, summon currency, how draws are earned, costs, rates, rarity, duplicate handling, guarantees and pity.
+- Whether gacha is exclusively in-game or has any optional monetization (do not assume monetization).
+- How players' equipment/HP/progression work in turn-based encounters and how companions appear in-world.
+- Cooperative battle capacity and whether each human participant brings an independent roster; the five-member limit is the solo player's active-party limit.
+
+Implementation status: this is a **design decision only**. The empty-foundation version does not have a working 5-actor battle or gacha. Existing legacy four-ally engine caps must be adapted before shipping a full new-game party; do not silently claim this is already implemented.
+
+Next collaborative design: define player battle actions and the draw economy/resources before committing character identities, numerical odds or new quest content.
