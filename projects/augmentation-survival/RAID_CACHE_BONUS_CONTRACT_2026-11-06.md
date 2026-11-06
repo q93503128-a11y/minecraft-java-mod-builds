@@ -1,7 +1,7 @@
 # Augmentation Survival — World Bosses raid cache integrated gacha
 
 Date: 2026-11-06
-State: USER-DIRECTED DESIGN ACCEPTED / PINNED EXTERNAL LOOT AUDIT PENDING / RUNTIME INTEGRATION NOT IMPLEMENTED
+State: RUNTIME IMPLEMENTED / ALL 11 CACHE CONFIG+ROLL+PREVIEW GAME TESTS PASS / FULL BUILD GATE FAILS UNRELATED COMBAT TESTS / CLIENT PLAYTEST NOT RUN
 
 ## Decision
 World Bosses 2.0.2 Fabric 26.2 has its own raid-cache **opening UI with the visible list of possible rewards and chances**. Add augmentation cores as actual entries in **that same reward table and UI**, not an invisible second bonus roll after the claim. The displayed chance must equal the effective server-side chance for each specific cache and loot context.
@@ -33,4 +33,13 @@ The official 2.0.2 release documents commented `worldbosses.json` and raid-cache
 5. Run deterministic repeat sampling, retry/concurrency/duplicate prevention, all 11 cache variants, dedicated-server and client smoke, then in-game review.
 6. Deliver rebuilt JAR + verified .mrpack only after the above succeeds.
 
-This document **supersedes** the prior draft's 10% invisible bonus-core concept and 0.05% Mythic chance. This is a design and implementation gate, not a claim that the feature is already playable.
+This document **supersedes** the prior draft's 10% invisible bonus-core concept and 0.05% Mythic chance.
+
+## Implementation checkpoint (2026-11-06)
+- Implemented in `integration/WorldBossesRaidCacheCoreIntegration.java`, `mixin/WorldBossesRaidCacheLootMixin.java`, and the data contract `worldbosses_raid_cache_core_pool.json`.
+- The pinned runtime is World Bosses 2.0.2. The native `RaidCacheLootConfig.get` loot definition drives both `rollReward` and `buildLootPool`, so inserted cores are true candidates, not simulated bonus awards.
+- All **11** cache variants logged successful native source integration on server startup. `WorldBossesRaidCacheGameTests.allRaidCachesDisplayTheSameEffectiveCoreProbabilitiesAsTheirServerRoll` passed in CI: exact final odds ~2.0% Epic, ~0.8% Legendary, ~0.2% Mythic, no change to `worldbosses:*` item effective weights, core entries appear in the 30-slot preview.
+- World Bosses itself offers no Mythic rarity enum. Mythic augmentation core appears as its own item/name with the native Legendary reel rarity.
+- Scope: CODE REVIEWED / COMPILED / SERVER GAMETEST FOR CONFIG+PREVIEW+ROLL PASSED. Actual human viewing/claim interaction, multiplayer, and inventory-full/crash-resume robustness are NOT TESTED.
+- Overall CI build gate remains red due independent domination damage and shield return tests; do not claim a full verified release.
+
