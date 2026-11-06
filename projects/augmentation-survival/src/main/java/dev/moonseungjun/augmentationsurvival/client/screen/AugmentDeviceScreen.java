@@ -59,8 +59,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     private final long[] revealStarted = {Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE};
     private final int[] observedCandidateKey = {Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE};
     private String hoveredOwnedId = "";
-    private int observedStatus = Integer.MIN_VALUE;
-    private long acquisitionStarted = Long.MIN_VALUE;
 
     public AugmentDeviceScreen(AugmentDeviceMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, W, H);
@@ -107,20 +105,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int mx = mouseX - leftPos;
         int my = mouseY - topPos;
 
-        int status = menu.status();
-        if (status == AugmentDeviceMenu.STATUS_ACQUIRED && observedStatus != status) {
-            acquisitionStarted = System.currentTimeMillis();
-            playAcquisitionSound();
-        }
-        observedStatus = status;
-
-        if (status == AugmentDeviceMenu.STATUS_ACQUIRED
-                && acquisitionStarted != Long.MIN_VALUE
-                && System.currentTimeMillis() - acquisitionStarted < 1_700L) {
-            drawAcquisitionConfirm(g);
-            return;
-        }
-
         if (menu.status() == AugmentDeviceMenu.STATUS_READY) {
             drawOffer(g, mx, my);
             return;
@@ -159,14 +143,15 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
 
     private void drawTierSelect(GuiGraphicsExtractor g, int mx, int my) {
         TierLayout l = tierLayout();
+        centered(g, "코어 등급 선택", l.centerX(), l.headerTop(), TEXT);
+
         int usableH = l.visibleBottom() - l.visibleTop();
-        if (usableH >= 150) centered(g, "코어 등급 선택", l.centerX(), l.headerTop(), TEXT);
         boolean showGuide = usableH >= 190;
         boolean showBonus = !l.compact() && usableH >= 300;
         if (showGuide) {
             String guide = l.compact()
-                    ? "코어를 누르면 바로 동조합니다."
-                    : "보유한 코어를 누르면 같은 등급 후보 3개가 제시됩니다.";
+                    ? "코어 1개 → 같은 등급 후보 3개"
+                    : "사용할 코어 등급을 선택하세요. 선택한 등급의 증강 후보 3개가 제시됩니다.";
             centered(g, clip(guide, l.visibleRight() - l.visibleLeft() - 22),
                     l.centerX(), l.headerTop() + 14, MUTED);
         }
@@ -185,7 +170,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             int y = l.gridTop() + row * (l.cellHeight() + l.gapY());
             drawTierChoice(g, x, y, l.cellWidth(), l.cellHeight(), tier, mx, my);
         }
-        drawResonanceCore(g, l, mx, my);
 
         String state = switch (menu.status()) {
             case AugmentDeviceMenu.STATUS_NO_CORE -> "선택한 등급의 코어가 없습니다.";
@@ -197,7 +181,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         String footer = !state.isBlank()
                 ? state
                 : l.compact() ? selectionBonusLine() : "후보는 동조를 끝낼 때까지 유지됩니다.";
-        if (!footer.isBlank() && usableH >= 150) {
+        if (!footer.isBlank()) {
             centered(g, clip(footer, l.visibleRight() - l.visibleLeft() - 20), l.centerX(), l.footerY(),
                     menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED ? GOOD
                             : menu.status() == AugmentDeviceMenu.STATUS_IDLE ? FAINT : BAD);
@@ -211,39 +195,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         if (reroll > 0 && second) return "보유 효과 · 카드별 재추첨 " + reroll + "회 · 후보 2개 선택";
         if (reroll > 0) return "보유 효과 · 카드별 재추첨 " + reroll + "회";
         return "보유 효과 · 후보 2개 선택";
-    }
-
-    private void drawResonanceCore(GuiGraphicsExtractor g, TierLayout l, int mx, int my) {
-        int usableH = l.visibleBottom() - l.visibleTop();
-        if (usableH < 170) return;
-        AugmentTier focus = null;
-        for (AugmentTier tier : AugmentTier.values()) {
-            int index = tier.ordinal();
-            int x = l.gridLeft() + (index % l.columns()) * (l.cellWidth() + l.gapX());
-            int y = l.gridTop() + (index / l.columns()) * (l.cellHeight() + l.gapY());
-            if (coreCount(tier) > 0 && inside(mx, my, x, y, l.cellWidth(), l.cellHeight())) {
-                focus = tier;
-                break;
-            }
-        }
-        if (focus == null) {
-            for (AugmentTier tier : AugmentTier.values()) {
-                if (coreCount(tier) > 0) { focus = tier; break; }
-            }
-        }
-        if (focus == null) return;
-
-        int color = tierColor(focus);
-        int size = usableH < 250 ? 22 : 28;
-        int x = (l.visibleLeft() + l.visibleRight() - size) / 2;
-        int y = l.headerTop() + (usableH < 250 ? 34 : 43);
-        double pulse = (Math.sin(System.currentTimeMillis() / 310.0) + 1.0) * 0.5;
-        g.fill(x - 5, y - 5, x + size + 5, y + size + 5,
-                withAlpha(color, 0x18 + (int) (pulse * 0x10)));
-        g.outline(x - 3, y - 3, size + 6, size + 6, withAlpha(brighten(color, 18), 0x82));
-        g.fill(x, y, x + size, y + size, SURFACE_DEEP);
-        g.outline(x, y, size, size, color);
-        g.item(new ItemStack(AugmentCoreItems.item(focus)), x + size / 2 - 8, y + size / 2 - 8);
     }
 
     private void drawTierChoice(GuiGraphicsExtractor g, int x, int y, int w, int h, AugmentTier tier, int mx, int my) {
@@ -262,10 +213,9 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             g.outline(x - 2, y - 2, w + 4, h + 4, withAlpha(color, 0x55));
         }
 
-        int tileFill = enabled ? tint(SURFACE, color, hover ? 17 : 8) : SURFACE;
-        g.fill(x, y, x + w, y + h, hover && enabled ? tint(tileFill, color, 10) : tileFill);
+        g.fill(x, y, x + w, y + h, hover && enabled ? SURFACE_HI : SURFACE);
         g.outline(x, y, w, h, hover && enabled ? brighten(color, 24) : LINE_SOFT);
-        g.fill(x, y, x + w, y + 3, enabled ? color : shade(color, 0.35));
+        g.fill(x, y, x + w, y + 2, enabled ? color : shade(color, 0.35));
 
         int socket = compact ? 22 : Math.min(34, h - 12);
         int sx = x + (compact ? 7 : 10);
@@ -277,14 +227,10 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int textX = sx + socket + (compact ? 6 : 10);
         int titleY = compact ? y + 5 : y + Math.max(7, h / 2 - 12);
         int reserve = compact ? 7 : 55;
-        String title = h < 32 ? tierLabel(tier) + " ×" + count : tierLabel(tier);
-        String countLabel = "보유 " + count;
-        g.text(font, clip(title, Math.max(20, x + w - reserve - textX)), textX, titleY,
+        g.text(font, clip(tierLabel(tier), Math.max(20, x + w - reserve - textX)), textX, titleY,
                 enabled ? TEXT : 0xFF858D90, false);
-        if (h >= 32) {
-            g.text(font, clip(countLabel, Math.max(20, x + w - reserve - textX)), textX, titleY + 13,
-                    enabled ? MUTED : FAINT, false);
-        }
+        g.text(font, clip("보유 " + count, Math.max(20, x + w - reserve - textX)), textX, titleY + 13,
+                enabled ? MUTED : FAINT, false);
 
         if (!compact) {
             String state = enabled ? "선택" : "없음";
@@ -322,124 +268,14 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             int x = l.cardLeft() + slot * (l.cardWidth() + l.gap());
             drawAugmentCard(g, x, l.cardTop(), l.cardWidth(), l.cardHeight(),
                     slot, d, mx, my, l.compact());
-            if (rerollLevel > 0) drawRerollIcon(g, l, slot, d, mx, my);
         }
 
         String footer = rerollLevel > 0
-                ? "카드를 선택하세요 · Shift: 정확한 수치"
-                : "카드를 선택하세요 · Shift: 정확한 수치";
-        if (l.compact() && rerollLevel > 0) footer = "재추첨 아이콘 · Shift 상세";
+                ? "카드 선택 · 카드별 재추첨 · Shift: 정확한 수치"
+                : "카드 선택 · Shift: 정확한 수치";
+        if (l.compact() && rerollLevel > 0) footer = "재추첨 " + menu.rerollsRemaining() + "회 · Shift 상세";
         centered(g, clip(footer, l.visibleRight() - l.visibleLeft() - 12),
                 l.centerX(), l.footerY(), MUTED);
-    }
-
-    private void drawRerollIcon(GuiGraphicsExtractor g, OfferLayout l, int slot,
-                                AugmentDefinition d, int mx, int my) {
-        int x = l.cardLeft() + slot * (l.cardWidth() + l.gap());
-        int y = l.cardTop() + (int) Math.round((1.0 - revealProgress(slot)) * 10.0);
-        int bx = x + l.cardWidth() + 1;
-        int by = y + 7;
-        boolean hover = inside(mx, my, bx, by, 14, 14);
-        boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
-        boolean enabled = !selected && menu.rerollsRemaining() > 0;
-        int color = tierColor(d.tier());
-        g.fill(bx, by, bx + 14, by + 14, hover && enabled ? tint(SURFACE_HI, color, 18) : SURFACE_DEEP);
-        g.outline(bx, by, 14, 14, enabled ? (hover ? brighten(color, 30) : shade(color, 0.72)) : LINE_SOFT);
-        centered(g, "↻", bx + 7, by + 2, enabled ? (hover ? TEXT : color) : FAINT);
-        if (hover) {
-            String hint = selected ? "선택한 카드" : enabled ? "재추첨 " + menu.rerollsRemaining() + "회" : "재추첨 소진";
-            int tw = Math.min(font.width(hint) + 10, l.visibleRight() - l.visibleLeft() - 8);
-            int tx = bx + 16;
-            if (tx + tw > l.visibleRight()) tx = bx - tw - 2;
-            tx = Math.max(l.visibleLeft() + 4, Math.min(tx, l.visibleRight() - tw - 4));
-            int ty = Math.max(l.visibleTop() + 3, by - 17);
-            g.fill(tx, ty, tx + tw, ty + 14, 0xF20A0F12);
-            g.outline(tx, ty, tw, 14, shade(color, 0.72));
-            g.text(font, clip(hint, tw - 8), tx + 4, ty + 3, TEXT, false);
-        }
-    }
-
-    private void drawAcquisitionConfirm(GuiGraphicsExtractor g) {
-        VisibleBounds b = viewportBounds(8);
-        AugmentTier tier = menu.tierOrdinal() >= 0
-                ? AugmentTier.values()[Math.min(menu.tierOrdinal(), AugmentTier.values().length - 1)]
-                : AugmentTier.COMMON;
-        int color = tierColor(tier);
-        List<AugmentDefinition> acquired = new ArrayList<>();
-        for (int slot = 0; slot < 3; slot++) {
-            if ((menu.selectedMask() & (1 << slot)) == 0) continue;
-            AugmentDefinition d = menu.candidate(slot);
-            if (d != null) acquired.add(d);
-        }
-        if (acquired.isEmpty()) {
-            for (int slot = 0; slot < 3 && acquired.size() < Math.max(1, menu.selectionCount()); slot++) {
-                AugmentDefinition d = menu.candidate(slot);
-                if (d != null) acquired.add(d);
-            }
-        }
-
-        long age = acquisitionStarted == Long.MIN_VALUE ? 0 : Math.max(0, System.currentTimeMillis() - acquisitionStarted);
-        double pulse = (Math.sin(age / 80.0) + 1.0) * 0.5;
-        int cx = b.left() + b.width() / 2;
-        centered(g, "증강 획득", cx, b.top() + 8, TEXT);
-        String subtitle = acquired.size() > 1 ? "두 증강이 코어에 공명합니다." : "새 증강이 코어에 공명합니다.";
-        centered(g, clip(subtitle, b.width() - 18), cx, b.top() + 22, color);
-
-        int count = Math.max(1, acquired.size());
-        int gap = count == 1 ? 0 : 12;
-        int cardW = Math.min(188, Math.max(44, (b.width() - 28 - gap * (count - 1)) / count));
-        int cardH = Math.max(62, Math.min(206, b.height() - 58));
-        cardW = Math.min(cardW, Math.max(44, (int) (cardH * 0.75)));
-        int groupW = cardW * count + gap * (count - 1);
-        int left = cx - groupW / 2;
-        int top = b.top() + 42 + Math.max(0, (b.height() - 53 - cardH) / 2);
-
-        // A short ring of motes stays outside the reward text and card hit areas.
-        for (int i = 0; i < 18; i++) {
-            double a = age / 300.0 + i * (Math.PI * 2.0 / 18.0);
-            int rx = (int) (groupW / 2.0 + 7 + (i % 3) * 3);
-            int ry = cardH / 2 + 7 + (i % 2) * 4;
-            int px = cx + (int) Math.round(Math.cos(a) * rx);
-            int py = top + cardH / 2 + (int) Math.round(Math.sin(a) * ry);
-            if (px >= b.left() + 2 && px < b.right() - 2 && py >= top - 8 && py < top + cardH + 8
-                    && (px < left - 3 || px >= left + groupW + 3 || py < top + 2 || py >= top + cardH - 2)) {
-                int mote = i % 3 == 0 ? 3 : 2;
-                g.fill(px, py, px + mote, py + mote,
-                        withAlpha(i % 2 == 0 ? brighten(color, 45) : color, 0x72 + (int) (pulse * 0x54)));
-            }
-        }
-
-        for (int index = 0; index < acquired.size(); index++) {
-            AugmentDefinition d = acquired.get(index);
-            AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
-            int x = left + index * (cardW + gap);
-            int cardColor = tierColor(d.tier());
-            drawCardFrame(g, x, top, cardW, cardH, d.tier(), cardColor, false, true);
-            g.fill(x + 4, top + 4, x + cardW - 4, top + cardH - 4,
-                    tint(SURFACE_DEEP, cardColor, d.tier() == AugmentTier.MYTHIC ? 28 : 16));
-            int box = Math.min(42, Math.max(24, cardW / 3));
-            int iconX = x + (cardW - box) / 2;
-            int iconY = top + 18;
-            drawAugmentSocket(g, iconX, iconY, box, cardColor, d.tier(), false);
-            g.item(AugmentIconClient.stackFor(d.id(), d.tier()), iconX + box / 2 - 8, iconY + box / 2 - 8);
-            String label = "획득";
-            centered(g, label, x + cardW / 2, top + cardH - 17, brighten(cardColor, 28));
-            int nameY = iconY + box + 9;
-            centered(g, clip(p.displayName(), cardW - 14), x + cardW / 2, nameY, TEXT);
-            centered(g, tierLabel(d.tier()), x + cardW / 2, nameY + 13, cardColor);
-            int bodyY = nameY + 31;
-            int bodyBottom = top + cardH - 26;
-            if (bodyBottom > bodyY) {
-                drawWrapped(g, p.summary(), x + 9, bodyY, Math.max(26, cardW - 18),
-                        Math.max(1, Math.min(4, (bodyBottom - bodyY) / 10)), 0xFFD4DCDD);
-            }
-        }
-    }
-
-    private void playAcquisitionSound() {
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.PLAYER_LEVELUP, 0.82F, 1.08F));
-        }
     }
 
     private void drawAugmentCard(
@@ -465,12 +301,8 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
 
         drawCardFrame(g, x, y, w, h, d.tier(), color, hover, selected);
-        int wash = switch (d.tier()) {
-            case COMMON -> 3; case UNCOMMON -> 7; case RARE -> 10;
-            case EPIC -> 15; case LEGENDARY -> 20; case MYTHIC -> 25;
-        };
-        g.fill(x + 4, y + 4, x + w - 4, y + h - 4, tint(SURFACE_DEEP, color, wash));
-        g.fill(x + 6, y + 6, x + w - 6, y + 28, tint(TOP, color, wash + 4));
+        g.fill(x + 4, y + 4, x + w - 4, y + h - 4, SURFACE_DEEP);
+        g.fill(x + 6, y + 6, x + w - 6, y + 28, tint(TOP, color, 10));
 
         String kind = p.kind().label();
         g.text(font, clip(kind, Math.max(20, w - 18)), x + 9, y + 12,
@@ -480,17 +312,15 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             g.text(font, picked, x + w - 9 - font.width(picked), y + 12, brighten(color, 45), false);
         }
 
-        int iconBox = h < 86 ? 18 : tiny ? 25 : compact ? 34 : 42;
-        int iconY = h < 86 ? y + 14 : tiny ? y + 28 : compact ? y + 34 : y + 38;
+        int iconBox = tiny ? 26 : compact ? 34 : 44;
+        int iconY = y + (tiny ? 31 : compact ? 35 : 39);
         int iconX = x + (w - iconBox) / 2;
-
-        drawTierCardMotif(g, x, y, w, h, d.tier(), color, slot);
 
         drawAugmentSocket(g, iconX, iconY, iconBox, color, d.tier(), hover);
         g.item(AugmentIconClient.stackFor(d.id(), d.tier()),
                 iconX + iconBox / 2 - 8, iconY + iconBox / 2 - 8);
 
-        int nameY = iconY + iconBox + (h < 86 ? 2 : tiny ? 3 : compact ? 5 : 8);
+        int nameY = iconY + iconBox + (tiny ? 4 : compact ? 6 : 9);
         centered(g, clip(p.displayName(), Math.max(24, w - 18)), x + w / 2, nameY, TEXT);
 
         int now = menu.currentLevel(slot);
@@ -498,41 +328,38 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         String level = now == 0
                 ? "신규 · Lv." + next + "/" + d.maxLevel()
                 : "Lv." + now + " → " + next + "/" + d.maxLevel();
-        int levelY = nameY + (h < 86 ? 10 : 12);
-        centered(g, clip(level, Math.max(24, w - 18)), x + w / 2, levelY,
+        centered(g, clip(level, Math.max(24, w - 18)), x + w / 2, nameY + 12,
                 now == 0 ? color : MUTED);
 
-        int descriptionTop = h < 86 ? levelY + 10 : nameY + 25;
-        int descriptionBottom = y + h - (h < 86 ? 3 : 7);
-        if (descriptionBottom - descriptionTop >= 10) {
-            if (h >= 86) {
-                int dividerY = descriptionTop - 4;
-                g.fill(x + 10, dividerY, x + w - 10, dividerY + 1, LINE_SOFT);
-                descriptionTop = dividerY + 4;
-            }
+        boolean rerollOwned = ClientAugmentProgressState.level(AugmentCatalog.REROLL_ID) > 0;
+        boolean rerollAction = rerollOwned && h >= 96;
+        int actionY = y + h - 22;
+
+        if (!tiny) {
+            int dividerY = nameY + 29;
+            g.fill(x + 10, dividerY, x + w - 10, dividerY + 1, LINE_SOFT);
+            int descriptionTop = dividerY + 7;
+            int descriptionBottom = rerollAction ? actionY - 5 : y + h - 8;
             int availableLines = Math.max(1, (descriptionBottom - descriptionTop) / 10);
-            int lineLimit = Math.min(compact ? 3 : (detail ? 7 : 5), availableLines);
+            int lineLimit = Math.min(compact ? 4 : (detail ? 7 : 6), availableLines);
             drawWrapped(g, detail ? p.detail() : p.summary(),
                     x + 10, descriptionTop, Math.max(24, w - 20), lineLimit,
                     detail ? 0xFFDCE2E2 : 0xFFC7CFD0);
+        } else if (!rerollAction) {
+            g.text(font, clip(detail ? p.detail() : p.summary(), Math.max(24, w - 18)),
+                    x + 9, y + h - 16, detail ? 0xFFDCE2E2 : 0xFFC7CFD0, false);
         }
-    }
 
-    private void drawTierCardMotif(GuiGraphicsExtractor g, int x, int y, int w, int h,
-                                   AugmentTier tier, int color, int slot) {
-        long now = System.currentTimeMillis();
-        if (tier == AugmentTier.EPIC) {
-            g.fill(x + 7, y + 29, x + w - 7, y + 31, withAlpha(color, 0x34));
-            g.fill(x + 7, y + h - 10, x + w - 7, y + h - 8, withAlpha(color, 0x36));
-        } else if (tier == AugmentTier.LEGENDARY) {
-            int pulse = 0x44 + (int) ((Math.sin(now / 280.0 + slot * 0.35) + 1) * 18);
-            g.fill(x + 5, y + 29, x + w - 5, y + 32, withAlpha(color, pulse));
-            g.fill(x + 5, y + h - 10, x + w - 5, y + h - 7, withAlpha(brighten(color, 18), pulse));
-            g.fill(x + w / 2 - 1, y + 25, x + w / 2 + 1, y + 31, withAlpha(color, 0x50));
-        } else if (tier == AugmentTier.MYTHIC) {
-            double pulse = (Math.sin(now / 180.0 + slot * 0.71) + 1.0) * 0.5;
-            g.fill(x + 4, y + 28, x + w - 4, y + 33, withAlpha(color, 0x42 + (int) (pulse * 0x28)));
-            g.fill(x + 6, y + h - 11, x + w - 6, y + h - 7, withAlpha(brighten(color, 24), 0x54));
+        if (rerollAction) {
+            boolean buttonHover = inside(mx, my, x + 8, actionY, w - 16, 15);
+            boolean canReroll = menu.rerollsRemaining() > 0 && !selected;
+            int line = canReroll ? (buttonHover ? color : shade(color, 0.72)) : LINE_SOFT;
+            int fill = canReroll && buttonHover ? tint(SURFACE_HI, color, 18) : SURFACE;
+            g.fill(x + 8, actionY, x + w - 8, actionY + 15, fill);
+            g.outline(x + 8, actionY, w - 16, 15, line);
+            String label = selected ? "선택 해제" : menu.rerollsRemaining() > 0 ? "↻ 재추첨" : "재추첨 소진";
+            centered(g, clip(label, w - 24), x + w / 2, actionY + 3,
+                    canReroll ? (buttonHover ? TEXT : color) : FAINT);
         }
     }
 
@@ -606,8 +433,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
 
         String title = "보유 증강";
         g.text(font, title, l.left(), l.headerY(), TEXT, false);
-        long ownedCount = owned.stream().filter(d -> ClientAugmentProgressState.level(d.id()) > 0).count();
-        String count = ownedCount + " / " + AugmentCatalog.allDefinitions().size() + " 보유";
+        String count = owned.size() + " / " + AugmentCatalog.allDefinitions().size();
         g.text(font, count, l.left() + font.width(title) + 8, l.headerY(), DEVICE_ACCENT, false);
 
         String help = l.width() >= 390 ? "마우스: 정보 · Shift: 정확한 수치" : "Shift: 상세";
@@ -657,8 +483,7 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         g.text(font, clip(p.displayName(), Math.max(20, w - (textX - x) - typeReserve)), textX, y + 6,
                 hover ? TEXT : 0xFFD5DCDE, false);
         if (h >= 28) {
-            String state = level > 0 ? "Lv." + level + "/" + d.maxLevel() : "미보유";
-            g.text(font, state, textX, y + 18, level > 0 ? MUTED : FAINT, false);
+            g.text(font, "Lv." + level + "/" + d.maxLevel(), textX, y + 18, MUTED, false);
         }
 
         if (w >= 108) {
@@ -701,8 +526,8 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             textX = x + 46;
         }
 
-        String state = level > 0 ? "보유 Lv." + level + "/" + d.maxLevel() : "미보유";
-        String head = p.displayName() + " · " + tierLabel(d.tier()) + " · " + p.kind().label() + " · " + state;
+        String head = p.displayName() + " · " + tierLabel(d.tier()) + " · " + p.kind().label()
+                + " · Lv." + level + "/" + d.maxLevel();
         g.text(font, clip(head, Math.max(24, x + w - 10 - textX)), textX, y + 6, TEXT, false);
 
         if (l.detailH() >= 30) {
@@ -830,9 +655,6 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() != 0) return super.mouseClicked(event, doubleClick);
-        if (menu.status() == AugmentDeviceMenu.STATUS_ACQUIRED
-                && acquisitionStarted != Long.MIN_VALUE
-                && System.currentTimeMillis() - acquisitionStarted < 1_700L) return true;
 
         double x = event.x() - leftPos;
         double y = event.y() - topPos;
@@ -841,19 +663,26 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
             OfferLayout l = offerLayout();
             boolean rerollOwned = ClientAugmentProgressState.level(AugmentCatalog.REROLL_ID) > 0;
             for (int slot = 0; slot < 3; slot++) {
-                if (menu.candidate(slot) == null) continue;
                 int cx = l.cardLeft() + slot * (l.cardWidth() + l.gap());
                 int cy = l.cardTop() + (int) Math.round((1.0 - revealProgress(slot)) * 10.0);
-                if (rerollOwned && inside(x, y, cx + l.cardWidth() + 1, cy + 7, 14, 14)) {
-                    boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
-                    if (!selected && menu.rerollsRemaining() > 0) {
-                        playClick(1.16F);
-                        return send(AugmentDeviceMenu.rerollButtonId(slot));
+                boolean selected = (menu.selectedMask() & (1 << slot)) != 0;
+
+                if (rerollOwned && l.cardHeight() >= 96) {
+                    int actionY = cy + l.cardHeight() - 22;
+                    if (inside(x, y, cx + 8, actionY, l.cardWidth() - 16, 15)) {
+                        if (selected) {
+                            playClick(0.94F);
+                            return send(AugmentDeviceMenu.candidateButtonId(slot));
+                        }
+                        if (menu.rerollsRemaining() > 0) {
+                            playClick(1.16F);
+                            return send(AugmentDeviceMenu.rerollButtonId(slot));
+                        }
+                        return true;
                     }
-                    return true;
                 }
 
-                if (inside(x, y, cx, cy, l.cardWidth(), l.cardHeight())) {
+                if (menu.candidate(slot) != null && inside(x, y, cx, cy, l.cardWidth(), l.cardHeight())) {
                     playClick(1.05F + slot * 0.04F);
                     return send(AugmentDeviceMenu.candidateButtonId(slot));
                 }
@@ -931,47 +760,22 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         return super.mouseClicked(event, doubleClick);
     }
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (menu.status() != AugmentDeviceMenu.STATUS_READY && view == View.OWNED && scrollY != 0) {
-            OwnedLayout l = ownedLayout();
-            List<AugmentDefinition> definitions = ownedDefinitions();
-            int pages = Math.max(1, (definitions.size() + l.pageSize() - 1) / l.pageSize());
-            double localX = mouseX - leftPos;
-            double localY = mouseY - topPos;
-            if (inside(localX, localY, l.left(), l.gridTop(), l.width(), l.pagerY() - l.gridTop())) {
-                int next = Math.max(0, Math.min(pages - 1, ownedPage + (scrollY < 0 ? 1 : -1)));
-                if (next != ownedPage) {
-                    ownedPage = next;
-                    return true;
-                }
-            }
-        }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-    }
-
     private OfferLayout offerLayout() {
         VisibleBounds b = viewportBounds(8);
         int usableW = b.width();
         int usableH = b.height();
-        boolean compactViewport = usableW < 300 || usableH < 170;
-        int gap = usableW >= 620 ? 24 : usableW >= 350 ? 20 : compactViewport ? 15 : 16;
-        int headerBand = compactViewport ? 24 : usableH >= 250 ? 44 : 36;
-        int footerBand = compactViewport ? 10 : usableH >= 220 ? 18 : 12;
-        int availableH = Math.max(48, usableH - headerBand - footerBand);
-        int idealH = Math.min(OFFER_MAX_CARD_H, availableH);
-        int widthBudget = Math.max(96, usableW - gap * 2 - 16);
-        int maxByHeight = Math.max(30, (int) Math.floor(idealH * 0.62));
-        int cardW = Math.max(30, Math.min(Math.min(156, maxByHeight), widthBudget / 3));
-        int cardH = Math.max(46, Math.min(idealH, (int) Math.round(cardW / 0.62)));
-        int groupW = cardW * 3 + gap * 2 + 16;
+        int gap = usableW >= 620 ? 14 : usableW >= 480 ? 10 : 6;
+        int rawCardW = Math.max(1, (usableW - gap * 2) / 3);
+        int cardW = Math.min(OFFER_MAX_CARD_W, Math.max(42, rawCardW));
+        if (cardW * 3 + gap * 2 > usableW) cardW = rawCardW;
+        int groupW = cardW * 3 + gap * 2;
         int cardLeft = b.left() + Math.max(0, (usableW - groupW) / 2);
-        boolean compact = cardW < 138 || usableH < 270;
-        int headerTop = b.top() + 3;
-        int contentTop = b.top() + headerBand;
-        int contentBottom = b.bottom() - footerBand;
-        int cardTop = contentTop + Math.max(0, (contentBottom - contentTop - cardH) / 2);
-        int footerY = b.bottom() - 9;
+        boolean compact = cardW < 145 || usableH < 270;
+        int headerTop = b.top() + 5;
+        int cardTop = headerTop + (compact ? 33 : 43);
+        int footerY = b.bottom() - 11;
+        int cardH = Math.min(OFFER_MAX_CARD_H, Math.max(92, footerY - cardTop - 6));
+        if (cardTop + cardH > footerY - 3) cardH = Math.max(88, footerY - cardTop - 3);
         return new OfferLayout(
                 b.left(), b.right(), b.top(), b.bottom(),
                 cardLeft, cardTop, cardW, cardH, gap, headerTop, footerY, compact);
@@ -986,17 +790,17 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
         int gapX = usableW >= 520 ? 10 : 5;
         int gapY = usableH >= 260 ? 8 : 4;
         boolean compact = usableW < 430 || usableH < 285;
-        int headerTop = usableH < 150 ? b.top() + 20 : b.top() + 27;
+        int headerTop = b.top() + 27;
         boolean showGuide = usableH >= 190;
         boolean showBonus = !compact && usableH >= 300;
-        int headerSpace = showBonus ? 86 : showGuide ? 68 : usableH < 150 ? 4 : 14;
+        int headerSpace = showBonus ? 42 : showGuide ? 27 : 14;
         int gridTop = headerTop + headerSpace;
-        int footerY = b.bottom() - (usableH < 150 ? 3 : 8);
+        int footerY = b.bottom() - 8;
         int gridBudget = Math.max(1, footerY - gridTop - 5);
         int rawCellW = Math.max(1, (usableW - gapX * (columns - 1)) / columns);
         int cellW = Math.min(190, Math.max(72, rawCellW));
         int rawCellH = Math.max(1, (gridBudget - gapY * (rows - 1)) / rows);
-        int cellH = Math.min(78, Math.max(usableH < 150 ? 14 : 18, rawCellH));
+        int cellH = Math.min(78, Math.max(24, rawCellH));
         int gridW = cellW * columns + gapX * (columns - 1);
         int gridLeft = b.left() + Math.max(0, (usableW - gridW) / 2);
         return new TierLayout(
@@ -1186,8 +990,13 @@ public final class AugmentDeviceScreen extends AbstractContainerScreen<AugmentDe
     }
 
     private List<AugmentDefinition> ownedDefinitions() {
-        List<AugmentDefinition> owned = new ArrayList<>(AugmentCatalog.allDefinitions());
-        owned.removeIf(definition -> definition.id().equals("augmentation_survival:retrace"));
+        List<AugmentDefinition> owned = new ArrayList<>();
+        for (String id : ClientAugmentProgressState.levels().keySet()) {
+            try {
+                owned.add(AugmentCatalog.require(id));
+            } catch (RuntimeException ignored) {
+            }
+        }
         owned.sort(Comparator.comparing((AugmentDefinition d) -> d.tier().ordinal())
                 .thenComparing(d -> AugmentPresentationCatalog.get(d).displayName()));
         return owned;

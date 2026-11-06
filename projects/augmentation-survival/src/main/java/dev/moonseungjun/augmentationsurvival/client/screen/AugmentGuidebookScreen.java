@@ -26,19 +26,13 @@ public final class AugmentGuidebookScreen extends Screen {
 
     private static final List<RecipePage> PAGES = List.of(
             new RecipePage(
-                    "증강 제작 안내서",
-                    new ItemStack[] {new ItemStack(Items.BOOK), new ItemStack(Items.COPPER_INGOT)},
-                    new ItemStack(dev.moonseungjun.augmentationsurvival.guide.GuidebookItems.GUIDEBOOK),
-                    true
-            ),
-            new RecipePage(
                     "증강 장치",
                     grid(
                             Items.IRON_INGOT, Items.COPPER_INGOT, Items.IRON_INGOT,
                             Items.COPPER_INGOT, Items.FURNACE, Items.COPPER_INGOT,
                             Items.IRON_INGOT, Items.COPPER_INGOT, Items.IRON_INGOT
                     ),
-                    new ItemStack(AugmentDeviceBlocks.AUGMENT_DEVICE.asItem()), false
+                    new ItemStack(AugmentDeviceBlocks.AUGMENT_DEVICE.asItem())
             ),
             new RecipePage(
                     "강화 증강 장치",
@@ -47,7 +41,7 @@ public final class AugmentGuidebookScreen extends Screen {
                             Items.GOLD_INGOT, AugmentDeviceBlocks.AUGMENT_DEVICE.asItem(), Items.GOLD_INGOT,
                             Items.IRON_INGOT, Items.DIAMOND, Items.IRON_INGOT
                     ),
-                    new ItemStack(AugmentDeviceBlocks.ADVANCED_AUGMENT_DEVICE.asItem()), false
+                    new ItemStack(AugmentDeviceBlocks.ADVANCED_AUGMENT_DEVICE.asItem())
             ),
             new RecipePage(
                     "일반 증강 코어",
@@ -56,7 +50,7 @@ public final class AugmentGuidebookScreen extends Screen {
                             Items.AMETHYST_SHARD, Items.COPPER_INGOT, Items.AMETHYST_SHARD,
                             Items.REDSTONE, Items.AMETHYST_SHARD, Items.REDSTONE
                     ),
-                    new ItemStack(AugmentCoreItems.COMMON_CORE), false
+                    new ItemStack(AugmentCoreItems.COMMON_CORE)
             )
     );
 
@@ -89,39 +83,26 @@ public final class AugmentGuidebookScreen extends Screen {
 
         RecipePage recipe = PAGES.get(page);
         centered(g, recipe.name(), l.centerX(), l.recipeTitleY(), TEXT);
-        if (recipe.shapeless() && !l.compact()) {
-            centered(g, "조합 위치 무관", l.centerX(), l.recipeTitleY() + (l.compact() ? 10 : 14), MUTED);
-        } else if (!l.compact()) {
+        if (!l.compact()) {
             centered(g, "3×3 제작대", l.centerX(), l.recipeTitleY() + 14, MUTED);
         }
 
         int slot = l.slotSize();
         int gap = l.slotGap();
-        if (recipe.shapeless()) {
-            int pairGap = gap + (l.compact() ? 4 : 8);
-            int pairWidth = slot * 2 + pairGap;
-            int startX = l.gridX() + (l.gridWidth() - pairWidth) / 2;
-            int y = l.gridY() + (l.gridHeight() - slot) / 2;
-            drawIngredientSlot(g, startX, y, slot, recipe.ingredients()[0], mouseX, mouseY);
-            drawIngredientSlot(g, startX + slot + pairGap, y, slot, recipe.ingredients()[1], mouseX, mouseY);
-        } else {
-            for (int index = 0; index < 9; index++) {
-                int col = index % 3;
-                int row = index / 3;
-                int x = l.gridX() + col * (slot + gap);
-                int y = l.gridY() + row * (slot + gap);
-                drawIngredientSlot(g, x, y, slot, recipe.ingredients()[index], mouseX, mouseY);
-            }
+        for (int index = 0; index < 9; index++) {
+            int col = index % 3;
+            int row = index / 3;
+            int x = l.gridX() + col * (slot + gap);
+            int y = l.gridY() + row * (slot + gap);
+            drawIngredientSlot(g, x, y, slot, recipe.ingredients()[index], mouseX, mouseY);
         }
 
         centered(g, "→", l.arrowX(), l.arrowY(), GOLD);
         drawResultSlot(g, l.resultX(), l.resultY(), l.resultSize(), recipe.result(), mouseX, mouseY);
 
-        if (l.showFooter()) {
-            g.fill(l.x() + 13, l.footerLineY(), l.x() + l.w() - 13, l.footerLineY() + 1, LINE_SOFT);
-            String hover = hoveredName.isBlank() ? "재료 위에 마우스를 올리세요." : hoveredName;
-            centered(g, clip(hover, l.w() - 100), l.centerX(), l.footerTextY(), hoveredName.isBlank() ? MUTED : TEXT);
-        }
+        g.fill(l.x() + 13, l.footerLineY(), l.x() + l.w() - 13, l.footerLineY() + 1, LINE_SOFT);
+        String hover = hoveredName.isBlank() ? "K: 액티브 스킬 관리 · 마우스: 재료 확인" : hoveredName;
+        centered(g, clip(hover, l.w() - 100), l.centerX(), l.footerTextY(), hoveredName.isBlank() ? MUTED : TEXT);
 
         drawPageControl(g, l.leftX(), l.controlY(), "‹", page > 0, mouseX, mouseY);
         drawPageControl(g, l.rightX(), l.controlY(), "›", page + 1 < PAGES.size(), mouseX, mouseY);
@@ -184,45 +165,37 @@ public final class AugmentGuidebookScreen extends Screen {
     }
 
     private Layout layout() {
-        int margin = width >= 320 && height >= 220 ? 12 : 4;
-        int w = Math.max(1, Math.min(470, width - margin * 2));
-        int h = Math.max(1, Math.min(310, height - margin * 2));
+        int margin = width >= 320 && height >= 220 ? 12 : 5;
+        int w = Math.min(470, Math.max(210, width - margin * 2));
+        int h = Math.min(310, Math.max(170, height - margin * 2));
+        if (w > width - 2) w = Math.max(1, width - 2);
+        if (h > height - 2) h = Math.max(1, height - 2);
         int x = (width - w) / 2;
         int y = (height - h) / 2;
         boolean compact = w < 330 || h < 235;
 
-        int slotGap = compact ? 2 : 5;
-        int controlY = y + h - 19;
-        boolean showFooter = !compact && h >= 235;
-        int footerLineY = showFooter ? controlY - 26 : -1;
-        int footerTextY = showFooter ? footerLineY + 8 : -1;
-        int recipeTitleY = y + (compact ? 29 : 42);
-        int gridY = y + (compact ? 41 : 74);
-        int gridH = Math.max(12, (showFooter ? footerLineY : controlY - 6) - gridY);
-        int maxSlot = compact ? 22 : 36;
-        int slotSize = Math.max(compact ? 16 : 24, Math.min(maxSlot, (gridH - slotGap * 2) / 3));
-        int gridHActual = slotSize * 3 + slotGap * 2;
-        gridY = Math.min(gridY, controlY - gridHActual - (showFooter ? 32 : 1));
-        gridH = gridHActual;
+        int slotSize = compact ? Math.max(20, Math.min(24, (h - 92) / 3)) : 30;
+        int slotGap = compact ? 3 : 5;
         int gridW = slotSize * 3 + slotGap * 2;
+        int recipeTitleY = y + 42;
+        int gridY = y + (compact ? 60 : 74);
         int resultSize = compact ? 32 : 42;
-        int resultDrawSize = Math.min(resultSize, Math.max(16, gridH));
-        int flowW = gridW + (compact ? 28 : 52) + resultDrawSize;
+        int flowW = gridW + (compact ? 34 : 52) + resultSize;
         int gridX = x + (w - flowW) / 2;
-        int arrowX = gridX + gridW + (compact ? 12 : 24);
-        int resultX = gridX + gridW + (compact ? 28 : 52);
-        int resultY = gridY + (gridH - resultDrawSize) / 2;
+        int arrowX = gridX + gridW + (compact ? 16 : 24);
+        int resultX = gridX + gridW + (compact ? 34 : 52);
+        int gridH = slotSize * 3 + slotGap * 2;
+        int resultY = gridY + (gridH - resultSize) / 2;
         int arrowY = gridY + gridH / 2 - 4;
 
+        int controlY = y + h - 27;
+        int footerLineY = controlY - 26;
+        int footerTextY = footerLineY + 8;
         int leftX = x + 14;
         int rightX = x + w - 44;
-        int availableGridW = Math.max(1, w - resultDrawSize - (compact ? 28 : 52));
-        gridX = x + 12 + Math.max(0, (availableGridW - gridW) / 2);
-        arrowX = gridX + gridW + (compact ? 12 : 24);
-        resultX = Math.min(x + w - resultDrawSize - 14, arrowX + (compact ? 16 : 28));
-        return new Layout(x, y, w, h, x + w / 2, compact, showFooter, recipeTitleY,
-                gridX, gridY, gridW, gridH, slotSize, slotGap, arrowX, arrowY,
-                resultX, resultY, resultDrawSize, footerLineY, footerTextY, controlY, leftX, rightX);
+        return new Layout(x, y, w, h, x + w / 2, compact, recipeTitleY,
+                gridX, gridY, slotSize, slotGap, arrowX, arrowY, resultX, resultY, resultSize,
+                footerLineY, footerTextY, controlY, leftX, rightX);
     }
 
     private String clip(String value, int maxWidth) {
@@ -252,12 +225,12 @@ public final class AugmentGuidebookScreen extends Screen {
         return stacks;
     }
 
-    private record RecipePage(String name, ItemStack[] ingredients, ItemStack result, boolean shapeless) {
+    private record RecipePage(String name, ItemStack[] ingredients, ItemStack result) {
     }
 
     private record Layout(
-            int x, int y, int w, int h, int centerX, boolean compact, boolean showFooter, int recipeTitleY,
-            int gridX, int gridY, int gridWidth, int gridHeight, int slotSize, int slotGap, int arrowX, int arrowY,
+            int x, int y, int w, int h, int centerX, boolean compact, int recipeTitleY,
+            int gridX, int gridY, int slotSize, int slotGap, int arrowX, int arrowY,
             int resultX, int resultY, int resultSize,
             int footerLineY, int footerTextY, int controlY, int leftX, int rightX
     ) {

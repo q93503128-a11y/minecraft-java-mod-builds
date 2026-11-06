@@ -63,13 +63,19 @@ public final class ActiveLoadoutScreen extends Screen {
         drawHeader(g, layout);
         drawQuickbar(g, layout, mouseX, mouseY);
         drawAvailablePanel(g, layout.listX(), layout.listY(), layout.listW(), layout.listH(), mouseX, mouseY);
-        if (!hoveredId.isBlank()) drawHoverCard(g, layout, hoveredId, mouseX, mouseY);
+
+        String inspect = inspectId();
+        if (layout.detailPanel()) {
+            drawDetailPanel(g, layout.detailX(), layout.detailY(), layout.detailW(), layout.detailH(), inspect);
+        } else if (layout.detailH() > 0) {
+            drawCompactDetail(g, layout.detailX(), layout.detailY(), layout.detailW(), layout.detailH(), inspect);
+        }
 
         String help = selectedSlot >= 0
-                ? "보유 액티브 선택: 장착 · 다른 슬롯: 교환 · 우클릭: 해제"
+                ? "보유 액티브 선택: 장착 · 다른 슬롯 선택: 교환 · 우클릭: 해제"
                 : !selectedAugmentId.isBlank()
-                    ? "상단 슬롯을 선택해 장착 · Shift: 상세 수치"
-                    : "클릭: 장착 · 슬롯 우클릭: 해제 · Shift: 상세 수치";
+                    ? "상단 슬롯을 선택해 장착 · Shift: 정확한 수치"
+                    : "슬롯 또는 보유 액티브 선택 · Shift: 정확한 수치";
         centered(g, clip(help, layout.w() - 28), layout.x() + layout.w() / 2, layout.y() + layout.h() - 14, MUTED);
     }
 
@@ -118,7 +124,7 @@ public final class ActiveLoadoutScreen extends Screen {
     }
 
     private void drawQuickbar(GuiGraphicsExtractor g, Layout l, int mx, int my) {
-        g.text(font, "장착 슬롯", l.x() + 13, l.quickLabelY(), FAINT, false);
+        g.text(font, "QUICK SLOTS", l.x() + 13, l.quickLabelY(), FAINT, false);
         if (l.w() >= 420) {
             String hint = "Alt ON → 숫자키 1~0";
             g.text(font, hint, l.x() + l.w() - 13 - font.width(hint), l.quickLabelY(), MUTED, false);
@@ -294,48 +300,6 @@ public final class ActiveLoadoutScreen extends Screen {
         }
     }
 
-    private void drawHoverCard(GuiGraphicsExtractor g, Layout l, String id, int mx, int my) {
-        AugmentDefinition d = safe(id);
-        if (d == null) return;
-        AugmentPresentationCatalog.Entry p = AugmentPresentationCatalog.get(d);
-        int color = tierColor(d);
-        int maxW = Math.max(120, Math.min(320, l.w() - 14));
-        int panelW = Math.min(maxW, Math.max(170, maxW * 3 / 4));
-        boolean detailed = shiftDown();
-        List<String> lines = wrap(detailed ? p.detail() : p.summary(), Math.max(50, panelW - 22));
-        int lineH = 10;
-        int panelH = Math.min(l.h() - 12, 52 + Math.max(1, lines.size()) * lineH);
-        int maxLines = Math.max(1, (panelH - 50) / lineH);
-        int px = mx < width / 2 ? mx + 14 : mx - panelW - 14;
-        int py = my + 12;
-        if (py + panelH > l.y() + l.h() - 6) py = my - panelH - 12;
-        px = Math.max(l.x() + 6, Math.min(px, l.x() + l.w() - panelW - 6));
-        py = Math.max(l.y() + 6, Math.min(py, l.y() + l.h() - panelH - 6));
-
-        g.fill(px - 2, py - 2, px + panelW + 2, py + panelH + 2, 0xB0000000);
-        g.fill(px, py, px + panelW, py + panelH, 0xFA0A0F12);
-        g.outline(px, py, panelW, panelH, shade(color, 0.84));
-        g.fill(px, py, px + panelW, py + 3, color);
-        g.fill(px + 8, py + 9, px + 34, py + 35, 0xFF080D10);
-        g.item(AugmentIconClient.stackFor(id, d.tier()), px + 13, py + 14);
-        int tx = px + 41;
-        int level = Math.max(1, ClientAugmentProgressState.level(id));
-        g.text(font, clip(p.displayName(), panelW - 51), tx, py + 9, TEXT, false);
-        String meta = tierLabel(d) + " · Lv." + level + "/" + d.maxLevel();
-        g.text(font, clip(meta, panelW - 51), tx, py + 22, color, false);
-        g.fill(px + 9, py + 39, px + panelW - 9, py + 40, LINE_SOFT);
-        for (int i = 0; i < Math.min(maxLines, lines.size()); i++) {
-            String line = lines.get(i);
-            if (i == maxLines - 1 && lines.size() > maxLines) line = clip(line + "…", panelW - 20);
-            g.text(font, line, px + 10, py + 45 + i * lineH,
-                    detailed ? 0xFFE1E6E6 : 0xFFD0D7D8, false);
-        }
-        if (panelH >= 68) {
-            String hint = detailed ? "Shift · 상세 수치" : "Shift · 상세 수치 보기";
-            g.text(font, clip(hint, panelW - 20), px + 10, py + panelH - 13, FAINT, false);
-        }
-    }
-
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         Layout layout = layout();
@@ -365,6 +329,8 @@ public final class ActiveLoadoutScreen extends Screen {
             }
         }
 
+        if (event.button() != 0) return super.mouseClicked(event, doubleClick);
+
         List<String> available = ClientActiveLoadoutState.available();
         AvailableLayout grid = availableLayout(layout.listX(), layout.listY(), layout.listW(), layout.listH());
         int pages = Math.max(1, (available.size() + grid.pageSize() - 1) / grid.pageSize());
@@ -381,29 +347,6 @@ public final class ActiveLoadoutScreen extends Screen {
             if (!inside(event.x(), event.y(), cx, cy, grid.cellW(), grid.cellH())) continue;
 
             String id = available.get(i);
-            if (event.button() == 1) {
-                List<String> slots = ClientActiveLoadoutState.slots();
-                int equippedSlot = slots.indexOf(id);
-                if (equippedSlot >= 0) {
-                    ClientPlayNetworking.send(new ActiveLoadoutEditPayload(
-                            ActiveLoadoutEditPayload.CLEAR, equippedSlot, 0, ""));
-                    selectedSlot = -1;
-                    selectedAugmentId = "";
-                } else {
-                    int emptySlot = slots.indexOf("");
-                    if (emptySlot >= 0 && emptySlot < 10) {
-                        ClientPlayNetworking.send(new ActiveLoadoutEditPayload(
-                                ActiveLoadoutEditPayload.ASSIGN, emptySlot, 0, id));
-                        selectedSlot = -1;
-                        selectedAugmentId = "";
-                    } else {
-                        selectedAugmentId = id;
-                        selectedSlot = -1;
-                    }
-                }
-                return true;
-            }
-            if (event.button() != 0) return super.mouseClicked(event, doubleClick);
             if (selectedSlot >= 0) {
                 ClientPlayNetworking.send(new ActiveLoadoutEditPayload(
                         ActiveLoadoutEditPayload.ASSIGN, selectedSlot, 0, id));
@@ -457,18 +400,40 @@ public final class ActiveLoadoutScreen extends Screen {
         int bodyH = Math.max(42, footerY - bodyY);
         int innerX = x + 11;
         int innerW = Math.max(40, w - 22);
+
+        boolean detailPanel = !compact && innerW >= 500 && bodyH >= 120;
         int listX = innerX;
         int listY = bodyY;
-        int listW = innerW;
-        int listH = bodyH;
-        int detailX = innerX;
-        int detailY = bodyY;
-        int detailW = 0;
-        int detailH = 0;
+        int listW;
+        int listH;
+        int detailX;
+        int detailY;
+        int detailW;
+        int detailH;
+
+        if (detailPanel) {
+            int gap = 11;
+            detailW = Math.min(254, Math.max(188, innerW * 2 / 5));
+            listW = Math.max(220, innerW - detailW - gap);
+            detailX = listX + listW + gap;
+            detailY = bodyY;
+            detailH = bodyH;
+            listH = bodyH;
+        } else {
+            int compactDetailH = bodyH >= 104 ? Math.min(42, Math.max(32, bodyH / 3)) : 0;
+            int gap = compactDetailH > 0 ? 6 : 0;
+            listW = innerW;
+            listH = Math.max(42, bodyH - compactDetailH - gap);
+            detailX = innerX;
+            detailY = bodyY + listH + gap;
+            detailW = innerW;
+            detailH = compactDetailH;
+        }
 
         return new Layout(x, y, w, h, compact, quickLabelY,
                 slotStartX, slotY, slotW, slotH, slotGap,
-                listX, listY, listW, listH, detailX, detailY, detailW, detailH, false);
+                listX, listY, listW, listH,
+                detailX, detailY, detailW, detailH, detailPanel);
     }
 
     private AvailableLayout availableLayout(int x, int y, int w, int h) {
