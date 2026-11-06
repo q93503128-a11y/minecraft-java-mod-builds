@@ -135,3 +135,12 @@
 - No rarity probabilities, duplicate conversion, star growth curves, new character identities or starter-specific role kits have been approved.
 - These decisions are currently **DESIGN ONLY**. The blank production catalog remains empty and the game does not yet include the new roster or selection UI.
 - **Next recommended design unit:** field-to-turn encounter entry/exit, avatar vulnerability/protection while directing the character party, party defeat and survival consequences, including multiplayer/exploit boundaries. Then first starter trio roles and the gacha economy. No code change required for native rarity documentation.
+
+## Confirmed encounter presentation — overworld field battle (2026-11-06)
+- **CONFIRMED: Option A**. Encounters transition into turn-based battles **in the same actual vanilla-generated overworld terrain where the enemy was met**, with authored TURNBOUND character/enemy models and a dedicated battle camera/UI. This is NOT a separate instanced arena or teleport to a dedicated battle dimension.
+- Up to **four playable gacha/starter characters** fight; the player's Minecraft avatar is an overworld explorer/director, **not a turn-based combatant**.
+- Preserve the surrounding survival world and other players' simulation. A battle session must not pause the entire world. Camera placement, slopes/cliffs, obstacles, entity positioning and post-battle state restoration require testing on actual terrain.
+- The exact **encounter trigger** (attack, enemy aggression, interaction or proximity), participant/world-external damage handling, avatar vulnerability/immobility, retreat, enemy interference and multiplayer participation rules are **not yet approved**.
+- This is a design choice only. The current content-empty build has **not implemented or playtested** this new field encounter flow. Legacy world-combat source must not be treated as approved behavior without review.
+
+- Next co-design decision: specify the **encounter trigger** without making ordinary Minecraft movement or resource gathering produce unavoidable repetitive battles. Then specify avatar protection/retreat and multiplayer authority before implementing a complete field battle.

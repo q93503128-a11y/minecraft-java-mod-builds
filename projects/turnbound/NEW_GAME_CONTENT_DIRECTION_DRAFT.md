@@ -1,6 +1,13 @@
 # TURNBOUND — New Player-Facing Game Content Direction (discussion draft)
 
-Status: PARTIALLY CONFIRMED — current authoritative decisions in the sections immediately below; specific character identities, kits, numeric balance and battle presentation remain undecided.
+Status: PARTIALLY CONFIRMED — native ★1–★5, four-character party, ordinary ★3 starter selection and overworld field battle are decided. Characters, kits, numeric balance, encounter triggering and visual implementation remain undecided.
+
+## Confirmed encounter presentation — overworld field battle (2026-11-06)
+- **CONFIRMED: Option A**. Encounters transition into turn-based battles **in the same actual vanilla-generated overworld terrain where the enemy was met**, with authored TURNBOUND character/enemy models and a dedicated battle camera/UI. This is NOT a separate instanced arena or teleport to a dedicated battle dimension.
+- Up to **four playable gacha/starter characters** fight; the player's Minecraft avatar is an overworld explorer/director, **not a turn-based combatant**.
+- Preserve the surrounding survival world and other players' simulation. A battle session must not pause the entire world. Camera placement, slopes/cliffs, obstacles, entity positioning and post-battle state restoration require testing on actual terrain.
+- The exact **encounter trigger** (attack, enemy aggression, interaction or proximity), participant/world-external damage handling, avatar vulnerability/immobility, retreat, enemy interference and multiplayer participation rules are **not yet approved**.
+- This is a design choice only. The current content-empty build has **not implemented or playtested** this new field encounter flow. Legacy world-combat source must not be treated as approved behavior without review.
 
 ## Approved native rarity range — 2026-11-06
 - **Native / born rarity is ★1, ★2, ★3, ★4 or ★5 only.** There is no native ★6 gacha rank.
@@ -49,7 +56,7 @@ Do not implement this proposal until the game's actual world style, party/collec
 ## Open design decisions — explicitly NOT SETTLED
 1. **World topology:** (A) expanded vanilla overworld with authored locations, (B) hand-built authored overworld, (C) hub-connected crafted regions; assess travel feel, build/art assets and multiplayer.
 2. **Player/party identity:** SOLVED for solo in the latest sections above: party-only combat, up to four playable units; player avatar is not a turn combatant. Exact roles, roster UI and multiplayer combining remain open.
-3. **Combat encounter presentation:** seamless field-to-turn battle vs distinct contained arena; reconcile visible world foes, spectators, shared-party ownership and interaction.
+3. **Combat encounter presentation:** CONFIRMED real-overworld field battle, not a separate arena. Encounter trigger, spectator/third-party interaction, party ownership, avatar safety and camera/terrain rules remain undecided.
 4. **Progression loop:** what tangible decisions rewards enable, and what prevents farming fatigue. Do not introduce multiple overlapping currencies by default.
 5. **Creative direction:** narrative tone, geographic theme, visual identity, character art source and how the world visually communicates danger/progress.
 
