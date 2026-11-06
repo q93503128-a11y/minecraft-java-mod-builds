@@ -1,5 +1,31 @@
 # TURNBOUND — Overworld Ecology and Encounter Spawn Architecture
 
+## New user-confirmed ecology and dungeon direction — 2026-11-06
+
+### Passive wildlife provocation — CONFIRMED
+- Peaceful TURNBOUND-authored creatures **do not initiate aggro against players during normal traversal**.
+- If a player **deliberately attacks / hits** one, it **becomes a combat encounter and fights back through the on-site turn-based party battle**, even if its natural behavior is peaceful. This is not an ordinary vanilla instant-kill-and-drop pathway.
+- Non-aggressive normal survival interactions such as feeding, breeding and intended resource gathering **do not themselves trigger a battle**. Exact milk/shear/egg/husbandry rules for new creatures and their resources are to be designed; do not assume a specific new animal supports all these vanilla mechanics.
+- Attacking a passive creature should not silently inflict vanilla damage first and then additionally pay tactical combat loot; avoid double damage, duplicate drops and unintended retaliation against unrelated nearby animals. Attack-to-combat handoff, visual provocation reaction, server ownership and cooldown are implementation decisions to validate with NeoForge 26.2.
+- An attacked creature can be confronted even if its normal field behavior has no `!` chase, so aggression/contact triggers must distinguish **voluntary player provocation** from **hostile monster sees player → ! → chase → contact**.
+- The user has not approved blanket hostility from all passive creatures, special rare wild encounters, noncombat harvesting exemptions after intentional attack, or exact combat strength/loot for peaceful fauna.
+
+### Dungeons in the normal generated world — CONFIRMED DIRECTION
+- Add **naturally discoverable dungeons and authored ruins inside the ordinary survival world**, without globally replacing vanilla terrain with a hand-built map or forcing separate dimensions for every dungeon.
+- Consider surface ruins, underground complexes, themed rooms/corridors, miniboss/boss encounters, and meaningful treasure/contract rewards. **Specific dungeon tiers, sizes, themes, layouts, enemy roster, boss identities and loot numbers are still proposals.**
+- Java Edition structure-template and Jigsaw/template-pool worldgen can produce reusable or assembled modular structures. Evaluate exact Minecraft **26.2 + NeoForge 26.2.0.62** registration/data keys against the actual current toolchain before implementation. Jigsaw is not required for every dungeon; authored fixed layouts can suit memorable encounters.
+- Placement must consider terrain, biome suitability, caves/fluid, existing vanilla structures and saved chunks; generation should not reshape existing player bases, destroy user builds or force retroactive recreation of previously explored worlds.
+- Field encounter combat still takes place in actual world geometry. Dungeons require terrain-safe party placement, camera paths, visibility/headroom, and room designs that support all combatants without flattened terrain or special teleport arenas.
+- Prefer **purposeful, finite encounter pockets with downtime and visible hazards** to corridors of endlessly respawning aggressive mobs. Normal routes to villages, farms and mines must remain comfortable.
+- Loot settlement, first-clear state, repeatability, multiplayer ownership, structure overlap and resource economy must be specified before implementation.
+- No dungeon structure, worldgen feature, tameable fauna, new entity or provoked wildlife combat is yet implemented, built or playtested by this documentation change.
+
+References for implementation assessment:
+- Minecraft Java Jigsaw structures/template pools (behavioral reference): https://minecraft.wiki/w/Jigsaw_structure and https://minecraft.wiki/w/Template_pool
+- NeoForge 26.2 AttackEntityEvent API reference to examine for intercepting intentional strikes: https://aldak.netlify.app/javadoc/26.2.x/net/neoforged/neoforge/event/entity/player/attackentityevent
+- NeoForge living damage event docs (check target version and server authority before use): https://github.com/neoforged/Documentation/blob/main/docs/entities/livingentity.md
+
+
 Date: 2026-11-06
 Branch: `turnbound-content-rebuild`
 Status: DESIGN DRAFT; **no code, spawn config, entity roster or specific spawn/balance numbers implemented or approved**
@@ -22,8 +48,8 @@ The following categories and numbers are **proposals, not finalized approvals**.
 
 | Ecosystem role | Behavior and gameplay | Intended density | Battle entry |
 | --- | --- | --- | --- |
-| Peaceful wildlife / food animals | Wander, react to surroundings, serve survival food/husbandry/resource loops | Can be relatively frequent without clogging paths | Do not auto-aggro; whether player hunting requires turn combat or ordinary interaction is undecided |
-| Neutral territorial wildlife | Warn or avoid; only some locations/conditions become dangerous | Infrequent near common travel routes | If hostile, use the same visible alert/chase/contact flow |
+| Peaceful wildlife / food animals | Wander, react to surroundings, serve survival food/husbandry/resource loops | Can be relatively frequent without clogging paths | Never auto-aggro, but a deliberate player attack triggers turn battle (CONFIRMED) |
+| Neutral territorial wildlife | Warn or avoid; only some locations/conditions become dangerous | Infrequent near common travel routes | If hostile, use visible alert/chase/contact; player provocation also triggers turn battle |
 | Roaming hostile encounter representative | One visible world actor/group stands for a full tactical enemy composition | Sparse, readable, avoidable | ! → telegraphed chase → contact battle |
 | Dungeon / ruin encounter | Designed pressure near visible landmarks and entrances; controlled pacing through interior | Medium-to-high *encounter* pressure, not an entity swarm | ! → chase/contact where feasible; authored terrain remains safe for battle camera |
 | Elite / boss | Clearly marked danger, rare/territorial or authored landmark | Deliberate and exceptional | Visible warning; no random road boss spam |
@@ -133,7 +159,7 @@ Exit gate: player can roam standard overworld regions without repetitive compuls
 
 ## 9. Still requires explicit user decisions
 
-- How passive/neutral fauna are gathered, farmed, protected and hunted in normal survival; whether every attack on an animal triggers a turn encounter or ordinary survival processing is allowed.
+- Passive/neutral fauna are **CONFIRMED** to initiate a turn-based fight if intentionally attacked by the player; decide exact animal husbandry/gathering interfaces, visual provocation response and multiplayer combat claim details.
 - How to represent the user's player body in a field battle and defend it from unrelated world hazards.
 - Which character/monster identities, themed region(s) and art sources constitute the first vertical slice.
 - Gacha resources, rates, duplicates, party growth and user-facing UI.

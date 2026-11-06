@@ -181,3 +181,9 @@
 - User agreed to the next design step: preserve ordinary survival traversal with mostly peaceful/neutral custom wildlife, place sparse avoidable hostile field groups, and increase intentional combat pressure in caves/ruins/dungeons. All vanilla living creatures are intended to be replaced eventually.
 - Design source: `OVERWORLD_ECOLOGY_SPAWNING_DRAFT.md`. Contains proposed ecology-zone roles, explicit anti-spam combat acceptance, vanilla-material replacement matrix, NeoForge spawn-gate approach and small vertical-slice milestones.
 - Spawn density numbers/weights, actual new entity kinds, loot tables and dimensions remain **NOT APPROVED/NOT IMPLEMENTED**. No Java source/resources were altered, and no build/CI was necessary for this docs-only checkpoint.
+
+## Confirmed peaceful-wildlife response and dungeon direction — 2026-11-06
+- **Peaceful authored wildlife becomes a turn-based opponent if the player deliberately attacks it**, while normal unprovoked survival travel leaves it peaceful. Routine nonhostile breeding/feeding/resource interactions must not accidentally force combat.
+- **Dungeons and ruins are planned as discoverable authored structures in ordinary vanilla-generated survival terrain**. They should be varied, contain meaningful encounters/rewards, preserve user builds and support same-world turn battle cameras and multiplayer authority.
+- R_PG visual ! reaction, pursuit/contact remains the normal *naturally hostile* enemy trigger; deliberate hits on passive fauna cause the field battle without requiring a nonsensical chase before contact.
+- `OVERWORLD_ECOLOGY_SPAWNING_DRAFT.md` records ecosystem, dungeon generation options, compatibility considerations and remaining design questions. This is a documentation decision, **not a new entity/dungeon implementation or playtest**.

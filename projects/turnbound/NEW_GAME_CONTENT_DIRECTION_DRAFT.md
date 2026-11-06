@@ -2,6 +2,12 @@
 
 Status: PARTIALLY CONFIRMED — native ★1–★5, four-character party, ordinary ★3 starter selection and overworld field battle are decided. Characters, kits, numeric balance, encounter triggering and visual implementation remain undecided.
 
+## New confirmed wildlife and dungeon decisions — 2026-11-06
+- **Peaceful wildlife fights back if the player deliberately attacks it:** enters the normal party turn-battle system on-site. Otherwise remains non-hostile. Normal feeding/breeding and legitimate resource interactions should not automatically trigger combat.
+- **Dungeons will be added to the normal generated Minecraft survival world:** planned modular/fixed authored structures with loot, encounters and potentially bosses, while preserving player building and avoidable travel.
+- Final dungeon tiers, layouts, technical structure templates, wildlife families, loot and provocation implementation are **not yet approved or built**. Detailed architecture is in `OVERWORLD_ECOLOGY_SPAWNING_DRAFT.md`.
+- The R_PG **! → chase → contact** rule remains for *naturally hostile* field encounters; provoking a peaceful creature is a second valid trigger and need not artificially replay a full chase before battle.
+  
 ## Monster ecology and spawn-direction checkpoint — 2026-11-06
 - User approved designing low-friction vanilla-world ecology: peaceful/neutral authored wildlife on normal routes, sparse avoidable R_PG hostile representatives, and higher intentional battle pressure near ruins/dungeons.
 - **Confirmed design goal**: no repeated forced contact battles while ordinary survival traveling. World atmosphere must not be achieved by mass-spawning hostile mobs.
