@@ -1,5 +1,24 @@
 # TURNBOUND — Dungeon Gameplay Structure: References and Design Options
 
+## Confirmed Minecraft free movement and combat-session room exit gate — 2026-11-06
+
+### Player-confirmed exploration/combat boundary
+- **Dungeon traversal remains normal first-person/third-person Minecraft 3D world movement** on actual generated terrain. The player walks, sprints, jumps and explores rooms/corridors directly. Dungeon traversal is **NOT a menu-choice/node-by-node roguelike room selector** and is NOT an instanced separate-dimension dungeon.
+- Room contents remain hidden before crossing a room entrance. A room may contain treasure, exploration, environmental interaction or enemies; **not every room forces combat**.
+- **Entering a combat room initiates a turn-based party battle; after encounter start the participant cannot physically leave that room until the battle is resolved.** They cannot just sprint/dig/fly/teleport out while combat is unresolved or bypass the encounter without its intended outcome.
+- The intended room exit resolutions are **enemy defeat (victory)** or **successful flee (escape)**; a party wipe resolves as a **defeat** and returns the user to the appropriate checkpoint (with the established per-dungeon loss count). A failed probabilistic flee attempt does **not** finish combat or allow leaving.
+- **Winning** permits normal 3D exploration from the resolved room and awards earned encounter/room rewards. **Escaping** permits leaving the combat room without those victory/clear rewards and leaves the room uncleared. An immediate reentry must not create an uncontrollable infinite encounter loop; exact escape repositioning/retrigger grace is to be designed.
+- The **choice to investigate/enter a branch** is the user's while exploring physical Minecraft space. Once a *combat* room is entered, its encounter is obligatory until victory/escape/defeat, which is separate from requiring combat in every room.
+- Preserve same-world local battle presentation with 4 collectible characters fighting; player Minecraft avatar only controls party and is NOT a fifth combatant. Other players and world keep running, and protection from external actors/damage while in the battle UI remains a required technical design issue.
+
+### Implementation boundary
+- Recommended execution: server-owned participant battle-session state that denies in-battle exploration actions/position escape and changes 3D controls to turn-battle camera/UI only during combat; it must resolve end states and restore safe Minecraft-world control exactly once.
+- Minecraft terrain remains editable in normal dungeon exploration; do not globally forbid mining/building in an entire dungeon merely to stop **in-battle** exits. Define server-side encounter boundaries/eligibility so alternate paths cannot evade an already-active encounter.
+- **User has not selected numerical flee success chance, boss flee policy, combat-room trigger shape, default reposition after flee, avatar invulnerability implementation or multiplayer session joining.** Do not silently invent those specifics.
+- Previously approved individual per-physical-dungeon **3 defeat → 30 connected-playtime-minute lockout** with loss-free checkpoint return remains in force.
+- No new room trigger, UI, collision gate, combat control enforcement, code, build or playtest has been performed. This is a planning/contract change only.
+
+
 ## Dungeon room fog-of-war, compulsory entered-room combat and layered rewards — 2026-11-06
 
 ### User-approved direction
