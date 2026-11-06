@@ -63,6 +63,9 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
                     "unowned hostile was incorrectly treated as a domination ally");
 
             float hostileHealth = hostile.getHealth();
+            // This assertion exercises the damage boundary; an earlier real attack can have
+            // started vanilla hurt immunity before this deliberate test strike.
+            hostile.invulnerableTime = 0;
             DamageSource companionAttack = hostile.damageSources().mobAttack(dominated);
             boolean hostileApplied = hostile.hurtServer(level, companionAttack, 4.0F);
             require(hostileApplied, "dominated companion could not damage a hostile target");
