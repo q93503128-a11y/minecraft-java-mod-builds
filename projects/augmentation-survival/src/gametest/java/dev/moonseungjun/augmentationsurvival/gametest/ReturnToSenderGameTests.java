@@ -61,7 +61,13 @@ public final class ReturnToSenderGameTests implements CustomTestMethodInvoker {
 
             blockHit(level, player, attacker, DURABILITY_CONSUMING_HIT);
             require(close(attackerBefore - attacker.getHealth(), 18.0D, 0.05D),
-                    "three durability-consuming blocks did not return the accumulated blocked damage");
+                    "three durability-consuming blocks did not return accumulated damage: actual="
+                            + (attackerBefore - attacker.getHealth())
+                            + " inside=" + (insideBefore - insideCone.getHealth())
+                            + " outside=" + (outsideBefore - outsideCone.getHealth())
+                            + " attackerPos=" + attacker.position()
+                            + " victimPos=" + insideCone.position()
+                            + " playerPos=" + player.position());
             require(close(insideBefore - insideCone.getHealth(), 18.0D, 0.05D),
                     "target inside the 45-degree cone was not hit by the shockwave");
             require(close(outsideCone.getHealth(), outsideBefore, 0.001D),

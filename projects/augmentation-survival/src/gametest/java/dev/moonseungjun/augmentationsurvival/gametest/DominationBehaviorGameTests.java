@@ -68,7 +68,14 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
             hostile.invulnerableTime = 0;
             DamageSource companionAttack = hostile.damageSources().mobAttack(dominated);
             boolean hostileApplied = hostile.hurtServer(level, companionAttack, 4.0F);
-            require(hostileApplied, "dominated companion could not damage a hostile target");
+            require(hostileApplied, "dominated companion could not damage hostile: policy="
+                    + CompanionAugmentService.mayDominatedMobDamage(dominated, hostile)
+                    + ", isHostile=" + CompanionAugmentService.isHostileEntity(hostile)
+                    + ", allied=" + CompanionAugmentService.areAllied(dominated, hostile)
+                    + ", vanillaAllied=" + dominated.isAlliedTo(hostile)
+                    + ", victimIFrames=" + hostile.invulnerableTime
+                    + ", victimHP=" + hostile.getHealth()
+                    + ", attacker=" + companionAttack.getEntity());
             require(hostile.getHealth() < hostileHealth,
                     "dominated companion attack did not reduce hostile health");
             GameTestPlayers.succeed(helper);

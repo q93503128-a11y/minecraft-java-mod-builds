@@ -14,6 +14,7 @@
       "dev.moonseungjun.augmentationsurvival.gametest.HealingInteractionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.ProtectionInteractionGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.DominationBehaviorGameTests",
+      "dev.moonseungjun.augmentationsurvival.gametest.WorldBossesRaidCacheGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.CooperativeMobilityGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.AugmentationSurvivalGameTests",
       "dev.moonseungjun.augmentationsurvival.gametest.AcquisitionOfferGameTests",
