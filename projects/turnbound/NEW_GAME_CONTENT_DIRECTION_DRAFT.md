@@ -1,5 +1,25 @@
 # TURNBOUND — New Player-Facing Game Content Direction (discussion draft)
 
+## Confirmed native draw probabilities and flexible initial roster size — 2026-11-06
+**Latest user decision, overriding earlier unresolved odds and provisional market comparisons:**
+
+| Native rarity | Base chance per non-guaranteed draw |
+| --- | ---: |
+| ★1 | 15% |
+| ★2 | 25% |
+| ★3 | 40% |
+| ★4 | 15% |
+| ★5 | 5% |
+| **Total** | **100%** |
+
+- These are the **base-rarity odds before applying guarantees**. The 10-pull guarantees at least one ★4+ in that batch; cumulative individual draws #50, #100, #150, ... guarantee a ★5 regardless of earlier lucky ★5 outcomes. The exact server draw/guarantee algorithm must preserve the promised minimum and not downgrade a naturally or milestone rolled ★5.
+- The initial **overall character roster size and the number per rarity are intentionally NOT fixed**. Character identities, designs, role balance, assets, skills, and available pool counts should evolve with content production and playtest. Do not manufacture filler units merely to fill an artificial quota.
+- The first-start selection remains exactly one from **three ordinary ★3 candidates**, all available from the normal summon pool. This fixed starter-choice count does NOT set the total number of ★3 characters.
+- Low rarity must have purposeful roles and an attainable promotion path to growth rank ★6; native ★5 should offer appealing identities without making low-rarity strategic choices irrelevant. Exact individual kits and raw stat/power budgets remain to be designed.
+- Main summon resources principally come from optional contracts and dungeons. **Exact summon cost and currency pacing are STILL undecided.**
+- This is a **planning-only decision**. GachaService is not connected to the rebuilt empty-runtime playable content; no code/build or gameplay tests were run.
+
+
 ## Confirmed summon guarantee and reward sources — 2026-11-06
 - **Every 10-pull batch guarantees at least one native ★4-or-★5 character.** The batch may contain more high-rarity results naturally. A ★5 counts toward this guaranteed ★4+ slot; do not silently promise an additional ★4 on top of a ★5.
 - **Every 50th individual draw is guaranteed native ★5**: 50, 100, 150, 200, ...; this is a **fixed milestone** guarantee, not a conventional pity counter that resets after obtaining ★5.

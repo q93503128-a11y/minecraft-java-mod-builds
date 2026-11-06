@@ -3,6 +3,9 @@
 **Status: External comparison ONLY. No new drop rates are approved or implemented.**
 Project: TURNBOUND `turnbound-content-rebuild`; not TURNBOUND: RE.
 
+## Current approved odds (updated after the reference study)
+The user subsequently chose the original assistant-proposed base distribution: native ★1 15%, ★2 25%, ★3 40%, ★4 15%, ★5 5%. The initial roster count is deliberately flexible. Earlier notes below describe the state *before* that decision; see `SUMMON_GACHA_AND_REWARD_ECONOMY_DRAFT.md` for binding current rules.
+
 ## Current user direction versus fixed decisions
 
 - CONFIRMED: one of three ordinary native ★3 free starters; summon pool native ★1–★5; ★6 obtainable by character promotion only.
