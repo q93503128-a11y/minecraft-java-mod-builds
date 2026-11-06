@@ -10,7 +10,8 @@ import net.minecraft.resources.Identifier;
 
 /** Server-derived authority collection snapshot, toggles and cooldown. */
 public record AuthorityCollectionPayload(
-        List<String> ownedIds, List<String> disabledIds, int remainingCooldownTicks, boolean openScreen
+        List<String> ownedIds, List<String> supportedIds, List<String> disabledIds,
+        int remainingCooldownTicks, boolean openScreen
 ) implements CustomPacketPayload {
     private static final int MAX_PACKAGES = 128;
     public static final Type<AuthorityCollectionPayload> TYPE = new Type<>(
@@ -23,10 +24,13 @@ public record AuthorityCollectionPayload(
                     int count = Math.max(0, Math.min(MAX_PACKAGES, buffer.readVarInt()));
                     List<String> owned = new ArrayList<>(count);
                     for (int i = 0; i < count; i++) owned.add(buffer.readUtf(128));
+                    int supportedCount = Math.max(0, Math.min(MAX_PACKAGES, buffer.readVarInt()));
+                    List<String> supported = new ArrayList<>(supportedCount);
+                    for (int i = 0; i < supportedCount; i++) supported.add(buffer.readUtf(128));
                     int disabledCount = Math.max(0, Math.min(MAX_PACKAGES, buffer.readVarInt()));
                     List<String> disabled = new ArrayList<>(disabledCount);
                     for (int i = 0; i < disabledCount; i++) disabled.add(buffer.readUtf(128));
-                    return new AuthorityCollectionPayload(owned, disabled,
+                    return new AuthorityCollectionPayload(owned, supported, disabled,
                             Math.max(0, buffer.readVarInt()), buffer.readBoolean());
                 }
                 @Override
@@ -34,6 +38,9 @@ public record AuthorityCollectionPayload(
                     int count = Math.min(MAX_PACKAGES, value.ownedIds().size());
                     buffer.writeVarInt(count);
                     for (int i = 0; i < count; i++) buffer.writeUtf(value.ownedIds().get(i), 128);
+                    int supportedCount = Math.min(MAX_PACKAGES, value.supportedIds().size());
+                    buffer.writeVarInt(supportedCount);
+                    for (int i = 0; i < supportedCount; i++) buffer.writeUtf(value.supportedIds().get(i), 128);
                     int disabledCount = Math.min(MAX_PACKAGES, value.disabledIds().size());
                     buffer.writeVarInt(disabledCount);
                     for (int i = 0; i < disabledCount; i++) buffer.writeUtf(value.disabledIds().get(i), 128);
@@ -43,6 +50,7 @@ public record AuthorityCollectionPayload(
             };
     public AuthorityCollectionPayload {
         ownedIds = List.copyOf(ownedIds);
+        supportedIds = List.copyOf(supportedIds);
         disabledIds = List.copyOf(disabledIds);
         remainingCooldownTicks = Math.max(0, remainingCooldownTicks);
     }

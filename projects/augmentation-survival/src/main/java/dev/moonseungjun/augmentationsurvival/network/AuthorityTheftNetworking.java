@@ -1,9 +1,12 @@
 package dev.moonseungjun.augmentationsurvival.network;
 
 import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityTheftService;
+import dev.moonseungjun.augmentationsurvival.augment.active.AuthorityPowerCatalog;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerState;
 import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import java.util.ArrayList;
+import java.util.List;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -54,7 +57,23 @@ public final class AuthorityTheftNetworking {
                 if (!AuthorityTheftService.isEnabled(state, id)) disabled.add(id);
             }
         }
-        ServerPlayNetworking.send(player, new AuthorityCollectionPayload(owned, disabled,
+        boolean hasChronoDawn = FabricLoader.getInstance().isModLoaded("chronodawn");
+        boolean hasWorldBosses = FabricLoader.getInstance().isModLoaded("worldbosses");
+        boolean hasMCEndgame = FabricLoader.getInstance().isModLoaded("mcendgame");
+        var supported = new ArrayList<>(AuthorityPowerCatalog.ENTRIES.stream()
+                .filter(entry -> switch (entry.group()) {
+                    case "바닐라" -> true;
+                    case "Chrono Dawn" -> hasChronoDawn;
+                    case "World Bosses" -> hasWorldBosses;
+                    case "MCEndgame" -> hasMCEndgame;
+                    default -> false;
+                })
+                .map(AuthorityPowerCatalog.Entry::id)
+                .toList());
+        for (String id : owned) {
+            if (id.startsWith(AuthorityTheftService.FALLBACK_PREFIX) && !supported.contains(id)) supported.add(id);
+        }
+        ServerPlayNetworking.send(player, new AuthorityCollectionPayload(owned, supported, disabled,
                 (int) Math.min(Integer.MAX_VALUE, cooldown), openScreen && state.level(AUTHORITY_ID) > 0));
     }
 }

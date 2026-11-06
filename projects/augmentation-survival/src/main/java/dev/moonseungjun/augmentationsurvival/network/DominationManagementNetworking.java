@@ -37,15 +37,20 @@ public final class DominationManagementNetworking {
         var results = new ArrayList<DominationManagementSnapshotPayload.CompanionView>();
         for (var record : roster.companions(player.getUUID())) {
             boolean loaded = false;
+            String currentDimension = record.dimension();
             try {
                 UUID id = UUID.fromString(record.uuid());
                 for (var level : player.level().getServer().getAllLevels()) {
                     var entity = level.getEntity(id);
-                    if (entity != null) { loaded = true; break; }
+                    if (entity != null) {
+                        loaded = true;
+                        currentDimension = entity.level().dimension().identifier().toString();
+                        break;
+                    }
                 }
             } catch (IllegalArgumentException ignored) { }
             results.add(new DominationManagementSnapshotPayload.CompanionView(
-                    record.uuid(), record.name(), record.entityId(), record.dimension(), loaded));
+                    record.uuid(), record.name(), record.entityId(), currentDimension, loaded));
         }
         int level = Math.min(3, AugmentationPlayerStateService.state(player).level(ID));
         int capacity = AdvancedWorldTuning.current().dominationCap(level);

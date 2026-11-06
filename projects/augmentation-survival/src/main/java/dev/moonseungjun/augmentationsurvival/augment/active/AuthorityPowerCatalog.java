@@ -68,4 +68,21 @@ public final class AuthorityPowerCatalog {
         }
         return List.copyOf(entries);
     }
+
+    /**
+     * Builds the runtime list from server capabilities and preserves owned legacy records even
+     * when the optional mod that supplied them is no longer installed.
+     */
+    public static List<Entry> available(List<String> supported, List<String> owned) {
+        ArrayList<Entry> entries = new ArrayList<>();
+        for (String id : supported) {
+            Entry entry = find(id);
+            if (entry != null && entries.stream().noneMatch(value -> value.id().equals(id))) entries.add(entry);
+        }
+        for (String id : owned) {
+            Entry entry = find(id);
+            if (entry != null && entries.stream().noneMatch(value -> value.id().equals(id))) entries.add(entry);
+        }
+        return List.copyOf(entries);
+    }
 }
