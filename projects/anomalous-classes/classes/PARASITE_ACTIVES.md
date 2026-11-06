@@ -4,6 +4,8 @@
 
 연결: [기생술사 v7](./PARASITE_MORPHER.md), [침투/BD](./PARASITE_BIODATA_ACQUISITION_AND_INTRUSION.md), [숙주 사망/긴급 전이](./PARASITE_HOST_DEATH_AND_TRANSFER.md), [285랭크 패시브](./PARASITE_SKILL_TREE.md), [허약한 인간형/BD 최소치](./PARASITE_BIODATA_GROWTH.md).
 
+> **D09 v3 제안/미확정 (2026-11-06):** 인간형 R=기존 기생 시도, 숙주에 기생 중 R=자발적 이탈을 시작하는 사용자의 조작 제안. 살아있는 숙주→다른 생물로 직접 이전하는 기존 경로는 그대로 보존. 조준한 적법 새 숙주가 있다면 이전 시도를 우선하고 대상 없을 때만 취소 가능한 안전 이탈 시전을 시작하는 방식은 후보. 자발적 이탈은 숙주 사망이 아니라서 사망 후 재기생 잠금으로 취급하지 않는다. 피격·위험 중 즉시 무적 이탈 불가. [D09 v3](../D09_DIRECT_SKILL_KEYBIND_AND_CLASS_COMMANDS_V1.md).
+
 ## 1. 기본 조작 ≠ 스킬 슬롯
 
 | 기본 기능 | 조작과 역할 | 제한 |
