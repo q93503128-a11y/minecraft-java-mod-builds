@@ -126,3 +126,12 @@
 - HISTORICAL evidence (legacy `turnbound-alpha17-full-v04`): `PROJECT.md`, `02_BALANCE_RULES_v1.md`, `03_CHARACTER_DESIGN_v1.md` defined **native ★1–★5**. The proposed ★6 promotion/Awakening relationship remained unresolved, and old `CanonicalData.levelCap` supporting an integer 6 is **not proof of approved ★6 native rarity**.
 - This is only a planning/documentation checkpoint; do not claim any starter selection or populated four-character roster currently functions in the released empty foundation.
 - Refer to `NEW_GAME_CONTENT_DIRECTION_DRAFT.md` latest selected combat direction section for the current design; superseded historical sections remain for traceability, not authority.
+
+## Approved native rarity range — 2026-11-06
+- **Native / born rarity is ★1, ★2, ★3, ★4 or ★5 only.** There is no native ★6 gacha rank.
+- Native rarity and any future upgrade/promotion/awakening tiers are distinct concepts. A ★6 promotion, sixth display star or Awakening path is **not approved** by today's native rarity decision; decide separately if ever needed.
+- The player avatar is outside turn-based combat. The solo combat party holds up to **four playable characters**, obtained by gacha except for the first choice.
+- On first start, choose **one of three ordinary ★3 characters**. No special starter-only power, extra rarity or exclusivity; all three are ordinary characters available through the normal pool.
+- No rarity probabilities, duplicate conversion, star growth curves, new character identities or starter-specific role kits have been approved.
+- These decisions are currently **DESIGN ONLY**. The blank production catalog remains empty and the game does not yet include the new roster or selection UI.
+- **Next recommended design unit:** field-to-turn encounter entry/exit, avatar vulnerability/protection while directing the character party, party defeat and survival consequences, including multiplayer/exploit boundaries. Then first starter trio roles and the gacha economy. No code change required for native rarity documentation.

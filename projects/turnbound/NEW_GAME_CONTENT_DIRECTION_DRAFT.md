@@ -1,6 +1,14 @@
 # TURNBOUND — New Player-Facing Game Content Direction (discussion draft)
 
-Status: PARTIALLY CONFIRMED — user-confirmed solo combat structure and starter selection below; character identities, numerical balance and rarity ceiling remain undecided.
+Status: PARTIALLY CONFIRMED — current authoritative decisions in the sections immediately below; specific character identities, kits, numeric balance and battle presentation remain undecided.
+
+## Approved native rarity range — 2026-11-06
+- **Native / born rarity is ★1, ★2, ★3, ★4 or ★5 only.** There is no native ★6 gacha rank.
+- Native rarity and any future upgrade/promotion/awakening tiers are distinct concepts. A ★6 promotion, sixth display star or Awakening path is **not approved** by today's native rarity decision; decide separately if ever needed.
+- The player avatar is outside turn-based combat. The solo combat party holds up to **four playable characters**, obtained by gacha except for the first choice.
+- On first start, choose **one of three ordinary ★3 characters**. No special starter-only power, extra rarity or exclusivity; all three are ordinary characters available through the normal pool.
+- No rarity probabilities, duplicate conversion, star growth curves, new character identities or starter-specific role kits have been approved.
+- These decisions are currently **DESIGN ONLY**. The blank production catalog remains empty and the game does not yet include the new roster or selection UI.
 
 ## Latest selected combat and starter direction — 2026-11-06 (overrides older player-plus-companions notes)
 - **Solo turn-based combat is performed by a party of up to 4 gacha-acquired characters. The Minecraft player avatar explores/builds/survives but is NOT a combat party actor.**
@@ -8,7 +16,7 @@ Status: PARTIALLY CONFIRMED — user-confirmed solo combat structure and starter
 - The two unselected options should remain obtainable through the regular character-acquisition system, just like the chosen character; starter choices are ordinary roster characters, not a separate special tier.
 - **Prior player-avatar-plus-four-companions / five-actor limit is superseded for the current design.** The present solo party limit is 4 characters; no player avatar in turn battles.
 - Character identity, exact skills, initial distribution and gacha rates have **NOT** been approved. Do not recycle retired P01–P08/F01–F04 by default.
-- The user asked about ★1–★6. Historical TURNBOUND design (legacy branch `turnbound-alpha17-full-v04`, `PROJECT.md`, `02_BALANCE_RULES_v1.md`, `03_CHARACTER_DESIGN_v1.md`) explicitly defined **native ★1–★5**. ★6 promotion / Awakening semantics were discussed but **not settled as a sixth native summon rarity**. The new game's rarity range is pending a new user decision.
+- The user has now CONFIRMED the old native rarity range **★1–★5** for the new game. A native ★6 summon rank is excluded; any upgrade/Awakening system remains a separate unresolved design question.
 - These are **planning decisions only**; starter selection, party roster and gacha have not been implemented into the blank-runtime build.
 
 Date: 2026-11-05. Branch: turnbound-content-rebuild.
@@ -40,13 +48,13 @@ Do not implement this proposal until the game's actual world style, party/collec
 
 ## Open design decisions — explicitly NOT SETTLED
 1. **World topology:** (A) expanded vanilla overworld with authored locations, (B) hand-built authored overworld, (C) hub-connected crafted regions; assess travel feel, build/art assets and multiplayer.
-2. **Player/party identity:** SOLVED for solo: player avatar fights with up to four gacha companions (five total). Exact battle roles, roster UI and multiplayer combining remain open.
+2. **Player/party identity:** SOLVED for solo in the latest sections above: party-only combat, up to four playable units; player avatar is not a turn combatant. Exact roles, roster UI and multiplayer combining remain open.
 3. **Combat encounter presentation:** seamless field-to-turn battle vs distinct contained arena; reconcile visible world foes, spectators, shared-party ownership and interaction.
 4. **Progression loop:** what tangible decisions rewards enable, and what prevents farming fatigue. Do not introduce multiple overlapping currencies by default.
 5. **Creative direction:** narrative tone, geographic theme, visual identity, character art source and how the world visually communicates danger/progress.
 
 ## Next collaborative decision
-The world direction is vanilla-generated overworld with authored RPG locations; solo combat uses player avatar + up to four gacha companions. Co-design player combat and in-game draw resources before specifying the first playable slice.
+The world direction is vanilla-generated overworld with authored RPG locations; the latest solo combat decision is four gacha/starter characters without the avatar. Co-design the field-to-battle transition and how survival consequences work, then the in-game draw resources before specifying the first playable slice.
 
 ## User-proposed direction — 2026-11-06 (new conversation, NOT final detailed GDD)
 The user proposed integrating RPG content into the normal generated Minecraft overworld, **combining survival and turn-based combat**, retiring mandatory story progression in favor of **NPC/job-board contracts**, and removing **all vanilla creatures**. Treat this as the currently preferred design direction; detailed gameplay architecture, exceptions and content still require agreement.
@@ -58,7 +66,7 @@ The user proposed integrating RPG content into the normal generated Minecraft ov
 - World and other players continue running in real time; only participants are managed by a turn-battle session with server-authoritative protection from outside damage, arena/world interaction exploits and cross-player contention. No global tick pause.
 - Avoid a mandatory linear story. Use purposeful contract categories (hunt, gather, exploration, boss bounty) and meaningful resource or equipment rewards; avoid repetitive menu chores and disconnected currencies.
 - Align one coherent economy: survival crafting must help exploration/turn combat; battle drops/contracts must help survival progress. Preserve the user choice of what to do next.
-- PvE solo-party structure is decided: the player fights directly, with up to four companions obtained through gacha. Survival HP, equipment, companion abilities and multiplayer composition still require design.
+- PvE solo-party structure was amended later: **four character actors maximum**, excluding the survival player avatar. Survival HP/consequences, character equipment and multiplayer composition still require design.
 - Avoid legacy authored character/boss/quest resurrection from dormant source. Reusable engine code is allowed only after separating old hardcoding.
 
 ### Relevant external reference
@@ -66,7 +74,7 @@ The user proposed integrating RPG content into the normal generated Minecraft ov
 - NeoForge entity and spawning documentation for later implementation planning: https://docs.neoforged.net/docs/entities/
 
 ### Next collaborative decision
-Player + up to four gacha-drawn companions is confirmed. Next decide player battle action flow and the sources/costs of drawing companions. Do not begin mass vanilla mob replacement until a substitute ecosystem can support survival.
+Latest decision: four playable character actors maximum (no avatar), one of three ordinary ★3 starters chosen initially; native rarity ★1–★5. Next decide field-to-turn combat rules and then draw resource sources/costs. Do not begin mass vanilla mob replacement until a substitute ecosystem can support survival.
 
 ## Superseded discussion record — former player-plus-companion concept (2026-11-06)
 
