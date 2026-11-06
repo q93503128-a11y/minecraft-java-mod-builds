@@ -41,7 +41,7 @@ with zipfile.ZipFile(jar) as z:
         cmd = ["javap", "-classpath", str(jar), "-p", "-c", classname]
         try:
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=12, check=False)
-            lines.append(f"CLASS {classname} rc={res.returncode}\n" + res.stdout[:32000] + res.stderr[:500])
+            lines.append(f"CLASS {classname} rc={res.returncode}\n" + (res.stdout if classname in ("com.mki.worldbosses.config.RaidCacheLootConfig", "com.mki.worldbosses.server.RaidCacheOpeningManager") else res.stdout[:18000]) + res.stderr[:500])
         except (OSError, subprocess.TimeoutExpired) as e:
             lines.append(f"CLASS {classname}: {type(e).__name__}: {e}")
 out.write_text("\n\n".join(lines) + "\n", encoding="utf-8")
