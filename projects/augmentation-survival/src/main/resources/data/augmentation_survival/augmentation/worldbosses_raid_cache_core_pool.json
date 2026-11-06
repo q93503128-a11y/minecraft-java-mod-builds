@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "required_worldbosses_version": "2.0.2",
+  "mode": "replace_only_ordinary_common_fillers",
+  "max_display_entries": 30,
+  "weight_scale": 10000,
+  "core_outcomes": [
+    {
+      "tier": "epic",
+      "item": "augmentation_survival:epic_augment_core",
+      "chance_basis_points": 200,
+      "display_rarity": "EPIC",
+      "label": "영웅 증강 코어"
+    },
+    {
+      "tier": "legendary",
+      "item": "augmentation_survival:legendary_augment_core",
+      "chance_basis_points": 80,
+      "display_rarity": "LEGENDARY",
+      "label": "전설 증강 코어"
+    },
+    {
+      "tier": "mythic",
+      "item": "augmentation_survival:mythic_augment_core",
+      "chance_basis_points": 20,
+      "display_rarity": "LEGENDARY",
+      "label": "신화 증강 코어"
+    }
+  ],
+  "ordinary_filler_ids": [
+    "minecraft:emerald",
+    "minecraft:experience_bottle",
+    "minecraft:moss_block",
+    "minecraft:iron_ingot",
+    "minecraft:amethyst_shard",
+    "minecraft:copper_ingot",
+    "minecraft:feather",
+    "minecraft:sand",
+    "minecraft:sandstone",
+    "minecraft:gold_nugget",
+    "minecraft:netherrack",
+    "minecraft:magma_cream",
+    "minecraft:blaze_powder",
+    "minecraft:soul_sand",
+    "minecraft:soul_soil",
+    "minecraft:bone",
+    "minecraft:chorus_fruit",
+    "minecraft:end_stone",
+    "minecraft:ender_pearl",
+    "minecraft:crying_obsidian",
+    "minecraft:cooked_beef",
+    "minecraft:gold_ingot",
+    "minecraft:golden_carrot"
+  ],
+  "supported_caches": [
+    "verdant_raid_cache",
+    "storm_raid_cache",
+    "dune_raid_cache",
+    "infernal_raid_cache",
+    "soul_raid_cache",
+    "void_raid_cache",
+    "umbral_raid_cache",
+    "dragon_raid_cache",
+    "griffin_raid_cache",
+    "weaver_raid_cache",
+    "primordial_raid_cache"
+  ]
+}

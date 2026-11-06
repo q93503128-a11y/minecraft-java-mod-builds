@@ -3,6 +3,7 @@
   "package": "dev.moonseungjun.augmentationsurvival.mixin",
   "mixins": [
     "RaidMixin",
+    "WorldBossesRaidCacheLootMixin",
     "CombatAugmentMixin",
     "PlayerDamagePipelineMixin",
     "PlayerHurtDirAccessor",
