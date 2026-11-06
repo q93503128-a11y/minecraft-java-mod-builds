@@ -248,3 +248,11 @@ Retain the proven generic combat contract from legacy TURNBOUND as a system, not
 ### Next design dependency
 Decide forge workflow and how the basic survival materials / monster trophies produce weapon, armor and accessory options without excessive crafting steps; then reconcile level caps with duplicate bonuses and star promotion. Avoid switching to first-region production before these relationships are coherent.
 
+
+## User-confirmed forge separation from vanilla Smithing Table — 2026-11-06
+- **TURNBOUND gear forging is an independently registered custom forge/blacksmith workstation and recipe interface, separate from Minecraft's vanilla Smithing Table.** No repurposing or replacement of vanilla Smithing Table recipes, templates, armor-trim/smithing functions or player-survival inventory item behavior.
+- The TURNBOUND forge creates/enhances **party character equipment** from survival ores and custom monster materials. Vanilla crafting/smithing remains useful for the Minecraft explorer's ordinary survival tools and armor.
+- Allowing an NPC blacksmith in towns to use the same shared forge recipes is an architectural **proposal**; the exact station location, GUI, extra modules and whether the player can craft/place a forge remain unfinalized in detail. Keep the player's ability to access normal Minecraft crafting independent of TURNBOUND's equipment loops.
+- Existing ★1–★6 rank level caps and duplicate +level cap-interaction are separate decisions. This separation does not resolve those mechanics.
+- Documentation checkpoint only: there is no actual custom forge block, recipe serializer, Forge GUI or registered structure yet.
+
