@@ -1,5 +1,20 @@
 # TURNBOUND — Dungeon Gameplay Structure: References and Design Options
 
+## Confirmed three-defeat, 30-online-minute individual dungeon lockout — 2026-11-06
+
+### User decisions superseding old open lockout duration
+- A character party's **third full battle defeat in one specific generated dungeon instance** imposes a **30-minute admission lockout for that exact dungeon and player only**. This is **not a permanent ban**, and it does not affect other dungeon instances even when sharing the same theme or structure template.
+- Time is measured in **cumulative time connected to the Minecraft server/world**, **not wall-clock time**. Offline time does **not** reduce the remaining lock. The remaining duration is retained across player logout/login and server restarts.
+- After accumulating **30 minutes of connected server play**, the dungeon becomes accessible again and its per-player defeat count resets to **0/3**. Repeated future defeats can trigger a new independent 30-online-minute lock.
+- The triggering third defeat follows existing user-confirmed loss-free defeat behavior: teleport to a valid checkpoint **outside that prohibited dungeon**, retain inventory, party equipment, XP, Gold and gems; no unearned victory or dungeon-clear rewards. Other players' own admission and defeat counts remain unaffected.
+- Count only **actual party defeat outcomes** during that dungeon's battles. One fainted party member, a successful escape, voluntarily leaving a dungeon, or a successful battle does not increase defeat count by itself.
+- A lock is an **entry/admission constraint** and should be enforced server-side over actual structure bounds/entrances, not only by locking the visible entrance door; otherwise mining, flying, teleportation or log-in-position exploits could bypass it. Avoid restricting unrelated overworld construction/traversal.
+- Persist keyed **player identity + physical dungeon instance identifier + loss count + remaining online lock time**; time should decrement once per eligible online server tick (or equivalent trusted server-side elapsed session accounting) without client-provided timing. Count/entry state changes must be saved durably and handled correctly across world unload/relog/disconnect.
+- **No separate real-time expiry, gem-paid reset, daily reset or permanent access denial** is authorized. A remaining 18-minute example after playing 12 minutes and disconnecting follows the same counter when reconnecting.
+- New initial design specifics (checkpoints, dungeon structure bounds, UI, single-player pause semantics, actual time source, multiplayer interactions and playtest balancing) require implementation review. Online clock includes connection time; no AFK penalty or AFK-exclusion rule is approved.
+- This is **design-only**; no running Java timer, lockout gate, persistence migration, structure registry, GUI, automated test, build or live Minecraft playtest has been performed.
+
+
 **CURRENT USER-APPROVED DUNGEON DIRECTION BELOW OVERRIDES ANY OLDER 'UNDECIDED' BOSS/BRANCH NOTES.**
 
 ## Confirmed frequent procedural dungeons, optional full clears and three-defeat instance lockout — 2026-11-06
