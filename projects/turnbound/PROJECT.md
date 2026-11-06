@@ -506,3 +506,19 @@ Planning/doc change only; no camera room geometry, all-clear tracking, replay/re
 - **APPROVED:** no enemy/battle/loot refill until a dungeon run has been cleared. That physical dungeon may be replayed after a **one-hour cooldown following a clear**, with the **same normal combat/treasure/main-clear/full-clear reward rules and payouts**, not reduced repeat rates.
 - An all-clear still means defeating all dungeon enemy encounters in that run. Keep its distinction from the ordinary main-clear trigger pending detailed design. The one-hour cooldown's wall-clock vs online-only basis has **not** been chosen (unlike the separately specified 30-online-minute personal 3-defeat lockout).
 - Source of detailed contract and open implementation questions: `DUNGEON_GAMEPLAY_STRUCTURE_REFERENCE_AND_OPTIONS_DRAFT.md`. No implementation or testing performed.
+
+## Non-commercial, generous repeatable gem farming — 2026-11-06
+
+### User-confirmed intent
+- TURNBOUND is principally being made for private/non-commercial enjoyment and likely will not be distributed. The player explicitly **wants long dedicated dungeon farming sessions to reward players with substantial summon gems**; do **not** add restrictive anti-grind economics, hidden repeated-clear reductions, daily gem earning caps or forced diminishing returns simply to control player engagement.
+- Continue the approved policy: **same reward eligibility and value for every eligible replay**, with the existing one-hour cooldown following dungeon completion and no encounter/treasure refill before completion. The cooldown itself was user-approved and is **not** repealed by this decision.
+- The exact rate and quantity of gems are not set. Balance for satisfying voluntary effort, challenge and content variety rather than monetization or fear that a committed player may summon many characters.
+- Do not silently decide whether the one-hour replay cooldown advances offline; the user said to proceed to the next topic without choosing online-only vs real-world clock. The already-approved 30-online-minute lockout after three losses is a separate timer.
+
+### Next design proposal (NOT yet an approved rule)
+- **Ordinary dungeon clear** could mean completing a structure-specific main objective (boss, central relic, main treasure or similar). **All clear** is independently user-confirmed as defeating **every dungeon-authored enemy**, including optional rooms. If the main objective is met first, players may remain in the current cycle to finish side encounters and claim an all-clear bonus before a voluntary replay/reset.
+- A post-clear cooldown should not prematurely erase uncleared optional enemies or prevent collecting legitimately available full-clear rewards. The exact lifecycle, reward-claim timing, reset activation and multiplayer sharing require a separate user decision; do not implement this proposal as settled.
+- The user already confirmed full-clear enemy defeat; avoid reclassifying unopened noncombat treasure rooms as mandatory full-clear targets.
+
+Status: documentation only. No economy code, cooldown clock implementation, dungeon objective code, tests, build, JAR or gameplay validation performed.
+

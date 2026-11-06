@@ -1,5 +1,21 @@
 # TURNBOUND — Summon Gacha and Currency Reward Design
 
+## Non-commercial, generous repeatable gem farming — 2026-11-06
+
+### User-confirmed intent
+- TURNBOUND is principally being made for private/non-commercial enjoyment and likely will not be distributed. The player explicitly **wants long dedicated dungeon farming sessions to reward players with substantial summon gems**; do **not** add restrictive anti-grind economics, hidden repeated-clear reductions, daily gem earning caps or forced diminishing returns simply to control player engagement.
+- Continue the approved policy: **same reward eligibility and value for every eligible replay**, with the existing one-hour cooldown following dungeon completion and no encounter/treasure refill before completion. The cooldown itself was user-approved and is **not** repealed by this decision.
+- The exact rate and quantity of gems are not set. Balance for satisfying voluntary effort, challenge and content variety rather than monetization or fear that a committed player may summon many characters.
+- Do not silently decide whether the one-hour replay cooldown advances offline; the user said to proceed to the next topic without choosing online-only vs real-world clock. The already-approved 30-online-minute lockout after three losses is a separate timer.
+
+### Next design proposal (NOT yet an approved rule)
+- **Ordinary dungeon clear** could mean completing a structure-specific main objective (boss, central relic, main treasure or similar). **All clear** is independently user-confirmed as defeating **every dungeon-authored enemy**, including optional rooms. If the main objective is met first, players may remain in the current cycle to finish side encounters and claim an all-clear bonus before a voluntary replay/reset.
+- A post-clear cooldown should not prematurely erase uncleared optional enemies or prevent collecting legitimately available full-clear rewards. The exact lifecycle, reward-claim timing, reset activation and multiplayer sharing require a separate user decision; do not implement this proposal as settled.
+- The user already confirmed full-clear enemy defeat; avoid reclassifying unopened noncombat treasure rooms as mandatory full-clear targets.
+
+Status: documentation only. No economy code, cooldown clock implementation, dungeon objective code, tests, build, JAR or gameplay validation performed.
+
+
 ## Current approved dungeon replay reward policy — 2026-11-06
 - **No dungeon enemy, room or treasure refills before a clear; after a clear a one-hour dungeon replay cooldown is applied. Re-clearing after eligibility receives the same reward value and schedule as the first run, without a repeat-clear reduction.** All-enemy full clear and its reward may be earned again each eligible cycle.
 - One-hour replay cooldown clock mode (online-only or wall-clock) remains open; the unrelated 3-defeat dungeon access ban is explicitly 30 online minutes.
