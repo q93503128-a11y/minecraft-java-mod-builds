@@ -64,3 +64,7 @@ Do not assume that mining plain ore itself yields summon currency. Mining is alr
 Frozen `turnbound-alpha17-full-v04:projects/turnbound/02_BALANCE_RULES_v1.md` had 10-pull ★4+ guarantee, ★5 probability baseline 3%, soft pity at 65 and hard pity at 80, with historical 300-crystal draw costs. **The new game only inherits the 10-pull ★4+ principle, not those old rates or the old pity logic.**
 
 The latest user decision supersedes any old ★5 pity-reset behavior. This file contains decisions and examples only: no summon transaction, persistence migration, server test, loot table, UI or playable game content has been implemented.
+
+## External rate benchmarks reviewed — 2026-11-06
+- See `GACHA_RATES_MARKET_COMPARISON_2026-11-06.md` for cited comparisons (Genshin, Star Rail, Wuthering Waves, Arknights, NIKKE, Azur Lane, AFK Journey), fixed 50-draw scenario arithmetic and rate design tradeoffs.
+- **NOT A USER RATE DECISION:** the user's roughly 5% ★5 suggestion and prior assistant 15/25/40/15/5 split remain provisional; do not change the confirmed 50-draw no-reset milestone or invent the final rarity table from this research.
