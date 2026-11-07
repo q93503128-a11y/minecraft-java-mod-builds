@@ -158,6 +158,49 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
         GameTestPlayers.succeed(helper);
     }
 
+    @GameTest(maxTicks = 80)
+    public void dominatedGhastUsesFlightSteeringTowardItsOwner(GameTestHelper helper) {
+        ServerPlayer owner = GameTestPlayers.survivalPlayer(helper);
+        var anchor = helper.absolutePos(new BlockPos(3, 2, 3));
+        owner.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
+        Mob ghast = helper.spawnMob(EntityTypes.GHAST, 18, 7, 3).spawn();
+        ghast.setAttached(CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(owner.getUUID()));
+        CompanionAugmentService.onRevivedCompanion(ghast);
+        GameTestPlayers.runAfterDelay(helper, 8, () -> {
+            var control = ghast.getMoveControl();
+            double horizontal = Math.hypot(control.getWantedX() - owner.getX(),
+                    control.getWantedZ() - owner.getZ());
+            require(control.hasWanted(), "dominated Ghast flight control has no target");
+            require(horizontal <= 9.0D && control.getWantedY() >= owner.getY() + 5.0D,
+                    "dominated Ghast is following random flight rather than owner-safe hover: "
+                            + horizontal + " block horizontal, y=" + control.getWantedY());
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
+    @GameTest(maxTicks = 80)
+    public void dominatedPiglinBruteSeedsFightActivityAndNativeWalking(GameTestHelper helper) {
+        ServerPlayer owner = GameTestPlayers.survivalPlayer(helper);
+        var anchor = helper.absolutePos(new BlockPos(1, 2, 1));
+        owner.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
+        Mob brute = helper.spawnMob(EntityTypes.PIGLIN_BRUTE, 2, 2, 2).spawn();
+        Mob zombie = helper.spawnMob(EntityTypes.ZOMBIE, 7, 2, 2).withNoFreeWill().spawn();
+        brute.setAttached(CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(owner.getUUID()));
+        CompanionAugmentService.onRevivedCompanion(brute);
+        brute.setTarget(zombie);
+        GameTestPlayers.runAfterDelay(helper, 4, () -> {
+            var brain = brute.getBrain();
+            require(brain.getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET)
+                    .filter(zombie::equals).isPresent(), "dominated brute lost its intended enemy");
+            require(brain.getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ANGRY_AT)
+                    .filter(zombie.getUUID()::equals).isPresent(),
+                    "dominated brute never entered its vanilla angry combat state");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }

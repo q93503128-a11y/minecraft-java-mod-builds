@@ -30,6 +30,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.WalkTarget;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Guardian;
 import net.minecraft.world.entity.monster.cubemob.AbstractCubeMob;
@@ -322,7 +323,12 @@ public final class CompanionAugmentService {
             }
 
             refreshCombatTarget(mob, ownerId.get(), server);
-            if (mob.getTarget() == null && mob.distanceToSqr(owner) > FOLLOW_OWNER_DISTANCE * FOLLOW_OWNER_DISTANCE) {
+            if (mob.getType() == EntityTypes.GHAST) {
+                // Ghasts have no pathfinding follower goal: their vanilla random flight
+                // moves them away even while a controlled combat target is present.
+                steerGhastNearOwner(mob, owner);
+            } else if (mob.getTarget() == null
+                    && mob.distanceToSqr(owner) > FOLLOW_OWNER_DISTANCE * FOLLOW_OWNER_DISTANCE) {
                 followOwner(mob, owner, 1.15D);
             }
         }
@@ -406,19 +412,67 @@ public final class CompanionAugmentService {
 
     private static void updateBrainTarget(Mob mob, LivingEntity target) {
         if (!hasBrainDrivenCombat(mob)) return;
+        var brain = mob.getBrain();
         if (target == null) {
-            mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+            brain.eraseMemory(MemoryModuleType.ATTACK_TARGET);
+            if (mob.getType() == EntityTypes.PIGLIN_BRUTE) {
+                brain.eraseMemory(MemoryModuleType.ANGRY_AT);
+                brain.eraseMemory(MemoryModuleType.WALK_TARGET);
+            }
         } else {
-            mob.getBrain().setMemory(MemoryModuleType.ATTACK_TARGET, target);
+            brain.setMemory(MemoryModuleType.ATTACK_TARGET, target);
+            if (mob.getType() == EntityTypes.PIGLIN_BRUTE) {
+                // The native brute AI enters its FIGHT activity through ANGRY_AT,
+                // not merely Mob#setTarget; without this it looks aggressive while idling.
+                if (brain.getMemory(MemoryModuleType.ANGRY_AT)
+                        .filter(target.getUUID()::equals).isEmpty()) {
+                    brain.setMemory(MemoryModuleType.ANGRY_AT, target.getUUID());
+                }
+                // Let vanilla fight behaviors own paths once active. Seed a missing
+                // WALK_TARGET, but never overwrite an ongoing vanilla route each tick.
+                if (mob.distanceToSqr(target) > 9.0D
+                        && !brain.hasMemoryValue(MemoryModuleType.WALK_TARGET)) {
+                    brain.setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(target, 1.0F, 2));
+                }
+            }
         }
     }
 
     private static void followOwner(Mob mob, ServerPlayer owner, double speed) {
-        if (mob.getType() == EntityTypes.VEX || mob.getType() == EntityTypes.BLAZE) {
+        if (mob.getType() == EntityTypes.GHAST) {
+            steerGhastNearOwner(mob, owner);
+        } else if (mob.getType() == EntityTypes.VEX || mob.getType() == EntityTypes.BLAZE) {
             mob.getMoveControl().setWantedPosition(owner.getX(), owner.getY() + 1.0D, owner.getZ(), speed);
         } else {
             mob.getNavigation().moveTo(owner, speed);
         }
+    }
+
+    /** The native Ghast MoveControl is flight-based; PathNavigation.moveTo(owner) does not work. */
+    private static void steerGhastNearOwner(Mob ghast, ServerPlayer owner) {
+        if (!(ghast.level() instanceof ServerLevel level)) return;
+        LivingEntity enemy = ghast.getTarget();
+        Vec3 reference = enemy != null ? enemy.position() : ghast.position();
+        Vec3 horizontal = new Vec3(reference.x - owner.getX(), 0.0D, reference.z - owner.getZ());
+        if (horizontal.lengthSqr() < 1.0E-4D) horizontal = new Vec3(1.0D, 0.0D, 0.0D);
+        horizontal = horizontal.normalize();
+        double radius = enemy != null ? 7.0D : 8.0D;
+        Vec3 desired = new Vec3(
+                owner.getX() + horizontal.x * radius,
+                owner.getY() + 6.0D,
+                owner.getZ() + horizontal.z * radius
+        );
+        // A Ghast occupies a 4x4x4 box; don't order it into a tree or hillside.
+        for (int step = 0; step < 3; step++) {
+            Vec3 candidate = desired.add(0.0D, step * 2.0D, 0.0D);
+            AABB moved = ghast.getBoundingBox().move(candidate.subtract(ghast.position()));
+            if (level.noCollision(ghast, moved)) {
+                ghast.getMoveControl().setWantedPosition(candidate.x, candidate.y, candidate.z, 1.0D);
+                return;
+            }
+        }
+        // Collision-unsafe owner anchors should not trigger random flight away.
+        ghast.getMoveControl().setWantedPosition(ghast.getX(), ghast.getY(), ghast.getZ(), 1.0D);
     }
 
     /** Hostile mobs must be able to retaliate against a dominated attacker, even of their own species. */
