@@ -26,6 +26,7 @@ def pinnedPackArtifacts = [
         [name: "Farmer's Delight Refabricated", coord: "maven.modrinth:7vxePowz:${project.farmers_delight_version_id}"],
         [name: 'Better Combat', coord: "maven.modrinth:5sy6g3kz:${project.better_combat_version_id}"],
         [name: 'LambDynamicLights', coord: "maven.modrinth:yBW8D80W:${project.lamb_dynamic_lights_version_id}"],
+        [name: 'Just Enough Items (JEI)', coord: "curse.maven:jei-238222:${project.jei_curse_file}"],
         [name: 'Chrono Dawn', coord: "curse.maven:chrono-dawn-1414198:${project.chronodawn_curse_file}"],
         [name: 'World Bosses', coord: "curse.maven:world-bosses-1545677:${project.world_bosses_curse_file}"],
         [name: 'Resourceful Lib', coord: "maven.modrinth:G1hIVOrD:${project.resourceful_lib_version_id}"],
