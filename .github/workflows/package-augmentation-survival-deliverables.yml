@@ -1,0 +1,89 @@
+name: Package Augmentation Survival Deliverables
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/package-augmentation-survival-deliverables.yml'
+      - 'projects/augmentation-survival/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: projects/augmentation-survival
+
+jobs:
+  deliverables:
+    name: Build JAR and mrpack (GameTests tracked separately)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Compile JAR and resolve pack dependencies
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean assemble inspectPackDependencies verifyPackRuntimeClasspath -PaugmentationPackRuntime=true --stacktrace
+
+      - name: Verify production JAR and Modrinth pack
+        run: |
+          python3 tools/verify_production_jar.py
+          python3 tools/build_verified_mrpack.py
+
+      - name: Verify patch scope in actual JAR and JEI in pack
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import zipfile
+          from pathlib import Path
+
+          base = Path("build")
+          jar = base / "libs/augmentation-survival-0.1.0-alpha.1.jar"
+          mrpack = base / "distributions/augmentation-survival-0.1.0-alpha.1.mrpack"
+          with zipfile.ZipFile(jar) as z:
+              data = json.loads(z.read("data/augmentation_survival/augmentation/core_distribution_contract.json"))
+          expected = {"normal_hostile": 0.012, "progression_hostile": 0.048, "special_hostile": 0.09, "elite_hostile": 0.24}
+          actual = {item["id"]: item["core_roll_chance"] for item in data["mob_profiles"]}
+          assert actual == expected, f"Unexpected built JAR core rates: {actual}"
+          assert {item["id"]: item["core_roll_chance"] for item in data["distribution_templates"]} == {
+              "routine_exploration": 0.13, "dangerous_mid": 0.17,
+              "dangerous_high": 0.23, "pinnacle_cache": 0.40
+          }, "Structure core rates changed unexpectedly"
+          assert {item["id"]: item["guaranteed_core_count"] for item in data["event_profiles"]} == {
+              "raid_victory": 1, "elder_guardian": 1, "warden": 1
+          }, "Guaranteed event reward changed unexpectedly"
+          assert data["fishing_profile"]["core_roll_chance"] == 0.12, "Fishing core rate changed unexpectedly"
+          with zipfile.ZipFile(mrpack) as z:
+              index = json.loads(z.read("modrinth.index.json"))
+              own_name = "overrides/mods/" + jar.name
+              assert hashlib.sha256(z.read(own_name)).digest() == hashlib.sha256(jar.read_bytes()).digest(), "Embedded JAR differs"
+          jei = [file for file in index["files"] if file["path"] == "mods/jei-238222-9352381.jar"]
+          assert len(jei) == 1 and jei[0]["env"] == {"client": "required", "server": "optional"}, f"Missing or incorrect JEI: {jei}"
+          assert len(index["files"]) == 24, f"Unexpected external artifact count: {len(index['files'])}"
+          print("DELIVERABLES_VERIFIED: mob chances exactly doubled; structure, event and fishing unchanged; JEI is pinned; JAR matches mrpack embedded JAR")
+          for f in (jar, mrpack):
+              print(f"{f.name}: {f.stat().st_size} bytes, SHA-256 {hashlib.sha256(f.read_bytes()).hexdigest()}")
+          PY
+
+      - name: Upload JAR and modpack files
+        uses: actions/upload-artifact@v4
+        with:
+          name: augmentation-survival-jar-and-modpack-${{ github.run_number }}
+          path: |
+            projects/augmentation-survival/build/libs/augmentation-survival-0.1.0-alpha.1.jar
+            projects/augmentation-survival/build/libs/augmentation-survival-0.1.0-alpha.1.jar.sha256
+            projects/augmentation-survival/build/distributions/augmentation-survival-0.1.0-alpha.1.mrpack
+            projects/augmentation-survival/build/distributions/augmentation-survival-0.1.0-alpha.1.mrpack.sha256
+            projects/augmentation-survival/build/distributions/MRPACK_VERIFICATION.txt
+          if-no-files-found: error
+          retention-days: 14
