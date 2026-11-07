@@ -36,6 +36,7 @@ DOWNLOADS: dict[str, str] = {
     "yBW8D80W-XVsaQXSm.jar": "https://api.modrinth.com/maven/maven/modrinth/yBW8D80W/XVsaQXSm/yBW8D80W-XVsaQXSm.jar",
     "chrono-dawn-1414198-9145359.jar": "https://cursemaven.com/curse/maven/chrono-dawn-1414198/9145359/chrono-dawn-1414198-9145359.jar",
     "world-bosses-1545677-9254111.jar": "https://cursemaven.com/curse/maven/world-bosses-1545677/9254111/world-bosses-1545677-9254111.jar",
+    "jei-238222-9352381.jar": "https://cursemaven.com/curse/maven/jei-238222/9352381/jei-238222-9352381.jar",
     "G1hIVOrD-SmfwDCLg.jar": "https://api.modrinth.com/maven/maven/modrinth/G1hIVOrD/SmfwDCLg/G1hIVOrD-SmfwDCLg.jar",
     "QAGBst4M-KU5rZUAR.jar": "https://api.modrinth.com/maven/maven/modrinth/QAGBst4M/KU5rZUAR/QAGBst4M-KU5rZUAR.jar",
     "ohNO6lps-rSd3GiG8.jar": "https://api.modrinth.com/maven/maven/modrinth/ohNO6lps/rSd3GiG8/ohNO6lps-rSd3GiG8.jar",
@@ -50,6 +51,7 @@ DOWNLOADS: dict[str, str] = {
 }
 
 CLIENT_ONLY = {"yBW8D80W-XVsaQXSm.jar"}
+CLIENT_OPTIONAL_SERVER = {"jei-238222-9352381.jar"}
 
 
 def fail(message: str) -> None:
@@ -119,6 +121,8 @@ def build() -> Path:
         env = {"client": "required", "server": "required"}
         if filename in CLIENT_ONLY:
             env = {"client": "required", "server": "unsupported"}
+        elif filename in CLIENT_OPTIONAL_SERVER:
+            env = {"client": "required", "server": "optional"}
         files.append({
             "path": f"mods/{filename}",
             "hashes": {
@@ -190,6 +194,10 @@ def build() -> Path:
         parsed = json.loads(archive.read("modrinth.index.json"))
         if parsed.get("formatVersion") != 1 or len(parsed.get("files", [])) != len(DOWNLOADS):
             fail("invalid Modrinth index structure or dependency count")
+        if not any(entry["path"] == "mods/jei-238222-9352381.jar"
+                   and entry["env"] == {"client": "required", "server": "optional"}
+                   for entry in parsed["files"]):
+            fail("26.2 Fabric JEI entry missing or client/server policy drifted")
         if any("yJtKNlKW" in str(entry) or "mcendgame" in str(entry).lower() for entry in parsed["files"]):
             fail("excluded MCEndgame entry remains in official pack index")
         terralith = json.loads(archive.read(terralith_arc))
