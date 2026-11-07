@@ -3,6 +3,8 @@
 Date: 2026-10-24  
 Status: CANONICAL INITIAL IMPLEMENTATION BASELINE / NUMBERS PLAYTEST-TUNABLE
 
+**2026-11-07 플레이테스트 조정:** 이 문서의 초기 몹 확률은 아래에서 갱신했다. 일반 0.6% → 1.2%, 진행구역 2.4% → 4.8%, 특수 4.5% → 9%, 엘리트 12% → 24%. 등급 비율과 구조물·낚시·이벤트·보스 보상은 변경 없음. 실제 값 정본은 `core_distribution_contract.json`.
+
 이 문서는 증강 코어의 획득처, 등급 분포, 보스 보상, 반복 파밍 방지 원칙을 정의한다.
 
 목표는 특정 한 활동만 반복하는 것이 아니라 Minecraft의 탐험·전투·제작·낚시·보스 콘텐츠가 모두 증강 성장으로 연결되게 만드는 것이다.
@@ -176,14 +178,14 @@ R A R
 
 ### 6.1 `normal_hostile`
 
-플레이어 귀속 처치 시 core roll: **0.60%**
+플레이어 귀속 처치 시 core roll: **1.20%**
 
 - 일반 90%
 - 고급 10%
 
 ### 6.2 `special_hostile`
 
-플레이어 귀속 처치 시 core roll: **4.5%**
+플레이어 귀속 처치 시 core roll: **9.0%**
 
 - 일반 65%
 - 고급 30%
@@ -191,7 +193,7 @@ R A R
 
 ### 6.3 `elite_hostile`
 
-플레이어 귀속 처치 시 core roll: **12%**
+플레이어 귀속 처치 시 core roll: **24%**
 
 - 고급 65%
 - 희귀 30%
@@ -199,7 +201,7 @@ R A R
 
 ### 6.4 `progression_hostile`
 
-Chrono Dawn / World Bosses의 진행 구역 적대 몹은 플레이어 귀속 처치 시 core roll: **2.4%**.
+Chrono Dawn / World Bosses의 진행 구역 적대 몹은 플레이어 귀속 처치 시 core roll: **4.8%**.
 
 - 일반 75%
 - 고급 22%
