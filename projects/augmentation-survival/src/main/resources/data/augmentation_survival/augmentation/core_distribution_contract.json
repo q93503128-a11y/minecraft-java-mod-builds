@@ -45,26 +45,26 @@
   "mob_profiles": [
     {
       "id": "normal_hostile",
-      "core_roll_chance": 0.006,
+      "core_roll_chance": 0.012,
       "weights": { "common": 0.90, "uncommon": 0.10 },
       "require_player_attributed_kill": true
     },
     {
       "id": "progression_hostile",
-      "core_roll_chance": 0.024,
+      "core_roll_chance": 0.048,
       "weights": { "common": 0.75, "uncommon": 0.22, "rare": 0.03 },
       "require_player_attributed_kill": true,
       "intent": "Dedicated progression-zone hostiles should contribute cores noticeably more often than ordinary overworld mobs without competing with elites, structures, or bosses."
     },
     {
       "id": "special_hostile",
-      "core_roll_chance": 0.045,
+      "core_roll_chance": 0.09,
       "weights": { "common": 0.65, "uncommon": 0.30, "rare": 0.05 },
       "require_player_attributed_kill": true
     },
     {
       "id": "elite_hostile",
-      "core_roll_chance": 0.12,
+      "core_roll_chance": 0.24,
       "weights": { "uncommon": 0.65, "rare": 0.30, "epic": 0.05 },
       "require_player_attributed_kill": true
     }
