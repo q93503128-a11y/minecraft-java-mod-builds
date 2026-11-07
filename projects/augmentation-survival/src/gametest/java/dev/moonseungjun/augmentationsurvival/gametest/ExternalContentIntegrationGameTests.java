@@ -72,8 +72,8 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
                         .weights().get(AugmentTier.RARE) - 0.05D) < 0.000001D,
                 "Routine structure rare core weight drifted");
         Map<String, Double> hostileChances = Map.of(
-                "normal_hostile", 0.006D, "progression_hostile", 0.024D,
-                "special_hostile", 0.045D, "elite_hostile", 0.12D
+                "normal_hostile", 0.012D, "progression_hostile", 0.048D,
+                "special_hostile", 0.09D, "elite_hostile", 0.24D
         );
         for (Map.Entry<String, Double> entry : hostileChances.entrySet()) {
             CoreDistributionCatalog.MobProfile profile = catalog.mobProfiles().get(entry.getKey());
@@ -106,7 +106,7 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
         CoreDistributionCatalog.MobProfile progression =
                 CoreDistributionCatalog.current().mobProfiles().get("progression_hostile");
         require(progression != null, "progression_hostile profile is missing");
-        require(Math.abs(progression.coreRollChance() - 0.024D) < 0.000001D,
+        require(Math.abs(progression.coreRollChance() - 0.048D) < 0.000001D,
                 "progression_hostile chance drifted: " + progression.coreRollChance());
 
         CoreSourceResolver.HostileResolution chrono = CoreSourceResolver.resolveHostile(
