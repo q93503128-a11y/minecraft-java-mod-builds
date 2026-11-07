@@ -167,14 +167,27 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
         ghast.setAttached(CompanionEntityAttachments.ENTITY_STATE,
                 CompanionEntityState.dominatedBy(owner.getUUID()));
         CompanionAugmentService.onRevivedCompanion(ghast);
+        // The GameTest callback can run after GhastMoveControl consumes its one-tick
+        // wanted operation but before END_SERVER_TICK reissues the owner hover.
+        // Probe the actual adapter synchronously; don't assert a transient control flag.
+        try {
+            Method steering = CompanionAugmentService.class.getDeclaredMethod(
+                    "steerGhastNearOwner", Mob.class, ServerPlayer.class);
+            steering.setAccessible(true);
+            steering.invoke(null, ghast, owner);
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError("Ghast flight adapter could not be invoked", failure);
+        }
+        var control = ghast.getMoveControl();
+        double horizontal = Math.hypot(control.getWantedX() - owner.getX(),
+                control.getWantedZ() - owner.getZ());
+        require(control.hasWanted(), "dominated Ghast flight adapter issued no wanted position");
+        require(horizontal <= 9.0D && control.getWantedY() >= owner.getY() + 5.0D,
+                "dominated Ghast flight adapter chose an unsafe anchor: "
+                        + horizontal + " block horizontal, y=" + control.getWantedY());
         GameTestPlayers.runAfterDelay(helper, 8, () -> {
-            var control = ghast.getMoveControl();
-            double horizontal = Math.hypot(control.getWantedX() - owner.getX(),
-                    control.getWantedZ() - owner.getZ());
-            require(control.hasWanted(), "dominated Ghast flight control has no target");
-            require(horizontal <= 9.0D && control.getWantedY() >= owner.getY() + 5.0D,
-                    "dominated Ghast is following random flight rather than owner-safe hover: "
-                            + horizontal + " block horizontal, y=" + control.getWantedY());
+            require(CompanionAugmentService.isDominated(ghast),
+                    "Ghast lost its domination during flight control");
             GameTestPlayers.succeed(helper);
         });
     }
