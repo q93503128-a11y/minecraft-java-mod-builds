@@ -111,6 +111,7 @@
     "LivingEntityCompanionFriendlyFireMixin",
     "WardenDominationTargetMixin",
     "DominatedSlimeContactMixin",
+    "DominatedPiglinZombificationMixin",
     "PlayerRootMeleeProvenanceMixin",
     "PlayerSweepingEnhancementMixin",
     "BetterCombatPlayerAttackHelperMixin",

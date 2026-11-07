@@ -214,6 +214,25 @@ public final class DominationBehaviorGameTests implements CustomTestMethodInvoke
         });
     }
 
+    @GameTest(maxTicks = 370)
+    public void dominatedPiglinBrutePreservesItsIdentityInTheOverworld(GameTestHelper helper) {
+        ServerPlayer owner = GameTestPlayers.survivalPlayer(helper);
+        var anchor = helper.absolutePos(new BlockPos(1, 2, 1));
+        owner.setPos(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D);
+        Mob brute = helper.spawnMob(EntityTypes.PIGLIN_BRUTE, 2, 2, 2).spawn();
+        brute.setAttached(CompanionEntityAttachments.ENTITY_STATE,
+                CompanionEntityState.dominatedBy(owner.getUUID()));
+        CompanionAugmentService.onRevivedCompanion(brute);
+        GameTestPlayers.runAfterDelay(helper, 330, () -> {
+            require(!brute.isRemoved() && brute.isAlive(),
+                    "controlled Piglin Brute converted or disappeared after 15 seconds");
+            require(brute.getType() == EntityTypes.PIGLIN_BRUTE
+                            && CompanionAugmentService.isOwnedBy(brute, owner.getUUID()),
+                    "controlled Piglin Brute lost its form or domination after overworld conversion interval");
+            GameTestPlayers.succeed(helper);
+        });
+    }
+
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }
