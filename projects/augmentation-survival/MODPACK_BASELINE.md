@@ -1,6 +1,8 @@
 # Official Small Modpack Baseline — M0
 
 Date: 2026-10-24
+
+2026-11-07 업데이트: 플레이테스트 피드백으로 적대몹 코어 확률을 일괄 2배 상향(일반 1.2%, 진행구역 4.8%, 특수 9%, 엘리트 24%). 기존 구조물/이벤트/보스/낚시 확률은 변경하지 않는다. 공식 팩에 **JEI 30.48.0.244 / Fabric 26.2**를 제작법 조회용으로 추가했다(새 구성 23개 외부 아티팩트 + 별도 Fabric API). 이번 변경 후 전체 빌드·클라이언트 화면 검증 전까지 과거 스모크 성공을 신규 구성 검증으로 취급하지 않는다.
 Minecraft: 26.2
 Loader: Fabric 0.19.5
 Java: 25
@@ -20,6 +22,7 @@ Java: 25
 | 농사·요리·생산 확장 | Farmer's Delight Refabricated | 26.2-3.6.22 | smoke verified candidate |
 | 근접 전투 모션·공격감 개선 | Better Combat | 3.2.2 | conditional candidate; smoke verified only |
 | 손에 든 발광 아이템 동적 조명 | LambDynamicLights | 4.12.4+26.2 | client-only pinned candidate; smoke verification required |
+| 아이템 제작법·사용처 조회 | Just Enough Items (JEI) | 30.48.0.244 Fabric 26.2 | 신규 추가; 출시 파일 확인, 동시 부팅·실플레이 미검증 |
 | 시간 차원 + 제작형 보스 6종 | Chrono Dawn | 0.12.0 | smoke verified boss candidate |
 | 월드 제단/레이드 캐시/보스 차원 + 주요 보스 11종 | World Bosses | 2.0.2 | smoke verified boss candidate; visual warnings tracked |
 
@@ -209,7 +212,7 @@ World Bosses처럼 ARR인 모드는 JAR 수정/재배포를 하지 않는다. Ch
 최신 자동 검증은 Build Augmentation Survival Pack #431 (run ID `40795138452`)이다. 실제 job log에서 workflow의 `build` task graph가 `compileGametestJava`, `processGametestResources`, `gametestClasses`, `runGameTest`를 실행했으며, 74개 required GameTest가 모두 통과했다. 23 pinned dependency 검사, build, dedicated-server smoke, client boot smoke와 검증된 Modrinth pack 생성도 통과했다. 이 후속 turn에서는 이를 재실행하지 않았다. 수동 플레이 검증 상태는 `FINAL_AUDIT_2026-10-29.md` 참조.
 
 - VERSION/PIN RESEARCHED: YES
-- CURRENT PIN COUNT: 23 external artifacts
+- CURRENT PIN COUNT: 23 external artifacts (2026-11-07 신규 JEI 포함; Fabric API 별도)
 - JAR METADATA/DATA REVIEWED: YES — Build #431 handoff
 - BUILD VERIFIED: YES — Build #431 handoff
 - JAR PRODUCED: YES — verified Modrinth pack from Build #431 handoff
