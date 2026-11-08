@@ -46,9 +46,9 @@ public final class AugmentGuidebookScreen extends Screen {
             new RecipePage(
                     "일반 증강 코어",
                     grid(
-                            Items.REDSTONE, Items.AMETHYST_SHARD, Items.REDSTONE,
-                            Items.AMETHYST_SHARD, Items.COPPER_INGOT, Items.AMETHYST_SHARD,
-                            Items.REDSTONE, Items.AMETHYST_SHARD, Items.REDSTONE
+                            Items.REDSTONE, Items.COPPER_INGOT, Items.REDSTONE,
+                            Items.COPPER_INGOT, Items.IRON_INGOT, Items.COPPER_INGOT,
+                            Items.REDSTONE, Items.COPPER_INGOT, Items.REDSTONE
                     ),
                     new ItemStack(AugmentCoreItems.COMMON_CORE)
             )
