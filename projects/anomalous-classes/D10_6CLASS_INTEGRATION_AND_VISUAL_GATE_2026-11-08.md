@@ -6,6 +6,10 @@
 >
 > **기술 범위:** 1.21.1 / NeoForge 21.1.x / Java21이 외부 모드팩 기획에서 선택된 스택. 프로젝트 자체는 현재 Markdown 82개·외부 모드팩 JSON 2개·XP 시뮬레이션 JSON1개·Python 유틸1개·HTML 구조 시안1개인 **기획 리포지토리 상태**(이 감사 시점). `projects/anomalous-classes` 경로에서 Gradle 프로젝트/Java 게임 소스/JAR을 확인하지 못함. 이 프로젝트와 다른 Minecraft 프로젝트를 섞지 않는다.
 
+## 2026-11-08 후속: **시각 탐색 가능 ≠ 게임 화면 동작 확정**
+
+[**직업별 첫60분·SP 경제·클래스 전환 수명·관리 UX 공백 상세 감사**](./PRE_VISUAL_PLANNING_GAP_AUDIT_2026-11-08.md)에서 **직업 컨셉/화면 분위기 탐색용 시안은 진행 가능**, 반면 **기능이 확정된 직업 선택/스킬 트리/전투·관리 UX 시안의 최종 승인** 전에는 G0 미결 5건 정리가 필요하다고 재판정. 본 문서 아래의 'VISUAL CONCEPT READY'는 *탐색용*의미로만 읽는다. 미승인 SP 해금/복귀 비용·중력/공명 플레이 제공을 자동 결정하지 않는다. game Java implementation / client playtest / multiplayer NOT DONE.
+
 ## 1. D10 인수 결과 요약
 
 | 검수 축 | 확인된 성과 | 남은 게이트 / 판정 |
