@@ -1,5 +1,11 @@
 # 이능 직업 서바이벌 (working title)
 
+## 2026-11-08 직업 선택 UI 시각 품질 후속
+
+직업 선택 화면의 여섯 카드 일러스트·고유 아이콘, 중앙 카드 비율, 좌우 미리보기, 텍스트 맞춤, 선택 버튼 배치를 갱신했다. 서버 저장·패킷 검증·직업 선택 동작은 보존했다. 기생술사 카드는 숙주의 몸을 차지하는 장면으로 교체했고, 기존 아트는 `artwork/archive/`에 보존한다.
+
+16:9·16:10·4:3에서 GUI Scale 2·3·4를 조합한 9개 논리 화면 크기의 좌표를 정적 검사했다. 비교 이미지와 세부 결과는 [정적 UI 검토](./ui/reviews/2026-11-08/STATIC_LAYOUT_REVIEW.md)에 있다. 이 작업에서 Minecraft 클라이언트 조작·실제 화면 렌더링은 **NOT RUN**이며 사용자 검수로 남긴다.
+
 > **2026-11-08 D11 사용자 최신 결정 (구형 '1SP·초기화 미정·직업 변경시 영구 휴면'보다 우선):** [**D11 결정 인계**](./D11_FINAL_PLAY_RULES_BEFORE_VISUAL_2026-11-08.md) · [**3SP/레벨, 무료 패시브 초기화, 6직업 각 900SP**](./SP_3_PER_LEVEL_AND_FREE_RESET_V2.md) · [**전직 시 원직업 효과 원상복귀**](./CLASS_SWITCH_ORIGINAL_STATE_POLICY_V2.md) · [**16제단 합계 부서진 포탈급/네르아만 수중**](./PACT_ALTAR_WORLDGEN_FREQUENCY_V2.md). 과거 승인 1SP와 Lv300=299SP, 장비/소환체 휴면 후보, 제단 밀도 미정은 **새 결정으로 대체**. 직업 6종의 **첫 1시간은 실제 게임에서 직접 플레이 후 평가**하고, 보류 중력/공명은 선택 UI 구석의 작은 비활성 영역에서만 표시하는 후보. 재전직으로 최초 발견 XP를 재수령하지 않음. 이전 수치/다른 확정 스킬·장비/제물/직업별 성장 기록은 보존. **시안 제작 진행 가능; 구현/게임 테스트 전.**
 
 
@@ -142,25 +148,34 @@
 ## 프로젝트 식별 / 빌드 상태
 
 - Slug: `anomalous-classes` (working repository identifier)
-- Mod ID: 미정
-- Namespace: 미정
-- Mod version: 미정 (기획 단계)
-- Minecraft: **1.21.1 (모드팩 DESIGN LOCK, 실제 빌드·클라/서버 미검증)**
-- Java: **21 (설계 선정, 툴체인 실검증 전)**
-- Loader: **NeoForge (모드팩 설계 선정)**
-- Loader version: **21.1.x 계열; 정확한 패치 릴리스 및 실 JAR 핀 고정 미완료**
-- Gradle: 미정
-- Build plugin: 미정
-- Final JAR: 없음
-- Existing-world compatibility: 구현 시작 시 정의
-- Required dependencies: **게임 본체 개발용 의존성 별도 미정; 외부 모드팩 라이브러리 6종은 [설계 목록](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md) 참조**
+- Mod ID: `anomalousclasses`
+- Namespace: `kr.moonseungjun.anomalousclasses`
+- Mod version: `0.1.0-alpha.1`
+- Minecraft: **1.21.1**
+- Java: **21**
+- Loader: **NeoForge**
+- Loader version: **21.1.244**
+- Gradle: **8.8**
+- Build plugin: **ModDevGradle 2.0.107**
+- Final JAR: `build/libs/anomalous-classes-0.1.0-alpha.1.jar`
+- Existing-world compatibility: 플레이어 UUID별 프로필을 Overworld `SavedData`로 분리해 기록한다. 기존 월드에는 새 데이터 파일만 추가하며 바닐라 플레이어·인벤토리·XP·엔티티 데이터를 변경하지 않는다. 이전 이능 직업 코드가 없으므로 이전 스키마 마이그레이션 대상은 없다.
+- Required dependencies: **NeoForge 21.1.244**
 - Optional external mods: **모드팩 설계 9기능 모드 + 6 라이브러리 선정, [정본](./modpack/EXTERNAL_MODPACK_DESIGN_LOCK_V1.md)**
 - Forbidden bundled dependencies: 사용·재배포 권한 없는 코드 및 자산
 - Datagen task: 미구성
 - GameTest task: 미구성
-- Server smoke-test task: 미구성
-- Client smoke-test task: 미구성
-- Status: `DESIGN IN PROGRESS / EXTERNAL MODPACK DESIGN LOCKED / NO SOURCE BOOTSTRAP / NOT CO-LOADED / NOT BUILT / NOT PLAYTESTED`
+- Server smoke-test task: `runServer` (실행 전 EULA 조건 확인 필요)
+- Client smoke-test task: `runClient`
+- Status: `BUILD PASS / STATIC UI REVIEW PASS / MINECRAFT CLIENT REVIEW PENDING`
+
+## 2026-11-08 직업 선택 세로 슬라이스
+
+- 신규 `anomalousclasses` Java 모드 골격과 Gradle Wrapper를 만들었다.
+- 공통 `Screen`에 6개 상세 직업의 고유 카드 아트, 좌우 탐색, 아이콘 선택, 키보드 방향키/휠, 최초 선택과 변경 버튼을 연결한다.
+- 중력술사·공명술사는 비활성 보류 영역에만 표시한다.
+- 서버는 선택 직업과 직업별 `level`, `experience`, `skillPoints`, 확장 가능한 영구 성장 NBT를 UUID 기준으로 저장하고 패킷 값·전투 잠금·프로필 revision을 검증한다.
+- 전투 정리 어댑터는 아직 없다. 이번 소스에는 직업별 전투 효과가 없어 전환은 프로필만 바꾸며, 몬스터·소환체·숙주 등 실제 효과를 지우거나 만든다고 주장하지 않는다.
+- 검증 상태는 `BUILD_AND_RUNTIME_REPORT.md`에 실행 증거와 함께 기록한다.
 
 ## 현재 작업 판정 — 2026-11-05 최신 통합 감사
 

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "available": [
+    "mental_dominator",
+    "puppeteer",
+    "parasite_morpher",
+    "barrier_caster",
+    "pact_caster",
+    "swarm_caster"
+  ],
+  "on_hold": [
+    "gravity_caster",
+    "resonance_caster"
+  ]
+}
