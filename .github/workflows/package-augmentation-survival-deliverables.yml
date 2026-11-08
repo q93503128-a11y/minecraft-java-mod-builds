@@ -52,17 +52,26 @@ jobs:
           mrpack = base / "distributions/augmentation-survival-0.1.0-alpha.1.mrpack"
           with zipfile.ZipFile(jar) as z:
               data = json.loads(z.read("data/augmentation_survival/augmentation/core_distribution_contract.json"))
-          expected = {"normal_hostile": 0.012, "progression_hostile": 0.048, "special_hostile": 0.09, "elite_hostile": 0.24}
+          expected = {"normal_hostile": 0.035, "progression_hostile": 0.12, "special_hostile": 0.20, "elite_hostile": 0.42}
           actual = {item["id"]: item["core_roll_chance"] for item in data["mob_profiles"]}
           assert actual == expected, f"Unexpected built JAR core rates: {actual}"
           assert {item["id"]: item["core_roll_chance"] for item in data["distribution_templates"]} == {
-              "routine_exploration": 0.13, "dangerous_mid": 0.17,
-              "dangerous_high": 0.23, "pinnacle_cache": 0.40
+              "routine_exploration": 0.40, "dangerous_mid": 0.55,
+              "dangerous_high": 0.70, "pinnacle_cache": 0.85
           }, "Structure core rates changed unexpectedly"
           assert {item["id"]: item["guaranteed_core_count"] for item in data["event_profiles"]} == {
-              "raid_victory": 1, "elder_guardian": 1, "warden": 1
+              "raid_victory": 2, "elder_guardian": 2, "warden": 2
           }, "Guaranteed event reward changed unexpectedly"
-          assert data["fishing_profile"]["core_roll_chance"] == 0.12, "Fishing core rate changed unexpectedly"
+          assert data["fishing_profile"]["core_roll_chance"] == 0.30, "Fishing core rate changed unexpectedly"
+          with zipfile.ZipFile(jar) as z:
+              bosses = json.loads(z.read("data/augmentation_survival/augmentation/boss_core_reward_contract.json"))
+              sources = json.loads(z.read("data/augmentation_survival/augmentation/core_source_profiles.json"))
+              augments = json.loads(z.read("data/augmentation_survival/augmentation/augment_catalog.json"))
+          assert len(augments["augments"]) == 150 and augments["augments"][-1]["id"] == "core_attunement", "Augment roster drifted"
+          assert all(b["guaranteed_core_count"] == 2 for b in bosses["reward_bands"]), "Boss rewards drifted"
+          shrines = {x["selector"]: x for x in sources["structure_sources"]["exact"] if x["selector"].startswith("nova_structures:shrine_combat_tier_")}
+          assert len(shrines) == 5, f"Missing shrine reward profiles: {sorted(shrines)}"
+          assert data["mob_core_rate_augment"]["bonus_per_level"] == 0.20 and data["mob_core_rate_augment"]["max_level"] == 5
           with zipfile.ZipFile(mrpack) as z:
               index = json.loads(z.read("modrinth.index.json"))
               own_name = "overrides/mods/" + jar.name
@@ -70,7 +79,7 @@ jobs:
           jei = [file for file in index["files"] if file["path"] == "mods/jei-238222-9352381.jar"]
           assert len(jei) == 1 and jei[0]["env"] == {"client": "required", "server": "optional"}, f"Missing or incorrect JEI: {jei}"
           assert len(index["files"]) == 24, f"Unexpected external artifact count: {len(index['files'])}"
-          print("DELIVERABLES_VERIFIED: mob chances exactly doubled; structure, event and fishing unchanged; JEI is pinned; JAR matches mrpack embedded JAR")
+          print("DELIVERABLES_VERIFIED: increased all core sourcing rates; 5 DnT shrine profiles; boss/event rewards doubled; Core Attunement unchanged; JEI pinned; embedded JAR matches mrpack")
           for f in (jar, mrpack):
               print(f"{f.name}: {f.stat().st_size} bytes, SHA-256 {hashlib.sha256(f.read_bytes()).hexdigest()}")
           PY
