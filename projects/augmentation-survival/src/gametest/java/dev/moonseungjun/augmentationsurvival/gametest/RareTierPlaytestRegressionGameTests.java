@@ -144,7 +144,7 @@ public final class RareTierPlaytestRegressionGameTests implements CustomTestMeth
     @GameTest
     public void augmentProgressProtocolCoversCanonicalRoster(GameTestHelper helper) {
         int canonicalCount = AugmentCatalog.allDefinitions().size();
-        require(canonicalCount == 149,
+        require(canonicalCount == 150,
                 "canonical roster changed unexpectedly during rare progress regression: " + canonicalCount);
         require(AugmentProgressStatePayload.maxEntries() >= canonicalCount,
                 "augment progress payload cap truncates the canonical roster: cap="
