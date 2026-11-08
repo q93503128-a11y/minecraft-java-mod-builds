@@ -2,6 +2,7 @@ package dev.moonseungjun.augmentationsurvival.core;
 
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
 import dev.moonseungjun.augmentationsurvival.augment.companion.CompanionAugmentService;
+import dev.moonseungjun.augmentationsurvival.state.AugmentationPlayerStateService;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -35,8 +36,12 @@ public final class CoreRewardService {
             case NONE, BOSS_SUPPRESSED -> {
                 return;
             }
-            case MOB -> CoreDistributionCatalog.rollMobProfile(resolution.profileId(), level.getRandom())
-                    .ifPresent(tier -> grantCore(player, tier, resolution.profileId()));
+            case MOB -> {
+                int attunementLevel = AugmentationPlayerStateService.state(player)
+                        .level(CoreDistributionCatalog.current().mobCoreRateAugment().augmentId());
+                CoreDistributionCatalog.rollMobProfile(resolution.profileId(), attunementLevel, level.getRandom())
+                        .ifPresent(tier -> grantCore(player, tier, resolution.profileId()));
+            }
             case EVENT -> CoreDistributionCatalog.rollEventProfile(resolution.profileId(), level.getRandom())
                     .forEach(tier -> grantCore(player, tier, resolution.profileId()));
         }
