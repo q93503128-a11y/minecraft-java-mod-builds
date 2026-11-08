@@ -23,7 +23,6 @@
   "screen.anomalousclasses.class_selection.new_class": "새 직업 · Lv 1 · SP 0",
   "screen.anomalousclasses.class_selection.progress": "Lv %1$s  ·  SP %2$s",
   "screen.anomalousclasses.class_selection.on_hold": "선택 불가",
-  "screen.anomalousclasses.class_selection.on_hold_compact": "선택 불가  ·  중력술사  ·  공명술사",
   "screen.anomalousclasses.class_selection.choose": "선택",
   "screen.anomalousclasses.class_selection.change": "직업 변경",
   "screen.anomalousclasses.class_selection.selected": "선택됨",

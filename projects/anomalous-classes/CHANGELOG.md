@@ -1,5 +1,11 @@
 # Changelog
 
+## Class selection text placement follow-up — 2026-11-08
+
+- Removed class names from the narrow side previews so they cannot break across letters; thumbnails remain unchanged.
+- Hid the compact held-class notice above the reserved hotbar clearance. On wider layouts, held names render only as a complete single line when the active Minecraft font metrics fit the text box.
+- Updated the static layout checks and previews for the text-only changes. Selection behavior, card art, icons, and layout proportions were preserved; Minecraft interaction was not run.
+
 ## UI render-order and layout follow-up — 2026-11-08
 
 - Fixed the selection screen's duplicate background pass: the old custom `render()` called `renderBackground()` and then `super.render()`, whose 1.21.1 implementation called `renderBackground()` again. The screen now draws its background once and renders its still-registered widgets last.

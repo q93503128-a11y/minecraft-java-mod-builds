@@ -114,7 +114,6 @@ public final class ClassSelectionScreen extends Screen {
         renderHeader(graphics);
         renderSideCards(graphics);
         renderMainCard(graphics, actionOffset, content);
-        renderSideLabels(graphics);
         renderFooter(graphics);
         // Screen.render() also invokes renderBackground(), which would blur the custom UI just drawn above.
         // Keep widgets registered for input and narration, but render that list after the screen content here.
@@ -206,52 +205,6 @@ public final class ClassSelectionScreen extends Screen {
                 thumbnailWidth, thumbnailHeight);
         graphics.fill(thumbnail.x() - 1, thumbnail.y() - 1, thumbnail.right() + 1, thumbnail.bottom() + 1, 0xFF5C5260);
         drawArtCover(graphics, CARD_ART[classIndex], thumbnail, 0.94f, 0.5f);
-    }
-
-    private void renderSideLabels(GuiGraphics graphics) {
-        drawSideLabel(graphics, layout.previousVisible(), Math.floorMod(selectedIndex - 1, ClassId.values().length));
-        drawSideLabel(graphics, layout.nextVisible(), Math.floorMod(selectedIndex + 1, ClassId.values().length));
-    }
-
-    private void drawSideLabel(GuiGraphics graphics, ClassSelectionLayout.Box visible, int classIndex) {
-        if (visible.width() < 16 || visible.height() < font.lineHeight + 2) return;
-        Component name = Component.translatable("class.anomalousclasses." + ClassId.values()[classIndex].key());
-        List<FormattedCharSequence> lines = sideNameLines(name, Math.max(1, visible.width() - 6));
-        if (lines.isEmpty()) return;
-        int lineCount = Math.min(lines.size(), Math.max(1, (visible.height() - 4) / font.lineHeight));
-        int bandHeight = Math.min(visible.height(), lineCount * font.lineHeight + 4);
-        int bandY = visible.bottom() - bandHeight;
-        graphics.enableScissor(visible.x(), visible.y(), visible.right(), visible.bottom());
-        graphics.fill(visible.x(), bandY, visible.right(), visible.bottom(), 0xD5141219);
-        for (int index = 0; index < lineCount; index++) {
-            drawFittedCentered(graphics, lines.get(index), visible.x() + visible.width() / 2,
-                    bandY + 2 + index * font.lineHeight, Math.max(1, visible.width() - 4), 0xFFE7DFD2);
-        }
-        graphics.disableScissor();
-    }
-
-    private List<FormattedCharSequence> sideNameLines(Component name, int maxWidth) {
-        String[] words = name.getString().trim().split("\\s+");
-        List<FormattedCharSequence> lines = new ArrayList<>();
-        for (String word : words) {
-            if (font.width(Component.literal(word)) <= maxWidth) {
-                lines.add(Component.literal(word).getVisualOrderText());
-                continue;
-            }
-            StringBuilder part = new StringBuilder();
-            for (int offset = 0; offset < word.length();) {
-                int codePoint = word.codePointAt(offset);
-                String next = new String(Character.toChars(codePoint));
-                if (!part.isEmpty() && font.width(Component.literal(part + next)) > maxWidth) {
-                    lines.add(Component.literal(part.toString()).getVisualOrderText());
-                    part.setLength(0);
-                }
-                part.append(next);
-                offset += Character.charCount(codePoint);
-            }
-            if (!part.isEmpty()) lines.add(Component.literal(part.toString()).getVisualOrderText());
-        }
-        return lines;
     }
 
     private void renderMainCard(GuiGraphics graphics, int offset, MainContent content) {
@@ -405,9 +358,6 @@ public final class ClassSelectionScreen extends Screen {
         }
 
         if (layout.compact()) {
-            drawFittedCentered(graphics, Component.translatable("screen.anomalousclasses.class_selection.on_hold_compact"),
-                    layout.heldInline().x() + layout.heldInline().width() / 2, layout.heldInline().y(),
-                    layout.heldInline().width(), 0xFFAAA2A0);
             return;
         }
 
@@ -422,7 +372,12 @@ public final class ClassSelectionScreen extends Screen {
             Component name = Component.translatable(index == 0
                     ? "class.anomalousclasses.gravity_caster"
                     : "class.anomalousclasses.resonance_caster");
-            drawWrappedCentered(graphics, name, nameBox, 0xFF969096);
+            FormattedCharSequence text = name.getVisualOrderText();
+            int measuredWidth = font.width(text);
+            if (font.lineHeight <= nameBox.height() && measuredWidth <= nameBox.width()) {
+                drawFittedCentered(graphics, text, nameBox.x() + nameBox.width() / 2,
+                        nameBox.y(), nameBox.width(), 0xFF969096);
+            }
         }
     }
 
@@ -519,18 +474,6 @@ public final class ClassSelectionScreen extends Screen {
             graphics.drawString(font, lines.get(index), 0, index * font.lineHeight, color, false);
         }
         graphics.pose().popPose();
-    }
-
-    private void drawWrappedCentered(GuiGraphics graphics, Component text, ClassSelectionLayout.Box box, int color) {
-        if (box.width() <= 0 || box.height() <= 0) return;
-        List<FormattedCharSequence> lines = font.split(text, box.width());
-        int maxLines = Math.max(1, box.height() / font.lineHeight);
-        int lineCount = Math.min(lines.size(), maxLines);
-        int y = box.y() + Math.max(0, (box.height() - lineCount * font.lineHeight) / 2);
-        for (int index = 0; index < lineCount; index++) {
-            drawFittedCentered(graphics, lines.get(index), box.x() + box.width() / 2,
-                    y + index * font.lineHeight, box.width(), color);
-        }
     }
 
     private ClassSelectionLayout.Box shifted(ClassSelectionLayout.Box box, int offset) {

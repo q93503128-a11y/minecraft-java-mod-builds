@@ -36,8 +36,7 @@ public final class ClassSelectionLayout {
             Box nextButton,
             List<Box> classTabs,
             Box heldPanel,
-            List<Box> heldNames,
-            Box heldInline) {
+            List<Box> heldNames) {
         public Box actionForContent(int headerHeight, int descriptionLineCount, int statusLineCount, int lineHeight) {
             int statusHeight = statusLineCount <= 0 ? 0 : statusLineCount * Math.max(1, lineHeight) + 3;
             int descriptionHeight = Math.max(0, descriptionLineCount) * Math.max(1, lineHeight);
@@ -84,10 +83,10 @@ public final class ClassSelectionLayout {
         int navigationGap = clamp(screenWidth / 120, 3, 8);
         int bottomMargin = clamp(screenHeight / 36, 5, 10);
         int tabHeight = compact ? 40 : 44;
-        int heldLineHeight = 13;
         int heldWidth = compact ? 0 : clamp(screenWidth / 5, 136, 156);
         int heldGap = compact ? 0 : 8;
-        int footerY = screenHeight - bottomMargin - tabHeight - (compact ? heldLineHeight + 3 : 0);
+        int compactHotbarClearance = compact ? 16 : 0;
+        int footerY = screenHeight - bottomMargin - tabHeight - compactHotbarClearance;
 
         int sideMinimum = compact ? 28 : 60;
         int sideReserve = margin + navigationSize + navigationGap + sideMinimum;
@@ -213,20 +212,16 @@ public final class ClassSelectionLayout {
             int nameAreaWidth = Math.max(0, heldWidth - 12);
             int nameGap = 4;
             int nameWidth = Math.max(0, (nameAreaWidth - nameGap) / 2);
-            int nameY = footerY + 21;
+            int nameY = footerY + 18;
             int nameHeight = Math.max(0, tabHeight - 24);
             heldNames.add(new Box(heldPanel.x() + 6, nameY, nameWidth, nameHeight));
             heldNames.add(new Box(heldPanel.x() + 6 + nameWidth + nameGap, nameY, nameWidth, nameHeight));
         }
-        Box heldInline = compact
-                ? new Box(margin, footerY + tabHeight + 3, footerWidth, heldLineHeight)
-                : new Box(heldPanel.x() + 4, footerY + 4, heldWidth - 8, 12);
-
         return new Layout(screenWidth, screenHeight, compact, stacked, compactPortrait, margin,
                 new Box(0, 0, screenWidth, headerHeight), card, art, details, action,
                 previousPreview, nextPreview, previousVisible, nextVisible,
                 previousButton, nextButton, List.copyOf(classTabs), heldPanel,
-                List.copyOf(heldNames), heldInline);
+                List.copyOf(heldNames));
     }
 
     public static float fitScale(float measuredWidth, float availableWidth) {

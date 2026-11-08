@@ -23,7 +23,6 @@
   "screen.anomalousclasses.class_selection.new_class": "New class · Lv 1 · SP 0",
   "screen.anomalousclasses.class_selection.progress": "Lv %1$s  ·  SP %2$s",
   "screen.anomalousclasses.class_selection.on_hold": "Unavailable",
-  "screen.anomalousclasses.class_selection.on_hold_compact": "Unavailable  ·  Gravity  ·  Resonance",
   "screen.anomalousclasses.class_selection.choose": "Choose",
   "screen.anomalousclasses.class_selection.change": "Change class",
   "screen.anomalousclasses.class_selection.selected": "Selected",

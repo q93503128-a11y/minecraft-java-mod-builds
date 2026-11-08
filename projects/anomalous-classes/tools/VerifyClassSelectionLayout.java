@@ -102,11 +102,16 @@ public final class VerifyClassSelectionLayout {
         }
 
         if (layout.compact()) {
-            require(layout.heldInline().inside(width, height), "compact held-class line outside screen");
+            require(lastTab.bottom() <= height - 20, "compact tabs overlap the reserved hotbar area");
         } else {
             require(layout.heldPanel().inside(width, height), "held-class panel outside screen");
             require(!lastTab.intersects(layout.heldPanel()), "held-class panel overlaps tabs");
-            for (Box name : layout.heldNames()) require(name.inside(width, height) && within(name, layout.heldPanel()), "held class name outside panel");
+            for (Box name : layout.heldNames()) {
+                require(name.inside(width, height) && within(name, layout.heldPanel()), "held class name outside panel");
+                Box singleLine = new Box(name.x(), name.y(), name.width(), 9);
+                require(singleLine.inside(width, height) && singleLine.bottom() <= height - 20,
+                        "held class name enters the reserved hotbar area");
+            }
         }
 
         int transitionDistance = Math.min(18, layout.card().width() / 32);

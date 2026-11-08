@@ -69,7 +69,6 @@ public final class RenderClassSelectionStaticPreview {
         drawHeader(graphics, layout);
         drawSideCards(graphics, assets, layout);
         drawMainCard(graphics, assets, layout, 0);
-        drawSideLabels(graphics, layout);
         drawFooter(graphics, assets, layout);
         drawButtons(graphics, layout);
         graphics.dispose();
@@ -235,28 +234,6 @@ public final class RenderClassSelectionStaticPreview {
         }
     }
 
-    private static void drawSideLabels(Graphics2D g, Layout layout) {
-        drawSideLabel(g, layout.previousVisible(), 5);
-        drawSideLabel(g, layout.nextVisible(), 1);
-    }
-
-    private static void drawSideLabel(Graphics2D g, Box visible, int index) {
-        g.setClip(visible.x(), visible.y(), visible.width(), visible.height());
-        setFont(g, Font.BOLD, 7);
-        List<String> lines = wrap(names()[index], Math.max(1, visible.width() - 4), g.getFontMetrics());
-        int lineCount = Math.min(2, Math.max(1, lines.size()));
-        int bandHeight = lineCount * 9 + 4;
-        int y = visible.bottom() - bandHeight;
-        g.setColor(new Color(17, 15, 21, 220));
-        g.fillRect(visible.x(), y, visible.width(), bandHeight);
-        for (int line = 0; line < lineCount; line++) {
-            drawCenteredFit(g, lines.get(line), visible.x() + visible.width() / 2,
-                    y + 2 + g.getFontMetrics().getAscent() + line * 9,
-                    Math.max(1, visible.width() - 4), new Color(231, 222, 208));
-        }
-        g.setClip(null);
-    }
-
     private static void drawFooter(Graphics2D g, Path assets, Layout layout) throws Exception {
         for (int index = 0; index < KEYS.length; index++) {
             Box box = layout.classTabs().get(index);
@@ -297,20 +274,13 @@ public final class RenderClassSelectionStaticPreview {
             for (int index = 0; index < layout.heldNames().size(); index++) {
                 Box nameBox = layout.heldNames().get(index);
                 String name = index == 0 ? gravity : resonance;
-                List<String> lines = wrap(name, nameBox.width(), g.getFontMetrics());
-                for (int line = 0; line < Math.min(2, lines.size()); line++) {
-                    drawCenteredFit(g, lines.get(line), nameBox.x() + nameBox.width() / 2,
-                            nameBox.y() + g.getFontMetrics().getAscent() + line * 9,
-                            nameBox.width(), new Color(154, 148, 148));
+                FontMetrics nameMetrics = g.getFontMetrics();
+                if (nameMetrics.stringWidth(name) <= nameBox.width()
+                        && nameMetrics.getHeight() <= nameBox.height()) {
+                    drawCenteredFit(g, name, nameBox.x() + nameBox.width() / 2,
+                            nameBox.y() + nameMetrics.getAscent(), nameBox.width(), new Color(154, 148, 148));
                 }
             }
-        } else {
-            setFont(g, Font.PLAIN, 7);
-            String held = english ? "Unavailable · Gravity · Resonance" : "선택 불가 · 중력술사 · 공명술사";
-            drawCenteredFit(g, held,
-                    layout.heldInline().x() + layout.heldInline().width() / 2,
-                    layout.heldInline().y() + g.getFontMetrics().getAscent(),
-                    layout.heldInline().width(), new Color(174, 164, 161));
         }
     }
 
