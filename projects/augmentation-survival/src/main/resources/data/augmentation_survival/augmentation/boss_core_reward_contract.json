@@ -7,21 +7,21 @@
   "reward_bands": [
     {
       "id": "boss_standard",
-      "guaranteed_core_count": 1,
+      "guaranteed_core_count": 2,
       "weights": { "rare": 0.75, "epic": 0.25 },
       "first_kill_bonus_core_count": 1,
       "intent": "A real boss is a reliable route into rare/epic progression."
     },
     {
       "id": "boss_major",
-      "guaranteed_core_count": 1,
+      "guaranteed_core_count": 2,
       "weights": { "epic": 0.80, "legendary": 0.20 },
       "first_kill_bonus_core_count": 1,
       "intent": "Major bosses are a direct route into epic/legendary progression."
     },
     {
       "id": "boss_pinnacle",
-      "guaranteed_core_count": 1,
+      "guaranteed_core_count": 2,
       "weights": { "legendary": 0.90, "mythic": 0.10 },
       "first_kill_bonus_core_count": 1,
       "repeat_weights": { "legendary": 0.95, "mythic": 0.05 },
