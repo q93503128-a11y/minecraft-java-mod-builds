@@ -26,6 +26,36 @@
   "structure_sources": {
     "exact": [
       {
+        "selector": "nova_structures:shrine_combat_tier_1",
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 1,
+        "reason": "DnT shrine key-gated reward difficulty scaling."
+      },
+      {
+        "selector": "nova_structures:shrine_combat_tier_2",
+        "distribution_profile": "dangerous_mid",
+        "core_roll_multiplier": 1.1,
+        "reason": "DnT shrine key-gated reward difficulty scaling."
+      },
+      {
+        "selector": "nova_structures:shrine_combat_tier_3",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 0.95,
+        "reason": "DnT shrine key-gated reward difficulty scaling."
+      },
+      {
+        "selector": "nova_structures:shrine_combat_tier_4",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 1,
+        "reason": "DnT shrine key-gated reward difficulty scaling."
+      },
+      {
+        "selector": "nova_structures:shrine_combat_tier_5",
+        "distribution_profile": "dangerous_high",
+        "core_roll_multiplier": 1.15,
+        "reason": "DnT shrine key-gated reward difficulty scaling."
+      },
+      {
         "selector": "minecraft:buried_treasure",
         "distribution_profile": "routine_exploration",
         "core_roll_multiplier": 2.0,
