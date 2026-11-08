@@ -528,3 +528,8 @@ Status: documentation only. No economy code, cooldown clock implementation, dung
 - Before choosing to leave, the player may backtrack to clear every finite authored dungeon enemy, then use the exit to receive the ordinary clear plus **all-clear bonus**. Combat, room and treasure rewards remain separate.
 - **Confirmed:** enemies must not approach/attack/re-aggro a player while reward or dungeon-clear result UI is open; battle-result UI should receive matching protection. Preserve multiplayer world activity for others and design safe transitions rather than a global world freeze.
 - Detailed canon and open implementation issues: `DUNGEON_GAMEPLAY_STRUCTURE_REFERENCE_AND_OPTIONS_DRAFT.md`. Documentation only, not implemented/tested.
+
+## Dungeon exit UI and multiplayer ownership proposal — 2026-11-08
+- Current approved explicit exit/interact, all-enemy all-clear at exit, personally scoped 3-defeat 30-online-minute lockout, and non-decaying repeat rewards after one-hour cooldown remain authoritative.
+- **Unapproved co-design options only:** exit UI interaction sequence, safety implementation and same-world multiplayer ownership. Favor discussing shared physical dungeon-run state with per-player rewards/defeat tracking versus independently simulated rooms in the same physical world before implementation.
+- Reference: `DUNGEON_EXIT_UI_MULTIPLAYER_OPTIONS_DRAFT.md`. No gameplay code or test/build changes.
