@@ -2,6 +2,7 @@
 
 > 정식 게임명은 아직 정하지 않았다. `Augmentation Survival`과 slug `augmentation-survival`은 저장소 내 작업 식별을 위한 임시 명칭이다.
 
+- 2026-11-08 추가: 고급 패시브 **코어 감응** Lv.1~5. 적대몹 직접 처치 코어 확률 +20% / +40% / +60% / +80% / +100%. 기존 증강 ID/카탈로그 순서와 저장 구조는 유지. 신규 기능은 소스 구현 후 빌드·실제 플레이 검증 별도.
 - Slug: `augmentation-survival`
 - Mod ID: `augmentation_survival` (working technical id)
 - Namespace: `augmentation_survival`
@@ -25,22 +26,22 @@
 
 ## 현재 상태
 
-`149-AUGMENT RUNTIME ROSTER / GAMEPLAY IMPLEMENTATION COMPLETE / FINAL PLAYTEST AUDIT`
+`150-AUGMENT RUNTIME ROSTER / CORE ATTUNEMENT SOURCE IMPLEMENTED / VALIDATION PENDING`
 
-외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현이 완료되었다. 현재는 **149종 runtime catalog와 모든 확정 증강 효과의 런타임 연결**, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water와 실제 hostile stat application, 외부 보스 공통 identity adapter, 코어 획득 경로, 기본/강화 증강 장치, 서버 권한 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성, 세이브 전역 증강 저장소가 구현되어 있다. 최종 플레이테스트 전 UI/VFX/audio polish, multiplayer 검증, 실제 게임 내 조작감 검수는 별도 완료 조건이다. 상세 감사 결과는 `FINAL_AUDIT_2026-10-29.md`, 감사 이후 최종 수정·검증은 `POST_AUDIT_CLOSURE_2026-10-29.md`를 참조한다.
+외부 모드팩 M0 부팅/의존성 기준선 위에 실제 Java runtime 구현이 완료되었다. 현재는 **150종 runtime catalog와 신규 코어 감응의 코어 드롭 확률 연결**, 영구 플레이어 증강 상태, 세이브 전역 위협 high-water와 실제 hostile stat application, 외부 보스 공통 identity adapter, 코어 획득 경로, 기본/강화 증강 장치, 서버 권한 3후보 선택 transaction, 두 번째 선택, 3:1 코어 합성, 세이브 전역 증강 저장소가 구현되어 있다. 최종 플레이테스트 전 UI/VFX/audio polish, multiplayer 검증, 실제 게임 내 조작감 검수는 별도 완료 조건이다. 상세 감사 결과는 `FINAL_AUDIT_2026-10-29.md`, 감사 이후 최종 수정·검증은 `POST_AUDIT_CLOSURE_2026-10-29.md`를 참조한다.
 
 Reference vertical slice는 증강 1~2개를 독립 구현하는 방식이 아니라 shared-system batch로 진행한다. stat → combat/protection/heal/death → movement/aerial → projectile shot-action/flight-segment → active/combat expansion → survival/resource → harvest/drop → consumption/fishing/breeding → save-wide threat application → external boss compatibility → reactive/status/mobility/utility bulk → advanced utility/permanent progression → special temporal/mythic active → advanced active/interact → advanced world/control → area acceleration + normalized companions → perception/revive/external-heal/enchant-refresh → inventory/storage 순으로 공통 런타임 경계를 확장했다.
 
-현재 149종 기준 gameplay runtime 진행도:
+현재 150종 기준 gameplay runtime 진행도 (신규 1종 빌드·게임 내 검증 전):
 
-- 완전 구현: **149 / 149**
-- 부분 구현: **0 / 149**
-- 완전 구현되지 않음: **0 / 149**
-- gameplay runtime 자체가 아직 없는 증강: **0 / 149**
+- 소스 구현: **150 / 150**
+- 부분 구현: **0 / 150**
+- 완전 구현되지 않음: **0 / 150**
+- gameplay runtime 자체가 아직 없는 증강: **0 / 150**
 
 `IMPLEMENTATION_STATUS_2026-10-24.md`와 `IMPLEMENTATION_STATUS_2026-10-25.md`는 각각 작성 당시의 146종 작업 체크포인트를 보존하는 역사 기록이며 현재 로스터 상태로 사용하지 않는다. 현재 정본 로스터는 `AUGMENTS.md`와 bundled catalog다.
 
-여기서 “완전 구현”은 canonical gameplay 효과의 runtime 구현을 뜻한다. 실제 플레이테스트, 최종 VFX/사운드/HUD/UI polish까지 끝났다는 뜻은 아니다.
+여기서 “소스 구현”은 canonical gameplay 효과의 runtime 코드가 존재함을 뜻한다. 실제 플레이테스트, 최종 VFX/사운드/HUD/UI polish까지 끝났다는 뜻은 아니다.
 
 ### 현재 shared runtime 요약
 
