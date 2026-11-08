@@ -190,6 +190,10 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
                         && "progression_hostile".equals(worldBossMob.profileId()),
                 "World Bosses hostile did not use progression_hostile: " + worldBossMob);
 
+        for (var band : BossCoreRewardCatalog.current().rewardBands().values()) {
+            require(band.guaranteedCoreCount() == 2 && band.firstKillBonusCoreCount() == 1,
+                    "Boss core reward count drifted: " + band.id());
+        }
         String[] compatibilityBossProfiles = {
                 "chronodawn_time_guardian", "chronodawn_chronos_warden",
                 "chronodawn_clockwork_colossus", "chronodawn_entropy_keeper",
