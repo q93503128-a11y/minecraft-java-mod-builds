@@ -19,6 +19,12 @@
       "summary": "잠시 달리지 않으면 이동 속도가 증가합니다.",
       "detail": "3초 동안 달리지 않으면 이동 속도가 10% / 20% / 30% 증가합니다."
     },
+    "core_attunement": {
+      "display_name": "코어 감응",
+      "kind": "passive",
+      "summary": "적대몹 처치 시 증강 코어를 얻을 확률이 증가합니다.",
+      "detail": "직접 처치한 적대몹의 증강 코어 획득 확률이 20% / 40% / 60% / 80% / 100% 증가합니다."
+    },
     "loot_scoop": {
       "display_name": "전리품 챙기기",
       "kind": "passive",
