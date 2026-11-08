@@ -69,6 +69,11 @@
       "require_player_attributed_kill": true
     }
   ],
+  "mob_core_rate_augment": {
+    "augment_id": "augmentation_survival:core_attunement",
+    "max_level": 5,
+    "bonus_per_level": 0.20
+  },
   "event_profiles": [
     {
       "id": "raid_victory",
