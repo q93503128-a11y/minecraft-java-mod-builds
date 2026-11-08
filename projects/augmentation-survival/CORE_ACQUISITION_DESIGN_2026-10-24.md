@@ -57,17 +57,17 @@ Status: CANONICAL INITIAL IMPLEMENTATION BASELINE / NUMBERS PLAYTEST-TUNABLE
 
 ## 3. 일반 코어 제작
 
-`GAME_DESIGN.md`의 현재 레시피를 사용한다.
+`GAME_DESIGN.md`의 현재 레시피를 사용한다. 자수정 정동을 찾지 않아도 초반 광물만으로 제작할 수 있도록 조정했다.
 
 ```text
-R A R
-A C A
-R A R
+R C R
+C I C
+R C R
 ```
 
-- R = 레드스톤 가루
-- A = 자수정 조각
-- C = 구리 주괴
+- R = 레드스톤 가루 4개
+- C = 구리 주괴 4개
+- I = 철 주괴 1개
 - 결과 = 일반 증강 코어 1개
 
 제작은 초반에 증강 시스템을 반드시 체험할 수 있게 하는 확정 루트다.
