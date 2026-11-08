@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.moonseungjun.augmentationsurvival.AugmentationSurvival;
+import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -70,14 +71,31 @@ public final class CoreDistributionCatalog {
     }
 
     public static Optional<AugmentTier> rollMobProfile(String profileId, RandomSource random) {
+        return rollMobProfile(profileId, 0, random);
+    }
+
+    /** Apply Core Attunement only to mob-sourced core rolls, never event or boss rewards. */
+    public static Optional<AugmentTier> rollMobProfile(String profileId, int augmentLevel, RandomSource random) {
         MobProfile profile = current().mobProfiles().get(profileId);
         if (profile == null) {
             throw new IllegalArgumentException("Unknown mob core profile: " + profileId);
         }
-        if (random.nextDouble() >= profile.coreRollChance()) {
+        if (random.nextDouble() >= effectiveMobCoreChance(profileId, augmentLevel)) {
             return Optional.empty();
         }
         return Optional.of(rollTier(profile.weights(), random));
+    }
+
+    /** Per-level bonus is additive to the multiplier, not cumulative multiplication. */
+    public static double effectiveMobCoreChance(String profileId, int augmentLevel) {
+        Catalog catalog = current();
+        MobProfile profile = catalog.mobProfiles().get(profileId);
+        if (profile == null) {
+            throw new IllegalArgumentException("Unknown mob core profile: " + profileId);
+        }
+        MobCoreRateAugment tuning = catalog.mobCoreRateAugment();
+        int level = Math.clamp(augmentLevel, 0, tuning.maxLevel());
+        return Math.min(1.0D, profile.coreRollChance() * (1.0D + tuning.bonusPerLevel() * level));
     }
 
     public static List<AugmentTier> rollEventProfile(String profileId, RandomSource random) {
@@ -179,6 +197,20 @@ public final class CoreDistributionCatalog {
             putUnique(mobs, profile.id(), profile, "mob profile");
         }
 
+        JsonObject rateObject = root.getAsJsonObject("mob_core_rate_augment");
+        if (rateObject == null) {
+            throw new IllegalStateException("Missing mob_core_rate_augment contract");
+        }
+        MobCoreRateAugment rateAugment = new MobCoreRateAugment(
+                requireString(rateObject, "augment_id"),
+                requireInt(rateObject, "max_level"),
+                requireProbability(rateObject, "bonus_per_level")
+        );
+        if (rateAugment.maxLevel() <= 0 || rateAugment.bonusPerLevel() <= 0.0D
+                || AugmentCatalog.require(rateAugment.augmentId()).maxLevel() != rateAugment.maxLevel()) {
+            throw new IllegalStateException("Core attunement tuning does not match the canonical roster");
+        }
+
         Map<String, EventProfile> events = new LinkedHashMap<>();
         for (JsonElement element : root.getAsJsonArray("event_profiles")) {
             JsonObject object = element.getAsJsonObject();
@@ -210,7 +242,8 @@ public final class CoreDistributionCatalog {
                 Collections.unmodifiableMap(templates),
                 Collections.unmodifiableMap(mobs),
                 Collections.unmodifiableMap(events),
-                fishingProfile
+                fishingProfile,
+                rateAugment
         );
     }
 
@@ -269,7 +302,8 @@ public final class CoreDistributionCatalog {
             Map<String, DistributionTemplate> distributionTemplates,
             Map<String, MobProfile> mobProfiles,
             Map<String, EventProfile> eventProfiles,
-            FishingProfile fishingProfile
+            FishingProfile fishingProfile,
+            MobCoreRateAugment mobCoreRateAugment
     ) {
     }
 
@@ -303,5 +337,8 @@ public final class CoreDistributionCatalog {
             double coreRollChance,
             Map<AugmentTier, Double> weights
     ) {
+    }
+
+    public record MobCoreRateAugment(String augmentId, int maxLevel, double bonusPerLevel) {
     }
 }
