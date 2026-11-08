@@ -6,6 +6,7 @@ import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardCatalog;
 import dev.moonseungjun.augmentationsurvival.core.CoreDistributionCatalog;
 import dev.moonseungjun.augmentationsurvival.core.CoreSourceResolver;
+import dev.moonseungjun.augmentationsurvival.core.StructureCoreRewardService;
 import dev.moonseungjun.augmentationsurvival.integration.EntityCompatibilityProfileService;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -56,13 +57,46 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
     }
 
     @GameTest(maxTicks = 20)
+    public void shrineRewardLootTablesAndTierProfilesAreRecognized(GameTestHelper helper) {
+        for (int tier = 1; tier <= 5; tier++) {
+            String id = "nova_structures:shrine_combat_tier_" + tier;
+            CoreSourceResolver.StructureResolution shrine =
+                    CoreSourceResolver.resolveStructure(Identifier.parse(id));
+            String expectedProfile = tier <= 2 ? "dangerous_mid" : "dangerous_high";
+            double expectedMultiplier = switch (tier) {
+                case 1, 4 -> 1.0D;
+                case 2 -> 1.1D;
+                case 3 -> 0.95D;
+                default -> 1.15D;
+            };
+            require(shrine.hasDistribution() && expectedProfile.equals(shrine.distributionProfile())
+                            && Math.abs(shrine.coreRollMultiplier() - expectedMultiplier) < 0.000001D,
+                    "Shrine core reward tier mapping drifted: " + id + " = " + shrine);
+        }
+        for (String key : new String[] {
+                "minecraft:chests/trial_chambers/reward",
+                "nova_structures:chests/shrine_vault",
+                "nova_structures:vaults/shrine_reward",
+                "nova_structures:rewards/shrine_vault"
+        }) {
+            require(StructureCoreRewardService.isStructureRewardTable(Identifier.parse(key)),
+                    "Natural vault reward table was not eligible: " + key);
+        }
+        require(!StructureCoreRewardService.isStructureRewardTable(Identifier.parse("minecraft:entities/zombie")),
+                "Mob loot must not be treated as structure treasure");
+        require(!StructureCoreRewardService.isStructureRewardTable(Identifier.parse("minecraft:gameplay/fishing")),
+                "General fishing loot must not be treated as a vault");
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest(maxTicks = 20)
     public void coreAcquisitionBalanceAndTreasureFishingProfileAreLoaded(GameTestHelper helper) {
         CoreDistributionCatalog.Catalog catalog = CoreDistributionCatalog.current();
         Map<String, Double> structureChances = Map.of(
-                "routine_exploration", 0.13D,
-                "dangerous_mid", 0.17D,
-                "dangerous_high", 0.23D,
-                "pinnacle_cache", 0.40D
+                "routine_exploration", 0.40D,
+                "dangerous_mid", 0.55D,
+                "dangerous_high", 0.70D,
+                "pinnacle_cache", 0.85D
         );
         for (Map.Entry<String, Double> entry : structureChances.entrySet()) {
             CoreDistributionCatalog.DistributionTemplate profile = catalog.distributionTemplates().get(entry.getKey());
@@ -73,8 +107,8 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
                         .weights().get(AugmentTier.RARE) - 0.05D) < 0.000001D,
                 "Routine structure rare core weight drifted");
         Map<String, Double> hostileChances = Map.of(
-                "normal_hostile", 0.012D, "progression_hostile", 0.048D,
-                "special_hostile", 0.09D, "elite_hostile", 0.24D
+                "normal_hostile", 0.035D, "progression_hostile", 0.12D,
+                "special_hostile", 0.20D, "elite_hostile", 0.42D
         );
         for (Map.Entry<String, Double> entry : hostileChances.entrySet()) {
             CoreDistributionCatalog.MobProfile profile = catalog.mobProfiles().get(entry.getKey());
@@ -83,19 +117,19 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
         }
         for (String event : new String[] {"raid_victory", "elder_guardian"}) {
             CoreDistributionCatalog.EventProfile profile = catalog.eventProfiles().get(event);
-            require(profile != null && profile.guaranteedCoreCount() == 1
+            require(profile != null && profile.guaranteedCoreCount() == 2
                             && Math.abs(profile.weights().get(AugmentTier.EPIC) - 0.10D) < 0.000001D,
                     "Event core epic weight drifted: " + event);
         }
         CoreDistributionCatalog.EventProfile warden = catalog.eventProfiles().get("warden");
-        require(warden != null && warden.guaranteedCoreCount() == 1
+        require(warden != null && warden.guaranteedCoreCount() == 2
                         && Math.abs(warden.weights().get(AugmentTier.LEGENDARY) - 0.10D) < 0.000001D
                         && Math.abs(warden.weights().get(AugmentTier.EPIC) - 0.40D) < 0.000001D,
                 "Warden core reward weights drifted");
         CoreDistributionCatalog.FishingProfile fishing = catalog.fishingProfile();
         require(fishing != null && "treasure_fishing".equals(fishing.id())
                         && "successful_treasure_category_catch".equals(fishing.trigger())
-                        && Math.abs(fishing.coreRollChance() - 0.12D) < 0.000001D
+                        && Math.abs(fishing.coreRollChance() - 0.30D) < 0.000001D
                         && Math.abs(fishing.weights().get(AugmentTier.RARE) - 0.05D) < 0.000001D
                         && Math.abs(fishing.weights().get(AugmentTier.UNCOMMON) - 0.25D) < 0.000001D,
                 "Treasure fishing core profile was not bound correctly");
@@ -126,11 +160,11 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
                     - Math.min(1.0D, profile.coreRollChance() * 2.0D)) < 0.000001D,
                     "Core attunement must cap at five levels");
         }
-        require(catalog.eventProfiles().get("raid_victory").guaranteedCoreCount() == 1,
+        require(catalog.eventProfiles().get("raid_victory").guaranteedCoreCount() == 2,
                 "Raid reward was affected by core attunement");
-        require(catalog.eventProfiles().get("warden").guaranteedCoreCount() == 1,
+        require(catalog.eventProfiles().get("warden").guaranteedCoreCount() == 2,
                 "Warden guaranteed reward was affected by core attunement");
-        require(Math.abs(catalog.fishingProfile().coreRollChance() - 0.12D) < 0.000001D,
+        require(Math.abs(catalog.fishingProfile().coreRollChance() - 0.30D) < 0.000001D,
                 "Fishing rate was affected by core attunement");
         GameTestPlayers.succeed(helper);
     }
@@ -140,7 +174,7 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
         CoreDistributionCatalog.MobProfile progression =
                 CoreDistributionCatalog.current().mobProfiles().get("progression_hostile");
         require(progression != null, "progression_hostile profile is missing");
-        require(Math.abs(progression.coreRollChance() - 0.048D) < 0.000001D,
+        require(Math.abs(progression.coreRollChance() - 0.12D) < 0.000001D,
                 "progression_hostile chance drifted: " + progression.coreRollChance());
 
         CoreSourceResolver.HostileResolution chrono = CoreSourceResolver.resolveHostile(
