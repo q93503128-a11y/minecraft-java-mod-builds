@@ -1,5 +1,8 @@
 # 《이능 직업 서바이벌》 여섯 직업 Lv300 종결급 전투력 역산·외부 보스 기준 v1
 
+> **2026-11-08 최신 결정 주의 — SP 부분이 구형일 수 있음:** [D11 최신 통합 정책](./D11_FINAL_PLAY_RULES_BEFORE_VISUAL_2026-11-08.md) / [3SP·각 직업 총900SP·무료 초기화](./SP_3_PER_LEVEL_AND_FREE_RESET_V2.md). 본문에 남은 **1SP/레벨, Lv300 299SP, 초기화 미정, 기술 구매비 미정** 등은 과거 수치 시뮬레이션/역사 기록으로서 **최신 사용자 결정이 아님**. 원래 직업 특색·레벨 스탯·구형 XP 비교 계산은 보존하나 새 SP 값으로 플레이/구현 해석해야 함. 30시간 XP P30 모델은 미검증 시험식 그대로이고 SP가 3개가 됐다고 XP 요구치를 3배/1/3배로 임의 조정하지 않는다.
+
+
 > 2026-11-05 · **DESIGN / NUMERICAL PROPOSAL — NOT USER-APPROVED, NOT IMPLEMENTED, NOT PLAYTESTED.**
 > 기준: `minecraft-java-mod-builds` 원격 `main` HEAD `6ff6a9f0b979125757223fd46e4a8b0bb76c3647` 읽기 후 작성. 공통 `AGENTS.md`, `docs/BUILD_STANDARD.md`, `docs/QUALITY_STANDARD.md` 및 `dev-playbook` 현행 규칙 참조. 이 문서는 **기존 기획을 덮어쓰지 않는, 별도로 검수할 밸런스 후보**다. 기존 직업별 최신 상세 문서가 확정한 기믹·시스템의 우선권을 유지한다.
 
