@@ -2,14 +2,14 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "RAR",
-    "ACA",
-    "RAR"
+    "RCR",
+    "CIC",
+    "RCR"
   ],
   "key": {
     "R": "minecraft:redstone",
-    "A": "minecraft:amethyst_shard",
-    "C": "minecraft:copper_ingot"
+    "C": "minecraft:copper_ingot",
+    "I": "minecraft:iron_ingot"
   },
   "result": {
     "id": "augmentation_survival:common_augment_core",
