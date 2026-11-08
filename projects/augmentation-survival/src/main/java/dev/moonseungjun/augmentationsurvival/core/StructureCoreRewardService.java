@@ -33,7 +33,7 @@ public final class StructureCoreRewardService {
     public static void initialize() {
         LootTableEvents.MODIFY_DROPS.register((holder, context, drops) -> holder.unwrapKey().ifPresent(tableKey -> {
             Identifier lootTableId = tableKey.identifier();
-            if (!isStructureContainerTable(lootTableId)) {
+            if (!isStructureRewardTable(lootTableId)) {
                 return;
             }
 
@@ -73,9 +73,21 @@ public final class StructureCoreRewardService {
         return null;
     }
 
-    private static boolean isStructureContainerTable(Identifier lootTableId) {
+    /**
+     * Natural chest and key-gated vault loot are eligible only if they originate from
+     * a supported generated structure. External loot tables never bypass the
+     * existing structure-piece and feature-generation checks.
+     */
+    public static boolean isStructureRewardTable(Identifier lootTableId) {
         String path = lootTableId.getPath();
-        return path.startsWith("chests/") || path.startsWith("chest/");
+        if (path.startsWith("chests/") || path.startsWith("chest/")) return true;
+        String namespace = lootTableId.getNamespace();
+        if (!"nova_structures".equals(namespace) && !"minecraft".equals(namespace)) return false;
+        return path.startsWith("vaults/")
+                || path.startsWith("vault/")
+                || path.startsWith("rewards/")
+                || path.contains("/vault/")
+                || path.contains("/shrine/");
     }
 
     private static CoreSourceResolver.StructureResolution resolveNaturalStructure(
