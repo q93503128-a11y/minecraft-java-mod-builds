@@ -98,6 +98,7 @@ public final class AugmentIconCatalog {
             case "time_stop" -> Items.ECHO_SHARD;
             case "area_acceleration" -> Items.BONE_MEAL;
             case "candidate_reroll" -> Items.AMETHYST_SHARD;
+            case "core_attunement" -> Items.AMETHYST_CLUSTER;
             case "clone" -> Items.ARMOR_STAND;
             case "domination" -> Items.NAME_TAG;
             case "instant_mining" -> Items.NETHERITE_PICKAXE;
