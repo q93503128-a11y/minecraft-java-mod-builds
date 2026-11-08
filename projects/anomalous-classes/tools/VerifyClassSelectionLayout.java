@@ -23,8 +23,11 @@ public final class VerifyClassSelectionLayout {
                 int height = viewport.physicalHeight() / scale;
                 Layout layout = ClassSelectionLayout.calculate(width, height);
                 verify(layout);
+                String mode = layout.compactPortrait() ? "compact-bottom-overlay"
+                        : layout.compact() ? "compact-side-overlay"
+                        : layout.stacked() ? "stacked" : "split-cover";
                 System.out.printf("| %s | %d | %dx%d | %s | %s | %s | %s | %s | %d / %d px | %d | PASS |%n",
-                        viewport.aspect(), scale, width, height, layout.compact() ? "compact" : "wide",
+                        viewport.aspect(), scale, width, height, mode,
                         size(layout.card()), size(layout.art()), size(layout.details()), size(layout.action()),
                         layout.previousVisible().width(), layout.nextVisible().width(), layout.classTabs().get(0).width());
             }
@@ -46,18 +49,24 @@ public final class VerifyClassSelectionLayout {
         require(layout.nextVisible().x() >= layout.card().right(), "right preview overlaps main card");
         require(layout.previousVisible().width() >= 20 && layout.nextVisible().width() >= 20, "side preview too narrow");
         require(layout.previousVisible().inside(width, height) && layout.nextVisible().inside(width, height), "side preview outside screen");
+        require(layout.previousPreview().inside(width, height) && layout.nextPreview().inside(width, height), "preview frame outside screen");
 
-        for (int descriptionLines = 1; descriptionLines <= 4; descriptionLines++) {
-            for (int statusLines = 0; statusLines <= 2; statusLines++) {
-                Box action = layout.actionForContent(38, descriptionLines, statusLines, 9);
-                require(action.inside(width, height) && within(action, layout.details()), "content-fitted action outside details");
-                require(!action.intersects(layout.classTabs().get(0)), "content-fitted action overlaps footer");
-                require(within(shift(action, -Math.min(18, layout.card().width() / 32)),
-                        shift(layout.card(), -Math.min(18, layout.card().width() / 32))), "animated action hitbox leaves card");
-            }
+        if (layout.compact()) {
+            require(!layout.stacked(), "compact layout must use an overlay mode");
+            require(within(layout.details(), layout.art()), "compact details must overlay the full-bleed art");
+        } else if (layout.stacked()) {
+            require(!layout.art().intersects(layout.details()), "stacked art/details overlap");
+            require(layout.details().y() >= layout.art().bottom(), "stacked details not below art");
+        } else {
+            require(!layout.art().intersects(layout.details()), "split art/details overlap");
+            require(layout.art().y() == layout.details().y()
+                    && layout.art().height() == layout.details().height(), "split card columns are misaligned");
         }
 
         Box firstTab = layout.classTabs().get(0);
+        Box lastTab = layout.classTabs().get(layout.classTabs().size() - 1);
+        int tabGroupCenter = firstTab.x() + (lastTab.right() - firstTab.x()) / 2;
+        require(Math.abs(tabGroupCenter - width / 2) <= 1, "class tab group not centered under main card");
         for (int index = 0; index < layout.classTabs().size(); index++) {
             Box tab = layout.classTabs().get(index);
             require(tab.inside(width, height), "class tab outside screen");
@@ -65,19 +74,47 @@ public final class VerifyClassSelectionLayout {
         }
         require(!layout.card().intersects(firstTab), "card overlaps footer tabs");
 
+        if (layout.compactPortrait()) {
+            Box meta = layout.compactMetaColumn();
+            Box copy = layout.compactCopyColumn();
+            require(meta.inside(width, height) && within(meta, layout.details()), "compact metadata outside details");
+            require(copy.inside(width, height) && within(copy, layout.details()), "compact copy outside details");
+            require(!meta.intersects(copy), "compact copy overlaps metadata");
+            require(meta.bottom() <= layout.action().y() - 3 && copy.bottom() <= layout.action().y() - 3,
+                    "compact action overlaps copy or metadata");
+            for (int descriptionLines = 1; descriptionLines <= 4; descriptionLines++) {
+                for (int statusLines = 0; statusLines <= 2; statusLines++) {
+                    int textHeight = descriptionLines * 9 + (statusLines == 0 ? 0 : statusLines * 9 + 3);
+                    require(textHeight <= copy.height(), "compact description/status exceed copy column");
+                }
+            }
+            require(2 * 9 + 3 + 2 * 9 <= meta.height(), "compact title/state exceed metadata column");
+        } else {
+            for (int descriptionLines = 1; descriptionLines <= 4; descriptionLines++) {
+                for (int statusLines = 0; statusLines <= 2; statusLines++) {
+                    Box action = layout.actionForContent(38, descriptionLines, statusLines, 9);
+                    require(action.inside(width, height) && within(action, layout.details()), "content-fitted action outside details");
+                    require(action.width() == layout.action().width() && action.height() == layout.action().height(),
+                            "button rendered size differs from registered hitbox");
+                    require(!action.intersects(layout.classTabs().get(0)), "content-fitted action overlaps footer");
+                }
+            }
+        }
+
         if (layout.compact()) {
             require(layout.heldInline().inside(width, height), "compact held-class line outside screen");
         } else {
             require(layout.heldPanel().inside(width, height), "held-class panel outside screen");
-            require(!layout.classTabs().get(layout.classTabs().size() - 1).intersects(layout.heldPanel()), "held-class panel overlaps tabs");
+            require(!lastTab.intersects(layout.heldPanel()), "held-class panel overlaps tabs");
             for (Box name : layout.heldNames()) require(name.inside(width, height) && within(name, layout.heldPanel()), "held class name outside panel");
         }
 
         int transitionDistance = Math.min(18, layout.card().width() / 32);
         Box leftShift = shift(layout.card(), -transitionDistance);
         Box rightShift = shift(layout.card(), transitionDistance);
-        Box leftAction = shift(layout.action(), -transitionDistance);
-        Box rightAction = shift(layout.action(), transitionDistance);
+        Box action = layout.action();
+        Box leftAction = shift(action, -transitionDistance);
+        Box rightAction = shift(action, transitionDistance);
         require(leftShift.inside(width, height) && rightShift.inside(width, height), "transition moves card offscreen");
         require(within(leftAction, leftShift) && within(rightAction, rightShift), "transition separates action hitbox from card");
     }

@@ -10,6 +10,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.SelectClassPayload;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -21,6 +22,8 @@ import org.lwjgl.glfw.GLFW;
 public final class ClassSelectionScreen extends Screen {
     private record MainContent(int titleY, int stateY, int descriptionY, int statusY,
                                int descriptionHeight, int statusHeight,
+                               List<FormattedCharSequence> titleLines,
+                               List<FormattedCharSequence> stateLines,
                                List<FormattedCharSequence> descriptionLines,
                                List<FormattedCharSequence> statusLines,
                                ClassSelectionLayout.Box action) {}
@@ -113,7 +116,11 @@ public final class ClassSelectionScreen extends Screen {
         renderMainCard(graphics, actionOffset, content);
         renderSideLabels(graphics);
         renderFooter(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        // Screen.render() also invokes renderBackground(), which would blur the custom UI just drawn above.
+        // Keep widgets registered for input and narration, but render that list after the screen content here.
+        for (Renderable renderable : renderables) {
+            renderable.render(graphics, mouseX, mouseY, partialTick);
+        }
     }
 
     public void applyServerState(ClassSelectionStatePayload state) {
@@ -258,63 +265,114 @@ public final class ClassSelectionScreen extends Screen {
         drawMainFrame(graphics, panel, accent);
         graphics.fill(panel.x() + inset + 1, panel.y() + inset + 1,
                 panel.right() - inset - 1, panel.bottom() - inset - 1, 0xFF17151B);
-        graphics.fill(details.x(), details.y(), details.right(), details.bottom(), 0xFF211E26);
-        graphics.fill(details.x(), details.y(), details.x() + 1, details.bottom(), accent);
         graphics.fill(art.x() - 1, art.y() - 1, art.right() + 1, art.bottom() + 1, 0xFF332D38);
-        graphics.fill(art.x(), art.y(), art.right(), art.bottom(), 0xFF0C0B0F);
         drawArtCover(graphics, CARD_ART[selectedIndex], art, 1.0f, selectedIndex == 2 ? 0.36f : 0.43f);
 
-        int pad = layout.compact() ? 8 : 12;
+        if (layout.compact()) {
+            graphics.fill(details.x(), details.y(), details.right(), details.bottom(), 0xE91B1821);
+            if (layout.compactPortrait()) {
+                graphics.fill(details.x(), details.y(), details.right(), details.y() + 1, accent);
+            } else {
+                graphics.fill(details.x(), details.y(), details.x() + 1, details.bottom(), accent);
+            }
+        } else if (layout.stacked()) {
+            graphics.fill(details.x(), details.y(), details.right(), details.bottom(), 0xFF211E26);
+            graphics.fill(details.x(), details.y(), details.right(), details.y() + 1, accent);
+        } else {
+            graphics.fill(details.x(), details.y(), details.right(), details.bottom(), 0xFF211E26);
+            graphics.fill(details.x(), details.y(), details.x() + 1, details.bottom(), accent);
+        }
+
+        int pad = layout.compact() ? 6 : 12;
         int textX = details.x() + pad;
         int textWidth = Math.max(1, details.width() - pad * 2);
         int iconSize = Math.min(21, Math.max(15, font.lineHeight + 8));
         int titleY = content.titleY() + offset;
-        int titleTextX = textX + iconSize + 5;
-        int titleTextWidth = Math.max(1, textWidth - iconSize - 5);
-        graphics.blit(CLASS_ICONS[selectedIndex], textX, titleY - 1, iconSize, iconSize,
-                0, 0, 96, 96, 96, 96);
-        drawFittedString(graphics, Component.translatable("class.anomalousclasses." + id.key()), titleTextX,
-                titleY + Math.max(0, (iconSize - font.lineHeight) / 2), titleTextWidth, 0xFFF3E9D9);
-
         int current = serverState.currentClassIndex();
-        Component stateText;
-        if (current == selectedIndex) {
-            stateText = Component.translatable("screen.anomalousclasses.class_selection.current");
-        } else if (hasPlayed(selectedIndex)) {
-            stateText = Component.translatable("screen.anomalousclasses.class_selection.progress",
-                    level(selectedIndex), skillPoints(selectedIndex));
+        Component name = Component.translatable("class.anomalousclasses." + id.key());
+        if (layout.compactPortrait()) {
+            ClassSelectionLayout.Box meta = shifted(layout.compactMetaColumn(), offset);
+            ClassSelectionLayout.Box copy = shifted(layout.compactCopyColumn(), offset);
+            graphics.blit(CLASS_ICONS[selectedIndex], meta.x(), titleY, iconSize, iconSize,
+                    0, 0, 96, 96, 96, 96);
+            int titleX = meta.x() + iconSize + 4;
+            drawFittedLines(graphics, content.titleLines(), titleX, titleY,
+                    Math.max(1, meta.right() - titleX), content.titleLines().size() * font.lineHeight, 0xFFF3E9D9);
+            drawFittedLines(graphics, content.stateLines(), meta.x(), content.stateY() + offset,
+                    meta.width(), content.stateLines().size() * font.lineHeight, 0xFFBEB5AA);
+            drawFittedLines(graphics, content.descriptionLines(), copy.x(), content.descriptionY() + offset,
+                    copy.width(), content.descriptionHeight(), 0xFFE1DAD0);
+            if (!content.statusLines().isEmpty()) {
+                drawFittedLines(graphics, content.statusLines(), copy.x(), content.statusY() + offset,
+                        copy.width(), content.statusHeight(),
+                        serverState.combatLocked() ? 0xFFFFC0AA : localStatusColor());
+            }
         } else {
-            stateText = Component.translatable("screen.anomalousclasses.class_selection.new_class");
-        }
-        drawFittedString(graphics, stateText, textX, content.stateY() + offset, textWidth,
-                current == selectedIndex ? accent : 0xFFBEB5AA);
-        drawFittedLines(graphics, content.descriptionLines(), textX, content.descriptionY() + offset,
-                textWidth, content.descriptionHeight(), 0xFFE1DAD0);
+            int titleTextX = textX + iconSize + 5;
+            int titleTextWidth = Math.max(1, textWidth - iconSize - 5);
+            graphics.blit(CLASS_ICONS[selectedIndex], textX, titleY - 1, iconSize, iconSize,
+                    0, 0, 96, 96, 96, 96);
+            drawFittedString(graphics, name, titleTextX,
+                    titleY + Math.max(0, (iconSize - font.lineHeight) / 2), titleTextWidth, 0xFFF3E9D9);
+            drawFittedString(graphics, classStateText(current), textX, content.stateY() + offset, textWidth,
+                    current == selectedIndex ? accent : 0xFFBEB5AA);
+            drawFittedLines(graphics, content.descriptionLines(), textX, content.descriptionY() + offset,
+                    textWidth, content.descriptionHeight(), 0xFFE1DAD0);
 
-        if (!content.statusLines().isEmpty()) {
-            drawFittedLines(graphics, content.statusLines(), textX, content.statusY() + offset,
-                    textWidth, content.statusHeight(),
-                    serverState.combatLocked() ? 0xFFFFC0AA : localStatusColor());
+            if (!content.statusLines().isEmpty()) {
+                drawFittedLines(graphics, content.statusLines(), textX, content.statusY() + offset,
+                        textWidth, content.statusHeight(),
+                        serverState.combatLocked() ? 0xFFFFC0AA : localStatusColor());
+            }
         }
         if (current == selectedIndex) {
             graphics.fill(panel.x() + 7, panel.y() + 7, panel.x() + 10, panel.y() + 10, accent);
         }
     }
 
+    private Component classStateText(int current) {
+        if (current == selectedIndex) {
+            return Component.translatable("screen.anomalousclasses.class_selection.current");
+        }
+        if (hasPlayed(selectedIndex)) {
+            return Component.translatable("screen.anomalousclasses.class_selection.progress",
+                    level(selectedIndex), skillPoints(selectedIndex));
+        }
+        return Component.translatable("screen.anomalousclasses.class_selection.new_class");
+    }
+
     private MainContent calculateMainContent() {
         ClassId id = ClassId.values()[selectedIndex];
         ClassSelectionLayout.Box details = layout.details();
-        int pad = layout.compact() ? 8 : 12;
-        int textWidth = Math.max(1, details.width() - pad * 2);
         int iconSize = Math.min(21, Math.max(15, font.lineHeight + 8));
+        if (layout.compactPortrait()) {
+            ClassSelectionLayout.Box meta = layout.compactMetaColumn();
+            ClassSelectionLayout.Box copy = layout.compactCopyColumn();
+            Component name = Component.translatable("class.anomalousclasses." + id.key());
+            Component state = classStateText(serverState.currentClassIndex());
+            List<FormattedCharSequence> titleLines = font.split(name,
+                    Math.max(1, meta.width() - iconSize - 4));
+            List<FormattedCharSequence> stateLines = font.split(state, Math.max(1, meta.width()));
+            List<FormattedCharSequence> descriptionLines = font.split(
+                    Component.translatable("class.anomalousclasses." + id.key() + ".description"), copy.width());
+            List<FormattedCharSequence> statusLines = currentStatusLines(copy.width());
+            int titleBlockHeight = Math.max(iconSize, titleLines.size() * font.lineHeight);
+            int titleY = meta.y();
+            int stateY = titleY + titleBlockHeight + 3;
+            int descriptionY = copy.y();
+            int descriptionHeight = descriptionLines.size() * font.lineHeight;
+            int statusY = descriptionY + descriptionHeight + (statusLines.isEmpty() ? 0 : 3);
+            int statusHeight = statusLines.isEmpty() ? 0 : statusLines.size() * font.lineHeight;
+            return new MainContent(titleY, stateY, descriptionY, statusY,
+                    descriptionHeight, statusHeight, titleLines, stateLines,
+                    descriptionLines, statusLines, layout.action());
+        }
+
+        int pad = layout.compact() ? 6 : 12;
+        int textWidth = Math.max(1, details.width() - pad * 2);
         List<FormattedCharSequence> descriptionLines = font.split(
                 Component.translatable("class.anomalousclasses." + id.key() + ".description"), textWidth);
-        List<FormattedCharSequence> statusLines = List.of();
-        if (serverState.combatLocked()) {
-            statusLines = font.split(Component.translatable("screen.anomalousclasses.class_selection.combat_lock"), textWidth);
-        } else if (localStatus >= 0) {
-            statusLines = font.split(localStatusComponent(), textWidth);
-        }
+        List<FormattedCharSequence> statusLines = currentStatusLines(textWidth);
         int headerHeight = iconSize + 4 + font.lineHeight + 4;
         ClassSelectionLayout.Box action = layout.actionForContent(headerHeight,
                 descriptionLines.size(), statusLines.size(), font.lineHeight);
@@ -326,7 +384,17 @@ public final class ClassSelectionScreen extends Screen {
         int descriptionY = stateY + font.lineHeight + 4;
         int statusY = descriptionY + descriptionHeight + (statusLines.isEmpty() ? 0 : 3);
         return new MainContent(blockTop, stateY, descriptionY, statusY,
-                descriptionHeight, statusHeight, descriptionLines, statusLines, action);
+                descriptionHeight, statusHeight, List.of(), List.of(), descriptionLines, statusLines, action);
+    }
+
+    private List<FormattedCharSequence> currentStatusLines(int textWidth) {
+        if (serverState.combatLocked()) {
+            return font.split(Component.translatable("screen.anomalousclasses.class_selection.combat_lock"), textWidth);
+        }
+        if (localStatus >= 0) {
+            return font.split(localStatusComponent(), textWidth);
+        }
+        return List.of();
     }
 
     private void renderFooter(GuiGraphics graphics) {
@@ -349,12 +417,13 @@ public final class ClassSelectionScreen extends Screen {
         drawThinFrame(graphics, held, 0xFF68636A, 0x99141218);
         drawFittedString(graphics, Component.translatable("screen.anomalousclasses.class_selection.on_hold"),
                 held.x() + 7, held.y() + 5, held.width() - 14, 0xFFBEB6AA);
-        drawFittedCentered(graphics, Component.translatable("class.anomalousclasses.gravity_caster"),
-                layout.heldNames().get(0).x() + layout.heldNames().get(0).width() / 2,
-                layout.heldNames().get(0).y(), layout.heldNames().get(0).width(), 0xFF969096);
-        drawFittedCentered(graphics, Component.translatable("class.anomalousclasses.resonance_caster"),
-                layout.heldNames().get(1).x() + layout.heldNames().get(1).width() / 2,
-                layout.heldNames().get(1).y(), layout.heldNames().get(1).width(), 0xFF969096);
+        for (int index = 0; index < layout.heldNames().size(); index++) {
+            ClassSelectionLayout.Box nameBox = layout.heldNames().get(index);
+            Component name = Component.translatable(index == 0
+                    ? "class.anomalousclasses.gravity_caster"
+                    : "class.anomalousclasses.resonance_caster");
+            drawWrappedCentered(graphics, name, nameBox, 0xFF969096);
+        }
     }
 
     private void drawArtCover(GuiGraphics graphics, ResourceLocation texture, ClassSelectionLayout.Box target,
@@ -450,6 +519,18 @@ public final class ClassSelectionScreen extends Screen {
             graphics.drawString(font, lines.get(index), 0, index * font.lineHeight, color, false);
         }
         graphics.pose().popPose();
+    }
+
+    private void drawWrappedCentered(GuiGraphics graphics, Component text, ClassSelectionLayout.Box box, int color) {
+        if (box.width() <= 0 || box.height() <= 0) return;
+        List<FormattedCharSequence> lines = font.split(text, box.width());
+        int maxLines = Math.max(1, box.height() / font.lineHeight);
+        int lineCount = Math.min(lines.size(), maxLines);
+        int y = box.y() + Math.max(0, (box.height() - lineCount * font.lineHeight) / 2);
+        for (int index = 0; index < lineCount; index++) {
+            drawFittedCentered(graphics, lines.get(index), box.x() + box.width() / 2,
+                    y + index * font.lineHeight, box.width(), color);
+        }
     }
 
     private ClassSelectionLayout.Box shifted(ClassSelectionLayout.Box box, int offset) {

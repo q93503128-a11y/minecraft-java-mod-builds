@@ -18,9 +18,11 @@ Minecraft Java 1.21.1 / NeoForge 21.1.244 모드. 현재 구현 범위는 6직�
 
 - [정적 레이아웃 검토 및 기준 이미지 비교](ui/reviews/2026-11-08/STATIC_LAYOUT_REVIEW.md)
 - [16:9 GUI Scale 2 정적 미리보기](ui/reviews/2026-11-08/class-selection-static-16x9-scale2.png)
+- [16:9 GUI Scale 4 영어 정적 미리보기](ui/reviews/2026-11-08/class-selection-static-16x9-scale4-en.png)
+- [4:3 GUI Scale 4 영어 정적 미리보기](ui/reviews/2026-11-08/class-selection-static-4x3-scale4-en.png)
 - [리소스 출처와 보존된 이전 아트](THIRD_PARTY_ASSETS.md)
 
-레이아웃 검사는 소스의 화면 좌표를 계산한 정적 검토다. Minecraft 클라이언트 조작과 실제 한글 폰트 렌더링은 아직 확인하지 않았다.
+2026-11-08 후속에서 Minecraft 1.21.1 `Screen.render()`의 배경 호출을 확인해 UI 블러 중복을 제거했다. 레이아웃 검사는 소스 좌표 계산과 정적 이미지에 기반하며, Minecraft 클라이언트의 실제 글꼴 렌더링·클릭 동작은 클라이언트 테스트로 표시하지 않는다.
 
 ## 개발
 

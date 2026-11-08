@@ -1,5 +1,12 @@
 # Changelog
 
+## UI render-order and layout follow-up — 2026-11-08
+
+- Fixed the selection screen's duplicate background pass: the old custom `render()` called `renderBackground()` and then `super.render()`, whose 1.21.1 implementation called `renderBackground()` again. The screen now draws its background once and renders its still-registered widgets last.
+- Kept button registration, click geometry, focus, narration, server state, and selection packets intact.
+- Adjusted the 16:9/16:10 split card, 4:3 stacked card, and compact overlays. Kept art proportions, showed side-card art and labels, centered the six tabs, and wrapped held-class labels.
+- Added Korean/English static previews and refreshed the 9-viewport coordinate review. Existing class art and icons were not replaced in this follow-up; Minecraft interaction was not run.
+
 ## UI visual follow-up — 2026-11-08
 
 - Rebalanced the selection card around a larger, aspect-preserved illustration and centered the text/action group inside the details panel.

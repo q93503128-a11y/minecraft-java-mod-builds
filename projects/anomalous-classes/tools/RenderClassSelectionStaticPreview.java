@@ -22,8 +22,9 @@ public final class RenderClassSelectionStaticPreview {
             "mental_dominator", "puppeteer", "parasite_morpher",
             "barrier_caster", "pact_caster", "swarm_caster"
     };
-    private static final String[] NAMES = {"정신 지배자", "인형술사", "기생술사", "결계술사", "계약술사", "군체술사"};
-    private static final String[] DESCRIPTIONS = {
+    private static final String[] KO_NAMES = {"정신 지배자", "인형술사", "기생술사", "결계술사", "계약술사", "군체술사"};
+    private static final String[] EN_NAMES = {"Mental Dominator", "Puppeteer", "Parasite Morpher", "Barrier Caster", "Pact Caster", "Swarm Caster"};
+    private static final String[] KO_DESCRIPTIONS = {
             "지배한 몹을 지휘합니다. 지배를 유지하려면 정신력이 필요합니다.",
             "직접 만든 인형을 꺼내 실로 움직입니다.",
             "숙주의 몸을 차지해 싸우며 생체 데이터를 쌓습니다.",
@@ -31,25 +32,39 @@ public final class RenderClassSelectionStaticPreview {
             "계약한 존재의 가호와 능력을 빌립니다.",
             "군체를 공격·엄호·이동에 나눠 씁니다."
     };
+    private static final String[] EN_DESCRIPTIONS = {
+            "Command creatures you dominate. Maintaining control costs focus.",
+            "Deploy puppets you craft and move them by thread.",
+            "Take over a host, then fight and build biodata.",
+            "Place barriers to defend, crush, or isolate.",
+            "Borrow protection and abilities from your pact.",
+            "Use your swarm to attack, cover, or travel."
+    };
     private static final int[] COLORS = {
             0xFFC69AE9, 0xFFD6A36D, 0xFF8CBF82, 0xFF70BFD5, 0xFFD0B47C, 0xFFB4C875
     };
+    private static boolean english;
 
     private RenderClassSelectionStaticPreview() {}
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 2) throw new IllegalArgumentException("Usage: <assets/anomalousclasses directory> <output.png>");
+        if (args.length < 2 || args.length > 6) {
+            throw new IllegalArgumentException("Usage: <assets/anomalousclasses directory> <output.png> [logicalWidth] [logicalHeight] [guiScale] [ko|en]");
+        }
         Path assets = Path.of(args[0]);
         File output = new File(args[1]);
-        Layout layout = ClassSelectionLayout.calculate(960, 540);
-        int outputScale = 2;
+        int logicalWidth = args.length > 2 ? Integer.parseInt(args[2]) : 960;
+        int logicalHeight = args.length > 3 ? Integer.parseInt(args[3]) : 540;
+        int outputScale = args.length > 4 ? Integer.parseInt(args[4]) : 2;
+        english = args.length > 5 && args[5].equalsIgnoreCase("en");
+        Layout layout = ClassSelectionLayout.calculate(logicalWidth, logicalHeight);
         BufferedImage image = new BufferedImage(layout.screenWidth() * outputScale,
                 layout.screenHeight() * outputScale, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         graphics.scale(outputScale, outputScale);
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         drawBackground(graphics, layout.screenWidth(), layout.screenHeight());
         drawHeader(graphics, layout);
         drawSideCards(graphics, assets, layout);
@@ -61,9 +76,12 @@ public final class RenderClassSelectionStaticPreview {
         File parent = output.getParentFile();
         if (parent != null && !parent.isDirectory() && !parent.mkdirs()) throw new IllegalStateException("Cannot create " + parent);
         ImageIO.write(image, "png", output);
-        System.out.printf("STATIC PREVIEW (not a Minecraft screenshot): %s (%dx%d output, 960x540 logical, GUI scale 2)%n",
-                output, image.getWidth(), image.getHeight());
+        System.out.printf("STATIC PREVIEW (not a Minecraft screenshot): %s (%dx%d output, %dx%d logical, GUI scale %d, %s)%n",
+                output, image.getWidth(), image.getHeight(), logicalWidth, logicalHeight, outputScale, english ? "English" : "Korean");
     }
+
+    private static String[] names() { return english ? EN_NAMES : KO_NAMES; }
+    private static String[] descriptions() { return english ? EN_DESCRIPTIONS : KO_DESCRIPTIONS; }
 
     private static void drawBackground(Graphics2D g, int width, int height) {
         g.setPaint(new LinearGradientPaint(new Point2D.Float(0, 0), new Point2D.Float(width, height),
@@ -83,10 +101,11 @@ public final class RenderClassSelectionStaticPreview {
     }
 
     private static void drawHeader(Graphics2D g, Layout layout) {
-        setFont(g, Font.BOLD, 15);
-        drawCentered(g, "직업 선택", layout.screenWidth() / 2, 18, 300, new Color(244, 232, 214));
-        setFont(g, Font.PLAIN, 9);
-        drawCentered(g, "세계로 나가기 전에 직업을 고르세요.", layout.screenWidth() / 2, 32, 500, new Color(211, 201, 188));
+        setFont(g, Font.BOLD, 10);
+        drawCentered(g, english ? "Choose a Class" : "직업 선택", layout.screenWidth() / 2, 18, 300, new Color(244, 232, 214));
+        setFont(g, Font.PLAIN, 7);
+        drawCentered(g, english ? "Choose a class before entering the world." : "세계로 나가기 전에 직업을 고르세요.",
+                layout.screenWidth() / 2, 32, 500, new Color(211, 201, 188));
     }
 
     private static void drawSideCards(Graphics2D g, Path assets, Layout layout) throws Exception {
@@ -126,38 +145,56 @@ public final class RenderClassSelectionStaticPreview {
         g.drawLine(panel.x() + 14, panel.y() + 3, panel.right() - 14, panel.y() + 3);
         g.setColor(new Color(27, 24, 33));
         g.fillRect(panel.x() + 5, panel.y() + 5, panel.width() - 10, panel.height() - 10);
-        g.setColor(new Color(29, 27, 34));
-        g.fillRect(details.x(), details.y(), details.width(), details.height());
-        g.setColor(accent);
-        g.fillRect(details.x(), details.y(), 2, details.height());
 
         BufferedImage art = ImageIO.read(assets.resolve("textures/gui/class_cards_v3/" + KEYS[0] + ".png").toFile());
         g.setColor(new Color(62, 53, 68));
         g.fillRect(artBox.x() - 1, artBox.y() - 1, artBox.width() + 2, artBox.height() + 2);
         drawCover(g, art, artBox);
 
-        int pad = 12;
+        if (layout.compact()) {
+            g.setColor(new Color(27, 24, 33, 233));
+            g.fillRect(details.x(), details.y(), details.width(), details.height());
+            g.setColor(accent);
+            if (layout.compactPortrait()) g.fillRect(details.x(), details.y(), details.width(), 1);
+            else g.fillRect(details.x(), details.y(), 2, details.height());
+        } else {
+            g.setColor(new Color(29, 27, 34));
+            g.fillRect(details.x(), details.y(), details.width(), details.height());
+            g.setColor(accent);
+            if (layout.stacked()) g.fillRect(details.x(), details.y(), details.width(), 1);
+            else g.fillRect(details.x(), details.y(), 2, details.height());
+        }
+
+        if (layout.compactPortrait()) {
+            drawCompactPortraitInfo(g, assets, layout, offset);
+            g.setColor(new Color(196, 156, 233));
+            g.fillOval(panel.x() + 8, panel.y() + 8, 4, 4);
+            return;
+        }
+
+        int pad = layout.compact() ? 6 : 12;
         int textX = details.x() + pad;
-        int textWidth = details.width() - pad * 2;
+        int textWidth = Math.max(1, details.width() - pad * 2);
         BufferedImage icon = ImageIO.read(assets.resolve("textures/gui/class_icons_v2/" + KEYS[0] + ".png").toFile());
-        int iconSize = 21;
-        setFont(g, Font.PLAIN, 9);
-        List<String> lines = wrap(DESCRIPTIONS[0], textWidth, g.getFontMetrics());
+        int iconSize = layout.compact() ? 17 : 21;
+        setFont(g, Font.PLAIN, 7);
+        List<String> lines = wrap(descriptions()[0], textWidth, g.getFontMetrics());
         FontMetrics textMetrics = g.getFontMetrics();
         int mcLineHeight = 9;
         int headerHeight = iconSize + 4 + mcLineHeight + 4;
         Box action = layout.actionForContent(headerHeight, lines.size(), 0, mcLineHeight);
         int blockTop = action.y() - 10 - lines.size() * mcLineHeight - headerHeight;
         int titleY = blockTop;
-        g.drawImage(icon, textX, titleY - 1, iconSize, iconSize, null);
-        setFont(g, Font.BOLD, 12);
+        drawPixelIcon(g, icon, textX, titleY - 1, iconSize, iconSize);
+        setFont(g, Font.BOLD, 8);
         FontMetrics titleMetrics = g.getFontMetrics();
-        drawFit(g, NAMES[0], textX + iconSize + 5,
+        drawFit(g, names()[0], textX + iconSize + 5,
                 titleY + Math.max(0, (iconSize - titleMetrics.getHeight()) / 2) + titleMetrics.getAscent(),
                 textWidth - iconSize - 5, new Color(243, 233, 217));
-        setFont(g, Font.PLAIN, 9);
+        setFont(g, Font.PLAIN, 7);
         int stateY = titleY + iconSize + 4;
-        drawFit(g, "새 직업 · Lv 1 · SP 0", textX, stateY + g.getFontMetrics().getAscent(), textWidth, new Color(195, 186, 172));
+        drawFit(g, english ? "New class · Lv 1 · SP 0" : "새 직업 · Lv 1 · SP 0",
+                textX, stateY + g.getFontMetrics().getAscent(), textWidth, new Color(195, 186, 172));
         int descriptionTop = stateY + mcLineHeight + 4;
         for (int index = 0; index < lines.size(); index++) {
             drawFit(g, lines.get(index), textX,
@@ -168,6 +205,36 @@ public final class RenderClassSelectionStaticPreview {
         g.fillOval(panel.x() + 8, panel.y() + 8, 4, 4);
     }
 
+    private static void drawCompactPortraitInfo(Graphics2D g, Path assets, Layout layout, int offset) throws Exception {
+        Box meta = shift(layout.compactMetaColumn(), offset);
+        Box copy = shift(layout.compactCopyColumn(), offset);
+        BufferedImage icon = ImageIO.read(assets.resolve("textures/gui/class_icons_v2/" + KEYS[0] + ".png").toFile());
+        int iconSize = 17;
+        setFont(g, Font.BOLD, 7);
+        List<String> titleLines = wrap(names()[0], Math.max(1, meta.width() - iconSize - 4), g.getFontMetrics());
+        int titleHeight = Math.max(iconSize, titleLines.size() * 9);
+        int titleY = meta.y();
+        drawPixelIcon(g, icon, meta.x(), titleY, iconSize, iconSize);
+        for (int index = 0; index < titleLines.size(); index++) {
+            drawFit(g, titleLines.get(index), meta.x() + iconSize + 4,
+                    titleY + g.getFontMetrics().getAscent() + index * 9,
+                    Math.max(1, meta.right() - meta.x() - iconSize - 4), new Color(243, 233, 217));
+        }
+        setFont(g, Font.PLAIN, 7);
+        String state = english ? "New class · Lv 1 · SP 0" : "새 직업 · Lv 1 · SP 0";
+        List<String> stateLines = wrap(state, meta.width(), g.getFontMetrics());
+        int stateY = titleY + titleHeight + 3;
+        for (int index = 0; index < stateLines.size(); index++) {
+            drawFit(g, stateLines.get(index), meta.x(), stateY + g.getFontMetrics().getAscent() + index * 9,
+                    meta.width(), new Color(195, 186, 172));
+        }
+        List<String> descriptionLines = wrap(descriptions()[0], copy.width(), g.getFontMetrics());
+        for (int index = 0; index < descriptionLines.size(); index++) {
+            drawFit(g, descriptionLines.get(index), copy.x(), copy.y() + g.getFontMetrics().getAscent() + index * 9,
+                    copy.width(), new Color(226, 218, 207));
+        }
+    }
+
     private static void drawSideLabels(Graphics2D g, Layout layout) {
         drawSideLabel(g, layout.previousVisible(), 5);
         drawSideLabel(g, layout.nextVisible(), 1);
@@ -175,13 +242,18 @@ public final class RenderClassSelectionStaticPreview {
 
     private static void drawSideLabel(Graphics2D g, Box visible, int index) {
         g.setClip(visible.x(), visible.y(), visible.width(), visible.height());
-        setFont(g, Font.BOLD, 8);
-        int bandHeight = 14;
+        setFont(g, Font.BOLD, 7);
+        List<String> lines = wrap(names()[index], Math.max(1, visible.width() - 4), g.getFontMetrics());
+        int lineCount = Math.min(2, Math.max(1, lines.size()));
+        int bandHeight = lineCount * 9 + 4;
         int y = visible.bottom() - bandHeight;
         g.setColor(new Color(17, 15, 21, 220));
         g.fillRect(visible.x(), y, visible.width(), bandHeight);
-        drawFit(g, NAMES[index], visible.x() + 2, y + 2 + g.getFontMetrics().getAscent(),
-                Math.max(1, visible.width() - 4), new Color(231, 222, 208));
+        for (int line = 0; line < lineCount; line++) {
+            drawCenteredFit(g, lines.get(line), visible.x() + visible.width() / 2,
+                    y + 2 + g.getFontMetrics().getAscent() + line * 9,
+                    Math.max(1, visible.width() - 4), new Color(231, 222, 208));
+        }
         g.setClip(null);
     }
 
@@ -195,11 +267,17 @@ public final class RenderClassSelectionStaticPreview {
             g.setStroke(new BasicStroke(index == 0 ? 2 : 1));
             g.drawRoundRect(box.x(), box.y(), box.width(), box.height(), 8, 8);
             BufferedImage icon = ImageIO.read(assets.resolve("textures/gui/class_icons_v2/" + KEYS[index] + ".png").toFile());
-            int iconSize = 24;
-            g.drawImage(icon, box.x() + (box.width() - iconSize) / 2, box.y() + 4, iconSize, iconSize, null);
-            setFont(g, Font.BOLD, 8);
-            drawFit(g, NAMES[index], box.x() + 3, box.bottom() - 14, box.width() - 6,
-                    index == 0 ? new Color(246, 237, 222) : new Color(212, 203, 188));
+            setFont(g, Font.BOLD, 7);
+            List<String> lines = wrap(names()[index], Math.max(1, box.width() - 8), g.getFontMetrics());
+            int lineCount = Math.max(1, Math.min(2, lines.size()));
+            int iconSize = Math.min(26, Math.max(15, box.height() - lineCount * 9 - 7));
+            drawPixelIcon(g, icon, box.x() + (box.width() - iconSize) / 2, box.y() + 3, iconSize, iconSize);
+            int labelY = box.bottom() - lineCount * 9 - 3;
+            for (int line = 0; line < lineCount; line++) {
+                drawCenteredFit(g, lines.get(line), box.x() + box.width() / 2,
+                        labelY + g.getFontMetrics().getAscent() + line * 9, box.width() - 6,
+                        index == 0 ? new Color(246, 237, 222) : new Color(212, 203, 188));
+            }
             if (index == 0) {
                 g.setColor(accent);
                 g.fillRect(box.x() + box.width() / 2 - 2, box.bottom() - 2, 4, 2);
@@ -212,15 +290,24 @@ public final class RenderClassSelectionStaticPreview {
             g.setColor(new Color(104, 99, 105));
             g.setStroke(new BasicStroke(1));
             g.drawRoundRect(held.x(), held.y(), held.width(), held.height(), 8, 8);
-            setFont(g, Font.PLAIN, 8);
-            drawFit(g, "선택 불가", held.x() + 7, held.y() + 6, held.width() - 14, new Color(197, 188, 174));
-            drawCenteredFit(g, "중력술사", layout.heldNames().get(0).x() + layout.heldNames().get(0).width() / 2,
-                    layout.heldNames().get(0).y() + g.getFontMetrics().getAscent(), layout.heldNames().get(0).width(), new Color(154, 148, 148));
-            drawCenteredFit(g, "공명술사", layout.heldNames().get(1).x() + layout.heldNames().get(1).width() / 2,
-                    layout.heldNames().get(1).y() + g.getFontMetrics().getAscent(), layout.heldNames().get(1).width(), new Color(154, 148, 148));
+            setFont(g, Font.PLAIN, 7);
+            drawFit(g, english ? "Unavailable" : "선택 불가", held.x() + 7, held.y() + 6, held.width() - 14, new Color(197, 188, 174));
+            String gravity = english ? "Gravity Caster" : "중력술사";
+            String resonance = english ? "Resonance Caster" : "공명술사";
+            for (int index = 0; index < layout.heldNames().size(); index++) {
+                Box nameBox = layout.heldNames().get(index);
+                String name = index == 0 ? gravity : resonance;
+                List<String> lines = wrap(name, nameBox.width(), g.getFontMetrics());
+                for (int line = 0; line < Math.min(2, lines.size()); line++) {
+                    drawCenteredFit(g, lines.get(line), nameBox.x() + nameBox.width() / 2,
+                            nameBox.y() + g.getFontMetrics().getAscent() + line * 9,
+                            nameBox.width(), new Color(154, 148, 148));
+                }
+            }
         } else {
-            setFont(g, Font.PLAIN, 8);
-            drawCenteredFit(g, "선택 불가 · 중력술사 · 공명술사",
+            setFont(g, Font.PLAIN, 7);
+            String held = english ? "Unavailable · Gravity · Resonance" : "선택 불가 · 중력술사 · 공명술사";
+            drawCenteredFit(g, held,
                     layout.heldInline().x() + layout.heldInline().width() / 2,
                     layout.heldInline().y() + g.getFontMetrics().getAscent(),
                     layout.heldInline().width(), new Color(174, 164, 161));
@@ -236,17 +323,19 @@ public final class RenderClassSelectionStaticPreview {
         g.setColor(color(COLORS[0]));
         g.setStroke(new BasicStroke(1.5f));
         g.drawRoundRect(action.x(), action.y(), action.width(), action.height(), 8, 8);
-        setFont(g, Font.BOLD, 12);
+        setFont(g, Font.BOLD, 8);
         FontMetrics actionMetrics = g.getFontMetrics();
-        drawCenteredFit(g, "선택", action.x() + action.width() / 2,
+        drawCenteredFit(g, english ? "Choose" : "선택", action.x() + action.width() / 2,
                 action.y() + Math.max(0, (action.height() - actionMetrics.getHeight()) / 2) + actionMetrics.getAscent(),
                 action.width() - 10, new Color(246, 236, 219));
     }
 
     private static Box previewAction(Graphics2D g, Layout layout) {
-        setFont(g, Font.PLAIN, 9);
-        int textWidth = Math.max(1, layout.details().width() - 24);
-        int descriptionLines = wrap(DESCRIPTIONS[0], textWidth, g.getFontMetrics()).size();
+        if (layout.compactPortrait()) return layout.action();
+        setFont(g, Font.PLAIN, 7);
+        int pad = layout.compact() ? 6 : 12;
+        int textWidth = Math.max(1, layout.details().width() - pad * 2);
+        int descriptionLines = wrap(descriptions()[0], textWidth, g.getFontMetrics()).size();
         int headerHeight = 21 + 4 + 9 + 4;
         return layout.actionForContent(headerHeight, descriptionLines, 0, 9);
     }
@@ -273,6 +362,13 @@ public final class RenderClassSelectionStaticPreview {
         g.setColor(edge);
         g.setStroke(new BasicStroke(1));
         g.drawRect(box.x(), box.y(), box.width() - 1, box.height() - 1);
+    }
+
+    private static void drawPixelIcon(Graphics2D g, BufferedImage icon, int x, int y, int width, int height) {
+        Graphics2D pixel = (Graphics2D) g.create();
+        pixel.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        pixel.drawImage(icon, x, y, width, height, null);
+        pixel.dispose();
     }
 
     private static void drawCover(Graphics2D g, BufferedImage source, Box target) {
@@ -317,15 +413,37 @@ public final class RenderClassSelectionStaticPreview {
     private static List<String> wrap(String text, int maxWidth, FontMetrics metrics) {
         List<String> result = new ArrayList<>();
         StringBuilder line = new StringBuilder();
-        for (int offset = 0; offset < text.length();) {
-            int codePoint = text.codePointAt(offset);
-            String next = new String(Character.toChars(codePoint));
-            if (!line.isEmpty() && metrics.stringWidth(line + next) > maxWidth) {
+        for (String word : text.trim().split("\\s+")) {
+            if (word.isEmpty()) continue;
+            if (metrics.stringWidth(word) <= maxWidth) {
+                String candidate = line.isEmpty() ? word : line + " " + word;
+                if (!line.isEmpty() && metrics.stringWidth(candidate) > maxWidth) {
+                    result.add(line.toString());
+                    line.setLength(0);
+                }
+                if (!line.isEmpty()) line.append(' ');
+                line.append(word);
+                continue;
+            }
+
+            if (!line.isEmpty()) {
                 result.add(line.toString());
                 line.setLength(0);
             }
-            line.append(next);
-            offset += Character.charCount(codePoint);
+            for (int offset = 0; offset < word.length();) {
+                int codePoint = word.codePointAt(offset);
+                String next = new String(Character.toChars(codePoint));
+                if (!line.isEmpty() && metrics.stringWidth(line + next) > maxWidth) {
+                    result.add(line.toString());
+                    line.setLength(0);
+                }
+                line.append(next);
+                offset += Character.charCount(codePoint);
+            }
+            if (!line.isEmpty()) {
+                result.add(line.toString());
+                line.setLength(0);
+            }
         }
         if (!line.isEmpty()) result.add(line.toString());
         return result;
