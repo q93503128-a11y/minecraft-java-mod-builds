@@ -1,5 +1,6 @@
 package dev.moonseungjun.augmentationsurvival.gametest;
 
+import dev.moonseungjun.augmentationsurvival.augment.AugmentCatalog;
 import dev.moonseungjun.augmentationsurvival.core.AugmentCoreItems;
 import dev.moonseungjun.augmentationsurvival.core.AugmentTier;
 import dev.moonseungjun.augmentationsurvival.core.BossCoreRewardCatalog;
@@ -98,6 +99,39 @@ public final class ExternalContentIntegrationGameTests implements CustomTestMeth
                         && Math.abs(fishing.weights().get(AugmentTier.RARE) - 0.05D) < 0.000001D
                         && Math.abs(fishing.weights().get(AugmentTier.UNCOMMON) - 0.25D) < 0.000001D,
                 "Treasure fishing core profile was not bound correctly");
+        GameTestPlayers.succeed(helper);
+    }
+
+    @GameTest(maxTicks = 20)
+    public void coreAttunementBoostsOnlyMobCoreChanceByTwentyPercentPerLevel(GameTestHelper helper) {
+        var catalog = CoreDistributionCatalog.current();
+        var tuning = catalog.mobCoreRateAugment();
+        require(tuning.augmentId().equals("augmentation_survival:core_attunement"),
+                "Core attunement source ID drifted");
+        require(AugmentCatalog.require(tuning.augmentId()).maxLevel() == 5,
+                "Core attunement must have five levels");
+        require(Math.abs(tuning.bonusPerLevel() - 0.20D) < 0.000001D,
+                "Core attunement per-level bonus drifted");
+        for (var profile : catalog.mobProfiles().values()) {
+            for (int level = 0; level <= 5; level++) {
+                double expected = Math.min(1.0D, profile.coreRollChance() * (1.0D + 0.20D * level));
+                require(Math.abs(CoreDistributionCatalog.effectiveMobCoreChance(profile.id(), level)
+                        - expected) < 0.000001D,
+                        "Mob core attunement scaling drifted: " + profile.id() + " Lv." + level);
+            }
+            require(Math.abs(CoreDistributionCatalog.effectiveMobCoreChance(profile.id(), -100)
+                    - profile.coreRollChance()) < 0.000001D,
+                    "Negative augment level must not reduce base core chances");
+            require(Math.abs(CoreDistributionCatalog.effectiveMobCoreChance(profile.id(), 100)
+                    - Math.min(1.0D, profile.coreRollChance() * 2.0D)) < 0.000001D,
+                    "Core attunement must cap at five levels");
+        }
+        require(catalog.eventProfiles().get("raid_victory").guaranteedCoreCount() == 1,
+                "Raid reward was affected by core attunement");
+        require(catalog.eventProfiles().get("warden").guaranteedCoreCount() == 1,
+                "Warden guaranteed reward was affected by core attunement");
+        require(Math.abs(catalog.fishingProfile().coreRollChance() - 0.12D) < 0.000001D,
+                "Fishing rate was affected by core attunement");
         GameTestPlayers.succeed(helper);
     }
 
