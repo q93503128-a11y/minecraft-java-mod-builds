@@ -1,5 +1,8 @@
 # 기생술사 — 장기 스킬 트리 v1 (침투·공생·생존)
 
+> **2026-11-08 D11 최신 우선: 기존 1SP/레벨·299SP/Lv300 가정은 폐기됨.** 현재 사용자 확정은 **레벨업마다 3SP**, **비전투 중 패시브 전체 무료 초기화**, **6직업의 기존 노드/랭크 수는 유지하고 각각 전부 투자비 900SP**, Lv1 SP0 가정 시 Lv301에 정확히 완성. [**스킬 비용 규칙**](../SP_3_PER_LEVEL_AND_FREE_RESET_V2.md), [**직업별 정확한 가격 배열**](../balance/SKILL_POINT_COST_MODEL_V2.json), [**최신 결정**](../D11_FINAL_PLAY_RULES_BEFORE_VISUAL_2026-11-08.md)을 우선한다. 아래 오래된 포인트 수·완료시각·선택지/초기화 '미정'은 과거 시안 기록이다. 스킬 자체 효과/고유 계승/돌파는 보존.
+
+
 > 2026-11-04 / **DESIGN PROPOSAL, NOT IMPLEMENTED/PLAYTESTED**. 사용자 결정: 인간형은 허약, 살아 있는 숙주 한 기를 직접 조종, 돼지부터 성장 가능, 영구 **생체 데이터(BD)**로 더 강한 생물 기생 자격 획득, 숙주 사망 시 인간형 배출과 일시 기생 금지, 스킬 트리로 **즉시 재기생 가능 횟수** 증가. 이 문서의 노드명·랭크·계수·돌파는 검증 전 제안.
 
 기준: [기생술사 v7](./PARASITE_MORPHER.md), [BD 요구치·성장](./PARASITE_BIODATA_GROWTH.md), [BD 획득·종별 숙련·침투](./PARASITE_BIODATA_ACQUISITION_AND_INTRUSION.md), [숙주 사망/생존 전이](./PARASITE_HOST_DEATH_AND_TRANSFER.md). 기생술사 직업 장비 **[공생 핵 5등급](./PARASITE_SYMBIOSIS_CORE.md)**은 현재 숙주 HP/공격력만 올리는 단순 보너스 후보이며, 장비 없이 기본 기생·배운 모든 종족 기술 사용 가능.
