@@ -1,5 +1,8 @@
 # 《이능 직업 서바이벌》 — 시안 이전 기획 공백·플레이 완성도 감사 (2026-11-08)
 
+> **2026-11-08 D11 사용자 최신 결정 (구형 '1SP·초기화 미정·직업 변경시 영구 휴면'보다 우선):** [**D11 결정 인계**](./D11_FINAL_PLAY_RULES_BEFORE_VISUAL_2026-11-08.md) · [**3SP/레벨, 무료 패시브 초기화, 6직업 각 900SP**](./SP_3_PER_LEVEL_AND_FREE_RESET_V2.md) · [**전직 시 원직업 효과 원상복귀**](./CLASS_SWITCH_ORIGINAL_STATE_POLICY_V2.md) · [**16제단 합계 부서진 포탈급/네르아만 수중**](./PACT_ALTAR_WORLDGEN_FREQUENCY_V2.md). 과거 승인 1SP와 Lv300=299SP, 장비/소환체 휴면 후보, 제단 밀도 미정은 **새 결정으로 대체**. 직업 6종의 **첫 1시간은 실제 게임에서 직접 플레이 후 평가**하고, 보류 중력/공명은 선택 UI 구석의 작은 비활성 영역에서만 표시하는 후보. 재전직으로 최초 발견 XP를 재수령하지 않음. 이전 수치/다른 확정 스킬·장비/제물/직업별 성장 기록은 보존. **시안 제작 진행 가능; 구현/게임 테스트 전.**
+
+
 > **2026-11-08 main 직접 조회 기반 / 문서 감사만 수행.** 감사 시작 main `5cade1e677b7d3d0cf64b99f67ee322ee19f36c4`. 정본 [PROJECT](./PROJECT.md), [사용자 결정 D01~D09](./PLANNING_DECISION_REGISTER_V1.md), [D10 UI 착수 조건부 감사](./D10_6CLASS_INTEGRATION_AND_VISUAL_GATE_2026-11-08.md), [공통 루프](./CORE_GAMEPLAY_GROWTH_REWARDS_DIFFICULTY_V1.md), [직업 생명주기](./CLASS_SWITCH_LIFECYCLE_POLICY_V1.md), [XP·장비 획득 시험](./RPG_XP_REWARDS_AND_ACQUISITION_MODEL_V1.md), 6직업별 원본/입력/경제/기술위험 문서를 교차 검토했다. **모든 파일의 모든 링크/모든 기술 수치에 대한 완전 자동 검증을 주장하지 않는다.** 외부 모드팩은 [2026-11-05 JAR·서버 검증 기록](./EXTERNAL_MODPACK_INSTALL_AND_VERIFICATION_2026-11-05.md)을 우선; 옛 문서의 '로더 미정/모드팩 미로딩'은 이후 검증으로 대체됨. 본 게임 6직업 자바 소스·실제 GUI·클라/멀티 검증은 **없다**.
 >
 > **최종 판단: CONCEPT VISUAL EXPLORATION = YES. FULL SCREEN/UI ART SIGN-OFF = NOT YET.** 정보 구조/직업 아이덴티티·전투 연출의 *탐색용* 시안은 지금 시작할 수 있다. 그러나 현재 상세 기획은 **완전한 제품 기능 계약** 수준은 아니며, 공통 시스템의 몇 가지 미결이 실제 선택/성장/관리 UI를 바꿀 수 있다. 사용자가 먼저 '기획 완성→시안→구현'을 택했으므로 구체 시안 승인 전에 **최소한 아래 G0 핵심 정책을 닫고 한 번의 플레이 흐름을 검증**하는 편이 적절하다. 추가 직업/재화/퀘스트/겹치는 성장축을 만드는 것은 해결이 아니다.
