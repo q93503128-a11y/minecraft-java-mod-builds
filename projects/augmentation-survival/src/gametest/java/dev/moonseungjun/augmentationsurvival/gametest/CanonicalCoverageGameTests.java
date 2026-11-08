@@ -42,7 +42,7 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
 
     @GameTest public void everyCanonicalAugmentRoundTripsThroughServerPlayerState(GameTestHelper helper) {
         ServerPlayer player = player(helper); List<AugmentDefinition> definitions = AugmentCatalog.allDefinitions();
-        require(definitions.size() == 149, "canonical roster size drifted; expected=149, actual=" + definitions.size());
+        require(definitions.size() == 150, "canonical roster size drifted; expected=150, actual=" + definitions.size());
         for (AugmentDefinition definition : definitions) {
             AugmentationPlayerStateService.replace(player, AugmentationPlayerState.initial().withAugmentLevel(definition.id(), definition.maxLevel()));
             AugmentationPlayerState persisted = AugmentationPlayerStateService.state(player);
@@ -56,7 +56,7 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
 
     @GameTest public void everyCanonicalAugmentIndexAndPowerBoundaryIsStable(GameTestHelper helper) {
         List<AugmentDefinition> definitions = AugmentCatalog.allDefinitions();
-        require(definitions.size() == 149, "canonical roster size drifted; expected=149, actual=" + definitions.size());
+        require(definitions.size() == 150, "canonical roster size drifted; expected=150, actual=" + definitions.size());
         for (int index = 0; index < definitions.size(); index++) {
             AugmentDefinition definition = definitions.get(index);
             require(AugmentCatalog.indexOf(definition.id()) == index, "catalog index lookup drifted for " + definition.id());
@@ -71,8 +71,8 @@ public final class CanonicalCoverageGameTests implements CustomTestMethodInvoker
 
     @GameTest public void everyCanonicalAugmentHasDistinctIcon(GameTestHelper helper) {
         var icons = AugmentIconCatalog.canonicalIcons();
-        require(icons.size() == 149, "icon catalog does not cover all 149 augments; actual=" + icons.size());
-        require(new LinkedHashSet<>(icons.values()).size() == 149,
+        require(icons.size() == 150, "icon catalog does not cover all 150 augments; actual=" + icons.size());
+        require(new LinkedHashSet<>(icons.values()).size() == 150,
                 "two or more canonical augments share the same icon item");
         for (AugmentDefinition definition : AugmentCatalog.allDefinitions()) {
             require(icons.containsKey(definition.id()), "missing icon for canonical augment: " + definition.id());
