@@ -1,5 +1,12 @@
 # TURNBOUND — Battle Outcome, Contracts and Dungeon Loop
 
+## Latest dungeon exit-clear and result UI protection — 2026-11-08
+- **Confirmed:** entering/finding the escape chamber, killing its boss, or discovering its exit does not clear the dungeon; **only using its exit object and actually leaving** marks an ordinary clear, pays completion reward and starts the one-hour dungeon replay cooldown.
+- Before choosing to leave, the player may backtrack to clear every finite authored dungeon enemy, then use the exit to receive the ordinary clear plus **all-clear bonus**. Combat, room and treasure rewards remain separate.
+- **Confirmed:** enemies must not approach/attack/re-aggro a player while reward or dungeon-clear result UI is open; battle-result UI should receive matching protection. Preserve multiplayer world activity for others and design safe transitions rather than a global world freeze.
+- Detailed canon and open implementation issues: `DUNGEON_GAMEPLAY_STRUCTURE_REFERENCE_AND_OPTIONS_DRAFT.md`. Documentation only, not implemented/tested.
+
+
 ## Approved dungeon replay: no refill before clear, one-hour cooldown, full repeat rewards — 2026-11-06
 **This is the latest user decision and supersedes older recommendations to make repeat clears pay less or treat replay as unapproved.**
 

@@ -135,3 +135,7 @@ The latest user decision supersedes any old ★5 pity-reset behavior. This file 
 ### Next co-design unit
 - Pick a **contract acquisition UX** (proposed combined noticeboard + NPC), then detail dungeon exploration decisions and checkpoint placements before setting reward amounts or summon-currency pacing.
 
+
+## Dungeon completion trigger — 2026-11-08
+- **Only a deliberate exit-object interaction followed by actual departure completes a run** and starts the one-hour replay cooldown. Before exiting, the player may backtrack to defeat every dungeon enemy and claim an **all-clear bonus at exit**; normal clearing does not require all enemy kills. Previous earned room/battle rewards remain valid.
+- Safe, non-aggro completion and reward UI; no pending implementation or economy rate is claimed. See `DUNGEON_GAMEPLAY_STRUCTURE_REFERENCE_AND_OPTIONS_DRAFT.md`.

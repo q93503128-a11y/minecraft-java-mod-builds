@@ -1,5 +1,33 @@
 # TURNBOUND — Dungeon Gameplay Structure: References and Design Options
 
+## Confirmed dungeon clear on exit interaction and safe reward screens — 2026-11-08
+
+**Latest user-approved rule; supersedes older suggestions that beating a boss, collecting the central relic, reaching the exit room, or completing a room by itself marks the dungeon as cleared.**
+
+### User-confirmed flow
+1. The player explores physically in ordinary Minecraft 3D, clearing desired combat rooms and optionally pursuing treasures. Dungeon content remains undisclosed before opening unexplored rooms; entering a combat room starts its battle, with escape/defeat/victory resolution.
+2. Every dungeon has a **usable exit interaction point** in its escape/exit room (a crystal or other appropriately themed object is an *example*, not a locked art asset).
+3. **Merely reaching/entering the exit room does NOT clear the dungeon.** The player may freely leave that room, backtrack and battle any remaining enemies, then return to the exit when ready. Do not silently start the replay cooldown because an exit room was entered or a boss/major objective was defeated.
+4. **Dungeon clear occurs only when the player deliberately interacts with the exit device and successfully exits that physical dungeon.** That server-authoritative exit-completion transition settles the run exactly once, records completion and starts the approved **one-hour replay cooldown at actual departure**. The 1-hour timer's offline/online basis is still not decided.
+5. **At exit**, if any finite authored enemy/encounter belonging to that dungeon's current run remains undefeated, grant ordinary dungeon-clear rewards. **If all its authored enemies have been defeated, including optional/hidden encounter rooms**, award the ordinary clear plus the **all-clear bonus**. Optional noncombat treasure/puzzles do not gate all-clear. All-clear is checked at final exit, not paid early merely on the last enemy's death.
+6. The user can enter the exit room early, keep exploring, and return to claim the all-clear bonus; reaching a room, defeating a boss or completing an intermediate quest does not prematurely wipe remaining room state. Clearing never silently regenerates previously defeated rooms; refill of enemies/treasure is only possible for an eligible future run following the one-hour post-exit cooldown.
+7. Earlier agreed **same-value rewards on eligible repeat clears**, plentiful/voluntarily farmable gems, and personal 3 dungeon defeats → 30 **connected-playtime** minutes ban remain unchanged. An ordinary exit/clear itself is not a party defeat.
+
+### Safe result/clear/reward presentation
+- **While a player is viewing a dungeon completion UI, loot/claim UI or combat-result/reward UI, dungeon enemies must not approach, aggro, initiate a new battle against, or damage that player.** The player must be able to read rewards/decisions without getting ambushed or losing health.
+- Prevent 'invisible' pending attacks or chained aggro from triggering immediately after the UI closes. The exit chamber and destination for completed departure should be safe/credible, and any transition to normal combat should have a fair reacquisition interval. Exact duration and camera/UI design are not finalized.
+- **Do NOT globally pause/freeze the server world or other players' combats** to achieve a single person's safe UI. Recommend a server-authoritative, player-scoped safe-presenting state/target suppression plus an authored safe exit area; nearby entity AI cannot be naively frozen for every other person in multiplayer. Revalidate when implementing.
+- The safety mechanism should start with an actual reward/result transition and end when safe control is restored. It should not enable opening arbitrary menus for indefinite general invulnerability during exploration, and reconnect/dismissal must not duplicate rewards.
+- On server side, settle completed dungeon reward **once**, after the valid exit action, with checked run ID, authored enemy completion states, and previous reward transactions. Persist all-clear and normal-clear outcomes before/atomically with cooldown and reward grants as applicable.
+- Exact exit interaction model, UI look/animation, pre-exit confirm vs single click, how mobs are suspended or aggro-suppressed, and multiplayer shared-world claim policy await implementation and playtest. Do not assume finalized visuals.
+
+### Avoid the old ambiguity
+- **Ordinary clear** = explicit dungeon exit interaction + actual departure. It is **not** "main boss dead", "main relic found" or "exit room entered".
+- **All clear** = ordinary clear at that exit **with all dungeon-authored enemies already defeated**.
+- Individual battle/room/treasure rewards earned beforehand remain legitimate and aren't clawed back on leaving/defeat, but normal-clear and all-clear payouts settle at the exit event.
+- No gameplay change has been implemented, tested, built or playtested in this design-only checkpoint.
+
+
 ## Non-commercial, generous repeatable gem farming — 2026-11-06
 
 ### User-confirmed intent
