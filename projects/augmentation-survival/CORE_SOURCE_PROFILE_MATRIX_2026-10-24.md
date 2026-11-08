@@ -71,6 +71,20 @@ Status: CANONICAL SOURCE-RESOLUTION BASELINE / RUNTIME NOT IMPLEMENTED
 
 이 값은 구조물 규모를 실제 플레이한 뒤 조정할 수 있다. 핵심은 **상자 수가 많다는 이유로 코어 기대값이 선형으로 폭증하지 않게 하는 것**이다.
 
+### Dungeons and Taverns 사당 (Shrine)
+
+실제 확인된 `nova_structures:shrine_combat_tier_1`~`5`를 별도 분류한다.
+
+| 단계 | 기본 위험도 | 기본 확률 × 보정 | 최종 코어 추첨 확률 |
+|---|---|---|---:|
+| 1 | dangerous_mid | 55% × 1.0 | 55% |
+| 2 | dangerous_mid | 55% × 1.1 | 60.5% |
+| 3 | dangerous_high | 70% × 0.95 | 66.5% |
+| 4 | dangerous_high | 70% × 1.0 | 70% |
+| 5 | dangerous_high | 70% × 1.15 | 80.5% |
+
+열쇠로 여는 금고 보상은 일반 상자와 다르므로, `StructureCoreRewardService`는 사당/금고 전용 전리품 테이블도 대상으로 확인한다. 단, 구조물 내부의 유효한 보상 지급 위치와 실제 서버 전리품 생성 훅이 모두 충족되어야 한다. 직접 사당 금고를 열어 확인하는 게임 내 검증은 아직 남아 있다.
+
 ### Illager Invasion 구조물
 
 정확한 구조물별 난이도를 아직 플레이 측정하지 않았으므로 namespace 기본값은 `dangerous_mid`, x0.8이다.
