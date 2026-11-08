@@ -1,7 +1,7 @@
 # Augmentation Survival — Augment Interaction Contract V2
 
 Date: 2026-10-29
-Status: CANONICAL INTERACTION CONTRACT — 149 runtime roster
+Status: CANONICAL INTERACTION CONTRACT — 150 runtime roster (2026-11-08 Core Attunement extension)
 
 이 문서는 `AUGMENTS.md`의 확정 증강 전체가 동시에 존재할 때 적용할 계산 순서, 출처 판정, 재귀 차단, 외부 모드 호환, 서버 권한 규칙을 하나로 합친 정본이다.
 
@@ -444,6 +444,14 @@ clientbound:
 
 큰 플레이어 상태를 매 작은 변경마다 전체 재동기화하지 않는다.
 
+### 코어 감응과 코어 드롭
+
+- 코어 감응은 적대몹 직접 처치의 기존 코어 추첨 확률을 Lv.1~5마다 +20%p가 아닌 **상대적 +20% 배율**로 높인다. 계산식: `기본 확률 × (1 + 0.20 × 레벨)` (100% 상한).
+- 해당 플레이어의 영구 저장 증강 레벨을 사망 처리 순간 서버에서 읽고 몹 코어 추첨 1회에만 적용한다.
+- 추가 코어 확률은 등급 비율을 바꾸지 않으며, Looting/풍요/전리품 챙기기/동료 독립 처치 등 기존 코어 제외 규칙은 그대로다.
+- 구조물 상자, 보물 낚시, 습격/엘더 가디언/워든 이벤트 및 보스의 확정 보상에는 적용하지 않는다.
+- 기존 149종 증강의 ID 및 카탈로그 순서를 보존하고 신규 ID를 맨 뒤에 추가한다.
+
 ## 20. 성능 / 무한루프 방지 예산
 
 - 매 tick 전체 엔티티/전체 플레이어/전체 인벤토리 전수 검색 금지.
@@ -457,7 +465,7 @@ clientbound:
 
 ## 21. 남은 전역 튜닝 파라미터
 
-현재 149종 런타임 구현 구조는 닫혔으며, 아래는 플레이테스트로 확정할 시스템 차원의 밸런스 값이다.
+현재 150종 런타임 구현 구조에 코어 감응을 추가했으며, 아래는 플레이테스트로 확정할 시스템 차원의 밸런스 값이다.
 
 1. 코어 획득처별 정확한 등급 확률
 2. 위협 단계 수치 테이블 최종 튜닝
@@ -467,7 +475,7 @@ clientbound:
 
 ## 22. 검증 상태
 
-- ROSTER RUNTIME: 149
+- ROSTER RUNTIME: 150 (신규 증강 빌드/플레이 검증 전)
 - INTERACTION CONTRACT: CURRENT RUNTIME SYNCED 2026-10-29
 - RUNTIME IMPLEMENTED: YES
 - GAME TESTS: PASS — Build Augmentation Survival Pack #431
