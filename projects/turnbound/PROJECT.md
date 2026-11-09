@@ -20,6 +20,8 @@
 - Datagen task: not configured; GameTest task: not configured.
 - Server smoke-test task: not configured for current Fabric branch.
 - Client smoke-test task: Fabric `turnbound-client-boot-smoke.yml` (boot window only).
+- Latest map compatibility checkpoint (2026-11-09): official Drehmal v2.2.2f read-only datapack/region audit **SUCCESS**, [reversible copied-world auto-root isolation #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004391) **SUCCESS** (3 automatic function entrypoints disabled and restored with original ZIP SHA match). This is **not** full story/command-block deactivation and **not** PLAYTESTED.
+- Latest Fabric build: [TURNBOUND #1077](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004087) **SUCCESS**; the historical #1072 checkpoint below remains an earlier reference.
 - Build verification: [TURNBOUND #1072](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568147041) **SUCCESS** at `ff035f9ae6282e359e530f3c28bbc37ba5df9c0a` (portable combat/session tests + Fabric Gradle/JUnit + JAR inspection).
 - Gameplay PLAYTESTED: NO; MULTIPLAYER TESTED: NO; real Drehmal datapack separated: NO; game-ready party/UI/loot: NO.
 

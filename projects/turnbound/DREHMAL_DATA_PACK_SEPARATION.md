@@ -1,5 +1,7 @@
 # Drehmal 원작 시스템 분리 — 현재 검증 범위
 
+> **최신 실측 검증(2026-11-09):** 공식 v2.2.2f 3개 ZIP SHA-256 검증 및 원본 데이터팩/명령 블록 분석 성공. 공식 월드를 **별도 복사**하여 `minecraft:load`/`minecraft:tick`의 원작 3개 자동 실행 진입점을 해시 고정 방식으로 차단한 뒤 **데이터팩 바이트까지 동일하게 복원**하는 오프라인 검증 PASS. [원본 분석 #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568764777) · [실제 복사본 가역 패치 #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004391). 다만 **개별 명령 블록·예약 함수·원작 업적/보상은 아직 활동 가능**하며, 구조물/Terminus/실게임·멀티플레이 검증 전이므로 **최종 맵 분리 완료는 아님**. 아래 이전 '원본 미확인' 문장은 시점별 과거 기록임.
+
 ## 정본
 - 대상: 공식 Drehmal: APOTHEOSIS **2.2.2f**, Minecraft 1.20.1/Fabric.
 - 공식 map release: https://github.com/Drehmal-Team/map/releases/tag/v2.2.2f
@@ -83,3 +85,15 @@ python3 tools/drehmal_pack_boundary.py stage \
 - 원본 발표의 샘플 `root_tags` SHA 및 `level.dat` SHA를 고정한 복사본 전용 도구 `tools/drehmal_auto_root_preview.py` 추가. `turnbound-stage.json`이 있고 활성화 마커가 없는 **오프라인 사본만** 받음. `inspect`는 읽기 전용, `apply`는 오직 `load.json`과 `tick.json`의 values를 비우고 다른 ZIP 내부 파일 바이트 보존 확인, `restore`는 백업 SHA에 따라 원래 ZIP로 복구. World level, NBT, command blocks, advancement, scheduler, functions 원본 내용은 건드리지 않음.
 - **이는 테스트용 AUTO-ROOT 비활성화 분리본이지 완전한 terrain-only 변환이 아님.** 해당 사본을 켜서 게임을 진행하거나 배포할 단계가 아니다.
 - 일회성 원본 복사본 실검사: [reversible root isolation acceptance](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-root-preview.yml). 공식 ZIP 다운로드→해시 검사→분리 사본→변경→복구를 러너에서 진행하고 **보고서 메타데이터만** 업로드함.
+
+## 가역 분리 실검사 증거 (공식 월드 전체 파일)
+
+- [Workflow `TURNBOUND Drehmal reversible root isolation acceptance #2`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004391): **SUCCESS**.
+- 공식 월드에서 생성한 `hi_drehmal.zip` SHA-256: `f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74`.
+- 사본의 `load.json` + `tick.json` 자동 진입점만 차단한 ZIP SHA-256: `344f82d835fb63e8d96d39e1aef62f0325977dc0cd87263bbef679d3ef03d8e0`.
+- 복구 후 ZIP SHA-256: `f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74` **원본과 일치**.
+- 확인된 함수: `core:init`(load), `core:main` + `entities:main`(tick). 다른 ZIP member의 내용 바이트는 변경하지 않음.
+- 공식 `level.dat` SHA-256: `44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1`. `turnbound-world.marker`는 생성하지 않음.
+- [Fabric Build #1077](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004087) **SUCCESS**. CI 다운로드 오류(HTTP 504) 후 재시도 로직을 수정하여 검증 완료. Fabric 코드/전투 기반은 변경하지 않았음.
+- CI 테스트가 증명하는 것은 **오프라인 분리/복구 안전성**이며, 원작 맵 문·포탈·Terminus 작동이나 게임 플레이 가능성을 증명하지 않는다. 원본 재배포 권한도 부여하지 않는다.
+- **다음 실작업:** 명령 블록에서 직접 호출하는 Terminus 이동 함수(공식 보고서 기준 63개 참조)와 각 특수 구조물 트리거를 위치·의존성별로 검토해 원작 게임 서사/보상만 차단하고 TURNBOUND 전용 이동·시설 동작으로 교체. 오래된 서바이벌·아이템 실행 루틴은 무조건 '재사용'하지 않음.
