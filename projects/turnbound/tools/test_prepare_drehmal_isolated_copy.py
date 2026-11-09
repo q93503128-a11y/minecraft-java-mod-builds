@@ -19,7 +19,7 @@ class IntegrationGuardTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"pre-existing"):
             m.no_other_stage(self.world)
     def test_all_four_stage_receipts_required_to_verify(self):
-        with self.assertRaisesRegex((ValueError, OSError),"Missing"):
+        with self.assertRaisesRegex(ValueError,"Only staged world copies are allowed"):
             m.verify(self.world)
     def test_restore_always_reverses_schedule_before_root_and_weapon(self):
         # A fake implementation captures order; no original content is edited.
@@ -28,6 +28,8 @@ class IntegrationGuardTests(unittest.TestCase):
         rs=(m.saved.restore,m.towers.restore,m.roots.restore,m.weapons.restore)
         base=m.baseline
         no=m.no_other_stage
+        old_file_sha=m.saved.file_sha
+        old_pack_sha=m.weapons.file_hash
         try:
             m.verify=lambda world: {"status":"VERIFIED"}
             m.saved.restore=lambda world:order.append("saved")
@@ -36,6 +38,8 @@ class IntegrationGuardTests(unittest.TestCase):
             m.weapons.restore=lambda world:order.append("weapon")
             m.baseline=lambda world:world
             m.no_other_stage=lambda world:None
+            m.saved.file_sha=lambda path:m.LEVEL_SHA
+            m.weapons.file_hash=lambda path:m.ORIGINAL_PACK_SHA
             m.restore(self.world)
             self.assertEqual(order,["saved","tower","root","weapon"])
         finally:
@@ -43,6 +47,8 @@ class IntegrationGuardTests(unittest.TestCase):
             m.saved.restore,m.towers.restore,m.roots.restore,m.weapons.restore=rs
             m.baseline=base
             m.no_other_stage=no
+            m.saved.file_sha=old_file_sha
+            m.weapons.file_hash=old_pack_sha
     def test_verify_cannot_claim_gameplay_success(self):
         self.assertFalse(m.inspect.__doc__=="PLAYTESTED")
         self.assertEqual(m.LEVEL_SHA,m.saved.LEVEL_SHA)
