@@ -1,0 +1,58 @@
+name: TURNBOUND Drehmal reversible root isolation acceptance
+
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-root-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated map root rewrite and restoration
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_drehmal_auto_root_preview.py'
+          df -h "${RUNNER_TEMP}"
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "${RUNNER_TEMP}/drehmal-source-shards" \
+            --world-dir "${RUNNER_TEMP}/drehmal-official-unmodified"
+          python3 tools/drehmal_pack_boundary.py stage \
+            --source "${RUNNER_TEMP}/drehmal-official-unmodified" \
+            --destination "${RUNNER_TEMP}/drehmal-temporary-copy"
+          original_pack="${RUNNER_TEMP}/drehmal-official-unmodified/datapacks/hi_drehmal.zip"
+          original_hash="$(sha256sum "$original_pack" | cut -d ' ' -f1)"
+          python3 tools/drehmal_auto_root_preview.py inspect \
+            --world-copy "${RUNNER_TEMP}/drehmal-temporary-copy" \
+            --output build/preview-inspect.json
+          python3 tools/drehmal_auto_root_preview.py apply \
+            --world-copy "${RUNNER_TEMP}/drehmal-temporary-copy" \
+            --output build/preview-applied.json
+          python3 tools/drehmal_auto_root_preview.py restore \
+            --world-copy "${RUNNER_TEMP}/drehmal-temporary-copy" \
+            --output build/preview-restored.json
+          test "$original_hash" = "$(sha256sum "$original_pack" | cut -d ' ' -f1)"
+          test "$original_hash" = "$(sha256sum "${RUNNER_TEMP}/drehmal-temporary-copy/datapacks/hi_drehmal.zip" | cut -d ' ' -f1)"
+          test ! -e "${RUNNER_TEMP}/drehmal-temporary-copy/turnbound-world.marker"
+          echo "PASS: official map original untouched; copied datapack root isolation reversible"
+      - name: Upload metadata only (no world assets)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-preview-hash-check
+          path: |
+            projects/turnbound/build/preview-inspect.json
+            projects/turnbound/build/preview-applied.json
+            projects/turnbound/build/preview-restored.json
+          if-no-files-found: warn
+          retention-days: 7

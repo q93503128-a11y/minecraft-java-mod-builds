@@ -69,3 +69,17 @@ python3 tools/drehmal_pack_boundary.py stage \
 - 일회성 GitHub workflow: \`.github/workflows/turnbound-drehmal-map-audit.yml\`. URL: https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-map-audit.yml
 - 대형 원본 다운로드 및 분석은 GitHub 네트워크/디스크 자원에 의존한다. 실패 시 원본 비활성화나 월드 통합이 완료됐다고 간주할 수 없다.
 - 이 분석이 성공하더라도 실제 원작 스토리·전투·보상 함수는 **분석만 했을 뿐 꺼지지 않는다**. 서브시스템별 대상 식별과 복사본 적용/플레이 검증이 별도로 필요하다.
+
+## 2026-11-09 실제 원본 데이터팩 감사 결과와 첫 가역 분리본
+
+공식 [read-only 분석 실행](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568764777) SUCCESS, 원본 SHA-256 3개 일치. 이 실행은 기능을 제거하거나 플레이하지 않았다.
+
+- 원본 추출 월드의 데이터팩: `bern.zip`, `emis.zip`, `hi_drehmal.zip`, `mael.zip`.
+- **18,771개** 함수, **2개** 함수 태그, **2,232개** 명령 블록/명령 블록 광차 명령이 발견됨. 지역 파일 **2,461개** 탐색 중 경고 **737개**(지역 헤더 오류 등); 따라서 NBT 스캔은 불완전.
+- 서버 시작 자동 태그: `#minecraft:load` → `core:init`; 매 틱 태그 `#minecraft:tick` → `core:main`, `entities:main`. 태그는 모두 `hi_drehmal.zip`에 있음.
+- 이 진입점을 통한 간접 연결: 약 **16,517개** 함수 (정적 문자열 호출 기준; 명령 블록/scoreboard/schedule 등 직접 호출은 제외).
+- 원본 지도 구성에서 TERMINUS 텔레포트 관련 함수 호출을 명령 블록에서 직접 찾았음. **따라서 시작·매 틱 루트 3개만 비활성화해도 원작 기능이 완전히 사라지지 않으며**, 일부 맵 기계 장치는 더 이상 작동하지 않을 수 있음.
+- 분석기의 `teleport` 범주 통계는 `execute` 명령도 포함하므로 **실제 텔레포트 함수 수를 뜻하지 않음**. 이름/정적 호출은 후보 분류용이지 자동 삭제 승인 근거가 아님.
+- 원본 발표의 샘플 `root_tags` SHA 및 `level.dat` SHA를 고정한 복사본 전용 도구 `tools/drehmal_auto_root_preview.py` 추가. `turnbound-stage.json`이 있고 활성화 마커가 없는 **오프라인 사본만** 받음. `inspect`는 읽기 전용, `apply`는 오직 `load.json`과 `tick.json`의 values를 비우고 다른 ZIP 내부 파일 바이트 보존 확인, `restore`는 백업 SHA에 따라 원래 ZIP로 복구. World level, NBT, command blocks, advancement, scheduler, functions 원본 내용은 건드리지 않음.
+- **이는 테스트용 AUTO-ROOT 비활성화 분리본이지 완전한 terrain-only 변환이 아님.** 해당 사본을 켜서 게임을 진행하거나 배포할 단계가 아니다.
+- 일회성 원본 복사본 실검사: [reversible root isolation acceptance](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-root-preview.yml). 공식 ZIP 다운로드→해시 검사→분리 사본→변경→복구를 러너에서 진행하고 **보고서 메타데이터만** 업로드함.
