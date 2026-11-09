@@ -1,0 +1,81 @@
+name: TURNBOUND saved Drehmal reward schedule isolation preview
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-saved-reward-preview.yml'
+      - 'projects/turnbound/tools/preview_drehmal_saved_reward_schedule.py'
+      - 'projects/turnbound/tools/test_preview_drehmal_saved_reward_schedule.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regression tests on synthetic level.dat NBT
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_preview_drehmal_saved_reward_schedule.py'
+      - name: Get verified earlier metadata artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/source-graph
+          gh run download 42574103795 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/source-positions
+          gh run download 42591982023 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/source-aux
+      - name: Verify official Drehmal world in temporary runner storage
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "${RUNNER_TEMP}/source-shards" --world-dir "${RUNNER_TEMP}/official-world"
+      - name: Four-part copy-only preview including exact scheduled event suppression
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/drehmal_pack_boundary.py stage --source "${RUNNER_TEMP}/official-world" --destination "${RUNNER_TEMP}/separation-copy"
+          w="${RUNNER_TEMP}/separation-copy"
+          aux=build/source-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/source-graph/build/drehmal-official-2.2.2f-summary.json
+          pos=build/source-positions/command-trigger-positions.json
+          python3 tools/preview_drehmal_weapon_rewards.py apply --world-copy "$w" --source-aux "$aux" --source-graph "$graph" --output build/weapon-applied.json
+          python3 tools/drehmal_auto_root_preview.py apply --world-copy "$w" --output build/root-applied.json
+          python3 tools/patch_drehmal_terminus_commands.py apply --world-copy "$w" --positions "$pos" --output build/tower-applied.json
+          python3 tools/preview_drehmal_saved_reward_schedule.py inspect --world-copy "$w" --output build/saved-preflight.json
+          python3 tools/preview_drehmal_saved_reward_schedule.py apply --world-copy "$w" --output build/saved-applied.json
+          python3 tools/preview_drehmal_saved_reward_schedule.py restore --world-copy "$w" --output build/saved-restored.json
+          python3 tools/patch_drehmal_terminus_commands.py restore --world-copy "$w" --output build/tower-restored.json
+          python3 tools/drehmal_auto_root_preview.py restore --world-copy "$w" --output build/root-restored.json
+          python3 tools/preview_drehmal_weapon_rewards.py restore --world-copy "$w" --output build/weapon-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('build')
+          read=lambda n:json.loads((base/(n+'.json')).read_text())
+          assert read('weapon-applied')['advancement_count']==read('weapon-restored')['advancement_count']==39
+          assert read('tower-applied')['target_count']==read('tower-restored')['target_count']==62
+          assert len(read('tower-applied')['regions'])==read('tower-restored')['region_count']==30
+          assert read('root-restored')['status']=='RESTORED'
+          assert read('saved-applied')['event_count']==read('saved-restored')['event_count']==1
+          assert read('saved-restored')['status']=='ORIGINAL_LEVEL_EXACTLY_RESTORED'
+          assert read('weapon-restored')['pack_sha256']=='f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74'
+          assert read('saved-restored')['level_sha256']=='44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1'
+          print("PASS: four original gameplay entrypoint groups isolated and byte-exact restored on staged copy")
+          PY
+      - name: Upload derived hashes and counts only, no source world files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-four-way-reversible-separation
+          path: |
+            projects/turnbound/build/weapon-*.json
+            projects/turnbound/build/root-*.json
+            projects/turnbound/build/tower-*.json
+            projects/turnbound/build/saved-*.json
+          if-no-files-found: warn
+          retention-days: 14
