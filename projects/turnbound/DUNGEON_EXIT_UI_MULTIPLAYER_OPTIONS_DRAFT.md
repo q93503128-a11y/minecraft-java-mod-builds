@@ -1,5 +1,39 @@
 # TURNBOUND — Dungeon Exit Interaction and Multiplayer Ownership Options
 
+## Approved co-op disconnect and third-defeat spectator continuation — 2026-11-09
+
+**Latest user-confirmed behavior. This supersedes older suggestions that an offline or third-defeat teammate must remain physically present at the escape chamber, or that a third-defeat player must be ejected from shared rewards.**
+
+### Participant disconnect
+- When a player **leaves the game/disconnects** during a shared dungeon run, the dungeon continues with the **currently connected participants**; if one player remains, that participant's run is treated as **solo** for dungeon interaction and exit eligibility. The remaining player can finish the dungeon by themselves without waiting for the disconnected participant at the exit chamber.
+- Remaining progress (already defeated shared dungeon enemies, claimed shared room progression, current exploration and previously earned rewards) **persists**; disconnect is not a run wipe, dungeon reset, forced reward reduction or instant clear. A solo survivor may continue fighting and later use the exit object to finish.
+- In a group with more than two connected participants, apply the same principle to remaining active players: the departing/offline member must not strand the others at exit. Do not introduce a mandatory party-vote UI as a prerequisite to making the solo conversion work.
+- The user has **not defined** what rewards an offline participant later receives, whether they automatically reclaim a place in the same active run upon reconnect, or what happens if everyone disconnects. Do not silently grant absent players all future rewards or unconditionally invalidate their previously earned rewards. Define explicit reconnect/run ownership and persisted credit rules later.
+
+### Third party-battle defeat while teammates remain
+- The player who suffers **their third dungeon defeat** still receives the already-approved **personal 30 cumulative-online-minute entry ban** for **this physical dungeon** and the normal **loss-free safe checkpoint handling** for their Minecraft avatar. This is not permanent and doesn't prevent the other team member(s) from continuing their run.
+- **Instead of forcing the survivor(s) to finish alone while the defeated member disappears from the team, that third-defeat player moves into a non-interactive SPECTATOR role for the surviving teammate(s)**. Their camera can watch ongoing cooperative fights/exploration, but their avatar cannot physically reenter the forbidden dungeon, cross boundaries, attack, mine/loot in that run or initiate encounters while spectating.
+- The third-defeat spectator **stays associated with the current cooperative dungeon run** and **can receive the normal shared dungeon clear and, if achieved, full-clear payout when the surviving player(s) complete the exit interaction**. Do not withhold their clear reward for not participating after defeat or require them to physically attend the exit chamber.
+- Previously approved **shared same-value encounter/room reward entitlement across eligible teammates** is not silently rewritten; implementation must distinguish already-earned rewards from new event credit and resolve exactly-once settlement. User specifically reconfirmed **clear reward eligibility** for the spectator.
+- **Joint-exit gathering requirement applies to connected ACTIVE EXPLORERS only.** Spectators are attached to that group's outcome and do **not** have to physically walk into the exit room. Only the surviving active explorers need to meet in the exit room and deliberately activate the authored exit; a spectator cannot initiate or force exit.
+- If a remaining active explorer disconnects while a spectator is attached, the user has not yet resolved which member may continue the encounter/run; do not treat a spectator as an active solo explorer who can clear the dungeon. Handle as an explicit save/suspend/reconnect case, not an automatic reward grant.
+- 30-minute online dungeon access timer must continue to obey established policy during connected spectator activity; user did not authorize a new spectator-only timer exception.
+- **No access-restriction bypass:** spectator camera may view dungeon activity even while the player's own avatar is outside, but cannot be turned into a free-moving physical character that interacts with dungeon objects or rewards. Restoring controls requires the appropriate normal world/entry rules.
+
+### Combined example (two players A and B)
+- A + B split up, defeat separate enemy rooms, both eligible for equal team rewards.
+- If B logs out, **A becomes a solo active dungeon explorer** and can clear through the exit object without B present.
+- If B instead gets a third party defeat, **B spectates A** (no physical dungeon admission for B); A keeps exploring and when A uses the exit at the proper chamber, **both A and spectator B receive the same normal dungeon clear / full-clear reward**, as applicable.
+- The remaining dungeon enemies and room progress do not respawn prematurely, and the one-hour post-exit repeat cooldown starts on actual completion; its online-only versus wall-clock basis remains undecided.
+
+### Still to design: edge conditions
+- Exactly how an online spectator watches split-up surviving teammates, switches camera target, dismisses spectating, returns to ordinary safe-world control, and how online access-ban expiry interacts with an ongoing run.
+- A simultaneous total party wipe, a player who disconnects *after* three defeats while spectating, reconnecting during/after a solo conversion, repeated reconnect spam and missing-participant rewards; no user-approved detailed outcomes yet.
+- Co-op combat control if two allies enter the same combat room, mid-combat disconnect handling, team-owned dungeon reset on the one-hour timer, reward log persistence across crash/restart.
+- Ensure spectators are immune to environmental danger while observing and that the avatar remains securely at a safe world checkpoint; exact UI/presentation and multiplayer network validations require a real playtest.
+- This is a **design contract only**: no implementation, JAR, build, or actual two-client multiplayer test has been run here.
+
+
 ## Confirmed cooperative dungeon run and joint exit — 2026-11-09
 
 **CURRENT USER-APPROVED RULE; this supersedes earlier unapproved alternatives for independent room progress, solo exit during a shared run, or unequal rewards based on who landed a kill.**
@@ -78,4 +112,4 @@ Status: **Cooperative dungeon reward/exit rules confirmed on 2026-11-09; remaini
 - **No Java resource changes, builds, functional multiplayer or playtests were performed.**
 
 ## Updated next decision
-Cooperative shared physical progress, equal team combat/clear rewards and joint physical exit are now approved; next design pass should resolve party roster, member absence/third defeat at exit, and reward eligibility without breaking parallel-room fights.
+Cooperative shared physical progress, equal team combat/clear rewards and joint physical exit are approved; 2026-11-09 rules now resolve disconnect-to-remaining-solo and third-defeat spectating with preserved clear reward. Next design pass should resolve same-room collaborative combat, reconnect behavior, spectator controls and simultaneous wipe.

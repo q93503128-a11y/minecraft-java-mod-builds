@@ -543,3 +543,11 @@ Status: documentation only. No economy code, cooldown clock implementation, dung
 - Multiplay same-room skill-control and chest/mined loot ownership are separate OPEN implementation/design decisions, not settled by equal currency/encounter rewards.
 - Detailed authority: `DUNGEON_EXIT_UI_MULTIPLAYER_OPTIONS_DRAFT.md`. Documentation only; no multiplayer gameplay tested or built.
 
+
+## Approved co-op disconnect and third-defeat spectator continuation — 2026-11-09
+- **Game disconnect:** offline teammate no longer blocks team exit; remaining connected explorers continue the same physical dungeon run, and a lone survivor proceeds as solo. No room reset and no forced early clear. Offline member's later rewards/reconnect policy remains undecided.
+- **Third personal defeat:** retain the per-player 30-online-minute admission ban plus loss-free checkpoint, but the defeated member becomes a **non-interactive spectator of surviving teammates** (remote camera, no physical dungeon access). The spectator remains linked to the team run and **receives the same clear/full-clear reward if surviving explorers exit successfully**.
+- The exit-room physical gathering rule applies only to **connected active explorers**, not spectators or disconnected members. Spectators cannot trigger the exit or teleport into the blocked dungeon.
+- Equal co-op rewards and shared encounter/room progress remain authoritative; protect per-player idempotent settlement. Spectator post-defeat event credit, reconnection, total wipe, split-target spectator camera and same-room combat control still require follow-up design.
+- Canon: `DUNGEON_EXIT_UI_MULTIPLAYER_OPTIONS_DRAFT.md`. Design only, no game implementation or multiplayer playtest.
+
