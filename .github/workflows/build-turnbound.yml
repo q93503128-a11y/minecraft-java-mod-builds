@@ -5,7 +5,11 @@ on:
     branches:
       - turnbound-content-rebuild
     paths:
-      - 'projects/turnbound/**'
+      - 'projects/turnbound/src/fabric/**'
+      - 'projects/turnbound/src/fabricTest/**'
+      - 'projects/turnbound/build.gradle'
+      - 'projects/turnbound/settings.gradle'
+      - 'projects/turnbound/gradle.properties'
       - '.github/workflows/build-turnbound.yml'
   workflow_dispatch:
 

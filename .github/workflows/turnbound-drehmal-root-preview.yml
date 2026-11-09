@@ -6,6 +6,9 @@ on:
       - turnbound-content-rebuild
     paths:
       - '.github/workflows/turnbound-drehmal-root-preview.yml'
+      - 'projects/turnbound/tools/download_audit_official_drehmal.py'
+      - 'projects/turnbound/tools/extract_official_drehmal_preview.py'
+      - 'projects/turnbound/tools/drehmal_auto_root_preview.py'
   workflow_dispatch:
 
 permissions:

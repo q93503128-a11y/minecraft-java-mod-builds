@@ -48,5 +48,22 @@ class OfficialAuditSafeExtractionTest(unittest.TestCase):
             mod.safe_extract(zip_path, dest)
         self.assertEqual((dest / "level.dat").read_bytes(), b"original")
 
+    def test_download_retries_gateway_timeout_and_verifies_full_size(self):
+        import io
+        from unittest.mock import patch
+        from urllib.error import HTTPError
+
+        class Response(io.BytesIO):
+            headers = {}
+            def getcode(self): return 200
+
+        dest = self.root / "download.zip"
+        timeout = HTTPError("https://github.com", 504, "Gateway Timeout", None, None)
+        with patch.object(mod.urllib.request, "urlopen", side_effect=[timeout, Response(b"abcd")]) as opener:
+            with patch.object(mod.time, "sleep"):
+                mod.download("https://github.com/example/file.zip", dest, 4, retries=2)
+        self.assertEqual(dest.read_bytes(), b"abcd")
+        self.assertEqual(opener.call_count, 2)
+
 if __name__ == "__main__":
     unittest.main()

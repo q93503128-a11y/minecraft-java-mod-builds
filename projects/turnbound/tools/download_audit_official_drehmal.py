@@ -37,7 +37,7 @@ def sha256(path: Path):
             h.update(data)
     return h.hexdigest()
 
-def download(url: str, dest: Path, expected_size: int, retries=3):
+def download(url: str, dest: Path, expected_size: int, retries=6):
     """Resume only when server explicitly honors Range. Never use an unverified partial."""
     if dest.exists():
         if dest.stat().st_size == expected_size:
@@ -54,14 +54,26 @@ def download(url: str, dest: Path, expected_size: int, retries=3):
         headers = {"User-Agent": "TURNBOUND-map-audit/1.0", "Accept-Encoding": "identity"}
         if offset:
             headers["Range"] = f"bytes={offset}-"
-        request = urllib.request.Request(url, headers=headers)
+        # The official GitHub asset CDN occasionally returns HTTP 504 for large
+        # shard downloads. Alternate verified official URLs and back off instead
+        # of failing the whole isolated-world integration after three quick tries.
+        direct_url = url if attempt == 0 else (
+            url + ("?download=1" if attempt % 2 else "?turnbound-retry=1")
+        )
+        if attempt:
+            headers["Cache-Control"] = "no-cache"
+        request = urllib.request.Request(direct_url, headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=90) as response:
+            with urllib.request.urlopen(request, timeout=120) as response:
                 status = response.getcode()
                 if offset and status != 206:
-                    # Remote did not support resume; start fresh instead of appending.
+                    # Remote did not honor Range: explicitly discard partial bytes.
                     staging.unlink()
                     offset = 0
+                elif offset:
+                    content_range = response.headers.get("Content-Range", "")
+                    if not content_range.startswith(f"bytes {offset}-"):
+                        raise ValueError("Resume byte range does not match local partial")
                 with staging.open("ab" if offset else "wb") as handle:
                     while data := response.read(CHUNK):
                         handle.write(data)
@@ -69,9 +81,9 @@ def download(url: str, dest: Path, expected_size: int, retries=3):
                 staging.rename(dest)
                 return
         except (OSError, urllib.error.URLError) as error:
-            print(f"Download attempt {attempt + 1}: {error}", flush=True)
+            print(f"Official shard attempt {attempt + 1}/{retries}: {error}", flush=True)
         if attempt + 1 < retries:
-            time.sleep(5 * (attempt + 1))
+            time.sleep(min(10 * (attempt + 1), 40))
     raise ValueError(f"Unable to obtain complete official file: {dest.name}")
 
 def safe_extract(archive: Path, root: Path):
