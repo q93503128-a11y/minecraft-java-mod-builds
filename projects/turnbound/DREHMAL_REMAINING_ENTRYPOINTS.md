@@ -11,3 +11,5 @@
 목표는 맵 지형·건물·문·포탈·특수 장치를 보존하면서 원작 스토리·전투·보상만 분리하는 것이다. 원작 Drehmal 코드의 사용 가치가 발견되면 후보로 보고하며, 별도 승인 없이 TURNBOUND에 이식/활용하지 않는다.
 
 후속 작업: 비함수 명령 블록, 예약 함수 및 업적/JSON 트리거를 읽기 전용으로 분석한 뒤 시설 보존 위험을 검토한다. 이번 작업에서 변경하는 것은 자체 분석 코드/보고 문서뿐이다.
+
+[Verified workflow #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42591270837) **SUCCESS**. Source reports were pinned by SHA-256, and output retained source ID/coordinate metadata only. No map bytes or original script code were altered or copied. See also [auxiliary execution audit](DREHMAL_AUXILIARY_EXECUTION_AUDIT.md) for remaining direct commands/JSON callback inspection.

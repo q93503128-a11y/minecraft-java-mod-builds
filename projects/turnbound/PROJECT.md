@@ -4,6 +4,8 @@
 
 > **현행 기술 정본 (2026-11-09, 이전 기록보다 우선)**: 아래 과거 26.2 / NeoForge / Java 25 안내는 역사적 기록이며 현재 개발/설치 기준이 아니다. 현행 게임은 **Minecraft 1.20.1, Fabric 0.16.14, Fabric API 0.92.6+1.20.1, Java 17, Fabric Loom 1.9.2, Gradle 8.12**로 빌드한다. Drehmal: APOTHEOSIS v2.2.2f의 별도 복사 월드를 이용하는 턴제 RPG다. 모든 생존·채굴·건축은 비활성화하는 방향이며, 정식 월드/전투 연동은 아직 미완이다. [전투 세션 브리지](BATTLE_SESSION_FABRIC_BRIDGE.md) · [Drehmal 분리 현황](DREHMAL_DATA_PACK_SEPARATION.md).
 
+> **Drehmal 원작 코드 활용의 승인 경계 (2026-11-09, 사용자 명시):** 원작 맵 지형/건축물을 보존하며 원작 시스템을 분리하는 것은 현재 작업 범위다. 그러나 `Drehmal`의 원본 함수·명령·JSON 동작·Terminus/기타 시스템을 TURNBOUND 게임 로직으로 **복사, 재사용, 이식, 각색하거나 기존 기획을 바꾸는 일은 별도 사용자 승인 전 금지**한다. 쓸 만한 기술을 발견하면 파일 ID, 실제 역할, 장점/의존성/라이선스와 기존 TURNBOUND 시스템 중복 여부를 **재사용 후보(미승인)**로만 보고한다. TURNBOUND 역참은 원래 승인된 기획이며 Terminus로 대체하지 않는다. 개별 원작 코드를 채택하지 않고, 검증된 복사본에서 원작 게임 기능을 끄는 분리 작업은 위 범위 안에서 계속할 수 있다. **맵 전체 분리는 아직 미완료**다.
+
 ## Current build contract (supersedes historical implementation checkpoints below)
 - Slug: `projects/turnbound/`; Mod ID / namespace: `turnbound`.
 - Mod version: `0.1.0-alpha.17` (현재 마이그레이션 빌드의 식별자이며 플레이 가능 릴리스가 아님).
@@ -20,6 +22,7 @@
 - Datagen task: not configured; GameTest task: not configured.
 - Server smoke-test task: not configured for current Fabric branch.
 - Client smoke-test task: Fabric `turnbound-client-boot-smoke.yml` (boot window only).
+- Latest residual original gameplay analysis (2026-11-09): [metadata-only callgraph #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42591270837) **PASS**. Following verified offline patch targets, 17 direct function-calling blocks / 21 call references still connect to **225 possible static functions**; another 2,153 scanned blocks need direct command categorization. No original code adopted, no full separation. [Residual review](DREHMAL_REMAINING_ENTRYPOINTS.md).
 - Newest Terminus copied-world checkpoint: [62 original tower commands isolated and exactly restored on official world copy](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42582286295), **PASS** (30 overworld region files). **NO in-world travel test**, 17 other command-trigger references retained, no full map conversion. [Technical guide](DREHMAL_DATA_PACK_SEPARATION.md).
 - Latest Terminus dependency review: [graph and replacement boundary](TERMINUS_GRAPH_REVIEW.md), [verified GitHub run](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42573686150). 82 referenced functions reviewed; physical command-block positions and full map disconnection still NOT VERIFIED.
 - Latest map compatibility checkpoint (2026-11-09): official Drehmal v2.2.2f read-only datapack/region audit **SUCCESS**, [reversible copied-world auto-root isolation #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004391) **SUCCESS** (3 automatic function entrypoints disabled and restored with original ZIP SHA match). This is **not** full story/command-block deactivation and **not** PLAYTESTED.
