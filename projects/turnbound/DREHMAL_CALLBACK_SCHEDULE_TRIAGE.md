@@ -73,3 +73,9 @@
 - Saved scheduled functions were not read from level.dat or command storage.
 - Original command-block geometry and mechanisms must not be removed from classification alone.
 - No Drehmal code was copied, adapted or reused in TURNBOUND.
+## 2026-11-09 실제 검증 상태
+
+- [Terminus · 업적 보상 · 예약 함수 분류 검증 #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42605435141): **SUCCESS**. 자체 회귀 테스트 6개 + 공식 기존 감사 자료 SHA-256 검사 + 업적 콜백 181건, 예약 함수 672건, 예약 순환 컴포넌트 29개 재계산 통과. 새 원본 월드 다운로드/수정 없음.
+- 원작 예약 함수 정적 순환 컴포넌트는 크기 **9인 장면 퍼즐 회로** `core:scene/bpalace/puzzle*` 1개, 크기 **2인** `core:c_commands/error/loop*` 1개, 크기 **1인** 자기 예약 27개로 구분됨. 스케줄러에 등록된 실제 진행 중 작업이 아니라 **원작 함수 내용의 정적 예약 관계**다. 퍼즐은 삭제 승인 없음.
+- 공식 그래프에 정의되지 않은 원작 업적 보상 함수: `players:null`, `players:items/frenzy/kill`. 오타, 제거된 이전 기능 또는 동적 의존성 여부를 단정하지 않고 재확인 목록에 남김.
+- 원작 빠른 이동/역참, 보상, 퍼즐, 엔티티 AI 구현을 TURNBOUND에 이식하지 않음. 새로운 원작 기능 재사용 승인은 없음.

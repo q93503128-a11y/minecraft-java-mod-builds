@@ -8,6 +8,8 @@
 
 > **통합 맵 분리 체크포인트 (2026-11-09):** [공식 복사본에서 무기 업적 보상 39개 + 자동 실행 진입점 3개 + Terminus 명령 블록 62개 동시 차단·완전 복구 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42603106525). 원작 [비함수 명령·예약·업적 감사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42591982023). **최종 맵 분리 미완료, 실플레이 미실시, 원작 코드 재사용 0건.** [상세 기록](DREHMAL_DATA_PACK_SEPARATION.md).
 
+> **원작 업적·예약 함수 분류 최신 검증 (2026-11-09):** [#1 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42605435141). 무기 외 업적 콜백 181건, 예약 함수를 포함한 함수 672개 및 정적 순환 29개 분류. 상당수가 기존 맵 구조물과 연관될 수 있어 **일괄 비활성화 금지**. 원작 코드 재사용 0건, 맵/전투 코드 변경 0건. [자세한 검토표](DREHMAL_CALLBACK_SCHEDULE_TRIAGE.md).
+
 ## Current build contract (supersedes historical implementation checkpoints below)
 - Slug: `projects/turnbound/`; Mod ID / namespace: `turnbound`.
 - Mod version: `0.1.0-alpha.17` (현재 마이그레이션 빌드의 식별자이며 플레이 가능 릴리스가 아님).
