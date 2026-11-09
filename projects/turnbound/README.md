@@ -2,7 +2,7 @@
 
 **New approved game:** Drehmal v2.2.2f map-backed independent party turn RPG. Survival, mining, block placing and player health/hunger are excluded from gameplay. Existing generic TURNBOUND battle contract is preserved.
 
-**Latest work status:** Fabric runtime/scoped exploration restrictions and pure combat-code extraction are **in progress**. This is not a playable game or an install-ready Drehmal package. Read [migration and world audit](FABRIC_MIGRATION_DREHMAL_SCOPE.md) and [current design index](GAME_DESIGN_CANON_INDEX.md).
+**Latest work status:** Fabric 1.20.1 base, isolated exploration policy, common combat and a server-authoritative multi-owner session/network adapter **compiled and tested** (Build #1072). This is not a playable game or an install-ready Drehmal package. Read [current technical contract](PROJECT.md), [Fabric battle session bridge](BATTLE_SESSION_FABRIC_BRIDGE.md), [Drehmal analysis](DREHMAL_DATA_PACK_SEPARATION.md), and [game design canon](GAME_DESIGN_CANON_INDEX.md).
 
 The archived NeoForge sources are not built into the Fabric JAR; old world/save files are never converted automatically. Do not activate the marker on a real Drehmal save.
 

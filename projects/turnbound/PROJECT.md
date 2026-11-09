@@ -2,6 +2,32 @@
 
 > **Current game-design decision index**: [GAME_DESIGN_CANON_INDEX.md](GAME_DESIGN_CANON_INDEX.md) is the concise 2026-11-09 status map for user-approved gameplay rules, pending decisions and superseded older proposals. This file remains the technical project contract; earlier appended historical sections may conflict with later approved decisions. Do not treat a stale 'TBD' in an older section as active canon.
 
+> **현행 기술 정본 (2026-11-09, 이전 기록보다 우선)**: 아래 과거 26.2 / NeoForge / Java 25 안내는 역사적 기록이며 현재 개발/설치 기준이 아니다. 현행 게임은 **Minecraft 1.20.1, Fabric 0.16.14, Fabric API 0.92.6+1.20.1, Java 17, Fabric Loom 1.9.2, Gradle 8.12**로 빌드한다. Drehmal: APOTHEOSIS v2.2.2f의 별도 복사 월드를 이용하는 턴제 RPG다. 모든 생존·채굴·건축은 비활성화하는 방향이며, 정식 월드/전투 연동은 아직 미완이다. [전투 세션 브리지](BATTLE_SESSION_FABRIC_BRIDGE.md) · [Drehmal 분리 현황](DREHMAL_DATA_PACK_SEPARATION.md).
+
+## Current build contract (supersedes historical implementation checkpoints below)
+- Slug: `projects/turnbound/`; Mod ID / namespace: `turnbound`.
+- Mod version: `0.1.0-alpha.17` (현재 마이그레이션 빌드의 식별자이며 플레이 가능 릴리스가 아님).
+- Minecraft: `1.20.1`.
+- Java: `17`.
+- Loader: `Fabric` / `0.16.14`.
+- Gradle: `8.12` (GitHub Actions CI).
+- Build plugin: Fabric Loom `1.9.2`.
+- Final JAR: `build/libs/turnbound-0.1.0-alpha.17.jar`.
+- Existing-world compatibility: old TURNBOUND/NeoForge saves not migrated, direct world alteration prohibited. Only a **separate Drehmal world copy** may be marked for TURNBOUND after datapack analysis.
+- Required dependencies: Fabric API `0.92.6+1.20.1`; loader and Minecraft above.
+- Optional external mods: original Drehmal client graphics/visual dependencies may be required after screen review; GeckoLib/renderer not yet part of the active Fabric runtime.
+- Forbidden bundled dependencies: third-party Drehmal map/resource pack bytes without distribution consent; historical NeoForge/old gameplay content.
+- Datagen task: not configured; GameTest task: not configured.
+- Server smoke-test task: not configured for current Fabric branch.
+- Client smoke-test task: Fabric `turnbound-client-boot-smoke.yml` (boot window only).
+- Build verification: [TURNBOUND #1072](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568147041) **SUCCESS** at `ff035f9ae6282e359e530f3c28bbc37ba5df9c0a` (portable combat/session tests + Fabric Gradle/JUnit + JAR inspection).
+- Gameplay PLAYTESTED: NO; MULTIPLAYER TESTED: NO; real Drehmal datapack separated: NO; game-ready party/UI/loot: NO.
+
+---
+
+## Historical notes (NeoForge 26.2 content-rebuild period; superseded where they conflict)
+
+
 ## Identity
 - Project: `projects/turnbound/` (NOT `projects/turnbound-re/`).
 - Mod ID / namespace: `turnbound`; Java package `io.github.q93503128.turnbound`.

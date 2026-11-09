@@ -22,3 +22,8 @@ The runtime registry is server-lifetime **in-memory only** and bounded to 128 co
 Run the existing scoped GitHub `Build TURNBOUND` CI workflow once for this coherent network checkpoint. It executes portable authority tests plus Fabric compile/JUnit/JAR inspection. The prior graphical client boot smoke at commit `4bbade5e` does not prove the new battle network is visually verified.
 
 Next: connect the actual field encounter catalog and a fully owned party state, add server AI turn execution, then test an isolated copy of the original Drehmal map. Do not enable the old Drehmal story or ship third-party map bytes.
+
+## Verification (2026-11-09)
+- Commit `ff035f9ae6282e359e530f3c28bbc37ba5df9c0a` → [Build TURNBOUND #1072](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568147041): `core-logic` PASS and `fabric-build` PASS, JAR produced.
+- Old `PROJECT.md` and README NeoForge text is historical and no longer active.
+- Neither an end-to-end battle launched by an encounter nor a multiplayer client session has been played. No enemy AI or player-facing battle screen is present yet.
