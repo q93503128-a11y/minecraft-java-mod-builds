@@ -101,3 +101,22 @@ python3 tools/drehmal_pack_boundary.py stage \
 ## Terminus command graph checkpoint
 
 [Reviewed and verified metadata](TERMINUS_GRAPH_REVIEW.md) reports 82 referenced functions / 83 matched invocations. Original Terminus arrivals/departures cannot be directly reused because their call graph intersects vanilla gamemode, unlock and gift functions. A metadata-only physical trigger scan is now separately defined; original world bytes are excluded from its artifact. No new live command-block deactivation is claimed.
+
+## Terminus 62개 원작 워프 장치 분리 실검사 (2026-11-09)
+
+- **실제 검증:** [TURNBOUND verified Terminus command isolation preview #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42582286295) **SUCCESS**, [해시 증거 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42582286295/artifacts/13658410066).
+- 공식 원본 v2.2.2f ZIP 3개 SHA 검증 후 러너의 임시 경로에 전개 → **별도 월드 사본 생성** → 원본 위치/명령어 SHA-256으로 모든 대상 확인 → 해당 명령 블록의 `Command` 문자열만 비움 → **정확한 지역 파일 복구**. 원본 지역 파일은 수정하지 않음.
+- 79개 함수 호출 명령 블록 중 **Terminus 62개**만 대상으로, **30개** Overworld `.mca` 지역 파일을 수정·복원. 구성은 탑 진입 **29개**, 출발 **33개**. 다른 직접 함수 호출 장치 **17개**는 명령을 변경하지 않음.
+- 수정 대상 이외의 NBT 문자열/블록은 변경하지 않음(청크의 구조를 검사하고, 비대상 청크 압축 데이터와 NBT 바이트를 보존); 필요한 Anvil 섹터 위치 정보는 새 파일에 재계산됨.
+- 적용 전후 각 지역 파일 SHA를 기록, 백업 SHA 검사 및 사본 복원 결과 **30/30개 지역 SHA 일치**, 상태 `EXACT_RESTORATION`, 대상 수 62. 합성 NBT 유닛 테스트 **4개 PASS**.
+- `tools/patch_drehmal_terminus_commands.py`는 원본 `level.dat` 및 보고서 SHA-256이 정확히 일치하는 **비활성화된 오프라인 사본**에서만 작동. `inspect`/ `apply`/ `restore` 경로를 제공함. 활성화된 TURNBOUND 월드에 직접 적용 불가.
+- 이는 **원작 Terminus 명령 블록의 선택적 차단+복구 안전성 검증**이지 새 빠른 이동 기능 완성, 맵 정상 플레이, 모든 원작 스크립트 비활성화, 멀티플레이 검증이 아니다.
+- 남아 있는 원작 실행: 다른 명령 블록 17개, 자동 루트 패치와는 별도인 예약 함수·업적·서사 트리거·장치, 기존 737개 지역 스캔 경고. Terminus 건물·버튼 배경의 실제 상호작용 검증 전까지 정식 모드팩으로 전환하지 않는다.
+
+### 후속 구현 경계
+
+1. 원작 워프 함수의 **실제 안전한 도착 위치**와 이동 전후 조건을 월드·원본 함수에서 추출한다. 명령 블록의 좌표를 도착 위치로 오인하지 않는다.
+2. TURNBOUND 서버의 검증 가능한 출발/도착/발견·해금 데이터로 **원작 생존/보상/스토리/scoreboard 호출 없이** 이동 구조를 작성한다. 비용·해금 조건은 승인된 게임 기획으로 결정하고 임의로 추가하지 않는다.
+3. 자동 시작·tick 차단과 62개 명령 블록 차단을 함께 통합하는 전용 설치/복사본 절차를 작성한다. 남은 원작 장치의 재진입 경로를 조사한다.
+4. 임시 월드에서 실제 게임 입장, 구조물/문/탑 기구, 서버 권한, 멀티클라이언트를 검증한 뒤 플레이 가능한 빌드로 판정한다.
+
