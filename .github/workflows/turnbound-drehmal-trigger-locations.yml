@@ -1,0 +1,45 @@
+name: TURNBOUND Drehmal physical trigger inventory
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-trigger-locations.yml'
+      - 'projects/turnbound/tools/inventory_drehmal_trigger_positions.py'
+      - 'projects/turnbound/tools/test_inventory_drehmal_trigger_positions.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test redaction and source coordinates
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_inventory_drehmal_trigger_positions.py'
+      - name: Download verified official world to ephemeral storage
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "${RUNNER_TEMP}/turnbound-shards" \
+            --world-dir "${RUNNER_TEMP}/turnbound-official"
+      - name: Extract command block coordinates and IDs only
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/inventory_drehmal_trigger_positions.py \
+            --world "${RUNNER_TEMP}/turnbound-official" \
+            --output build/command-trigger-positions.json
+      - name: Upload sanitized metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-trigger-positions
+          path: projects/turnbound/build/command-trigger-positions.json
+          if-no-files-found: warn
+          retention-days: 14
