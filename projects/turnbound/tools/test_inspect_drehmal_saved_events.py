@@ -58,7 +58,7 @@ class SavedStateTests(unittest.TestCase):
         x=m.saved_schedule(obj)
         self.assertEqual(x["entries"][0]["type_review"],"UNRECOGNIZED_REVIEW")
     def test_unexpected_event_rejected(self):
-        with self.assertRaisesRegex(ValueError,"Unexpected"):
+        with self.assertRaisesRegex(ValueError,"Missing scheduled callback compound"):
             m.saved_schedule({"Data":{"ScheduledEvents":[{"Name":"x"}]}})
     def test_world_hash_check_and_zero_writes(self):
         actual=m.file_sha(self.root/"level.dat")
