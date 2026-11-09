@@ -38,3 +38,7 @@ Next: connect the actual field encounter catalog and a fully owned party state, 
 ## Fault handling (same checkpoint)
 - Fabric server ticks now process a stable registry snapshot. If data-defined enemy basics cannot be resolved (invalid targets, unsupported effect, arithmetic), log the actual exception once and **close only that combat session**. Other Minecraft/world sessions continue, and no rewards are issued by this layer. It never performs a fake/no-op attack.
 - This fault behavior is part of the low-level foundation, not a substitute for authored encounter validation and in-game error feedback.
+
+## Enemy-turn verification
+- [Build TURNBOUND #1075](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42569936565) PASS at `e987fc34fac65bf21346b91d6f91b74cda4462e2`: portable Java battle simulation, Python map scanner fixtures, JUnit, Fabric 1.20.1 Gradle compile/build and JAR structure inspection.
+- No actual Minecraft field encounter or player-facing battle UI has been PLAYTESTED. No two-client multiplayer session tested. This check does not supersede the separate original Drehmal world analysis.
