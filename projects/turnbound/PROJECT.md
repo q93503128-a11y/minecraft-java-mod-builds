@@ -551,3 +551,8 @@ Status: documentation only. No economy code, cooldown clock implementation, dung
 - Equal co-op rewards and shared encounter/room progress remain authoritative; protect per-player idempotent settlement. Spectator post-defeat event credit, reconnection, total wipe, split-target spectator camera and same-room combat control still require follow-up design.
 - Canon: `DUNGEON_EXIT_UI_MULTIPLAYER_OPTIONS_DRAFT.md`. Design only, no game implementation or multiplayer playtest.
 
+
+## Dungeon co-op combat inherits the overworld rules — 2026-11-09
+- **Confirmed:** when allies enter the same dungeon battle room, use ordinary overworld/field co-op turn-based battle controls and combat outcomes. No separate dungeon-specific multiplayer battle mode, party size scheme, turn rules or new character-control decision.
+- Dungeon layer contributes only the room entrance/exit gate, camera-safe combat space, generated enemy placement, shared dungeon progress and loot, spectator/admission handling and group completion.
+- Generic field co-op actor/party ownership details are not assumed implemented or decided. Resolve them in the shared combat architecture once, not independently per dungeon. Source: `DUNGEON_EXIT_UI_MULTIPLAYER_OPTIONS_DRAFT.md`. Docs only; no client or multiplayer testing.

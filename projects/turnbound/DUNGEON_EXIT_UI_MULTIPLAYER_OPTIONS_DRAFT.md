@@ -1,5 +1,20 @@
 # TURNBOUND — Dungeon Exit Interaction and Multiplayer Ownership Options
 
+## Dungeon co-op combat inherits the overworld rules — 2026-11-09
+
+### User-confirmed scope
+- **No dungeon-exclusive co-op battle control mechanic.** If two or more cooperating players meet in the same dungeon combat room, use the SAME standard TURNBOUND field/overworld multiplayer turn-battle rules for party control, shared battle participation, combat sequencing, ability activation, targeting, outcomes and disconnected combat participants. Dungeon enemies use the normal enemy/battle architecture; their identity, difficulty and authored dungeon-room placement may differ.
+- Dungeon functionality is a *container/context* around this common battle system: trigger an encounter on entry to a combat room, preserve physical Minecraft 3D exploration elsewhere, hold a participant in the active room until victory/successful escape/party defeat, ensure sufficient in-world party/camera space, record room and dungeon enemy completion, grant all eligible teammates equal combat/room rewards, and feed defeat/clear to the existing personal loss, spectator and co-op dungeon exit systems.
+- Cooperative players may independently fight in different dungeon rooms at the same time, as already agreed. Two teammates entering the same combat room should be handled exactly as the equivalent **overworld joint encounter**, not as a second co-op combat mode.
+- **Do not infer that overworld multiplayer combat mechanics are already implemented or fully approved simply from this reuse decision.** Any globally unresolved field co-op details (e.g. actor ownership, whether each player commands four actors or controls a shared party) remain to be designed ONCE at the common combat-system level and then automatically apply in both locations. Do not ask the user to separately decide the same combat design for a dungeon.
+- Preserve prior user-confirmed dungeon-specific rules: shared enemy/room progress, equal rewards without splitting when players fight different rooms, only active explorers must physically gather to exit, third-defeat spectating with clear reward eligibility, disconnect-to-solo continuation, one-hour full-value replay after actual exit, individual three-loss thirty-connected-minute lockout, and safe reward/results UI.
+
+### Distinction
+- **Same combat system** does not mean room boundaries, battle trigger or dungeon all-clear/reward state can be omitted. They remain dungeon-aware wrappers around the common world battle lifecycle.
+- Dungeon-specific enemy rarity and encounter presentation must fit authored-room cameras. Avoid treating a dungeon enemy as a vanilla hit-to-kill mob or replacing the current world battle model with a separate instanced combat screen.
+- This is a game-design decision only. Current empty content-rebuild runtime has NOT acquired a tested live field/dungeon co-op battle implementation, and no code/tests/build/multiplayer gameplay validation occurred here.
+
+
 ## Approved co-op disconnect and third-defeat spectator continuation — 2026-11-09
 
 **Latest user-confirmed behavior. This supersedes older suggestions that an offline or third-defeat teammate must remain physically present at the escape chamber, or that a third-defeat player must be ejected from shared rewards.**
@@ -29,7 +44,7 @@
 ### Still to design: edge conditions
 - Exactly how an online spectator watches split-up surviving teammates, switches camera target, dismisses spectating, returns to ordinary safe-world control, and how online access-ban expiry interacts with an ongoing run.
 - A simultaneous total party wipe, a player who disconnects *after* three defeats while spectating, reconnecting during/after a solo conversion, repeated reconnect spam and missing-participant rewards; no user-approved detailed outcomes yet.
-- Co-op combat control if two allies enter the same combat room, mid-combat disconnect handling, team-owned dungeon reset on the one-hour timer, reward log persistence across crash/restart.
+- Co-op combat in the same room inherits the overworld battle rules. Mid-combat disconnect handling (common to field and dungeon), team-owned dungeon reset on the one-hour timer, and reward log persistence across crash/restart still require design.
 - Ensure spectators are immune to environmental danger while observing and that the avatar remains securely at a safe world checkpoint; exact UI/presentation and multiplayer network validations require a real playtest.
 - This is a **design contract only**: no implementation, JAR, build, or actual two-client multiplayer test has been run here.
 
@@ -55,7 +70,7 @@
 ### Open cases to design before implementing
 - **Party membership and reward snapshot:** who is an eligible participant, when can members join/leave/reconnect, whether players in different teams can share the same physical dungeon simultaneously, and how to stop late arrivals/free-riding or phantom group members blocking departure, without contradicting the rule that separate-room fighting earns identical rewards.
 - **One member suffers third defeat:** that player is checkpoint-returned and personally entry-locked for 30 online minutes while teammates may remain inside. Define a non-destructive team-membership/exit continuation policy so the other members are not stranded indefinitely; do NOT silently auto-kick, cancel the group or penalize innocent members.
-- **Simultaneous battles:** map a player's four-character party, enemy ownership and turn-gauge combat sessions safely for separate rooms; how team members fight together in the SAME battle is a separate unresolved co-op combat-control question.
+- **Simultaneous battles:** map each participant's normal overworld co-op turn-battle ownership and enemy sessions safely for separate rooms; SAME ROOM co-op must reuse the field battle behavior, not create a dungeon-specific choice. Unresolved generic actor control belongs in shared battle design.
 - **Physical loot:** equal server-awarded encounter/room/clear rewards are approved; how shared Minecraft chest contents, dropped physical items and one-off mined blocks are allocated remains open. Do not conflate natural shared-world chests with automatic personal gem/Gold transaction rewards.
 - **Independent personal replay eligibility vs one shared reset:** a personal 30-online-minute loss ban, a run's one-hour replay cooldown (clock mode unspecified) and other players' continuing dungeon presence must not corrupt or prematurely respawn shared world entities.
 - **Safe reward/result UI** protects its viewer from aggro/damage without pausing other players or killing other people's battle mobs.
@@ -112,4 +127,4 @@ Status: **Cooperative dungeon reward/exit rules confirmed on 2026-11-09; remaini
 - **No Java resource changes, builds, functional multiplayer or playtests were performed.**
 
 ## Updated next decision
-Cooperative shared physical progress, equal team combat/clear rewards and joint physical exit are approved; 2026-11-09 rules now resolve disconnect-to-remaining-solo and third-defeat spectating with preserved clear reward. Next design pass should resolve same-room collaborative combat, reconnect behavior, spectator controls and simultaneous wipe.
+Cooperative shared physical progress, equal team combat/clear rewards and joint physical exit are approved; 2026-11-09 rules resolve disconnect-to-remaining-solo, third-defeat spectating with preserved clear reward, and reuse of normal field co-op battle in the same room. Next design pass should resolve reconnect behavior, spectator controls, simultaneous wipe, and generic field battle actor ownership only if unresolved globally.
