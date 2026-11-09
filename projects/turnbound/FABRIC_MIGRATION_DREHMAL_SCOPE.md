@@ -16,7 +16,7 @@ Date: 2026-11-09. Workbranch: `turnbound-content-rebuild`. This is TURNBOUND, **
 - The initial Fabric entrypoint implements a **limited server-authoritative world safety layer**: opt-in save gate, Adventure mode enforcement, block break and common placement item prevention, incoming damage cancellation, hunger/HP restoration. It **does not** implement TURNBOUND combat sessions, character rewards, dungeon systems or complete terrain mutation protection. Vanilla survival bars are now suppressed on clients after the server sends the opt-in world mode; the actual on-screen result still requires a Minecraft client test.
 - Direct port of generic `TurnScheduler`, state/skill/stat arithmetic and target resolution is started. Historical hardcoded P06/P08 behavior is removed from this *new isolated copy*, not from the archived source. No content from old roster is restored.
 - The legacy world bootstrap/downloader, NeoForge bindings and old GAME_DATA are **not** part of Fabric output. Existing old worlds remain untouched.
-- The Fabric test build / JAR / in-game multiplayer test has not yet been executed until CI is checked.
+- **Verified build checkpoint (2026-11-09)**: [Fabric Build #1067](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42564964448) PASS (Gradle tests, compile/build and Fabric JAR inspection) at `4bbade5e0effe78a85c138bd6ab703deb01d6052`. [Fabric Client Boot Smoke](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42564964435) PASS (headless Xvfb graphical Minecraft startup). These results do **not** test in-world interaction, multiplayer, Drehmal map integration or visual HUD inside a world.
 
 ## Save/world safety
 - The Fabric exploration policy is disabled unless the **separate copied** world's root has a file named `turnbound-world.marker` containing exactly `TURNBOUND_DREHMAL_WORLD_V1`. The marker is not automatically created.
@@ -42,9 +42,22 @@ Date: 2026-11-09. Workbranch: `turnbound-content-rebuild`. This is TURNBOUND, **
 - Existing map data and renderer are not proven license-cleared for packaging; no code from Drehmal itself was inspected in this migration commit.
 
 ## Missing gates
-1. Fabric Gradle dependency resolution and full build/compile.
-2. Fabric live login, Adventure mode + inventory/terrain mutation, health/hunger/HUD.
+1. Fabric Gradle dependency/build and graphical client startup: **VERIFIED** as above; no repeated CI necessary for this documentation change.
+2. Fabric live login into activated world, Adventure mode + inventory/terrain mutation, health/hunger/HUD.
 3. Copy-world compatibility and datapack command analysis using actual v2.2.2f world files.
 4. Core battle session + network + persistence adapters, authoring catalog.
 5. Visual camera/UI, GeckoLib animation, audio and multiplayer.
 No claim of PLAYTESTED or MULTIPLAYER TESTED is made.
+
+## Additional map features found in official documentation (2026-11-09)
+
+These are **official/reference behavior, not verified in the provided v2.2.2f binaries**. They are not proof of dependency-free reuse.
+
+- **Terminus Network:** existing fast-travel towers, central hub and already-used tower unlocking are spatially valuable. Their commands, original security-clearance/story milestones and original UI should **not** be silently carried over. Source: https://www.wiki.drehmal.cyou/Story_and_Features/Terminus_Network/
+- **Critical exploration conflict:** some towers were designed to be climbed by **placing blocks/pillaring**. TURNBOUND forbids placement. Preserve original geometry and provide an alternate traversal affordance or non-destructive interaction, verified in-client. Do not invent a universal teleport bypass.
+- **Original regional maps and merchant buildings:** source map helps guide exploration and existing town layouts fit TURNBOUND services. Source: https://www.wiki.drehmal.cyou/Help/Getting_Started/
+- **Holotexts / CIT Resewn:** some map visual text depends on an external client resource pack / CIT Resewn. Treat this as an optional visual preservation dependency after screen inspection, not permission to redistribute the resource pack. Source: https://wiki.drehmal.cyou/Help/FAQ/
+- **World datapack:** upstream's FAQ explicitly warns that separating terrain from story/weapons requires significant datapack surgery; do not delete the whole pack. **The actual world datapack remains NOT INSPECTED in this task**, because no official map archive was supplied to the runtime and remote binary world extraction was unavailable.
+- **Publication permissions:** adapting the map for an independent RPG server or redistributing map assets requires contacting Drehmal creators; the wiki also states creator credit and limitations on monetization. Source: https://wiki.drehmal.cyou/Help/FAQ/
+
+The audit tool and source-preserving migration boundary are ready to use on an **isolated map copy**. No original Drehmal functions have yet been disabled on disk or demonstrated safe to disable.
