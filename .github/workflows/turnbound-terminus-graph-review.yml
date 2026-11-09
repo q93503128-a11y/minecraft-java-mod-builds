@@ -1,0 +1,46 @@
+name: TURNBOUND Terminus dependency graph review
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-terminus-graph-review.yml'
+      - 'projects/turnbound/tools/review_drehmal_terminus_graph.py'
+      - 'projects/turnbound/tools/test_review_drehmal_terminus_graph.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review tool regression tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_review_drehmal_terminus_graph.py'
+      - name: Retrieve verified audit metadata without redownloading map
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/upstream
+      - name: Produce read-only review
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/review_drehmal_terminus_graph.py \
+            --audit build/upstream/build/drehmal-official-2.2.2f-summary.json \
+            --out-json build/terminus-review.json \
+            --out-md build/terminus-review.md --verify-source
+      - name: Upload only derived review metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-terminus-dependency-review
+          path: |
+            projects/turnbound/build/terminus-review.json
+            projects/turnbound/build/terminus-review.md
+          if-no-files-found: warn
+          retention-days: 14
