@@ -1,0 +1,4033 @@
+{
+  "schema": "anomalous-classes-skill-tree-branch-design-v1",
+  "status": "DESIGN_PROPOSAL_ONLY__NOT_RUNTIME_CONFIG",
+  "date": "2026-11-09",
+  "baseline": {
+    "main_commit": "3850e5d2786cce9b2042ea968eb3a5f45e3f338e",
+    "legacy_cost_blob_sha": "23db49223acd5360efb1452ad487a085f3843563",
+    "legacy_catalog_blob_sha": "9aab4dc698c5188eefb4dd0b0cfcf7602fa33f98"
+  },
+  "rules": {
+    "class_skill_points_per_level": 3,
+    "class_full_tree_cost": 900,
+    "class_start_level": 1,
+    "class_start_sp": 0,
+    "progression": "Historical original rank costs define the budget. Legacy effects are stepped to the purchased major stage end-rank. Ordinary stat minors do not advance legacy ranks.",
+    "node_classes": [
+      "minor_vanilla_attribute",
+      "major_existing_skill_segment"
+    ],
+    "minor_stat_amounts": {
+      "max_health_hp": 0.2,
+      "armor": 0.08,
+      "movement_speed_percent": 0.12,
+      "attack_damage": 0.04
+    },
+    "parasite_minor_stat_amounts": {
+      "max_health_hp": 0.05,
+      "armor": 0.02,
+      "movement_speed_percent": 0.12,
+      "attack_damage": 0.01
+    },
+    "cost_split": "Per old-rank segment: <=15 SP: one minor; 16..37 SP: two minors; >=38 SP: three minors. Minors jointly get max(count, round(22% of segment old cost)), remainder to major; integer prices sum exactly.",
+    "stage_splitting": "Cut each original skill at every 10 ranks, every original SkillTreeCatalog milestone, and final max rank. Preserve 5/15/25/35 special thresholds.",
+    "no_new_special_abilities": true,
+    "no_new_active_skills": true,
+    "no_vanilla_xp_conversion": true,
+    "free_noncombat_reset": true,
+    "graph_layout": {
+      "format": "pan_zoom_world_map_not_3_column_menu",
+      "free_navigation_nodes": [
+        "origin",
+        "branch.one",
+        "branch.two",
+        "branch.three"
+      ],
+      "sectors_degrees": {
+        "one": 205,
+        "two": 270,
+        "three": 335
+      },
+      "sector_spread_degrees": 48,
+      "placement": "Place each original skill along its own ray within its sector. Minor nodes and then major nodes form successive outward stages; stage nodes are ~70 world units apart, starting radius 240. Icons ~42 world units, pan/zoom required. The group hub connects all first minor nodes for that sector.",
+      "bridge_rule": "Visual and traversable minor-to-minor bridges connect adjacent skill rays at segment indexes 1 and 3 when both rays have them. A bridge may grant access to a stat minor but never bypasses a major's own preceding-stage prerequisite.",
+      "major_unlock": "All minors of own stage purchased and preceding major of same original skill purchased; group hub is an always-unlocked visual entry.",
+      "minor_unlock": "Adjacent to the free group hub, an owned node in the same ray, or an owned adjacent-ray minor via a bridge.",
+      "ui": "Distinct skill-map background (not Profile plum wallpaper); clipped zoom/pan graph, right-side details, name/bonus/costs/remaining SP, minimize/fit control; actual glyph and texture sampling require Minecraft review."
+    },
+    "migration": "At world load, map each legacy skill rank to the largest fully completed new stage. Mark all minors and the major for each completed stage. Refund only the cost of an incomplete tail (< next stage threshold) to that class's unspent SP. Each fully completed stage costs exactly its original rank-cost sum, so total earned SP is conserved. Migration idempotent/version-tagged; do not erase class XP, BD, contracts, puppets or swarm data.",
+    "legacy_power_limit": "The complete original skill reaches exactly its former max rank and old milestone effects (as currently specified in source docs). Extra vanilla attributes are additional small proposed bonuses and require balance review; neither original formulas nor current non-SP growth are rewritten."
+  },
+  "classes": {
+    "mental": {
+      "name": "정신 지배자",
+      "source": "classes/SKILL_TREE.md",
+      "legacy_rank_total": 270,
+      "old_skill_count": 10,
+      "group_names": {
+        "one": "장악",
+        "two": "결속",
+        "three": "간섭"
+      },
+      "skills": [
+        {
+          "legacy_id": "deep_infiltration",
+          "name": "심층 침투",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 78,
+          "source_per_rank_effect": "장악 속도 +1%(가산)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 24,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 19,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 42,
+              "minor_costs": [
+                3,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 33,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "resistance_piercing",
+          "name": "저항 관통",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 115,
+          "source_per_rank_effect": "침투 계산의 대상 유효 위협도 -0.5% (개체 유지비·실제 스탯 불변)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 37,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 29,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 56,
+              "minor_costs": [
+                4,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "domination_stability",
+          "name": "지배 안정화",
+          "group": "one",
+          "legacy_max_rank": 20,
+          "original_total_sp": 38,
+          "source_per_rank_effect": "집중 끊김 후 장악도 감소 속도 -2%",
+          "catalog_milestones": [
+            10,
+            20
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 26,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 20,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "mental_bond",
+          "name": "정신 결속",
+          "group": "two",
+          "legacy_max_rank": 40,
+          "original_total_sp": 173,
+          "source_per_rank_effect": "개체별 정신력 유지비 -0.65%, 최대 -26%, 장비와 곱 보정",
+          "catalog_milestones": [
+            10,
+            20,
+            30,
+            40
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 35,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 56,
+              "minor_costs": [
+                4,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 40,
+              "old_segment_sp": 60,
+              "minor_costs": [
+                5,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 47,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "multiple_bonds",
+          "name": "다중 결속",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 151,
+          "source_per_rank_effect": "5랭크마다 +1 동시 지배 슬롯, 랭크당 최대 정신력 보조 증가 후보",
+          "catalog_milestones": [
+            5,
+            10,
+            15,
+            20,
+            25,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 5,
+              "old_segment_sp": 15,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 6,
+              "old_rank_to": 10,
+              "old_segment_sp": 17,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 13,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 11,
+              "old_rank_to": 15,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 16,
+              "old_rank_to": 20,
+              "old_segment_sp": 28,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 22,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 5,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 31,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 24,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 6,
+              "old_rank_from": 26,
+              "old_rank_to": 30,
+              "old_segment_sp": 40,
+              "minor_costs": [
+                3,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 31,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "distributed_attunement",
+          "name": "분산 동조",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 114,
+          "source_per_rank_effect": "집단 유지 부담 -1%, 최대 -30%",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 36,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 28,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 56,
+              "minor_costs": [
+                4,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "shock_echo",
+          "name": "충격 잔향",
+          "group": "three",
+          "legacy_max_rank": 20,
+          "original_total_sp": 38,
+          "source_per_rank_effect": "정신 충격 후 침투 장악 효율 +0.8%",
+          "catalog_milestones": [
+            10,
+            20
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 26,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 20,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "suggestion_depth",
+          "name": "암시 심화",
+          "group": "three",
+          "legacy_max_rank": 25,
+          "original_total_sp": 56,
+          "source_per_rank_effect": "자해 암시 피해 효율 +1%",
+          "catalog_milestones": [
+            10,
+            20,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 24,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 19,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "overload_duration",
+          "name": "과부하 지속",
+          "group": "three",
+          "legacy_max_rank": 25,
+          "original_total_sp": 56,
+          "source_per_rank_effect": "지배 대상 일시 강화 지속 +0.12초",
+          "catalog_milestones": [
+            10,
+            20,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 24,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 19,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "containment_expansion",
+          "name": "봉쇄 확장",
+          "group": "three",
+          "legacy_max_rank": 20,
+          "original_total_sp": 81,
+          "source_per_rank_effect": "의식 봉쇄 반경 +0.12블록",
+          "catalog_milestones": [
+            10,
+            20
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 49,
+              "minor_costs": [
+                4,
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 38,
+              "original_milestone_at_end": true
+            }
+          ]
+        }
+      ],
+      "derived": {
+        "major_nodes": 31,
+        "minor_nodes": 63,
+        "sp_total": 900,
+        "stage_count": 31
+      }
+    },
+    "puppet": {
+      "name": "인형술사",
+      "source": "classes/PUPPET_SKILL_TREE.md",
+      "legacy_rank_total": 290,
+      "old_skill_count": 10,
+      "group_names": {
+        "one": "조립",
+        "two": "운용",
+        "three": "전투"
+      },
+      "skills": [
+        {
+          "legacy_id": "frame_refinement",
+          "name": "골격 정밀화",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 101,
+          "source_per_rank_effect": "인형 HP +0.45%/랭크",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 33,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 26,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "material_use",
+          "name": "소재 활용",
+          "group": "one",
+          "legacy_max_rank": 25,
+          "original_total_sp": 49,
+          "source_per_rank_effect": "실제 수리 원가 -0.6%/랭크",
+          "catalog_milestones": [
+            10,
+            20,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 21,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 16,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "module_adaptation",
+          "name": "모듈 적응",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 101,
+          "source_per_rank_effect": "칼날·투사기·방패의 상황별 동작 개선",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 33,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 26,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "connection_strength",
+          "name": "연결 강도",
+          "group": "two",
+          "legacy_max_rank": 40,
+          "original_total_sp": 105,
+          "source_per_rank_effect": "명령 범위 +0.25블록/랭크",
+          "catalog_milestones": [
+            10,
+            20,
+            30,
+            40
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 33,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 26,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 40,
+              "old_segment_sp": 40,
+              "minor_costs": [
+                3,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 31,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "spare_threads",
+          "name": "여분의 실",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 134,
+          "source_per_rank_effect": "10랭크마다 전개 +1, 그 외 집결 안정성",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 44,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 34,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 58,
+              "minor_costs": [
+                5,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 45,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "response_attunement",
+          "name": "반응 동조",
+          "group": "two",
+          "legacy_max_rank": 25,
+          "original_total_sp": 49,
+          "source_per_rank_effect": "적법 표적 전환 대기 -1%/랭크",
+          "catalog_milestones": [
+            5,
+            10,
+            20,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 5,
+              "old_segment_sp": 5,
+              "minor_costs": [
+                1
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 4,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 6,
+              "old_rank_to": 10,
+              "old_segment_sp": 7,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp"
+              ],
+              "major_cost": 5,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 21,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 16,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "weapon_tuning",
+          "name": "무장 조율",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 134,
+          "source_per_rank_effect": "무장별 공격/방패 반격 +0.4%/랭크",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 44,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 34,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 58,
+              "minor_costs": [
+                5,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 45,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "guarded_joints",
+          "name": "방호 관절",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 101,
+          "source_per_rank_effect": "적으로부터 받는 피해 -0.4%/랭크",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 33,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 26,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "mobility_axis",
+          "name": "기동 축",
+          "group": "three",
+          "legacy_max_rank": 25,
+          "original_total_sp": 49,
+          "source_per_rank_effect": "이동속도 +0.4%/랭크",
+          "catalog_milestones": [
+            5,
+            10,
+            20,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 5,
+              "old_segment_sp": 5,
+              "minor_costs": [
+                1
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 4,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 6,
+              "old_rank_to": 10,
+              "old_segment_sp": 7,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp"
+              ],
+              "major_cost": 5,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 21,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 16,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "emergency_repair",
+          "name": "긴급 복원",
+          "group": "three",
+          "legacy_max_rank": 25,
+          "original_total_sp": 77,
+          "source_per_rank_effect": "응급 접합 회복량 +0.6%/랭크",
+          "catalog_milestones": [
+            10,
+            20,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 34,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 21,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            }
+          ]
+        }
+      ],
+      "derived": {
+        "major_nodes": 33,
+        "minor_nodes": 68,
+        "sp_total": 900,
+        "stage_count": 33
+      }
+    },
+    "parasite": {
+      "name": "기생술사",
+      "source": "classes/PARASITE_SKILL_TREE.md",
+      "legacy_rank_total": 285,
+      "old_skill_count": 10,
+      "group_names": {
+        "one": "침투",
+        "two": "공생",
+        "three": "생존"
+      },
+      "skills": [
+        {
+          "legacy_id": "infiltration_precision",
+          "name": "침투 정밀화",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 97,
+          "source_per_rank_effect": "요구 BD 통과 후 집중 침투 시간 -0.5%/랭크 (최대 -15%)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 45,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 35,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "infiltration_resistance",
+          "name": "침투 저항",
+          "group": "one",
+          "legacy_max_rank": 25,
+          "original_total_sp": 48,
+          "source_per_rank_effect": "침투 중 받은 피해 -0.3%/랭크 (최대 -7.5%)",
+          "catalog_milestones": [
+            5,
+            15,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 5,
+              "old_segment_sp": 5,
+              "minor_costs": [
+                1
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 4,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 6,
+              "old_rank_to": 10,
+              "old_segment_sp": 7,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 5,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 11,
+              "old_rank_to": 15,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 16,
+              "old_rank_to": 20,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 5,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 16,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "biological_analysis",
+          "name": "생체 해석",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 97,
+          "source_per_rank_effect": "유효 BD 보상 +0.4%/랭크 (최대 +12%)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 45,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 35,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "species_adaptation",
+          "name": "종별 융화",
+          "group": "one",
+          "legacy_max_rank": 25,
+          "original_total_sp": 48,
+          "source_per_rank_effect": "현재 숙주 종의 유효 숙련 획득 효율 +0.5%/랭크 (최대 +12.5%)",
+          "catalog_milestones": [
+            5,
+            15,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 5,
+              "old_segment_sp": 5,
+              "minor_costs": [
+                1
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 4,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 6,
+              "old_rank_to": 10,
+              "old_segment_sp": 7,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 5,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 11,
+              "old_rank_to": 15,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 16,
+              "old_rank_to": 20,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 5,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 16,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "tissue_reinforcement",
+          "name": "조직 강화",
+          "group": "two",
+          "legacy_max_rank": 35,
+          "original_total_sp": 159,
+          "source_per_rank_effect": "현재 숙주 최대 HP +0.35%/랭크 (최대 +12.25%)",
+          "catalog_milestones": [
+            10,
+            20,
+            35
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 41,
+              "minor_costs": [
+                3,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 32,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 56,
+              "minor_costs": [
+                4,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 35,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "attack_adaptation",
+          "name": "공격 적응",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 130,
+          "source_per_rank_effect": "현재 숙주 공격 피해 +0.35%/랭크 (최대 +10.5%)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 42,
+              "minor_costs": [
+                3,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 33,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 56,
+              "minor_costs": [
+                4,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "body_control",
+          "name": "신체 운용",
+          "group": "two",
+          "legacy_max_rank": 25,
+          "original_total_sp": 47,
+          "source_per_rank_effect": "현재 숙주 일반 이동속도 +0.3%/랭크 (최대 +7.5%)",
+          "catalog_milestones": [
+            5,
+            15,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 5,
+              "old_segment_sp": 5,
+              "minor_costs": [
+                1
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 4,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 6,
+              "old_rank_to": 10,
+              "old_segment_sp": 7,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 5,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 11,
+              "old_rank_to": 15,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 16,
+              "old_rank_to": 20,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 5,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 15,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "survival_transfer",
+          "name": "생존 전이",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 130,
+          "source_per_rank_effect": "사망 후 재기생 금지시간 -0.5초/랭크 (최대 -15초)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 42,
+              "minor_costs": [
+                3,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 33,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 56,
+              "minor_costs": [
+                4,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "self_repair",
+          "name": "자가 수복",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 97,
+          "source_per_rank_effect": "액티브 생체 수복 회복량 +0.5%/랭크 (최대 +15%)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 45,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 35,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "human_mimicry",
+          "name": "인간 의태",
+          "group": "three",
+          "legacy_max_rank": 25,
+          "original_total_sp": 47,
+          "source_per_rank_effect": "미기생 인간형 기본 최대 HP +0.08/랭크 (8→10 후보)",
+          "catalog_milestones": [
+            5,
+            15,
+            25
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 5,
+              "old_segment_sp": 5,
+              "minor_costs": [
+                1
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 4,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 6,
+              "old_rank_to": 10,
+              "old_segment_sp": 7,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 5,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 11,
+              "old_rank_to": 15,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 16,
+              "old_rank_to": 20,
+              "old_segment_sp": 10,
+              "minor_costs": [
+                2
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 8,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 5,
+              "old_rank_from": 21,
+              "old_rank_to": 25,
+              "old_segment_sp": 15,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            }
+          ]
+        }
+      ],
+      "derived": {
+        "major_nodes": 39,
+        "minor_nodes": 69,
+        "sp_total": 900,
+        "stage_count": 39
+      }
+    },
+    "barrier": {
+      "name": "결계술사",
+      "source": "classes/BARRIER_SKILL_TREE.md",
+      "legacy_rank_total": 300,
+      "old_skill_count": 9,
+      "group_names": {
+        "one": "형성",
+        "two": "압축",
+        "three": "경계"
+      },
+      "skills": [
+        {
+          "legacy_id": "spatial_aiming",
+          "name": "공간 조준",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 59,
+          "source_per_rank_effect": "결계 최대 유효 설치 거리 +0.10블록/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 27,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 21,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "lasting_inscription",
+          "name": "지속 각인",
+          "group": "one",
+          "legacy_max_rank": 35,
+          "original_total_sp": 74,
+          "source_per_rank_effect": "방어·격리 결계 지속시간 +0.15초/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 26,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 20,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 35,
+              "old_segment_sp": 16,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "multiple_deployment",
+          "name": "다중 전개",
+          "group": "one",
+          "legacy_max_rank": 35,
+          "original_total_sp": 145,
+          "source_per_rank_effect": "결계 시전 시간 -0.4%/랭크(최대 -14%)",
+          "catalog_milestones": [
+            15,
+            35
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 15,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 16,
+              "old_rank_to": 20,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 5,
+              "old_rank_from": 31,
+              "old_rank_to": 35,
+              "old_segment_sp": 27,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 21,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "compression_density",
+          "name": "압축 밀도",
+          "group": "two",
+          "legacy_max_rank": 35,
+          "original_total_sp": 145,
+          "source_per_rank_effect": "압축 결계 대상당 피해 +0.6%/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 40,
+              "minor_costs": [
+                3,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 31,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 35,
+              "old_segment_sp": 27,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 21,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "focused_pressure",
+          "name": "압박 집중",
+          "group": "two",
+          "legacy_max_rank": 35,
+          "original_total_sp": 110,
+          "source_per_rank_effect": "소형 압축 결계 피해 +0.45%/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 36,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 28,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 35,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "barrier_link",
+          "name": "결계 연계",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 89,
+          "source_per_rank_effect": "적이 격리 결계 안에 유효하게 갇힌 동안 압축 피해 +0.4%/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 37,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 29,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "defense_density",
+          "name": "방호 밀도",
+          "group": "three",
+          "legacy_max_rank": 35,
+          "original_total_sp": 110,
+          "source_per_rank_effect": "방어 결계의 경계 내구 +0.55%/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 36,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 28,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 35,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "sealing_strength",
+          "name": "봉쇄 강도",
+          "group": "three",
+          "legacy_max_rank": 35,
+          "original_total_sp": 109,
+          "source_per_rank_effect": "격리 결계의 경계 내구 +0.55%/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 30,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 23,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 36,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 28,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 31,
+              "old_rank_to": 35,
+              "old_segment_sp": 21,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "quick_barrier",
+          "name": "즉응 방벽",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 59,
+          "source_per_rank_effect": "순간 방벽 내구 +0.5%/랭크",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 27,
+              "minor_costs": [
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 21,
+              "original_milestone_at_end": false
+            }
+          ]
+        }
+      ],
+      "derived": {
+        "major_nodes": 34,
+        "minor_nodes": 68,
+        "sp_total": 900,
+        "stage_count": 34
+      }
+    },
+    "pact": {
+      "name": "계약술사",
+      "source": "classes/PACT_SKILL_TREE.md",
+      "legacy_rank_total": 270,
+      "old_skill_count": 9,
+      "group_names": {
+        "one": "육화",
+        "two": "권능",
+        "three": "교섭"
+      },
+      "skills": [
+        {
+          "legacy_id": "flesh_inscription",
+          "name": "육신 각인",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 104,
+          "source_per_rank_effect": "계약이 제공하는 *추가 최대 HP*의 효율 +0.45%/랭크 (최대 13.5%의 보너스분)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 34,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 48,
+              "minor_costs": [
+                4,
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 37,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "martial_attunement",
+          "name": "무력 동화",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 137,
+          "source_per_rank_effect": "계약이 제공하는 *직접 공격 가호 증가분* 효율 +0.5%/랭크 (최대 15%의 보너스분)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 44,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 34,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 61,
+              "minor_costs": [
+                5,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 48,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "crisis_resistance",
+          "name": "위기 저항",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 70,
+          "source_per_rank_effect": "유효 계약 중 실제 받는 일반 피해 -0.25%/랭크 (최대 -7.5%)",
+          "catalog_milestones": [
+            20
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 36,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 28,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "power_condensation",
+          "name": "권능 응축",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 137,
+          "source_per_rank_effect": "계약술사의 고유 액티브 권능 직접 효과 +0.5%/랭크 (최대 +15%)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 44,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 34,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 61,
+              "minor_costs": [
+                5,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 48,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "woven_arms",
+          "name": "무장 직조",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 104,
+          "source_per_rank_effect": "유효 권능을 사용한 뒤 다음 실제 무기 타격 추가 기여 +0.5%/랭크 (최대 +15%)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 34,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 48,
+              "minor_costs": [
+                4,
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 37,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "ritual_cycle",
+          "name": "술식 순환",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 104,
+          "source_per_rank_effect": "보통 계약 액티브의 쿨타임 -0.3%/랭크 (최대 -9%)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 34,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 48,
+              "minor_costs": [
+                4,
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 37,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "relationship_resonance",
+          "name": "관계 공명",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 70,
+          "source_per_rank_effect": "관계 수치 50 초과분이 제공하는 권능 효율 상승량 +0.5%/랭크 (최대 15%의 상승량)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 36,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 28,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "deepening_internalization",
+          "name": "심화 내재화",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 104,
+          "source_per_rank_effect": "추가 제물로 심화한 뒤 새로 늘어난 가호 보너스분 +0.5%/랭크 (최대 15%의 증가분)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 34,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 48,
+              "minor_costs": [
+                4,
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 37,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "dual_attunement",
+          "name": "이중 조율",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 70,
+          "source_per_rank_effect": "서로 다른 계약의 유효 권능을 연계했을 때 후속 권능 효과 +0.4%/랭크 (최대 +12%)",
+          "catalog_milestones": [
+            10,
+            20,
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 36,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 28,
+              "original_milestone_at_end": true
+            }
+          ]
+        }
+      ],
+      "derived": {
+        "major_nodes": 27,
+        "minor_nodes": 59,
+        "sp_total": 900,
+        "stage_count": 27
+      }
+    },
+    "swarm": {
+      "name": "군체술사",
+      "source": "classes/SWARM_SKILL_TREE.md",
+      "legacy_rank_total": 270,
+      "old_skill_count": 9,
+      "group_names": {
+        "one": "공격",
+        "two": "엄호",
+        "three": "번식·지휘"
+      },
+      "skills": [
+        {
+          "legacy_id": "sharp_jaws",
+          "name": "날카로운 턱",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 133,
+          "source_per_rank_effect": "개체 유효 공격 성능 +0.6% (최대 +18%)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 44,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 34,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 57,
+              "minor_costs": [
+                5,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "assault_tactics",
+          "name": "급습 전술",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 100,
+          "source_per_rank_effect": "`군집 급습`의 유효 타격 위력 +0.6%(최대 +18%)",
+          "catalog_milestones": [
+            20
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "sacrifice_instinct",
+          "name": "희생 본능",
+          "group": "one",
+          "legacy_max_rank": 30,
+          "original_total_sp": 100,
+          "source_per_rank_effect": "`군체 소모`의 희생당 공격 효율 +0.6%(최대 +18%)",
+          "catalog_milestones": [
+            30
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": true
+            }
+          ]
+        },
+        {
+          "legacy_id": "hard_shell",
+          "name": "단단한 갑피",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 100,
+          "source_per_rank_effect": "논리 개체의 유효 소실 내구 +0.6%(최대 +18%)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "ballistic_sense",
+          "name": "탄도 감각",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 100,
+          "source_per_rank_effect": "공격 탄도에 반응하는 엄호 개체 이동·정렬 속도 +0.8%(최대 +24%)",
+          "catalog_milestones": [
+            15
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 15,
+              "old_segment_sp": 15,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage"
+              ],
+              "major_cost": 12,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 16,
+              "old_rank_to": 20,
+              "old_segment_sp": 17,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 13,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 4,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "escort_formation",
+          "name": "호위 진형",
+          "group": "two",
+          "legacy_max_rank": 30,
+          "original_total_sp": 100,
+          "source_per_rank_effect": "엄호대의 유효 군체 소실 내구 +0.5%(최대 +15%)",
+          "catalog_milestones": [
+            10
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 22,
+              "minor_costs": [
+                3,
+                2
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 17,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 46,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 36,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "natural_fission",
+          "name": "자연 분열",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 133,
+          "source_per_rank_effect": "자동·유효 전투 재증식 속도 +1.2%(최대 +36%)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 32,
+              "minor_costs": [
+                4,
+                3
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 25,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 44,
+              "minor_costs": [
+                4,
+                3,
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 34,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 57,
+              "minor_costs": [
+                5,
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 44,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "regrouping",
+          "name": "재결집",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 67,
+          "source_per_rank_effect": "엄호/공격대의 목표 소멸 후 귀환·재배치 속도 +0.7%(최대 +21%)",
+          "catalog_milestones": [
+            20
+          ],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "armor"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "attack_damage",
+                "max_health_hp"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": true
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 35,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "armor",
+                "movement_speed_percent"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": false
+            }
+          ]
+        },
+        {
+          "legacy_id": "pack_tracking",
+          "name": "무리 추적",
+          "group": "three",
+          "legacy_max_rank": 30,
+          "original_total_sp": 67,
+          "source_per_rank_effect": "원격 표적까지 군집의 실제 이동 속도 +0.8%(최대 +24%)",
+          "catalog_milestones": [],
+          "segments": [
+            {
+              "stage": 1,
+              "old_rank_from": 1,
+              "old_rank_to": 10,
+              "old_segment_sp": 12,
+              "minor_costs": [
+                3
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent"
+              ],
+              "major_cost": 9,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 2,
+              "old_rank_from": 11,
+              "old_rank_to": 20,
+              "old_segment_sp": 20,
+              "minor_costs": [
+                2,
+                2
+              ],
+              "minor_stat_types": [
+                "max_health_hp",
+                "armor"
+              ],
+              "major_cost": 16,
+              "original_milestone_at_end": false
+            },
+            {
+              "stage": 3,
+              "old_rank_from": 21,
+              "old_rank_to": 30,
+              "old_segment_sp": 35,
+              "minor_costs": [
+                4,
+                4
+              ],
+              "minor_stat_types": [
+                "movement_speed_percent",
+                "attack_damage"
+              ],
+              "major_cost": 27,
+              "original_milestone_at_end": false
+            }
+          ]
+        }
+      ],
+      "derived": {
+        "major_nodes": 28,
+        "minor_nodes": 62,
+        "sp_total": 900,
+        "stage_count": 28
+      }
+    }
+  }
+}
