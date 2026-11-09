@@ -32,7 +32,7 @@ public final class ProfileScreen extends Screen {
         boolean compact = width < 540 || height < 310;
         int header = height < 250 ? 17 : 23;
         int bodyY = outer.y() + header + 5;
-        int navHeight = Math.max(19, Math.min(26, height / 13));
+        int navHeight = Math.max(19, Math.min(23, height / 15));
         int navY = outer.bottom() - navHeight - 5;
         int bodyBottom = navY - 5;
         int bodyHeight = Math.max(1, bodyBottom - bodyY);
@@ -51,13 +51,13 @@ public final class ProfileScreen extends Screen {
                 Math.max(1, information.bottom() - (information.y() + (compact ? 68 : 112)) - 2));
 
         int buttonGap = 6;
-        int buttonWidth = Math.max(1, (outer.width() - 20 - buttonGap) / 2);
+        int buttonWidth = Math.max(1, Math.min(156, (outer.width() - 20 - buttonGap) / 2));
         int buttonX = outer.x() + (outer.width() - (buttonWidth * 2 + buttonGap)) / 2;
         skillButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(buttonX, navY, buttonWidth, navHeight),
-                Component.translatable("screen.anomalousclasses.profile.skill_tree"), MenuUi.accent(classId), button -> openSkillTree()));
+                Component.translatable("screen.anomalousclasses.profile.skill_tree"), button -> openSkillTree()));
         managementButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(buttonX + buttonWidth + buttonGap, navY,
                 buttonWidth, navHeight), Component.translatable("screen.anomalousclasses.profile.class_management"),
-                MenuUi.accent(classId), button -> minecraft.setScreen(new ClassManagementScreen(state))));
+                button -> minecraft.setScreen(new ClassManagementScreen(state))));
         refreshButtons();
     }
 
@@ -65,17 +65,16 @@ public final class ProfileScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         graphics.fill(0, 0, width, height, 0x70201D25);
-        MenuUi.drawPanel(graphics, outer, MenuUi.accent(classId));
-        MenuUi.drawCentered(graphics, font, title, width / 2, outer.y() + 5, outer.width() - 24, 0xFFF1E7D7);
+        MenuUi.drawPanel(graphics, outer);
+        MenuUi.drawTitle(graphics, font, title, outer, width, height);
 
-        graphics.fill(artwork.x() - 1, artwork.y() - 1, artwork.right() + 1, artwork.bottom() + 1, 0xFF8F775D);
         MenuUi.drawArtCover(graphics, classId, artwork);
+        MenuUi.drawInsetSurface(graphics, information);
+        MenuUi.drawInsetSurface(graphics, stats);
         MenuUi.drawClassIcon(graphics, classId, information.x(), information.y() + 2, Math.min(26, font.lineHeight + 8));
         int nameX = information.x() + Math.min(26, font.lineHeight + 8) + 5;
         MenuUi.drawFit(graphics, font, Component.translatable("class.anomalousclasses." + classId.key()), nameX,
                 information.y() + 6, Math.max(1, information.right() - nameX), 0xFFF4E8D7);
-        MenuUi.drawProgressDivider(graphics, information.x(), information.y() + (height < 250 ? 30 : 35), information.width(), MenuUi.accent(classId));
-
         int compact = width < 540 || height < 310 ? 1 : 0;
         int line = compact == 1 ? Math.max(10, font.lineHeight + 1) : font.lineHeight + 4;
         int rowY = information.y() + (compact == 1 ? 38 : 44);
@@ -107,7 +106,7 @@ public final class ProfileScreen extends Screen {
 
     private void drawPair(GuiGraphics graphics, String key, String value, int y, int availableWidth) {
         Component label = Component.translatable(key);
-        int valueWidth = font.width(value);
+        int valueWidth = Math.min(Math.max(1, availableWidth / 2), Math.max(1, font.width(value)));
         int labelWidth = Math.max(1, availableWidth - valueWidth - 8);
         MenuUi.drawFit(graphics, font, label, information.x() + 3, y, labelWidth, 0xFFD8D0C5);
         MenuUi.drawFit(graphics, font, Component.literal(value), information.right() - valueWidth, y,

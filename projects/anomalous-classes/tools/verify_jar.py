@@ -140,6 +140,35 @@ def main() -> None:
                 if not png_has_transparent_pixel(archive.read(icon)):
                     fail(f"class icon has no transparent background: {icon}")
 
+                skill_icon = f"assets/anomalousclasses/textures/gui/skill_icons_v1/{class_key}.png"
+                if skill_icon not in names:
+                    fail(f"skill icon atlas missing: {skill_icon}")
+                width, height, _, _ = png_dimensions(archive.read(skill_icon))
+                if (width, height) != (1024, 1024):
+                    fail(f"unexpected skill atlas dimensions for {skill_icon}: {width}x{height}")
+                if not png_has_transparent_pixel(archive.read(skill_icon)):
+                    fail(f"skill icon atlas has no transparent pixels: {skill_icon}")
+
+            shared_ui_textures = {
+                "frame_atlas": (768, 768, True),
+                "title_plate": (1024, 342, True),
+                "surface_tile": (256, 256, False),
+                "button_states": (1024, 1024, True),
+                "node_states": (1024, 1024, True),
+                "connection_paths": (1024, 1024, True),
+                "progress_states": (1024, 1024, True),
+            }
+            for name, (expected_width, expected_height, needs_alpha) in shared_ui_textures.items():
+                entry = f"assets/anomalousclasses/textures/gui/menu_v1/{name}.png"
+                if entry not in names:
+                    fail(f"shared UI texture missing: {entry}")
+                data = archive.read(entry)
+                width, height, _, _ = png_dimensions(data)
+                if (width, height) != (expected_width, expected_height):
+                    fail(f"unexpected dimensions for {entry}: {width}x{height}")
+                if needs_alpha and not png_has_transparent_pixel(data):
+                    fail(f"shared UI state texture has no transparent pixels: {entry}")
+
             if any("textures/gui/class_cards/" in name or "textures/gui/class_cards_v2/" in name
                    or "textures/gui/class_icons/" in name for name in names):
                 fail("archived class UI artwork was incorrectly packaged")

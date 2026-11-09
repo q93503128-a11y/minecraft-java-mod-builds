@@ -35,11 +35,11 @@ public final class ClassManagementScreen extends Screen {
         int changeWidth = Math.max(1, Math.min(112, (outer.width() - 28) / 2));
         int changeX = outer.right() - changeWidth - 10;
         profileButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(profileX, footerY, buttonWidth, footerHeight),
-                Component.translatable("screen.anomalousclasses.class_management.profile"), MenuUi.accent(classId),
+                Component.translatable("screen.anomalousclasses.class_management.profile"),
                 button -> openProfile()));
         changeButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(changeX, footerY,
                 changeWidth, footerHeight), Component.translatable("screen.anomalousclasses.class_management.change_class"),
-                MenuUi.accent(classId), button -> openClassSelection()));
+                button -> openClassSelection()));
         central = new MenuUi.Box(outer.x() + 8, outer.y() + 63, Math.max(1, outer.width() - 16),
                 Math.max(1, footerY - (outer.y() + 72)));
     }
@@ -48,12 +48,12 @@ public final class ClassManagementScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         graphics.fill(0, 0, width, height, 0x70201D25);
-        MenuUi.drawPanel(graphics, outer, MenuUi.accent(classId));
-        MenuUi.drawCentered(graphics, font, title, width / 2, outer.y() + 5, outer.width() - 24, 0xFFF1E7D7);
+        MenuUi.drawPanel(graphics, outer);
+        MenuUi.drawTitle(graphics, font, title, outer, width, height);
         MenuUi.drawClassIcon(graphics, classId, outer.x() + 16, outer.y() + 31, 25);
         MenuUi.drawFit(graphics, font, Component.translatable("class.anomalousclasses." + classId.key()),
                 outer.x() + 48, outer.y() + 38, Math.max(1, outer.width() - 64), 0xFFF0E6D8);
-        MenuUi.drawPanel(graphics, central, MenuUi.accent(classId));
+        MenuUi.drawInsetSurface(graphics, central);
         for (Renderable renderable : renderables) renderable.render(graphics, mouseX, mouseY, partialTick);
     }
 

@@ -88,3 +88,47 @@ The package is at `build/libs/anomalous-classes-0.1.0-alpha.1.jar`; the checksum
 - Skill investment and storage are implemented; passive combat effects are not. No gameplay, combat, balance, or AI review was performed.
 - Existing `EventBusSubscriber.bus()` removal warnings remain in `ClientModEvents.java:14`.
 - The existing GitHub Actions workflow uploads the built JAR, checksum, report, and raw CI log bundle on a successful `main` build.
+
+## 2026-11-09 — Profile and skill-tree visual quality follow-up
+
+### Baseline and scope
+
+- Fetched `origin/main` before continuing. Local `main` and fetched `origin/main` both matched `f1c1fb8d5e7230d790f137ab103ebeaf1b836cce` (`anomalous-classes: remove K class selection shortcut`). That change remains intact; no K class-selection mapping or behavior was restored.
+- Only `projects/anomalous-classes/` was changed. The pre-existing untracked `projects/turnbound/` remains untouched.
+- The existing server-owned profile, class-specific skill data, SP transactions, reset restriction, class selection/change flow, and M key profile action were preserved. No gameplay, combat, or balance code was changed.
+- The baseline build exposed a missing `org.lwjgl.glfw.GLFW` import in the existing M key mapping. Adding that import preserves the M mapping while allowing the existing key registration to compile.
+
+### Visual work
+
+- Profile, skill tree, and class management now share authored frame, blank title-plaque, and surface textures with button, node-state, connection, and rank-progress atlases. The six class-specific 4×4 skill icon atlases are separate runtime PNG assets, keyed by canonical node order. Sources and processing are documented in `THIRD_PARTY_ASSETS.md`; no external art, fonts, paid assets, or library dependency was introduced.
+- Profile retains the large class illustration, server-stored level/experience/SP, and the four server-reported attributes. Navigation controls are compact. No XP progress bar was invented.
+- The tree uses the canonical six skill catalogs, current/max rank, next-rank cost, next breakpoint/cost, per-class icons, and distinct uninvested/invested/selected/hover states. Lines express the existing tree relationships without adding prerequisites. The internal passive-effect status banner was removed; skill investment remains stored but passive combat effects remain unimplemented.
+- Class management keeps its intentionally empty central area and only the common frame, current class identity, profile return, and class-change action.
+- A comparison and limitation record is in `ui/reviews/2026-11-09/PROFILE_SKILLTREE_VISUAL_REVIEW.md`. Actual Minecraft profile/tree screenshots were not available for this pass; no in-game screenshot comparison is claimed.
+
+### Build and static verification
+
+| Check | Result |
+|---|---|
+| Java / Gradle | Java 21.0.10 / Gradle 8.8 |
+| `./gradlew.bat --console=plain clean build` | **PASS** — 6 tasks executed; `test` is `NO-SOURCE` |
+| Profile/skill-tree static verifier | **PASS** — canonical trees, bilingual labels, and all 9 aspect-ratio / GUI-scale cases |
+| JAR verifier | **PASS** — 9,378,884 bytes; 48 classes; metadata, assets, data, all new UI texture atlases, and duplicate-entry checks passed |
+| SHA-256 | `e1015912b916304ccf88615fa731e9d7bf7cc33035a3e73e55d078d46744eac8` |
+| Datagen / GameTest / dedicated server | **NOT RUN** — no configured datagen or GameTest source; outside this UI-only change |
+| Minecraft screen interaction | **NOT RUN** — CUA was not used |
+
+Deliverables:
+
+- `artifacts/anomalous-classes-0.1.0-alpha.1.jar`
+- `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`
+- `artifacts/raw-logs.zip` (sanitized build, static-layout, and JAR-verifier logs)
+
+The existing `ClientModEvents.java:14` `EventBusSubscriber.bus()` removal warnings remain. `tools/verify_profile_skilltree.py` uses conservative Korean/English width estimates for group labels; actual Minecraft glyph widths and texture sampling require in-game review.
+
+### Runtime review boundary
+
+- No matching Minecraft client was running before launch. The updated `runClient` now remains active in a responsive window titled `Minecraft NeoForge* 1.21.1`; its log confirms `anomalousclasses` resources were loaded and OpenAL initialized.
+- **CLIENT TESTED: NOT RUN.** The client has not been used to open or interact with these screens. After launch, the user should enter a world, press `M`, then inspect Profile → Skill Tree and Profile → Class Management at the requested GUI scales and aspect ratios.
+- **CLIENT RUNNING:** yes. The client remains open at the startup/title screen. No world or UI screen was opened because live client interaction is outside this review and CUA was not used.
+- The approved concept images guided the composition and visual language, but the resulting textures are not a pixel-perfect copy. Further ornament and glyph treatment cannot be confirmed without the user's actual Minecraft screen review.
