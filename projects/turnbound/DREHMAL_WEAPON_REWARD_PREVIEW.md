@@ -10,3 +10,7 @@
 - 원본 ZIP의 SHA를 확인한 뒤 백업하고, 복사본 수정 후 해시 기록/정확한 복구를 수행한다. 오프라인 `turnbound-stage.json`이 없는 원본 및 활성화된 월드는 거부한다.
 - 기존 automatic load/tick 3개 진입점 및 Terminus 명령 블록 62개와 같은 사본에 모두 적용 후 복원하는 통합 검증: [GitHub workflow](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-weapon-preview.yml).
 - 이번 분리 도구는 정식 모드팩 맵 설치기가 아니며 게임 안의 지형·장치·맵 플레이 적합성은 미검증. 다른 업적 462개, 기타 원작 기능은 그대로 남는다. 원작 스크립트는 TURNBOUND에 채택하지 않는다.
+
+## 실측 검증 결과 (공식 원본 v2.2.2f)
+
+[TURNBOUND original weapon advancement reward isolation #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42603106525): **SUCCESS**. 공식 전체 월드에서 39개 보상 필드를 선택적으로 비활성화한 뒤, 기존 자동 실행 진입점 차단 및 Terminus 62개 차단과 함께 역순 복원 성공. 원본 `hi_drehmal.zip` SHA-256 재일치. 이 작업은 재사용/이식이 아니라 기존 원작 보상만 차단한 안전성 시험이며, 실제 게임 속 무기 획득·퀘스트·퍼즐 연결 검증은 남아 있다.

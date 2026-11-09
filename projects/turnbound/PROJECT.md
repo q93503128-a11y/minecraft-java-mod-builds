@@ -6,6 +6,8 @@
 
 > **Drehmal 원작 코드 활용의 승인 경계 (2026-11-09, 사용자 명시):** 원작 맵 지형/건축물을 보존하며 원작 시스템을 분리하는 것은 현재 작업 범위다. 그러나 `Drehmal`의 원본 함수·명령·JSON 동작·Terminus/기타 시스템을 TURNBOUND 게임 로직으로 **복사, 재사용, 이식, 각색하거나 기존 기획을 바꾸는 일은 별도 사용자 승인 전 금지**한다. 쓸 만한 기술을 발견하면 파일 ID, 실제 역할, 장점/의존성/라이선스와 기존 TURNBOUND 시스템 중복 여부를 **재사용 후보(미승인)**로만 보고한다. TURNBOUND 역참은 원래 승인된 기획이며 Terminus로 대체하지 않는다. 개별 원작 코드를 채택하지 않고, 검증된 복사본에서 원작 게임 기능을 끄는 분리 작업은 위 범위 안에서 계속할 수 있다. **맵 전체 분리는 아직 미완료**다.
 
+> **통합 맵 분리 체크포인트 (2026-11-09):** [공식 복사본에서 무기 업적 보상 39개 + 자동 실행 진입점 3개 + Terminus 명령 블록 62개 동시 차단·완전 복구 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42603106525). 원작 [비함수 명령·예약·업적 감사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42591982023). **최종 맵 분리 미완료, 실플레이 미실시, 원작 코드 재사용 0건.** [상세 기록](DREHMAL_DATA_PACK_SEPARATION.md).
+
 ## Current build contract (supersedes historical implementation checkpoints below)
 - Slug: `projects/turnbound/`; Mod ID / namespace: `turnbound`.
 - Mod version: `0.1.0-alpha.17` (현재 마이그레이션 빌드의 식별자이며 플레이 가능 릴리스가 아님).
