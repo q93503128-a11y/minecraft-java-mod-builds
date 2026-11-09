@@ -1,0 +1,76 @@
+name: TURNBOUND original weapon advancement reward isolation
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-weapon-preview.yml'
+      - 'projects/turnbound/tools/preview_drehmal_weapon_rewards.py'
+      - 'projects/turnbound/tools/test_preview_drehmal_weapon_rewards.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test exact original weapon advancement scope
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_preview_drehmal_weapon_rewards.py'
+      - name: Get previously verified official audit metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/source-graph
+          gh run download 42574103795 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/source-positions
+          gh run download 42591982023 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/source-aux
+      - name: Extract original official map to runner temporary storage
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "${RUNNER_TEMP}/shards" --world-dir "${RUNNER_TEMP}/official-drehmal"
+      - name: Verify combined reversible separation WITHOUT activating world
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/drehmal_pack_boundary.py stage --source "${RUNNER_TEMP}/official-drehmal" --destination "${RUNNER_TEMP}/turnbound-separation-copy"
+          w="${RUNNER_TEMP}/turnbound-separation-copy"
+          aux=build/source-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/source-graph/build/drehmal-official-2.2.2f-summary.json
+          pos=build/source-positions/command-trigger-positions.json
+          python3 tools/preview_drehmal_weapon_rewards.py inspect --world-copy "$w" --source-aux "$aux" --source-graph "$graph" --output build/weapon-inspect.json
+          python3 tools/preview_drehmal_weapon_rewards.py apply --world-copy "$w" --source-aux "$aux" --source-graph "$graph" --output build/weapon-applied.json
+          python3 tools/drehmal_auto_root_preview.py apply --world-copy "$w" --output build/auto-root-applied.json
+          python3 tools/patch_drehmal_terminus_commands.py apply --world-copy "$w" --positions "$pos" --output build/tower-applied.json
+          python3 tools/patch_drehmal_terminus_commands.py restore --world-copy "$w" --output build/tower-restored.json
+          python3 tools/drehmal_auto_root_preview.py restore --world-copy "$w" --output build/auto-root-restored.json
+          python3 tools/preview_drehmal_weapon_rewards.py restore --world-copy "$w" --output build/weapon-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          read=lambda name:json.loads((Path("build")/(name+".json")).read_text())
+          w=read("weapon-applied");a=read("auto-root-applied");t=read("tower-applied")
+          wr=read("weapon-restored");ar=read("auto-root-restored");tr=read("tower-restored")
+          assert w["advancement_count"]==wr["advancement_count"]==39
+          assert t["target_count"]==tr["target_count"]==62
+          assert len(t["regions"])==tr["region_count"]==30
+          assert ar["status"]=="RESTORED"
+          assert wr["pack_sha256"]=="f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74"
+          print("PASS: official copied world separated at 39 reward callbacks, 3 auto roots, 62 tower commands and restored exactly")
+          PY
+      - name: Save metadata only — never upload original map
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-combined-reversible-preview
+          path: |
+            projects/turnbound/build/weapon-*.json
+            projects/turnbound/build/auto-root-*.json
+            projects/turnbound/build/tower-*.json
+          if-no-files-found: warn
+          retention-days: 14
