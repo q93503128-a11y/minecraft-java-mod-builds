@@ -1,0 +1,43 @@
+name: TURNBOUND Drehmal original auxiliary execution audit
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-auxiliary-audit.yml'
+      - 'projects/turnbound/tools/audit_drehmal_auxiliary_sources.py'
+      - 'projects/turnbound/tools/test_audit_drehmal_auxiliary_sources.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify read-only command and JSON classifier tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_audit_drehmal_auxiliary_sources.py'
+      - name: Retrieve SHA-verified official Drehmal source to ephemeral storage
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "${RUNNER_TEMP}/source-shards" \
+            --world-dir "${RUNNER_TEMP}/drehmal-verified-original"
+      - name: Audit command types, schedules, and advancement callbacks WITHOUT modifications
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/audit_drehmal_auxiliary_sources.py \
+            --world "${RUNNER_TEMP}/drehmal-verified-original" \
+            --report build/drehmal-auxiliary-entrypoints.json
+      - name: Publish redacted analysis only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-auxiliary-execution-audit
+          path: projects/turnbound/build/drehmal-auxiliary-entrypoints.json
+          if-no-files-found: warn
+          retention-days: 14
