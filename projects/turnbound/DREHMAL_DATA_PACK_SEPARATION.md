@@ -1,0 +1,44 @@
+# Drehmal 원작 시스템 분리 — 현재 검증 범위
+
+## 정본
+- 대상: 공식 Drehmal: APOTHEOSIS **2.2.2f**, Minecraft 1.20.1/Fabric.
+- 공식 map release: https://github.com/Drehmal-Team/map/releases/tag/v2.2.2f
+- ZIP 파일: shard_1.zip (1,484,178,230 B), shard_2.zip (1,641,289,974 B), shard_3.zip (861,863,079 B). 리소스팩 resources.zip (190,255,507 B).
+- 현 GitHub 작업 정본: TURNBOUND \`turnbound-content-rebuild\` / \`projects/turnbound/\`. 다른 프로젝트 TURNBOUND: RE 또는 과거 알파 콘텐츠와 섞지 않음.
+
+## 현 작업 상태
+**원본 v2.2.2f 월드 바이너리의 내부 데이터팩은 아직 열지 못했음.** 런타임에 4 GB가 넘는 공식 월드 압축파일이 제공되지 않았으며, 현재 \`q93503128-a11y/minecraft-java-mod-builds\`에는 해당 원본 월드가 없음.
+
+- \`tools/drehmal_pack_boundary.py\`: 실제 추출한 월드의 함수, \`minecraft:load\`/\`minecraft:tick\` 참조, 연결된 함수 그래프, 보상/진척도/이동/월드 변경 명령을 **읽기 전용**으로 조사.
+- \`audit\`는 필수 \`level.dat\` 및 \`datapacks/\`를 요구하며 저장 데이터 수정 없음.
+- \`stage\`는 원본을 보존하고 별도 위치에 **전체 월드 복사본**을 생성. 기존 대상 경로 덮어쓰기와 소스 내부 복사 금지. 이 단계에서도 원본 함수나 맵 장치는 건드리지 않음.
+- 데이터팩 분석 결과에 "REVIEW_REQUIRED"라고 표기하며, *시각/퍼즐/포탈에 필요한 명령을 증거 없이 자동으로 제거하지 않음*.
+- **커맨드 블록/레드스톤 호출·명령 블록 광차 등 region NBT 검사는 아직 구현되지 않았음.** 함수만 보고 전체 기능을 분리했다고 결론 내리지 않는다.
+
+## 재현
+\`\`\`bash
+# 공식 맵 조각을 정상 추출·조립한 후:
+python3 tools/drehmal_pack_boundary.py audit \
+  --world "/path/to/official-Drehmal" \
+  --output "/path/to/reports/drehmal-2.2.2f-functions.json"
+
+# 디스크 여유(원본 이상의 용량)를 확인하고 별도 보존 사본 생성:
+python3 tools/drehmal_pack_boundary.py stage \
+  --source "/path/to/official-Drehmal" \
+  --destination "/path/to/turnbound-drehmal-copy"
+\`\`\`
+
+## 분리 우선순위
+1. 동일 월드에서 \`load\`, \`tick\`, 스케줄 및 외부 명령 블록 경로의 **실제 함수 ID**를 추출한다.
+2. 원본 서사/전투/보상 계통과 **지도 구조 유지**에 필요한 문·포탈·워프·전용 텍스처/자막 계통을 호출 관계별로 구분한다.
+3. 참조되는 기능을 삭제하여 지도에 깨진 오브젝트가 생기지 않게 한다. 필요한 것은 TURNBOUND 기능으로 교체하면서 최종 원작 상호작용을 분리한다.
+4. 검토된 파일의 정확한 경로·SHA를 고정한 변경 목록으로 **복사본에만** 반영한다.
+5. 실제 1.20.1/Fabric 클라이언트에서 서사/퀘스트/보상 재진입 여부, 문·포탈·Terminus, 월드 렌더링 및 멀티플레이를 확인한다.
+
+## 전투 엔진 이식
+- \`GenericBattleResolver\`는 서버 측 공통 전투 로직이 사용할 **로더 비종속 액션 실행기**다. 1000 고정소수점 게이지, 행동/타깃 검증, 피해·회복·실드·게이지·부활의 공통 하위 기능을 구현하고, 구현되지 않은 복잡 효과는 행동 전에 거절한다.
+- 실제 필드 몬스터, 캐릭터 수집/저장, 공동 전투, 패시브, 카메라/UI, 스킬 전체·보상 처리 등은 **미구현**. 이 실행기는 아직 월드 엔티티를 자동 조우/전투로 전환하지 않는다. 캐릭터 기획·보스·스킬 수치를 임의로 채워 넣지 않는다.
+- 이 단계의 자동 테스트는 순수 전투 액션의 거절/성공/상태 불변성만 검증한다.
+
+## 수동 판단이 필요한 부분
+원본의 시각 효과나 특정 도어/워프가 데이터팩에서 제공되는지는 실제 함수·NBT·클라이언트 검사 뒤 판정해야 한다. 현재는 원본 지도 삭제/수정/원본 코드 비활성화 **0건**이다.

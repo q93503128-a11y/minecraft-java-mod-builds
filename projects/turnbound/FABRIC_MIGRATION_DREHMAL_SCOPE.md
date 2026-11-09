@@ -61,3 +61,7 @@ These are **official/reference behavior, not verified in the provided v2.2.2f bi
 - **Publication permissions:** adapting the map for an independent RPG server or redistributing map assets requires contacting Drehmal creators; the wiki also states creator credit and limitations on monetization. Source: https://wiki.drehmal.cyou/Help/FAQ/
 
 The audit tool and source-preserving migration boundary are ready to use on an **isolated map copy**. No original Drehmal functions have yet been disabled on disk or demonstrated safe to disable.
+
+## 2026-11-09 subsequent separation and combat unit
+
+See [DREHMAL_DATA_PACK_SEPARATION.md](DREHMAL_DATA_PACK_SEPARATION.md). Added a non-destructive datapack call-graph inspector/copy stager and a loader-independent common action resolver. The actual official world files were **not** analyzed or disabled, and the combat resolver is not yet connected to player-facing world encounters. Keep old source/saves safe.

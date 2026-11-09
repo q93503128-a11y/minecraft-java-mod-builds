@@ -29,6 +29,7 @@ jobs:
         working-directory: projects/turnbound
         run: |
           set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_*.py'
           gradle test build --no-daemon --stacktrace | tee gradle-build.log
       - name: Verify produced Fabric JAR
         working-directory: projects/turnbound
