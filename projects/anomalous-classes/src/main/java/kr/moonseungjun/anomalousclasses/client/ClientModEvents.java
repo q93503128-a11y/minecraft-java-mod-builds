@@ -17,7 +17,6 @@ public final class ClientModEvents {
 
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-        event.register(ClassSelectionKeyMappings.OPEN_CLASS_MENU);
         event.register(ClassSelectionKeyMappings.OPEN_PROFILE);
     }
 
