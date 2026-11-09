@@ -24,6 +24,11 @@ class SourceReferenceTest(unittest.TestCase):
             with self.subTest(command=command,expected=expected):
                 self.assertIn(expected,m.parse_command(command)[0])
 
+    def test_matches_range_does_not_treat_run_as_an_objective(self):
+        refs,_=m.parse_command("execute if score @s ai_state matches 1.. run setblock ~ ~ ~ air")
+        self.assertIn(("ai_state","score_condition"),refs)
+        self.assertNotIn(("run","score_condition"),refs)
+
     def test_storage_reads_and_writes_identifiers_only(self):
         refs=m.parse_command("execute store result storage drehmal:door value int 1 run scoreboard players get @s stage")
         self.assertIn("drehmal:door",refs[1])
