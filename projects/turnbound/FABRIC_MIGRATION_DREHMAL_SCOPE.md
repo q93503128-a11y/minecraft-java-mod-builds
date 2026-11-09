@@ -68,5 +68,5 @@ See [DREHMAL_DATA_PACK_SEPARATION.md](DREHMAL_DATA_PACK_SEPARATION.md). Added a 
 
 ## Fabric separation checkpoint (2026-11-09)
 - [Drehmal separation status and inspector](DREHMAL_DATA_PACK_SEPARATION.md).
-- Build/test [TURNBOUND #1068](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42566636024): core-logic Python/JDK17 + Gradle Fabric tests/build/JAR verification PASS, source SHA `3b65df702332741e264eaac160c01607be5b1ced`.
+- Build/test [TURNBOUND #1070](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42566636024): core-logic Python/JDK17 + Gradle Fabric tests/build/JAR verification PASS, source SHA `3b65df702332741e264eaac160c01607be5b1ced`.
 - Actual v2.2.2f world binaries, original datapack disabling, multiplayer and in-world play remain NOT TESTED. No world copy has been created or modified remotely.

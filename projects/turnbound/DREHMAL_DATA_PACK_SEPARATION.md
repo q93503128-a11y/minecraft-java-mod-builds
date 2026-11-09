@@ -55,7 +55,7 @@ python3 tools/drehmal_pack_boundary.py stage \
 원본 설치 프로그램 manifest 기준 추출된 월드 예상 크기는 5,139,218,299 bytes. Resource pack \`resources.zip\`은 190,255,507 bytes로 별도 보존해야 한다. 원본/리소스팩을 저장소에 직접 포함하지 않는다. 오프라인 월드 검사 전에 공식 조각 해시를 검증할 것.
 
 ## 검증 결과 및 남은 게임 내부 작업
-- GitHub [Build TURNBOUND #1068](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42566636024) **SUCCESS** at \`3b65df702332741e264eaac160c01607be5b1ced\`.
+- GitHub [Build TURNBOUND #1070](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42566636024) **SUCCESS** at \`3b65df702332741e264eaac160c01607be5b1ced\`.
 - \`core-logic\`: Python 합성 맵 데이터팩 및 .mca 명령 블록 테스트 PASS; JDK 17 단독 범용 전투 코드 컴파일·행동 검증 PASS.
 - \`fabric-build\`: Fabric 1.20.1 Gradle 테스트/빌드 및 생성 JAR 구조검증 PASS.
 - 기존 CI 두 회의 504 오류는 Gradle distribution 다운로드 단계의 외부 오류로, 해당 커밋의 코드 컴파일 결과가 아님. 이후 정상 빌드에서 통과.
