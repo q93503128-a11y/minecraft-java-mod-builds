@@ -27,3 +27,10 @@ Next: connect the actual field encounter catalog and a fully owned party state, 
 - Commit `ff035f9ae6282e359e530f3c28bbc37ba5df9c0a` → [Build TURNBOUND #1072](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568147041): `core-logic` PASS and `fabric-build` PASS, JAR produced.
 - Old `PROJECT.md` and README NeoForge text is historical and no longer active.
 - Neither an end-to-end battle launched by an encounter nor a multiplayer client session has been played. No enemy AI or player-facing battle screen is present yet.
+
+## Server AI progression and anti-stall (2026-11-09)
+
+- A session now advances an **enemy turn** on the server once per tick if the next actor is an enemy. Human turns remain paused pending an authenticated action. No client packet is needed to execute an enemy.
+- The fallback enemy policy currently uses **only the authored enemy's basic skill**, validated by the same `GenericBattleResolver` as human commands, and respects taunt and target rules. It has no invented enemy skill rotation or artificial odds.
+- Per-tick processing is limited to **one enemy action per battle** to avoid synchronous runaway turns. A successful enemy action bumps the authoritative revision and synchronizes the changed snapshot to all participants.
+- Invalid authored enemy basics are treated as errors rather than silently skipped. This is still a **technical foundation**: encounter triggers, data catalogs, model/animation, rewards, UI, enemy kit AI strategy, persistence, recovery and multiplayer playtesting remain open.

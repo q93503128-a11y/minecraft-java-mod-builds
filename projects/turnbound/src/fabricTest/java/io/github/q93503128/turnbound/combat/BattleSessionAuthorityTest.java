@@ -86,4 +86,43 @@ final class BattleSessionAuthorityTest {
                         Map.of(owner, Set.of("enemy"))));
         assertEquals(0, registry.activeCount());
     }
+    @Test void enemyActsWithoutClientInputAndTauntIsHonored() {
+        UUID owner = UUID.randomUUID();
+        var enemy = unit("enemy", CombatantSide.ENEMY, 320);
+        var mage = unit("mage", CombatantSide.ALLY, 110);
+        var tank = unit("tank", CombatantSide.ALLY, 110);
+        enemy.putStatus(new StatusInstance("taunt", "tank", 2, 1.0));
+        var state = new BattleState(List.of(mage, tank, enemy));
+        var registry = new BattleSessionRegistry();
+        var session = registry.open("minecraft:overworld", state,
+                Map.of(owner, Set.of("mage", "tank")));
+        assertEquals("enemy", session.viewFor(owner).currentActorId());
+        long before = session.revision();
+        assertTrue(session.advanceEnemyTurn());
+        assertEquals(100, mage.hp());
+        assertTrue(tank.hp() < 100);
+        assertEquals(before + 1, session.revision());
+        registry.close(session.id());
+    }
+
+    @Test void enemyChainMakesOneActionPerAdvanceCall() {
+        UUID owner = UUID.randomUUID();
+        var hero = unit("hero", CombatantSide.ALLY, 120);
+        var enemy = unit("enemy", CombatantSide.ENEMY, 320);
+        var state = new BattleState(List.of(hero, enemy));
+        var registry = new BattleSessionRegistry();
+        var session = registry.open("minecraft:overworld", state, Map.of(owner, Set.of("hero")));
+        long revision = session.revision();
+        assertTrue(session.advanceEnemyTurn());
+        assertEquals(revision + 1, session.revision());
+        // Only one action per call, regardless of how much quicker the enemy is.
+        assertEquals(1, state.events().stream().filter(e -> e.type().equals("ACTION")).count());
+        // A rejected stale packet cannot interrupt the next turn.
+        var invalid = new BattleSessionAuthority.Action(session.id(), revision,
+                "hero", "basic", List.of("enemy"));
+        assertEquals(BattleSessionAuthority.Status.STALE_REVISION,
+                registry.submit(owner, "minecraft:overworld", invalid));
+        registry.close(session.id());
+    }
+
 }

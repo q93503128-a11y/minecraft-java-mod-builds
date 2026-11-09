@@ -59,6 +59,18 @@ public final class GenericBattleSelfTest {
             throw new AssertionError("replayed turn changed combat");
         registry.close(session.id());
         if (registry.activeCount() != 0) throw new AssertionError("session not released");
+        var firstEnemy = unit("firstEnemy", CombatantSide.ENEMY, 320, List.of(basic()));
+        var firstHero = unit("firstHero", CombatantSide.ALLY, 110, List.of(basic()));
+        var enemyFirstState = new BattleState(List.of(firstHero, firstEnemy));
+        var owner2 = UUID.randomUUID();
+        var enemyFirstSession = registry.open("minecraft:overworld", enemyFirstState,
+                Map.of(owner2, Set.of("firstHero")));
+        if (!"firstEnemy".equals(enemyFirstState.currentActorId())) {
+            throw new AssertionError("enemy is not the first actor");
+        }
+        if (!enemyFirstSession.advanceEnemyTurn()) throw new AssertionError("enemy turn was not processed");
+        if (firstHero.hp() >= firstHero.maxHp()) throw new AssertionError("enemy did no damage");
+        registry.close(enemyFirstSession.id());
         System.out.println("PASS: actor scheduling, atomic prevalidation, damage and turn completion");
     }
 }

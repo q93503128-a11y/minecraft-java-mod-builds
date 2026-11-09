@@ -9,6 +9,7 @@ import io.github.q93503128.turnbound.combat.BattleSessionAuthority;
 import io.github.q93503128.turnbound.combat.BattleSessionRegistry;
 import io.github.q93503128.turnbound.combat.BattleState;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -39,6 +40,16 @@ public final class TurnboundBattleBridge {
             if (registry != null) registry.clear();
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sync(handler.player));
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (!TurnboundWorldGate.active(server)) return;
+            BattleSessionRegistry registry = SERVERS.get(server);
+            if (registry == null) return;
+            // At most one enemy action per battle per tick. Snapshot is
+            // synchronized only for sessions that actually changed.
+            for (BattleSessionAuthority session : registry.advanceEnemyTurns()) {
+                syncParticipants(server, session);
+            }
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(ACTION, (server, player, handler, buf, responseSender) -> {
             // Decode on the network thread, then execute state changes on the server thread.

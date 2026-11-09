@@ -49,6 +49,18 @@ public final class BattleSessionRegistry {
                 : battle.submit(sender, worldId, action);
     }
 
+    /**
+     * Process at most one NPC action per active battle in a server tick.
+     * Keeps the Minecraft world responsive even during long enemy chains.
+     */
+    public java.util.List<BattleSessionAuthority> advanceEnemyTurns() {
+        java.util.List<BattleSessionAuthority> changed = new java.util.ArrayList<>();
+        for (BattleSessionAuthority session : byId.values()) {
+            if (session.advanceEnemyTurn()) changed.add(session);
+        }
+        return java.util.List.copyOf(changed);
+    }
+
     public void close(long sessionId) {
         BattleSessionAuthority battle = byId.remove(sessionId);
         if (battle == null) return;

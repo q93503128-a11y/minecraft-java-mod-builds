@@ -135,5 +135,21 @@ public final class BattleSessionAuthority {
         return Status.ACCEPTED;
     }
 
+    /**
+     * At most one enemy turn per call. Called from server tick; player decision
+     * turns remain paused. An invalid enemy kit is an explicit error, never a
+     * silent pass or a simulated attack.
+     */
+    public boolean advanceEnemyTurn() {
+        if (closed || state.outcome() != BattleOutcome.RUNNING) return false;
+        if (state.currentActorId() == null) resolver.beginTurn();
+        if (!EnemyTurnDirector.actOne(state, resolver)) return false;
+        revision = Math.incrementExact(revision);
+        if (state.outcome() == BattleOutcome.RUNNING) resolver.beginTurn();
+        return true;
+    }
+
+    public boolean finished() { return state.outcome() != BattleOutcome.RUNNING; }
+
     public void close() { closed = true; }
 }
