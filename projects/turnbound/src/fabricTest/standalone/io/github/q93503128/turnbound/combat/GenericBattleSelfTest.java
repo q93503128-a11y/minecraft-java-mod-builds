@@ -1,0 +1,38 @@
+package io.github.q93503128.turnbound.combat;
+
+import java.util.List;
+
+/** JDK-only smoke of the migrated battle state machine. No game or Gradle needed. */
+public final class GenericBattleSelfTest {
+    private static SkillDefinition basic() {
+        return new SkillDefinition("basic", "Basic", TargetRule.ENEMY_SINGLE, 0,
+                List.of(SkillEffect.damage(1.0)));
+    }
+    private static CombatantState unit(String id, CombatantSide side, int speed, List<SkillDefinition> skills) {
+        var definition = new CombatantDefinition(id, id, new BattleStats(100, 20, 10, speed),
+                "basic", skills);
+        return new CombatantState(id, definition, side, 0);
+    }
+    public static void main(String[] args) {
+        var invalid = new SkillDefinition("bad", "Bad", TargetRule.ENEMY_SINGLE, 2,
+                List.of(SkillEffect.mark("", 0)));
+        var hero = unit("hero", CombatantSide.ALLY, 200, List.of(basic(), invalid));
+        var enemy = unit("enemy", CombatantSide.ENEMY, 100, List.of(basic()));
+        var state = new BattleState(List.of(hero, enemy));
+        var engine = new GenericBattleResolver(state);
+        if (!engine.beginTurn().instanceId().equals("hero")) throw new AssertionError("turn ordering");
+        long gauge = hero.gauge();
+        try {
+            engine.resolve("hero", "bad", "enemy");
+            throw new AssertionError("malformed status was accepted");
+        } catch (IllegalArgumentException expected) {
+            if (hero.gauge() != gauge || hero.cooldown("bad") != 0)
+                throw new AssertionError("rejected action changed combat state");
+        }
+        int oldHp = enemy.hp();
+        engine.resolve("hero", "basic", "enemy");
+        if (enemy.hp() >= oldHp) throw new AssertionError("attack did no damage");
+        if (state.currentActorId() != null) throw new AssertionError("turn was not released");
+        System.out.println("PASS: actor scheduling, atomic prevalidation, damage and turn completion");
+    }
+}

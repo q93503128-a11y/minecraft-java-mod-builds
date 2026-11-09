@@ -40,6 +40,14 @@ public final class GenericBattleResolver {
             if (effect == null || !supported(effect.type())) {
                 throw new IllegalArgumentException("Effect requires authored resolver: " + effect);
             }
+            if (!Double.isFinite(effect.magnitude())) {
+                throw new IllegalArgumentException("Non-finite skill magnitude");
+            }
+            if ((effect.type() == EffectType.STATUS_MARK
+                    && (effect.key().isBlank() || effect.duration() <= 0))
+                    || (effect.type() == EffectType.STATUS_CLEAR && effect.key().isBlank())) {
+                throw new IllegalArgumentException("Malformed status effect");
+            }
         }
         List<CombatantState> targets = BattleTargetResolver.resolve(state, actor, skill, targetIds);
         if (targets.isEmpty()) throw new IllegalArgumentException("No valid targets");

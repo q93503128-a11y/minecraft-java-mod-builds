@@ -53,4 +53,18 @@ final class GenericBattleResolverTest {
         BattleState state = new BattleState(List.of(hero, enemy));
         assertThrows(IllegalStateException.class, () -> new GenericBattleResolver(state).beginTurn());
     }
+    @Test void malformedStatusIsRejectedWithoutSpendingGauge() {
+        SkillDefinition badMark = new SkillDefinition("bad", "Bad", TargetRule.ENEMY_SINGLE, 2,
+                List.of(SkillEffect.mark("", 0)));
+        CombatantState hero = unit("hero", CombatantSide.ALLY, 200, List.of(basic(), badMark));
+        CombatantState enemy = unit("enemy", CombatantSide.ENEMY, 100, List.of(basic()));
+        BattleState state = new BattleState(List.of(hero, enemy));
+        GenericBattleResolver resolver = new GenericBattleResolver(state);
+        resolver.beginTurn();
+        long before = hero.gauge();
+        assertThrows(IllegalArgumentException.class, () -> resolver.resolve("hero", "bad", "enemy"));
+        assertEquals(before, hero.gauge());
+        assertEquals(0, hero.cooldown("bad"));
+    }
+
 }
