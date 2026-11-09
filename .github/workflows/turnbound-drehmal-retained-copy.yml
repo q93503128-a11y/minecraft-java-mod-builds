@@ -1,0 +1,83 @@
+name: TURNBOUND retained offline separated Drehmal copy
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-retained-copy.yml'
+      - 'projects/turnbound/tools/prepare_drehmal_isolated_copy.py'
+      - 'projects/turnbound/tools/test_prepare_drehmal_isolated_copy.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  retained-copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test orchestration safety gates
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_prepare_drehmal_isolated_copy.py'
+      - name: Retrieve pinned original metadata only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+      - name: Download original map with official checksum verification
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "${RUNNER_TEMP}/source-shards" --world-dir "${RUNNER_TEMP}/drehmal-original"
+      - name: Create and KEEP isolated copied world until independently verified
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/drehmal_pack_boundary.py stage --source "${RUNNER_TEMP}/drehmal-original" --destination "${RUNNER_TEMP}/turnbound-isolated-review-copy"
+          w="${RUNNER_TEMP}/turnbound-isolated-review-copy"
+          aux=build/original-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/original-graph/build/drehmal-official-2.2.2f-summary.json
+          pos=build/original-triggers/command-trigger-positions.json
+          python3 tools/prepare_drehmal_isolated_copy.py inspect --world-copy "$w" --aux "$aux" --graph "$graph" --positions "$pos" --output build/isolated-preflight.json
+          python3 tools/prepare_drehmal_isolated_copy.py prepare --world-copy "$w" --aux "$aux" --graph "$graph" --positions "$pos" --output build/isolated-prepared.json
+          python3 tools/prepare_drehmal_isolated_copy.py verify --world-copy "$w" --output build/isolated-reverified.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path("build")
+          pre=json.loads((base/"isolated-preflight.json").read_text())
+          prep=json.loads((base/"isolated-prepared.json").read_text())
+          verify=json.loads((base/"isolated-reverified.json").read_text())
+          assert pre["status"]=="COPY_PREFLIGHT_NO_WRITES"
+          assert prep==verify
+          assert prep["status"]=="FOUR_BOUNDARIES_PRESENT_VERIFIED"
+          assert prep["map_separation_complete"] is False
+          assert prep["isolated_copy_retained"] is True
+          print("PASS: retained reviewed copied world with four boundaries; NO GAMEPLAY CLAIM")
+          PY
+          # No original or modified world may be published. Runner temp is erased.
+          python3 tools/prepare_drehmal_isolated_copy.py restore --world-copy "$w" --output build/isolated-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("build/isolated-restored.json").read_text())
+          assert r["status"]=="ALL_FOUR_BOUNDARIES_RESTORED_EXACTLY"
+          print("PASS: separate copy restored byte-exact before runner disposal")
+          PY
+      - name: Upload derived metadata only (NO MAP BYTES)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-retained-isolated-copy-metadata
+          path: |
+            projects/turnbound/build/isolated-preflight.json
+            projects/turnbound/build/isolated-prepared.json
+            projects/turnbound/build/isolated-reverified.json
+            projects/turnbound/build/isolated-restored.json
+          retention-days: 14
+          if-no-files-found: warn
