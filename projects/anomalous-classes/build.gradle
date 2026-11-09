@@ -54,6 +54,10 @@ tasks.processResources {
     filesMatching('META-INF/neoforge.mods.toml') {
         expand replaceProperties
     }
+    from('balance/SKILL_POINT_COST_MODEL_V2.json') {
+        into 'data/anomalousclasses'
+        rename { 'skill_point_cost_model_v2.json' }
+    }
 }
 
 tasks.jar {
@@ -65,4 +69,14 @@ tasks.jar {
                 'NeoForge-Version': neo_version
         )
     }
+}
+
+tasks.register('verifyProfileSkillTree', Exec) {
+    group = 'verification'
+    description = 'Checks the approved skill point cost source, localized node catalog, and responsive menu bounds.'
+    commandLine 'python', 'tools/verify_profile_skilltree.py'
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyProfileSkillTree')
 }

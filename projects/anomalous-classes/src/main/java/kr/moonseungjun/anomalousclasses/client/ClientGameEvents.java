@@ -2,6 +2,7 @@ package kr.moonseungjun.anomalousclasses.client;
 
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestClassMenuPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestProfilePayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -18,6 +19,10 @@ public final class ClientGameEvents {
         Minecraft minecraft = Minecraft.getInstance();
         if (ClassSelectionKeyMappings.OPEN_CLASS_MENU.consumeClick() && minecraft.player != null && minecraft.level != null) {
             PacketDistributor.sendToServer(RequestClassMenuPayload.INSTANCE);
+        }
+        if (ClassSelectionKeyMappings.OPEN_PROFILE.consumeClick() && minecraft.player != null
+                && minecraft.level != null && minecraft.screen == null) {
+            PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);
         }
     }
 }

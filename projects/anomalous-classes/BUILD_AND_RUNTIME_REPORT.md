@@ -48,3 +48,43 @@ The build retains two existing removal/deprecation warnings for `EventBusSubscri
 ## GitHub main
 
 Per repository policy, this change is committed directly to `main` without creating a branch or PR.
+
+## 2026-11-09 — Profile, skill tree, and class-management frame
+
+### Baseline and scope
+
+- Fetched `origin/main` before editing. Local `main` and fetched `origin/main` both pointed to `b7699d39522979fb44176eca47cf9ec9081ede85` (`Fix class selection text placement`).
+- Changes are limited to `projects/anomalous-classes/`; the pre-existing untracked `projects/turnbound/` was left untouched.
+- The existing class-selection screen, class selection/change flow, server-owned profile, and prior UI artwork were retained.
+
+### Implemented
+
+- `M` opens the server-backed profile. The key mapping is rebindable in Minecraft Controls.
+- Profile shows current class art/icon, class level, stored experience, current SP, and the server player's current max health, attack damage, movement speed, and armor. It has only the two requested navigation buttons.
+- The skill tree presents the canonical nodes, ranks, groupings, breakpoints, icons, and cost arrays for all six classes. One-rank, next-breakpoint, max-affordable investment, insufficient-SP/max-rank responses, and free respec are processed by the server. Respec is rejected during combat; ranks and SP are stored per class in the existing SavedData.
+- The class-management screen contains the common frame, current class identity, profile return, empty central area, and a small class-change action that reuses the existing selection screen.
+- Added an OP level-2-only `/class test grant-levels <amount>` command to exercise level/SP screens. No ordinary XP reward path was invented.
+- Reused existing class card art and icons plus vanilla item icons. No class art was replaced and no third-party assets or new libraries were added.
+
+### Build and static verification
+
+| Check | Result |
+|---|---|
+| Java / Gradle | Java 21.0.10 / Gradle 8.8 |
+| `./gradlew.bat clean build` | **PASS**; `test` is `NO-SOURCE` |
+| Profile/tree static verifier | **PASS**; canonical node names/order/max ranks, bilingual keys, purchase boundaries, and 9 layout cases |
+| JAR verifier | **PASS**; 2,187,404 bytes, 48 classes, loader metadata/assets/data present, cost model packaged, no duplicate ZIP entries |
+| SHA-256 | `2f23427468032bf1016c2ff904c90606e2b64c85d873205d7a10ba9bf364bb11` |
+| Datagen / GameTest / dedicated server | **NOT RUN**; no project datagen or GameTest source is configured |
+| Minecraft UI interaction | **NOT RUN**; CUA was not used |
+
+The package is at `build/libs/anomalous-classes-0.1.0-alpha.1.jar`; the checksum is beside it as `.jar.sha256`. Static layout notes are in `ui/reviews/2026-11-09/PROFILE_SKILLTREE_STATIC_REVIEW.md`.
+
+### Runtime and remaining boundaries
+
+- **CLIENT RUNNING:** `runClient` launched after the successful build; mod discovery, `mod/anomalousclasses` resource reload, and OpenAL initialization appeared in the launch output. The client remains running; no in-world screen was opened or interacted with.
+- **CLIENT TESTED: NOT RUN.** The user should enter a world, press `M`, inspect Profile → Skill Tree and Profile → Class Management, and verify input/readability. For SP checks, an operator can use `/class test grant-levels <amount>`.
+- The project has no RPG XP acquisition path or approved XP threshold curve. The profile shows stored XP only and does not draw a made-up progress bar.
+- Skill investment and storage are implemented; passive combat effects are not. No gameplay, combat, balance, or AI review was performed.
+- Existing `EventBusSubscriber.bus()` removal warnings remain in `ClientModEvents.java:14`.
+- The existing GitHub Actions workflow uploads the built JAR, checksum, report, and raw CI log bundle on a successful `main` build.

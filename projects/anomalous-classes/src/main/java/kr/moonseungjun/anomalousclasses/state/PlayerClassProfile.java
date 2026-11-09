@@ -45,5 +45,6 @@ public final class PlayerClassProfile {
 
     public void updateProgress(ClassId id, ClassProgress updated) {
         progress.put(id, updated);
+        revision++;
     }
 }

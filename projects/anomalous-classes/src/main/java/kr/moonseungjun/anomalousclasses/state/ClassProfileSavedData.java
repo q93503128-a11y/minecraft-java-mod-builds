@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.datafix.DataFixTypes;
@@ -51,13 +52,16 @@ public final class ClassProfileSavedData extends SavedData {
                 progressTag.putLong("experience", progress.experience());
                 progressTag.putInt("skillPoints", progress.skillPoints());
                 progressTag.put("permanentData", progress.permanentData());
+                ListTag ranks = new ListTag();
+                for (int rank : progress.skillRanks()) ranks.add(IntTag.valueOf(rank));
+                progressTag.put("skillRanks", ranks);
                 progressList.add(progressTag);
             }
             playerTag.put("progress", progressList);
             playerList.add(playerTag);
         }
         tag.put("players", playerList);
-        tag.putInt("schemaVersion", 1);
+        tag.putInt("schemaVersion", 2);
         return tag;
     }
 
@@ -76,12 +80,18 @@ public final class ClassProfileSavedData extends SavedData {
                 ClassId id = ClassId.fromKey(progressTag.getString("class")).orElse(null);
                 if (id == null) continue;
                 CompoundTag permanentData = progressTag.getCompound("permanentData");
+                ListTag rankList = progressTag.getList("skillRanks", Tag.TAG_INT);
+                int[] ranks = new int[rankList.size()];
+                for (int rankIndex = 0; rankIndex < rankList.size(); rankIndex++) {
+                    ranks[rankIndex] = Math.max(0, rankList.getInt(rankIndex));
+                }
                 progress.put(id, new ClassProgress(
                         progressTag.getBoolean("played"),
                         progressTag.contains("level", Tag.TAG_ANY_NUMERIC) ? progressTag.getInt("level") : 1,
                         progressTag.getLong("experience"),
                         progressTag.getInt("skillPoints"),
-                        permanentData));
+                        permanentData,
+                        ranks));
             }
             PlayerClassProfile profile = new PlayerClassProfile();
             profile.load(selected, progress, playerTag.getInt("revision"));

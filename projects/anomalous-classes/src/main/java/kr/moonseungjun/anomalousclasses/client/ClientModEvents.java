@@ -2,6 +2,8 @@ package kr.moonseungjun.anomalousclasses.client;
 
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -16,12 +18,17 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(ClassSelectionKeyMappings.OPEN_CLASS_MENU);
+        event.register(ClassSelectionKeyMappings.OPEN_PROFILE);
     }
 
     @SubscribeEvent
     public static void registerClientPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToClient(ClassSelectionStatePayload.TYPE, ClassSelectionStatePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
+        registrar.playToClient(ProfileStatePayload.TYPE, ProfileStatePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
+        registrar.playToClient(SkillTreeStatePayload.TYPE, SkillTreeStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
     }
 }

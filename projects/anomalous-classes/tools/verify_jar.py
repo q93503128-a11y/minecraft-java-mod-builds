@@ -101,6 +101,7 @@ def main() -> None:
                 "META-INF/neoforge.mods.toml",
                 "META-INF/MANIFEST.MF",
                 "data/anomalousclasses/class_catalog.json",
+                "data/anomalousclasses/skill_point_cost_model_v2.json",
                 "assets/anomalousclasses/lang/ko_kr.json",
                 "assets/anomalousclasses/lang/en_us.json",
             ]
@@ -153,6 +154,21 @@ def main() -> None:
                         key = f"class.anomalousclasses.{class_key}{suffix}"
                         if not language.get(key):
                             fail(f"player-facing class text missing: {language_entry} / {key}")
+
+            try:
+                skill_costs = json.loads(archive.read("data/anomalousclasses/skill_point_cost_model_v2.json"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                fail(f"invalid skill-point data: {error}")
+            expected_trees = {
+                "mental": (10, 270), "puppet": (10, 290), "parasite": (10, 285),
+                "barrier": (9, 300), "pact": (9, 270), "swarm": (9, 270),
+            }
+            for key, (node_count, rank_count) in expected_trees.items():
+                nodes = skill_costs.get("classes", {}).get(key, {}).get("nodes", [])
+                if len(nodes) != node_count or sum(node.get("max_rank", 0) for node in nodes) != rank_count:
+                    fail(f"unexpected skill tree shape in packaged cost data: {key}")
+                if sum(sum(node.get("rank_costs", [])) for node in nodes) != 900:
+                    fail(f"skill tree cost does not total 900 SP: {key}")
 
             metadata = archive.read("META-INF/neoforge.mods.toml").decode("utf-8")
             manifest = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
