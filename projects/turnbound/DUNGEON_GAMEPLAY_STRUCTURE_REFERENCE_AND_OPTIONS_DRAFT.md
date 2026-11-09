@@ -1,5 +1,16 @@
 # TURNBOUND — Dungeon Gameplay Structure: References and Design Options
 
+
+## Confirmed cooperative dungeon run and joint exit — 2026-11-09
+- **User-confirmed cooperative mode:** same generated dungeon's authored enemy/room progress and full-clear completion are SHARED across active teammates. Teammates may split up and fight different rooms concurrently.
+- **Combat/room/dungeon clear/all-clear rewards are full and equal for each eligible teammate, no reward splitting or missing rewards when somebody else fights**. Exactly-once personal server settlement required; team member eligibility rules for join-in-progress remain to design.
+- **Joint exit:** the whole active dungeon party must gather physically in the escape room, then leave together through the exit interaction. An individual cannot unilaterally finish or pull absent teammates out. Specific who-clicks/confirmation interactions still OPEN.
+- **Per-player only:** dungeon defeats, 3-loss 30-connected-minute entry ban and owned inventory/resources remain personal. A locked-out teammate, disconnect, staggered rejoin and exit vote/roster management cannot trap the other party indefinitely; exact policy OPEN.
+- Preserve reward/result UI safety, normal Minecraft walking/building, on-site battles, one-hour full-value repeat cycle and all-enemies all-clear at actual exit.
+- Multiplay same-room skill-control and chest/mined loot ownership are separate OPEN implementation/design decisions, not settled by equal currency/encounter rewards.
+- Detailed authority: `DUNGEON_EXIT_UI_MULTIPLAYER_OPTIONS_DRAFT.md`. Documentation only; no multiplayer gameplay tested or built.
+
+
 ## Confirmed dungeon clear on exit interaction and safe reward screens — 2026-11-08
 
 **Latest user-approved rule; supersedes older suggestions that beating a boss, collecting the central relic, reaching the exit room, or completing a room by itself marks the dungeon as cleared.**
