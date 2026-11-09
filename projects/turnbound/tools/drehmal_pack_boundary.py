@@ -16,6 +16,7 @@ import sys
 import zipfile
 from collections import defaultdict, Counter
 from pathlib import Path, PurePosixPath
+from scan_drehmal_command_blocks import scan_world
 
 FUNCTION = re.compile(r"^data/([a-z0-9_.-]+)/functions/([a-z0-9_./-]+)\.mcfunction$")
 TAG = re.compile(r"^data/([a-z0-9_.-]+)/tags/functions/([a-z0-9_./-]+)\.json$")
@@ -148,6 +149,7 @@ def inspect_world(world: Path) -> dict:
         meta["reachable_from_load_or_tick"] = fid in root_functions
         meta["review_status"] = "REVIEW_REQUIRED"
         # Mechanism is reference classification, not an inferred safe-disable verdict.
+    command_blocks = scan_world(world)
     return {
         "schema": 1, "source": str(world.resolve()),
         "level_dat_sha256": hashlib.sha256((world / "level.dat").read_bytes()).hexdigest(),
@@ -158,10 +160,7 @@ def inspect_world(world: Path) -> dict:
         "tags": [tags[k] for k in sorted(tags)],
         "unresolved_calls": unresolved,
         "duplicate_function_ids": sorted(set(duplicate_ids)),
-        "command_blocks": {
-            "status": "NOT_SCANNED",
-            "note": "Command blocks and command minecarts in region NBT must be inspected before disabling any target."
-        },
+        "command_blocks": command_blocks,
         "classification": "INSPECTION_ONLY",
         "safety": "A function classified as rewards or progression can still control map doors, teleporters or visuals. No automatic deactivation is permitted."
     }
@@ -213,7 +212,7 @@ def main(argv=None):
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"Audit written: {output} | functions={report['function_count']} "
-              f"| tick/load reachable={report['reachable_function_count']} | command blocks NOT SCANNED")
+              f"| tick/load reachable={report['reachable_function_count']} | command block region scan included")
 
 if __name__ == "__main__":
     try:

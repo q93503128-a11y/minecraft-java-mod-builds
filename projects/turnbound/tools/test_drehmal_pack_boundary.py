@@ -40,7 +40,7 @@ class DrehmalBoundaryTest(unittest.TestCase):
         self.assertTrue(funcs["drehmal:loop"]["reachable_from_load_or_tick"])
         self.assertEqual(funcs["drehmal:story/reward"]["called_by"], ["drehmal:loop"])
         self.assertIn("world_edit", funcs["drehmal:door/open"]["categories"])
-        self.assertEqual(report["command_blocks"]["status"], "NOT_SCANNED")
+        self.assertEqual(report["command_blocks"]["status"], "PARTIAL")
         self.assertEqual(hashlib.sha256(pack.read_bytes()).hexdigest(), before)
 
     def test_reject_zip_escape(self):
