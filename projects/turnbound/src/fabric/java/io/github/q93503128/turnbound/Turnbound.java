@@ -6,11 +6,15 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.GameMode;
 
 /**
@@ -18,10 +22,18 @@ import net.minecraft.world.GameMode;
  * quest/advancement/datapack logic and does not create a playable TURNBOUND party.
  */
 public final class Turnbound implements ModInitializer {
+    public static final Identifier WORLD_MODE_PACKET = new Identifier("turnbound", "world_mode");
     @Override
     public void onInitialize() {
         ServerLifecycleEvents.SERVER_STARTED.register(TurnboundWorldGate::open);
         ServerLifecycleEvents.SERVER_STOPPED.register(TurnboundWorldGate::close);
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            if (ServerPlayNetworking.canSend(handler.player, WORLD_MODE_PACKET)) {
+                var payload = PacketByteBufs.create();
+                payload.writeBoolean(TurnboundWorldGate.active(server));
+                ServerPlayNetworking.send(handler.player, WORLD_MODE_PACKET, payload);
+            }
+        });
 
         // Vanilla health is not the party's battle HP. Prevent damage before lethal effects.
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->

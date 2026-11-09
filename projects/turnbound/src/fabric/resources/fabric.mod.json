@@ -6,8 +6,10 @@
   "description": "Party turn-based RPG on a separately prepared Drehmal world.",
   "environment": "*",
   "entrypoints": {
-    "main": ["io.github.q93503128.turnbound.Turnbound"]
+    "main": ["io.github.q93503128.turnbound.Turnbound"],
+    "client": ["io.github.q93503128.turnbound.TurnboundClient"]
   },
+  "mixins": ["turnbound.mixins.json"],
   "depends": {
     "fabricloader": ">=0.16.14",
     "minecraft": "~1.20.1",
