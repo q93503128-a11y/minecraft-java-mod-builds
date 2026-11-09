@@ -14,3 +14,7 @@
 검증: [GitHub workflow](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-retained-copy.yml).
 
 원작 코드를 TURNBOUND 게임 로직으로 복사하거나 활용하는 것은 사용자의 별도 승인이 필요하다. 이번 단계는 원작 기능의 차단·복원만 수행한다.
+
+## 공식 v2.2.2f 통합 검증 상태
+
+[GitHub Actions #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42616136730): **SUCCESS** (2026-11-09). 단순 적용·복구 외에, 차단된 **사본을 복구 전에 유지하여 독립적인 `verify` 검사를 수행**했다. 4개 경계/62개 명령 블록/30개 지역 파일을 확인했고 원본 ZIP과 `level.dat` 해시를 복구하였다. 원본 또는 가공한 월드 전체는 커밋·아티팩트에 포함되지 않았다. 정식 플레이테스트와 전체 원작 시스템 분리는 여전히 필요하다.

@@ -157,3 +157,10 @@ python3 tools/drehmal_pack_boundary.py stage \
 - 최종 원본 `level.dat` SHA `44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1` 일치, 원본 `hi_drehmal.zip` SHA `f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74` 일치, Terminus 지역 30개 각 원본 SHA 일치. 합성 NBT 테스트 **7개 PASS**.
 - **OFFLINE ONLY, PLAYTESTED NO**: 월드 자체를 TURNBOUND 게임으로 활성화한 결과가 아니다. 남은 원작 장치·업적/예약 함수·스코어보드·커맨드 스토리지·명령 블록 / 지역 스캔 경고를 분리해야 하며, 구조물 보존 검증이 필요하다.
 - 개발 범위 외 원작 코드 재사용, 역참 시스템 변경, 원본 맵 수정은 전혀 하지 않음.
+
+## 4종 통합 분리 월드 복사본 — 독립 재검증 기록
+
+- [TURNBOUND retained offline separated Drehmal copy #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42616136730) **SUCCESS**. 합성 회귀 테스트 5개 PASS, 공식 v2.2.2f 3샤드 SHA 확인. `inspect` 원본 상태 PASS → `prepare` 원작 4개 경계 차단 → **차단 상태 유지** → 독립 `verify` 결과 동일성 확인 → `restore` 원본 파일 상태로 정확히 복원.
+- 차단 범위: 무기 업적 보상 39, 자동 load/tick 진입점 3, Terminus 명령 블록 62(지역 파일 30), 공식 월드 저장 예약 보상 1. 변경한 세계 파일은 GitHub에 업로드하지 않고 검증용 임시 러너에만 생성됨.
+- 명령 블록·점수판·기타 업적·원작 전투/스토리 실행 경로가 **아직 남아 있으므로 전체 분리 완료 아님**. 실제 월드에서 문/포탈/퍼즐/이동 동작도 검증되지 않음.
+- [검증 메타데이터](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42616136730)에서 전후 해시와 격리 경계 상태 확인 가능. 원작 코드 TURNBOUND 이식 0건.

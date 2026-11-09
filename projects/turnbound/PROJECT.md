@@ -12,6 +12,8 @@
 
 > **원작 저장 예약 이벤트·4종 가역 분리 검증 (2026-11-09):** [실제 저장 이벤트 감사 #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42607952302) **SUCCESS** — `level.dat`의 원작 보상 이벤트 `terminus:gifts/respawn_gift` **1건**이 저장 시점 131틱 뒤 실행되도록 예약되어 있었음. 저장된 scoreboard objective 539개, `command_storage_*.dat` 파일 12개도 읽기 전용 확인. [4종 통합 복사본 검증 #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42608494226) **SUCCESS** — 예약 이벤트 1건 + 무기 업적 보상 39개 + 자동 진입점 3개 + 원작 Terminus 명령 블록 62개를 같은 별도 월드 사본에서 차단하고 원본 `level.dat` / 데이터팩 / 지역 파일로 정확히 복구. **맵 전체 분리 및 실플레이 완료는 아님, 원작 코드 이식 없음.** [상세 내용](DREHMAL_SAVED_REWARD_PREVIEW.md).
 
+> **4종 분리 상태의 별도 복사본 독립 재검증 (2026-11-09):** [공식 월드 CI #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42616136730) **SUCCESS**. `inspect → prepare → verify`로 원본 월드 복사본을 네 가지 원작 기능 차단 상태로 유지한 후 별도 재검증, `restore`로 전체 원본 해시 복구. 원작 무기 보상 39개/자동 진입점 3개/Terminus 62개(30 region)/저장 예약 보상 1건. **원본/복사본 월드를 GitHub에 업로드하지 않음. 러너 임시 복사본은 검증 후 복구·폐기. 이것은 게임 실행 가능 판정 또는 전체 원작 게임 분리 완료가 아니다.** [세부 도구](DREHMAL_ISOLATED_COPY_PREPARATION.md).
+
 ## Current build contract (supersedes historical implementation checkpoints below)
 - Slug: `projects/turnbound/`; Mod ID / namespace: `turnbound`.
 - Mod version: `0.1.0-alpha.17` (현재 마이그레이션 빌드의 식별자이며 플레이 가능 릴리스가 아님).
