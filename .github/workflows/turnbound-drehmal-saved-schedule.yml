@@ -1,0 +1,53 @@
+name: TURNBOUND Drehmal saved schedule state inspection
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-saved-schedule.yml'
+      - 'projects/turnbound/tools/inspect_drehmal_saved_events.py'
+      - 'projects/turnbound/tools/test_inspect_drehmal_saved_events.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate read-only NBT extraction and boundary failures
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_inspect_drehmal_saved_events.py'
+      - name: Download pinned previous static schedule audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42591982023 --repo "${GITHUB_REPOSITORY}" \
+            --name turnbound-drehmal-auxiliary-execution-audit \
+            --dir projects/turnbound/build/verified-static-audit
+      - name: Extract official Drehmal source into temporary runner directory
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "${RUNNER_TEMP}/official-shards" \
+            --world-dir "${RUNNER_TEMP}/official-drehmal-1.20.1"
+      - name: Inspect SAVED, not merely statically declared, scheduled events
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/inspect_drehmal_saved_events.py \
+            --world "${RUNNER_TEMP}/official-drehmal-1.20.1" \
+            --aux build/verified-static-audit/drehmal-auxiliary-entrypoints.json \
+            --output build/drehmal-saved-event-audit.json
+      - name: Upload derived metadata only, never source world, player data or raw NBT
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-saved-event-audit
+          path: projects/turnbound/build/drehmal-saved-event-audit.json
+          if-no-files-found: warn
+          retention-days: 14
