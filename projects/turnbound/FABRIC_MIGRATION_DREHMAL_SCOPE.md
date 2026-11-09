@@ -65,3 +65,8 @@ The audit tool and source-preserving migration boundary are ready to use on an *
 ## 2026-11-09 subsequent separation and combat unit
 
 See [DREHMAL_DATA_PACK_SEPARATION.md](DREHMAL_DATA_PACK_SEPARATION.md). Added a non-destructive datapack call-graph inspector/copy stager and a loader-independent common action resolver. The actual official world files were **not** analyzed or disabled, and the combat resolver is not yet connected to player-facing world encounters. Keep old source/saves safe.
+
+## Fabric separation checkpoint (2026-11-09)
+- [Drehmal separation status and inspector](DREHMAL_DATA_PACK_SEPARATION.md).
+- Build/test [TURNBOUND #1068](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42566636024): core-logic Python/JDK17 + Gradle Fabric tests/build/JAR verification PASS, source SHA `3b65df702332741e264eaac160c01607be5b1ced`.
+- Actual v2.2.2f world binaries, original datapack disabling, multiplayer and in-world play remain NOT TESTED. No world copy has been created or modified remotely.

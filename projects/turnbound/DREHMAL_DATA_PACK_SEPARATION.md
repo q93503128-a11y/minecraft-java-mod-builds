@@ -42,3 +42,22 @@ python3 tools/drehmal_pack_boundary.py stage \
 
 ## 수동 판단이 필요한 부분
 원본의 시각 효과나 특정 도어/워프가 데이터팩에서 제공되는지는 실제 함수·NBT·클라이언트 검사 뒤 판정해야 한다. 현재는 원본 지도 삭제/수정/원본 코드 비활성화 **0건**이다.
+
+## 공식 v2.2.2f 파일 무결성 자료
+출처: GitHub \`Drehmal-Team/map\` 공식 Release Asset API 및 \`Drehmal-Team/installer/main/manifest.json\` (2026-11-09 조회).
+
+| 원본 다운로드 | bytes | 공식 SHA-256 |
+|---|---:|---|
+| shard_1.zip | 1484178230 | 378f8bea9c88371c44d3a6fd6c6d91a886f14b6dfce97e6e6e994789b979b358 |
+| shard_2.zip | 1641289974 | 2d250f04259404d81a3e9bd83a5592f1c26545f45f9c8a22a2277c9e523c1331 |
+| shard_3.zip | 861863079 | 8c892c77c7ab9ef03aac7b517e5448490f55690163085b38c380523dd2d29b67 |
+
+원본 설치 프로그램 manifest 기준 추출된 월드 예상 크기는 5,139,218,299 bytes. Resource pack \`resources.zip\`은 190,255,507 bytes로 별도 보존해야 한다. 원본/리소스팩을 저장소에 직접 포함하지 않는다. 오프라인 월드 검사 전에 공식 조각 해시를 검증할 것.
+
+## 검증 결과 및 남은 게임 내부 작업
+- GitHub [Build TURNBOUND #1068](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42566636024) **SUCCESS** at \`3b65df702332741e264eaac160c01607be5b1ced\`.
+- \`core-logic\`: Python 합성 맵 데이터팩 및 .mca 명령 블록 테스트 PASS; JDK 17 단독 범용 전투 코드 컴파일·행동 검증 PASS.
+- \`fabric-build\`: Fabric 1.20.1 Gradle 테스트/빌드 및 생성 JAR 구조검증 PASS.
+- 기존 CI 두 회의 504 오류는 Gradle distribution 다운로드 단계의 외부 오류로, 해당 커밋의 코드 컴파일 결과가 아님. 이후 정상 빌드에서 통과.
+- **NOT TESTED**: 실제 Drehmal 2.2.2f 원본 데이터팩 분석, 원작 기능 분리 적용, 복사본 월드 진입·문/포탈/Terminus 확인, 실게임 전투, 멀티플레이.
+- Fabric 클라이언트 그래픽 부팅은 이전 [smoke](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42564964435)에서 확인. 최신 JAR에서 실제 월드 HUD를 보았다는 의미가 아님.
