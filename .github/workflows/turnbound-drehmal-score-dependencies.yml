@@ -1,0 +1,51 @@
+name: TURNBOUND original scoreboard and storage references
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-score-dependencies.yml'
+      - 'projects/turnbound/tools/audit_drehmal_objective_storage_dependencies.py'
+      - 'projects/turnbound/tools/test_audit_drehmal_objective_storage_dependencies.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify conservative syntax scans and non-deletion contracts
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_audit_drehmal_objective_storage_dependencies.py'
+      - name: Load previously verified original function and saved metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/source-graph
+          gh run download 42607952302 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-saved-event-audit --dir projects/turnbound/build/source-saved
+      - name: Extract SHA-verified official source to ephemeral runner storage
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "${RUNNER_TEMP}/official-source-shards" --world-dir "${RUNNER_TEMP}/verified-official-world"
+      - name: Inspect original command/source references without changing any files
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/audit_drehmal_objective_storage_dependencies.py \
+            --world "${RUNNER_TEMP}/verified-official-world" \
+            --saved build/source-saved/drehmal-saved-event-audit.json \
+            --graph build/source-graph/build/drehmal-official-2.2.2f-summary.json \
+            --output build/drehmal-objective-storage-reference-report.json
+      - name: Upload derived metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-score-storage-dependency-review
+          path: projects/turnbound/build/drehmal-objective-storage-reference-report.json
+          if-no-files-found: warn
+          retention-days: 14
