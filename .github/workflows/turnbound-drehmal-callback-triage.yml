@@ -1,0 +1,45 @@
+name: TURNBOUND Drehmal callback and scheduler triage
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-callback-triage.yml'
+      - 'projects/turnbound/tools/review_drehmal_callback_schedule.py'
+      - 'projects/turnbound/tools/test_review_drehmal_callback_schedule.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Graph and scheduler regression tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_review_drehmal_callback_schedule.py'
+      - name: Retrieve earlier verified metadata, not the 4GB world
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/graph
+          gh run download 42591982023 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/aux
+      - name: Recalculate conservatively classified original callback and schedule risks
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/review_drehmal_callback_schedule.py \
+            --graph build/graph/build/drehmal-official-2.2.2f-summary.json \
+            --aux build/aux/drehmal-auxiliary-entrypoints.json \
+            --out build/callback-schedule-risk-review.json
+      - name: Upload redacted risk review only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-callback-scheduler-review
+          path: projects/turnbound/build/callback-schedule-risk-review.json
+          if-no-files-found: warn
+          retention-days: 14
