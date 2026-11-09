@@ -1,0 +1,63 @@
+name: TURNBOUND verified Terminus command isolation preview
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-terminus-command-preview.yml'
+      - 'projects/turnbound/tools/patch_drehmal_terminus_commands.py'
+      - 'projects/turnbound/tools/test_patch_drehmal_terminus_commands.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 42
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test offline Anvil command patcher
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_patch_drehmal_terminus_commands.py'
+      - name: Retrieve pinned original trigger metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42574103795 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/positions
+      - name: Extract verified official map into temporary runner storage
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "${RUNNER_TEMP}/terminus-shards" \
+            --world-dir "${RUNNER_TEMP}/terminus-source"
+      - name: Validate 62 exact triggers on staged copy, patch and restore
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/drehmal_pack_boundary.py stage \
+            --source "${RUNNER_TEMP}/terminus-source" \
+            --destination "${RUNNER_TEMP}/terminus-copy"
+          python3 tools/patch_drehmal_terminus_commands.py inspect \
+            --world-copy "${RUNNER_TEMP}/terminus-copy" \
+            --positions build/positions/command-trigger-positions.json --output build/terminus-preflight.json
+          python3 tools/patch_drehmal_terminus_commands.py apply \
+            --world-copy "${RUNNER_TEMP}/terminus-copy" \
+            --positions build/positions/command-trigger-positions.json --output build/terminus-isolated.json
+          python3 tools/patch_drehmal_terminus_commands.py restore \
+            --world-copy "${RUNNER_TEMP}/terminus-copy" --output build/terminus-restored.json
+          python3 -c "import json; from pathlib import Path; f=lambda n: json.loads(Path('build/'+n+'.json').read_text()); a,b,c=f('terminus-preflight'),f('terminus-isolated'),f('terminus-restored'); assert a['target_count']==b['target_count']==c['target_count']==62; assert a['region_count']==len(b['regions'])==c['region_count']==30; assert c['status']=='EXACT_RESTORATION'; print('PASS: exact original map copied, 62 triggers isolated and restored')"
+      - name: Upload only sanitized proof, no world files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-terminus-copy-isolation-proof
+          path: |
+            projects/turnbound/build/terminus-preflight.json
+            projects/turnbound/build/terminus-isolated.json
+            projects/turnbound/build/terminus-restored.json
+          if-no-files-found: warn
+          retention-days: 14
