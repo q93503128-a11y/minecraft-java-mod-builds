@@ -17,3 +17,9 @@
 
 ## 이후
 저장된 이벤트 중 존재하는 원작 콜백과 `scoreboard.dat`에 기록된 장치 진행도 상태를 기준으로, **스토리/전투/보상**과 **문/레버/퍼즐/포탈** 호출 관계를 나누고 복사본에서만 선별 비활성화를 검토한다. 모든 map separation 검사 통과 전 최종 맵 변환을 완료했다고 하지 않는다.
+
+## 공식 원본 v2.2.2f 실검사 결과 (2026-11-09)
+
+[저장된 함수 예약 CI #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42607952302) **SUCCESS**. 원본 1.20.1 `Data.ScheduledEvents`에는 `terminus:gifts/respawn_gift` 예약 이벤트 **1건**이 있고, 현재 저장된 월드 시간보다 예정 시간이 131틱 뒤임. 다른 저장 예약 이벤트는 발견되지 않았으나 실행 중 추가될 수 있음. 저장된 scoreboard objective **539개**, `command_storage_*.dat` 파일 **12개** 발견. 여기에는 원작 게임 진행도 및 구조물 제어가 섞일 수 있으므로 모두 보존 검토 대상으로 남긴다.
+
+[저장 보상 예약 1건 + 기존 3종 통합 차단·복구 CI](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42608494226) **SUCCESS**. 예약 큐 수정은 별도 사본의 원본 `level.dat`에서만 수행되며 데이터팩·Terminus 차단 이후에 적용하고 복구 시 가장 먼저 되돌린다. 원작 코드는 TURNBOUND에 이식하지 않음. [분리 도구](DREHMAL_SAVED_REWARD_PREVIEW.md).

@@ -10,6 +10,8 @@
 
 > **원작 업적·예약 함수 분류 최신 검증 (2026-11-09):** [#1 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42605435141). 무기 외 업적 콜백 181건, 예약 함수를 포함한 함수 672개 및 정적 순환 29개 분류. 상당수가 기존 맵 구조물과 연관될 수 있어 **일괄 비활성화 금지**. 원작 코드 재사용 0건, 맵/전투 코드 변경 0건. [자세한 검토표](DREHMAL_CALLBACK_SCHEDULE_TRIAGE.md).
 
+> **원작 저장 예약 이벤트·4종 가역 분리 검증 (2026-11-09):** [실제 저장 이벤트 감사 #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42607952302) **SUCCESS** — `level.dat`의 원작 보상 이벤트 `terminus:gifts/respawn_gift` **1건**이 저장 시점 131틱 뒤 실행되도록 예약되어 있었음. 저장된 scoreboard objective 539개, `command_storage_*.dat` 파일 12개도 읽기 전용 확인. [4종 통합 복사본 검증 #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42608494226) **SUCCESS** — 예약 이벤트 1건 + 무기 업적 보상 39개 + 자동 진입점 3개 + 원작 Terminus 명령 블록 62개를 같은 별도 월드 사본에서 차단하고 원본 `level.dat` / 데이터팩 / 지역 파일로 정확히 복구. **맵 전체 분리 및 실플레이 완료는 아님, 원작 코드 이식 없음.** [상세 내용](DREHMAL_SAVED_REWARD_PREVIEW.md).
+
 ## Current build contract (supersedes historical implementation checkpoints below)
 - Slug: `projects/turnbound/`; Mod ID / namespace: `turnbound`.
 - Mod version: `0.1.0-alpha.17` (현재 마이그레이션 빌드의 식별자이며 플레이 가능 릴리스가 아님).

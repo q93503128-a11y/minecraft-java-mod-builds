@@ -10,3 +10,7 @@ Drehmal v2.2.2f 공식 맵 저장 시점에 실제 예약된 이벤트 `terminus
 - 게임 내부 문/포탈/퍼즐 동작과 새로운 예약 함수 발생은 아직 미검증. **맵 분리 미완료**.
 
 검증: [공식 월드 4단계 가역 분리 CI](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-saved-reward-preview.yml).
+
+## 실제 4종 통합 사본 검증 — 성공
+
+[공식 Drehmal v2.2.2f 원본을 사용한 GitHub Actions](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42608494226) **SUCCESS**. 합성 NBT 7개 테스트 PASS. 기존 분리된 원작 무기 업적 보상 39개, 자동 3진입점, 명령 블록 62개 및 `level.dat`의 **저장된 원작 선물 이벤트 1개**까지 하나의 사본에서 비활성화한 다음 역순으로 정확하게 복원했다. 원본 `level.dat`와 ZIP/지역 파일 SHA도 일치. 게임 실행·시설 작동·멀티플레이 검증은 하지 않았음.
