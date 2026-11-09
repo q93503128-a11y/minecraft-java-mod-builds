@@ -7,10 +7,11 @@ The old characters, quests, story, bosses, equipment and Drehmal-based gameplay 
 **Current state:** Old content no longer activates on startup. All 27 old authored gameplay JSON resources have been moved into test-only fixtures; the production manifest has an empty character/quest/equipment/enemy/region/encounter set. Legacy Java code and artwork still need dependency-safe retirement. This is **not yet a playable RPG**.
 
 - Build stack: Minecraft Java 26.2, NeoForge 26.2.0.62, Java 25, Gradle 9.2.1.
-- Canon: [PROJECT.md](PROJECT.md).
+- **Current game-design decisions / open questions:** [GAME_DESIGN_CANON_INDEX.md](GAME_DESIGN_CANON_INDEX.md) (read first for new-game planning).
+- Technical project contract, baseline and engineering gates: [PROJECT.md](PROJECT.md).
 - Dependency audit and removal gates: [CONTENT_REBUILD_AUDIT_2026-11-05.md](CONTENT_REBUILD_AUDIT_2026-11-05.md).
-- Last validated foundation: [GitHub Actions Build TURNBOUND #1049](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/41980378906).
+- Last documented blank-foundation build verification: [GitHub Actions Build TURNBOUND #1065](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42016753073); [Xvfb graphical boot smoke #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42018332635) passed (not a gameplay playtest).
 - Validation: Tests/build, dedicated-server smoke, JAR and pack checks PASS; client gameplay and multiplayer NOT TESTED.
 - The rebuild pack intentionally does not install or modify Drehmal. Do not replace the legacy JAR in an existing world without a separate save-migration decision.
 
-The new characters, equipment, quest content, and world will be planned jointly with the user after the generic foundation has been checked. Codex handles approved visual/world work, not autonomous game lore or roster decisions.
+High-level new-game world, combat, growth, gacha, contracts and dungeon design are now partially approved and cataloged in the current index; character identities, content lists, balance and implementation are not complete. Further design is collaborative. Codex handles approved visual/world work, not autonomous game lore or roster decisions.

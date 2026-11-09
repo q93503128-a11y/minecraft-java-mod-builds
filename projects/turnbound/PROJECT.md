@@ -1,5 +1,7 @@
 # TURNBOUND — Rebuild project contract
 
+> **Current game-design decision index**: [GAME_DESIGN_CANON_INDEX.md](GAME_DESIGN_CANON_INDEX.md) is the concise 2026-11-09 status map for user-approved gameplay rules, pending decisions and superseded older proposals. This file remains the technical project contract; earlier appended historical sections may conflict with later approved decisions. Do not treat a stale 'TBD' in an older section as active canon.
+
 ## Identity
 - Project: `projects/turnbound/` (NOT `projects/turnbound-re/`).
 - Mod ID / namespace: `turnbound`; Java package `io.github.q93503128.turnbound`.
