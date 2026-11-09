@@ -34,3 +34,7 @@ Next: connect the actual field encounter catalog and a fully owned party state, 
 - The fallback enemy policy currently uses **only the authored enemy's basic skill**, validated by the same `GenericBattleResolver` as human commands, and respects taunt and target rules. It has no invented enemy skill rotation or artificial odds.
 - Per-tick processing is limited to **one enemy action per battle** to avoid synchronous runaway turns. A successful enemy action bumps the authoritative revision and synchronizes the changed snapshot to all participants.
 - Invalid authored enemy basics are treated as errors rather than silently skipped. This is still a **technical foundation**: encounter triggers, data catalogs, model/animation, rewards, UI, enemy kit AI strategy, persistence, recovery and multiplayer playtesting remain open.
+
+## Fault handling (same checkpoint)
+- Fabric server ticks now process a stable registry snapshot. If data-defined enemy basics cannot be resolved (invalid targets, unsupported effect, arithmetic), log the actual exception once and **close only that combat session**. Other Minecraft/world sessions continue, and no rewards are issued by this layer. It never performs a fake/no-op attack.
+- This fault behavior is part of the low-level foundation, not a substitute for authored encounter validation and in-game error feedback.

@@ -17,12 +17,15 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Server-owned battle transport. It cannot create a fight from a client packet.
  * Encounter code must explicitly open a session using server-validated character definitions.
  */
 public final class TurnboundBattleBridge {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TurnboundBattleBridge.class);
     public static final Identifier ACTION = new Identifier("turnbound", "battle_action");
     public static final Identifier SNAPSHOT = new Identifier("turnbound", "battle_snapshot");
     public static final Identifier RECEIPT = new Identifier("turnbound", "battle_receipt");
@@ -46,8 +49,15 @@ public final class TurnboundBattleBridge {
             if (registry == null) return;
             // At most one enemy action per battle per tick. Snapshot is
             // synchronized only for sessions that actually changed.
-            for (BattleSessionAuthority session : registry.advanceEnemyTurns()) {
-                syncParticipants(server, session);
+            for (BattleSessionAuthority session : registry.activeSessions()) {
+                try {
+                    if (session.advanceEnemyTurn()) syncParticipants(server, session);
+                } catch (RuntimeException invalidEnemyKit) {
+                    // Do not crash the Minecraft server or repeat the failed turn each tick.
+                    LOGGER.error("Invalid enemy action in TURNBOUND session {}. Closing session without rewards.",
+                            session.id(), invalidEnemyKit);
+                    close(server, session.id());
+                }
             }
         });
 
