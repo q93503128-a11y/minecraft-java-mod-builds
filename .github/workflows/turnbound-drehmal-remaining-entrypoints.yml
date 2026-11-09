@@ -1,0 +1,50 @@
+name: TURNBOUND Drehmal residual original entrypoints
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-remaining-entrypoints.yml'
+      - 'projects/turnbound/tools/review_drehmal_remaining_entrypoints.py'
+      - 'projects/turnbound/tools/test_review_drehmal_remaining_entrypoints.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pure graph regression tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_review_drehmal_remaining_entrypoints.py'
+      - name: Fetch pinned metadata artifacts only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" \
+            --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/source-graph
+          gh run download 42574103795 --repo "${GITHUB_REPOSITORY}" \
+            --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/source-positions
+      - name: Analyze original gameplay re-entry paths
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/review_drehmal_remaining_entrypoints.py \
+            --audit build/source-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/source-positions/command-trigger-positions.json \
+            --output-json build/remaining-entrypoints.json \
+            --output-md build/remaining-entrypoints.md
+      - name: Publish sanitized derived metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-remaining-entrypoints
+          path: |
+            projects/turnbound/build/remaining-entrypoints.json
+            projects/turnbound/build/remaining-entrypoints.md
+          retention-days: 14
+          if-no-files-found: warn
