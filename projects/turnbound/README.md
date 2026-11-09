@@ -1,3 +1,13 @@
+# TURNBOUND — Fabric 1.20.1 migration
+
+**New approved game:** Drehmal v2.2.2f map-backed independent party turn RPG. Survival, mining, block placing and player health/hunger are excluded from gameplay. Existing generic TURNBOUND battle contract is preserved.
+
+**Latest work status:** Fabric runtime/scoped exploration restrictions and pure combat-code extraction are **in progress**. This is not a playable game or an install-ready Drehmal package. Read [migration and world audit](FABRIC_MIGRATION_DREHMAL_SCOPE.md) and [current design index](GAME_DESIGN_CANON_INDEX.md).
+
+The archived NeoForge sources are not built into the Fabric JAR; old world/save files are never converted automatically. Do not activate the marker on a real Drehmal save.
+
+## Previous rebuild notes (historical)
+
 # TURNBOUND — Content Rebuild
 
 This branch is a **technical foundation** for a completely redesigned Minecraft Java turn-based RPG.

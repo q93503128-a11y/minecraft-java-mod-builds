@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "turnbound",
+  "version": "${version}",
+  "name": "TURNBOUND",
+  "description": "Party turn-based RPG on a separately prepared Drehmal world.",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["io.github.q93503128.turnbound.Turnbound"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}

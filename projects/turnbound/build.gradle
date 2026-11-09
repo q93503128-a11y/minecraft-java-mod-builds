@@ -1,245 +1,56 @@
 plugins {
-    id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.143'
-    id 'idea'
+    id 'fabric-loom' version '1.9.2'
+    id 'maven-publish'
 }
 
-version = mod_version
-group = mod_group_id
-base { archivesName = mod_id }
-java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+group = project.mod_group_id
+version = project.mod_version
+base { archivesName = project.mod_id }
+
+// Preserve old 26.2 NeoForge sources and resources in Git, but never package them as a
+// Fabric JAR. Only explicitly migrated sources are accepted into the new runtime.
+sourceSets {
+    main {
+        java { srcDirs = ['src/fabric/java'] }
+        resources { srcDirs = ['src/fabric/resources'] }
+    }
+    test {
+        java { srcDirs = ['src/fabricTest/java'] }
+        resources { srcDirs = ['src/fabricTest/resources'] }
+    }
+}
 
 repositories {
     mavenCentral()
-    maven {
-        name = 'BlameJared'
-        url = 'https://maven.blamejared.com'
-        content { includeGroup 'info.journeymap' }
-    }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = 'Modrinth'
-                url = 'https://api.modrinth.com/maven'
-            }
-        }
-        filter { includeGroup 'maven.modrinth' }
-    }
-}
-
-configurations {
-    journeyMapPack
 }
 
 dependencies {
-    // UI Lib is client-only. Server/common classes must never import it.
-    compileOnly "maven.modrinth:AOEDs9Al:${uilib_version_id}"
-    compileOnly "info.journeymap:journeymap-api-neoforge:26.2-2.0.0"
-    journeyMapPack "maven.modrinth:lfHFW1mp:${journeymap_version_id}"
-    implementation "maven.modrinth:8BmcQJ2H:${geckolib_version_id}"
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.12.2'
-    // CanonicalData exposes Gson JSON nodes; tests that audit canonical resource IDs need the type on their compile classpath.
-    testImplementation 'com.google.code.gson:gson:2.14.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.12.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.2'
 }
 
-neoForge {
-    version = project.neo_version
-    runs {
-        client { client(); gameDirectory = file('run/client') }
-        server { server(); gameDirectory = file('run/server'); programArgument '--nogui' }
-        configureEach { logLevel = org.slf4j.event.Level.INFO }
-    }
-    mods { "${mod_id}" { sourceSet sourceSets.main } }
-}
-
-var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
-    var replaceProperties = [
-        minecraft_version: minecraft_version,
-        minecraft_version_range: minecraft_version_range,
-        neo_version: neo_version,
-        mod_id: mod_id,
-        mod_name: mod_name,
-        mod_license: mod_license,
-        mod_version: mod_version
-    ]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    from 'src/main/templates'
-    into 'build/generated/sources/modMetadata'
-}
-sourceSets.main.resources.srcDir generateModMetadata
-neoForge.ideSyncTask generateModMetadata
-
-// The retired hero texture generator is deliberately not part of the blank-content build.
-
-// Preserve historical full-PNG texture validation without shipping a retired hero image.
-var prepareLegacyHeroFixture = tasks.register('prepareLegacyHeroFixture') {
-    def inputFile = file('src/test/resources/legacy/elysia.png.b64')
-    def outputDir = layout.buildDirectory.dir('generated/testResources/legacyHero')
-    inputs.file inputFile
-    outputs.dir outputDir
-    doLast {
-        def outputFile = outputDir.get().file('assets/turnbound/textures/entity/hero/elysia.png').asFile
-        outputFile.parentFile.mkdirs()
-        outputFile.bytes = java.util.Base64.getDecoder().decode(inputFile.getText('UTF-8').trim())
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
     }
 }
-sourceSets.test.resources.srcDir prepareLegacyHeroFixture
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+    withSourcesJar()
+}
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 25
+    options.release = 17
 }
 
 test {
     useJUnitPlatform()
-    testLogging {
-        events 'failed'
-        exceptionFormat 'full'
-        showExceptions true
-        showCauses true
-        showStackTraces true
-    }
-}
-
-// Keep historical Minecraft/NeoForge sources compiled for regression tests while ensuring
-// that the abandoned Drehmal downloader/repair UI cannot ship in the rebuild JAR.
-// This does NOT declare all old Java gameplay physically removed; its cleanup is separate.
-def retiredDrehmalClientClassNames = [
-    'DrehmalAutoInstaller',
-    'DrehmalInstallScreen',
-    'DrehmalBootstrapManifest',
-    'DrehmalInstallFiles',
-    'Drehmal26_2CompatMigrator',
-    'Drehmal26_2ResourcePackMigrator',
-    'DrehmalResourceRepairDiscovery',
-    'ClientWorldLoadingBootstrap',
-    'WorldLoadingScreen'
-]
-
-jar {
-    retiredDrehmalClientClassNames.each { className ->
-        exclude("io/github/q93503128/turnbound/client/${className}*.class")
-    }
-    manifest {
-        attributes(
-            'Specification-Title': mod_name,
-            'Specification-Version': mod_version,
-            'Implementation-Title': mod_name,
-            'Implementation-Version': mod_version,
-            'Automatic-Module-Name': mod_group_id
-        )
-    }
-}
-
-idea { module { downloadSources = true; downloadJavadoc = true } }
-
-
-// Build the user-facing one-click Modrinth pack from the same verified JAR/runtime dependency graph.
-// The ARR Drehmal world/resource bytes are intentionally NOT bundled: the imported pack drops only
-// an opt-in marker, and TURNBOUND downloads/verifies the official upstream release on first launch.
-tasks.register('prepareOneClickPack') {
-    dependsOn tasks.named('jar')
-    inputs.file(tasks.named('jar').flatMap { it.archiveFile })
-    inputs.files(configurations.runtimeClasspath)
-    inputs.files(configurations.journeyMapPack)
-    inputs.file(file('THIRD_PARTY/geckolib_neoforge/LICENSE'))
-    outputs.dir(layout.buildDirectory.dir('oneclick-pack'))
-
-    doLast {
-        File root = layout.buildDirectory.dir('oneclick-pack').get().asFile
-        project.delete(root)
-        File mods = new File(root, 'overrides/mods')
-        File config = new File(root, 'overrides/config/turnbound')
-        File licenses = new File(root, 'overrides/licenses')
-        mods.mkdirs()
-        config.mkdirs()
-        licenses.mkdirs()
-
-        File turnboundJar = tasks.named('jar', Jar).get().archiveFile.get().asFile
-        project.copy {
-            from turnboundJar
-            into mods
-            rename { "turnbound-${mod_version}.jar" }
-        }
-
-        File geckolibJar = configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.find {
-            it.moduleVersion.id.group == 'maven.modrinth' && it.name == '8BmcQJ2H'
-        }?.file
-        if (geckolibJar == null) {
-            geckolibJar = configurations.runtimeClasspath.files.find {
-                String name = it.name.toLowerCase(Locale.ROOT)
-                it.name.endsWith('.jar') && (name.contains('geckolib') || name.contains('8bmcqj2h'))
-            }
-        }
-        if (geckolibJar == null) {
-            throw new GradleException('Resolved GeckoLib runtime JAR was not found for one-click pack')
-        }
-        project.copy {
-            from geckolibJar
-            into mods
-            rename { 'geckolib-neoforge-26.2-5.5.3.jar' }
-        }
-        project.copy {
-            from file('THIRD_PARTY/geckolib_neoforge/LICENSE')
-            into licenses
-            rename { 'GeckoLib-MIT.txt' }
-        }
-
-        // No world installer marker: the rebuild pack must never download or modify Drehmal worlds.
-
-        String readme = '''TURNBOUND content-rebuild foundation
-
-This pack intentionally contains no playable TURNBOUND roster, quests or authored world.
-The previous Drehmal world download/install is retired on this branch.
-Use a separate test instance and world. Existing saves are not migrated or overwritten.
-The foundation retains common multiplayer/battle protocols while new content is jointly designed.
-'''
-        new File(root, 'overrides/README-TURNBOUND.txt').setText(readme, 'UTF-8')
-
-        File journeyMapJar = configurations.journeyMapPack.singleFile
-        def digest = { String algorithm ->
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance(algorithm)
-            journeyMapJar.withInputStream { input ->
-                byte[] buffer = new byte[8192]
-                int read
-                while ((read = input.read(buffer)) > 0) md.update(buffer, 0, read)
-            }
-            md.digest().collect { String.format('%02x', it & 0xff) }.join()
-        }
-        def journeyMapFile = [
-                path: 'mods/journeymap-neoforge-26.2-6.0.8.jar',
-                hashes: [sha1: digest('SHA-1'), sha512: digest('SHA-512')],
-                env: [client: 'required', server: 'unsupported'],
-                downloads: ["https://cdn.modrinth.com/data/lfHFW1mp/versions/${journeymap_version_id}/journeymap-neoforge-26.2-6.0.8.jar"],
-                fileSize: journeyMapJar.length()
-        ]
-        def index = [
-                formatVersion: 1,
-                game: 'minecraft',
-                versionId: mod_version,
-                name: "TURNBOUND ${mod_version} Content Rebuild Foundation",
-                summary: 'TURNBOUND 26.2 NeoForge content-rebuild foundation (no legacy world installer)',
-                files: [journeyMapFile],
-                dependencies: [
-                        minecraft: minecraft_version,
-                        neoforge: neo_version
-                ]
-        ]
-        new File(root, 'modrinth.index.json').setText(
-                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(index)),
-                'UTF-8')
-    }
-}
-
-tasks.register('oneClickPack', Zip) {
-    dependsOn tasks.named('prepareOneClickPack')
-    from layout.buildDirectory.dir('oneclick-pack')
-    destinationDirectory = layout.buildDirectory.dir('distributions')
-    archiveFileName = "TURNBOUND-oneclick-${mod_version}.mrpack"
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
 }

@@ -1,10 +1,8 @@
-name: Build TURNBOUND
+name: Build TURNBOUND (Fabric migration)
 
 on:
   push:
     branches:
-      - main
-      - turnbound-alpha17-full-v04
       - turnbound-content-rebuild
     paths:
       - 'projects/turnbound/**'
@@ -15,206 +13,52 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  fabric-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.2.1'
-      - name: Test and build TURNBOUND
+          gradle-version: '8.12'
+      - name: Validate Fabric source and tests
         working-directory: projects/turnbound
-        shell: bash
-        run: |
-          echo 'IN PROGRESS' > build.status
-          python3 tools/verify_rebuild_boundary.py --sources
-          python3 tools/audit_rebuild_java_dependencies.py
-          set -o pipefail
-          gradle clean test build oneClickPack --stacktrace 2>&1 | tee gradle-build.log
-          echo 'PASS' > build.status
-      - name: Smoke-test NeoForge server load
-        working-directory: projects/turnbound
-        run: |
-          echo 'IN PROGRESS' > server-smoke.status
-          mkdir -p run/server
-          printf 'eula=true\n' > run/server/eula.txt
-          setsid gradle runServer --no-daemon > server-smoke.log 2>&1 &
-          pid=$!
-          started=0
-          for i in $(seq 1 120); do
-            if grep -q 'Done (' server-smoke.log; then
-              started=1
-              break
-            fi
-            if ! kill -0 "$pid" 2>/dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          cat server-smoke.log
-          test "$started" -eq 1
-          kill -TERM -- "-$pid" 2>/dev/null || true
-          wait "$pid" 2>/dev/null || true
-          echo 'PASS' > server-smoke.status
-      - name: Verify built JAR
-        working-directory: projects/turnbound
-        run: |
-          echo 'IN PROGRESS' > jar-verification.status
-          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
-          jar_file="build/libs/turnbound-${expected_version}.jar"
-          test -s "$jar_file"
-          echo "Verifying $jar_file"
-          jar tf "$jar_file" > jar-contents.txt
-          python3 tools/verify_rebuild_boundary.py --jar "$jar_file"
-          if duplicate_entries="$(LC_ALL=C sort jar-contents.txt | uniq -d)" && [ -n "$duplicate_entries" ]; then
-            echo "Duplicate ZIP entries found:"
-            echo "$duplicate_entries"
-            exit 1
-          fi
-          if grep -Eq '(^|/)(src|docs)/|\.java$|\.md$' jar-contents.txt; then
-            echo "Development source or documentation found in JAR"
-            exit 1
-          fi
-          grep -qx 'META-INF/neoforge.mods.toml' jar-contents.txt
-          grep -qx 'io/github/q93503128/turnbound/Turnbound.class' jar-contents.txt
-          grep -qx 'data/turnbound/rebuild/foundation_v1.json' jar-contents.txt
-          if grep -Eq '^io/github/q93503128/turnbound/.*\.png$' jar-contents.txt; then
-            echo "Unexpected embedded PNG in compiled class output"
-            exit 1
-          fi
-          if grep -q '^assets/turnbound/' jar-contents.txt; then
-            echo "Retired authored assets are still packaged"
-            exit 1
-          fi
-          if grep -Eq '^data/turnbound/(characters|enemies|equipment|quests|battles|world|regions|signatures|passives|skills|statuses|loot|growth)/' jar-contents.txt; then
-            echo "Retired authored content data is still packaged"
-            exit 1
-          fi
-          unzip -p "$jar_file" META-INF/neoforge.mods.toml > built-neoforge.mods.toml
-          grep -Eq 'modId[[:space:]]*=[[:space:]]*"turnbound"' built-neoforge.mods.toml
-          grep -Fq "version=\"${expected_version}\"" <(tr -d ' ' < built-neoforge.mods.toml)
-          grep -Fq 'modId="journeymap"' <(tr -d ' ' < built-neoforge.mods.toml)
-          grep -Fq 'versionRange="[26.2-6.0.8,26.2-6.1)"' <(tr -d ' ' < built-neoforge.mods.toml)
-          unzip -p "$jar_file" META-INF/MANIFEST.MF > built-manifest.mf
-          grep -q '^Implementation-Title: TURNBOUND' built-manifest.mf
-          grep -Fq "Implementation-Version: ${expected_version}" built-manifest.mf
-          sha256sum "$jar_file" | tee "$jar_file.sha256"
-          echo 'PASS' > jar-verification.status
-      - name: Verify one-click Modrinth pack
-        working-directory: projects/turnbound
-        run: |
-          echo 'IN PROGRESS' > mrpack-verification.status
-          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
-          pack_file="build/distributions/TURNBOUND-oneclick-${expected_version}.mrpack"
-          test -f "$pack_file"
-          unzip -l "$pack_file" > mrpack-contents.txt
-          grep -q 'modrinth.index.json' mrpack-contents.txt
-          ! grep -q 'overrides/config/turnbound/one_click_drehmal.txt' mrpack-contents.txt
-          grep -q "overrides/mods/turnbound-${expected_version}.jar" mrpack-contents.txt
-          grep -Eq 'overrides/mods/.*geckolib.*\.jar' mrpack-contents.txt
-          grep -q 'overrides/licenses/GeckoLib-MIT.txt' mrpack-contents.txt
-          ! grep -Eq 'shard_[123]\.zip|resources\.zip' mrpack-contents.txt
-          unzip -p "$pack_file" modrinth.index.json > built-modrinth.index.json
-          python3 - <<'PY'
-          import json
-          with open('built-modrinth.index.json', encoding='utf-8') as f:
-              data=json.load(f)
-          assert data['formatVersion'] == 1
-          assert data['dependencies']['minecraft'] == '26.2'
-          assert data['dependencies']['neoforge'] == '26.2.0.62'
-          files=data['files']
-          assert len(files) == 1
-          jm=files[0]
-          assert jm['path'] == 'mods/journeymap-neoforge-26.2-6.0.8.jar'
-          assert len(jm['hashes']['sha1']) == 40
-          assert len(jm['hashes']['sha512']) == 128
-          assert jm['env'] == {'client':'required','server':'unsupported'}
-          assert len(jm['downloads']) == 1 and 'cdn.modrinth.com/data/lfHFW1mp/versions/' in jm['downloads'][0]
-          assert jm['fileSize'] > 1_000_000
-          PY
-          echo "Verifying $pack_file"
-          sha256sum "$pack_file" | tee "$pack_file.sha256"
-          echo 'PASS' > mrpack-verification.status
-      - name: Prepare build report and raw logs
-        if: always()
-        working-directory: projects/turnbound
-        shell: bash
         run: |
           set -euo pipefail
-          expected_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
-          jar_file="build/libs/turnbound-${expected_version}.jar"
-          pack_file="build/distributions/TURNBOUND-oneclick-${expected_version}.mrpack"
-          release_dir="build/release"
-          log_dir="$release_dir/raw-logs"
-          mkdir -p "$log_dir"
-          for file in gradle-build.log server-smoke.log build.status server-smoke.status jar-verification.status mrpack-verification.status jar-contents.txt mrpack-contents.txt built-neoforge.mods.toml built-manifest.mf built-modrinth.index.json; do
-            if [ -f "$file" ]; then cp "$file" "$log_dir/"; fi
-          done
-          for file in gradle-build.log server-smoke.log; do
-            if [ ! -f "$file" ]; then printf '%s\n' 'NOT RUN' > "$log_dir/$file"; fi
-          done
-          (cd build && zip -qr release/raw-logs.zip release/raw-logs)
-          build_status=NOT_RUN
-          if grep -q 'BUILD SUCCESSFUL' gradle-build.log 2>/dev/null; then build_status=PASS; fi
-          if grep -q 'BUILD FAILED' gradle-build.log 2>/dev/null; then build_status=FAIL; fi
-          status_from_marker() {
-            if [ ! -f "$1" ]; then echo 'NOT RUN'; return; fi
-            if [ "$(cat "$1")" = PASS ]; then echo PASS; else echo FAIL; fi
-          }
-          server_status="$(status_from_marker server-smoke.status)"
-          jar_status="$(status_from_marker jar-verification.status)"
-          pack_status="$(status_from_marker mrpack-verification.status)"
-          jar_sha=NOT_GENERATED
-          pack_sha=NOT_GENERATED
-          if [ -f "$jar_file.sha256" ]; then jar_sha="$(cut -d' ' -f1 "$jar_file.sha256")"; fi
-          if [ -f "$pack_file.sha256" ]; then pack_sha="$(cut -d' ' -f1 "$pack_file.sha256")"; fi
-          java_version="$(java -version 2>&1 | head -n 1 | tr -d '\r' || echo unknown)"
-          gradle_version="$(gradle --version 2>/dev/null | sed -n 's/^Gradle //p' | head -n 1 || echo unknown)"
-          first_failure=""
-          if [ "$build_status" = FAIL ]; then
-            first_failure="$(grep -m1 -E 'Execution failed for task|Could not resolve|error:|There were failing tests|BUILD FAILED' gradle-build.log || true)"
-            if [ -z "$first_failure" ]; then first_failure='See gradle-build.log in raw-logs.zip.'; fi
+          gradle test build --no-daemon --stacktrace | tee gradle-build.log
+      - name: Verify produced Fabric JAR
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          jar_file="build/libs/turnbound-$(sed -n 's/^mod_version=//p' gradle.properties).jar"
+          test -s "$jar_file"
+          jar tf "$jar_file" > jar-contents.txt
+          grep -qx 'fabric.mod.json' jar-contents.txt
+          grep -qx 'io/github/q93503128/turnbound/Turnbound.class' jar-contents.txt
+          grep -qx 'io/github/q93503128/turnbound/combat/TurnScheduler.class' jar-contents.txt
+          if grep -Eq 'neoforge|META-INF/neoforge.mods.toml|DrehmalAutoInstaller|AsterMarch' jar-contents.txt; then
+            echo 'Legacy NeoForge/Drehmal runtime leaked into Fabric JAR'
+            exit 1
           fi
-          cat > "$release_dir/BUILD_AND_RUNTIME_REPORT.md" <<EOF
-          # TURNBOUND build and runtime report
-
-          - Version: ${expected_version}
-          - Java: ${java_version}
-          - Gradle: ${gradle_version}
-          - Build and tests: ${build_status} (gradle clean test build oneClickPack --stacktrace)
-          - Datagen: NOT SUPPORTED (no datagen task is configured)
-          - GameTest: NOT SUPPORTED (no GameTest run task is configured)
-          - Dedicated server smoke test: ${server_status}
-          - Client visual test: NOT RUN in the headless CI runner
-          - JAR inspection: ${jar_status} (metadata, compiled classes, assets, data, unique ZIP entries, manifest version)
-          - JAR SHA-256: ${jar_sha}
-          - Modrinth pack validation: ${pack_status}
-          - Modrinth pack SHA-256: ${pack_sha}
-          - First build failure: ${first_failure:-NONE}
-
-          ## Artifacts
-
-          - ${jar_file}
-          - ${jar_file}.sha256
-          - ${pack_file}
-          - ${pack_file}.sha256
-          - ${release_dir}/raw-logs.zip
-          EOF
-      - name: Upload JAR and one-click pack
+          sha256sum "$jar_file" | tee "$jar_file.sha256"
+      - name: Collect logs
+        if: always()
+        working-directory: projects/turnbound
+        run: |
+          mkdir -p build/release
+          test -f gradle-build.log || echo 'NOT RUN' > gradle-build.log
+          zip -q build/release/raw-logs.zip gradle-build.log || true
+      - name: Upload migration artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: turnbound-content-rebuild-foundation
+          name: turnbound-fabric-migration-checkpoint
           path: |
             projects/turnbound/build/libs/*.jar
             projects/turnbound/build/libs/*.jar.sha256
-            projects/turnbound/build/distributions/*.mrpack
-            projects/turnbound/build/distributions/*.mrpack.sha256
-            projects/turnbound/build/release/BUILD_AND_RUNTIME_REPORT.md
             projects/turnbound/build/release/raw-logs.zip
-          if-no-files-found: error
+          if-no-files-found: warn
