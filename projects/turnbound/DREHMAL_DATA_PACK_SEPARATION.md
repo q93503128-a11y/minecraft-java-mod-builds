@@ -97,3 +97,7 @@ python3 tools/drehmal_pack_boundary.py stage \
 - [Fabric Build #1077](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004087) **SUCCESS**. CI 다운로드 오류(HTTP 504) 후 재시도 로직을 수정하여 검증 완료. Fabric 코드/전투 기반은 변경하지 않았음.
 - CI 테스트가 증명하는 것은 **오프라인 분리/복구 안전성**이며, 원작 맵 문·포탈·Terminus 작동이나 게임 플레이 가능성을 증명하지 않는다. 원본 재배포 권한도 부여하지 않는다.
 - **다음 실작업:** 명령 블록에서 직접 호출하는 Terminus 이동 함수(공식 보고서 기준 63개 참조)와 각 특수 구조물 트리거를 위치·의존성별로 검토해 원작 게임 서사/보상만 차단하고 TURNBOUND 전용 이동·시설 동작으로 교체. 오래된 서바이벌·아이템 실행 루틴은 무조건 '재사용'하지 않음.
+
+## Terminus command graph checkpoint
+
+[Reviewed and verified metadata](TERMINUS_GRAPH_REVIEW.md) reports 82 referenced functions / 83 matched invocations. Original Terminus arrivals/departures cannot be directly reused because their call graph intersects vanilla gamemode, unlock and gift functions. A metadata-only physical trigger scan is now separately defined; original world bytes are excluded from its artifact. No new live command-block deactivation is claimed.
