@@ -1,0 +1,40 @@
+name: TURNBOUND official Drehmal v2.2.2f read-only analysis
+
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-map-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  map-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify official release and inspect ephemeral world
+        shell: bash
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          df -h "${RUNNER_TEMP}"
+          python3 tools/download_audit_official_drehmal.py \
+            --download-dir "${RUNNER_TEMP}/turnbound-drehmal-downloads" \
+            --world-dir "${RUNNER_TEMP}/turnbound-official-map" \
+            --report "build/drehmal-official-2.2.2f-summary.json" 2>&1 | tee build-drehmal-audit.log
+          df -h "${RUNNER_TEMP}"
+      - name: Upload redacted audit only (never world/map ZIP)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-map-structure-audit
+          path: |
+            projects/turnbound/build/drehmal-official-2.2.2f-summary.json
+            projects/turnbound/build-drehmal-audit.log
+          if-no-files-found: warn
+          retention-days: 7

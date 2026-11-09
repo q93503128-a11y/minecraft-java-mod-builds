@@ -61,3 +61,11 @@ python3 tools/drehmal_pack_boundary.py stage \
 - 기존 CI 두 회의 504 오류는 Gradle distribution 다운로드 단계의 외부 오류로, 해당 커밋의 코드 컴파일 결과가 아님. 이후 정상 빌드에서 통과.
 - **NOT TESTED**: 실제 Drehmal 2.2.2f 원본 데이터팩 분석, 원작 기능 분리 적용, 복사본 월드 진입·문/포탈/Terminus 확인, 실게임 전투, 멀티플레이.
 - Fabric 클라이언트 그래픽 부팅은 이전 [smoke](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42564964435)에서 확인. 최신 JAR에서 실제 월드 HUD를 보았다는 의미가 아님.
+
+## 원본 파일 자동 분석 작업(One-time CI)
+- \`tools/download_audit_official_drehmal.py\`가 공식 v2.2.2f 릴리스 3개 ZIP을 **순서대로** 다운로드하고 공식 SHA-256/크기를 검사한다. 제작진 공식 설치 프로그램의 각 ZIP을 **같은 world root로 풀어 조립**하는 방식과 일치하도록 하되, 중복 파일 내용이 다르면 안전하게 중지한다.
+- 다운로드/압축 해제 대상은 GitHub Actions 러너의 임시 경로이고, 압축 파일은 각 조각 추출 후 삭제한다. 사용자의 월드, Git 저장소, 기존 저장 데이터에 어떤 쓰기도 하지 않는다.
+- 공식 파일에서 데이터팩 함수 graph와 region NBT를 검사하고 **원작 함수/명령 본문을 제외한 참조/통계 보고서만** 공개 가능한 CI artifact에 담는다.
+- 일회성 GitHub workflow: \`.github/workflows/turnbound-drehmal-map-audit.yml\`. URL: https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-map-audit.yml
+- 대형 원본 다운로드 및 분석은 GitHub 네트워크/디스크 자원에 의존한다. 실패 시 원본 비활성화나 월드 통합이 완료됐다고 간주할 수 없다.
+- 이 분석이 성공하더라도 실제 원작 스토리·전투·보상 함수는 **분석만 했을 뿐 꺼지지 않는다**. 서브시스템별 대상 식별과 복사본 적용/플레이 검증이 별도로 필요하다.
