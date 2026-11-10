@@ -35,6 +35,7 @@ const proof = {
   respawn_tested: false,
   synthetic_force_kill_path_tested: false,
   synthetic_forced_death_return_verified: false,
+  synthetic_force_kill_handling: 'NOT_TESTED',
   synthetic_inventory_preserved_after_forced_death: false,
   synthetic_respawn_request_sent: false,
   structures_tested: false,
@@ -203,28 +204,47 @@ async function second() {
   await ms(500);
   const stillListed = await online(names[0]);
   const healthRead = await command('data get entity '+names[0]+' Health');
-  const posRead = await command('data get entity '+names[0]+' Pos');
-  let observedPos = null;
-  try { observedPos = parsePosition(posRead); } catch {}
+  const healthMatch = healthRead.match(/(-?\d+(?:\.\d+)?)[fFdD]?\s*$/);
+  check(healthMatch !== null, 'Could not read server authoritative Health NBT after /kill');
+  let currentHealth = Number(healthMatch[1]);
+  let postKillPosition = await readPos(names[0]);
   proof.observations.push({
-    label:'server post-kill entity status before respawn request',
+    label:'server post-kill entity status before possible respawn',
     same_player_still_listed:stillListed,
-    health_value_kind:healthRead.includes('Health:') ? 'present' : 'unavailable',
-    server_position:observedPos
+    health_positive:currentHealth>0,
+    server_position:postKillPosition
   });
-  alice.write('client_command', {actionId: 0});
-  proof.synthetic_respawn_request_sent = true;
-  await expectPosition(names[0], position.entry,
-                       'forced kill returned Alice to persisted TURNBOUND checkpoint');
-  proof.synthetic_forced_death_return_verified = true;
+  if (!stillListed || currentHealth<=0) {
+    // Only a genuinely dead player is asked to respawn. Unlike the old
+    // probe, an already living player is never sent a pointless request.
+    alice.write('client_command', {actionId:0});
+    proof.synthetic_respawn_request_sent = true;
+    await expectPosition(names[0], position.entry,
+                         'vanilla respawn returned to registered checkpoint');
+    currentHealth = Number((await command('data get entity '+names[0]+' Health'))
+      .match(/(-?\d+(?:\.\d+)?)[fFdD]?\s*$/)[1]);
+    postKillPosition = await readPos(names[0]);
+    proof.synthetic_force_kill_handling='VANILLA_RESPAWN_WITH_CHECKPOINT';
+  } else if (near(postKillPosition, position.entry)) {
+    proof.synthetic_force_kill_handling='DEATH_CANCELLED_AND_RETURNED_TO_CHECKPOINT';
+  } else if (near(postKillPosition, position.away)) {
+    proof.synthetic_force_kill_handling='VANILLA_DEATH_DENIED_WITHOUT_TELEPORT';
+  } else {
+    throw Error('Unexpected position after /kill; no trusted checkpoint semantics');
+  }
+  check(currentHealth>0,'Forced kill left player with zero or negative health');
+  proof.synthetic_forced_death_return_verified = near(postKillPosition, position.entry);
   const inventory = await command('data get entity '+names[0]+' Inventory');
   check(inventory.includes('minecraft:diamond'),
         'Force kill removed the test diamond; lossless death policy failed');
   proof.synthetic_inventory_preserved_after_forced_death = true;
-  const health = await command('data get entity '+names[0]+' Health');
-  proof.observations.push({label:'post-force-death health queried',
-    nonzero_health: !/\b0\.0f\b/.test(health)});
   proof.synthetic_force_kill_path_tested = true;
+  proof.observations.push({
+    label:'post-force-kill outcome',
+    handling:proof.synthetic_force_kill_handling,
+    inventory_preserved:true,
+    positive_health:true
+  });
   await expectPosition(names[1], position.entry,
                        'Bob retained entry position after Alice force-kill');
   await leave(names[0], alice);
