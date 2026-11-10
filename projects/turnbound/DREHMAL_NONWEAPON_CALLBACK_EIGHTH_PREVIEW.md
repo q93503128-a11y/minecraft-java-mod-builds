@@ -32,3 +32,7 @@
 ## 후속 교차 감사로 확인된 보존 경고 (2026-11-10)
 
 [모든 원작 콜백 181건의 교차 참조 확인 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42743577751). 8번째 실험에서 차단 대상이었던 `data/players/advancements/kill_with_bowblade.json`의 함수가 보존된 원작 점수판 `bowbladEffect`를 참조하는 **표본 증거**를 추가로 발견했다. 기존 단순 분류에서 이 의존성이 드러나지 않았으므로 **실제 플레이 월드에서의 안전한 차단 승인으로 해석할 수 없다.** 8번째 가역 실험은 원본 복원까지 완료되어 데이터 손상은 없었다. 향후 실사용 전 이 항목을 우선 메커니즘 조사 대상으로 보존한다. [교차 위험 보고](DREHMAL_CALLBACK_MECHANISM_CROSS_REVIEW.md).
+
+## 2026-11-10 후속 원본 명령 효과 검증
+
+[원본 함수 효과 감사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42745349874). 기존 9개 대상 중 bowblade 보상 콜백은 **scoreboard 쓰기 1건**을 포함하며 해당 objective를 참조하는 원작 함수는 총 **5개**다. 나머지에도 **effect, tag, team, attribute, advancement 등 플레이어/엔티티 상태 변경**이 포함된 것이 직접 확인되었다. 기존 9개 오프라인 가역 실험의 성공은 '분리·복원 작업이 정확하다'는 의미이지, 이 원작 기능 9개를 플레이 가능한 월드에서 제거해도 된다는 의미가 아니다. **실사용 차단 승인 0건 유지.** [원본 명령 보고서](DREHMAL_ORIGINAL_CALLBACK_COMMAND_EFFECTS.md).

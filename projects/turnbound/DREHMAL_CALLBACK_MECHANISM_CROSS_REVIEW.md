@@ -45,3 +45,14 @@ TURNBOUND `turnbound-content-rebuild`의 비무기 업적 보상 함수 연결 *
 1. 우선 `kill_with_bowblade` → `bowbladEffect` 연결과, location/impossible/월드 변경/예약 실행 콜백 중 실제 원작 시설 상태에 영향을 주는 명령의 출처를 원본 공식 사본에서 **읽기 전용으로 기능별 분석**한다. 원문·NBT/원본 코드 배포 없이 명령 종류/대상/호출 구조만 추출한다.
 2. 구조물·퍼즐/문/포탈 운영에 필수적인 경로와 스토리·보상만 담당하는 경로를 분리한다. 정적 증거만으로 여전히 구분할 수 없다면 판정을 유보하고, 필요한 경우 사람 없이 전용 서버에서 추가 검증한다.
 3. 그 뒤 확인된 범위만 독립 가역 실험으로 편입하고, TURNBOUND 자체 월드 진입·리스폰 시스템을 승인된 장소/정책에 따라 구현한다. 그 전에는 플레이 가능한 맵으로 선언하지 않는다.
+
+## 2026-11-10 직접 원본 명령 효과 비교: 정적 범주와 명령 효과 불일치 확인
+
+- [공식 GitHub Actions #42745349874 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42745349874). 원본 4개 데이터팩에 있는 **18,771개 함수 본문의 SHA를 모두 검증**하고, 실험 중인 9개 콜백과 시설 3개 콜백의 직접/정적 간접 명령을 분류했다. 함수 내용을 GitHub에 재배포하지 않음.
+- **avsal 터미널:** 정적 호출·예약 경로 6개 함수에 setblock **4**, teleport **1**, schedule **2**, scoreboard **5**, kill **2**가 존재한다. 원래 시설·이동 장치 사용과 관계될 가능성이 높아 현재 설정 유지 및 직접 제거 금지.
+- **foundry 레버:** 정적 호출 경로 3개 함수에 scoreboard **2**, tellraw **3**, playsound **1**, function **2**, advancement **1**. 직접 명령 분류상 tp/teleport는 **0**이지만 이 사실만으로 다른 동적 실행이나 장치 연관성이 없다고 단정하지 않는다. 기존 그래프의 teleport 분류는 정적 위험 표시로 남기되 직접 이동 명령 확인과는 구별한다.
+- **godmachine 버튼:** 원본 콜백 함수 1개의 직접 명령에 scoreboard **1**, advancement **1**, playsound **4**. 블록을 직접 변경하지 않는다는 이유로 해당 이벤트를 제거하지 않는다.
+- **bowbladEffect:** 서로 다른 원작 함수 5개에서 점수판 참조를 검출했고, 총 역할은 objective_admin **1**, score_condition **6**, score_write **3**. 기존 8번째 실험의 bowblade 보상 함수가 실제 score_write **1**을 수행해 나머지 참조자와 연결되는 사실을 확인했다. 따라서 실제 게임용 차단 후보에서 제외 유지.
+- 기타 8번째 실험 대상에도 effect/team/tag/attribute/advancement 등 원작 플레이어·엔티티 상태 변경 명령이 확인됐다. 정확한 기능을 게임 내에서 재현하지 않았으므로 **9개 모두 플레이용 차단 승인 0건**.
+
+이번 검증은 원본을 수정하지 않은 read-only 명령 분류다. Minecraft 명령의 execute 중첩·매크로·NBT/동적 실행·구조물 행동을 완전 해석한 것이 아니며 실사용 승인이 아니다. [상세 명령 효과 보고](DREHMAL_ORIGINAL_CALLBACK_COMMAND_EFFECTS.md).
