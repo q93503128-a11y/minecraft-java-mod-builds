@@ -1,0 +1,55 @@
+name: TURNBOUND Drehmal starter physical mechanism audit
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-starter-mechanisms.yml'
+      - 'projects/turnbound/tools/audit_drehmal_starter_mechanisms.py'
+      - 'projects/turnbound/tools/test_audit_drehmal_starter_mechanisms.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  physical-inspection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic paletted-state and chain regression tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_audit_drehmal_starter_mechanisms.py'
+      - name: Download SHA-pinned official command metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Extract official source to disposable world copy
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/source-shards" --world-dir "$RUNNER_TEMP/drehmal-original"
+          python3 tools/drehmal_pack_boundary.py stage --source "$RUNNER_TEMP/drehmal-original" --destination "$RUNNER_TEMP/physical-review-copy"
+      - name: Read physical chains and trigger proximity without writing map files
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/audit_drehmal_starter_mechanisms.py --world-copy "$RUNNER_TEMP/physical-review-copy" --direct-report build/direct-source-review/direct-gameplay-review.json --output build/starter-mechanism-static-report.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('build/starter-mechanism-static-report.json').read_text())
+          assert d['target_count']==24 and d['region_count']==4
+          assert d['world_modified'] is False and d['integration_safe_for_play'] is False
+          assert all('Command' not in e for e in d['targets'])
+          print('PASS: 24 physical source command blocks verified; static evidence only')
+          PY
+      - name: Publish sanitized audit metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-starter-physical-chain-audit
+          path: projects/turnbound/build/starter-mechanism-static-report.json
+          retention-days: 14
+          if-no-files-found: warn
