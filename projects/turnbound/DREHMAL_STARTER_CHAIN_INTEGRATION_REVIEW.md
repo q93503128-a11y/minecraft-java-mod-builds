@@ -45,3 +45,16 @@
 
 **검증:** CODE REVIEWED, ORIGINAL WORLD OFFLINE TESTED, EXACT RESTORE VERIFIED.
 **미검증:** PLAYTESTED, MULTIPLAYER TESTED, STRUCTURE FUNCTIONALITY TESTED, MAP SEPARATION COMPLETE.
+
+## 2026-11-10 — 7번째 시작 장치 잔여 명령 분리 실험
+
+- [GitHub Actions 공식 7단계 분리 검사 #1 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42735713657). 공식 v2.2.2f 별도 비활성 사본에서만 실행.
+- 앞서 검증한 5종과 지급/발견도 24개 처리 이후에 남은 시작 명령 33개를 독립적인 7번째 실험 경계로 추가했다: tp 3, spreadplayers 3, spawnpoint 3, setblock 6, effect 3, gamerule 3, execute-scoreboard 6, execute-advancement 6.
+- 모든 대상은 region/r.51.-1.mca의 확인된 명령 블록 33개로, 공식 직접 명령 보고서 SHA 및 개별 위치/원본 명령 SHA를 기준으로 패치했다.
+- 결과: 기존 24개와 5종 중 게임모드 3개, 신규 33개를 합쳐 **시작 장치 6개 체인 57개 블록의 Command 필드가 모두 빈 문자열**임을 실제 지역 재스캔으로 검증했다.
+- 원본 지역 백업·영수증을 변경 전에 보존하고, 7단계 전후 SHA를 검증했다. 7번째 차단을 해제해 앞선 6단계 분리본과의 SHA를 확인하고, 6단계 자체도 모두 원본 해시로 복구했다. 합성 단위 테스트 3개 PASS.
+- 기존 4종 기본 및 5종 옵션이나 24개 선택형 실험 동작을 바꾸지 않았다. 도구: tools/verify_drehmal_start_chain_isolation.py. 이 검증 도구는 사본에 6단계가 완료된 때에만 사용한다.
+- 원작 명령 블록의 지형/레드스톤/시설은 삭제하지 않았지만 원래 setblock 명령에 의한 실행 시점의 시설 변화는 차단된다. 따라서 **시작 장치, 문, 포탈, 리스폰, 레드스톤의 실제 기능 보존은 미검증**이다. TURNBOUND 시작 위치·리스폰의 서버 소유 시스템도 아직 구현되지 않았다.
+- 원작 명령/함수 코드 재사용 0건. 공식 지도 원본과 변경 사본은 GitHub 또는 artifact에 게시하지 않았다.
+
+**다음:** 원작 시설과 시작 트리거의 전후 실제 클라이언트/서버 동작을 확인하고, 승인된 TURNBOUND 시작 위치·리스폰 정책이 정해질 때 서버 소유로 구현한다. 다른 수많은 원작 실행 경로는 별도 선별 분리가 필요하므로 전체 맵 분리 완료는 아님.

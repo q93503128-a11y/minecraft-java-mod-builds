@@ -26,3 +26,7 @@
 ## 2026-11-10 여섯 번째 원작 시작 명령 경계 — 선택형 오프라인 실험
 
 통합 도구에서 --include-gamemode --include-starter-experiment --direct-report (검증된 원본 직접 명령 보고서 경로)를 함께 지정할 때만 5종 분리 사본에 기존 24개 후보를 추가한다. [공식 원본 복사본 해시 체인·복구 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42733256037). 기본 4종/5종 절차는 유지. [실제 구조 연결 검토](DREHMAL_STARTER_CHAIN_INTEGRATION_REVIEW.md)에 따르면 **시작 체인 원작 명령 33개가 남고 시설 동작 미검증**이므로 실제 게임 월드에 사용할 수 없다.
+
+## 2026-11-10 오프라인 7번째 시작 체인 실험
+
+기존 5종 + 지급/발견도 24개와 별도로, tools/verify_drehmal_start_chain_isolation.py가 같은 비활성 복사본에 남은 시작 장치 명령 33개를 가역적으로 차단한다. [공식 실험 검사 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42735713657): 시작 체인 57개 명령 모두 빈 문자열 확인 → 7번째 오버레이 원본 복구 → 앞선 6단계 전체 복구. 기본 4/5종 동작에는 추가하지 않는다. **파일·해시 검사 성공일 뿐, 원작 시설의 실제 작동이나 안전한 플레이 맵 분리는 검증하지 않았다.** 자세한 내용은 DREHMAL_STARTER_CHAIN_INTEGRATION_REVIEW.md 참고.
