@@ -22,3 +22,7 @@
 ## 2026-11-10 다섯 번째 선택적 분리 경계
 
 기존 `prepare_drehmal_isolated_copy.py`에 `--include-gamemode`를 붙이면 [원작 `gamemode` 블록 29개](DREHMAL_GAMEMODE_COMMAND_SEPARATION.md)를 추가한다. 기존 4종은 기본 동작으로 유지한다. 검증 결과: [5종 공식 검사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42725309538) / [4종 호환 검사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42725309921). 작업은 검증된 월드 **사본**에서만 허용하며 배포/플레이는 아직 금지한다.
+
+## 2026-11-10 여섯 번째 원작 시작 명령 경계 — 선택형 오프라인 실험
+
+통합 도구에서 --include-gamemode --include-starter-experiment --direct-report (검증된 원본 직접 명령 보고서 경로)를 함께 지정할 때만 5종 분리 사본에 기존 24개 후보를 추가한다. [공식 원본 복사본 해시 체인·복구 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42733256037). 기본 4종/5종 절차는 유지. [실제 구조 연결 검토](DREHMAL_STARTER_CHAIN_INTEGRATION_REVIEW.md)에 따르면 **시작 체인 원작 명령 33개가 남고 시설 동작 미검증**이므로 실제 게임 월드에 사용할 수 없다.
