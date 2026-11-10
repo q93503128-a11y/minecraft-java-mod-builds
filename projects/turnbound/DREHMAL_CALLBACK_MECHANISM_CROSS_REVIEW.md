@@ -56,3 +56,8 @@ TURNBOUND `turnbound-content-rebuild`의 비무기 업적 보상 함수 연결 *
 - 기타 8번째 실험 대상에도 effect/team/tag/attribute/advancement 등 원작 플레이어·엔티티 상태 변경 명령이 확인됐다. 정확한 기능을 게임 내에서 재현하지 않았으므로 **9개 모두 플레이용 차단 승인 0건**.
 
 이번 검증은 원본을 수정하지 않은 read-only 명령 분류다. Minecraft 명령의 execute 중첩·매크로·NBT/동적 실행·구조물 행동을 완전 해석한 것이 아니며 실사용 승인이 아니다. [상세 명령 효과 보고](DREHMAL_ORIGINAL_CALLBACK_COMMAND_EFFECTS.md).
+
+
+## 2026-11-10 Bowblade 점수판 활성화 경로 추가 교차 검토
+
+[실제 GitHub Actions #42747001893 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42747001893)에서 기존 원작 근거 3종의 SHA와 역방향 함수 호출/예약 경로를 재검토했다. `bowbladEffect`에 관련한 다섯 함수는 기존 8단계 비활성 사본의 자동 태그/업적 보상 연결 차단 범위에 포함되지만, 동적 함수 호출이나 활성화된 플레이어 및 시설 상태는 검증하지 않았다. 반면 원작 시설 3개 콜백에는 독립 업적 보상 진입점이 남아 있다. **원작 시설 임의 분리 금지, 실제 게임용 차단 승인 0건 유지.** [분석 문서](DREHMAL_BOWBLADE_ENTRYPOINT_BOUNDARY_REVIEW.md).
