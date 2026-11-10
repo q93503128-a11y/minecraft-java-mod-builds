@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import io.github.q93503128.turnbound.combat.BattleDefeatRecoveryLedger;
+import io.github.q93503128.turnbound.combat.BattleOutcome;
 import io.github.q93503128.turnbound.combat.BattleSessionAuthority;
 import io.github.q93503128.turnbound.combat.BattleSessionRegistry;
 import io.github.q93503128.turnbound.combat.BattleState;
@@ -30,17 +32,23 @@ public final class TurnboundBattleBridge {
     public static final Identifier SNAPSHOT = new Identifier("turnbound", "battle_snapshot");
     public static final Identifier RECEIPT = new Identifier("turnbound", "battle_receipt");
     private static final Map<MinecraftServer, BattleSessionRegistry> SERVERS = new IdentityHashMap<>();
+    private static final Map<MinecraftServer, BattleDefeatRecoveryLedger> DEFEAT_RECOVERY = new IdentityHashMap<>();
     private static final int MAX_TARGETS = 8;
 
     private TurnboundBattleBridge() {}
 
     public static void register() {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            if (TurnboundWorldGate.active(server)) SERVERS.put(server, new BattleSessionRegistry());
+            if (TurnboundWorldGate.active(server)) {
+                SERVERS.put(server, new BattleSessionRegistry());
+                DEFEAT_RECOVERY.put(server, new BattleDefeatRecoveryLedger());
+            }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             BattleSessionRegistry registry = SERVERS.remove(server);
             if (registry != null) registry.clear();
+            BattleDefeatRecoveryLedger recovery = DEFEAT_RECOVERY.remove(server);
+            if (recovery != null) recovery.clear();
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sync(handler.player));
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -53,10 +61,21 @@ public final class TurnboundBattleBridge {
                 try {
                     if (session.advanceEnemyTurn()) syncParticipants(server, session);
                 } catch (RuntimeException invalidEnemyKit) {
-                    // Do not crash the Minecraft server or repeat the failed turn each tick.
-                    LOGGER.error("Invalid enemy action in TURNBOUND session {}. Closing session without rewards.",
+                    // Invalid enemy logic closes only its own session without rewards.
+                    LOGGER.error("Invalid enemy action in TURNBOUND session {}. Closing without rewards.",
                             session.id(), invalidEnemyKit);
                     close(server, session.id());
+                    continue;
+                }
+                if (session.outcome() == BattleOutcome.ENEMY_VICTORY) {
+                    try {
+                        settleDefeat(server, session);
+                    } catch (RuntimeException unsafeRecovery) {
+                        // Never delete a completed encounter or mint rewards because a
+                        // target checkpoint cannot currently be reached.
+                        LOGGER.error("TURNBOUND checkpoint return failed for session {}.",
+                                session.id(), unsafeRecovery);
+                    }
                 }
             }
         });
@@ -89,7 +108,10 @@ public final class TurnboundBattleBridge {
                 sendReceipt(player, action.sessionId(), status);
                 if (status == BattleSessionAuthority.Status.ACCEPTED) {
                     BattleSessionAuthority session = registry.sessionFor(player.getUuid());
-                    if (session != null) syncParticipants(server, session);
+                    if (session != null) {
+                        syncParticipants(server, session);
+                        if (session.outcome() == BattleOutcome.ENEMY_VICTORY) settleDefeat(server, session);
+                    }
                 } else {
                     // A rejected request cannot change any other participant's view.
                     sync(player);
@@ -129,6 +151,32 @@ public final class TurnboundBattleBridge {
             }
         }
         registry.close(sessionId);
+        BattleDefeatRecoveryLedger recovery = DEFEAT_RECOVERY.get(server);
+        if (recovery != null) recovery.discard(sessionId);
+    }
+
+    /**
+     * Only server-verified ENEMY_VICTORY may recover participants. The terminal
+     * snapshot is retained until a trusted encounter owner closes this session;
+     * no implicit loot, battle closure or additional death is introduced here.
+     * Offline participants or players who changed dimensions are not teleported.
+     */
+    private static void settleDefeat(MinecraftServer server, BattleSessionAuthority session) {
+        if (!TurnboundWorldGate.active(server) || session.closed()
+                || session.outcome() != BattleOutcome.ENEMY_VICTORY) return;
+        BattleDefeatRecoveryLedger recovery = DEFEAT_RECOVERY.get(server);
+        if (recovery == null) return;
+        for (UUID participant : session.participants()) {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(participant);
+            if (player == null) continue;
+            String currentWorld = player.getServerWorld().getRegistryKey().getValue().toString();
+            // A failed move stays pending, e.g. until the target chunk is loaded.
+            if (recovery.recover(session, participant, currentWorld,
+                    () -> TurnboundCheckpointService.returnAfterDefeat(player))) {
+                LOGGER.info("TURNBOUND session {} completed a checkpoint return for participant.",
+                        session.id());
+            }
+        }
     }
 
     private static void syncParticipants(MinecraftServer server, BattleSessionAuthority session) {

@@ -149,6 +149,9 @@ public final class BattleSessionAuthority {
         return true;
     }
 
+    /** Server-authoritative combat conclusion, not a client receipt. */
+    public BattleOutcome outcome() { return state.outcome(); }
+
     public boolean finished() { return state.outcome() != BattleOutcome.RUNNING; }
 
     public void close() { closed = true; }
