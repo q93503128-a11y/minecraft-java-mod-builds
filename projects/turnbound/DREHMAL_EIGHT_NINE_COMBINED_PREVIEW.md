@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 8+9 통합 오프라인 가역 분리 실험
 
+> **2026-11-10 공식 원본 통합 검증 완료:** [CI #42822471453 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42822471453) · Python 회귀 4개 PASS · 기존 7단계 공식 사본 위에서 **8+9 누적 10개 보상 연결의 교환법칙/무결성/정확 복원** 통과. 실제 시설 조작·PLAYTESTED·8단계 9건의 실사용 차단 안전성·게임용 맵 승인 **아님**.
+
+
 > 2026-11-10 · TURNBOUND (TURNBOUND: RE 아님) · branch: turnbound-content-rebuild · Minecraft 1.20.1 Fabric · 공식 Drehmal: APOTHEOSIS 2.2.2f.
 
 ## 목적과 적용 금지선
