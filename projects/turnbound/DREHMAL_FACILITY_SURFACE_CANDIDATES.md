@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 시설 물리 상호작용 좌표 후보 조사
 
+> **2026-11-10 공식 7+9 사본 실서버 물리 조작 검증 PASS:** [실제 Foundry 레버 우클릭 CI #42824376001](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42824376001)에서 원작 데이터팩 ON·명령 블록 ON인 폐기용 사본에 1인 프로토콜 클라이언트를 접속해 레버 **3개 모두 각각 첫 클릭에서 powered 상태 전환·두 번째 클릭에서 원복**을 관측했다. 원본 위치 확인은 [시설 구역 스캔 #42823505301](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42823505301). **문 실제 개방 / 원작 Foundry 6웨이브 전투 / 클라이언트 시각적 작동 / 4인 멀티는 미검증**. 8단계 미승인 차단 9건은 이 실험에 포함하지 않았다.
+
+
 2026-11-10, branch turnbound-content-rebuild, Minecraft 1.20.1 Fabric / Drehmal 2.2.2f.
 
 ## 범위

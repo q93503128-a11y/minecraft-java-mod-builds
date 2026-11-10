@@ -1,5 +1,8 @@
 # TURNBOUND — Rebuild project contract
 
+> **2026-11-10 Drehmal 실제 시설 사용 최신 정본:** [7+9 공식 맵 사본 실제 레버 조작 #42824376001 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42824376001). 7단계와 `primordial/root` 강제 복귀 보상 연결 차단(9단계)을 적용한 공식 임시 사본에서 **원작 데이터팩·명령 블록 활성**, Fabric 1.20.1 프로토콜 클라이언트 실제 우클릭으로 Foundry 레버 3개 모두 첫 클릭 상태 전환 / 두 번째 클릭 복원 관측. [시설 좌표/물리 후보 원본·사본 비교 #42823505301 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42823505301). 8단계의 9개 실사용 차단은 미승인 상태로 이 시험에 **포함하지 않았다**. 문 개방·퍼즐·원작 전투 비재진입·실제 그래픽 클라이언트·멀티 미확인. **전체 맵 분리와 실사용 START 승인 아님.**
+
+
 > **2026-11-10 8+9 통합 실험 최신 상태:** [8+9 통합 정본](DREHMAL_EIGHT_NINE_COMBINED_PREVIEW.md) · [공식 원본 사본 CI #42822471453 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42822471453). 독립 8단계(9건)와 9단계(1건)를 동일 7단계 사본에 결합, 양방향 순서 결과 일치 및 원본 정확 복원 검증. **이는 오프라인 사본 무결성 시험이지 8단계의 실사용 안전성이나 문·퍼즐·포탈 작동 승인 아님. MAP SEPARATION COMPLETE: NO.** 다음은 원작 시설 실제 물리 조작과 원작 재진입 조건 선별 판정.
 
 

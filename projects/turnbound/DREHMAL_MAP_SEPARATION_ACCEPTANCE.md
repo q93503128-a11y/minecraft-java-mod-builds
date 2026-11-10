@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-10 7+9 실서버 Foundry 레버 실제 사용 PASS:** [시설 우클릭 #42824376001](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42824376001). 공식 원본 SHA 확인·폐기 사본·원작 데이터팩 ON·명령 블록 ON·Minecraft 1.20.1 프로토콜 클라이언트로 세 개 Foundry 레버의 첫 클릭 powered 전환, 두 번째 클릭 원복이 **모두 재현**됐다. [읽기 전용 시설 위치 선행 확인 #42823505301](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42823505301)에서 원본/7+9 구역 블록이 일치함을 확인했다. **기존의 강제 advancement grant 검사와 달리 실제 사용 패킷**을 보냈지만, 문 개방/시설 동선/원작 전투 제거/전체 퍼즐/그래픽 클라이언트/4인 멀티는 검증하지 않았다. 실제 맵 승인 = NO.
+
+
 > **2026-11-10 8+9 통합 오프라인 사본 정확 복원 검증:** [CI #42822471453 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42822471453) · [통합 절차·경계](DREHMAL_EIGHT_NINE_COMBINED_PREVIEW.md). 기존 7단계 검증 사본에서 8단계 9건 + 9단계 1건을 순서 양방향으로 결합해 **원본 ZIP member 정확히 10개만 수정** 및 원상복구, 원본 SHA 보존. **8단계 실사용 차단 승인 여전히 0건, 물리 시설 기능/실사용 맵/클라이언트 테스트 여전히 NO**.
 
 
