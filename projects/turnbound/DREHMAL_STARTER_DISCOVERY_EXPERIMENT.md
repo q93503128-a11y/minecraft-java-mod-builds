@@ -14,3 +14,10 @@
 이 실험은 **5종 통합 분리본에는 아직 포함되지 않은 선택적 시험**이다. 게임모드/지급 명령 블록의 조건부 체인과 퍼즐·시설 기능은 실플레이 검증 전까지 미확정. 반드시 원본 기능과 구조물 양쪽을 확인한 후 통합 여부를 결정한다.
 
 검증: [GitHub Actions 원본 공식 월드 복사본 24개 명령 차단·복구](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/workflows/turnbound-drehmal-starter-discovery-preview.yml).
+
+## 2026-11-10 공식 월드 사본 검증 결과
+
+- [검증 CI #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42729892272) **SUCCESS**. 원본 공식 `shard_1.zip` ~ `shard_3.zip`를 검증·추출해 별도 월드 복사본 생성.
+- `inspect → apply → verify → restore` 전 과정 통과. 원작 시작 지급품 21개와 발견도 업적 지급 3개, 총 **24개 명령 블록**, 지역 파일 **4개**를 검증된 해시 대상으로 처리. 파일 변경 영수증 검증 및 원본 지역 SHA로 정확한 복구. **회귀 테스트 7개 PASS**.
+- **실제 Minecraft 게임에 넣어 확인한 것은 아님.** 원작 명령 블록 체인, 조건부 실행, 주변 퍼즐·장치 호환성, 실플레이/멀티플레이는 미검증. 원작 지도 파일은 GitHub/아티팩트에 업로드하지 않았으며 사용자용 설치물도 생성하지 않음.
+- 정식 5종 분리 검증에 이 24개를 추가하지 않은 상태를 유지. 다음 작업에서는 장치 의존성을 먼저 실측하여 편입 여부 결정. 원작 코드 TURNBOUND 게임 로직 재사용 **없음**.
