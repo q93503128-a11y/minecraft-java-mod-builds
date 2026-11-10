@@ -50,7 +50,16 @@ jobs:
           assert d["world_modified"] is False and d["original_code_reused"] is False
           assert d["automatically_suppressed_original_functions"]==0
           assert d["fully_verified_original_map_separation"] is False
-          print("PASS: all 181 callbacks cross-indexed with no removal or map edit")
+          assert d["risk_reason_counts"]["DEFERRED_SCHEDULE_EDGE"]==45, "Scheduler source set drift or accidental defaultdict insertion"
+          assert d["risk_reason_counts"]["SCHEDULE_IN_CALL_GRAPH"]==45
+          assert d["risk_reason_counts"]["FUNCTION_WORLD_EDIT"]==42
+          assert d["risk_reason_counts"]["FUNCTION_TELEPORT"]==138
+          assert d["risk_reason_counts"]["LOCATION_OR_DIMENSION_ACTIVATION"]==53
+          assert d["risk_reason_counts"]["SAMPLED_OBJECTIVE_OR_STORAGE_REFERENCE"]==54
+          bow=next(x for x in d["callbacks"] if x["advancement_file"]=="data/players/advancements/kill_with_bowblade.json")
+          assert "bowbladEffect" in bow["sampled_score_objective_ids"]
+          assert bow["review_priority"]=="PRESERVE_UNTIL_MECHANISM_REVIEW"
+          print("PASS: all 181 callbacks reconciled; 45 deferred callback paths, no removals, bowblade objective risk retained")
           PY
       - name: Upload metadata and risk classifications ONLY
         if: always()
