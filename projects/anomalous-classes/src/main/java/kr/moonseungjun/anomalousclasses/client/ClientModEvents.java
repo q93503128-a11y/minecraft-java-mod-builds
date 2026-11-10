@@ -22,7 +22,7 @@ public final class ClientModEvents {
 
     @SubscribeEvent
     public static void registerClientPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("1");
+        PayloadRegistrar registrar = event.registrar("2");
         registrar.playToClient(ClassSelectionStatePayload.TYPE, ClassSelectionStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(ProfileStatePayload.TYPE, ProfileStatePayload.STREAM_CODEC,

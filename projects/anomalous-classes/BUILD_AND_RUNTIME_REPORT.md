@@ -132,3 +132,71 @@ The existing `ClientModEvents.java:14` `EventBusSubscriber.bus()` removal warnin
 - **CLIENT TESTED: NOT RUN.** The client has not been used to open or interact with these screens. After launch, the user should enter a world, press `M`, then inspect Profile → Skill Tree and Profile → Class Management at the requested GUI scales and aspect ratios.
 - **CLIENT RUNNING:** yes. The client remains open at the startup/title screen. No world or UI screen was opened because live client interaction is outside this review and CUA was not used.
 - The approved concept images guided the composition and visual language, but the resulting textures are not a pixel-perfect copy. Further ornament and glyph treatment cannot be confirmed without the user's actual Minecraft screen review.
+
+---
+
+# Build and Runtime Report — 2026-11-10
+
+## Build target
+
+- Project: `projects/anomalous-classes/`
+- Base GitHub `main`: `5732427fea2ae0fd295618c0ffc84b1e292c53e5`
+- Minecraft: 1.21.1
+- NeoForge: 21.1.244
+- Java: OpenJDK 21.0.10
+- Gradle wrapper: 8.8
+- Mod version: 0.1.0-alpha.1
+
+## Implementation summary
+
+- Replaced the old small category grid with the six full graph maps. All 581 purchasable nodes are loaded from the graph data: 94 mental dominator, 101 puppeteer, 108 parasite morpher, 102 barrier caster, 86 pact caster, and 90 swarm caster. Each class totals 900 SP.
+- Added separate class-map background art and 61 runtime icon files (57 class-specific passive icons plus four shared stat icons). Live graph lines, node states, text, tooltips, and buttons render separately from the artwork.
+- Added pan, pointer-centered wheel zoom, bounded camera movement, transformed hit testing, drag/click separation, viewport culling, and edge-clamped hover cards.
+- The server validates class, revision, node, purchase path, prerequisites, ownership, and SP. Noncombat reset is free and returns the purchased-node cost.
+- Legacy per-class rank arrays migrate to fully purchased stages. Incomplete-stage rank spend is refunded. All six class conversions are validated before a batch save; SP conservation and saved-data round trips are covered by runtime fixtures.
+- Minor vanilla attribute nodes use stable modifiers for the active class. Existing major passive descriptions and stage purchases are preserved as data; major combat effects are not claimed active where this project has no combat integration.
+- M profile entry and the existing class-selection flow remain. The removed K class-change shortcut was not restored.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| `.\gradlew.bat --no-daemon clean build --stacktrace` | PASS — `BUILD SUCCESSFUL` |
+| Java runtime catalog and graph purchase fixture | PASS — all six graphs can be purchased through the real catalog path at 900 SP |
+| Migration fixtures | PASS — new, partial, complete, invalid/atomic-failure, retry, reset refund, and NBT save/load cases |
+| Static tree/UI verifier | PASS — 581 nodes, six 900-SP totals, original skill/rank/milestone mapping, Korean/English keys, PNG resources |
+| Viewport calculations | STATIC REVIEW PASS — 16:9, 16:10, 4:3 × GUI Scale 2, 3, 4 |
+| JAR archive inspection | PASS — readable ZIP, no duplicate entries, 64 compiled classes, NeoForge metadata, graph JSON, languages, backgrounds and icons present; source/tools/docs excluded |
+| Datagen / JUnit / GameTest | NOT RUN — no project datagen or JUnit tests are registered; GameTest was not launched |
+| Dedicated-server smoke test | NOT RUN — `run/server/eula.txt` is absent; EULA was not accepted on the user's behalf |
+| Minecraft client process | RUNNING — development client loaded NeoForge 21.1.244 and the mod resource pack; left open |
+| UI screen interaction / visual review | NOT TESTED — no Minecraft UI was opened or manipulated; perform the user test below |
+| Multiplayer / gameplay / balance | NOT TESTED — outside this verification run |
+
+## JAR
+
+- File: `anomalous-classes-0.1.0-alpha.1.jar`
+- Size: 31,372,781 bytes
+- SHA-256: `1a985b65ed7d433be0fc13eaab92bf21b1b9394bfd735f60b8c8edc68ebd943e`
+- Checksum file: `anomalous-classes-0.1.0-alpha.1.jar.sha256`
+
+The current JAR is delivered as a local artifact. The repository's previously tracked artifact files were left untouched.
+
+## Warnings and limits
+
+- Compilation reports the existing deprecated NeoForge `EventBusSubscriber.Bus` API use in the client event subscriber.
+- The client log includes nonfatal vanilla goat-horn sound and emissive-shader sampler warnings.
+- Static font and viewport checks do not substitute for opening the screen in Minecraft. Final visual quality, real font shaping, zoom feel, and click accuracy still require user review.
+- Major passive stage purchase state is persistent, but a stage whose combat implementation does not exist remains unimplemented in combat.
+
+## User UI check
+
+1. Enter a test world and open the profile with `M`.
+2. Select **Skill Tree** and verify the active class map, all three branch directions, labels, node hover card, and SP counts.
+3. Drag from empty space, zoom around the pointer, and check that releasing a drag does not purchase a node.
+4. Purchase an available minor/major node, reopen the screen, then confirm SP and ownership persisted. Try a blocked node and an insufficient-SP node.
+5. Reset while outside combat; confirm the full node cost is returned. Try again in combat and confirm reset is rejected.
+6. Change class through the existing class-selection screen and confirm the other class has its own tree. Repeat at GUI Scale 2, 3, and 4 in 16:9, 16:10, and 4:3 windows; review Korean and English.
+7. For authorized progression testing, use the existing admin command `/class test grant-levels 10`.
+
+Do not interpret this UI checklist as a gameplay balance or combat-effect evaluation.

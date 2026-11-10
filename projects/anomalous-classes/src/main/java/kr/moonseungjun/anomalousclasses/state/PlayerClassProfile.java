@@ -47,4 +47,15 @@ public final class PlayerClassProfile {
         progress.put(id, updated);
         revision++;
     }
+
+    public void updateProgressBatch(Map<ClassId, ClassProgress> updates) {
+        if (updates.isEmpty()) return;
+        EnumMap<ClassId, ClassProgress> validated = new EnumMap<>(ClassId.class);
+        for (ClassId id : ClassId.values()) {
+            ClassProgress value = updates.get(id);
+            if (value != null) validated.put(id, value);
+        }
+        progress.putAll(validated);
+        revision++;
+    }
 }

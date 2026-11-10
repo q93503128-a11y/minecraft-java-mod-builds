@@ -8,6 +8,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -55,13 +56,17 @@ public final class ClassProfileSavedData extends SavedData {
                 ListTag ranks = new ListTag();
                 for (int rank : progress.skillRanks()) ranks.add(IntTag.valueOf(rank));
                 progressTag.put("skillRanks", ranks);
+                ListTag graphNodes = new ListTag();
+                for (String nodeId : progress.purchasedNodes()) graphNodes.add(StringTag.valueOf(nodeId));
+                progressTag.put("purchasedNodes", graphNodes);
+                progressTag.putInt("skillTreeVersion", progress.skillTreeVersion());
                 progressList.add(progressTag);
             }
             playerTag.put("progress", progressList);
             playerList.add(playerTag);
         }
         tag.put("players", playerList);
-        tag.putInt("schemaVersion", 2);
+        tag.putInt("schemaVersion", 3);
         return tag;
     }
 
@@ -85,13 +90,22 @@ public final class ClassProfileSavedData extends SavedData {
                 for (int rankIndex = 0; rankIndex < rankList.size(); rankIndex++) {
                     ranks[rankIndex] = Math.max(0, rankList.getInt(rankIndex));
                 }
+                ListTag graphNodeList = progressTag.getList("purchasedNodes", Tag.TAG_STRING);
+                java.util.Set<String> purchasedNodes = new java.util.HashSet<>();
+                for (int nodeIndex = 0; nodeIndex < graphNodeList.size(); nodeIndex++) {
+                    String nodeId = graphNodeList.getString(nodeIndex);
+                    if (!nodeId.isBlank() && nodeId.length() <= 128) purchasedNodes.add(nodeId);
+                }
                 progress.put(id, new ClassProgress(
                         progressTag.getBoolean("played"),
                         progressTag.contains("level", Tag.TAG_ANY_NUMERIC) ? progressTag.getInt("level") : 1,
                         progressTag.getLong("experience"),
                         progressTag.getInt("skillPoints"),
                         permanentData,
-                        ranks));
+                        ranks,
+                        progressTag.contains("skillTreeVersion", Tag.TAG_ANY_NUMERIC)
+                                ? progressTag.getInt("skillTreeVersion") : 0,
+                        purchasedNodes));
             }
             PlayerClassProfile profile = new PlayerClassProfile();
             profile.load(selected, progress, playerTag.getInt("revision"));

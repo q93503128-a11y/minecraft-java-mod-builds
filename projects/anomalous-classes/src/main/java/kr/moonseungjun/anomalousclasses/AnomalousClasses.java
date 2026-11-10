@@ -20,6 +20,7 @@ public final class AnomalousClasses {
         ClassRosterCatalog.validate();
         ClassNetwork.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogin);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogout);
         NeoForge.EVENT_BUS.addListener(this::onLivingDamage);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
@@ -31,6 +32,12 @@ public final class AnomalousClasses {
 
     private void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         CombatTracker.remove(event.getEntity().getUUID());
+    }
+
+    private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+            ClassSelectionService.onPlayerRespawn(player);
+        }
     }
 
     private void onLivingDamage(LivingDamageEvent.Post event) {

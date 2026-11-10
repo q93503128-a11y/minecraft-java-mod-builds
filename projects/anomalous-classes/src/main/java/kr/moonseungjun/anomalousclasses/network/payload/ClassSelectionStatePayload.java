@@ -108,6 +108,7 @@ public record ClassSelectionStatePayload(
         ALREADY_CURRENT,
         COMBAT_LOCKED,
         STALE_REQUEST,
-        INVALID_CLASS
+        INVALID_CLASS,
+        MIGRATION_FAILED
     }
 }

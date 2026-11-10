@@ -58,6 +58,14 @@ tasks.processResources {
         into 'data/anomalousclasses'
         rename { 'skill_point_cost_model_v2.json' }
     }
+    from('balance/SKILL_TREE_BRANCH_REDESIGN_V1.json') {
+        into 'data/anomalousclasses'
+        rename { 'skill_tree_branch_redesign_v1.json' }
+    }
+    from('ui/SKILL_TREE_GRAPH_LAYOUT_V1.json') {
+        into 'data/anomalousclasses'
+        rename { 'skill_tree_graph_layout_v1.json' }
+    }
 }
 
 tasks.jar {
@@ -73,10 +81,21 @@ tasks.jar {
 
 tasks.register('verifyProfileSkillTree', Exec) {
     group = 'verification'
-    description = 'Checks the approved skill point cost source, localized node catalog, and responsive menu bounds.'
-    commandLine 'python', 'tools/verify_profile_skilltree.py'
+    description = 'Checks six graph trees, legacy migration conservation, skill-tree assets, translations, and responsive bounds.'
+    commandLine 'python', 'tools/verify_graph_skilltree.py'
+}
+
+tasks.register('verifyGraphSkillTreeRuntime', Exec) {
+    group = 'verification'
+    description = 'Runs runtime catalog, migration, atomicity, and SavedData round-trip fixtures without packaging test code.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/GraphSkillTreeRuntimeVerifier.java').absolutePath
+    }
 }
 
 tasks.named('check') {
     dependsOn tasks.named('verifyProfileSkillTree')
+    dependsOn tasks.named('verifyGraphSkillTreeRuntime')
 }

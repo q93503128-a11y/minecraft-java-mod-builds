@@ -132,7 +132,8 @@ public final class ClassSelectionScreen extends Screen {
             transitionStarted = System.currentTimeMillis();
         } else if (state.result() == ClassSelectionStatePayload.Result.COMBAT_LOCKED
                 || state.result() == ClassSelectionStatePayload.Result.STALE_REQUEST
-                || state.result() == ClassSelectionStatePayload.Result.INVALID_CLASS) {
+                || state.result() == ClassSelectionStatePayload.Result.INVALID_CLASS
+                || state.result() == ClassSelectionStatePayload.Result.MIGRATION_FAILED) {
             if (state.currentClassIndex() >= 0 && selectedIndex == state.currentClassIndex()
                     && priorResult == ClassSelectionStatePayload.Result.SAVED) {
                 selectedIndex = state.currentClassIndex();
@@ -549,6 +550,7 @@ public final class ClassSelectionScreen extends Screen {
             case COMBAT_LOCKED -> Component.translatable("screen.anomalousclasses.class_selection.combat_lock");
             case STALE_REQUEST -> Component.translatable("screen.anomalousclasses.class_selection.stale");
             case INVALID_CLASS -> Component.translatable("screen.anomalousclasses.class_selection.invalid");
+            case MIGRATION_FAILED -> Component.translatable("screen.anomalousclasses.skill_tree.migration_failed");
             default -> Component.translatable("screen.anomalousclasses.class_selection.status");
         };
     }
@@ -556,7 +558,7 @@ public final class ClassSelectionScreen extends Screen {
     private int localStatusColor() {
         return switch (serverState.result()) {
             case SAVED -> 0xFFB8D99A;
-            case COMBAT_LOCKED, INVALID_CLASS -> 0xFFFFB5A1;
+            case COMBAT_LOCKED, INVALID_CLASS, MIGRATION_FAILED -> 0xFFFFB5A1;
             default -> 0xFFD7CEC3;
         };
     }

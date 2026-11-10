@@ -1,5 +1,13 @@
 # Changelog
 
+## Six-class graph skill trees — 2026-11-10
+
+- Replaced the old three-column rank screen with the six approved full-map skill trees: 581 purchasable nodes and 900 SP per class.
+- Added pan/zoom map interaction, hover cards, class-specific backgrounds and passive icons, milestone frames, and a compact SP/reset HUD.
+- Added server-checked node purchases and path requirements, persistent per-class ownership, vanilla stat-node modifiers, and one-time legacy-rank migration with SP conservation.
+- The original passive combat effects were not connected in the previous implementation; this change records their stage ownership and does not represent those effects as active.
+- Static graph, migration-model, translation, asset, and viewport checks were run. Minecraft client interaction and multiplayer tests were not run.
+
 ## Class selection text placement follow-up — 2026-11-08
 
 - Removed class names from the narrow side previews so they cannot break across letters; thumbnails remain unchanged.

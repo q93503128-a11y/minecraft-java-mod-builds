@@ -27,7 +27,7 @@ public final class ClassNetwork {
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("1");
+        PayloadRegistrar registrar = event.registrar("2");
         registrar.playToServer(RequestClassMenuPayload.TYPE, RequestClassMenuPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) ClassSelectionService.openMenu(player);

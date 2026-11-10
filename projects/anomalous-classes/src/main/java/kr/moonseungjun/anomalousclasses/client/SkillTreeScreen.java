@@ -1,446 +1,678 @@
 package kr.moonseungjun.anomalousclasses.client;
 
+import com.mojang.math.Axis;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestProfilePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
+import kr.moonseungjun.anomalousclasses.state.GraphSkillTreeCatalog;
 import kr.moonseungjun.anomalousclasses.state.SkillTreeCatalog;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+/** Full-screen, data-driven graph map. Node art and class backdrops are separate runtime assets. */
 public final class SkillTreeScreen extends Screen {
+    private static final double MIN_ZOOM = 0.24;
+    private static final double MAX_ZOOM = 1.85;
+    private static final double DRAG_THRESHOLD_SQUARED = 16.0;
+    private static final int HUD_HEIGHT = 34;
+
     private SkillTreeStatePayload state;
     private ClassId classId;
-    private List<SkillTreeCatalog.Node> nodes = List.of();
-    private final List<NodeButton> nodeButtons = new ArrayList<>();
-    private MenuUi.Box outer, identity, graph, details;
-    private MenuUi.Button investOne, investBreakpoint, investMax, resetButton, profileButton;
-    private int selectedNode;
-    private int nodeSize;
-    private int graphHeader;
-    private int investY;
-    private int actionHeight;
-    private boolean compact, pending;
+    private GraphSkillTreeCatalog.Tree tree;
+    private MenuUi.Box viewport;
+    private MenuUi.Button profileButton;
+    private MenuUi.Button resetButton;
+    private final Map<String, ResourceLocation> iconTextures = new HashMap<>();
+    private final Map<String, GraphSkillTreeCatalog.PurchaseCheck> purchaseChecks = new HashMap<>();
+    private final Map<String, ScreenNode> projectedById = new HashMap<>();
+    private List<ScreenNode> visibleNodes = List.of();
+    private List<VisibleEdge> visibleEdges = List.of();
+    private Set<String> owned = Set.of();
+    private String selectedNodeId;
+    private double cameraX;
+    private double cameraY;
+    private double zoom = 0.5;
+    private boolean cameraInitialized;
+    private boolean mapPointerDown;
+    private boolean dragging;
+    private int pointerButton = -1;
+    private double pressX;
+    private double pressY;
+    private double lastX;
+    private double lastY;
+    private String pressedNodeId;
+    private boolean pending;
+    private long resetConfirmUntil;
+    private long feedbackUntil;
 
     public SkillTreeScreen(SkillTreeStatePayload state) {
         super(Component.translatable("screen.anomalousclasses.skill_tree.title"));
         this.state = state;
         this.classId = ClassId.fromNetworkIndex(state.classIndex()).orElse(ClassId.MENTAL_DOMINATOR);
-        this.nodes = SkillTreeCatalog.nodes(classId);
+        this.tree = GraphSkillTreeCatalog.tree(classId);
+        rebuildOwnership();
     }
 
     @Override
     protected void init() {
-        classId = ClassId.fromNetworkIndex(state.classIndex()).orElse(classId);
-        nodes = SkillTreeCatalog.nodes(classId);
-        compact = width < 700 || height < 400;
-        int margin = width < 360 ? 4 : 8;
-        int top = height < 250 ? 3 : 8;
-        outer = new MenuUi.Box(margin, top, Math.max(1, width - margin * 2), Math.max(1, height - top * 2));
-        int header = height < 280 ? 18 : 26;
-        nodeButtons.clear();
-        if (compact) initCompact(header);
-        else initWide(header);
-        int rows = nodes.stream().mapToInt(SkillTreeCatalog.Node::row).max().orElse(0) + 1;
-        graphHeader = compact ? 12 : 28;
-        int maxSize = (graph.height() - graphHeader - 6 - Math.max(0, rows - 1) * 2) / Math.max(1, rows);
-        nodeSize = Math.max(compact ? 18 : 32, Math.min(compact ? 36 : 48, maxSize));
-        for (int index = 0; index < nodes.size(); index++) {
-            nodeButtons.add(addRenderableWidget(new NodeButton(nodeBox(index), index)));
+        clearWidgets();
+        int mapTop = Math.min(Math.max(25, HUD_HEIGHT), Math.max(1, height - 1));
+        viewport = new MenuUi.Box(0, mapTop, Math.max(1, width), Math.max(1, height - mapTop));
+        if (!cameraInitialized) {
+            double graphWidth = Math.max(1, tree.maxX() - tree.minX() + 180);
+            double graphHeight = Math.max(1, tree.maxY() - tree.minY() + 180);
+            zoom = Math.max(MIN_ZOOM, Math.min(0.58,
+                    Math.min(viewport.width() / graphWidth, viewport.height() / graphHeight) * 0.9));
+            cameraX = (tree.minX() + tree.maxX()) * 0.5;
+            cameraY = (tree.minY() + tree.maxY()) * 0.5;
+            cameraInitialized = true;
         }
-        refreshButtons();
-    }
 
-    private void initCompact(int header) {
-        int gap = 4;
-        int contentX = outer.x() + 5;
-        int contentWidth = Math.max(1, outer.width() - 10);
-        int identityHeight = height < 300 ? 22 : 24;
-        identity = new MenuUi.Box(contentX, outer.y() + header + 3, contentWidth, identityHeight);
-
-        actionHeight = Math.max(16, Math.min(20, height / 18));
-        int footerY = outer.bottom() - 4 - actionHeight;
-        investY = footerY - 3 - actionHeight;
-        int detailsHeight = Math.max(52, Math.min(62, height / 5));
-        details = new MenuUi.Box(contentX, investY - 4 - detailsHeight, contentWidth, detailsHeight);
-        int graphY = identity.bottom() + 4;
-        graph = new MenuUi.Box(contentX, graphY, contentWidth, Math.max(1, details.y() - graphY - 4));
-
-        int investWidth = Math.max(1, (contentWidth - 2 * gap) / 3);
-        int investX = contentX + (contentWidth - (investWidth * 3 + gap * 2)) / 2;
-        investOne = button(investX, investY, investWidth, actionHeight,
-                "screen.anomalousclasses.skill_tree.invest_one", SkillTreeActionPayload.Action.INVEST_ONE);
-        investBreakpoint = button(investX + investWidth + gap, investY, investWidth, actionHeight,
-                "screen.anomalousclasses.skill_tree.invest_breakpoint", SkillTreeActionPayload.Action.INVEST_TO_BREAKPOINT);
-        investMax = button(investX + 2 * (investWidth + gap), investY, investWidth, actionHeight,
-                "screen.anomalousclasses.skill_tree.invest_max", SkillTreeActionPayload.Action.INVEST_MAX);
-
-        int footerWidth = Math.max(1, Math.min(156, (contentWidth - gap) / 2));
-        int footerX = contentX + (contentWidth - (footerWidth * 2 + gap)) / 2;
-        resetButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(footerX, footerY, footerWidth, actionHeight),
-                Component.translatable("screen.anomalousclasses.skill_tree.reset"),
-                button -> submit(SkillTreeActionPayload.Action.RESET)));
-        profileButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(footerX + footerWidth + gap, footerY,
-                footerWidth, actionHeight), Component.translatable("screen.anomalousclasses.skill_tree.profile"),
-                button -> requestProfile()));
-    }
-
-    private void initWide(int header) {
-        int bodyY = outer.y() + header + 5;
-        int bodyHeight = Math.max(1, outer.bottom() - bodyY - 7);
-        int contentX = outer.x() + 7;
-        int identityWidth = Math.max(148, Math.min(202, outer.width() / 5));
-        int detailWidth = Math.max(190, Math.min(258, outer.width() / 4));
-        int gap = 6;
-        identity = new MenuUi.Box(contentX, bodyY, identityWidth, bodyHeight);
-        int detailX = outer.right() - 7 - detailWidth;
-        int graphX = identity.right() + gap;
-        graph = new MenuUi.Box(graphX, bodyY, Math.max(1, detailX - graphX - gap), bodyHeight);
-        details = new MenuUi.Box(detailX, bodyY, detailWidth, bodyHeight);
-
-        actionHeight = 20;
-        investY = details.bottom() - 50 - actionHeight;
-        int actionGap = 4;
-        int investWidth = Math.max(1, (details.width() - 12 - actionGap * 2) / 3);
-        int investX = details.x() + (details.width() - (investWidth * 3 + actionGap * 2)) / 2;
-        investOne = button(investX, investY, investWidth, actionHeight,
-                "screen.anomalousclasses.skill_tree.invest_one", SkillTreeActionPayload.Action.INVEST_ONE);
-        investBreakpoint = button(investX + investWidth + actionGap, investY, investWidth, actionHeight,
-                "screen.anomalousclasses.skill_tree.invest_breakpoint", SkillTreeActionPayload.Action.INVEST_TO_BREAKPOINT);
-        investMax = button(investX + 2 * (investWidth + actionGap), investY, investWidth, actionHeight,
-                "screen.anomalousclasses.skill_tree.invest_max", SkillTreeActionPayload.Action.INVEST_MAX);
-
-        int footerWidth = Math.max(1, Math.min(132, details.width() - 12));
-        int footerX = details.x() + (details.width() - footerWidth) / 2;
-        int footerY = details.bottom() - 25;
-        resetButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(identity.x() + 8, identity.bottom() - 27,
-                identity.width() - 16, 21), Component.translatable("screen.anomalousclasses.skill_tree.reset"),
-                button -> submit(SkillTreeActionPayload.Action.RESET)));
-        profileButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(footerX, footerY, footerWidth, 20),
-                Component.translatable("screen.anomalousclasses.skill_tree.profile"), button -> requestProfile()));
+        int margin = width < 420 ? 5 : 9;
+        int backWidth = Math.min(76, Math.max(54, width / 7));
+        int resetWidth = Math.min(78, Math.max(54, width / 7));
+        int spWidth = Math.min(112, Math.max(78, width / 4));
+        int rightX = Math.max(margin, width - margin - resetWidth - 4 - spWidth);
+        int availableClassWidth = Math.max(30, rightX - margin - backWidth - 4 - margin);
+        int classWidth = Math.min(158, availableClassWidth);
+        profileButton = addRenderableWidget(new MenuUi.Button(
+                new MenuUi.Box(margin, 7, backWidth, 21),
+                Component.translatable("screen.anomalousclasses.skill_tree.back"), button -> requestProfile()));
+        resetButton = addRenderableWidget(new MenuUi.Button(
+                new MenuUi.Box(width - margin - resetWidth, 7, resetWidth, 21),
+                resetLabel(), button -> confirmOrReset()));
+        clampCamera();
+        refreshPurchaseChecks();
+        rebuildCameraCache();
+        refreshControls();
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        refreshControls();
         renderBackground(graphics, mouseX, mouseY, partialTick);
-        graphics.fill(0, 0, width, height, 0x70201D25);
-        MenuUi.drawPanel(graphics, outer);
-        MenuUi.drawTitle(graphics, font, title, outer, width, height);
-
-        if (compact) drawCompactIdentity(graphics);
-        else drawWideIdentity(graphics);
-
-        MenuUi.drawInsetSurface(graphics, graph);
-        drawGroups(graphics);
-        drawConnections(graphics);
-
-        MenuUi.drawInsetSurface(graphics, details);
-        drawSelectedDetails(graphics);
+        drawBackdrop(graphics);
+        drawMap(graphics);
+        drawHud(graphics);
+        drawHoveredCard(graphics, mouseX, mouseY);
+        drawFeedback(graphics);
         for (Renderable renderable : renderables) renderable.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    public void applyServerState(SkillTreeStatePayload state) {
-        this.state = state;
-        this.classId = ClassId.fromNetworkIndex(state.classIndex()).orElse(classId);
-        this.nodes = SkillTreeCatalog.nodes(classId);
-        this.pending = false;
-        if (selectedNode >= nodes.size()) selectedNode = Math.max(0, nodes.size() - 1);
-        refreshButtons();
+    private void drawBackdrop(GuiGraphics graphics) {
+        ResourceLocation background = texture("backgrounds/" + classId.key() + ".png");
+        int sourceWidth = 1672;
+        int sourceHeight = 941;
+        double cover = Math.max(width / (double) sourceWidth, height / (double) sourceHeight);
+        int drawWidth = (int) Math.ceil(sourceWidth * cover);
+        int drawHeight = (int) Math.ceil(sourceHeight * cover);
+        graphics.blit(background, (width - drawWidth) / 2, (height - drawHeight) / 2,
+                drawWidth, drawHeight, 0, 0, sourceWidth, sourceHeight, sourceWidth, sourceHeight);
     }
 
-    @Override public boolean isPauseScreen() { return false; }
-
-    private MenuUi.Button button(int x, int y, int w, int h, String key,
-                                 SkillTreeActionPayload.Action action) {
-        return addRenderableWidget(new MenuUi.Button(new MenuUi.Box(x, y, w, h), Component.translatable(key),
-                button -> submit(action)));
+    private void drawMap(GuiGraphics graphics) {
+        graphics.enableScissor(viewport.x(), viewport.y(), viewport.right(), viewport.bottom());
+        for (VisibleEdge edge : visibleEdges) drawEdge(graphics, edge);
+        for (ScreenNode screenNode : visibleNodes) drawNode(graphics, screenNode);
+        graphics.disableScissor();
     }
 
-    private void drawCompactIdentity(GuiGraphics graphics) {
-        MenuUi.drawInsetSurface(graphics, identity);
-        int iconSize = Math.min(18, identity.height() - 4);
-        MenuUi.drawClassIcon(graphics, classId, identity.x() + 5, identity.y() + (identity.height() - iconSize) / 2, iconSize);
-        Component className = Component.translatable("class.anomalousclasses." + classId.key());
-        int classX = identity.x() + iconSize + 10;
-        int pointsWidth = Math.min(145, identity.width() / 2);
-        MenuUi.drawFit(graphics, font, className, classX, identity.y() + (identity.height() - font.lineHeight) / 2,
-                Math.max(1, identity.right() - classX - pointsWidth - 8), 0xFFF1E7D7);
-        Component points = Component.translatable("screen.anomalousclasses.skill_tree.points_summary",
-                state.skillPoints(), SkillTreeCatalog.spent(classId, state.ranks()));
-        MenuUi.drawFit(graphics, font, points, identity.right() - pointsWidth - 5,
-                identity.y() + (identity.height() - font.lineHeight) / 2, pointsWidth, 0xFFE6D1A6);
-    }
-
-    private void drawWideIdentity(GuiGraphics graphics) {
-        MenuUi.drawInsetSurface(graphics, identity);
-        int padding = 6;
-        int artWidth = identity.width() - padding * 2;
-        int artHeight = Math.max(1, Math.min(116, artWidth * 9 / 16));
-        MenuUi.drawArtCover(graphics, classId, new MenuUi.Box(identity.x() + padding, identity.y() + padding,
-                artWidth, artHeight));
-        int iconSize = Math.min(28, font.lineHeight + 8);
-        int nameY = identity.y() + padding + artHeight + 6;
-        MenuUi.drawClassIcon(graphics, classId, identity.x() + padding, nameY, iconSize);
-        int nameX = identity.x() + padding + iconSize + 5;
-        MenuUi.drawWrapped(graphics, font, Component.translatable("class.anomalousclasses." + classId.key()),
-                nameX, nameY + Math.max(0, (iconSize - font.lineHeight) / 2),
-                Math.max(1, identity.right() - nameX - padding), 2, 0xFFF1E7D7);
-
-        int statsY = nameY + iconSize + 8;
-        MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.skill_tree.spent_points",
-                SkillTreeCatalog.spent(classId, state.ranks())), identity.x() + padding, statsY,
-                identity.width() - padding * 2, 0xFFD8D0C5);
-        MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.skill_tree.skill_points",
-                state.skillPoints()), identity.x() + padding, statsY + font.lineHeight + 3,
-                identity.width() - padding * 2, 0xFFE6D1A6);
-    }
-
-    private void drawGroups(GuiGraphics graphics) {
-        for (int column = 0; column < 3; column++) {
-            int targetColumn = column;
-            SkillTreeCatalog.Node representative = nodes.stream()
-                    .filter(node -> node.column() == targetColumn).findFirst().orElse(null);
-            if (representative == null) continue;
-            int start = graph.x() + graph.width() * column / 3;
-            int end = graph.x() + graph.width() * (column + 1) / 3;
-            int center = (start + end) / 2;
-            MenuUi.drawCentered(graphics, font, Component.translatable(representative.groupKey()), center,
-                    graph.y() + 4, Math.max(1, end - start - 8), 0xFFD9C7A7);
+    private void drawEdge(GuiGraphics graphics, VisibleEdge visible) {
+        ScreenNode from = visible.from();
+        ScreenNode to = visible.to();
+        double dx = to.x() - from.x();
+        double dy = to.y() - from.y();
+        double length = Math.hypot(dx, dy);
+        if (length < 1) return;
+        double nx = dx / length;
+        double ny = dy / length;
+        double startOffset = from.size() * (from.node().kind() == GraphSkillTreeCatalog.Kind.MAJOR ? 0.40 : 0.34);
+        double endOffset = to.size() * (to.node().kind() == GraphSkillTreeCatalog.Kind.MAJOR ? 0.40 : 0.34);
+        double x1 = from.x() + nx * startOffset;
+        double y1 = from.y() + ny * startOffset;
+        double x2 = to.x() - nx * endOffset;
+        double y2 = to.y() - ny * endOffset;
+        double bend = Math.min(18.0, Math.hypot(x2 - x1, y2 - y1) * 0.105);
+        double sign = ((visible.edge().from().hashCode() ^ visible.edge().to().hashCode()) & 1) == 0 ? 1 : -1;
+        double px = -ny * bend * sign;
+        double py = nx * bend * sign;
+        double c1x = x1 + (x2 - x1) * 0.32 + px;
+        double c1y = y1 + (y2 - y1) * 0.32 + py;
+        double c2x = x1 + (x2 - x1) * 0.68 + px;
+        double c2y = y1 + (y2 - y1) * 0.68 + py;
+        int color = visible.active() ? MenuUi.accent(classId) :
+                (visible.edge().type().equals("navigation") ? 0x7FDDC59F : 0x807B6B89);
+        double prevX = x1;
+        double prevY = y1;
+        int segments = Math.max(3, Math.min(8, (int) Math.ceil(length / 18.0)));
+        for (int segment = 1; segment <= segments; segment++) {
+            double t = segment / (double) segments;
+            double oneMinus = 1.0 - t;
+            double x = oneMinus * oneMinus * oneMinus * x1 + 3 * oneMinus * oneMinus * t * c1x
+                    + 3 * oneMinus * t * t * c2x + t * t * t * x2;
+            double y = oneMinus * oneMinus * oneMinus * y1 + 3 * oneMinus * oneMinus * t * c1y
+                    + 3 * oneMinus * t * t * c2y + t * t * t * y2;
+            drawLineSegment(graphics, prevX, prevY, x, y, color, visible.active());
+            prevX = x;
+            prevY = y;
         }
     }
 
-    private void drawConnections(GuiGraphics graphics) {
-        for (int column = 0; column < 3; column++) {
-            MenuUi.Box previous = null;
-            for (int index = 0; index < nodes.size(); index++) {
-                SkillTreeCatalog.Node node = nodes.get(index);
-                if (node.column() != column) continue;
-                MenuUi.Box current = nodeBox(index);
-                if (previous != null) {
-                    int fromX = previous.x() + previous.width() / 2;
-                    int toX = current.x() + current.width() / 2;
-                    int top = previous.bottom() - 2;
-                    int bottom = current.y() + 2;
-                    int pathWidth = Math.max(18, Math.abs(toX - fromX) + 18);
-                    int pathHeight = Math.max(12, bottom - top + 10);
-                    int pathX = (fromX + toX - pathWidth) / 2;
-                    int pathY = top - 5;
-                    int type = fromX == toX ? 0 : (toX > fromX ? 1 : 2);
-                    MenuUi.drawConnection(graphics, type,
-                            new MenuUi.Box(pathX, pathY, pathWidth, pathHeight));
-                }
-                previous = current;
-            }
-        }
+    private void drawLineSegment(GuiGraphics graphics, double x1, double y1, double x2, double y2,
+                                 int color, boolean active) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double length = Math.hypot(dx, dy);
+        if (length < 0.2) return;
+        var pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(x1, y1, 0);
+        pose.mulPose(Axis.ZP.rotation((float) Math.atan2(dy, dx)));
+        if (active) graphics.fill(0, -2, (int) Math.ceil(length), 2, withAlpha(MenuUi.accent(classId), 0x48));
+        graphics.fill(0, -1, (int) Math.ceil(length), 1, color);
+        pose.popPose();
     }
 
-    private MenuUi.Box nodeBox(int index) {
-        SkillTreeCatalog.Node node = nodes.get(index);
-        int columnStart = graph.x() + graph.width() * node.column() / 3;
-        int columnEnd = graph.x() + graph.width() * (node.column() + 1) / 3;
-        int centerX = (columnStart + columnEnd) / 2;
-        int offset = node.row() % 2 == 0 ? 0 : (node.column() == 1 ? 10 : (node.column() == 0 ? 8 : -8));
-        centerX += offset;
-        centerX = Math.max(graph.x() + nodeSize / 2 + 4,
-                Math.min(graph.right() - nodeSize / 2 - 4, centerX));
-        int maxRows = nodes.stream().filter(value -> value.column() == node.column())
-                .mapToInt(SkillTreeCatalog.Node::row).max().orElse(0) + 1;
-        int top = graph.y() + graphHeader + nodeSize / 2 + 2;
-        int bottom = graph.bottom() - nodeSize / 2 - 4;
-        int step = maxRows <= 1 ? 0 : Math.max(1, (bottom - top) / (maxRows - 1));
-        int centerY = top + node.row() * step;
-        return new MenuUi.Box(centerX - nodeSize / 2, centerY - nodeSize / 2, nodeSize, nodeSize);
-    }
-
-    private void drawSelectedDetails(GuiGraphics graphics) {
-        if (selectedNode < 0 || selectedNode >= nodes.size()) return;
-        SkillTreeCatalog.Node node = nodes.get(selectedNode);
-        int rank = rank(selectedNode);
-        if (compact) drawCompactDetails(graphics, node, rank);
-        else drawWideDetails(graphics, node, rank);
-    }
-
-    private void drawCompactDetails(GuiGraphics graphics, SkillTreeCatalog.Node node, int rank) {
-        int padding = 5;
-        int iconSize = Math.min(18, details.height() - 6);
-        MenuUi.drawSkillIcon(graphics, classId, selectedNode, details.x() + padding,
-                details.y() + 3, iconSize);
-        int nameX = details.x() + padding + iconSize + 5;
-        int contentWidth = Math.max(1, details.right() - nameX - padding);
-        MenuUi.drawFit(graphics, font, Component.translatable(node.nameKey(classId)), nameX,
-                details.y() + 3, contentWidth, 0xFFF3E8D8);
-
-        int nextCost = rank < node.maxRank() ? node.rankCosts()[rank] : 0;
-        int breakpoint = node.nextBreakpoint(rank);
-        Component summary = breakpoint >= 0
-                ? Component.translatable("screen.anomalousclasses.skill_tree.compact_breakpoint_summary",
-                        rank, node.maxRank(), nextCost, breakpoint, node.costFromTo(rank, breakpoint))
-                : Component.translatable("screen.anomalousclasses.skill_tree.compact_summary",
-                        rank, node.maxRank(), nextCost);
-        MenuUi.drawFit(graphics, font, summary, details.x() + padding, details.y() + font.lineHeight + 5,
-                details.width() - padding * 2, 0xFFE6C788);
-
-        Component status = statusMessage();
-        Component effect = status == null ? Component.translatable(node.effectKey(classId)) : status;
-        int effectY = details.y() + font.lineHeight * 2 + 7;
-        int maxLines = Math.max(1, (details.bottom() - effectY - 3) / font.lineHeight);
-        MenuUi.drawWrapped(graphics, font, effect, details.x() + padding, effectY,
-                details.width() - padding * 2, maxLines, status == null ? 0xFFE0D8CE : statusColor());
-    }
-
-    private void drawWideDetails(GuiGraphics graphics, SkillTreeCatalog.Node node, int rank) {
-        int padding = 9;
-        int iconSize = 31;
-        MenuUi.drawSkillIcon(graphics, classId, selectedNode, details.x() + padding, details.y() + padding, iconSize);
-        int nameX = details.x() + padding + iconSize + 7;
-        int nameWidth = Math.max(1, details.right() - nameX - padding);
-        Component name = Component.translatable(node.nameKey(classId));
-        List<net.minecraft.util.FormattedCharSequence> nameLines = font.split(name, nameWidth);
-        int nameLineCount = Math.max(1, Math.min(2, nameLines.size()));
-        MenuUi.drawWrapped(graphics, font, name, nameX, details.y() + padding + 2, nameWidth,
-                nameLineCount, 0xFFF3E8D8);
-
-        int rankY = details.y() + 48;
-        MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.skill_tree.rank",
-                rank, node.maxRank()), details.x() + padding, rankY,
-                details.width() - padding * 2, 0xFFD6C6AC);
-
-        int nextBreakpoint = node.nextBreakpoint(rank);
-        int nextCost = rank < node.maxRank() ? node.rankCosts()[rank] : 0;
-        int targetRank = nextBreakpoint >= 0 ? nextBreakpoint : node.maxRank();
-        int stageStart = 0;
-        for (int breakpoint : node.breakpoints()) if (breakpoint <= rank) stageStart = breakpoint;
-        double progress = targetRank <= stageStart ? 1.0 : (rank - stageStart) / (double) (targetRank - stageStart);
-        int meterY = rankY + font.lineHeight + 3;
-        MenuUi.drawRankProgress(graphics, details.x() + padding, meterY,
-                Math.max(1, details.width() - padding * 2), 7, progress);
-
-        int costY = meterY + 11;
-        MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.skill_tree.next_cost", nextCost),
-                details.x() + padding, costY, details.width() - padding * 2, 0xFFE6C788);
-        Component milestone = nextBreakpoint >= 0
-                ? Component.translatable("screen.anomalousclasses.skill_tree.breakpoint_cost", nextBreakpoint,
-                        node.costFromTo(rank, nextBreakpoint))
-                : Component.translatable("screen.anomalousclasses.skill_tree.no_breakpoint");
-        int milestoneY = costY + font.lineHeight + 2;
-        MenuUi.drawFit(graphics, font, milestone, details.x() + padding, milestoneY,
-                details.width() - padding * 2, 0xFFD6C6AC);
-
-        int effectY = milestoneY + font.lineHeight + 8;
-        int effectBottom = investY - 9;
-        Component status = statusMessage();
-        int statusSpace = status == null ? 0 : font.lineHeight + 3;
-        int effectLines = Math.max(1, (effectBottom - effectY - statusSpace) / font.lineHeight);
-        MenuUi.drawWrapped(graphics, font, Component.translatable(node.effectKey(classId)),
-                details.x() + padding, effectY, details.width() - padding * 2, effectLines, 0xFFE0D8CE);
-        if (status != null) {
-            MenuUi.drawFit(graphics, font, status, details.x() + padding, effectBottom - font.lineHeight,
-                    details.width() - padding * 2, statusColor());
-        }
-    }
-
-    private int rank(int index) {
-        return index >= 0 && index < state.ranks().length ? state.ranks()[index] : 0;
-    }
-
-    private Component statusMessage() {
-        if (pending) return Component.translatable("screen.anomalousclasses.skill_tree.pending");
-        return switch (state.result()) {
-            case UPDATED -> Component.translatable("screen.anomalousclasses.skill_tree.saved");
-            case RESET -> Component.translatable("screen.anomalousclasses.skill_tree.reset_done");
-            case INSUFFICIENT_SP -> Component.translatable("screen.anomalousclasses.skill_tree.insufficient");
-            case MAX_RANK -> Component.translatable("screen.anomalousclasses.skill_tree.max_rank");
-            case NO_BREAKPOINT -> Component.translatable("screen.anomalousclasses.skill_tree.no_breakpoint");
-            case COMBAT_LOCKED -> Component.translatable("screen.anomalousclasses.skill_tree.combat_lock");
-            case STALE_REQUEST -> Component.translatable("screen.anomalousclasses.skill_tree.stale");
-            case INVALID_ACTION, INVALID_CLASS, INVALID_NODE -> Component.translatable("screen.anomalousclasses.skill_tree.rejected");
-            default -> null;
-        };
-    }
-
-    private int statusColor() {
-        return switch (state.result()) {
-            case UPDATED, RESET -> 0xFFB9D9A7;
-            case INSUFFICIENT_SP, MAX_RANK, NO_BREAKPOINT -> 0xFFE6C788;
-            case COMBAT_LOCKED, INVALID_ACTION, INVALID_CLASS, INVALID_NODE -> 0xFFF0B3A3;
-            default -> 0xFFD8D0C5;
-        };
-    }
-
-    private void submit(SkillTreeActionPayload.Action action) {
-        if (pending) return;
-        if (action == SkillTreeActionPayload.Action.RESET && state.combatLocked()) {
-            state = new SkillTreeStatePayload(state.classIndex(), state.revision(), state.skillPoints(), state.ranks(), true,
-                    SkillTreeStatePayload.Result.COMBAT_LOCKED);
-            refreshButtons();
+    private void drawNode(GuiGraphics graphics, ScreenNode projected) {
+        GraphSkillTreeCatalog.Node node = projected.node();
+        int size = projected.size();
+        int x = (int) Math.round(projected.x() - size / 2.0);
+        int y = (int) Math.round(projected.y() - size / 2.0);
+        if (node.kind() == GraphSkillTreeCatalog.Kind.NAVIGATION) {
+            drawNavigationNode(graphics, node, x, y, size);
             return;
         }
+        boolean isOwned = owned.contains(node.id());
+        boolean isHighlighted = node.id().equals(selectedNodeId) || node.id().equals(hoveredNodeId);
+        GraphSkillTreeCatalog.PurchaseCheck check = purchaseChecks.getOrDefault(node.id(),
+                GraphSkillTreeCatalog.PurchaseCheck.NOT_CONNECTED);
+        int frameState = isHighlighted ? 2 : isOwned ? 3 :
+                check == GraphSkillTreeCatalog.PurchaseCheck.PURCHASABLE ? 1 : 0;
+        if (node.major() && node.milestone()) {
+            int outer = size + Math.max(3, size / 9);
+            graphics.fill((int) Math.round(projected.x() - outer / 2.0),
+                    (int) Math.round(projected.y() - outer / 2.0),
+                    (int) Math.round(projected.x() + outer / 2.0),
+                    (int) Math.round(projected.y() + outer / 2.0), isOwned ? 0xB7E4C17D : 0x73735C79);
+        }
+        graphics.fill(x + size / 4, y + size / 4, x + size * 3 / 4, y + size * 3 / 4,
+                isOwned ? 0xE321132A : 0xD20D0915);
+        MenuUi.drawNodeFrame(graphics, frameState, x, y, size);
+        ResourceLocation icon = iconTextures.get(node.id());
+        if (icon != null) {
+            int iconSize = Math.max(8, size * (node.major() ? 58 : 61) / 100);
+            graphics.blit(icon, (int) Math.round(projected.x() - iconSize / 2.0),
+                    (int) Math.round(projected.y() - iconSize / 2.0), iconSize, iconSize,
+                    0, 0, 256, 256, 256, 256);
+        }
+        if (node.major() && size >= 22) {
+            int maxStages = tree.skills().get(node.source()).segments().size();
+            String stage = node.stage() + "/" + maxStages;
+            int labelY = y + size - 2;
+            int labelWidth = Math.min(size + 10, font.width(stage) + 8);
+            graphics.fill((int) Math.round(projected.x() - labelWidth / 2.0), labelY,
+                    (int) Math.round(projected.x() + labelWidth / 2.0), labelY + font.lineHeight + 2, 0xE21A101D);
+            graphics.drawString(font, stage, (int) Math.round(projected.x() - font.width(stage) / 2.0),
+                    labelY + 1, node.milestone() ? 0xFFFFD78E : 0xFFF1E6D5, true);
+        }
+    }
+
+    private void drawNavigationNode(GuiGraphics graphics, GraphSkillTreeCatalog.Node node, int x, int y, int size) {
+        if (node.id().equals("origin")) {
+            int iconSize = Math.max(18, size);
+            MenuUi.drawClassIcon(graphics, classId, x + (size - iconSize) / 2, y + (size - iconSize) / 2, iconSize);
+            return;
+        }
+        int centerX = x + size / 2;
+        int centerY = y + size / 2;
+        int outer = Math.max(4, size / 3);
+        graphics.fill(centerX - outer, centerY - outer, centerX + outer + 1, centerY + outer + 1,
+                withAlpha(MenuUi.accent(classId), 0xA8));
+        graphics.fill(centerX - 2, centerY - 2, centerX + 3, centerY + 3, 0xFFF4E6CB);
+    }
+
+    private void drawHud(GuiGraphics graphics) {
+        int margin = width < 420 ? 5 : 9;
+        int spWidth = Math.min(112, Math.max(78, width / 4));
+        int spX = resetButton.getX() - 4 - spWidth;
+        int leftX = profileButton.getX() + profileButton.getWidth() + 4;
+        int classRight = Math.max(leftX, spX - 6);
+        int classWidth = Math.max(24, classRight - leftX);
+        MenuUi.drawPanel(graphics, new MenuUi.Box(spX, 6, spWidth, 23));
+        MenuUi.drawClassIcon(graphics, classId, leftX + 1, 8, 18);
+        Component className = Component.translatable("class.anomalousclasses." + classId.key());
+        MenuUi.drawFit(graphics, font, className, leftX + 23, 13, Math.max(1, classWidth - 24), 0xFFF4E8D4);
+        Component points = Component.translatable("screen.anomalousclasses.skill_tree.points", state.skillPoints());
+        Component spent = Component.translatable("screen.anomalousclasses.skill_tree.spent", state.spentPoints());
+        int lineY = font.lineHeight <= 9 ? 8 : 7;
+        MenuUi.drawFit(graphics, font, points, spX + 6, lineY, spWidth - 12, 0xFFF2E7DB);
+        MenuUi.drawFit(graphics, font, spent, spX + 6, lineY + font.lineHeight, spWidth - 12, 0xFFCDBDD6);
+    }
+
+    private void drawHoveredCard(GuiGraphics graphics, int mouseX, int mouseY) {
+        ScreenNode hovered = hoveredNode(mouseX, mouseY);
+        if (hovered == null || hovered.node().kind() == GraphSkillTreeCatalog.Kind.NAVIGATION) return;
+        GraphSkillTreeCatalog.Node node = hovered.node();
+        List<CardLine> lines = tooltipLines(node);
+        int maxWidth = Math.max(105, Math.min(230, width - 12));
+        int textWidth = Math.max(1, maxWidth - 16);
+        List<WrappedLine> wrapped = new ArrayList<>();
+        for (CardLine line : lines) {
+            List<net.minecraft.util.FormattedCharSequence> split = font.split(line.text(), textWidth);
+            for (net.minecraft.util.FormattedCharSequence part : split) wrapped.add(new WrappedLine(part, line.color()));
+        }
+        int maxCardLines = Math.max(3, (height - HUD_HEIGHT - 18) / (font.lineHeight + 2));
+        if (wrapped.size() > maxCardLines) {
+            wrapped = new ArrayList<>(wrapped.subList(0, maxCardLines));
+            wrapped.set(maxCardLines - 1, new WrappedLine(font.split(Component.literal("…"), textWidth).get(0),
+                    wrapped.get(maxCardLines - 1).color()));
+        }
+        int cardHeight = 12 + wrapped.size() * (font.lineHeight + 2);
+        int cardWidth = maxWidth;
+        int nodeRight = (int) Math.round(hovered.x() + hovered.size() / 2.0);
+        int nodeLeft = (int) Math.round(hovered.x() - hovered.size() / 2.0);
+        int cardX = nodeRight + cardWidth + 12 <= width ? nodeRight + 9 : nodeLeft - cardWidth - 9;
+        cardX = Math.max(6, Math.min(width - cardWidth - 6, cardX));
+        int cardY = Math.max(viewport.y() + 3, Math.min(height - cardHeight - 5, mouseY + 8));
+        if (cardY < HUD_HEIGHT + 2) cardY = Math.min(height - cardHeight - 5, HUD_HEIGHT + 3);
+        MenuUi.drawPanel(graphics, new MenuUi.Box(cardX, cardY, cardWidth, cardHeight));
+        int y = cardY + 6;
+        for (WrappedLine line : wrapped) {
+            graphics.drawString(font, line.text(), cardX + 8, y, line.color(), true);
+            y += font.lineHeight + 2;
+        }
+    }
+
+    private List<CardLine> tooltipLines(GraphSkillTreeCatalog.Node node) {
+        List<CardLine> lines = new ArrayList<>();
+        lines.add(new CardLine(Component.translatable(node.nameKey(classId)), 0xFFFFE8BF));
+        lines.add(new CardLine(node.major()
+                ? Component.translatable("screen.anomalousclasses.skill_tree.node_stage",
+                    owned.contains(node.id()) ? node.equivalentOldRank() : 0,
+                    legacyMaxRank(node))
+                : Component.translatable("screen.anomalousclasses.skill_tree.node_stat", statAmount(node)), 0xFFE4D8C9));
+        if (!node.major()) lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_rank",
+                owned.contains(node.id()) ? 1 : 0, 1), 0xFFE4D8C9));
+        lines.add(new CardLine(Component.translatable(owned.contains(node.id())
+                ? "screen.anomalousclasses.skill_tree.node_owned"
+                : "screen.anomalousclasses.skill_tree.node_unowned"),
+                owned.contains(node.id()) ? 0xFFBEE6A9 : 0xFFCFC1D7));
+        lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_cost", node.cost()), 0xFFF3D48D));
+        if (node.major()) {
+            lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.passive_effect",
+                    Component.translatable(node.effectKey(classId))), 0xFFE7DFD4));
+            if (node.milestone()) {
+                lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_breakthrough",
+                        node.crossedMilestones().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(", "))),
+                        0xFFFFD58A));
+            }
+        }
+        GraphSkillTreeCatalog.PurchaseCheck check = purchaseChecks.getOrDefault(node.id(),
+                GraphSkillTreeCatalog.PurchaseCheck.NOT_CONNECTED);
+        lines.add(new CardLine(Component.translatable(statusKey(check)), statusColor(check)));
+        if (!owned.contains(node.id())) {
+            for (String required : node.requiresStageMinors()) {
+                GraphSkillTreeCatalog.Node prerequisite = tree.node(required);
+                if (prerequisite != null && !owned.contains(required)) {
+                    lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_requires",
+                            Component.translatable(prerequisite.nameKey(classId))), 0xFFC8B6A2));
+                }
+            }
+            if (node.requiresPreviousMajor() != null && !owned.contains(node.requiresPreviousMajor())) {
+                GraphSkillTreeCatalog.Node prerequisite = tree.node(node.requiresPreviousMajor());
+                if (prerequisite != null) lines.add(new CardLine(Component.translatable(
+                        "screen.anomalousclasses.skill_tree.node_requires",
+                        Component.translatable(prerequisite.nameKey(classId))), 0xFFC8B6A2));
+            }
+            if (check == GraphSkillTreeCatalog.PurchaseCheck.NOT_CONNECTED) {
+                lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_follow_path"), 0xFFC8B6A2));
+            }
+        }
+        return lines;
+    }
+
+    private int legacyMaxRank(GraphSkillTreeCatalog.Node node) {
+        return SkillTreeCatalog.nodes(classId).stream().filter(value -> value.id().equals(node.source()))
+                .mapToInt(SkillTreeCatalog.Node::maxRank).findFirst().orElse(node.equivalentOldRank());
+    }
+
+    private String statAmount(GraphSkillTreeCatalog.Node node) {
+        double amount = GraphSkillTreeCatalog.statAmount(classId, node.stat());
+        String formatted = String.format(Locale.ROOT, "%.2f", amount);
+        return Component.translatable("screen.anomalousclasses.skill_tree.stat." + node.stat(), formatted).getString();
+    }
+
+    private String statusKey(GraphSkillTreeCatalog.PurchaseCheck check) {
+        return switch (check) {
+            case PURCHASABLE -> "screen.anomalousclasses.skill_tree.ready";
+            case ALREADY_OWNED -> "screen.anomalousclasses.skill_tree.node_owned";
+            case INSUFFICIENT_SP -> "screen.anomalousclasses.skill_tree.insufficient";
+            case MISSING_REQUIREMENT, NOT_CONNECTED -> "screen.anomalousclasses.skill_tree.requirement_missing";
+            case UNKNOWN_NODE, NOT_PURCHASABLE -> "screen.anomalousclasses.skill_tree.rejected";
+        };
+    }
+
+    private int statusColor(GraphSkillTreeCatalog.PurchaseCheck check) {
+        return switch (check) {
+            case PURCHASABLE -> 0xFFBDE9AD;
+            case ALREADY_OWNED -> 0xFFBDE9AD;
+            case INSUFFICIENT_SP, MISSING_REQUIREMENT, NOT_CONNECTED -> 0xFFF1D18A;
+            case UNKNOWN_NODE, NOT_PURCHASABLE -> 0xFFE5A39A;
+        };
+    }
+
+    private void drawFeedback(GuiGraphics graphics) {
+        if (!pending && System.currentTimeMillis() > feedbackUntil) return;
+        String key = switch (state.result()) {
+            case UPDATED -> "screen.anomalousclasses.skill_tree.saved";
+            case RESET -> "screen.anomalousclasses.skill_tree.reset_done";
+            case INSUFFICIENT_SP -> "screen.anomalousclasses.skill_tree.insufficient";
+            case ALREADY_OWNED -> "screen.anomalousclasses.skill_tree.node_owned";
+            case MISSING_REQUIREMENT, NOT_CONNECTED -> "screen.anomalousclasses.skill_tree.requirement_missing";
+            case COMBAT_LOCKED -> "screen.anomalousclasses.skill_tree.combat_lock";
+            case STALE_REQUEST -> "screen.anomalousclasses.skill_tree.stale";
+            case INVALID_ACTION, INVALID_CLASS, INVALID_NODE -> "screen.anomalousclasses.skill_tree.rejected";
+            case MIGRATION_FAILED -> "screen.anomalousclasses.skill_tree.migration_failed";
+            default -> pending ? "screen.anomalousclasses.skill_tree.pending" : null;
+        };
+        if (key == null) return;
+        Component text = Component.translatable(key);
+        int maxWidth = Math.max(1, Math.min(width - 12, 260));
+        int x = (width - Math.min(maxWidth, font.width(text) + 20)) / 2;
+        int y = height - font.lineHeight - 18;
+        int w = Math.min(maxWidth, font.width(text) + 20);
+        MenuUi.drawPanel(graphics, new MenuUi.Box(x, y, w, font.lineHeight + 12));
+        MenuUi.drawCentered(graphics, font, text, width / 2, y + 5, w - 12, 0xFFF2E7D9);
+    }
+
+    private void rebuildOwnership() {
+        Set<String> values = new HashSet<>();
+        for (int index : state.purchasedNodeIndexes()) {
+            GraphSkillTreeCatalog.Node node = tree.purchaseNode(index);
+            if (node != null) values.add(node.id());
+        }
+        owned = Set.copyOf(values);
+        refreshPurchaseChecks();
+    }
+
+    private void refreshPurchaseChecks() {
+        purchaseChecks.clear();
+        for (GraphSkillTreeCatalog.Node node : tree.purchaseNodes()) {
+            purchaseChecks.put(node.id(), GraphSkillTreeCatalog.canPurchase(classId, owned, state.skillPoints(), node.id()));
+        }
+    }
+
+    private void rebuildCameraCache() {
+        projectedById.clear();
+        List<ScreenNode> nextNodes = new ArrayList<>();
+        for (GraphSkillTreeCatalog.Node node : tree.allNodes()) {
+            double x = screenX(node.x());
+            double y = screenY(node.y());
+            int baseSize = switch (node.kind()) {
+                case NAVIGATION -> node.id().equals("origin") ? 46 : 26;
+                case MINOR -> 30;
+                case MAJOR -> node.milestone() ? 49 : 43;
+            };
+            int size = Math.max(node.kind() == GraphSkillTreeCatalog.Kind.MAJOR ? 17 : 14,
+                    Math.min(64, (int) Math.round(baseSize * zoom)));
+            ScreenNode projected = new ScreenNode(node, x, y, size);
+            projectedById.put(node.id(), projected);
+            if (x + size >= viewport.x() && x - size <= viewport.right()
+                    && y + size >= viewport.y() && y - size <= viewport.bottom()) nextNodes.add(projected);
+        }
+        nextNodes.sort(Comparator.comparingInt(value -> switch (value.node().kind()) {
+            case NAVIGATION -> 0;
+            case MINOR -> 1;
+            case MAJOR -> 2;
+        }));
+        visibleNodes = List.copyOf(nextNodes);
+
+        List<VisibleEdge> nextEdges = new ArrayList<>();
+        for (GraphSkillTreeCatalog.Edge edge : tree.edges()) {
+            ScreenNode from = projectedById.get(edge.from());
+            ScreenNode to = projectedById.get(edge.to());
+            if (from == null || to == null) continue;
+            double left = Math.min(from.x(), to.x());
+            double right = Math.max(from.x(), to.x());
+            double top = Math.min(from.y(), to.y());
+            double bottom = Math.max(from.y(), to.y());
+            if (right < viewport.x() || left > viewport.right() || bottom < viewport.y() || top > viewport.bottom()) continue;
+            boolean active = owned.contains(edge.from()) && owned.contains(edge.to());
+            if (!active && purchaseChecks.get(edge.to()) == GraphSkillTreeCatalog.PurchaseCheck.PURCHASABLE) active = true;
+            nextEdges.add(new VisibleEdge(edge, from, to, active));
+        }
+        visibleEdges = List.copyOf(nextEdges);
+    }
+
+    private double screenX(double worldX) {
+        return viewport.x() + viewport.width() * 0.5 + (worldX - cameraX) * zoom;
+    }
+
+    private double screenY(double worldY) {
+        return viewport.y() + viewport.height() * 0.5 + (worldY - cameraY) * zoom;
+    }
+
+    private double worldX(double screenX) {
+        return cameraX + (screenX - (viewport.x() + viewport.width() * 0.5)) / zoom;
+    }
+
+    private double worldY(double screenY) {
+        return cameraY + (screenY - (viewport.y() + viewport.height() * 0.5)) / zoom;
+    }
+
+    private ScreenNode hoveredNode(double mouseX, double mouseY) {
+        return hitNode(mouseX, mouseY);
+    }
+
+    private String hoveredNodeId;
+
+    private ScreenNode hitNode(double mouseX, double mouseY) {
+        if (viewport == null || !viewport.contains(mouseX, mouseY)) return null;
+        for (int index = visibleNodes.size() - 1; index >= 0; index--) {
+            ScreenNode node = visibleNodes.get(index);
+            if (node.node().kind() == GraphSkillTreeCatalog.Kind.NAVIGATION) continue;
+            double halfSize = node.size() * 0.5;
+            if (Math.abs(mouseX - node.x()) <= halfSize && Math.abs(mouseY - node.y()) <= halfSize) return node;
+        }
+        return null;
+    }
+
+    private void clampCamera() {
+        if (viewport == null || zoom <= 0) return;
+        double halfWidth = viewport.width() * 0.5 / zoom;
+        double halfHeight = viewport.height() * 0.5 / zoom;
+        double minX = tree.minX() - halfWidth + 32;
+        double maxX = tree.maxX() + halfWidth - 32;
+        double minY = tree.minY() - halfHeight + 32;
+        double maxY = tree.maxY() + halfHeight - 32;
+        cameraX = minX > maxX ? (tree.minX() + tree.maxX()) * 0.5 : Math.max(minX, Math.min(maxX, cameraX));
+        cameraY = minY > maxY ? (tree.minY() + tree.maxY()) * 0.5 : Math.max(minY, Math.min(maxY, cameraY));
+    }
+
+    private void zoomAt(double mouseX, double mouseY, double scroll) {
+        double beforeX = worldX(mouseX);
+        double beforeY = worldY(mouseY);
+        double factor = scroll > 0 ? 1.14 : 1.0 / 1.14;
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * factor));
+        cameraX = beforeX - (mouseX - viewport.width() * 0.5) / zoom;
+        cameraY = beforeY - (mouseY - (viewport.y() + viewport.height() * 0.5)) / zoom;
+        clampCamera();
+        rebuildCameraCache();
+    }
+
+    private void confirmOrReset() {
+        if (pending || state.combatLocked()) return;
+        long now = System.currentTimeMillis();
+        if (now > resetConfirmUntil) {
+            resetConfirmUntil = now + 4000;
+            resetButton.setMessage(Component.translatable("screen.anomalousclasses.skill_tree.confirm_reset"));
+            return;
+        }
+        resetConfirmUntil = 0;
+        submit(SkillTreeActionPayload.Action.RESET, -1);
+    }
+
+    private void submit(SkillTreeActionPayload.Action action, int nodeIndex) {
+        if (pending) return;
         pending = true;
-        refreshButtons();
-        PacketDistributor.sendToServer(new SkillTreeActionPayload(classId.networkIndex(), selectedNode,
+        resetConfirmUntil = 0;
+        refreshControls();
+        PacketDistributor.sendToServer(new SkillTreeActionPayload(classId.networkIndex(), nodeIndex,
                 action.ordinal(), state.revision()));
     }
 
     private void requestProfile() {
         if (pending) return;
         pending = true;
-        refreshButtons();
+        refreshControls();
         PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);
     }
 
-    private void refreshButtons() {
-        int rank = rank(selectedNode);
-        boolean canInvest = !pending && selectedNode < nodes.size() && rank < nodes.get(selectedNode).maxRank()
-                && state.skillPoints() > 0;
-        if (investOne != null) investOne.active = canInvest;
-        if (investBreakpoint != null) {
-            boolean hasMilestone = selectedNode < nodes.size() && nodes.get(selectedNode).nextBreakpoint(rank) >= 0;
-            investBreakpoint.active = canInvest && hasMilestone;
-        }
-        if (investMax != null) investMax.active = canInvest;
-        if (resetButton != null) resetButton.active = !pending && !state.combatLocked();
+    private void refreshControls() {
         if (profileButton != null) profileButton.active = !pending;
-        for (NodeButton nodeButton : nodeButtons) nodeButton.active = !pending;
-    }
-
-    private final class NodeButton extends AbstractButton {
-        private final int index;
-
-        private NodeButton(MenuUi.Box box, int index) {
-            super(box.x(), box.y(), box.width(), box.height(), Component.translatable(nodes.get(index).nameKey(classId)));
-            this.index = index;
-        }
-
-        @Override public void onPress() {
-            selectedNode = index;
-            state = new SkillTreeStatePayload(state.classIndex(), state.revision(), state.skillPoints(), state.ranks(),
-                    state.combatLocked(), SkillTreeStatePayload.Result.STATUS);
-            refreshButtons();
-        }
-
-        @Override protected void updateWidgetNarration(NarrationElementOutput output) { defaultButtonNarrationText(output); }
-
-        @Override
-        public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            int rank = rank(index);
-            int frameState = index == selectedNode ? 2 : (isHoveredOrFocused() ? 3 : (rank > 0 ? 1 : 0));
-            MenuUi.drawNodeFrame(graphics, frameState, getX(), getY(), width);
-            int iconSize = Math.max(10, width - (compact ? 9 : 16));
-            int iconY = getY() + (compact ? 2 : 3);
-            MenuUi.drawSkillIcon(graphics, classId, index, getX() + (width - iconSize) / 2, iconY, iconSize);
-            Component rankLabel = compact ? Component.literal(Integer.toString(rank))
-                    : Component.literal(rank + "/" + nodes.get(index).maxRank());
-            MenuUi.drawCentered(graphics, Minecraft.getInstance().font, rankLabel, getX() + width / 2,
-                    getY() + height - Minecraft.getInstance().font.lineHeight - 1, width - 3,
-                    rank > 0 ? 0xFFFFE2A4 : 0xFFD4C9BB);
+        if (resetButton != null) {
+            resetButton.active = !pending && !state.combatLocked();
+            if (System.currentTimeMillis() > resetConfirmUntil) {
+                resetButton.setMessage(Component.translatable("screen.anomalousclasses.skill_tree.reset"));
+            }
         }
     }
+
+    public void applyServerState(SkillTreeStatePayload updated) {
+        ClassId newClass = ClassId.fromNetworkIndex(updated.classIndex()).orElse(classId);
+        boolean changedClass = newClass != classId;
+        state = updated;
+        pending = false;
+        if (updated.result() != SkillTreeStatePayload.Result.OPEN && updated.result() != SkillTreeStatePayload.Result.STATUS) {
+            feedbackUntil = System.currentTimeMillis() + 2400;
+        }
+        if (changedClass) {
+            classId = newClass;
+            tree = GraphSkillTreeCatalog.tree(classId);
+            cameraInitialized = false;
+            init();
+            return;
+        }
+        rebuildOwnership();
+        if (viewport != null) rebuildCameraCache();
+        refreshControls();
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (super.mouseClicked(mouseX, mouseY, button)) return true;
+        if (button != 0 || viewport == null || !viewport.contains(mouseX, mouseY)) return false;
+        mapPointerDown = true;
+        pointerButton = button;
+        pressX = lastX = mouseX;
+        pressY = lastY = mouseY;
+        ScreenNode node = hitNode(mouseX, mouseY);
+        pressedNodeId = node == null ? null : node.node().id();
+        dragging = false;
+        return true;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (mapPointerDown && button == pointerButton) {
+            double totalX = mouseX - pressX;
+            double totalY = mouseY - pressY;
+            if (!dragging && totalX * totalX + totalY * totalY > DRAG_THRESHOLD_SQUARED) dragging = true;
+            if (dragging) {
+                cameraX -= (mouseX - lastX) / zoom;
+                cameraY -= (mouseY - lastY) / zoom;
+                clampCamera();
+                rebuildCameraCache();
+            }
+            lastX = mouseX;
+            lastY = mouseY;
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean widgetHandled = super.mouseReleased(mouseX, mouseY, button);
+        if (mapPointerDown && button == pointerButton) {
+            if (!dragging && pressedNodeId != null && !pending) {
+                ScreenNode target = hitNode(mouseX, mouseY);
+                if (target != null && target.node().id().equals(pressedNodeId)) {
+                    selectedNodeId = pressedNodeId;
+                    GraphSkillTreeCatalog.Node node = target.node();
+                    if (purchaseChecks.get(node.id()) == GraphSkillTreeCatalog.PurchaseCheck.PURCHASABLE) {
+                        submit(SkillTreeActionPayload.Action.PURCHASE_NODE, node.purchaseIndex());
+                    }
+                }
+            }
+            mapPointerDown = false;
+            dragging = false;
+            pointerButton = -1;
+            pressedNodeId = null;
+            return true;
+        }
+        return widgetHandled;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (viewport != null && viewport.contains(mouseX, mouseY)) {
+            zoomAt(mouseX, mouseY, scrollY);
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        super.mouseMoved(mouseX, mouseY);
+        ScreenNode hovered = hitNode(mouseX, mouseY);
+        String next = hovered == null ? null : hovered.node().id();
+        if (!java.util.Objects.equals(hoveredNodeId, next)) {
+            hoveredNodeId = next;
+        }
+    }
+
+    @Override
+    public void onClose() {
+        requestProfile();
+    }
+
+    @Override
+    public boolean isPauseScreen() { return false; }
+
+    private ResourceLocation texture(String path) {
+        return ResourceLocation.fromNamespaceAndPath(AnomalousClasses.MOD_ID, "textures/gui/skilltree_v1/" + path);
+    }
+
+    private static int withAlpha(int argb, int alpha) {
+        return (argb & 0x00FFFFFF) | (alpha << 24);
+    }
+
+    private Component resetLabel() {
+        return Component.translatable(System.currentTimeMillis() <= resetConfirmUntil
+                ? "screen.anomalousclasses.skill_tree.confirm_reset"
+                : "screen.anomalousclasses.skill_tree.reset");
+    }
+
+    private record ScreenNode(GraphSkillTreeCatalog.Node node, double x, double y, int size) {}
+    private record VisibleEdge(GraphSkillTreeCatalog.Edge edge, ScreenNode from, ScreenNode to, boolean active) {}
+    private record CardLine(Component text, int color) {}
+    private record WrappedLine(net.minecraft.util.FormattedCharSequence text, int color) {}
 }

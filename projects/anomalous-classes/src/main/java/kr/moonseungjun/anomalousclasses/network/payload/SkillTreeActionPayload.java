@@ -20,5 +20,5 @@ public record SkillTreeActionPayload(int classIndex, int nodeIndex, int action, 
                     ByteBufCodecs.VAR_INT.decode(buffer), ByteBufCodecs.VAR_INT.decode(buffer),
                     Math.max(0, ByteBufCodecs.VAR_INT.decode(buffer))));
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
-    public enum Action { INVEST_ONE, INVEST_TO_BREAKPOINT, INVEST_MAX, RESET }
+    public enum Action { INVEST_ONE, INVEST_TO_BREAKPOINT, INVEST_MAX, RESET, PURCHASE_NODE }
 }
