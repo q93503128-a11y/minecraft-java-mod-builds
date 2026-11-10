@@ -6,6 +6,8 @@
 >
 > **주의:** `turnbound-content-rebuild`는 공용 저장소의 `main`과 다른 작업 브랜치다. TURNBOUND: RE의 `projects/turnbound-re/`와 혼합하지 않는다.
 
+> **2026-11-10 필드 전투 기술 연동 최신 상태:** [전용 기술 보고서](FIELD_ENCOUNTER_SERVER_BOUNDARY.md). 승인된 큰 흐름(! 경고 → 추격 → 물리 접촉 → 현장 턴제 전투 → 패배 시 체크포인트 복귀)을 정식 게임 콘텐츠가 아닌 **CI 등록 임시 적**으로 실제 Fabric 서버에서 검증: [접촉 #42768225763 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42768225763), [패배 연동 #42768714927 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42768714927). **현재 정식 월드의 새 적 스폰/실제 소환 캐릭터·UI·보상·Drehmal 맵 적용은 아직 없다.** 아래 과거 문단의 '전투 패배 복귀 미연결'은 해당 작업 당시 상태다.
+
 > **2026-11-10 후속 자동 접속 검증:** [실제 Minecraft 1.20.1 Fabric 서버의 2인 프로토콜 클라이언트 회귀 #42753458094 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42753458094): 첫 진입, 2명 동시 접속, UUID 재접속, 서버 재시작, `/kill` 이후 바닐라 사망 차단·HP 양수·아이템 보존 통과. **`/kill`에서 체크포인트 이동이 일어난 것은 아니고 원위치 생존**했다. 파티 패배 시 `returnAfterDefeat` 호출 및 실제 유저 플레이/원작 시설/정식 좌표는 아직 검증되지 않았다. [상세](TURNBOUND_ENTRY_CHECKPOINT_SERVER.md).
 
 > **2026-11-10 기술 구현 현황:** [서버 소유 진입·체크포인트](TURNBOUND_ENTRY_CHECKPOINT_SERVER.md)가 Fabric 코드에 연결되어 컴파일/테스트 및 **폐기용 새 월드 전용 서버 부팅**을 통과했다. **원작 Drehmal 맵에 적용할 승인된 초기 좌표가 없으므로 자동 입장 텔레포트는 여전히 비활성**이고, 패배 후 체크포인트 복귀 API도 실제 전투 결과 처리기와 미연결이다. 실제 플레이어 진입·리스폰·시설·멀티플레이 **NOT TESTED**. 기존 게임 기획을 변경하지 않는다.

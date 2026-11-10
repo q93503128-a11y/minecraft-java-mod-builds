@@ -42,3 +42,11 @@ Next: connect the actual field encounter catalog and a fully owned party state, 
 ## Enemy-turn verification
 - [Build TURNBOUND #1075](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42569936565) PASS at `e987fc34fac65bf21346b91d6f91b74cda4462e2`: portable Java battle simulation, Python map scanner fixtures, JUnit, Fabric 1.20.1 Gradle compile/build and JAR structure inspection.
 - No actual Minecraft field encounter or player-facing battle UI has been PLAYTESTED. No two-client multiplayer session tested. This check does not supersede the separate original Drehmal world analysis.
+
+## 2026-11-10 server-authorized field contact and defeat checkpoint bridge
+
+[기술 경계](FIELD_ENCOUNTER_SERVER_BOUNDARY.md): `TurnboundFieldEncounterService`와 loader-independent `FieldEncounterClaims`를 기존 서버 세션 전송 위에 추가했다. 서버가 미리 등록한 물리 엔티티만 감지·경고·추격·접촉 후 `TurnboundBattleBridge.open`으로 전투 세션을 연다. `inBattle`과 기존 소유권/월드 검증으로 다른 사람의 무단 참전·동일 플레이어 이중 선점을 막고, 명시적 `close` 시 대표 적 상태를 해제한다. 확정된 `ENEMY_VICTORY`가 기존 패배 체크포인트 복귀로 이어지는 경로를 다시 활용한다. **이것은 정식 적·파티·모델/전투 화면·승리 보상을 생성하는 기능이 아니다.**
+
+- [Fabric Build/JUnit PASS #42767437269](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42767437269).
+- [실제 2인 가상 클라이언트 접촉→전투 PASS #42768225763](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42768225763).
+- [동일 서버 접촉→ENEMY_VICTORY→체크포인트 PASS #42768714927](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42768714927): 임시 필드 적과 캐릭터로 연결 실측. 다른 플레이어 영향 없고 아이템 보존. **인간 조작·정식 Drehmal 월드·파티 실제 스킬 전투·4인 멀티는 NOT TESTED.**
