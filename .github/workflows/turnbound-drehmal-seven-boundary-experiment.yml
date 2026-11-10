@@ -1,0 +1,84 @@
+name: TURNBOUND Drehmal original START chain seventh offline boundary
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-seven-boundary-experiment.yml'
+      - 'projects/turnbound/tools/verify_drehmal_start_chain_isolation.py'
+      - 'projects/turnbound/tools/test_verify_drehmal_start_chain_isolation.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  start-chain-seven:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static regression tests for exactly 33 residual source blocks
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_verify_drehmal_start_chain_isolation.py'
+      - name: Retrieve official SHA-pinned metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Extract checksum-verified official map and copy it
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/source-shards" --world-dir "$RUNNER_TEMP/drehmal-original"
+          python3 tools/drehmal_pack_boundary.py stage --source "$RUNNER_TEMP/drehmal-original" --destination "$RUNNER_TEMP/start-chain-stage"
+      - name: Compose reversible six stages then isolate remaining 33 original start commands
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          w="$RUNNER_TEMP/start-chain-stage"
+          aux=build/original-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/original-graph/build/drehmal-official-2.2.2f-summary.json
+          pos=build/original-triggers/command-trigger-positions.json
+          direct=build/direct-source-review/direct-gameplay-review.json
+          six=tools/prepare_drehmal_isolated_copy.py
+          seven=tools/verify_drehmal_start_chain_isolation.py
+          python3 "$six" prepare --world-copy "$w" --aux "$aux" --graph "$graph" --positions "$pos" --include-gamemode --include-starter-experiment --direct-report "$direct" --output build/seven-sourced-six.json
+          python3 "$seven" inspect --world-copy "$w" --source-aux "$aux" --output build/seven-preflight.json
+          python3 "$seven" apply --world-copy "$w" --source-aux "$aux" --output build/seven-applied.json
+          python3 "$seven" verify --world-copy "$w" --output build/seven-verified.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          get=lambda name:json.loads((Path('build')/('seven-'+name+'.json')).read_text())
+          before,after=get('applied'),get('verified')
+          assert before==after
+          assert after['command_count']==33 and after['empty_start_chain_commands']==57
+          assert after['seven_stage_offline_experiment_verified'] is True
+          assert after['structure_functionality_tested'] is False
+          assert after['map_separation_complete'] is False and after['original_code_reused'] is False
+          print('PASS: original six start chains all 57 commands empty in offline seven-boundary COPY')
+          PY
+          python3 "$seven" restore --world-copy "$w" --output build/seven-overlay-restored.json
+          python3 "$six" verify --world-copy "$w" --output build/seven-reverted-six.json
+          python3 "$six" restore --world-copy "$w" --output build/seven-all-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          get=lambda name:json.loads((Path('build')/('seven-'+name+'.json')).read_text())
+          assert get('overlay-restored')['status']=='SEVENTH_STAGE_RESTORED_TO_VERIFIED_SIX_STAGE'
+          assert get('all-restored')['status']=='ALL_SIX_BOUNDARIES_RESTORED_EXACTLY_OFFLINE'
+          print('PASS: original region and ALL six other world separation boundaries restored')
+          PY
+      - name: Upload metadata only; NEVER publish map or original commands
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-start-chain-seven-stage-offline-proof
+          path: |
+            projects/turnbound/build/seven-*.json
+          retention-days: 14
+          if-no-files-found: warn
