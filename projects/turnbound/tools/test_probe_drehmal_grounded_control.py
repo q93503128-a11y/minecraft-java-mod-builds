@@ -42,7 +42,9 @@ class AirborneGroundedComparisonTest(unittest.TestCase):
                 p.geo,"check_official_source",return_value=True),patch.object(
                 p,"World",return_value=object()),patch.object(
                 p.geo,"footprint",return_value={
-                    "standing_space":"AIRBORNE_NO_FLOOR"}):
+                    "standing_space":"AIRBORNE_NO_FLOOR",
+                    "ground":"minecraft:air","feet":"minecraft:air",
+                    "head":"minecraft:air"}):
                 with self.assertRaisesRegex(ValueError,"no longer matches"):
                     p.verify_sites(a,b)
 
