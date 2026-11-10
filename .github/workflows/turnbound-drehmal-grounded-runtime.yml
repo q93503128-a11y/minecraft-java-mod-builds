@@ -1,0 +1,108 @@
+name: TURNBOUND Drehmal official-map airborne versus grounded movement comparison
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-grounded-runtime.yml'
+      - 'projects/turnbound/tools/probe_drehmal_grounded_control.py'
+      - 'projects/turnbound/tools/test_probe_drehmal_grounded_control.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  actual-copied-map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Narrow compare code checks and synthetic client dependencies
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_drehmal_grounded_control.py'
+          python3 -m py_compile tools/probe_drehmal_grounded_control.py
+          node --check tools/probe_drehmal_map_players_with_movement.cjs
+          npm install --prefix "$RUNNER_TEMP/grounded-bot" --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+      - name: Load SHA-pinned offline provenance metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Create separate seven-stage official Drehmal copy; no source publication
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/grounded-ci-seven-copy"
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/official-parts" --world-dir "$source"
+          python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare --world-copy "$copy" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/grounded-six-private.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply --world-copy "$copy" \
+            --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/grounded-seven-private.json
+      - name: Actual Fabric server with two clients teleported to unsupported and supported sites
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 18
+        env:
+          TURNBOUND_PROBE_NODE_MODULES: ${{ runner.temp }}/grounded-bot/node_modules
+        run: |
+          set -euo pipefail
+          python3 tools/probe_drehmal_grounded_control.py --project . \
+            --original "$RUNNER_TEMP/official-original" \
+            --world-copy "$RUNNER_TEMP/grounded-ci-seven-copy" \
+            --output build/grounded-vs-airborne-observation.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("build/grounded-vs-airborne-observation.json").read_text())
+          assert data["status"]=="OFFICIAL_COPIED_MAP_AIRBORNE_VS_FLOOR_COMPARE_OBSERVED"
+          assert data["two_protocol_clients_connected"]
+          assert data["both_players_remained_online"]
+          assert data["server_stopped_cleanly"]
+          assert data["start_commands_still_disabled"]
+          assert data["original_sha_preserved_after_runtime"]
+          assert len(data["samples"])==8
+          assert data["verified_site_geometry"]["airborne_legacy_test"]["geometry_class"]=="AIRBORNE_NO_FLOOR"
+          assert data["verified_site_geometry"]["conservative_full_floor"]["geometry_class"]=="CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_PASSABLE"
+          assert data["command_blocks_enabled"] is False
+          assert data["game_start_approved"] is False
+          assert data["map_separation_complete"] is False
+          print(json.dumps({
+              "status":data["status"],"comparison":data["comparison"],
+              "final_horizontal_offsets":data["final_horizontal_offsets"],
+              "original_map_preserved":True,"game_start_approved":False
+          }))
+          PY
+      - name: Upload derived positional observations only (not map/save/log)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-official-drehmal-airborne-grounded-comparison
+          path: projects/turnbound/build/grounded-vs-airborne-observation.json
+          retention-days: 14
+          if-no-files-found: warn
