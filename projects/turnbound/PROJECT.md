@@ -1,5 +1,8 @@
 # TURNBOUND — Rebuild project contract
 
+> **2026-11-10 공식 Drehmal 실제 서버 공중/바닥 대조 검증:** [지형·착지/공통 복귀 최신 정본](DREHMAL_TELEPORT_FOOTPRINT_SERVER_COMPARISON.md). 원본/7단계 복사본의 실제 블록 팔레트를 비교하여 기존 Y223 목표가 **공중**임을 확인. 그 근처 **Y219의 purple_concrete 바닥 + 발/머리 공기**인 별도 시험 위치를 확보하고, [CI #42808944435 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42808944435)에서 2인 동시 실측한 결과 **공중·바닥 위치 모두 약 1~1.6초 후 정확히 같은 (26520.5,177,-84.5) 좌표로 복귀**했다(각 수평 210.345/213.214블록). 명령 블록 OFF, 57 START 명령 차단, TURNBOUND 활성 마커 없음. 따라서 **공중 위치만을 원인으로 간주하지 않으며**, 다음 대상은 원작 남은 동적 데이터팩/서버 공통 이동 경로의 분리다. **맵 분리 완료·게임 START 승인·시설 기능 검증은 여전히 NO.**
+
+
 > **최신 Drehmal 맵 분리 검증(2026-11-10):** [원작 시작 위치 비정상 복귀 시계열·대조 정본](DREHMAL_ENTRY_POSITION_DISPLACEMENT_TRIAGE.md). 공식 2.2.2f의 독립 7단계 사본에서 RCON 위치 이동 후 수평 **210.345블록** 복귀는 command block ON/OFF 모두 동일([#42795308304](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42795308304)); 합성 flat world에서는 재현 안 됨([#42796956789](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42796956789)); 공식 지도에서 vanilla-like position packet을 보내도 동일([#42798205522](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42798205522)). 따라서 원작 명령 블록이나 봇 ACK만 원인으로 단정 금지. **실제 CI 지점 발/머리 충돌과 서버 이동·업적 루트 추가 검사가 다음 우선순위.** 프로덕션 전투/캐릭터 구현을 우선하지 않고, 맵 분리 완료/정식 START 승인도 선언하지 않는다.
 
 
