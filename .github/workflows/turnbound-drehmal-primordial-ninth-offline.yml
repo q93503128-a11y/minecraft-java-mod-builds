@@ -1,0 +1,121 @@
+name: TURNBOUND primordial root reward ninth copied-map reversible boundary
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-primordial-ninth-offline.yml'
+      - 'projects/turnbound/tools/preview_drehmal_primordial_root_ninth.py'
+      - 'projects/turnbound/tools/test_preview_drehmal_primordial_root_ninth.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  ninth-offline-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail-closed synthetic apply/restore/attack tests
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_preview_drehmal_primordial_root_ninth.py'
+          python3 -m py_compile tools/preview_drehmal_primordial_root_ninth.py
+      - name: Retrieve SHA-pinned author source boundary metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Apply, verify and restore ninth selective boundary on original map copy ONLY
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/seven-stage-offline-ninth-copy"
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          python3 tools/drehmal_pack_boundary.py stage \
+            --source "$source" --destination "$copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare \
+            --world-copy "$copy" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/primordial-six-private.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply \
+            --world-copy "$copy" \
+            --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/primordial-seven-private.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py inspect \
+            --world-copy "$copy" --output build/ninth-preflight.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py apply \
+            --world-copy "$copy" --output build/ninth-applied.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py verify \
+            --world-copy "$copy" --output build/ninth-verified.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py restore \
+            --world-copy "$copy" --output build/ninth-restored.json
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          src=Path(os.environ["RUNNER_TEMP"])/"official-original"
+          copy=Path(os.environ["RUNNER_TEMP"])/"seven-stage-offline-ninth-copy"
+          read=lambda name:json.loads(Path(f"build/ninth-{name}.json").read_text())
+          i,a,v,r=read("preflight"),read("applied"),read("verified"),read("restored")
+          assert i["status"]=="NINTH_PRIMORDIAL_ROOT_PREFLIGHT_ONLY"
+          assert not i["world_modified"]
+          assert a["status"]=="NINTH_PRIMORDIAL_ROOT_REWARD_LINK_OFFLINE_PREVIEW"
+          assert v["verified"] and a["verified"]
+          assert a["modified_datapack_members"]==1
+          assert a["original_function_code_unchanged"]
+          assert a["all_other_original_pack_members_unchanged"]
+          assert a["changed_original_advancement_id"]=="advancements:primordial/root"
+          assert a["removed_reward_link_target_id"]=="players:sethost"
+          assert r["status"]=="NINTH_PRIMORDIAL_ROOT_PREVIEW_RESTORED_EXACTLY_TO_SEVENTH"
+          assert a["source_base_pack_sha256"]==r["original_seventh_stage_pack_sha256"]
+          assert not (copy/"turnbound-primordial-root-ninth-receipt.json").exists()
+          assert not (copy/"turnbound-primordial-root-ninth-backup.zip").exists()
+          for name,sha in (
+            ("level.dat","44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"),
+            ("datapacks/hi_drehmal.zip","f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74")
+          ):
+              assert hashlib.sha256((src/name).read_bytes()).hexdigest()==sha,name
+          from pathlib import Path
+          summary={
+            "status":"OFFICIAL_ORIGINAL_DREHMAL_NINTH_PREVIEW_APPLY_RESTORE_PASS",
+            "original_sha_preserved":True,
+            "original_seventh_pack_restored_exactly":True,
+            "modified_member_count":1,
+            "original_function_code_untouched":True,
+            "original_advancement_criteria_preserved":True,
+            "original_file_contents_published":False,
+            "direct_author_code_reused":False,
+            "physical_facilities_playtested":False,
+            "original_full_game_separated":False,
+            "map_separation_complete":False
+          }
+          Path("build/primordial-ninth-proof.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary))
+          PY
+      - name: Upload derived safe proof only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-original-primordial-ninth-reversible-proof
+          path: projects/turnbound/build/primordial-ninth-proof.json
+          retention-days: 14
+          if-no-files-found: warn
