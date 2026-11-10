@@ -6,6 +6,8 @@
 >
 > **주의:** `turnbound-content-rebuild`는 공용 저장소의 `main`과 다른 작업 브랜치다. TURNBOUND: RE의 `projects/turnbound-re/`와 혼합하지 않는다.
 
+> **2026-11-10 후속 자동 접속 검증:** [실제 Minecraft 1.20.1 Fabric 서버의 2인 프로토콜 클라이언트 회귀 #42753458094 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42753458094): 첫 진입, 2명 동시 접속, UUID 재접속, 서버 재시작, `/kill` 이후 바닐라 사망 차단·HP 양수·아이템 보존 통과. **`/kill`에서 체크포인트 이동이 일어난 것은 아니고 원위치 생존**했다. 파티 패배 시 `returnAfterDefeat` 호출 및 실제 유저 플레이/원작 시설/정식 좌표는 아직 검증되지 않았다. [상세](TURNBOUND_ENTRY_CHECKPOINT_SERVER.md).
+
 > **2026-11-10 기술 구현 현황:** [서버 소유 진입·체크포인트](TURNBOUND_ENTRY_CHECKPOINT_SERVER.md)가 Fabric 코드에 연결되어 컴파일/테스트 및 **폐기용 새 월드 전용 서버 부팅**을 통과했다. **원작 Drehmal 맵에 적용할 승인된 초기 좌표가 없으므로 자동 입장 텔레포트는 여전히 비활성**이고, 패배 후 체크포인트 복귀 API도 실제 전투 결과 처리기와 미연결이다. 실제 플레이어 진입·리스폰·시설·멀티플레이 **NOT TESTED**. 기존 게임 기획을 변경하지 않는다.
 
 > **2026-11-09 사용자 신규 결정(본 인덱스의 서바이벌 전제보다 우선):** TURNBOUND는 Minecraft **1.20.1 / Fabric / Java 17**로 전환하고 **Drehmal 2.2.2f의 제작형 월드**를 기반으로 하는 독립형 4인 파티 턴제 RPG다. **채굴·블록 파괴·설치·건축·바닐라 배고픔·플레이어 HP/사망을 게임 플레이에서 배제**하고, **장비·승급용 재료는 적 처치로 획득**한다. 기존 의뢰·던전·소환·성장·전투 기획은 유지하며, 아래에 남은 바닐라 자연생성 서바이벌/NeoForge/광물 채굴 관련 문장은 **폐기된 역사적 방향**이다. Drehmal 원작의 퀘스트·전투·보상 기능은 실제 맵 파일 분석 후 독립적으로 분리하며, 원본 맵 자체를 수정하거나 기존 데이터를 자동 이전하지 않는다. 자세한 현황: [FABRIC_MIGRATION_DREHMAL_SCOPE.md](FABRIC_MIGRATION_DREHMAL_SCOPE.md).
