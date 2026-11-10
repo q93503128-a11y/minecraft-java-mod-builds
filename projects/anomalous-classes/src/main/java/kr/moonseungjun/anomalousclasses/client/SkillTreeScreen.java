@@ -15,7 +15,6 @@ import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
 import kr.moonseungjun.anomalousclasses.state.GraphSkillTreeCatalog;
-import kr.moonseungjun.anomalousclasses.state.SkillTreeCatalog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -74,6 +73,7 @@ public final class SkillTreeScreen extends Screen {
         clearWidgets();
         int mapTop = Math.min(Math.max(25, HUD_HEIGHT), Math.max(1, height - 1));
         viewport = new MenuUi.Box(0, mapTop, Math.max(1, width), Math.max(1, height - mapTop));
+        rebuildIconTextures();
         if (!cameraInitialized) {
             double graphWidth = Math.max(1, tree.maxX() - tree.minX() + 180);
             double graphHeight = Math.max(1, tree.maxY() - tree.minY() + 180);
@@ -124,6 +124,7 @@ public final class SkillTreeScreen extends Screen {
         int drawHeight = (int) Math.ceil(sourceHeight * cover);
         graphics.blit(background, (width - drawWidth) / 2, (height - drawHeight) / 2,
                 drawWidth, drawHeight, 0, 0, sourceWidth, sourceHeight, sourceWidth, sourceHeight);
+        graphics.fill(viewport.x(), viewport.y(), viewport.right(), viewport.bottom(), 0x26080712);
     }
 
     private void drawMap(GuiGraphics graphics) {
@@ -221,16 +222,6 @@ public final class SkillTreeScreen extends Screen {
                     (int) Math.round(projected.y() - iconSize / 2.0), iconSize, iconSize,
                     0, 0, 256, 256, 256, 256);
         }
-        if (node.major() && size >= 22) {
-            int maxStages = tree.skills().get(node.source()).segments().size();
-            String stage = node.stage() + "/" + maxStages;
-            int labelY = y + size - 2;
-            int labelWidth = Math.min(size + 10, font.width(stage) + 8);
-            graphics.fill((int) Math.round(projected.x() - labelWidth / 2.0), labelY,
-                    (int) Math.round(projected.x() + labelWidth / 2.0), labelY + font.lineHeight + 2, 0xE21A101D);
-            graphics.drawString(font, stage, (int) Math.round(projected.x() - font.width(stage) / 2.0),
-                    labelY + 1, node.milestone() ? 0xFFFFD78E : 0xFFF1E6D5, true);
-        }
     }
 
     private void drawNavigationNode(GuiGraphics graphics, GraphSkillTreeCatalog.Node node, int x, int y, int size) {
@@ -302,13 +293,8 @@ public final class SkillTreeScreen extends Screen {
     private List<CardLine> tooltipLines(GraphSkillTreeCatalog.Node node) {
         List<CardLine> lines = new ArrayList<>();
         lines.add(new CardLine(Component.translatable(node.nameKey(classId)), 0xFFFFE8BF));
-        lines.add(new CardLine(node.major()
-                ? Component.translatable("screen.anomalousclasses.skill_tree.node_stage",
-                    owned.contains(node.id()) ? node.equivalentOldRank() : 0,
-                    legacyMaxRank(node))
-                : Component.translatable("screen.anomalousclasses.skill_tree.node_stat", statAmount(node)), 0xFFE4D8C9));
-        if (!node.major()) lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_rank",
-                owned.contains(node.id()) ? 1 : 0, 1), 0xFFE4D8C9));
+        if (!node.major()) lines.add(new CardLine(Component.translatable(
+                "screen.anomalousclasses.skill_tree.node_stat", statAmount(node)), 0xFFE4D8C9));
         lines.add(new CardLine(Component.translatable(owned.contains(node.id())
                 ? "screen.anomalousclasses.skill_tree.node_owned"
                 : "screen.anomalousclasses.skill_tree.node_unowned"),
@@ -345,11 +331,6 @@ public final class SkillTreeScreen extends Screen {
             }
         }
         return lines;
-    }
-
-    private int legacyMaxRank(GraphSkillTreeCatalog.Node node) {
-        return SkillTreeCatalog.nodes(classId).stream().filter(value -> value.id().equals(node.source()))
-                .mapToInt(SkillTreeCatalog.Node::maxRank).findFirst().orElse(node.equivalentOldRank());
     }
 
     private String statAmount(GraphSkillTreeCatalog.Node node) {
@@ -409,6 +390,15 @@ public final class SkillTreeScreen extends Screen {
         }
         owned = Set.copyOf(values);
         refreshPurchaseChecks();
+    }
+
+    private void rebuildIconTextures() {
+        iconTextures.clear();
+        for (GraphSkillTreeCatalog.Node node : tree.purchaseNodes()) {
+            String path = node.iconPath(classId);
+            if (path != null) iconTextures.put(node.id(),
+                    ResourceLocation.fromNamespaceAndPath(AnomalousClasses.MOD_ID, path));
+        }
     }
 
     private void refreshPurchaseChecks() {

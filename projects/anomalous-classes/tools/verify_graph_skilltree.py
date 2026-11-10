@@ -261,6 +261,7 @@ def png_info(path: Path) -> tuple[int, int, int]:
 def check_art_and_screen() -> None:
     texture_root = RES / "textures/gui/skilltree_v1"
     hashes = set()
+    expected_skill_icons: set[str] = set()
     for _, class_key, *_ in CLASSES.values():
         path = texture_root / f"backgrounds/{class_key}.png"
         if png_info(path) != (1672, 941, 2): fail(f"class backdrop wrong dimensions/format: {path}")
@@ -272,9 +273,17 @@ def check_art_and_screen() -> None:
         for skill in BRANCH["classes"][_branch_key(class_key)]["skills"]:
             path = directory / f"{skill['legacy_id']}.png"
             if png_info(path) != (256, 256, 6): fail(f"missing/invalid passive icon {path}")
+            expected_skill_icons.add(path.relative_to(RES).as_posix())
+    if len(expected_skill_icons) != 57:
+        fail(f"expected 57 distinct class skill icons, found {len(expected_skill_icons)}")
+    expected_runtime_icons = set(expected_skill_icons)
     for stat in STAT_LABELS:
-        if png_info(texture_root / f"icons/common/{stat}.png") != (256, 256, 6):
+        path = texture_root / f"icons/common/{stat}.png"
+        if png_info(path) != (256, 256, 6):
             fail(f"missing/invalid stat icon {stat}")
+        expected_runtime_icons.add(path.relative_to(RES).as_posix())
+    if len(expected_runtime_icons) != 61:
+        fail(f"expected 61 reusable skill-tree icons, found {len(expected_runtime_icons)}")
     for relative, size in (("menu_v1/node_states.png", (1024, 1024)),
                            ("menu_v1/button_states.png", (1024, 1024)),
                            ("menu_v1/frame_atlas.png", (768, 768))):
@@ -282,11 +291,21 @@ def check_art_and_screen() -> None:
 
     screen = (SRC / "client/SkillTreeScreen.java").read_text(encoding="utf-8")
     graph_source = (SRC / "state/GraphSkillTreeCatalog.java").read_text(encoding="utf-8")
+    menu = (SRC / "client/MenuUi.java").read_text(encoding="utf-8")
+    profile = (SRC / "client/ProfileScreen.java").read_text(encoding="utf-8")
     if screen.count("renderBackground(graphics,") != 1 or "super.render(" in screen:
         fail("skill screen renders the background more than once or re-enters Screen.render")
     for term in ("mouseDragged(", "mouseReleased(", "mouseScrolled(", "zoomAt(", "GraphSkillTreeCatalog",
-                 "MenuUi.drawNodeFrame", "drawHoveredCard", "SkillTreeActionPayload.Action.PURCHASE_NODE"):
+                 "MenuUi.drawNodeFrame", "drawHoveredCard", "SkillTreeActionPayload.Action.PURCHASE_NODE",
+                 "rebuildIconTextures()", "node.iconPath(classId)",
+                 "ResourceLocation.fromNamespaceAndPath(AnomalousClasses.MOD_ID, path)"):
         if term not in screen: fail(f"skill screen missing interactive graph feature {term}")
+    for term in ("iconTextures.clear()", "tree.purchaseNodes()", "iconTextures.put(node.id()"):
+        if term not in screen: fail(f"skill node icon texture map is not populated from graph data: {term}")
+    if any(term in screen for term in ("maxStages", "node_stage", "node_rank", 'String stage = node.stage()')):
+        fail("stage/rank fraction text is still rendered in the skill map or hover card")
+    if "node_stage" in KO or "node_rank" in KO or "node_stage" in EN or "node_rank" in EN:
+        fail("removed stage/rank labels remain in the player language files")
     if "icons/common" not in graph_source: fail("common custom stat icons are not wired in the graph catalog")
     if any(term in screen for term in ("drawTitle(graphics", "INVEST_TO_BREAKPOINT", "BuiltInRegistries", "effect_unavailable")):
         fail("old grid/title/development or vanilla-item presentation remains in the graph screen")
@@ -294,6 +313,24 @@ def check_art_and_screen() -> None:
         fail("K class-change key binding was reintroduced")
     if "OPEN_PROFILE" not in (SRC / "client/ClassSelectionKeyMappings.java").read_text(encoding="utf-8"):
         fail("M profile key mapping was removed")
+
+    if "sourceCellX + leftSourceX" not in menu or "sourceCellY + sourceY" not in menu:
+        fail("panel frame is no longer sampled from separate horizontal frame strips")
+    if "sourceCellX + railSourceX" not in menu or "sourceCellY + lowerSourceY" not in menu:
+        fail("panel side rails are not cropped independently from the frame atlas")
+    if "sourceWidth, sourceHeight, 768, 768" not in menu:
+        fail("panel patch renderer does not use explicit atlas crop dimensions")
+    if "0, row * 256, 1024, 256" in menu:
+        fail("button skin again stretches its full 1024x256 source into the destination")
+    if not all(term in menu for term in ("256, 256, 1024, 1024", "512, 256, 1024, 1024")):
+        fail("button skin does not preserve fixed-size left/right caps")
+    if "enableScissor(artwork.x(), artwork.y(), artwork.right(), artwork.bottom())" not in profile \
+            or "drawArtCover(graphics, classId, artwork)" not in profile:
+        fail("profile artwork is not clipped to its assigned viewport")
+    if "float sourceAspect = 16.0f / 9.0f" not in menu or "sourceWidth = Math.max(1, Math.round(288 * targetAspect))" not in menu:
+        fail("profile artwork no longer uses an aspect-preserving source crop")
+    if "graphics.fill(viewport.x(), viewport.y(), viewport.right(), viewport.bottom(), 0x26080712)" not in screen:
+        fail("tree backdrop has no restrained viewport-only contrast layer")
 
 
 def viewport_cases() -> int:
@@ -355,8 +392,8 @@ def check_text() -> None:
     for language, mapping in (("ko_kr", KO), ("en_us", EN)):
         for key in ("screen.anomalousclasses.skill_tree.back", "screen.anomalousclasses.skill_tree.reset",
                     "screen.anomalousclasses.skill_tree.confirm_reset", "screen.anomalousclasses.skill_tree.points",
-                    "screen.anomalousclasses.skill_tree.spent", "screen.anomalousclasses.skill_tree.node_stage",
-                    "screen.anomalousclasses.skill_tree.node_stat", "screen.anomalousclasses.skill_tree.node_cost",
+                    "screen.anomalousclasses.skill_tree.spent", "screen.anomalousclasses.skill_tree.node_stat",
+                    "screen.anomalousclasses.skill_tree.node_cost",
                     "screen.anomalousclasses.skill_tree.node_breakthrough", "screen.anomalousclasses.skill_tree.ready",
                     "screen.anomalousclasses.skill_tree.node_follow_path", "screen.anomalousclasses.skill_tree.migration_failed"):
             if not mapping.get(key): fail(f"{language}: missing player text {key}")
@@ -369,6 +406,111 @@ def check_text() -> None:
                 "screen.anomalousclasses.skill_tree.back", "screen.anomalousclasses.skill_tree.reset",
                 "screen.anomalousclasses.skill_tree.confirm_reset")):
             fail(f"{language}: a compact HUD label is too wide")
+        for key, value in mapping.items():
+            if re.search(r"\{\d+\}", value):
+                fail(f"{language}: Java translation still contains a literal indexed placeholder: {key}")
+    for key in KO:
+        ko_args = re.findall(r"(?<!%)%(?:\d+\$)?s", KO[key])
+        en_args = re.findall(r"(?<!%)%(?:\d+\$)?s", EN[key])
+        if len(ko_args) != len(en_args):
+            fail(f"KO/EN translation argument count differs for {key}")
+    for key, expected in {
+            "screen.anomalousclasses.skill_tree.points": 1,
+            "screen.anomalousclasses.skill_tree.spent": 1,
+            "screen.anomalousclasses.skill_tree.node_stat": 1,
+            "screen.anomalousclasses.skill_tree.node_cost": 1,
+            "screen.anomalousclasses.skill_tree.node_breakthrough": 1,
+            "screen.anomalousclasses.skill_tree.node_requires": 1,
+            "screen.anomalousclasses.skill_tree.stat.max_health_hp": 1,
+            "screen.anomalousclasses.skill_tree.stat.armor": 1,
+            "screen.anomalousclasses.skill_tree.stat.movement_speed_percent": 1,
+            "screen.anomalousclasses.skill_tree.stat.attack_damage": 1,
+            "screen.anomalousclasses.skill_tree.passive_effect": 1,
+    }.items():
+        for language, mapping in (("ko_kr", KO), ("en_us", EN)):
+            args = re.findall(r"(?<!%)%(?:\d+\$)?s", mapping[key])
+            if len(args) != expected:
+                fail(f"{language}: {key} has {len(args)} format arguments, expected {expected}")
+
+
+def profile_viewport_cases() -> int:
+    profile = (SRC / "client/ProfileScreen.java").read_text(encoding="utf-8")
+    menu = (SRC / "client/MenuUi.java").read_text(encoding="utf-8")
+    if "font.width(text) <= maxWidth" not in menu or "font.plainSubstrByWidth(value, contentWidth)" not in menu:
+        fail("profile text is not fitted using Minecraft Font measurements")
+    if "outer.x() + frameInset" not in profile or "outer.right() - frameInset" not in profile:
+        fail("profile content does not respect the frame-safe inset")
+    for language, mapping in (("ko_kr", KO), ("en_us", EN)):
+        for key in ("screen.anomalousclasses.profile.title", "screen.anomalousclasses.profile.level",
+                    "screen.anomalousclasses.profile.experience", "screen.anomalousclasses.profile.skill_points",
+                    "screen.anomalousclasses.profile.attributes", "screen.anomalousclasses.profile.max_health",
+                    "screen.anomalousclasses.profile.attack_damage", "screen.anomalousclasses.profile.movement_speed",
+                    "screen.anomalousclasses.profile.armor", "screen.anomalousclasses.profile.skill_tree",
+                    "screen.anomalousclasses.profile.class_management"):
+            if not mapping.get(key): fail(f"{language}: missing profile label {key}")
+        for class_key in ("mental_dominator", "puppeteer", "parasite_morpher", "barrier_caster", "pact_caster", "swarm_caster"):
+            if not mapping.get(f"class.anomalousclasses.{class_key}"):
+                fail(f"{language}: missing profile class title for {class_key}")
+    cases = 0
+    for physical_w, physical_h, aspect in ((1920, 1080, "16:9"), (1920, 1200, "16:10"), (1600, 1200, "4:3")):
+        for scale in (2, 3, 4):
+            width, height = math.ceil(physical_w / scale), math.ceil(physical_h / scale)
+            margin = 5 if width < 360 else 10
+            top = 4 if height < 250 else 10
+            outer_x, outer_y = margin, top
+            outer_w, outer_h = width - margin * 2, height - top * 2
+            inset = min(30, max(12, min(outer_w, outer_h) // 10))
+            compact = width < 540 or height < 310
+            header = max(17 if height < 250 else 23, inset + 7)
+            body_y = outer_y + header + 5
+            nav_height = max(19, min(23, height // 15))
+            nav_y = outer_y + outer_h - nav_height - max(7, inset // 2)
+            body_bottom = nav_y - 7
+            body_height = max(1, body_bottom - body_y)
+            content_x, content_right = outer_x + inset, outer_x + outer_w - inset
+            inner_width = max(1, content_right - content_x)
+            gap = 7
+            if compact:
+                left_width = min((inner_width - gap) // 2, max(90, math.floor(inner_width * 0.44 + 0.5)))
+                art_height = max(1, min(body_height, left_width * 9 // 16))
+                art_y = body_y + max(0, (body_height - min(body_height, left_width * 9 // 16)) // 2)
+                info_x = content_x + left_width + gap
+                info_width = max(1, content_right - (content_x + left_width) - gap)
+            else:
+                left_width = math.floor((inner_width - gap) * 0.44 + 0.5)
+                art_height = body_height
+                art_y = body_y
+                info_x = content_x + left_width + gap
+                info_width = max(1, content_right - (content_x + left_width) - gap)
+            art_right = content_x + max(1, left_width)
+            info_right = info_x + info_width
+            button_gap = 6
+            button_width = max(1, min(156, (inner_width - button_gap) // 2))
+            button_x = outer_x + (outer_w - (button_width * 2 + button_gap)) // 2
+            if body_height < 1 or art_height < 1 or art_y < body_y or art_y + art_height > body_bottom:
+                fail(f"{aspect} GUI {scale}: profile artwork falls outside the body viewport")
+            if art_right + gap > info_x or info_right > content_right or info_width < 100:
+                fail(f"{aspect} GUI {scale}: profile columns overlap or leave no usable data width")
+            if button_x < content_x or button_x + button_width * 2 + button_gap > content_right:
+                fail(f"{aspect} GUI {scale}: profile navigation buttons escape the frame-safe area")
+            for language, mapping in (("ko_kr", KO), ("en_us", EN)):
+                button_label_width = max(1, button_width - max(8, button_width // 12))
+                if max(approximate_font_width(mapping["screen.anomalousclasses.profile.skill_tree"]),
+                       approximate_font_width(mapping["screen.anomalousclasses.profile.class_management"])) > button_label_width:
+                    fail(f"{aspect} GUI {scale}: {language} profile navigation text exceeds its measured button width")
+            if nav_y < body_bottom or nav_y + nav_height > outer_y + outer_h - max(7, inset // 2):
+                fail(f"{aspect} GUI {scale}: profile navigation buttons overlap the body or frame")
+            stats_offset = 68 if compact else 112
+            stats_y = body_y + stats_offset
+            stats_bottom = body_y + body_height - 2
+            line = max(10, 10) if compact else 13
+            stat_line = max(9, 9 + (0 if compact else 2))
+            final_stat_bottom = stats_y + 2 + line + 3 * stat_line + 9
+            if stats_y + 1 > stats_bottom or final_stat_bottom > stats_bottom:
+                fail(f"{aspect} GUI {scale}: profile stat rows do not fit their information area")
+            cases += 1
+            print(f"{aspect} GUI {scale}: profile frame inset, art clip, columns, stats, and buttons OK")
+    return cases
 
 
 def approximate_font_width(value: str) -> int:
@@ -390,5 +532,6 @@ if __name__ == "__main__":
     check_migration_and_purchase(old_catalog)
     check_art_and_screen()
     check_text()
-    count = viewport_cases()
-    print(f"PASS: 581 nodes, six 900-SP graphs, legacy-rank migration fixtures, runtime art, KO/EN, and {count} static viewport cases")
+    tree_count = viewport_cases()
+    profile_count = profile_viewport_cases()
+    print(f"PASS: 581 nodes, six 900-SP graphs, legacy-rank migration fixtures, 61 tree icons, KO/EN, and {tree_count + profile_count} static viewport cases")

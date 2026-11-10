@@ -200,3 +200,55 @@ The current JAR is delivered as a local artifact. The repository's previously tr
 7. For authorized progression testing, use the existing admin command `/class test grant-levels 10`.
 
 Do not interpret this UI checklist as a gameplay balance or combat-effect evaluation.
+
+---
+
+# Build and Runtime Report — 2026-11-10 UI Playtest Fixes
+
+## Baseline
+
+- Repository: `q93503128-a11y/minecraft-java-mod-builds`
+- Project: `projects/anomalous-classes/`
+- Branch: `main`
+- Base HEAD checked before editing: `04ef95c168baf6778f2751abc26452ac5ffe4f89`
+- Minecraft 1.21.1 / NeoForge 21.1.244 / Java 21.0.10 / Gradle 8.8
+
+## Root causes and changes
+
+- **Missing node icons:** `SkillTreeScreen.iconTextures` was read while drawing nodes, but never populated. The screen now builds the map from the active tree's `purchaseNodes()` and each node's existing `iconPath()`. It reuses all 57 class skill textures and four shared stat textures already in the project.
+- **Stage fractions:** node rendering drew `stage/maxStages` below major nodes and hover cards showed the legacy rank fraction. Those text draws and the redundant minor `0/1` rank line were removed. Stage, prerequisite, migration, and milestone fields remain intact in graph data and server code.
+- **Literal translation arguments:** the new skill-tree labels used `{0}` / `{1}`, but Minecraft's `Component.translatable()` uses Java format arguments. Both locales now use `%s` (and `%%` for a literal percent); the removed stage/rank strings were also deleted. Static checks compare KO/EN argument counts and reject indexed braces.
+- **Broken panel and button frames:** `drawPanel()` compressed complete 256×256 atlas cells into 6–12 px strips, while buttons compressed an entire 1024×256 state row into each control. Panel rails and center ornaments now use cropped atlas regions with adaptive corner geometry; button skins keep fixed-size end caps and stretch only the center.
+- **Profile alignment and artwork:** profile content now respects a size-aware inset matching the frame, navigation buttons sit inside that inset, and the class title is vertically aligned with its icon. Existing 16:9 artwork keeps its aspect-preserving cover crop and is explicitly clipped to its assigned rectangle.
+- **Background contrast:** a restrained plum tint is applied only over the skill-map viewport. The six class backdrops and all node data remain unchanged.
+
+No icons or class illustrations were replaced. The 581 purchase nodes, six 900-SP totals, server-authoritative investment/reset, saved data, migration, pan/zoom, M profile entry, existing class-selection route, and removed K shortcut were not modified. RPG XP behavior was not added.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| `.\gradlew.bat --no-daemon --console=plain clean build --stacktrace` | **PASS** — 18s, 7 tasks executed; `test` is `NO-SOURCE` |
+| Runtime graph/migration fixture | **PASS** — graph catalog, legacy conversion, SP conservation, atomic failure, reset, and NBT round trip |
+| Static profile/tree verifier | **PASS** — 581 nodes, six 900-SP trees, 61 icon paths, KO/EN format arguments, profile layout and tree HUD in 18 combinations |
+| JAR archive verifier | **PASS** — 31,373,485 bytes, 64 classes, metadata, graph data, six backgrounds, 61 icon textures, and duplicate-entry check |
+| Off-screen frame sampling preview | **STATIC REVIEW PASS** — large and compact panels plus two button states reconstructed from the same atlas source crops; this is not a Minecraft screenshot |
+| Datagen / GameTest | **NOT RUN** — no configured datagen or GameTest source |
+| Dedicated server | **NOT RUN** — no server EULA was accepted for this UI-only change |
+| Minecraft client process | **RUNNING** — no matching client existed before launch; updated development client loaded NeoForge 21.1.244 and the mod resources |
+| Minecraft UI interaction / visual inspection | **NOT TESTED** — CUA was not used; no profile or skill-tree screen was opened |
+| Playtest / multiplayer | **NOT TESTED** |
+
+The off-screen preview checks frame texture geometry only. The nine layout cases per screen are static coordinate checks, not actual Minecraft GUI-scale or font-rendering tests. The existing NeoForge `EventBusSubscriber.Bus` deprecation warnings remain; startup also emitted existing nonfatal shader and vanilla sound warnings.
+
+## JAR
+
+- File: `anomalous-classes-0.1.0-alpha.1.jar`
+- Size: 31,373,485 bytes
+- SHA-256: `2a65a53bf4e86ee153934fbeda94fe770439e8b08f2eea7ec3410e67cff005c5`
+- Local deliverable folder: `Downloads/anomalous-classes-ui-playtest-fixes-2026-11-10/`
+- Checksum file: `anomalous-classes-0.1.0-alpha.1.jar.sha256`
+
+## User review
+
+The development client is left running. Open a test world in that window, press `M`, and inspect the profile frame, title/class alignment, artwork crop, stat rows, and navigation buttons. Open **스킬 트리 / Skill Tree** and verify that node icons appear, major nodes have no stage fractions, SP strings and hover-card arguments are formatted, and the tree remains legible over each class backdrop. Check Korean and English, then repeat at GUI Scale 2, 3, and 4 in 16:9, 16:10, and 4:3 layouts. This checklist is UI review only; no combat, balance, or progression test is requested.

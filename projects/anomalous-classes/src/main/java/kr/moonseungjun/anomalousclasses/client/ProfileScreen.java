@@ -30,28 +30,34 @@ public final class ProfileScreen extends Screen {
         int top = height < 250 ? 4 : 10;
         outer = new MenuUi.Box(margin, top, Math.max(1, width - margin * 2), Math.max(1, height - top * 2));
         boolean compact = width < 540 || height < 310;
-        int header = height < 250 ? 17 : 23;
+        int frameInset = Math.min(30, Math.max(12, Math.min(outer.width(), outer.height()) / 10));
+        int header = Math.max(height < 250 ? 17 : 23, frameInset + 7);
         int bodyY = outer.y() + header + 5;
         int navHeight = Math.max(19, Math.min(23, height / 15));
-        int navY = outer.bottom() - navHeight - 5;
-        int bodyBottom = navY - 5;
+        int navY = outer.bottom() - navHeight - Math.max(7, frameInset / 2);
+        int bodyBottom = navY - 7;
         int bodyHeight = Math.max(1, bodyBottom - bodyY);
         int gap = 7;
+        int contentX = outer.x() + frameInset;
+        int contentRight = outer.right() - frameInset;
+        int innerWidth = Math.max(1, contentRight - contentX);
         if (compact) {
-            int leftWidth = Math.min((outer.width() - gap) / 2, Math.max(90, Math.round(outer.width() * 0.44f)));
-            artwork = new MenuUi.Box(outer.x() + 7, bodyY + Math.max(0, (bodyHeight - Math.min(bodyHeight, leftWidth * 9 / 16)) / 2),
+            int leftWidth = Math.min((innerWidth - gap) / 2, Math.max(90, Math.round(innerWidth * 0.44f)));
+            artwork = new MenuUi.Box(contentX, bodyY + Math.max(0, (bodyHeight - Math.min(bodyHeight, leftWidth * 9 / 16)) / 2),
                     Math.max(1, leftWidth), Math.max(1, Math.min(bodyHeight, leftWidth * 9 / 16)));
-            information = new MenuUi.Box(artwork.right() + gap, bodyY, Math.max(1, outer.right() - artwork.right() - gap - 7), bodyHeight);
+            information = new MenuUi.Box(artwork.right() + gap, bodyY,
+                    Math.max(1, contentRight - artwork.right() - gap), bodyHeight);
         } else {
-            int leftWidth = Math.round((outer.width() - 21) * 0.44f);
-            artwork = new MenuUi.Box(outer.x() + 8, bodyY, Math.max(1, leftWidth), bodyHeight);
-            information = new MenuUi.Box(artwork.right() + gap, bodyY, Math.max(1, outer.right() - artwork.right() - 9), bodyHeight);
+            int leftWidth = Math.round((innerWidth - gap) * 0.44f);
+            artwork = new MenuUi.Box(contentX, bodyY, Math.max(1, leftWidth), bodyHeight);
+            information = new MenuUi.Box(artwork.right() + gap, bodyY,
+                    Math.max(1, contentRight - artwork.right() - gap), bodyHeight);
         }
         stats = new MenuUi.Box(information.x(), information.y() + (compact ? 68 : 112), information.width(),
                 Math.max(1, information.bottom() - (information.y() + (compact ? 68 : 112)) - 2));
 
         int buttonGap = 6;
-        int buttonWidth = Math.max(1, Math.min(156, (outer.width() - 20 - buttonGap) / 2));
+        int buttonWidth = Math.max(1, Math.min(156, (innerWidth - buttonGap) / 2));
         int buttonX = outer.x() + (outer.width() - (buttonWidth * 2 + buttonGap)) / 2;
         skillButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(buttonX, navY, buttonWidth, navHeight),
                 Component.translatable("screen.anomalousclasses.profile.skill_tree"), button -> openSkillTree()));
@@ -68,13 +74,18 @@ public final class ProfileScreen extends Screen {
         MenuUi.drawPanel(graphics, outer);
         MenuUi.drawTitle(graphics, font, title, outer, width, height);
 
+        graphics.enableScissor(artwork.x(), artwork.y(), artwork.right(), artwork.bottom());
         MenuUi.drawArtCover(graphics, classId, artwork);
+        graphics.disableScissor();
         MenuUi.drawInsetSurface(graphics, information);
         MenuUi.drawInsetSurface(graphics, stats);
-        MenuUi.drawClassIcon(graphics, classId, information.x(), information.y() + 2, Math.min(26, font.lineHeight + 8));
-        int nameX = information.x() + Math.min(26, font.lineHeight + 8) + 5;
+        int classIconSize = Math.min(26, font.lineHeight + 8);
+        int classIconY = information.y() + 2;
+        MenuUi.drawClassIcon(graphics, classId, information.x(), classIconY, classIconSize);
+        int nameX = information.x() + classIconSize + 5;
         MenuUi.drawFit(graphics, font, Component.translatable("class.anomalousclasses." + classId.key()), nameX,
-                information.y() + 6, Math.max(1, information.right() - nameX), 0xFFF4E8D7);
+                classIconY + Math.max(0, (classIconSize - font.lineHeight) / 2),
+                Math.max(1, information.right() - nameX), 0xFFF4E8D7);
         int compact = width < 540 || height < 310 ? 1 : 0;
         int line = compact == 1 ? Math.max(10, font.lineHeight + 1) : font.lineHeight + 4;
         int rowY = information.y() + (compact == 1 ? 38 : 44);

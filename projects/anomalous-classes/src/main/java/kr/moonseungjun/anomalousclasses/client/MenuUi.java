@@ -51,19 +51,94 @@ final class MenuUi {
     static void drawPanel(GuiGraphics graphics, Box box) {
         drawSurface(graphics, box);
         int cell = 256;
-        int edge = Math.max(6, Math.min(12, Math.min(box.width(), box.height()) / 16));
-        int middleWidth = Math.max(1, box.width() - edge * 2);
-        int middleHeight = Math.max(1, box.height() - edge * 2);
+        int corner = Math.max(6, Math.min(40, Math.min(box.width(), box.height()) / 10));
+        corner = Math.min(corner, Math.min(box.width() / 2, box.height() / 2));
+        int edge = Math.max(4, Math.min(22, corner * 2 / 3));
+        int jewelWidth = Math.max(4, corner / 2);
+        jewelWidth = Math.min(jewelWidth, Math.max(1, box.width() - corner * 2));
+        int sideJewelWidth = Math.min(corner, Math.max(4, corner * 5 / 6));
+        int middleX = box.x() + box.width() / 2;
+        int topRailY = box.y() + corner / 2 - edge / 2;
+        int bottomRailY = box.bottom() - corner / 2 - edge / 2;
+        int topJewelY = box.y();
+        int bottomJewelY = box.bottom() - corner;
+        int horizontalSourceHeight = Math.min(50, Math.max(12, edge * 3));
 
-        region(graphics, PANEL_ATLAS, box.x(), box.y(), edge, edge, 0, 0, cell, cell, 768, 768);
-        region(graphics, PANEL_ATLAS, box.right() - edge, box.y(), edge, edge, cell * 2, 0, cell, cell, 768, 768);
-        region(graphics, PANEL_ATLAS, box.x(), box.bottom() - edge, edge, edge, 0, cell * 2, cell, cell, 768, 768);
-        region(graphics, PANEL_ATLAS, box.right() - edge, box.bottom() - edge, edge, edge, cell * 2, cell * 2, cell, cell, 768, 768);
+        // The atlas is a 3x3 panel sheet. Its edge cells include large transparent
+        // margins and center ornaments, so crop the actual rails instead of
+        // squeezing each 256x256 cell into a thin destination strip.
+        drawHorizontalRail(graphics, box, corner, edge, middleX, jewelWidth,
+                topRailY, cell, 0, 83 - horizontalSourceHeight / 2, 84, 24, horizontalSourceHeight);
+        drawHorizontalRail(graphics, box, corner, edge, middleX, jewelWidth,
+                bottomRailY, cell, cell * 2, 170 - horizontalSourceHeight / 2, 84, 24, horizontalSourceHeight);
+        drawVerticalRail(graphics, box, corner, edge, 0, cell, 54, 0, 106, 150, 106, 52, 104, 60, 50, sideJewelWidth);
+        drawVerticalRail(graphics, box, corner, edge, cell * 2, cell, 148, 0, 106, 150, 106, 148, 104, 60, 50, sideJewelWidth);
 
-        region(graphics, PANEL_ATLAS, box.x() + edge, box.y(), middleWidth, edge, cell, 0, cell, cell, 768, 768);
-        region(graphics, PANEL_ATLAS, box.x() + edge, box.bottom() - edge, middleWidth, edge, cell, cell * 2, cell, cell, 768, 768);
-        region(graphics, PANEL_ATLAS, box.x(), box.y() + edge, edge, middleHeight, 0, cell, cell, cell, 768, 768);
-        region(graphics, PANEL_ATLAS, box.right() - edge, box.y() + edge, edge, middleHeight, cell * 2, cell, cell, cell, 768, 768);
+        int topJewelHeight = corner;
+        int jewelSourceX = cell + 104;
+        region(graphics, PANEL_ATLAS, middleX - jewelWidth / 2, topJewelY,
+                jewelWidth, topJewelHeight, jewelSourceX, 16, 48, 128, 768, 768);
+        region(graphics, PANEL_ATLAS, middleX - jewelWidth / 2, bottomJewelY,
+                jewelWidth, topJewelHeight, jewelSourceX, cell * 2 + 112, 48, 128, 768, 768);
+
+        int cornerSource = 144;
+        region(graphics, PANEL_ATLAS, box.x(), box.y(), corner, corner,
+                0, 0, cornerSource, cornerSource, 768, 768);
+        region(graphics, PANEL_ATLAS, box.right() - corner, box.y(), corner, corner,
+                cell * 2 + 112, 0, cornerSource, cornerSource, 768, 768);
+        region(graphics, PANEL_ATLAS, box.x(), box.bottom() - corner, corner, corner,
+                0, cell * 2 + 112, cornerSource, cornerSource, 768, 768);
+        region(graphics, PANEL_ATLAS, box.right() - corner, box.bottom() - corner, corner, corner,
+                cell * 2 + 112, cell * 2 + 112, cornerSource, cornerSource, 768, 768);
+    }
+
+    private static void drawHorizontalRail(GuiGraphics graphics, Box box, int corner, int edge,
+                                           int middleX, int jewelWidth, int y,
+                                           int sourceCellX, int sourceCellY, int sourceY,
+                                           int leftSourceX, int sourceWidth, int sourceHeight) {
+        int left = box.x() + corner * 3 / 4;
+        int right = box.right() - corner * 3 / 4;
+        int jewelLeft = middleX - jewelWidth / 2;
+        int jewelRight = middleX + (jewelWidth + 1) / 2;
+        int leftWidth = Math.max(0, jewelLeft - left);
+        int rightWidth = Math.max(0, right - jewelRight);
+        region(graphics, PANEL_ATLAS, left, y, leftWidth, edge,
+                sourceCellX + leftSourceX, sourceCellY + sourceY, sourceWidth, sourceHeight, 768, 768);
+        region(graphics, PANEL_ATLAS, jewelRight, y, rightWidth, edge,
+                sourceCellX + 150, sourceCellY + sourceY, sourceWidth, sourceHeight, 768, 768);
+    }
+
+    private static void drawVerticalRail(GuiGraphics graphics, Box box, int corner, int edge,
+                                         int sourceCellX, int sourceCellY, int sourceRailX,
+                                         int upperStart, int upperHeight, int lowerStart, int lowerHeight,
+                                         int sourceJewelX, int sourceJewelY, int sourceJewelW, int sourceJewelH,
+                                         int jewelWidth) {
+        int centerY = box.y() + box.height() / 2;
+        int jewelHeight = Math.max(4, corner * 3 / 4);
+        int top = box.y() + corner * 3 / 4;
+        int bottom = box.bottom() - corner * 3 / 4;
+        int jewelTop = centerY - jewelHeight / 2;
+        int jewelBottom = centerY + (jewelHeight + 1) / 2;
+        boolean leftSide = sourceCellX == 0;
+        int railX = leftSide ? box.x() + corner / 2 - edge / 2
+                : box.right() - corner / 2 - edge / 2;
+        int upperDestHeight = Math.max(0, jewelTop - top);
+        int lowerDestHeight = Math.max(0, bottom - jewelBottom);
+        int railSourceWidth = Math.min(58, Math.max(16, edge * 3));
+        int railSourceX = sourceRailX + (58 - railSourceWidth) / 2;
+        int upperSourceHeight = Math.min(upperHeight, Math.max(12, upperDestHeight * 4));
+        int lowerSourceHeight = Math.min(lowerHeight, Math.max(12, lowerDestHeight * 4));
+        int upperSourceY = upperStart + (upperHeight - upperSourceHeight) / 2;
+        int lowerSourceY = lowerStart + (lowerHeight - lowerSourceHeight) / 2;
+        region(graphics, PANEL_ATLAS, railX, top, edge, upperDestHeight,
+                sourceCellX + railSourceX, sourceCellY + upperSourceY, railSourceWidth, upperSourceHeight, 768, 768);
+        region(graphics, PANEL_ATLAS, railX, jewelBottom, edge, lowerDestHeight,
+                sourceCellX + railSourceX, sourceCellY + lowerSourceY, railSourceWidth, lowerSourceHeight, 768, 768);
+        int jewelX = leftSide ? box.x() + corner / 2 - jewelWidth / 2
+                : box.right() - corner / 2 - jewelWidth / 2;
+        region(graphics, PANEL_ATLAS, jewelX, jewelTop, jewelWidth, jewelHeight,
+                sourceCellX + sourceJewelX, sourceCellY + sourceJewelY,
+                sourceJewelW, sourceJewelH, 768, 768);
     }
 
     static void drawTitle(GuiGraphics graphics, Font font, Component title, Box outer, int screenWidth, int screenHeight) {
@@ -143,7 +218,13 @@ final class MenuUi {
 
     static void drawButtonSkin(GuiGraphics graphics, int x, int y, int width, int height, int state) {
         int row = Math.max(0, Math.min(3, state));
-        region(graphics, BUTTON_STATES, x, y, width, height, 0, row * 256, 1024, 256, 1024, 1024);
+        int cap = Math.min(height, Math.max(1, width / 2));
+        int centerWidth = Math.max(0, width - cap * 2);
+        region(graphics, BUTTON_STATES, x, y, cap, height, 0, row * 256, 256, 256, 1024, 1024);
+        region(graphics, BUTTON_STATES, x + cap, y, centerWidth, height,
+                256, row * 256, 512, 256, 1024, 1024);
+        region(graphics, BUTTON_STATES, x + width - cap, y, cap, height,
+                768, row * 256, 256, 256, 1024, 1024);
     }
 
     static void drawRankProgress(GuiGraphics graphics, int x, int y, int width, int height, double progress) {

@@ -102,6 +102,8 @@ def main() -> None:
                 "META-INF/MANIFEST.MF",
                 "data/anomalousclasses/class_catalog.json",
                 "data/anomalousclasses/skill_point_cost_model_v2.json",
+                "data/anomalousclasses/skill_tree_branch_redesign_v1.json",
+                "data/anomalousclasses/skill_tree_graph_layout_v1.json",
                 "assets/anomalousclasses/lang/ko_kr.json",
                 "assets/anomalousclasses/lang/en_us.json",
             ]
@@ -148,6 +150,33 @@ def main() -> None:
                     fail(f"unexpected skill atlas dimensions for {skill_icon}: {width}x{height}")
                 if not png_has_transparent_pixel(archive.read(skill_icon)):
                     fail(f"skill icon atlas has no transparent pixels: {skill_icon}")
+
+            branch_path = Path(__file__).resolve().parents[1] / "balance/SKILL_TREE_BRANCH_REDESIGN_V1.json"
+            branch_data = json.loads(branch_path.read_text(encoding="utf-8"))
+            branch_keys = {
+                "mental_dominator": "mental", "puppeteer": "puppet", "parasite_morpher": "parasite",
+                "barrier_caster": "barrier", "pact_caster": "pact", "swarm_caster": "swarm",
+            }
+            tree_art_entries: set[str] = set()
+            for class_key, branch_key in branch_keys.items():
+                background = f"assets/anomalousclasses/textures/gui/skilltree_v1/backgrounds/{class_key}.png"
+                if background not in names:
+                    fail(f"class skill-tree background missing: {background}")
+                width, height, _, _ = png_dimensions(archive.read(background))
+                if (width, height) != (1672, 941):
+                    fail(f"unexpected dimensions for {background}: {width}x{height}")
+                for skill in branch_data["classes"][branch_key]["skills"]:
+                    tree_art_entries.add(
+                        f"assets/anomalousclasses/textures/gui/skilltree_v1/icons/{class_key}/{skill['legacy_id']}.png")
+            for stat in ("max_health_hp", "armor", "movement_speed_percent", "attack_damage"):
+                tree_art_entries.add(f"assets/anomalousclasses/textures/gui/skilltree_v1/icons/common/{stat}.png")
+            if len(tree_art_entries) != 61:
+                fail(f"expected 61 distinct skill-tree icon assets, found {len(tree_art_entries)}")
+            for entry in tree_art_entries:
+                if entry not in names:
+                    fail(f"skill-tree node icon missing from JAR: {entry}")
+                if png_dimensions(archive.read(entry)) != (256, 256, 8, 6):
+                    fail(f"skill-tree node icon is not a 256x256 RGBA texture: {entry}")
 
             shared_ui_textures = {
                 "frame_atlas": (768, 768, True),
