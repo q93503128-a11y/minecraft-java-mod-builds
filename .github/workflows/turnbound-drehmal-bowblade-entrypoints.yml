@@ -1,0 +1,72 @@
+name: TURNBOUND Drehmal original bowblade entrypoint boundary review
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-bowblade-entrypoints.yml'
+      - 'projects/turnbound/tools/review_drehmal_bowblade_entrypoints.py'
+      - 'projects/turnbound/tools/test_review_drehmal_bowblade_entrypoints.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static root and schedule edge regression tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_review_drehmal_bowblade_entrypoints.py'
+      - name: Obtain existing verified original reports without downloading the map
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/entry-graph
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/entry-aux
+          gh run download 42745349874 --repo "$GITHUB_REPOSITORY" --name turnbound-original-callback-command-effect-audit --dir projects/turnbound/build/entry-effects
+      - name: Check all five bowblade entrypoints and retained facility roots
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/review_drehmal_bowblade_entrypoints.py \
+            --graph build/entry-graph/build/drehmal-official-2.2.2f-summary.json \
+            --aux build/entry-aux/drehmal-auxiliary-entrypoints.json \
+            --effects build/entry-effects/callback-exact-command-effect-audit.json \
+            --out build/drehmal-bowblade-static-entrypoint-boundaries.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path("build/drehmal-bowblade-static-entrypoint-boundaries.json").read_text())
+          assert x["status"]=="READ_ONLY_BOWBLADE_ORIGINAL_ENTRYPOINT_BOUNDARY_REVIEW"
+          assert x["total_reviewed_source_functions"]==18771
+          assert x["original_advancement_reward_records"]==220
+          assert x["original_literal_block_function_roots"]==78
+          assert x["schedule_source_functions"]==672
+          assert len(x["bowblade_function_entrypoints"])==5
+          assert len(x["retained_facility_callback_entrypoints"])==3
+          assert sum(v["known_entrypoint_after_eighth_offline_preview"]=="LOAD_TICK_TAG_REMOVED_OFFLINE_ONLY"
+                     for v in x["bowblade_function_entrypoints"].values())==4
+          assert sum(v["known_entrypoint_after_eighth_offline_preview"]=="ADVANCEMENT_REWARD_LINK_REMOVED_OFFLINE_ONLY"
+                     for v in x["bowblade_function_entrypoints"].values())==1
+          assert all(v["known_entrypoint_after_eighth_offline_preview"]=="ORIGINAL_ADVANCEMENT_LINK_RETAINED"
+                     for v in x["retained_facility_callback_entrypoints"].values())
+          assert all(v["possible_root_counts"]["command_block"]==0
+                     for v in x["bowblade_function_entrypoints"].values())
+          assert x["bowblade_known_literal_roots_after_eighth_offline_isolation"]==0
+          assert x["dynamic_or_saved_execution_untested"] and not x["static_nonroot_execution_ruled_out"]
+          assert x["automatic_removals_approved"]==0
+          assert x["world_modified"] is False and x["original_code_reused"] is False
+          assert x["playtested"] is False and x["multiplayer_tested"] is False
+          print("PASS: four load/tick-reachable bowblade functions, one advancement-only callback, three retained facility advancement roots; no live-activation claim")
+          PY
+      - name: Publish derived metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-bowblade-entrypoint-boundary-review
+          path: projects/turnbound/build/drehmal-bowblade-static-entrypoint-boundaries.json
+          if-no-files-found: warn
+          retention-days: 14
