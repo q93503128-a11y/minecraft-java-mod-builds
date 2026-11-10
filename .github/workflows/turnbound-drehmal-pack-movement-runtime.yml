@@ -1,0 +1,173 @@
+name: TURNBOUND official Drehmal original datapack movement dependence on copied worlds
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-pack-movement-runtime.yml'
+      - 'projects/turnbound/tools/probe_drehmal_pack_toggle_runtime.py'
+      - 'projects/turnbound/tools/test_probe_drehmal_pack_toggle_runtime.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-pack-on-off:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Strict stage receipts, packet/client source and pack-toggle unit tests
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_drehmal_pack_toggle_runtime.py'
+          python3 -m py_compile tools/probe_drehmal_pack_toggle_runtime.py
+          node --check tools/probe_drehmal_map_players_with_movement.cjs
+          npm install --prefix "$RUNNER_TEMP/drehmal-pack-protocol" \
+            --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+
+      - name: Retrieve pinned official-only source provenance reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+
+      - name: Compare OFFICIAL independent copied worlds with original pack KEPT vs DISABLED
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 45
+        env:
+          TURNBOUND_PROBE_NODE_MODULES: ${{ runner.temp }}/drehmal-pack-protocol/node_modules
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/drehmal-pack-independent-staged-copy"
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          for mode in kept disabled; do
+            # The previous copy was discarded after its server shut down.
+            test ! -e "$copy"
+            python3 tools/drehmal_pack_boundary.py stage \
+              --source "$source" --destination "$copy"
+            python3 tools/prepare_drehmal_isolated_copy.py prepare \
+              --world-copy "$copy" \
+              --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+              --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+              --positions build/original-triggers/command-trigger-positions.json \
+              --include-gamemode --include-starter-experiment \
+              --direct-report build/direct-source-review/direct-gameplay-review.json \
+              --output "build/pack-$mode-six-private.json"
+            python3 tools/verify_drehmal_start_chain_isolation.py apply \
+              --world-copy "$copy" \
+              --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+              --output "build/pack-$mode-seven-private.json"
+            python3 tools/probe_drehmal_pack_toggle_runtime.py \
+              --project . --original "$source" --world-copy "$copy" \
+              --datapack-mode "$mode" \
+              --output "build/pack-$mode-observations.json"
+            # Do not restore a server-ticked world and claim clean receipts.
+            rm -rf -- "$copy"
+          done
+          python3 - <<'PY'
+          import hashlib,json,math,os
+          from pathlib import Path
+          read=lambda mode:json.loads(Path(f"build/pack-{mode}-observations.json").read_text())
+          kept,disabled=read("kept"),read("disabled")
+          for data,mode in ((kept,"kept"),(disabled,"disabled")):
+              assert data["status"]=="OFFICIAL_COPIED_MAP_ORIGINAL_DATAPACK_BOUNDARY_OBSERVED"
+              assert data["datapack_mode"]==mode
+              assert data["two_protocol_clients_connected"]
+              assert data["both_players_remained_online"]
+              assert data["server_stopped_cleanly"]
+              assert data["start_commands_still_disabled"]
+              assert data["original_sha_preserved_after_runtime"]
+              assert data["datapack_boundary"]["pack_list_verified_after_reload"]
+              assert data["datapack_boundary"]["original_pack_enabled_during_probe"] == (mode=="kept")
+              assert data["datapack_boundary"]["pack_removed_from_copy"] is False
+              assert data["command_blocks_enabled"] is False
+              assert all(v=="minecraft:overworld" for v in data["player_entry_dimensions"].values())
+              assert len(data["samples"])==8
+              assert data["map_separation_complete"] is False
+              assert data["game_start_approved"] is False
+              assert data["verified_site_geometry"]==kept["verified_site_geometry"]
+          original=Path(os.environ["RUNNER_TEMP"])/"official-original"
+          checks=(
+            ("level.dat","44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"),
+            ("datapacks/hi_drehmal.zip","f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74")
+          )
+          for rel,expected in checks:
+              assert hashlib.sha256((original/rel).read_bytes()).hexdigest()==expected,rel
+          roles=["airborne","floored"]
+          kept_offsets=kept["final_horizontal_offsets"]
+          disabled_offsets=disabled["final_horizontal_offsets"]
+          baseline_reproduced=all(kept_offsets[role]>80 for role in roles)
+          no_pack_reproduced=all(disabled_offsets[role]>80 for role in roles)
+          before_equal=all(
+            math.dist(kept["original_join_positions"][key],
+                      disabled["original_join_positions"][key]) < 4
+            for key in ("airborne_legacy_test","conservative_full_floor")
+          )
+          if not before_equal:
+              result="INVALID_CONTROL_DIFFERENT_INITIAL_PLAYER_LOCATIONS"
+          elif not baseline_reproduced:
+              result="ORIGINAL_PACK_CONTROL_DID_NOT_REPRODUCE_SHARED_MOVEMENT"
+          elif no_pack_reproduced:
+              result="SHARED_MOVEMENT_PERSISTS_AFTER_ORIGINAL_PACK_DISABLED"
+          elif all(disabled_offsets[role]<5 for role in roles):
+              result="SHARED_MOVEMENT_DEPENDS_ON_ENABLED_ORIGINAL_PACK_IN_THIS_EXPERIMENT"
+          else:
+              result="PARTIAL_OR_AMBIGUOUS_DIFFERENTIAL_NOT_CAUSE_PROOF"
+          summary={
+            "status":"OFFICIAL_DREHMAL_DATAPACK_DEPENDENCE_COMPARISON_COMPLETED",
+            "classification":result,
+            "baseline_original_pack_both_relocated":baseline_reproduced,
+            "disabled_original_pack_both_relocated":no_pack_reproduced,
+            "initial_player_locations_comparable":before_equal,
+            "kept_pack_offsets":kept_offsets,
+            "disabled_pack_offsets":disabled_offsets,
+            "same_original_site_geometry":True,
+            "original_hashes_preserved":True,
+            "two_clients_per_trial":True,
+            "command_blocks_disabled_in_both":True,
+            "original_pack_off_only_on_disposable_second_copy":True,
+            "origin_of_move_specific_function_identified":False,
+            "physical_facility_operation_tested":False,
+            "map_separation_complete":False,
+            "start_coordinates_approved":False,
+            "graphical_or_human_playtested":False
+          }
+          Path("build/pack-movement-compare.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary))
+          PY
+      - name: Upload derived bounded outcomes only; never map/datapack/NBT or logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-pack-movement-boundary
+          path: |
+            projects/turnbound/build/pack-kept-observations.json
+            projects/turnbound/build/pack-disabled-observations.json
+            projects/turnbound/build/pack-movement-compare.json
+          retention-days: 14
+          if-no-files-found: warn
