@@ -1,0 +1,140 @@
+name: TURNBOUND server battle-defeat checkpoint return acceptance (CI-only fixture)
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-defeat-checkpoint-runtime.yml'
+      - 'projects/turnbound/tools/ci-fixtures/TurnboundDefeatProbeInitializer.java'
+      - 'projects/turnbound/tools/probe_turnbound_battle_defeat_runtime.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-battle-defeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+
+      - name: Install sandbox protocol dependencies outside production mod
+        run: |
+          set -euo pipefail
+          node --check projects/turnbound/tools/probe_turnbound_battle_defeat_runtime.cjs
+          npm install --prefix "$RUNNER_TEMP/turnbound-defeat-bot" \
+            --no-save --no-package-lock --ignore-scripts \
+            minecraft-protocol@1.60.1 rcon-client@4.2.5
+
+      - name: Inject trusted server-only synthetic encounter fixture into disposable CI checkout
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          cp tools/ci-fixtures/TurnboundDefeatProbeInitializer.java \
+            src/fabric/java/io/github/q93503128/turnbound/TurnboundDefeatProbeInitializer.java
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("src/fabric/resources/fabric.mod.json")
+          value=json.loads(p.read_text())
+          value["entrypoints"]["main"].append(
+            "io.github.q93503128.turnbound.TurnboundDefeatProbeInitializer")
+          assert len(value["entrypoints"]["main"])==2
+          p.write_text(json.dumps(value,indent=2)+"\n")
+          print("Only the CI checkout now contains synthetic battle fixture.")
+          PY
+          mkdir -p run/world build
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=world
+          level-type=minecraft:flat
+          online-mode=false
+          server-ip=127.0.0.1
+          server-port=25565
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=turnbound_ci_synthetic_only
+          max-players=4
+          spawn-protection=0
+          difficulty=peaceful
+          motd=TURNBOUND CI disposable defeat test
+          EOF
+          printf 'TURNBOUND_DREHMAL_WORLD_V1\n' > run/world/turnbound-world.marker
+          cat > run/world/turnbound-entry.json <<'EOF'
+          {"schema":1,"dimension":"minecraft:overworld","x":10.5,"y":70,"z":10.5,"yaw":0,"pitch":0}
+          EOF
+          test ! -f run/world/level.dat
+          echo "CI ONLY: This is a new flat world. None of the fixture code or world may ship."
+
+      - name: Execute actual Fabric server ticks, settle two server-owned synthetic defeats
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 18
+        run: |
+          set -euo pipefail
+          export TURNBOUND_PROBE_NODE_MODULES="$RUNNER_TEMP/turnbound-defeat-bot/node_modules"
+          gradle runServer --no-daemon --console=plain > build/defeat-server-internal.log 2>&1 &
+          server_pid=$!
+          set +e
+          timeout 340s node tools/probe_turnbound_battle_defeat_runtime.cjs \
+            build/turnbound-synthetic-battle-defeat-result.json
+          result=$?
+          set -e
+          if [ "$result" -ne 0 ]; then
+            echo "Defeat check failed; first server-side cause at end of run:"
+            tail -110 build/defeat-server-internal.log || true
+            kill "$server_pid" 2>/dev/null || true
+            exit 1
+          fi
+          for i in $(seq 1 120); do
+            if ! kill -0 "$server_pid" 2>/dev/null; then break; fi
+            sleep 0.5
+          done
+          if kill -0 "$server_pid" 2>/dev/null; then
+            echo "Synthetic defeat server did not stop after RCON stop"
+            kill "$server_pid" 2>/dev/null || true
+            exit 1
+          fi
+          wait "$server_pid"
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          proof=json.loads(Path("build/turnbound-synthetic-battle-defeat-result.json").read_text())
+          assert proof["status"]=="SYNTHETIC_SERVER_OWNED_BATTLE_DEFEAT_CHECKPOINT_PASS"
+          for field in (
+              "two_protocol_clients_connected",
+              "server_terminal_defeat_recovered_alice",
+              "no_duplicate_recovery",
+              "second_player_unchanged_during_alice_defeat",
+              "independent_second_player_defeat_recovered",
+              "item_preservation_verified",
+          ):
+              assert proof[field] is True, field
+          assert proof["world"]=="SYNTHETIC_FLAT_CI_ONLY"
+          assert proof["original_drehmal_loaded"] is False
+          assert proof["production_fixture_shipped"] is False
+          assert proof["checkpoint_coordinates_approved_for_game"] is False
+          assert proof["real_encounter_spawned"] is False
+          assert proof["human_playtested"] is False
+          print("PASS: real Fabric server bridge moves both synthetic defeated players, "
+                "preserves items and suppresses repeated recovery; no real game playtest")
+          PY
+
+      - name: Publish derived CI-only observations (never map/player files or fixture JAR)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-synthetic-battle-checkpoint-return
+          path: projects/turnbound/build/turnbound-synthetic-battle-defeat-result.json
+          retention-days: 14
+          if-no-files-found: warn
