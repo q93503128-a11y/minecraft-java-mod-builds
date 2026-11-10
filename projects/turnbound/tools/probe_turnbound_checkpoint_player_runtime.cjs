@@ -33,6 +33,9 @@ const proof = {
   restarted_server_preserves_player_position: false,
   uuid_state_persistence_verified: false,
   respawn_tested: false,
+  synthetic_forced_death_return_verified: false,
+  synthetic_inventory_preserved_after_forced_death: false,
+  synthetic_respawn_request_sent: false,
   structures_tested: false,
   original_world_modified: false,
   real_human_playtested: false,
@@ -113,6 +116,23 @@ function join(name) {
   });
   client.on('error', err => {client._turnboundError = err.message;});
   client.on('kick_disconnect', packet => { client._turnboundError='kicked by server'; });
+  // A /kill may bypass the Fabric death cancellation hook. In that case
+  // emulate the ordinary 1.20.1 client pressing Respawn, once per death.
+  client.on('update_health', packet => {
+    if (packet.health <= 0 && !client._turnboundRespawnPending) {
+      client._turnboundRespawnPending = true;
+      setTimeout(() => {
+        try {
+          client.write('client_command', {actionId: 0});
+          proof.synthetic_respawn_request_sent = true;
+        } catch (err) {
+          client._turnboundError = err.message;
+        }
+      }, 600);
+    } else if (packet.health > 0) {
+      client._turnboundRespawnPending = false;
+    }
+  });
   return client;
 }
 async function joined(name) {
@@ -167,6 +187,28 @@ async function second() {
   proof.other_player_independent = true;
   proof.same_server_two_players_connected = await online(names[0]) && await online(names[1]);
   proof.uuid_state_persistence_verified = proof.same_server_two_players_connected;
+  // Synthetic-world only. Observe whether /kill is cancelled before vanilla
+  // death or whether a vanilla respawn still preserves the player inventory.
+  const give = await command('give '+names[0]+' minecraft:diamond 1');
+  await until(async () =>
+    (await command('data get entity '+names[0]+' Inventory')).includes('minecraft:diamond'),
+    'test diamond present before force-kill');
+  const kill = await command('kill '+names[0]);
+  proof.observations.push({label:'synthetic forced kill issued', server_response_kind:
+    /Killed|killed/i.test(kill) ? 'kill_acknowledged' : 'other_response'});
+  await expectPosition(names[0], position.entry,
+                       'forced kill returned Alice to persisted TURNBOUND checkpoint');
+  proof.synthetic_forced_death_return_verified = true;
+  const inventory = await command('data get entity '+names[0]+' Inventory');
+  check(inventory.includes('minecraft:diamond'),
+        'Force kill removed the test diamond; lossless death policy failed');
+  proof.synthetic_inventory_preserved_after_forced_death = true;
+  const health = await command('data get entity '+names[0]+' Health');
+  proof.observations.push({label:'post-force-death health queried',
+    nonzero_health: !/\b0\.0f\b/.test(health)});
+  proof.respawn_tested = true;
+  await expectPosition(names[1], position.entry,
+                       'Bob retained entry position after Alice force-kill');
   await leave(names[0], alice);
   await leave(names[1], bob);
 }
