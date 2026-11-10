@@ -1,5 +1,8 @@
 # Drehmal 원작 시스템 분리 — 현재 검증 범위
 
+> **2026-11-10 후속 실제 시설 콜백 실서버 관측:** [#42788411203 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42788411203). 공식 v2.2.2f 복사본 7/8단계에서 각각 2인 봇, START 명령 57개 차단 유지, 강제 업적 콜백 Foundry(점수판 변경 2), Godmachine(1), Av'Sal(1) 비교. 이 세 콜백은 두 단계 모두 서버 측 점수판 변경이 발생했다. **실제 레버/터미널 이동·퍼즐 보존과 전체 원작 기능 차단은 미검증**. 두 사본 CI 위치가 동일하게 X+62,Y-46,Z+201 이동; 원인 불명, 게임 START 승인 0건. [검증 상세](DREHMAL_FACILITY_CALLBACK_RUNTIME.md).
+
+
 > **2026-11-10 실제 공식 맵의 가상 2인 접속·7/8단계 비교 검증:** [Actions #42772502908 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42772502908). 공식 원본 SHA 고정 → 7단계/8단계 각각 별도 임시 맵 사본 → 1.20.1 Fabric 서버 두 번 실행, **각 서버에 실제 프로토콜 가상 플레이어 2명 접속**. START 원작 명령 57개 비활성 유지, 시작 영역 1,440블록 전후 변화 0, 지정한 `players:sleep_on_lodahr` 업적 강제 실행 시 **7단계의 원작 태그 변경 관측 / 8단계 미관측**. 두 시험은 안전한 START·문·포탈·퍼즐의 실제 사용/플레이테스트가 아니며, 원작 다른 콜백/스케줄/명령 블록은 계속 조사 대상. 상세 판정: [DREHMAL_MAP_SEPARATION_ACCEPTANCE.md](DREHMAL_MAP_SEPARATION_ACCEPTANCE.md). **최종 분리 미완료**.
 
 

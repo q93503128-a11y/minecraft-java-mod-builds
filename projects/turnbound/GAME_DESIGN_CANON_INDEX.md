@@ -1,5 +1,8 @@
 # TURNBOUND — 현재 게임 기획 정본 인덱스
 
+> **2026-11-10 지도 분리 신규 검증:** [시설 콜백 검증](DREHMAL_FACILITY_CALLBACK_RUNTIME.md) / [실제 Fabric 공식 복사본 7/8단계 #42788411203 성공](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42788411203). Foundry/Godmachine/Av'Sal의 업적 reward 콜백을 임시 플레이어에 강제 grant하면 두 단계 모두 점수판 변경이 재현된다. **시설 조작 자체는 미검증**이다. CI 위치 강제 변위 X+62,Y-46,Z+201의 원인을 추적해야 한다. 원작 게임 시스템 전체 분리는 아직 아니며 정식 START·빠른 이동·퍼즐 정상 작동을 선언하지 않는다.
+
+
 > **2026-11-10 맵 분리 우선 정본:** [Drehmal 실사용 승인 게이트](DREHMAL_MAP_SEPARATION_ACCEPTANCE.md). 실제 **공식 원본 사본**의 7·8단계 서버에 가상 2인씩 접속 및 원작 특정 업적 보상 콜백 차단 확인([#42772502908 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42772502908)). 그러나 시설·START·원작 잔여 실행 경로 미완이므로 **MAP SEPARATION COMPLETE: NO**. 현 단계 최우선은 분리와 시설 보존이며 신규 캐릭터·전투 콘텐츠 제작을 앞당기지 않는다. 이전 본 문서의 '플레이어 0명' 등은 예전 개별 시험의 역사적 결과다.
 
 

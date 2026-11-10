@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-10 추가: 실제 시설 업적 콜백 강제 호출 실서버 비교 성공.** [시설 콜백 검증 정본](DREHMAL_FACILITY_CALLBACK_RUNTIME.md) · [GitHub Actions #42788411203 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42788411203). 공식 7·8단계 분리 사본 각각에서 2인 실제 프로토콜 봇이 접속했고 Foundry(점수판 신규 2건), Godmachine(1건), Av'Sal(1건)의 **업적 콜백 강제 호출 이후** 점수판 기록이 두 단계 모두 동일했다. 실제 레버/버튼·시설 이동은 조작하지 않았다. **CI 임시 위치에서 (X+62,Y-46,Z+201) 이동**도 두 단계 모두 확인돼 START 원인 추적이 선행돼야 한다. **완전 맵 분리 = NO**.
+
+
 > **기준:** 2026-11-10 / `turnbound-content-rebuild` / `projects/turnbound/`.
 >
 > **판정: MAP SEPARATION COMPLETE = NO.** 정식 TURNBOUND 전용 월드로 배포하거나 기존 7·8단계 실험 사본을 사용자 월드로 승격하지 않는다. 지금은 **맵 분리 우선**, 캐릭터·보스·스폰·UI 콘텐츠 제작을 다음 단계로 미루며 원작 시설/원작 게임 상태 보존·차단을 검증한다.

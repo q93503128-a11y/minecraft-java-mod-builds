@@ -1,5 +1,8 @@
 # TURNBOUND — Rebuild project contract
 
+> **2026-11-10 실제 Drehmal 시설 콜백 검증 최신 결과:** [Actions #42788411203 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42788411203)에서 7·8단계 임시 공식 맵의 가상 플레이어 2명씩으로 Foundry/Godmachine/Av'Sal 원작 **업적 콜백 강제 호출**이 동일한 점수판 상태 변경을 남기는지 관측했다. 실제 시설 조작은 미검증. 또한 시험용 START 인접 위치에서 X+62,Y-46,Z+201 이동이 양쪽 모두 발생, 원인은 불명확. **게임 시작 좌표를 승인하거나 맵 분리 완료로 선언하지 않는다.** [현행 분리 보고서](DREHMAL_FACILITY_CALLBACK_RUNTIME.md). 새 캐릭터/전투 콘텐츠 개발보다 맵 분리 검증이 우선이다.
+
+
 > **최우선 작업: Drehmal 맵 분리(2026-11-10 현재 미완료).** [실사용 승인 게이트](DREHMAL_MAP_SEPARATION_ACCEPTANCE.md)를 우선 확인한다. 공식 2.2.2f 맵을 7·8단계로 분리한 **각각의 폐기용 사본**에서 실제 Minecraft Fabric 서버에 가상 플레이어 2명 접속, START 57개 차단 명령 유지, 시작 영역 1,440블록 무변경 및 **한 개 원작 보상 콜백의 태그 효과 차단**을 확인했다([Actions #42772502908 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42772502908)). **이것은 원작 전체 기능 분리·문/포탈/퍼즐 보존·정식 START 선정·실게임 플레이 완료가 아니다.** 다음 우선순위는 원작 시설 실동작 및 남은 원작 서사·보상 분리이며 **캐릭터·몬스터·전투 UI 신규 콘텐츠 제작은 그 이후**다. CI 임시 위치를 게임 시작 좌표로 사용하지 않는다.
 
 
