@@ -108,7 +108,7 @@ jobs:
           assert second["same_server_two_players_connected"] and second["other_player_independent"]
           assert second["restarted_server_preserves_player_position"]
           assert second["uuid_state_persistence_verified"]
-          assert second["respawn_tested"]
+          assert second["synthetic_force_kill_path_tested"]
           assert second["synthetic_forced_death_return_verified"]
           assert second["synthetic_inventory_preserved_after_forced_death"]
           assert all(doc["synthetic_ci_world_only"] and not doc["official_drehmal_used"]
@@ -129,6 +129,7 @@ jobs:
             "synthetic_force_kill_checkpoint_return_verified":True,
             "synthetic_force_kill_diamond_preserved":True,
             "automated_client_respawn_packet_sent":second["synthetic_respawn_request_sent"],
+            "whether_vanilla_respawn_actually_occurred":"NOT_PROVEN_CANCELLATION_OR_RESPAWN",
             "actual_drehmal_respawn_untested":True,
             "real_gameplay_or_facility_tested":False,
             "human_multiplayer_playtested":False,

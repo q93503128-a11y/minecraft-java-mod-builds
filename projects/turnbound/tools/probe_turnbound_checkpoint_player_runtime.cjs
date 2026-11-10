@@ -33,6 +33,7 @@ const proof = {
   restarted_server_preserves_player_position: false,
   uuid_state_persistence_verified: false,
   respawn_tested: false,
+  synthetic_force_kill_path_tested: false,
   synthetic_forced_death_return_verified: false,
   synthetic_inventory_preserved_after_forced_death: false,
   synthetic_respawn_request_sent: false,
@@ -196,6 +197,12 @@ async function second() {
   const kill = await command('kill '+names[0]);
   proof.observations.push({label:'synthetic forced kill issued', server_response_kind:
     /Killed|killed/i.test(kill) ? 'kill_acknowledged' : 'other_response'});
+  // A real protocol client must explicitly send a respawn request if the
+  // server reached the death screen. If the server cancelled death first,
+  // the same packet is ignored and cannot trigger a second death.
+  await ms(500);
+  alice.write('client_command', {actionId: 0});
+  proof.synthetic_respawn_request_sent = true;
   await expectPosition(names[0], position.entry,
                        'forced kill returned Alice to persisted TURNBOUND checkpoint');
   proof.synthetic_forced_death_return_verified = true;
@@ -206,7 +213,7 @@ async function second() {
   const health = await command('data get entity '+names[0]+' Health');
   proof.observations.push({label:'post-force-death health queried',
     nonzero_health: !/\b0\.0f\b/.test(health)});
-  proof.respawn_tested = true;
+  proof.synthetic_force_kill_path_tested = true;
   await expectPosition(names[1], position.entry,
                        'Bob retained entry position after Alice force-kill');
   await leave(names[0], alice);

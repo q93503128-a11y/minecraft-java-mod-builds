@@ -2,6 +2,7 @@
   "required": true,
   "package": "io.github.q93503128.turnbound.mixin",
   "compatibilityLevel": "JAVA_17",
+  "mixins": ["ServerPlayerDeathMixin"],
   "client": ["InGameHudMixin"],
   "injectors": {"defaultRequire": 1}
 }
