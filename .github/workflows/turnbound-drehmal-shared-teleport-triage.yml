@@ -1,0 +1,77 @@
+name: TURNBOUND original Drehmal shared teleport function and advancement candidate inventory
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-shared-teleport-triage.yml'
+      - 'projects/turnbound/tools/triage_drehmal_shared_teleport_functions.py'
+      - 'projects/turnbound/tools/test_triage_drehmal_shared_teleport_functions.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  static-official-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic script and restricted-output tests
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_triage_drehmal_shared_teleport_functions.py'
+          python3 -m py_compile tools/triage_drehmal_shared_teleport_functions.py
+      - name: Obtain and SHA-verify official 2.2.2f source only in runner
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "$RUNNER_TEMP/original-shards" \
+            --world-dir "$RUNNER_TEMP/original-world"
+      - name: Enumerate function and advancement references without raw author commands
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/triage_drehmal_shared_teleport_functions.py \
+            --original "$RUNNER_TEMP/original-world" \
+            --output build/shared-teleport-original-candidates.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("build/shared-teleport-original-candidates.json")
+          d=json.loads(p.read_text())
+          assert d["status"]=="ORIGINAL_DREHMAL_DATAPACK_STATIC_SHARED_TELEPORT_TRIAGE"
+          assert d["source"]=="ORIGINAL_OFFICIAL_DREHMAL_V2_2_2F_DATAPACK_SHA_LOCKED"
+          assert d["function_count"]>=15000
+          assert d["functions_with_direct_teleport_lines"]>0
+          assert len(d["candidate_function_records"])<=60
+          assert len(d["entry_like_advancement_reward_records"])<=60
+          assert not d["raw_original_commands_or_advancement_json_published"]
+          assert not d["source_files_modified"]
+          assert not d["specific_function_causing_relocation_proven"]
+          assert not d["map_separation_complete"]
+          assert all("sha256" in x and "function_id" in x for x in d["candidate_function_records"])
+          print(json.dumps({
+            "status":d["status"],
+            "functions":d["function_count"],
+            "advancements":d["advancement_count"],
+            "teleport_carrying_functions":d["functions_with_direct_teleport_lines"],
+            "exact_target_number_pair_functions":d["functions_with_both_target_number_hints"],
+            "candidate_functions":len(d["candidate_function_records"]),
+            "candidate_advancement_rewards":len(d["entry_like_advancement_reward_records"]),
+            "specific_function_proven":False,
+            "map_separation_complete":False
+          }))
+          PY
+      - name: Upload derived bounded candidate metadata; no source functions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-original-drehmal-shared-teleport-candidates
+          path: projects/turnbound/build/shared-teleport-original-candidates.json
+          retention-days: 14
+          if-no-files-found: warn
