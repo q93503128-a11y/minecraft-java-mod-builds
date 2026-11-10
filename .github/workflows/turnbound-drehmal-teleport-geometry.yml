@@ -1,0 +1,100 @@
+name: TURNBOUND Drehmal official-source copied-map teleport footprint geometry gate
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-teleport-geometry.yml'
+      - 'projects/turnbound/tools/inspect_drehmal_teleport_footprints.py'
+      - 'projects/turnbound/tools/test_inspect_drehmal_teleport_footprints.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  read-only-geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static geometry inspector unit and source syntax tests
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_inspect_drehmal_teleport_footprints.py'
+          python3 -m py_compile tools/inspect_drehmal_teleport_footprints.py
+      - name: Retrieve pinned source metadata (no official world files in artifacts)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Assemble source and independently stage seven-stage map copy (runner only)
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/disposable-staged-map"
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/official-parts" --world-dir "$source"
+          python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare --world-copy "$copy" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/geometry-six-stage-private.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply \
+            --world-copy "$copy" \
+            --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/geometry-seven-stage-private.json
+          python3 tools/inspect_drehmal_teleport_footprints.py --source "$source" --world-copy "$copy" \
+            --output build/teleport-footprint-evidence.json
+      - name: Assert geometry evidence scope and original source SHA unchanged
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,hashlib
+          from pathlib import Path
+          d=json.loads(Path("build/teleport-footprint-evidence.json").read_text())
+          assert d["status"]=="OFFICIAL_DREHMAL_ORIGINAL_AND_SEVEN_STAGE_GEOMETRY_MATCH"
+          assert d["official_original_sha_verified"]
+          assert d["seven_stage_original_geometry_preserved_at_three_sites"]
+          assert len(d["footprints"])==3
+          assert all(f["geometry_matches_official_source"] for f in d["footprints"])
+          assert not d["candidate_is_game_start_approved"]
+          assert not d["official_map_separation_complete"]
+          assert not d["actual_collision_box_and_block_shapes_tested"]
+          assert not d["actual_teleport_or_playtest_performed"]
+          assert not d["original_world_modified"]
+          original=Path(os.environ["RUNNER_TEMP"])/"official-original"
+          expected={
+            "level.dat":"44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1",
+            "datapacks/hi_drehmal.zip":"f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74"
+          }
+          for rel,sha in expected.items():
+            assert hashlib.sha256((original/rel).read_bytes()).hexdigest()==sha,rel
+          print(json.dumps({
+            "status":d["status"],
+            "observed_footprints":{x["site"]:x["standing_space"] for x in d["footprints"]},
+            "nearby_test_candidate_count":d["nearby_conservative_candidate_count"],
+            "game_start_approved":False,"map_separation_complete":False
+          }))
+          PY
+      - name: Upload derived geometry categories only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-teleport-footprint-geometry
+          path: projects/turnbound/build/teleport-footprint-evidence.json
+          retention-days: 14
+          if-no-files-found: warn
