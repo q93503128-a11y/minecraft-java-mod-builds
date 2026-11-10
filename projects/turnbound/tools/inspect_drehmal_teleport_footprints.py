@@ -19,6 +19,9 @@ from audit_drehmal_starter_mechanisms import World, palette_index
 from verify_drehmal_start_chain_isolation import verify as verify_seven
 
 AIR=frozenset({"minecraft:air","minecraft:cave_air","minecraft:void_air"})
+# Minecraft light blocks illuminate map builds but have no collision shape.
+NONCOLLIDING=frozenset({"minecraft:light"})
+PASSABLE=AIR|NONCOLLIDING
 FLUID=frozenset({"minecraft:water","minecraft:lava"})
 KNOWN_FULL=frozenset({
     "minecraft:stone","minecraft:deepslate","minecraft:cobblestone",
@@ -33,7 +36,9 @@ KNOWN_FULL=frozenset({
     "minecraft:oak_planks","minecraft:spruce_planks",
     "minecraft:birch_planks","minecraft:dark_oak_planks",
     "minecraft:warped_planks","minecraft:crimson_planks",
-})
+}) | frozenset(f"minecraft:{color}_concrete" for color in (
+    "white","orange","magenta","light_blue","yellow","lime","pink",
+    "gray","light_gray","cyan","purple","blue","brown","green","red","black"))
 SOURCE_LEVEL_SHA="44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"
 SOURCE_PACK_SHA="f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74"
 # CI targets from prior *observations*, never player-facing starts.
@@ -79,12 +84,12 @@ def full_block(view,x,y,z):
 def classify_space(ground,feet,head):
     if ground in FLUID or feet in FLUID or head in FLUID:
         return "FLUID_PRESENT_NOT_SAFE"
-    if feet not in AIR or head not in AIR:
-        return "FEET_OR_HEAD_NOT_AIR_COLLISION_UNRESOLVED"
-    if ground in AIR:
+    if feet not in PASSABLE or head not in PASSABLE:
+        return "FEET_OR_HEAD_OCCUPIED_COLLISION_UNRESOLVED"
+    if ground in PASSABLE:
         return "AIRBORNE_NO_FLOOR"
     if ground in KNOWN_FULL:
-        return "CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_AIR"
+        return "CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_PASSABLE"
     return "UNKNOWN_FLOOR_SHAPE_NO_SAFETY_CLAIM"
 
 def footprint(view,center,ground_y=None):
@@ -119,7 +124,7 @@ def conservative_candidates(view,center,radius=5,y_range=12,max_results=6):
                 if dx==dz==dy==0:continue
                 p=(x+dx,y+dy,z+dz)
                 f=footprint(view,p)
-                if f["standing_space"]=="CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_AIR":
+                if f["standing_space"]=="CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_PASSABLE":
                     found.append((abs(dx)+abs(dz)+abs(dy),abs(dy),abs(dx)+abs(dz),p))
     found.sort()
     return [{"ci_only_candidate":[*p],
@@ -148,6 +153,8 @@ def inspect(source,copy):
         observations.append({"site":name,"ci_only_target":[*position],**b,
                              "geometry_matches_official_source":True})
     candidates,count=conservative_candidates(v2,SITES[0][1])
+    spawn_candidates,spawn_count=conservative_candidates(
+        v2,SITES[2][1],radius=8,y_range=5,max_results=12)
     return {
         "status":"OFFICIAL_DREHMAL_ORIGINAL_AND_SEVEN_STAGE_GEOMETRY_MATCH",
         "official_original_sha_verified":True,
@@ -155,6 +162,8 @@ def inspect(source,copy):
         "footprints":observations,
         "nearby_conservative_candidates":candidates,
         "nearby_conservative_candidate_count":count,
+        "original_join_nearby_conservative_candidates":spawn_candidates,
+        "original_join_nearby_conservative_candidate_count":spawn_count,
         "actual_collision_box_and_block_shapes_tested":False,
         "actual_teleport_or_playtest_performed":False,
         "candidate_is_game_start_approved":False,

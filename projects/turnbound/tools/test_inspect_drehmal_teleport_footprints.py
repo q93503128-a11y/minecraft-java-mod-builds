@@ -11,14 +11,19 @@ class GeometrySafetyTest(unittest.TestCase):
     def test_airborne_floor_is_not_safe(self):
         self.assertEqual("AIRBORNE_NO_FLOOR",m.classify_space(
             "minecraft:air","minecraft:air","minecraft:air"))
-        self.assertEqual("FEET_OR_HEAD_NOT_AIR_COLLISION_UNRESOLVED",
+        self.assertEqual("FEET_OR_HEAD_OCCUPIED_COLLISION_UNRESOLVED",
                          m.classify_space("minecraft:stone","minecraft:stone","minecraft:air"))
         self.assertEqual("FLUID_PRESENT_NOT_SAFE",
                          m.classify_space("minecraft:stone","minecraft:water","minecraft:air"))
         self.assertEqual("UNKNOWN_FLOOR_SHAPE_NO_SAFETY_CLAIM",
                          m.classify_space("minecraft:oak_slab","minecraft:air","minecraft:air"))
-        self.assertEqual("CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_AIR",
+        self.assertEqual("CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_PASSABLE",
                          m.classify_space("minecraft:stone","minecraft:air","minecraft:air"))
+        self.assertEqual("CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_PASSABLE",
+                         m.classify_space("minecraft:light_gray_concrete",
+                                          "minecraft:air","minecraft:light"))
+        self.assertEqual("AIRBORNE_NO_FLOOR",
+                         m.classify_space("minecraft:light","minecraft:air","minecraft:air"))
 
     def test_identifies_below_feet_head_and_above_without_claiming_collision(self):
         states={69:"minecraft:stone",70:"minecraft:air",71:"minecraft:air",72:"minecraft:glass"}
@@ -27,7 +32,7 @@ class GeometrySafetyTest(unittest.TestCase):
         self.assertEqual(f["ground"],"minecraft:stone")
         self.assertEqual(f["above_head"],"minecraft:glass")
         self.assertFalse(f["collision_shapes_runtime_verified"])
-        self.assertEqual(f["standing_space"],"CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_AIR")
+        self.assertEqual(f["standing_space"],"CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_PASSABLE")
 
     def test_only_centered_probe_and_finite_positions_allowed(self):
         for xyz in ((10.2,70,2.5),(10.5,70.2,2.5),
@@ -38,7 +43,7 @@ class GeometrySafetyTest(unittest.TestCase):
     def test_candidate_search_only_known_full_cube_floor(self):
         def ground(view,p):
             if p==(3.5,70,3.5):
-                return {"standing_space":"CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_AIR"}
+                return {"standing_space":"CONSERVATIVE_FULL_FLOOR_TWO_BLOCK_PASSABLE"}
             return {"standing_space":"AIRBORNE_NO_FLOOR"}
         with patch.object(m,"footprint",side_effect=ground):
             candidates,count=m.conservative_candidates(None,(2.5,70,3.5),
