@@ -1,0 +1,117 @@
+name: TURNBOUND Drehmal eighth+ninth combined offline integrity
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-eight-nine-combined.yml'
+      - 'projects/turnbound/tools/preview_drehmal_eight_nine_combined.py'
+      - 'projects/turnbound/tools/test_preview_drehmal_eight_nine_combined.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  combined-copy-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Narrow synthetic fail-closed and exact-restoration regression
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_preview_drehmal_eight_nine_combined.py'
+          python3 -m py_compile tools/preview_drehmal_eight_nine_combined.py
+      - name: Retrieve pinned original structure and callback metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+          gh run download 42605435141 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-callback-scheduler-review --dir projects/turnbound/build/callback-review
+      - name: Check official map SHAs and reversible 7+8+9 on disposable copy
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/seven-stage-offline-combined"
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare \
+            --world-copy "$copy" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/combined-private-six.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply \
+            --world-copy "$copy" \
+            --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/combined-private-seven.json
+          cli=tools/preview_drehmal_eight_nine_combined.py
+          review=build/callback-review/callback-schedule-risk-review.json
+          python3 "$cli" inspect --world-copy "$copy" --source-review "$review" --output build/combined-private-inspect.json
+          python3 "$cli" apply --world-copy "$copy" --source-review "$review" --output build/combined-private-applied.json
+          python3 "$cli" verify --world-copy "$copy" --output build/combined-private-verified.json
+          python3 "$cli" restore --world-copy "$copy" --output build/combined-private-restored.json
+          python3 tools/verify_drehmal_start_chain_isolation.py verify --world-copy "$copy" --output build/combined-private-reverified-seven.json
+          python3 tools/verify_drehmal_start_chain_isolation.py restore --world-copy "$copy" --output build/combined-private-restored-six.json
+          python3 tools/prepare_drehmal_isolated_copy.py restore --world-copy "$copy" --output build/combined-private-all-restored.json
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          source=Path(os.environ["RUNNER_TEMP"])/"official-original"
+          copy=Path(os.environ["RUNNER_TEMP"])/"seven-stage-offline-combined"
+          read=lambda n: json.loads(Path("build/combined-private-"+n+".json").read_text())
+          applied,verified,restored=read("applied"),read("verified"),read("restored")
+          assert applied==verified
+          assert applied["verified"] and applied["changed_original_zip_members"]==10
+          assert applied["application_order_independent"]
+          assert applied["original_function_bodies_unchanged"]
+          assert not applied["world_activated"]
+          assert not applied["eighth_layer_gameplay_removal_approved"]
+          assert not applied["map_separation_complete"]
+          assert restored["status"]=="EIGHT_NINE_EXPERIMENT_RESTORED_EXACTLY_TO_SEVEN"
+          assert restored["restored_seven_stage_pack_sha256"]==applied["original_seven_stage_pack_sha256"]
+          assert read("restored-six")["status"]=="SEVENTH_STAGE_RESTORED_TO_VERIFIED_SIX_STAGE"
+          assert read("all-restored")["status"]=="ALL_SIX_BOUNDARIES_RESTORED_EXACTLY_OFFLINE"
+          for name,sha in (
+              ("level.dat","44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"),
+              ("datapacks/hi_drehmal.zip","f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74")
+          ):
+              assert hashlib.sha256((source/name).read_bytes()).hexdigest()==sha
+          summary={
+            "status":"OFFICIAL_DREHMAL_EIGHT_NINE_OFFLINE_COMBINED_RESTORED",
+            "verified":True, "changed_members":10,
+            "commutative_order":True,"base_pack_restored_exactly":True,
+            "original_source_sha_preserved":True,
+            "original_function_bodies_unchanged":True,
+            "gameplay_removal_approved":False,
+            "facility_physical_interaction_tested":False,
+            "world_activated":False,"map_separation_complete":False,
+          }
+          Path("build/combined-safe-summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary))
+          PY
+      - name: Upload derived boolean/count proof only (never source map or receipts)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-eight-nine-integrity-proof
+          path: projects/turnbound/build/combined-safe-summary.json
+          retention-days: 14
+          if-no-files-found: warn
