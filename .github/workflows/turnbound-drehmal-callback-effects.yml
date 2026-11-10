@@ -1,0 +1,73 @@
+name: TURNBOUND Drehmal original callback command effect audit
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-callback-effects.yml'
+      - 'projects/turnbound/tools/inspect_drehmal_callback_command_effects.py'
+      - 'projects/turnbound/tools/test_inspect_drehmal_callback_command_effects.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  source-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Local effect-parser regression tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_inspect_drehmal_callback_command_effects.py'
+      - name: Download four existing SHA-pinned metadata inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/effect-graph
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/effect-aux
+          gh run download 42744121545 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-callback-mechanism-risk-matrix --dir projects/turnbound/build/effect-cross
+      - name: Extract SHA-verified official 2.2.2f source world without changes
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/verified-release-download" --world-dir "$RUNNER_TEMP/official-source"
+      - name: Validate all original functions and classify 12 callbacks actual command operations
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/inspect_drehmal_callback_command_effects.py \
+            --world "$RUNNER_TEMP/official-source" \
+            --graph build/effect-graph/build/drehmal-official-2.2.2f-summary.json \
+            --aux build/effect-aux/drehmal-auxiliary-entrypoints.json \
+            --cross build/effect-cross/callback-mechanism-cross-review.json \
+            --output build/callback-exact-command-effect-audit.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("build/callback-exact-command-effect-audit.json")
+          doc=json.loads(p.read_text())
+          assert doc["status"]=="READ_ONLY_PINNED_ORIGINAL_CALLBACK_COMMAND_EFFECTS"
+          assert doc["original_function_bodies_sha_checked"]==18771
+          assert doc["selected_advancement_callbacks"]==12
+          assert len(doc["selected_callback_effects"])==12
+          assert doc["original_source_code_published"] is False
+          assert doc["world_modified"] is False
+          assert doc["automatic_removals_approved"]==0
+          assert doc["runtime_triggered"] is False and doc["playtested"] is False
+          bow=next(x for x in doc["selected_callback_effects"]
+                   if x["advancement_file"].endswith("/kill_with_bowblade.json"))
+          assert bow["direct_function_effects"]["bowblade_objective_role_counts"]
+          assert "bowbladEffect" in doc["bowblade_objective"]
+          print("PASS: pinned 18,771 function bodies, 12 callback command-effect classifications, 0 removals")
+          PY
+      - name: Publish derived command categories ONLY (never original commands, NBT, assets or map files)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-original-callback-command-effect-audit
+          path: projects/turnbound/build/callback-exact-command-effect-audit.json
+          retention-days: 14
+          if-no-files-found: warn
