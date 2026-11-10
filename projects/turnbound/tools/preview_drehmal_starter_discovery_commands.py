@@ -101,8 +101,15 @@ def select_candidates(data):
         raise ValueError("Pinned starter/discovery isolated candidate set drifted")
     return targets
 
-def validate_copy(world):
-    world=gamemode.validate_copy(world)
+def validate_copy(world,composite=False,original_level_required=True):
+    world=gamemode.validate_copy(world,original_level_required=original_level_required)
+    if composite:
+        for prerequisite in (regions.RECEIPT,gamemode.RECEIPT,
+                             "turnbound-auto-root-preview.json",
+                             "turnbound-weapon-reward-preview.json"):
+            if not (world/prerequisite).is_file() or (world/prerequisite).is_symlink():
+                raise ValueError("Incomplete five-boundary prerequisite for offline experiment")
+        return world
     for suspect in (regions.RECEIPT,regions.BACKUP,
                     gamemode.RECEIPT,gamemode.BACKUP,
                     "turnbound-weapon-reward-preview.json",
@@ -111,8 +118,8 @@ def validate_copy(world):
             raise ValueError("Other preview is active; stage an independent fresh world copy")
     return world
 
-def preflight(world,targets):
-    world=validate_copy(world)
+def preflight(world,targets,composite=False):
+    world=validate_copy(world,composite=composite)
     if (world/RECEIPT).exists() or (world/BACKUP).exists():
         raise ValueError("Existing starter/discovery preview must be restored")
     grouped=collections.defaultdict(lambda:collections.defaultdict(list))
@@ -132,9 +139,9 @@ def preflight(world,targets):
         raise ValueError("Unexpected target region count")
     return changes
 
-def apply(world,targets):
-    world=validate_copy(world)
-    changes=preflight(world,targets)
+def apply(world,targets,composite=False):
+    world=validate_copy(world,composite=composite)
+    changes=preflight(world,targets,composite=composite)
     backup=world/BACKUP
     receipt=world/RECEIPT
     backup.mkdir()
@@ -166,8 +173,8 @@ def apply(world,targets):
             raise ValueError("Isolated copied region SHA verification failed")
     return record
 
-def verify(world):
-    world=gamemode.validate_copy(world)
+def verify(world,composite=False):
+    world=validate_copy(world,composite=composite,original_level_required=not composite)
     backup=world/BACKUP
     receipt=world/RECEIPT
     if not receipt.is_file() or receipt.is_symlink() or not backup.is_dir():
@@ -192,9 +199,9 @@ def verify(world):
         raise ValueError("Preview record regions missing")
     return result
 
-def restore(world):
-    world=gamemode.validate_copy(world)
-    record=verify(world)
+def restore(world,composite=False):
+    world=validate_copy(world,composite=composite)
+    record=verify(world,composite=composite)
     for rel,hashes in record["regions"].items():
         original=(world/BACKUP/rel).read_bytes()
         regions.write_atomic(world/rel,original)

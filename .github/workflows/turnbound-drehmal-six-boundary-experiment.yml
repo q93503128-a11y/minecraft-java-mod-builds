@@ -1,0 +1,84 @@
+name: TURNBOUND Drehmal five plus starter offline integration experiment
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-six-boundary-experiment.yml'
+      - 'projects/turnbound/tools/prepare_drehmal_isolated_copy.py'
+      - 'projects/turnbound/tools/preview_drehmal_starter_discovery_commands.py'
+      - 'projects/turnbound/tools/test_prepare_drehmal_isolated_copy.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reversible-composite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic six-stage and standalone isolation regression tests
+        working-directory: projects/turnbound
+        run: |
+          python3 -m unittest discover -s tools -p 'test_prepare_drehmal_isolated_copy.py'
+          python3 -m unittest discover -s tools -p 'test_preview_drehmal_starter_discovery_commands.py'
+      - name: Download pinned metadata only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Extract official map and stage non-activated independent copy
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/source-shards" --world-dir "$RUNNER_TEMP/drehmal-original"
+          python3 tools/drehmal_pack_boundary.py stage --source "$RUNNER_TEMP/drehmal-original" --destination "$RUNNER_TEMP/six-stage-experiment"
+      - name: Inspect five plus experimental starter stage and restore exactly
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          w="$RUNNER_TEMP/six-stage-experiment"
+          aux=build/original-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/original-graph/build/drehmal-official-2.2.2f-summary.json
+          pos=build/original-triggers/command-trigger-positions.json
+          direct=build/direct-source-review/direct-gameplay-review.json
+          py=tools/prepare_drehmal_isolated_copy.py
+          python3 "$py" inspect --world-copy "$w" --aux "$aux" --graph "$graph" --positions "$pos" --include-gamemode --include-starter-experiment --direct-report "$direct" --output build/six-stage-preflight.json
+          python3 "$py" prepare --world-copy "$w" --aux "$aux" --graph "$graph" --positions "$pos" --include-gamemode --include-starter-experiment --direct-report "$direct" --output build/six-stage-prepared.json
+          python3 "$py" verify --world-copy "$w" --output build/six-stage-verified.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=lambda name:json.loads((Path('build')/('six-stage-'+name+'.json')).read_text())
+          p,v=d('prepared'),d('verified')
+          assert p==v and p['status']=='SIX_BOUNDARIES_PRESENT_VERIFIED_OFFLINE_EXPERIMENT'
+          assert p['starter_discovery_commands']==24 and p['starter_discovery_region_files']==4
+          assert p['direct_gamemode_commands']==29 and p['terminus_command_blocks']==62
+          assert p['map_separation_complete'] is False and p['starter_mechanisms_safe_for_play'] is False
+          print('PASS: five plus 24 sixth-stage OFFLINE hash-overlay experiment; NO GAMEPLAY CLAIM')
+          PY
+          python3 "$py" restore --world-copy "$w" --output build/six-stage-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('build/six-stage-restored.json').read_text())
+          assert r['status']=='ALL_SIX_BOUNDARIES_RESTORED_EXACTLY_OFFLINE'
+          print('PASS: six-stage copied world restored exactly; original remains unchanged')
+          PY
+      - name: Upload metadata only, never map data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-six-stage-offline-experiment
+          path: |
+            projects/turnbound/build/six-stage-preflight.json
+            projects/turnbound/build/six-stage-prepared.json
+            projects/turnbound/build/six-stage-verified.json
+            projects/turnbound/build/six-stage-restored.json
+          retention-days: 14
+          if-no-files-found: warn
