@@ -1,0 +1,103 @@
+name: TURNBOUND Drehmal 1.20.1 dedicated server start scene comparison
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-start-scene-runtime.yml'
+      - 'projects/turnbound/tools/probe_drehmal_start_runtime.py'
+      - 'projects/turnbound/tools/test_probe_drehmal_start_runtime.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  scene-compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Test runtime probe invariants without game client
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_probe_drehmal_start_runtime.py'
+      - name: Retrieve only SHA-pinned original metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Extract verified official source into disposable runner filesystem
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/source-shards" --world-dir "$RUNNER_TEMP/official-original"
+      - name: Run Fabric 1.20.1 dedicated-server scene probes sequentially
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 32
+        run: |
+          set -euo pipefail
+          map="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/scene-probe-copy"
+          aux=build/original-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/original-graph/build/drehmal-official-2.2.2f-summary.json
+          positions=build/original-triggers/command-trigger-positions.json
+          direct=build/direct-source-review/direct-gameplay-review.json
+          for stage in six seven; do
+            python3 tools/drehmal_pack_boundary.py stage --source "$map" --destination "$copy"
+            python3 tools/prepare_drehmal_isolated_copy.py prepare --world-copy "$copy" \
+              --aux "$aux" --graph "$graph" --positions "$positions" \
+              --include-gamemode --include-starter-experiment --direct-report "$direct" \
+              --output "build/scene-prepared-$stage.json"
+            if [ "$stage" = seven ]; then
+              python3 tools/verify_drehmal_start_chain_isolation.py apply \
+                --world-copy "$copy" --source-aux "$aux" --output build/scene-seven-overlay.json
+            fi
+            python3 tools/probe_drehmal_start_runtime.py --project . \
+              --world-copy "$copy" --stage "$stage" --output "build/scene-runtime-$stage.json"
+            rm -rf -- "$copy"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          folder=Path("build")
+          read=lambda variant:json.loads((folder/f"scene-runtime-{variant}.json").read_text())
+          six,seven=read("six"),read("seven")
+          assert six["scene_before_sha256"]==seven["scene_before_sha256"]
+          assert six["start_command_blocks_empty"]==24 and seven["start_command_blocks_empty"]==57
+          assert six["dedicated_server_started"] and seven["dedicated_server_started"]
+          assert six["force_loaded_start_area"] and seven["force_loaded_start_area"]
+          assert six["dedicated_server_stopped_cleanly"] and seven["dedicated_server_stopped_cleanly"]
+          summary={
+            "status":"TWO_SEQUENTIAL_FABRIC_DEDICATED_SERVERS_VERIFIED",
+            "minecraft":"1.20.1","tested_variants":["six","seven"],
+            "same_initial_scene_blockstates":True,
+            "six_boundary_scene_changes":six["scene_changes_excluding_injections"],
+            "seven_boundary_scene_changes":seven["scene_changes_excluding_injections"],
+            "comparative_mechanism_safety_proven":False,
+            "human_playtested":False,"multiplayer_tested":False,
+            "world_activated_as_turnbound":False,"map_separation_complete":False
+          }
+          (folder/"scene-runtime-comparison.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary))
+          PY
+      - name: Upload derived comparison metadata ONLY, not original files or internal server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-server-scene-comparison
+          path: |
+            projects/turnbound/build/scene-runtime-six.json
+            projects/turnbound/build/scene-runtime-seven.json
+            projects/turnbound/build/scene-runtime-comparison.json
+          retention-days: 14
+          if-no-files-found: warn
