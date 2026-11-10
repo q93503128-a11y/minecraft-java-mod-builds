@@ -1,5 +1,8 @@
 # TURNBOUND — Rebuild project contract
 
+> **최신 Drehmal 맵 분리 검증(2026-11-10):** [원작 시작 위치 비정상 복귀 시계열·대조 정본](DREHMAL_ENTRY_POSITION_DISPLACEMENT_TRIAGE.md). 공식 2.2.2f의 독립 7단계 사본에서 RCON 위치 이동 후 수평 **210.345블록** 복귀는 command block ON/OFF 모두 동일([#42795308304](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42795308304)); 합성 flat world에서는 재현 안 됨([#42796956789](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42796956789)); 공식 지도에서 vanilla-like position packet을 보내도 동일([#42798205522](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42798205522)). 따라서 원작 명령 블록이나 봇 ACK만 원인으로 단정 금지. **실제 CI 지점 발/머리 충돌과 서버 이동·업적 루트 추가 검사가 다음 우선순위.** 프로덕션 전투/캐릭터 구현을 우선하지 않고, 맵 분리 완료/정식 START 승인도 선언하지 않는다.
+
+
 > **2026-11-10 실제 Drehmal 시설 콜백 검증 최신 결과:** [Actions #42788411203 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42788411203)에서 7·8단계 임시 공식 맵의 가상 플레이어 2명씩으로 Foundry/Godmachine/Av'Sal 원작 **업적 콜백 강제 호출**이 동일한 점수판 상태 변경을 남기는지 관측했다. 실제 시설 조작은 미검증. 또한 시험용 START 인접 위치에서 X+62,Y-46,Z+201 이동이 양쪽 모두 발생, 원인은 불명확. **게임 시작 좌표를 승인하거나 맵 분리 완료로 선언하지 않는다.** [현행 분리 보고서](DREHMAL_FACILITY_CALLBACK_RUNTIME.md). 새 캐릭터/전투 콘텐츠 개발보다 맵 분리 검증이 우선이다.
 
 

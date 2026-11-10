@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 시설 콜백 7/8단계 공식 월드 실서버 교차 검사
 
+> **2026-11-10 위치 문제 후속 조사:** [정본](DREHMAL_ENTRY_POSITION_DISPLACEMENT_TRIAGE.md) / [공식 명령 블록 ON/OFF #42795308304 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42795308304) / [합성 평지 프로토콜 #42796956789 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42796956789) / [공식 지도 위치·진척도 비교 #42798205522 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42798205522). 이동은 **명령 블록 OFF 및 일반 위치 패킷 전송 시에도 재현**. 첫 접속 위치 근처로 되돌아오는 현상은 확인했으나 정확한 발생 기작(블록 충돌, 원작 콜백, 서버 위치 보정 등)은 미확정이다. 아래 기존 기록의 원인 미확정 판정 유지.
+
+
 > 2026-11-10 · 브랜치 `turnbound-content-rebuild` · `projects/turnbound/` · **MAP SEPARATION COMPLETE: NO**
 
 ## 실제 검증 원본과 실행

@@ -1,5 +1,8 @@
 # TURNBOUND — 현재 게임 기획 정본 인덱스
 
+> **맵 분리 우선(2026-11-10 최신):** [시작 위치 복귀 진단](DREHMAL_ENTRY_POSITION_DISPLACEMENT_TRIAGE.md)에서 공식 7단계 사본의 수평 210.345블록 복귀가 명령 블록 OFF·일반 위치 패킷 ACK 상태에서도 반복됨을 확인했다. 평지 봇 대조에서는 재현 안 됨. **원인은 여전히 불명확**, 실험 좌표는 승인된 게임 START가 아님. 지형·퍼즐·원작 코드 보존 검증이 끝나기 전 캐릭터/전투 콘텐츠를 앞당기지 않는다.
+
+
 > **2026-11-10 지도 분리 신규 검증:** [시설 콜백 검증](DREHMAL_FACILITY_CALLBACK_RUNTIME.md) / [실제 Fabric 공식 복사본 7/8단계 #42788411203 성공](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42788411203). Foundry/Godmachine/Av'Sal의 업적 reward 콜백을 임시 플레이어에 강제 grant하면 두 단계 모두 점수판 변경이 재현된다. **시설 조작 자체는 미검증**이다. CI 위치 강제 변위 X+62,Y-46,Z+201의 원인을 추적해야 한다. 원작 게임 시스템 전체 분리는 아직 아니며 정식 START·빠른 이동·퍼즐 정상 작동을 선언하지 않는다.
 
 
