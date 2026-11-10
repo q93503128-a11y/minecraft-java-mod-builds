@@ -1,5 +1,8 @@
 # Drehmal 원작 시스템 분리 — 현재 검증 범위
 
+> **2026-11-10 원작 자동 위치 복귀 경로 선별 차단 검증:** [primordial/root → players:sethost 실서버 원인 확인 및 제9 가역 분리 정본](DREHMAL_PRIMORDIAL_ENTRY_REWARD_NINTH.md). [원작 데이터팩 ON/OFF #42814595461 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42814595461) 이후 [원작 보상 함수 연결 **한 개만** 제거한 2인 실서버 비교 #42817029748 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42817029748)에서 원작 데이터팩은 두 경우 모두 **활성**, 두 서버 모두 **reload** 조건인 상태로, `advancements:primordial/root`의 보상 `players:sethost`를 해제한 쪽의 수평 이동이 두 플레이어 모두 **0블록**으로 사라졌다(유지 사본 공중 210.345·바닥 213.214). [제9단계 독립 7단계 사본 적용/검증/정확 복구 #42818384756 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42818384756). **원작 함수/다른 원본 ZIP member는 그대로**, 원본 SHA 유지. 단, **기존 8단계와 9단계는 아직 결합된 결과가 아니고**, 실제 시설 조작·시작 좌표·멀티플레이·전체 맵 분리는 **미검증**. 다음도 캐릭터/전투 콘텐츠가 아니라 맵 분리·시설 보존이 우선.
+
+
 > **2026-11-10 후속 실제 시설 콜백 실서버 관측:** [#42788411203 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42788411203). 공식 v2.2.2f 복사본 7/8단계에서 각각 2인 봇, START 명령 57개 차단 유지, 강제 업적 콜백 Foundry(점수판 변경 2), Godmachine(1), Av'Sal(1) 비교. 이 세 콜백은 두 단계 모두 서버 측 점수판 변경이 발생했다. **실제 레버/터미널 이동·퍼즐 보존과 전체 원작 기능 차단은 미검증**. 두 사본 CI 위치가 동일하게 X+62,Y-46,Z+201 이동; 원인 불명, 게임 START 승인 0건. [검증 상세](DREHMAL_FACILITY_CALLBACK_RUNTIME.md).
 
 

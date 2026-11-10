@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-10 원작 자동 위치 복귀 경로 선별 차단 검증:** [primordial/root → players:sethost 실서버 원인 확인 및 제9 가역 분리 정본](DREHMAL_PRIMORDIAL_ENTRY_REWARD_NINTH.md). [원작 데이터팩 ON/OFF #42814595461 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42814595461) 이후 [원작 보상 함수 연결 **한 개만** 제거한 2인 실서버 비교 #42817029748 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42817029748)에서 원작 데이터팩은 두 경우 모두 **활성**, 두 서버 모두 **reload** 조건인 상태로, `advancements:primordial/root`의 보상 `players:sethost`를 해제한 쪽의 수평 이동이 두 플레이어 모두 **0블록**으로 사라졌다(유지 사본 공중 210.345·바닥 213.214). [제9단계 독립 7단계 사본 적용/검증/정확 복구 #42818384756 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42818384756). **원작 함수/다른 원본 ZIP member는 그대로**, 원본 SHA 유지. 단, **기존 8단계와 9단계는 아직 결합된 결과가 아니고**, 실제 시설 조작·시작 좌표·멀티플레이·전체 맵 분리는 **미검증**. 다음도 캐릭터/전투 콘텐츠가 아니라 맵 분리·시설 보존이 우선.
+
+
 > **2026-11-10 공식 Drehmal 실제 서버 공중/바닥 대조 검증:** [지형·착지/공통 복귀 최신 정본](DREHMAL_TELEPORT_FOOTPRINT_SERVER_COMPARISON.md). 원본/7단계 복사본의 실제 블록 팔레트를 비교하여 기존 Y223 목표가 **공중**임을 확인. 그 근처 **Y219의 purple_concrete 바닥 + 발/머리 공기**인 별도 시험 위치를 확보하고, [CI #42808944435 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42808944435)에서 2인 동시 실측한 결과 **공중·바닥 위치 모두 약 1~1.6초 후 정확히 같은 (26520.5,177,-84.5) 좌표로 복귀**했다(각 수평 210.345/213.214블록). 명령 블록 OFF, 57 START 명령 차단, TURNBOUND 활성 마커 없음. 따라서 **공중 위치만을 원인으로 간주하지 않으며**, 다음 대상은 원작 남은 동적 데이터팩/서버 공통 이동 경로의 분리다. **맵 분리 완료·게임 START 승인·시설 기능 검증은 여전히 NO.**
 
 
