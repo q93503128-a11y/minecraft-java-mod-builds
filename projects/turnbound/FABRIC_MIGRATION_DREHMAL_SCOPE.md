@@ -75,3 +75,8 @@ See [DREHMAL_DATA_PACK_SEPARATION.md](DREHMAL_DATA_PACK_SEPARATION.md). Added a 
 - [Battle session / Fabric transport](BATTLE_SESSION_FABRIC_BRIDGE.md) includes validated actor ownership, session ID, revision, dimension check and per-participant snapshots.
 - [Build TURNBOUND #1072](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568147041) PASS for pure-session/Map-audit tests and Fabric build. This verifies compile/API linkage, not actual in-game multiplayer.
 - Official Drehmal v2.2.2f datapack has not been edited or disabled.
+
+
+## 2026-11-10 후속 서버 소유 진입·체크포인트 구현
+
+[Build TURNBOUND #42748867041 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42748867041), [빈 전용 서버 마커 감지·안전 비활성 #42749364808 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42749364808). 별도 marker + **승인된 entry JSON**이 있을 때만 첫 진입 이동을 활성화하는 코드를 구현했고 UUID별 체크포인트 저장/복귀·안전 좌표 검사를 추가했다. START/리스폰 좌표는 사용자/맵 실측 승인이 없어 0건이며 원작 파일을 변경하지 않았다. 사람 또는 실제 Minecraft 플레이어 연결, 문·레버·포탈 동작, 실제 패배 후 복귀와 멀티플레이는 **NOT TESTED**. [후속 현행 설명](TURNBOUND_ENTRY_CHECKPOINT_SERVER.md). 과거 미검사 기록은 해당 이력의 상태다.

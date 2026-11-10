@@ -71,3 +71,8 @@
 **판정:** DEDICATED SERVER SCENE SMOKE VERIFIED. STRUCTURAL FUNCTIONALITY / PLAYER JOIN / RESPAWN / MULTIPLAYER / GAMEPLAY **NOT TESTED**. 실제 플레이 월드로 승격하지 않는다.
 
 **다음 실작업:** 두 사본 각각에서 실제 플레이어가 오리지널 입장 기구를 작동시키는 실측 경로 마련, server-authoritative TURNBOUND 시작 위치/리스폰의 승인된 위치 확인, 원작 기타 장치·업적·점수판 재진입 차단. 실행 조건/플레이어 효과를 검증하지 않은 원작 코드 재사용 금지.
+
+
+## 2026-11-10 후속 TURNBOUND 서버 소유 시작·리스폰 경로
+
+[Fabric 컴파일/테스트 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42748867041), [실제 폐기용 마커 월드의 Fabric 전용 서버 부팅 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42749364808). TURNBOUND 자체 UUID별 시작·체크포인트 영속 저장 및 패배 복귀 진입점을 구현했으나 **확정된 공식 Drehmal START 위치 좌표가 아직 없고, 실제 플레이어/시설/리스폰 테스트를 하지 않았다**. 따라서 기존 7/8단계 가역 실험 세계를 플레이 가능하다고 승격하지 않는다. [설계 및 검증 상태](TURNBOUND_ENTRY_CHECKPOINT_SERVER.md).
