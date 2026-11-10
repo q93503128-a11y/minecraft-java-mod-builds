@@ -10,9 +10,11 @@ import io.github.q93503128.turnbound.combat.FieldEncounterClaims;
 import io.github.q93503128.turnbound.combat.SkillDefinition;
 import io.github.q93503128.turnbound.combat.SkillEffect;
 import io.github.q93503128.turnbound.combat.TargetRule;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.entity.EntityType;
@@ -30,6 +32,7 @@ import static net.minecraft.server.command.CommandManager.literal;
  * The zombie and all combatants are synthetic fixture data only.
  */
 public final class TurnboundFieldProbeInitializer implements ModInitializer {
+    private static final Map<UUID, CombatantState> TEST_HERO = new HashMap<>();
     private static ServerPlayerEntity player(net.minecraft.server.command.ServerCommandSource source,
                                              String name) {
         ServerPlayerEntity p = source.getServer().getPlayerManager().getPlayer(name);
@@ -70,12 +73,28 @@ public final class TurnboundFieldProbeInitializer implements ModInitializer {
                                                             new BattleStats(100,10,10,80),
                                                             "basic",List.of(basic)),
                                                     CombatantSide.ENEMY,0);
+                                            TEST_HERO.put(contacted.getUuid(), hero);
                                             return new TurnboundFieldEncounterService.EncounterPlan(
                                                     new BattleState(List.of(hero, enemy)),
                                                     Map.of(contacted.getUuid(), Set.of("hero")));
                                         });
                                 if (!ok) throw new IllegalStateException("CI field registration refused");
                                 source.sendFeedback(() -> Text.literal("CI_FIELD_REGISTERED"), false);
+                                return 1;
+                            })));
+            dispatcher.register(literal("tb_ci_field_defeat")
+                    .requires(source -> source.hasPermissionLevel(4))
+                    .then(argument("player", StringArgumentType.word())
+                            .executes(context -> {
+                                var source = context.getSource();
+                                var target = player(source, StringArgumentType.getString(context,"player"));
+                                CombatantState hero = TEST_HERO.get(target.getUuid());
+                                if (hero == null || !TurnboundBattleBridge.inBattle(
+                                        source.getServer(), target.getUuid())) {
+                                    throw new IllegalStateException("Missing server-owned field session");
+                                }
+                                hero.forceDown();
+                                source.sendFeedback(() -> Text.literal("CI_FIELD_DEFEAT_APPLIED"), false);
                                 return 1;
                             })));
             dispatcher.register(literal("tb_ci_field_status")

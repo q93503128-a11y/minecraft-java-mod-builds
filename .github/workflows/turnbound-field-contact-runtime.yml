@@ -107,11 +107,13 @@ jobs:
           assert d["status"]=="SYNTHETIC_FIELD_CONTACT_OPENED_SERVER_BATTLE"
           assert all(d[k] is True for k in (
             "two_clients_connected","visible_warning_delay_not_bypassed",
-            "physical_contact_claimed_battle","second_player_not_automatically_claimed"))
+            "physical_contact_claimed_battle","second_player_not_automatically_claimed",
+            "field_battle_defeat_return_verified","defeat_item_preserved",
+            "other_player_unaffected_by_defeat"))
           assert not any(d[k] for k in (
             "official_drehmal_loaded","fixture_shipped_in_production",
             "authored_game_enemy_created","human_playtested","real_gameplay_multiplayer_tested"))
-          print('PASS: server-authorized contact opens actual turn-battle session after notice')
+          print('PASS: authorized field contact opens battle; terminal defeat returns to checkpoint with inventory preserved')
           PY
       - name: Upload derived synthetic observations only (no logs/map/third-party bytes)
         if: always()

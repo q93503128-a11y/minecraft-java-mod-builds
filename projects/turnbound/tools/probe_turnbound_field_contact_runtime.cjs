@@ -12,6 +12,8 @@ const proof={status:'INCOMPLETE',minecraft:'1.20.1',
   human_playtested:false,real_gameplay_multiplayer_tested:false,
   two_clients_connected:false,visible_warning_delay_not_bypassed:false,
   physical_contact_claimed_battle:false,second_player_not_automatically_claimed:false,
+  field_battle_defeat_return_verified:false,defeat_item_preserved:false,
+  other_player_unaffected_by_defeat:false,
   observations:[]};
 const names=['TBAliceProbe','TBBobProbe'];
 const start=[10.5,70,10.5], nearEnemy=[16.5,70,10.5],contact=[20.2,70,10.5];
@@ -97,6 +99,21 @@ async function run(){
   await delay(900);
   insist((await status(names[1]))==='FREE','Second player claimed occupied representative');
   proof.second_player_not_automatically_claimed=true;
+  await send('give '+names[0]+' minecraft:diamond 1');
+  await poll(async()=>(await send('data get entity '+names[0]+' Inventory'))
+    .includes('minecraft:diamond'),'diamond before synthetic battle defeat');
+  const forced=await send('tb_ci_field_defeat '+names[0]);
+  insist(forced.includes('CI_FIELD_DEFEAT_APPLIED'),
+    'Server-owned terminal defeat was not authored');
+  await at(names[0],start,'Field battle defeat returned Alice to first checkpoint');
+  proof.field_battle_defeat_return_verified=true;
+  insist((await send('data get entity '+names[0]+' Inventory')).includes('minecraft:diamond'),
+    'Defeat removed synthetic inventory item');
+  proof.defeat_item_preserved=true;
+  const bobPos=await pos(names[1]);
+  insist(close(bobPos,[20.5,70,11.4]),'Other player moved due to Alice defeat');
+  insist((await status(names[1]))==='FREE','Bob falsely joined Alice defeated session');
+  proof.other_player_unaffected_by_defeat=true;
 }
 async function main(){
   try{await run();proof.status='SYNTHETIC_FIELD_CONTACT_OPENED_SERVER_BATTLE';}
