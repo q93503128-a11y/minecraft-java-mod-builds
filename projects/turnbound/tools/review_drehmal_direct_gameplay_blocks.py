@@ -25,6 +25,7 @@ TARGET_ROOTS = ("give", "advancement", "effect", "kill", "summon")
 EXPECTED = {"give":37, "advancement":3, "effect":127, "kill":20, "summon":81}
 RESOURCE = re.compile(r"^[a-z0-9_.-]+:[a-z0-9_./-]+$")
 RESOURCE_HEAD = re.compile(r"^([a-z0-9_.-]+:[a-z0-9_./-]+)(?=[{\[]|$)", re.I)
+VANILLA_RESOURCE_HEAD = re.compile(r"^([a-z0-9_.-]+)(?=[{\[]|$)", re.I)
 SELECTORS = re.compile(r"^@([apser])(?:\[|$)", re.I)
 
 def digest(data):
@@ -60,7 +61,11 @@ def selector_class(token):
 
 def item_id(token):
     match=RESOURCE_HEAD.match(token)
-    return match.group(1).lower() if match else None
+    if match:
+        return match.group(1).lower()
+    # 1.20.1 permits unqualified vanilla registry identifiers, including NBT-bearing items.
+    unqualified=VANILLA_RESOURCE_HEAD.match(token)
+    return "minecraft:"+unqualified.group(1).lower() if unqualified else None
 
 def parse_direct_effect(command,root):
     # Only top-level verbs are parsed. Execution predicates and NBT are *never*

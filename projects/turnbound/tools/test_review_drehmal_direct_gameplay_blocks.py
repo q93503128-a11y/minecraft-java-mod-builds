@@ -11,6 +11,12 @@ class ReviewDirectTests(unittest.TestCase):
         self.assertEqual(x["resource_id"],"minecraft:diamond_sword")
         self.assertEqual(x["target_class"],"NEAREST_PLAYER")
         self.assertNotIn("secret",str(x))
+    def test_unqualified_vanilla_registry_id(self):
+        self.assertEqual(m.item_id("stone_pickaxe{Enchantments:[{id:\"minecraft:unbreaking\",lvl:1}]}"),
+                         "minecraft:stone_pickaxe")
+        self.assertEqual(m.item_id("written_book"),"minecraft:written_book")
+        self.assertIsNone(m.item_id("{unparseable}"))
+
     def test_advancement_scope(self):
         x=m.parse_direct_effect("advancement grant @a only story:step_one","advancement")
         self.assertEqual(x["resource_id"],"story:step_one")
