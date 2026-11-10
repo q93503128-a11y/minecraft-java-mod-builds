@@ -121,7 +121,7 @@ def directed(view,pos):
             incoming.append(near)
     return incoming,outgoing
 
-def chain(view,pos):
+def connected(view,pos):
     pending=[pos]; visited=set(); edges=set()
     while pending and len(visited)<64:
         current=pending.pop()
@@ -134,7 +134,11 @@ def chain(view,pos):
         for other in outgoing:
             edges.add((current,other))
             if other not in visited: pending.append(other)
-    return len(visited),len(edges),bool(pending)
+    return visited,edges,bool(pending)
+
+def chain(view,pos):
+    visited,links,truncated=connected(view,pos)
+    return len(visited),len(links),truncated
 
 def vicinity(view,pos):
     counts=collections.Counter()
@@ -152,6 +156,8 @@ def vicinity(view,pos):
 def audit(world,targets):
     view=World(anvil.validate_world(Path(world)))
     entries=[]
+    target_positions={pos for _,_,pos,_,_ in targets}
+    components={}
     for region,slot,pos,command_hash,actor_id in sorted(targets):
         x,y,z=pos
         if (actor_id!="minecraft:command_block" or
@@ -164,14 +170,52 @@ def audit(world,targets):
         if (actor.get("id")!=actor_id or not isinstance(source,str) or
                 hashlib.sha256(source.encode()).hexdigest()!=command_hash):
             raise ValueError("Physical NBT command hash differs")
-        nodes,edges,truncated=chain(view,pos)
+        members,links,truncated=connected(view,pos)
+        component_key=tuple(sorted(members))
+        if component_key not in components:
+            manifest=[]
+            for member in component_key:
+                member_state=view.state(member)
+                member_actor=view.actor(member)
+                original_command=member_actor.get("Command","")
+                if not isinstance(original_command,str):
+                    raise ValueError("Non-string command in source chain")
+                pieces=original_command.lstrip("/").split(maxsplit=1)
+                operation=pieces[0].lower() if pieces else "empty"
+                manifest.append({
+                    "coordinates":list(member),
+                    "block_type":member_state["id"],
+                    "facing":member_state["facing"],
+                    "conditional":member_state["conditional"],
+                    "root_operation":operation,
+                    "included_in_24_targets":member in target_positions,
+                    "auto":member_actor.get("auto"),
+                    "powered":member_actor.get("powered")
+                })
+            components[component_key]={
+                "component_id":len(components)+1,
+                "member_count":len(members),
+                "directed_edge_count":len(links),
+                "truncated":truncated,
+                "target_count":sum(r["included_in_24_targets"] for r in manifest),
+                "conditional_member_count":sum(r["conditional"] for r in manifest),
+                "conditional_successors_of_targets":sum(
+                    src in target_positions and view.state(dst)["conditional"]
+                    for src,dst in links),
+                "other_active_original_commands_after_six_stage":sum(
+                    not r["included_in_24_targets"] and
+                    r["root_operation"] not in ("gamemode","empty")
+                    for r in manifest),
+                "members":manifest
+            }
         near=vicinity(view,pos)
         entries.append({"coordinates":list(pos),"region_file":region,
+                        "component_id":components[component_key]["component_id"],
                         "command_sha256":command_hash,
                         "block_type":state["id"],"facing":state["facing"],
                         "conditional":state["conditional"],"auto":actor.get("auto"),
                         "powered":actor.get("powered"),
-                        "chain_nodes":nodes,"directed_chain_edges":edges,
+                        "chain_nodes":len(members),"directed_chain_edges":len(links),
                         "trace_truncated":truncated,
                         "adjacent_command_blocks":near["adjacent_command"],
                         "nearby_signals":near["signal"],
@@ -186,6 +230,11 @@ def audit(world,targets):
             "conditional_targets":sum(e["conditional"] for e in entries),
             "targets_near_signals":sum(e["nearby_signals"]>0 for e in entries),
             "truncated_chains":sum(e["trace_truncated"] for e in entries),
+            "component_count":len(components),
+            "original_chain_commands_still_present_in_six_stage":sum(
+                c["other_active_original_commands_after_six_stage"]
+                for c in components.values()),
+            "components":list(components.values()),
             "integration_safe_for_play":False,
             "world_modified":False,"original_code_reused":False,"playtested":False,
             "note":"Static block states, block entities and nearby wiring; mechanisms require runtime validation.",
