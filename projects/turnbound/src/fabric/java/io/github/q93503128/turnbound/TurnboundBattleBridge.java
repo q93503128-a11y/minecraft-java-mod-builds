@@ -138,6 +138,12 @@ public final class TurnboundBattleBridge {
         return session;
     }
 
+    /** Read-only server-side eligibility: an already engaged player cannot be claimed twice. */
+    public static boolean inBattle(MinecraftServer server, UUID playerId) {
+        BattleSessionRegistry registry = SERVERS.get(server);
+        return registry != null && registry.sessionFor(playerId) != null;
+    }
+
     public static void close(MinecraftServer server, long sessionId) {
         BattleSessionRegistry registry = SERVERS.get(server);
         if (registry == null) return;
@@ -151,6 +157,7 @@ public final class TurnboundBattleBridge {
             }
         }
         registry.close(sessionId);
+        TurnboundFieldEncounterService.onBattleClosed(server, sessionId);
         BattleDefeatRecoveryLedger recovery = DEFEAT_RECOVERY.get(server);
         if (recovery != null) recovery.discard(sessionId);
     }
