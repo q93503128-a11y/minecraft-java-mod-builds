@@ -77,7 +77,7 @@ public final class TurnboundFieldProbeInitializer implements ModInitializer {
                                 if (!ok) throw new IllegalStateException("CI field registration refused");
                                 source.sendFeedback(() -> Text.literal("CI_FIELD_REGISTERED"), false);
                                 return 1;
-                            }))));
+                            })));
             dispatcher.register(literal("tb_ci_field_status")
                     .requires(source -> source.hasPermissionLevel(4))
                     .then(argument("player", StringArgumentType.word())
@@ -88,7 +88,7 @@ public final class TurnboundFieldProbeInitializer implements ModInitializer {
                                 source.sendFeedback(() -> Text.literal(inBattle ? "CI_FIELD_BATTLE" : "CI_FIELD_FREE"),
                                         false);
                                 return 1;
-                            }))));
+                            })));
         });
     }
 }
