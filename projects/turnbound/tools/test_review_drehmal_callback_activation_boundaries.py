@@ -13,6 +13,16 @@ class OriginalCallbackActivationMatrixTests(unittest.TestCase):
         self.assertEqual(r,{"a","b","c","d"})
         self.assertEqual(u,{"unknown"})
 
+    def test_schedule_sources_not_inflated_by_graph_merge(self):
+        from collections import defaultdict
+        schedule=defaultdict(set)
+        schedule["a"].add("b")
+        combined=matrix.merge_schedule_edges({"a":set(),"b":set(),"c":set()},schedule)
+        self.assertEqual(set(schedule),{"a"})
+        self.assertEqual(combined["a"],{"b"})
+        self.assertEqual(combined["b"],set())
+        self.assertEqual(combined["c"],set())
+
     def test_location_impossible_and_structure_preservation(self):
         row={"trigger_types":["minecraft:location"],"review_group":"PLAYER_REWARD_OR_STATE_REVIEW",
              "direct_function_callers":[],"reachable_from_original_auto_roots":False,

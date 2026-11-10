@@ -46,6 +46,10 @@ def traverse(roots,edges,known):
         pending.extend(edges.get(fid,()))
     return visited,unresolved
 
+def merge_schedule_edges(calls,schedule):
+    """Merge without inserting missing source IDs into defaultdict schedule."""
+    return {fid:arcs|schedule.get(fid,set()) for fid,arcs in calls.items()}
+
 def tag(row,categories,link_count,sample_count):
     triggers=set(row["trigger_types"])
     group=row["review_group"]
@@ -114,7 +118,7 @@ def analyze(aux,graph,callbacks,score):
                 e["literal_schedule_count"]<len(set(e["scheduled_target_ids"]))):
             raise ValueError("Unverified original scheduled-function origin")
         schedule[fid].update(e["scheduled_target_ids"])
-    combined={fid:calls[fid]|schedule[fid] for fid in index}
+    combined=merge_schedule_edges(calls,schedule)
     known=set(index)
     direct=collections.defaultdict(list)
     root_ids=set()
