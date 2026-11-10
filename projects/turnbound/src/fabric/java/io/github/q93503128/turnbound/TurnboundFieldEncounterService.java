@@ -189,7 +189,7 @@ public final class TurnboundFieldEncounterService {
     private static boolean canTarget(MinecraftServer server, MobEntity actor, ServerPlayerEntity target) {
         return target != null && target.isAlive() && !target.isSpectator()
                 && !target.isCreative()
-                && target.getServerWorld() == actor.getServerWorld()
+                && target.getServerWorld() == actor.getWorld()
                 && !TurnboundBattleBridge.inBattle(server, target.getUuid());
     }
 
