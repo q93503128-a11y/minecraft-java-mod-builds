@@ -1,0 +1,148 @@
+name: TURNBOUND Drehmal facility callback 7-vs-8 copied-map server observation
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-facility-callback-runtime.yml'
+      - 'projects/turnbound/tools/preview_drehmal_nonweapon_callbacks.py'
+      - 'projects/turnbound/tools/probe_drehmal_facility_callback_runtime.py'
+      - 'projects/turnbound/tools/probe_drehmal_map_players.cjs'
+      - 'projects/turnbound/tools/test_probe_drehmal_facility_callback_runtime.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Narrow facility boundary safety tests and protocol dependencies
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_drehmal_facility_callback_runtime.py'
+          python3 -m py_compile tools/probe_drehmal_facility_callback_runtime.py
+          node --check tools/probe_drehmal_map_players.cjs
+          npm install --prefix "$RUNNER_TEMP/drehmal-protocol-bots" --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+      - name: Retrieve SHA-pinned original metadata and 181 callback classification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+          gh run download 42605435141 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-callback-scheduler-review --dir projects/turnbound/build/callback-review
+      - name: Reconstruct official v2.2.2f world from three verified release parts
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/source-parts" --world-dir "$RUNNER_TEMP/original"
+          python3 tools/drehmal_pack_boundary.py stage --source "$RUNNER_TEMP/original" --destination "$RUNNER_TEMP/staged-copy"
+      - name: Observe three protected facility advancement callbacks on official stage 7 and 8 copies
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          export TURNBOUND_PROBE_NODE_MODULES="$RUNNER_TEMP/drehmal-protocol-bots/node_modules"
+          source="$RUNNER_TEMP/original"
+          copy="$RUNNER_TEMP/staged-copy"
+          aux=build/original-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/original-graph/build/drehmal-official-2.2.2f-summary.json
+          positions=build/original-triggers/command-trigger-positions.json
+          direct=build/direct-source-review/direct-gameplay-review.json
+          cb=build/callback-review/callback-schedule-risk-review.json
+          for stage in seven eight; do
+            if [ "$stage" = eight ]; then
+              python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+            fi
+            python3 tools/prepare_drehmal_isolated_copy.py prepare --world-copy "$copy" \
+              --aux "$aux" --graph "$graph" --positions "$positions" \
+              --include-gamemode --include-starter-experiment --direct-report "$direct" \
+              --output "build/map-client-$stage-base.json"
+            python3 tools/verify_drehmal_start_chain_isolation.py apply --world-copy "$copy" \
+              --source-aux "$aux" --output "build/map-client-$stage-seven.json"
+            if [ "$stage" = eight ]; then
+              python3 tools/preview_drehmal_nonweapon_callbacks.py apply --world-copy "$copy" \
+                --source-review "$cb" --output build/map-client-eight-callback.json
+            fi
+            python3 tools/probe_drehmal_facility_callback_runtime.py --project . --world-copy "$copy" \
+              --stage "$stage" --output "build/map-client-$stage-observation.json"
+            rm -rf -- "$copy"
+          done
+          python3 - <<'PY'
+          import json,hashlib,os
+          from pathlib import Path
+          read=lambda x:json.loads(Path(f"build/map-client-{x}-observation.json").read_text())
+          a,b=read("seven"),read("eight")
+          for d in (a,b):
+              assert d["status"]=="OFFICIAL_COPY_FACILITY_CALLBACK_COMMANDS_OBSERVED"
+              assert d["server_started"] and d["server_stopped_cleanly"]
+              assert d["protocol_players_connected"]==2
+              assert d["facility_commands_all_accepted"] is True
+              assert len(d["facility_callback_tests"])==3
+              assert {x["facility"] for x in d["facility_callback_tests"]}=={
+                  "foundry_lever","godmachine_button","avsal_terminal"}
+              assert all(x["advancement_accepted"] for x in d["facility_callback_tests"])
+              assert d["start_command_blocks_after_boot"]==57
+              assert not d["map_separation_complete"] and not d["turned_on_turnbound_marker"]
+              assert not d["structure_mechanism_functionality_verified"]
+          world=Path(os.environ["RUNNER_TEMP"])/"original"
+          for p,sha in (
+          ("level.dat","44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"),
+          ("datapacks/hi_drehmal.zip","f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74")
+          ):
+              assert hashlib.sha256((world/p).read_bytes()).hexdigest()==sha
+          def safe_summary(d):
+              return {
+                  "stage":d["stage"],
+                  "connected_clients":d["protocol_players_connected"],
+                  "facility_outcomes":[{
+                      "facility":x["facility"],
+                      "command_accepted":x["advancement_accepted"],
+                      "scoreboard_changed":x["scoreboard"]["changed_entries"],
+                      "tag_changed":x["player_tags_changed"],
+                      "position_changed":x["player_position_changed"]
+                    } for x in d["facility_callback_tests"]],
+                  "scene_changed_positions":d["scene_changes_excluding_synthetic_redstone"],
+                  "teleport_setup_axis_delta":d["after_ci_teleport_axis_delta"],
+                  "ground_below_ci_test_position":d["requested_spot_below_block_id"]
+              }
+          summary={
+              "status":"OFFICIAL_COPY_FACILITY_CALLBACKS_COMPARE_7_VS_8",
+              "seven":safe_summary(a),"eight":safe_summary(b),
+              "same_initial_scene":a["initial_scene_sha256"]==b["initial_scene_sha256"],
+              "original_world_hashes_unchanged":True,
+              "original_game_systems_fully_removed":False,
+              "interacted_with_real_facility_mechanisms":False,
+              "human_playtested":False,"map_separation_complete":False
+          }
+          Path("build/map-client-seven-eight-summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary))
+          PY
+      - name: Upload derived facility metadata only, never map files, commands, scores, logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-facility-callback-observations
+          path: |
+            projects/turnbound/build/map-client-seven-observation.json
+            projects/turnbound/build/map-client-eight-observation.json
+            projects/turnbound/build/map-client-seven-eight-summary.json
+          retention-days: 14
+          if-no-files-found: warn
