@@ -1,0 +1,67 @@
+name: TURNBOUND synthetic Minecraft 1.20.1 teleport protocol control
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-position-protocol-control.yml'
+      - 'projects/turnbound/tools/probe_turnbound_position_ack_flat_bots.cjs'
+      - 'projects/turnbound/tools/probe_turnbound_position_ack_flat.py'
+      - 'projects/turnbound/tools/test_probe_turnbound_position_ack_flat.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  protocol-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Validate synthetic-only control and install isolated bot
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_turnbound_position_ack_flat.py'
+          node --check tools/probe_turnbound_position_ack_flat_bots.cjs
+          python3 -m py_compile tools/probe_turnbound_position_ack_flat.py
+          npm install --prefix "$RUNNER_TEMP/position-protocol" \
+            --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+      - name: Boot disposable FLAT Fabric 1.20.1 server and compare two client packet patterns
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 14
+        run: |
+          set -euo pipefail
+          export TURNBOUND_PROBE_NODE_MODULES="$RUNNER_TEMP/position-protocol/node_modules"
+          python3 tools/probe_turnbound_position_ack_flat.py --project . \
+            --output build/position-control.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("build/position-control.json").read_text())
+          assert d["status"]=="DISPOSABLE_FLAT_PROTOCOL_ACK_CONTROL_PASS"
+          assert len(d["samples"])==6
+          assert d["two_clients_still_online"]
+          assert d["real_minecraft_server_booted"]
+          assert not d["official_drehmal_loaded"]
+          assert not d["map_separation_complete"]
+          print("PASS: two protocol bot modes measured on isolated flat world")
+          PY
+      - name: Upload derived distance observations only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-disposable-position-protocol-control
+          path: projects/turnbound/build/position-control.json
+          retention-days: 14
+          if-no-files-found: warn
