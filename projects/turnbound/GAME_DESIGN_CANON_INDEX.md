@@ -1,5 +1,8 @@
 # TURNBOUND — 현재 게임 기획 정본 인덱스
 
+> **2026-11-10 맵 분리 우선 정본:** [Drehmal 실사용 승인 게이트](DREHMAL_MAP_SEPARATION_ACCEPTANCE.md). 실제 **공식 원본 사본**의 7·8단계 서버에 가상 2인씩 접속 및 원작 특정 업적 보상 콜백 차단 확인([#42772502908 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42772502908)). 그러나 시설·START·원작 잔여 실행 경로 미완이므로 **MAP SEPARATION COMPLETE: NO**. 현 단계 최우선은 분리와 시설 보존이며 신규 캐릭터·전투 콘텐츠 제작을 앞당기지 않는다. 이전 본 문서의 '플레이어 0명' 등은 예전 개별 시험의 역사적 결과다.
+
+
 > 기준일: 2026-11-09 · 작업 정본: `q93503128-a11y/minecraft-java-mod-builds` / `turnbound-content-rebuild` / `projects/turnbound/`
 >
 > **용도:** 여러 대화에 걸친 확정 기획의 빠른 탐색, 오래된 초안과 최신 결정의 경계, 후속 개발 우선순위. 이 문서는 기존 상세 기획서의 증거·구체 내용을 대체하지 않는다. 최신 사용자 확정 결정을 우선 적용하며, 아래의 '미정'을 임의로 확정하지 않는다.

@@ -1,5 +1,8 @@
 # TURNBOUND — Rebuild project contract
 
+> **최우선 작업: Drehmal 맵 분리(2026-11-10 현재 미완료).** [실사용 승인 게이트](DREHMAL_MAP_SEPARATION_ACCEPTANCE.md)를 우선 확인한다. 공식 2.2.2f 맵을 7·8단계로 분리한 **각각의 폐기용 사본**에서 실제 Minecraft Fabric 서버에 가상 플레이어 2명 접속, START 57개 차단 명령 유지, 시작 영역 1,440블록 무변경 및 **한 개 원작 보상 콜백의 태그 효과 차단**을 확인했다([Actions #42772502908 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42772502908)). **이것은 원작 전체 기능 분리·문/포탈/퍼즐 보존·정식 START 선정·실게임 플레이 완료가 아니다.** 다음 우선순위는 원작 시설 실동작 및 남은 원작 서사·보상 분리이며 **캐릭터·몬스터·전투 UI 신규 콘텐츠 제작은 그 이후**다. CI 임시 위치를 게임 시작 좌표로 사용하지 않는다.
+
+
 > **Current game-design decision index**: [GAME_DESIGN_CANON_INDEX.md](GAME_DESIGN_CANON_INDEX.md) is the concise 2026-11-09 status map for user-approved gameplay rules, pending decisions and superseded older proposals. This file remains the technical project contract; earlier appended historical sections may conflict with later approved decisions. Do not treat a stale 'TBD' in an older section as active canon.
 
 > **현행 기술 정본 (2026-11-09, 이전 기록보다 우선)**: 아래 과거 26.2 / NeoForge / Java 25 안내는 역사적 기록이며 현재 개발/설치 기준이 아니다. 현행 게임은 **Minecraft 1.20.1, Fabric 0.16.14, Fabric API 0.92.6+1.20.1, Java 17, Fabric Loom 1.9.2, Gradle 8.12**로 빌드한다. Drehmal: APOTHEOSIS v2.2.2f의 별도 복사 월드를 이용하는 턴제 RPG다. 모든 생존·채굴·건축은 비활성화하는 방향이며, 정식 월드/전투 연동은 아직 미완이다. [전투 세션 브리지](BATTLE_SESSION_FABRIC_BRIDGE.md) · [Drehmal 분리 현황](DREHMAL_DATA_PACK_SEPARATION.md).

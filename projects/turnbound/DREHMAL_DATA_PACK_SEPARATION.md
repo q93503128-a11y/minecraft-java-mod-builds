@@ -1,5 +1,8 @@
 # Drehmal 원작 시스템 분리 — 현재 검증 범위
 
+> **2026-11-10 실제 공식 맵의 가상 2인 접속·7/8단계 비교 검증:** [Actions #42772502908 SUCCESS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42772502908). 공식 원본 SHA 고정 → 7단계/8단계 각각 별도 임시 맵 사본 → 1.20.1 Fabric 서버 두 번 실행, **각 서버에 실제 프로토콜 가상 플레이어 2명 접속**. START 원작 명령 57개 비활성 유지, 시작 영역 1,440블록 전후 변화 0, 지정한 `players:sleep_on_lodahr` 업적 강제 실행 시 **7단계의 원작 태그 변경 관측 / 8단계 미관측**. 두 시험은 안전한 START·문·포탈·퍼즐의 실제 사용/플레이테스트가 아니며, 원작 다른 콜백/스케줄/명령 블록은 계속 조사 대상. 상세 판정: [DREHMAL_MAP_SEPARATION_ACCEPTANCE.md](DREHMAL_MAP_SEPARATION_ACCEPTANCE.md). **최종 분리 미완료**.
+
+
 > **최신 실측 검증(2026-11-09):** 공식 v2.2.2f 3개 ZIP SHA-256 검증 및 원본 데이터팩/명령 블록 분석 성공. 공식 월드를 **별도 복사**하여 `minecraft:load`/`minecraft:tick`의 원작 3개 자동 실행 진입점을 해시 고정 방식으로 차단한 뒤 **데이터팩 바이트까지 동일하게 복원**하는 오프라인 검증 PASS. [원본 분석 #1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42568764777) · [실제 복사본 가역 패치 #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42572004391). 다만 **개별 명령 블록·예약 함수·원작 업적/보상은 아직 활동 가능**하며, 구조물/Terminus/실게임·멀티플레이 검증 전이므로 **최종 맵 분리 완료는 아님**. 아래 이전 '원본 미확인' 문장은 시점별 과거 기록임.
 
 ## 작업 권한 경계 (사용자 명시)

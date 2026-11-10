@@ -1,5 +1,8 @@
 # TURNBOUND — 원작 4개 경계 통합 분리 복사본 준비
 
+> **2026-11-10 후속 실서버 검증:** 공식 2.2.2f **서로 다른 7/8단계 사본**에서 Minecraft Java 프로토콜 플레이어 2명씩 접속, 57개 시작 명령 차단 유지 및 원작 업적 콜백의 태그 효과 차단 비교가 [#42772502908](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42772502908)에서 통과했다. 8단계 오프라인 사본을 실사용 안전으로 승격한 것은 아니다. 자세한 남은 게이트: [DREHMAL_MAP_SEPARATION_ACCEPTANCE.md](DREHMAL_MAP_SEPARATION_ACCEPTANCE.md).
+
+
 이번 단계는 이전의 개별 '적용 후 즉시 복구' 검증을 **일시적으로 보존 가능한 별도 오프라인 월드 사본**의 생성/재검증/복구 절차로 통합한다.
 
 ## 경계
