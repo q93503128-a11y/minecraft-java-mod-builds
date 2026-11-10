@@ -27,6 +27,14 @@ class ReviewDirectTests(unittest.TestCase):
         x=m.parse_direct_effect("summon minecraft:armor_stand ~ ~ ~ {CustomName:'secret'}","summon")
         self.assertEqual(x["resource_id"],"minecraft:armor_stand")
         self.assertNotIn("secret",str(x))
+    def test_no_position_summon_stays_a_review_candidate(self):
+        self.assertEqual(m.parse_direct_effect("summon minecraft:armor_stand ~ ~ ~","summon")["review"],
+                         "PRESERVE_UNTIL_GAMEPLAY_AND_MECHANISM_REVIEW")
+    def test_missing_coordinate_reference_key_is_explicit(self):
+        data={"region_file":"region/r.0.0.mca","chunk_slot":9,"coordinates":None,
+              "command_actor":"minecraft:command_block","command_sha256":"a"*64}
+        self.assertIsNone(m.key(data)[2])
+
     def test_target_scope_never_exports_literal(self):
         self.assertEqual(m.selector_class("privatePlayerName"),"LITERAL_OR_UNPARSED_REVIEW")
     def test_record_key_integrity(self):

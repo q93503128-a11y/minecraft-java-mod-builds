@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 from audit_drehmal_auxiliary_sources import command_shape, region_dimension
-from scan_drehmal_command_blocks import scan_world
+from scan_drehmal_command_blocks import scan_region
 
 LEVEL_SHA = "44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"
 AUX_SHA = "9092055106167e69e55091151acfa2af86ed468b1aa171dcb2dfe07ecd1897ef"
@@ -116,22 +116,53 @@ def source_key(block,world):
             block["id"],digest(block["command"].encode("utf-8")))
 
 def scan_and_verify(world,report):
+    """Reverify all command actors in 72 targeted regions against pinned full audit.
+
+    The earlier official scan covered 2,232 actors; rescanning the entire 5 GB
+    source world a second time takes 10+ minutes. All candidate command bytes
+    and surrounding actors in their *own regions* are verified here. Other
+    region command bytes remain supported only by the pinned first audit.
+    """
     world=Path(world).resolve(strict=True)
     level=world/"level.dat"
     if not level.is_file() or level.is_symlink() or file_digest(level)!=LEVEL_SHA:
         raise ValueError("Not official Drehmal 2.2.2f original world")
-    actual=scan_world(world)
     metadata=report["command_blocks"]
-    if len(actual["command_blocks"])!=2232 or len(actual["warnings"])!=metadata["region_warning_count"]:
-        raise ValueError("Command block or incomplete region scan coverage drift")
     expected_rows=metadata["all_block_metadata"]
-    if len(expected_rows)!=2232:
-        raise ValueError("Incomplete prior original command metadata")
-    old=collections.Counter(key(x) for x in expected_rows)
-    new=collections.Counter(source_key(x,world) for x in actual["command_blocks"])
-    if old!=new or len(old)!=2232:
-        raise ValueError("Command-block source identifiers/locations/hashes drifted")
-    return actual
+    if len(expected_rows)!=2232 or metadata["scanned_command_blocks"]!=2232:
+        raise ValueError("Incomplete official full original audit")
+    selected=[x for x in expected_rows if x["root_operation"] in TARGET_ROOTS]
+    if len(selected)!=sum(EXPECTED.values()):
+        raise ValueError("Incomplete original direct gameplay target inventory")
+    paths={x["region_file"] for x in selected}
+    if len(paths)!=72:
+        raise ValueError("Original review target region set changed")
+    grouped=collections.defaultdict(list)
+    for row in expected_rows:
+        if row["region_file"] in paths:
+            grouped[row["region_file"]].append(row)
+    actors=[]
+    warnings=[]
+    for relative in sorted(paths):
+        rel=Path(relative)
+        if rel.is_absolute() or ".." in rel.parts or not rel.name.endswith(".mca"):
+            raise ValueError("Unsafe source region path")
+        src=world/rel
+        if not src.is_file() or src.is_symlink():
+            raise ValueError("Required original region absent/symlinked")
+        local,problems=scan_region(src)
+        if problems:
+            warnings.extend(f"{relative}: {p}" for p in problems)
+            raise ValueError("Selected source region contains incomplete command-block scan coverage")
+        found=collections.Counter(source_key(x,world) for x in local)
+        expected=collections.Counter(key(x) for x in grouped[relative])
+        if found!=expected or len(found)!=len(local):
+            raise ValueError("Original target-region command actor/hash inventory differs")
+        actors.extend(local)
+    # No claim of re-auditing every non-target original region; they remain
+    # covered by the first official SHA-pinned 2,232-actor inventory.
+    return {"command_blocks":actors,"warnings":warnings,
+            "target_region_count":len(paths),"verified_region_command_actor_count":len(actors)}
 
 def summarize(world,source,metadata):
     coords_by_dimension=collections.defaultdict(list)
@@ -149,15 +180,13 @@ def summarize(world,source,metadata):
         roots[root]+=1
         rowkey=source_key(block,world)
         relative,slot,coord,actor,hash_value=rowkey
-        if coord is None:
-            raise ValueError("A direct gameplay candidate has no physical coordinates")
         dimension=region_dimension(relative)
         if dimension=="UNKNOWN":
             raise ValueError("Unrecognized original command dimension")
         near=[]
         for other in coords_by_dimension[dimension]:
             pos=other.get("coordinates")
-            if pos is None:
+            if pos is None or coord is None:
                 continue
             if (other["region_file"],other["chunk_slot"],tuple(pos),
                     other["command_actor"],other["command_sha256"])==rowkey:
@@ -169,7 +198,8 @@ def summarize(world,source,metadata):
         info=parse_direct_effect(raw,root)
         records.append({
             "operation":root,"dimension":dimension,"region_file":relative,
-            "chunk_slot":slot,"coordinates":list(coord),
+            "chunk_slot":slot,"coordinates":list(coord) if coord is not None else None,
+            "physical_coordinate_review":"KNOWN" if coord is not None else "MISSING_NBT_COORDS_NO_PATCH",
             "command_sha256":hash_value,"actor":actor,
             "neighboring_command_blocks_within_4":len(near),
             "neighbor_root_operations":dict(sorted(collections.Counter(x[1] for x in near).items())),
@@ -179,14 +209,19 @@ def summarize(world,source,metadata):
         })
     if dict(roots)!=EXPECTED:
         raise ValueError(f"Official gameplay direct opcode counts drifted: {dict(roots)}")
-    records.sort(key=lambda x:(x["operation"],x["dimension"],x["region_file"],x["coordinates"]))
+    records.sort(key=lambda x:(x["operation"],x["dimension"],x["region_file"],
+                               str(x["coordinates"]),x["command_sha256"]))
     return {
         "status":"READ_ONLY_DIRECT_GAMEPLAY_MECHANISM_TRIAGE",
         "source_level_sha256":LEVEL_SHA,"source_auxiliary_sha256":AUX_SHA,
-        "verified_scanned_command_blocks":2232,
-        "region_warnings":len(source["warnings"]),
+        "official_full_audit_command_blocks":2232,
+        "reverified_target_regions":source["target_region_count"],
+        "reverified_command_actors_in_target_regions":source["verified_region_command_actor_count"],
+        "original_full_audit_region_warnings":metadata["command_blocks"]["region_warning_count"],
+        "selected_region_scan_warnings":len(source["warnings"]),
         "counts_by_direct_operation":dict(sorted(roots.items())),
         "distinct_region_files":len({r["region_file"] for r in records}),
+        "candidates_missing_physical_coordinates":sum(x["coordinates"] is None for x in records),
         "physical_candidates":records,
         "world_modified":False,"original_code_reused":False,
         "automatic_suppression_allowed":False,
@@ -195,7 +230,9 @@ def summarize(world,source,metadata):
             "Nearest-command-block adjacency is a spatial hint, not a redstone/conditional chain topology.",
             "Raw summon NBT, give item NBT, selector predicates and command text are deliberately not exported.",
             "Function indirect invocation, advancement triggers, entity behavior and unreadable region chunks remain.",
-            "No candidate is authorized for removal solely by opcode; preserve puzzle and facility mechanisms."
+            "No candidate is authorized for removal solely by opcode; preserve puzzle and facility mechanisms.",
+            "Six summon records lack physical NBT coordinates and cannot be safely patched by location.",
+            "Only the 72 candidate-bearing regions are re-scanned. Full 2,232-block catalog is pinned to previous official verified audit."
         ]
     }
 
@@ -214,7 +251,9 @@ def main():
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
-        "verified_command_blocks":result["verified_scanned_command_blocks"],
+        "official_command_blocks":result["official_full_audit_command_blocks"],
+        "reverified_target_regions":result["reverified_target_regions"],
+        "missing_coordinates":result["candidates_missing_physical_coordinates"],
         "gameplay_direct_candidates":len(result["physical_candidates"]),
         "operations":result["counts_by_direct_operation"],
         "world_modified":False,"removals_authorized":False

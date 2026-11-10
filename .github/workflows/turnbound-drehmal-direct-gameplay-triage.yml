@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/extract_official_drehmal_preview.py --download-dir "${RUNNER_TEMP}/official-shards" --world-dir "${RUNNER_TEMP}/drehmal-official"
-      - name: Compare all 2232 original command hashes then review direct gameplay targets
+      - name: Recheck all command hashes in 72 target regions against pinned full audit
         working-directory: projects/turnbound
         run: |
           set -euo pipefail
