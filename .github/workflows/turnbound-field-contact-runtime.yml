@@ -1,0 +1,123 @@
+name: TURNBOUND field encounter actual contact probe (disposable server)
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-field-contact-runtime.yml'
+      - 'projects/turnbound/tools/ci-fixtures/TurnboundFieldProbeInitializer.java'
+      - 'projects/turnbound/tools/probe_turnbound_field_contact_runtime.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  synthetic-contact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Prepare isolated protocol clients (CI only)
+        run: |
+          set -euo pipefail
+          node --check projects/turnbound/tools/probe_turnbound_field_contact_runtime.cjs
+          npm install --prefix "$RUNNER_TEMP/turnbound-field-bot" \
+            --no-save --no-package-lock --ignore-scripts \
+            minecraft-protocol@1.60.1 rcon-client@4.2.5
+      - name: Inject CI encounter author, never include fixture in release
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          cp tools/ci-fixtures/TurnboundFieldProbeInitializer.java \
+            src/fabric/java/io/github/q93503128/turnbound/TurnboundFieldProbeInitializer.java
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("src/fabric/resources/fabric.mod.json")
+          d=json.loads(p.read_text())
+          assert d["entrypoints"]["main"]==["io.github.q93503128.turnbound.Turnbound"]
+          d["entrypoints"]["main"].append("io.github.q93503128.turnbound.TurnboundFieldProbeInitializer")
+          p.write_text(json.dumps(d,indent=2)+"\n")
+          PY
+          mkdir -p run/world build
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=world
+          level-type=minecraft:flat
+          online-mode=false
+          server-ip=127.0.0.1
+          server-port=25565
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=turnbound_ci_synthetic_only
+          max-players=4
+          spawn-protection=0
+          difficulty=normal
+          motd=TURNBOUND synthetic field contact probe
+          EOF
+          printf 'TURNBOUND_DREHMAL_WORLD_V1\n' > run/world/turnbound-world.marker
+          cat > run/world/turnbound-entry.json <<'EOF'
+          {"schema":1,"dimension":"minecraft:overworld","x":10.5,"y":70,"z":10.5,"yaw":0,"pitch":0}
+          EOF
+          test ! -e run/world/level.dat
+
+      - name: Boot actual Fabric server and verify alert contact and session claiming
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 18
+        run: |
+          set -euo pipefail
+          export TURNBOUND_PROBE_NODE_MODULES="$RUNNER_TEMP/turnbound-field-bot/node_modules"
+          gradle runServer --no-daemon --console=plain > build/field-server-private.log 2>&1 &
+          server_pid=$!
+          set +e
+          timeout 340s node tools/probe_turnbound_field_contact_runtime.cjs \
+            build/field-contact-synthetic-observations.json
+          result=$?
+          set -e
+          if [ "$result" -ne 0 ]; then
+            echo 'Field contact CI failed, relevant server tail:'
+            tail -110 build/field-server-private.log || true
+            kill "$server_pid" 2>/dev/null || true
+            exit 1
+          fi
+          for i in $(seq 1 120); do
+            if ! kill -0 "$server_pid" 2>/dev/null; then break; fi
+            sleep 0.5
+          done
+          if kill -0 "$server_pid" 2>/dev/null; then
+            echo 'Synthetic server did not stop on RCON request'
+            kill "$server_pid" 2>/dev/null || true
+            exit 1
+          fi
+          wait "$server_pid"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("build/field-contact-synthetic-observations.json").read_text())
+          assert d["status"]=="SYNTHETIC_FIELD_CONTACT_OPENED_SERVER_BATTLE"
+          assert all(d[k] is True for k in (
+            "two_clients_connected","visible_warning_delay_not_bypassed",
+            "physical_contact_claimed_battle","second_player_not_automatically_claimed"))
+          assert not any(d[k] for k in (
+            "official_drehmal_loaded","fixture_shipped_in_production",
+            "authored_game_enemy_created","human_playtested","real_gameplay_multiplayer_tested"))
+          print('PASS: server-authorized contact opens actual turn-battle session after notice')
+          PY
+      - name: Upload derived synthetic observations only (no logs/map/third-party bytes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-synthetic-field-contact-server
+          path: projects/turnbound/build/field-contact-synthetic-observations.json
+          retention-days: 14
+          if-no-files-found: warn
