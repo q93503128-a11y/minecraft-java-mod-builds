@@ -167,15 +167,16 @@ def restore(world):
     # Restore saved level FIRST: all subsequent restorers demand original level hash.
     # A failed restore leaves receipts and backups intact for manual recovery.
     verify(world)
+    had_gamemode=(world/GAMEMODE_RECEIPT).exists()
     saved.restore(world)
-    if (world/GAMEMODE_RECEIPT).exists():
+    if had_gamemode:
         modes.restore(world)
     towers.restore(world)
     roots.restore(world)
     weapons.restore(world)
     world=baseline(world)
     no_other_stage(world)
-    return {"status":"ALL_BOUNDARIES_RESTORED_EXACTLY",
+    return {"status":"ALL_FIVE_BOUNDARIES_RESTORED_EXACTLY" if had_gamemode else "ALL_FOUR_BOUNDARIES_RESTORED_EXACTLY",
             "original_level_sha256":saved.file_sha(world/"level.dat"),
             "original_datapack_sha256":weapons.file_hash(world/"datapacks"/weapons.PACK),
             "original_world_preserved":True,"playtested":False}

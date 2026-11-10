@@ -66,7 +66,7 @@ jobs:
           import json
           from pathlib import Path
           r=json.loads(Path("build/five-restored.json").read_text())
-          assert r["status"]=="ALL_BOUNDARIES_RESTORED_EXACTLY"
+          assert r["status"]=="ALL_FIVE_BOUNDARIES_RESTORED_EXACTLY"
           print("PASS: all five copied-world modifications exactly restored")
           PY
       - name: Upload derived hash receipts ONLY, NEVER WORLD FILES
