@@ -1,0 +1,83 @@
+name: TURNBOUND five-boundary Drehmal copied-world separation
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-five-boundary.yml'
+      - 'projects/turnbound/tools/suppress_drehmal_gamemode_commands.py'
+      - 'projects/turnbound/tools/test_suppress_drehmal_gamemode_commands.py'
+      - 'projects/turnbound/tools/prepare_drehmal_isolated_copy.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test new game mode safety bounds and existing copy integration
+        working-directory: projects/turnbound
+        run: |
+          python3 -m unittest discover -s tools -p 'test_suppress_drehmal_gamemode_commands.py'
+          python3 -m unittest discover -s tools -p 'test_prepare_drehmal_isolated_copy.py'
+      - name: Retrieve already verified Drehmal audit metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+      - name: Obtain SHA-verified full official Drehmal save in temporary runner storage
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "${RUNNER_TEMP}/original-shards" --world-dir "${RUNNER_TEMP}/drehmal-original"
+      - name: Stage, verify five isolation boundaries, and exact-restore copied world
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/drehmal_pack_boundary.py stage --source "${RUNNER_TEMP}/drehmal-original" --destination "${RUNNER_TEMP}/separated-copy"
+          w="${RUNNER_TEMP}/separated-copy"
+          aux=build/original-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/original-graph/build/drehmal-official-2.2.2f-summary.json
+          positions=build/original-triggers/command-trigger-positions.json
+          python3 tools/prepare_drehmal_isolated_copy.py inspect --include-gamemode --world-copy "$w" --aux "$aux" --graph "$graph" --positions "$positions" --output build/five-inspected.json
+          python3 tools/prepare_drehmal_isolated_copy.py prepare --include-gamemode --world-copy "$w" --aux "$aux" --graph "$graph" --positions "$positions" --output build/five-prepared.json
+          python3 tools/prepare_drehmal_isolated_copy.py verify --world-copy "$w" --output build/five-verified.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=lambda key:json.loads((Path("build")/f"five-{key}.json").read_text())
+          p,v=d("prepared"),d("verified")
+          assert p==v and p["status"]=="FIVE_BOUNDARIES_PRESENT_VERIFIED"
+          assert p["direct_gamemode_commands"]==29 and p["gamemode_region_files"]==7
+          assert p["terminus_command_blocks"]==62 and p["terminus_region_files"]==30
+          assert p["weapon_advancements"]==39 and p["saved_reward_schedules"]==1
+          assert p["map_separation_complete"] is False and p["playtested"] is False
+          print("PASS: five-boundary COPY retained and independently reverified")
+          PY
+          python3 tools/prepare_drehmal_isolated_copy.py restore --world-copy "$w" --output build/five-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("build/five-restored.json").read_text())
+          assert r["status"]=="ALL_BOUNDARIES_RESTORED_EXACTLY"
+          print("PASS: all five copied-world modifications exactly restored")
+          PY
+      - name: Upload derived hash receipts ONLY, NEVER WORLD FILES
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-five-boundary-review-metadata-only
+          path: |
+            projects/turnbound/build/five-inspected.json
+            projects/turnbound/build/five-prepared.json
+            projects/turnbound/build/five-verified.json
+            projects/turnbound/build/five-restored.json
+          retention-days: 14
+          if-no-files-found: warn
