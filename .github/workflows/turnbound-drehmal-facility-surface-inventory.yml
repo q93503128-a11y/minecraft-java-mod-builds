@@ -1,0 +1,92 @@
+name: TURNBOUND official Drehmal 7+9 facility surface inventory
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-facility-surface-inventory.yml'
+      - 'projects/turnbound/tools/preview_drehmal_facility_surface_inventory.py'
+      - 'projects/turnbound/tools/test_preview_drehmal_facility_surface_inventory.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  facility-surface:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bounded scanner regression
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_preview_drehmal_facility_surface_inventory.py'
+          python3 -m py_compile tools/preview_drehmal_facility_surface_inventory.py
+      - name: Retrieve pinned official source analysis metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Build verified seven+ninth copy and inspect wiki-hinted physical controls
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/seven-nine-facility-survey"
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare \
+            --world-copy "$copy" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/facility-surface-private-six.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply \
+            --world-copy "$copy" --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/facility-surface-private-seven.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py apply \
+            --world-copy "$copy" --output build/facility-surface-private-ninth.json
+          python3 tools/preview_drehmal_facility_surface_inventory.py \
+            --original "$source" --world-copy "$copy" \
+            --output build/facility-surface-derived.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py restore \
+            --world-copy "$copy" --output build/facility-surface-private-ninth-restore.json
+          python3 tools/verify_drehmal_start_chain_isolation.py restore \
+            --world-copy "$copy" --output build/facility-surface-private-seven-restore.json
+          python3 tools/prepare_drehmal_isolated_copy.py restore \
+            --world-copy "$copy" --output build/facility-surface-private-six-restore.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("build/facility-surface-derived.json").read_text())
+          assert data["site_count"]==6 and data["original_and_copied_block_states_identical_at_scanned_sites"]
+          assert not data["facility_physical_interactions_tested"]
+          assert not data["map_separation_complete"]
+          for site in data["sites"]:
+              assert not site["real_physical_interaction_tested"]
+              assert not site["exact_click_target_confirmed"]
+          assert json.loads(Path("build/facility-surface-private-six-restore.json").read_text())["status"]=="ALL_SIX_BOUNDARIES_RESTORED_EXACTLY_OFFLINE"
+          print("PASS: derived geometry inventory from official SHA-verified source and 7+9 copy; exactly restored")
+          PY
+      - name: Publish public location and block-type metadata only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-seven-nine-facility-surface-candidates
+          path: projects/turnbound/build/facility-surface-derived.json
+          retention-days: 14
+          if-no-files-found: warn
