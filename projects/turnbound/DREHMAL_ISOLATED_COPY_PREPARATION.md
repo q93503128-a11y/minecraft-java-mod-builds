@@ -34,3 +34,7 @@
 ## 2026-11-10 서버 구동 관측: 6/7단계 시작 장치 비교
 
 [공식 Minecraft 1.20.1 Fabric 전용 서버 검사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42738739482). 공식 원본에서 각각 새로 생성한 6단계와 7단계 임시 사본을 순차 서버 구동. 169/165틱과 시작 영역 청크 로딩, 명령 블록 57개(각각 Command 비움 24/57), 양쪽 레드스톤 주입 6곳, 각 1,440 구조 상태 전후 비교(주입 제외 변화 0), 정상 종료를 확인했다. **비활성 복사본에서 플레이어 없이 실행한 장면 스모크**로 한정하며 게임 입장·문·포탈·리스폰 기능 보존, 플레이테스트 및 멀티플레이는 주장하지 않는다. 시험 사본은 전부 폐기하고 원본/변경 월드·서버 전체 로그를 아티팩트에 올리지 않았다. 자세한 판정은 DREHMAL_STARTER_CHAIN_INTEGRATION_REVIEW.md 참고.
+
+## 2026-11-10 8번째 임시 업적 보상 연결 분리
+
+별도 도구 tools/preview_drehmal_nonweapon_callbacks.py가 기존 7단계 공식 사본 검증 후에만 원작 비구조 이벤트 업적 reward.function 9건을 SHA 고정 조건으로 가역 차단한다. [공식 #42741395799 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42741395799): 9개 변경, 다른 ZIP 구성원의 원시 내용과 업적 달성 조건 유지, 8→7→6 전체 복구. **8번째 처리는 기존 4/5종 기본 도구에 포함되지 않고 플레이 불가 실험에만 해당한다.** 실제 시설/플레이 기능 무영향은 입증되지 않았으며 남은 비무기 보상 콜백 172개, 다른 명령 블록/예약 함수 등은 여전히 조사 대상. [상세](DREHMAL_NONWEAPON_CALLBACK_EIGHTH_PREVIEW.md).
