@@ -1,0 +1,82 @@
+name: TURNBOUND Drehmal starter kit and discovery copy-only experiment
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-starter-discovery-preview.yml'
+      - 'projects/turnbound/tools/preview_drehmal_starter_discovery_commands.py'
+      - 'projects/turnbound/tools/test_preview_drehmal_starter_discovery_commands.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  copied-world-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run strictly scoped synthetic candidate tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_preview_drehmal_starter_discovery_commands.py'
+      - name: Download verified original source command evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42729125584 --repo "${GITHUB_REPOSITORY}" \
+            --name turnbound-drehmal-direct-gameplay-triage \
+            --dir projects/turnbound/build/direct-source-review
+      - name: Download original world and verify official checksums
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "${RUNNER_TEMP}/original-shards" \
+            --world-dir "${RUNNER_TEMP}/original-drehmal"
+      - name: Patch only 24 selected commands in separate copy then exactly restore
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/drehmal_pack_boundary.py stage \
+            --source "${RUNNER_TEMP}/original-drehmal" \
+            --destination "${RUNNER_TEMP}/starter-discovery-review-copy"
+          w="${RUNNER_TEMP}/starter-discovery-review-copy"
+          evidence=build/direct-source-review/direct-gameplay-review.json
+          python3 tools/preview_drehmal_starter_discovery_commands.py inspect --world-copy "$w" --direct-report "$evidence" --output build/starter-disc-inspect.json
+          python3 tools/preview_drehmal_starter_discovery_commands.py apply --world-copy "$w" --direct-report "$evidence" --output build/starter-disc-applied.json
+          python3 tools/preview_drehmal_starter_discovery_commands.py verify --world-copy "$w" --output build/starter-disc-verified.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          get=lambda x:json.loads((Path('build')/('starter-disc-'+x+'.json')).read_text())
+          pre,a,v=get('inspect'),get('applied'),get('verified')
+          assert pre['target_count']==a['target_count']==v['target_count']==24
+          assert a==v and a['region_count']==4
+          assert a['starter_item_commands']==21 and a['advancement_grant_commands']==3
+          assert a['structural_mechanisms_tested'] is False and a['gameplay_tested'] is False
+          print('PASS: copy-only starter/discovery preview held and independently verified')
+          PY
+          python3 tools/preview_drehmal_starter_discovery_commands.py restore --world-copy "$w" --output build/starter-disc-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('build/starter-disc-restored.json').read_text())
+          assert r['status']=='ORIGINAL_STARTER_DISCOVERY_REGIONS_RESTORED'
+          assert r['target_count']==24 and r['region_count']==4
+          print('PASS: 24 copied-world commands reverted to original region SHA')
+          PY
+      - name: Upload metadata only, never original or modified map bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-starter-discovery-copy-only-proof
+          path: |
+            projects/turnbound/build/starter-disc-inspect.json
+            projects/turnbound/build/starter-disc-applied.json
+            projects/turnbound/build/starter-disc-verified.json
+            projects/turnbound/build/starter-disc-restored.json
+          retention-days: 14
+          if-no-files-found: warn
