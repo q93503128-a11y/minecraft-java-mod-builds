@@ -1,0 +1,139 @@
+name: TURNBOUND Drehmal actual entry movement and advancement differential
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-movement-advancement.yml'
+      - 'projects/turnbound/tools/probe_drehmal_movement_advancements.py'
+      - 'projects/turnbound/tools/probe_drehmal_map_players_with_movement.cjs'
+      - 'projects/turnbound/tools/probe_drehmal_map_players.cjs'
+      - 'projects/turnbound/tools/test_probe_drehmal_movement_advancements.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Narrow command-block attribution tests and protocol dependencies
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_drehmal_movement_advancements.py'
+          python3 -m py_compile tools/probe_drehmal_movement_advancements.py
+          node --check tools/probe_drehmal_map_players.cjs
+          node --check tools/probe_drehmal_map_players_with_movement.cjs
+          npm install --prefix "$RUNNER_TEMP/drehmal-protocol-bots" --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+      - name: Retrieve SHA-pinned original metadata and 181 callback classification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+          gh run download 42605435141 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-callback-scheduler-review --dir projects/turnbound/build/callback-review
+      - name: Reconstruct official v2.2.2f world from three verified release parts
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/source-parts" --world-dir "$RUNNER_TEMP/original"
+          python3 tools/drehmal_pack_boundary.py stage --source "$RUNNER_TEMP/original" --destination "$RUNNER_TEMP/staged-copy"
+      - name: Compare original advancement awards under bare and movement-ack bots
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          export TURNBOUND_PROBE_NODE_MODULES="$RUNNER_TEMP/drehmal-protocol-bots/node_modules"
+          source="$RUNNER_TEMP/original"
+          copy="$RUNNER_TEMP/staged-copy"
+          aux=build/original-aux/drehmal-auxiliary-entrypoints.json
+          graph=build/original-graph/build/drehmal-official-2.2.2f-summary.json
+          positions=build/original-triggers/command-trigger-positions.json
+          direct=build/direct-source-review/direct-gameplay-review.json
+          for mode in bare ack; do
+            if [ "$mode" = ack ]; then
+              python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+            fi
+            python3 tools/prepare_drehmal_isolated_copy.py prepare --world-copy "$copy" \
+              --aux "$aux" --graph "$graph" --positions "$positions" \
+              --include-gamemode --include-starter-experiment --direct-report "$direct" \
+              --output "build/movement-$mode-base.json"
+            python3 tools/verify_drehmal_start_chain_isolation.py apply --world-copy "$copy" \
+              --source-aux "$aux" --output "build/movement-$mode-seven.json"
+            python3 tools/probe_drehmal_movement_advancements.py --project . \
+              --world-copy "$copy" --mode "$mode" --output "build/movement-$mode-trace.json"
+            rm -rf -- "$copy"
+          done
+          python3 - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          read=lambda mode:json.loads(Path(f"build/movement-{mode}-trace.json").read_text())
+          bare,ack=read("bare"),read("ack")
+          for row in (bare,ack):
+              assert row["status"]=="OFFICIAL_DREHMAL_MOVEMENT_TRACE_OBSERVED"
+              assert row["two_synthetic_protocol_clients_connected"]
+              assert row["other_protocol_player_still_online"]
+              assert row["start_commands_still_disabled"]
+              assert row["server_stopped_cleanly"]
+              assert len(row["timeline"])==9
+              assert row["newly_awarded_advancement_count"]==len(row["newly_awarded_advancement_ids"])
+              assert not row["map_separation_complete"]
+          assert bare["variant"]=="BARE_TELEPORT_CONFIRM"
+          assert ack["variant"]=="VANILLA_LIKE_MOVEMENT_ACK"
+          original=Path(os.environ["RUNNER_TEMP"])/"original"
+          for rel,sha in (
+              ("level.dat","44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"),
+              ("datapacks/hi_drehmal.zip","f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74")
+          ):
+              assert hashlib.sha256((original/rel).read_bytes()).hexdigest()==sha
+          d0,d1=bare["final_horizontal_offset"],ack["final_horizontal_offset"]
+          if d0>=30 and d1<5:
+              classification="CLIENT_POSITION_PACKET_DEPENDENCE_OBSERVED"
+          elif d0>=30 and d1>=30:
+              classification="MOVEMENT_PERSISTS_WITH_VANILLA_LIKE_POSITION_ACK"
+          else:
+              classification="MIXED_OR_NOT_REPRODUCED_REQUIRES_FOLLOWUP"
+          summary={
+              "status":"OFFICIAL_DREHMAL_ENTRY_MOVEMENT_ADVANCEMENT_PROBE_PASS",
+              "classification":classification,
+              "bare_final_horizontal_offset":d0,"ack_final_horizontal_offset":d1,
+              "bare_awarded_advancement_ids":bare["newly_awarded_advancement_ids"],
+              "ack_awarded_advancement_ids":ack["newly_awarded_advancement_ids"],
+              "bare_initial_dimension":bare["initial_dimension"],
+              "ack_initial_dimension":ack["initial_dimension"],
+              "command_blocks_enabled_in_either":False,
+              "original_level_and_pack_hash_preserved":True,
+              "map_separation_complete":False,
+              "game_start_approved":False
+          }
+          Path("build/movement-advancement-summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary))
+          PY
+      - name: Upload derived metadata only, never original map, commands, datapacks or backups
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-movement-advancement
+          path: |
+            projects/turnbound/build/movement-bare-trace.json
+            projects/turnbound/build/movement-ack-trace.json
+            projects/turnbound/build/movement-advancement-summary.json
+          retention-days: 14
+          if-no-files-found: warn
