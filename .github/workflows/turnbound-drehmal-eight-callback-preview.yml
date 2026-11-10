@@ -1,0 +1,99 @@
+name: TURNBOUND Drehmal eighth original callback offline boundary
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-eight-callback-preview.yml'
+      - 'projects/turnbound/tools/preview_drehmal_nonweapon_callbacks.py'
+      - 'projects/turnbound/tools/test_preview_drehmal_nonweapon_callbacks.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Narrow Python regression tests
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_preview_drehmal_nonweapon_callbacks.py'
+      - name: Retrieve SHA-pinned original metadata and 181 callback classification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+          gh run download 42605435141 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-callback-scheduler-review --dir projects/turnbound/build/callback-review
+      - name: Reconstruct official v2.2.2f world from three verified release parts
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/source-parts" --world-dir "$RUNNER_TEMP/original"
+          python3 tools/drehmal_pack_boundary.py stage --source "$RUNNER_TEMP/original" --destination "$RUNNER_TEMP/staged-copy"
+      - name: Apply, verify and completely restore eighth layer on nonactivated temporary copy
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          w="$RUNNER_TEMP/staged-copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare --world-copy "$w" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/eight-prior-six.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply --world-copy "$w" \
+            --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/eight-prior-seven.json
+          cb=build/callback-review/callback-schedule-risk-review.json
+          eight=tools/preview_drehmal_nonweapon_callbacks.py
+          python3 "$eight" inspect --world-copy "$w" --source-review "$cb" --output build/eight-inspect.json
+          python3 "$eight" apply --world-copy "$w" --source-review "$cb" --output build/eight-applied.json
+          python3 "$eight" verify --world-copy "$w" --output build/eight-verified.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          get=lambda n:json.loads((Path("build")/("eight-"+n+".json")).read_text())
+          assert get("applied")==get("verified")
+          r=get("verified")
+          assert r["count"]==9 and r["verified"] and not r["world_activated"]
+          assert not r["structure_functionality_tested"] and not r["map_separation_complete"]
+          assert r["advancement_criteria_preserved"] and not r["original_code_reused"]
+          print("PASS: exactly nine original reward links removed from offline staged copy")
+          PY
+          python3 "$eight" restore --world-copy "$w" --output build/eight-restored-seven.json
+          python3 tools/verify_drehmal_start_chain_isolation.py verify --world-copy "$w" \
+            --output build/eight-reverified-seven.json
+          python3 tools/verify_drehmal_start_chain_isolation.py restore --world-copy "$w" \
+            --output build/eight-restored-six.json
+          python3 tools/prepare_drehmal_isolated_copy.py restore --world-copy "$w" \
+            --output build/eight-all-restored.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          get=lambda n:json.loads((Path("build")/("eight-"+n+".json")).read_text())
+          assert get("restored-seven")["status"]=="EIGHTH_STAGE_RESTORED_EXACTLY_TO_SEVEN"
+          assert get("restored-six")["status"]=="SEVENTH_STAGE_RESTORED_TO_VERIFIED_SIX_STAGE"
+          assert get("all-restored")["status"]=="ALL_SIX_BOUNDARIES_RESTORED_EXACTLY_OFFLINE"
+          print("PASS: all eight experimental boundaries returned to exact original")
+          PY
+      - name: Upload derived metadata only, never original map, commands, datapacks or backups
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-eight-callback-preview-proof
+          path: |
+            projects/turnbound/build/eight-inspect.json
+            projects/turnbound/build/eight-applied.json
+            projects/turnbound/build/eight-verified.json
+            projects/turnbound/build/eight-restored-seven.json
+            projects/turnbound/build/eight-restored-six.json
+            projects/turnbound/build/eight-all-restored.json
+          retention-days: 14
+          if-no-files-found: warn
