@@ -1,0 +1,145 @@
+name: TURNBOUND copied-world checkpoint protocol-player runtime acceptance
+
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-checkpoint-player-runtime.yml'
+      - 'projects/turnbound/tools/probe_turnbound_checkpoint_player_runtime.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-players:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Install isolated protocol clients (never packaged into Minecraft mod)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check projects/turnbound/tools/probe_turnbound_checkpoint_player_runtime.cjs
+          npm install --prefix "$RUNNER_TEMP/turnbound-checkpoint-bot" \
+            --no-save --no-package-lock --ignore-scripts \
+            minecraft-protocol@1.60.1 rcon-client@4.2.5
+      - name: Prepare synthetic empty world with explicit CI-only entry
+        shell: bash
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          mkdir -p run/world build
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=world
+          level-type=minecraft:flat
+          online-mode=false
+          server-ip=127.0.0.1
+          server-port=25565
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=turnbound_ci_synthetic_only
+          max-players=4
+          spawn-protection=0
+          difficulty=peaceful
+          motd=Disposable TURNBOUND connection regression test
+          EOF
+          printf 'TURNBOUND_DREHMAL_WORLD_V1\n' > run/world/turnbound-world.marker
+          cat > run/world/turnbound-entry.json <<'EOF'
+          {"schema":1,"dimension":"minecraft:overworld","x":10.5,"y":70,"z":10.5,"yaw":0,"pitch":0}
+          EOF
+          test ! -e run/world/level.dat
+          echo 'SYNTHETIC FLAT WORLD, NOT DREHMAL. X=10.5 IS NOT APPROVED GAME SPAWN.'
+      - name: Run real Fabric server and two protocol clients through two server restarts
+        shell: bash
+        working-directory: projects/turnbound
+        timeout-minutes: 18
+        run: |
+          set -euo pipefail
+          export TURNBOUND_PROBE_NODE_MODULES="$RUNNER_TEMP/turnbound-checkpoint-bot/node_modules"
+          for phase in first second; do
+            echo "Starting disposable Fabric server phase $phase"
+            gradle runServer --no-daemon --console=plain > "build/turnbound-checkpoint-server-$phase.log" 2>&1 &
+            pid=$!
+            set +e
+            timeout 170s node tools/probe_turnbound_checkpoint_player_runtime.cjs \
+              "$phase" "build/turnbound-checkpoint-player-$phase.json"
+            result=$?
+            set -e
+            if [ "$result" -ne 0 ]; then
+              echo "Failed synthetic client phase $phase, first meaningful server failure context:"
+              tail -90 "build/turnbound-checkpoint-server-$phase.log" || true
+              kill "$pid" 2>/dev/null || true
+              exit 1
+            fi
+            for i in $(seq 1 120); do
+              if ! kill -0 "$pid" 2>/dev/null; then break; fi
+              sleep 0.5
+            done
+            if kill -0 "$pid" 2>/dev/null; then
+              echo "Server did not stop cleanly after RCON stop"
+              kill "$pid" 2>/dev/null || true
+              exit 1
+            fi
+            wait "$pid"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          docs=[json.loads(Path(f"build/turnbound-checkpoint-player-{phase}.json").read_text())
+                for phase in ("first","second")]
+          first,second=docs
+          assert all(doc["status"]=="SYNTHETIC_PROTOCOL_PLAYER_JOIN_RECONNECT_PASS" for doc in docs)
+          assert first["first_join_teleport_verified"]
+          assert first["same_server_two_players_connected"] and first["other_player_independent"]
+          assert first["rejoin_preserves_last_position"]
+          assert second["same_server_two_players_connected"] and second["other_player_independent"]
+          assert second["restarted_server_preserves_player_position"]
+          assert second["uuid_state_persistence_verified"]
+          assert all(doc["synthetic_ci_world_only"] and not doc["official_drehmal_used"]
+                     and not doc["entry_coordinates_approved_for_game"]
+                     and not doc["real_human_playtested"]
+                     and not doc["multiplayer_gameplay_tested"] for doc in docs)
+          result={
+            "status":"TWO_DISPOSABLE_FABRIC_SERVER_PHASES_AND_TWO_PROTOCOL_PLAYERS_VERIFIED",
+            "minecraft":"1.20.1",
+            "official_drehmal_loaded":False,
+            "synthetic_flat_world_only":True,
+            "simultaneous_protocol_clients":2,
+            "entry_teleport_verified":True,
+            "same_uuid_rejoin_preserves_position":True,
+            "two_player_independence":True,
+            "server_restart_keeps_player_positions":True,
+            "approved_game_spawn_coordinates":False,
+            "player_death_or_respawn_tested":False,
+            "real_gameplay_or_facility_tested":False,
+            "human_multiplayer_playtested":False,
+            "drehmal_map_separation_complete":False,
+          }
+          Path("build/turnbound-checkpoint-player-runtime-summary.json").write_text(
+            json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result))
+          PY
+      - name: Upload synthetic connection evidence only, never server world or player data
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: turnbound-checkpoint-synthetic-two-protocol-players
+          path: |
+            projects/turnbound/build/turnbound-checkpoint-player-first.json
+            projects/turnbound/build/turnbound-checkpoint-player-second.json
+            projects/turnbound/build/turnbound-checkpoint-player-runtime-summary.json
+          if-no-files-found: warn
+          retention-days: 14
