@@ -1,0 +1,95 @@
+name: TURNBOUND Fabric checkpoint opt-in server boot smoke
+
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-checkpoint-server-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkpoint-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+
+      - name: Prepare a disposable NEW world with exact activation marker only
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          mkdir -p run/world
+          printf 'eula=true\n' > run/eula.txt
+          printf 'level-name=world\nonline-mode=false\nmotd=TURNBOUND CI copied-world gate smoke\n' > run/server.properties
+          printf 'TURNBOUND_DREHMAL_WORLD_V1\n' > run/world/turnbound-world.marker
+          test ! -e run/world/turnbound-entry.json
+          test ! -e run/world/level.dat
+          echo 'DISPOSABLE NEW WORLD ONLY - NOT DREHMAL; NO PLAYER CONNECTION'
+
+      - name: Start Fabric server and prove checkpoint hook reaches opt-in missing-entry gate
+        working-directory: projects/turnbound
+        timeout-minutes: 13
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,subprocess,time
+          from pathlib import Path
+          logfile=Path("checkpoint-server-boot.log")
+          facts={"status":"CHECKPOINT_OPT_IN_SERVER_SMOKE_NOT_PLAYER_TEST",
+                 "minecraft":"1.20.1","temporary_generated_world":True,
+                 "official_drehmal_world_used":False,"entry_location_configured":False,
+                 "actual_player_connected":False,"respawn_activated":False,
+                 "map_separation_complete":False,"multiplayer_tested":False,
+                 "server_started":False,"checkpoint_gate_logged":False,
+                 "server_stopped_cleanly":False}
+          with logfile.open("w",encoding="utf-8") as out:
+              process=subprocess.Popen(["gradle","runServer","--no-daemon","--console=plain"],
+                  stdin=subprocess.PIPE,stdout=out,stderr=subprocess.STDOUT,text=True)
+              deadline=time.monotonic()+480
+              while time.monotonic()<deadline:
+                  content=logfile.read_text(encoding="utf-8",errors="replace")
+                  facts["server_started"]="Done (" in content and "For help, type" in content
+                  facts["checkpoint_gate_logged"]="TURNBOUND entry location is unconfigured" in content
+                  if facts["server_started"] and facts["checkpoint_gate_logged"]:
+                      try:
+                          process.stdin.write("stop\n")
+                          process.stdin.flush()
+                          process.wait(timeout=25)
+                          facts["server_stopped_cleanly"]=process.returncode==0
+                      except (BrokenPipeError,subprocess.TimeoutExpired):
+                          pass
+                      break
+                  if process.poll() is not None: break
+                  time.sleep(2)
+              if process.poll() is None:
+                  process.terminate()
+                  try:process.wait(timeout=15)
+                  except subprocess.TimeoutExpired:
+                      process.kill()
+                      process.wait()
+          Path("checkpoint-server-smoke.json").write_text(json.dumps(facts,indent=2)+"\n")
+          print(json.dumps(facts))
+          if not facts["server_started"] or not facts["checkpoint_gate_logged"]:
+              print("BOOT GATE FAILED. Last 60 server lines:")
+              print("\n".join(logfile.read_text(errors="replace").splitlines()[-60:]))
+              raise SystemExit(1)
+          PY
+
+      - name: Publish synthetic-world boot proof (no world, user files, or third-party assets)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-checkpoint-opt-in-server-smoke
+          path: projects/turnbound/checkpoint-server-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
