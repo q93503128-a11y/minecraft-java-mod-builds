@@ -201,6 +201,17 @@ async function second() {
   // server reached the death screen. If the server cancelled death first,
   // the same packet is ignored and cannot trigger a second death.
   await ms(500);
+  const stillListed = await online(names[0]);
+  const healthRead = await command('data get entity '+names[0]+' Health');
+  const posRead = await command('data get entity '+names[0]+' Pos');
+  let observedPos = null;
+  try { observedPos = parsePosition(posRead); } catch {}
+  proof.observations.push({
+    label:'server post-kill entity status before respawn request',
+    same_player_still_listed:stillListed,
+    health_value_kind:healthRead.includes('Health:') ? 'present' : 'unavailable',
+    server_position:observedPos
+  });
   alice.write('client_command', {actionId: 0});
   proof.synthetic_respawn_request_sent = true;
   await expectPosition(names[0], position.entry,
