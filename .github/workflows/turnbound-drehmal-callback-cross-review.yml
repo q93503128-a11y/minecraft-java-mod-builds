@@ -1,0 +1,62 @@
+name: TURNBOUND Drehmal callback mechanism and deferred execution matrix
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-callback-cross-review.yml'
+      - 'projects/turnbound/tools/review_drehmal_callback_activation_boundaries.py'
+      - 'projects/turnbound/tools/test_review_drehmal_callback_activation_boundaries.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  callback-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify review-only behavior on synthetic graph fixtures
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_review_drehmal_callback_activation_boundaries.py'
+      - name: Retrieve four previously verified source reports (never the original world)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42605435141 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-callback-scheduler-review --dir projects/turnbound/build/source-callbacks
+          gh run download 42612649513 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-score-storage-dependency-review --dir projects/turnbound/build/source-objectives
+      - name: Cross-index all 181 nonweapon callbacks with deferred and facility paths
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/review_drehmal_callback_activation_boundaries.py \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --callbacks build/source-callbacks/callback-schedule-risk-review.json \
+            --score build/source-objectives/drehmal-objective-storage-reference-report.json \
+            --output build/callback-mechanism-cross-review.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("build/callback-mechanism-cross-review.json").read_text())
+          assert d["status"]=="READ_ONLY_CALLBACK_DEFERRED_AND_MECHANISM_CROSS_REVIEW"
+          assert len(d["callbacks"])==181
+          assert sum(d["review_priorities"].values())==181
+          assert sum(x["already_eighth_copy_only_preview"] for x in d["callbacks"])==9
+          assert all(x["approved_for_removal"] is False for x in d["callbacks"])
+          assert d["world_modified"] is False and d["original_code_reused"] is False
+          assert d["automatically_suppressed_original_functions"]==0
+          assert d["fully_verified_original_map_separation"] is False
+          print("PASS: all 181 callbacks cross-indexed with no removal or map edit")
+          PY
+      - name: Upload metadata and risk classifications ONLY
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-callback-mechanism-risk-matrix
+          path: projects/turnbound/build/callback-mechanism-cross-review.json
+          retention-days: 14
+          if-no-files-found: warn
