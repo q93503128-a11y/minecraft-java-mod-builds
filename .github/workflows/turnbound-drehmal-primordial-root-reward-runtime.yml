@@ -1,0 +1,180 @@
+name: TURNBOUND Drehmal primordial root reward one-link movement isolation
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-primordial-root-reward-runtime.yml'
+      - 'projects/turnbound/tools/probe_drehmal_primordial_reward_runtime.py'
+      - 'projects/turnbound/tools/test_probe_drehmal_primordial_reward_runtime.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  primordial-root-reward-on-off:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Strict stage receipts, packet/client source and single-advancement reward isolation unit tests
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_drehmal_primordial_reward_runtime.py'
+          python3 -m py_compile tools/probe_drehmal_primordial_reward_runtime.py
+          node --check tools/probe_drehmal_map_players_with_movement.cjs
+          npm install --prefix "$RUNNER_TEMP/drehmal-pack-protocol" \
+            --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+
+      - name: Retrieve pinned official-only source provenance reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" \
+            --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+
+      - name: Compare same original pack enabled with ONE primordial reward link KEPT vs REMOVED
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 45
+        env:
+          TURNBOUND_PROBE_NODE_MODULES: ${{ runner.temp }}/drehmal-pack-protocol/node_modules
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/drehmal-pack-independent-staged-copy"
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          for mode in kept root_reward_removed; do
+            # The previous copy was discarded after its server shut down.
+            test ! -e "$copy"
+            python3 tools/drehmal_pack_boundary.py stage \
+              --source "$source" --destination "$copy"
+            python3 tools/prepare_drehmal_isolated_copy.py prepare \
+              --world-copy "$copy" \
+              --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+              --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+              --positions build/original-triggers/command-trigger-positions.json \
+              --include-gamemode --include-starter-experiment \
+              --direct-report build/direct-source-review/direct-gameplay-review.json \
+              --output "build/pack-$mode-six-private.json"
+            python3 tools/verify_drehmal_start_chain_isolation.py apply \
+              --world-copy "$copy" \
+              --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+              --output "build/pack-$mode-seven-private.json"
+            python3 tools/probe_drehmal_primordial_reward_runtime.py \
+              --project . --original "$source" --world-copy "$copy" \
+              --root-reward-mode "$mode" \
+              --output "build/pack-$mode-observations.json"
+            # Do not restore a server-ticked world and claim clean receipts.
+            rm -rf -- "$copy"
+          done
+          python3 - <<'PY'
+          import hashlib,json,math,os
+          from pathlib import Path
+          read=lambda mode:json.loads(Path(f"build/pack-{mode}-observations.json").read_text())
+          kept,removed=read("kept"),read("root_reward_removed")
+          for data,mode in ((kept,"kept"),(removed,"root_reward_removed")):
+              assert data["status"]=="OFFICIAL_COPIED_MAP_PRIMORDIAL_REWARD_LINK_OBSERVED"
+              assert data["primordial_root_reward_mode"]==mode
+              assert data["two_protocol_clients_connected"]
+              assert data["both_players_remained_online"]
+              assert data["server_stopped_cleanly"]
+              assert data["start_commands_still_disabled"]
+              assert data["original_sha_preserved_after_runtime"]
+              assert data["original_datapack_remains_enabled"]
+              assert data["both_variants_reloaded_before_clients"]
+              assert data["selective_patch"]["function_code_unchanged"]
+              assert data["selective_patch"]["original_world_unchanged"]
+              assert data["selective_patch"]["modified_pack_members"]==(0 if mode=="kept" else 1)
+              assert data["command_blocks_enabled"] is False
+              assert len(data["samples"])==8
+              assert data["map_separation_complete"] is False
+              assert data["game_start_approved"] is False
+              assert data["verified_site_geometry"]==kept["verified_site_geometry"]
+          assert removed["selective_patch"]["other_advancement_fields_unchanged"]
+          assert removed["selective_patch"]["isolated_advancement_id"]=="advancements:primordial/root"
+          assert removed["selective_patch"]["isolated_reward_function_id"]=="players:sethost"
+          original=Path(os.environ["RUNNER_TEMP"])/"official-original"
+          for rel,expected in (
+            ("level.dat","44e9b625f9dd8616472bbae98b3481a2fb34a22a49a98faf913d3b7148a935d1"),
+            ("datapacks/hi_drehmal.zip","f074d2927ea2947f14fe0b2836332695087e5bbf2e7c3b08f94f2e4f36c6fc74")
+          ):
+              assert hashlib.sha256((original/rel).read_bytes()).hexdigest()==expected,rel
+          roles=("airborne","floored")
+          control=kept["final_horizontal_offsets"]
+          isolated=removed["final_horizontal_offsets"]
+          baseline=all(control[k]>80 for k in roles)
+          off_relocated=all(isolated[k]>80 for k in roles)
+          before_comparable=all(
+              math.dist(kept["original_join_positions"][k],
+                        removed["original_join_positions"][k])<4
+              for k in ("airborne_legacy_test","conservative_full_floor"))
+          if not before_comparable:
+              classification="INVALID_CONTROL_START_POSITIONS_DIFFER"
+          elif not baseline:
+              classification="CONTROL_WITH_RELOAD_NO_LONGER_REPRODUCED"
+          elif all(isolated[k]<5 for k in roles):
+              classification="PRIMORDIAL_REWARD_LINK_NECESSARY_FOR_SHARED_RELOCATION_IN_THIS_EXPERIMENT"
+          elif off_relocated:
+              classification="SHARED_RELOCATION_PERSISTS_WITH_PRIMORDIAL_REWARD_LINK_REMOVED"
+          else:
+              classification="MIXED_OR_AMBIGUOUS_LINK_ISOLATION"
+          summary={
+            "status":"ORIGINAL_DREHMAL_ONE_REWARD_LINK_LIVE_DIFFERENTIAL_COMPLETE",
+            "classification":classification,
+            "both_variants_reloaded":True,
+            "original_pack_enabled_in_both":True,
+            "only_variation_is_one_original_advancement_reward_link":True,
+            "advancement_id":"advancements:primordial/root",
+            "removed_reward_function_reference":"players:sethost",
+            "original_function_source_reused_in_turnbound":False,
+            "other_original_datapack_member_contents_unchanged":True,
+            "control_shared_relocation_reproduced":baseline,
+            "isolated_shared_relocation_reproduced":off_relocated,
+            "control_player_entry_comparable":before_comparable,
+            "kept_final_offsets":control,
+            "one_link_removed_final_offsets":isolated,
+            "original_map_sha_preserved":True,
+            "command_blocks_disabled_in_both":True,
+            "each_trial_connected_2_synthetic_clients":True,
+            "real_facility_interactions_tested":False,
+            "approved_start":False,
+            "map_separation_complete":False,
+            "human_playtested":False
+          }
+          Path("build/primordial-root-reward-differential.json").write_text(
+              json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary))
+          PY
+      - name: Upload derived bounded outcomes only; never map/datapack/NBT or logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-primordial-root-one-reward-link
+          path: |
+            projects/turnbound/build/pack-kept-observations.json
+            projects/turnbound/build/pack-root_reward_removed-observations.json
+            projects/turnbound/build/primordial-root-reward-differential.json
+          retention-days: 14
+          if-no-files-found: warn

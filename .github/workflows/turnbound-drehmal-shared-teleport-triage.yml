@@ -46,7 +46,7 @@ jobs:
           d=json.loads(p.read_text())
           assert d["status"]=="ORIGINAL_DREHMAL_DATAPACK_STATIC_SHARED_TELEPORT_TRIAGE"
           assert d["source"]=="ORIGINAL_OFFICIAL_DREHMAL_V2_2_2F_DATAPACK_SHA_LOCKED"
-          assert d["function_count"]>=15000
+          assert d["function_count"]>=5000  # the single hi_drehmal.zip pack, not all world packs
           assert d["functions_with_direct_teleport_lines"]>0
           assert len(d["candidate_function_records"])<=60
           assert len(d["entry_like_advancement_reward_records"])<=60
