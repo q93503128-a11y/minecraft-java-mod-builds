@@ -14,6 +14,8 @@
 
 > **4종 분리 상태의 별도 복사본 독립 재검증 (2026-11-09):** [공식 월드 CI #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42616136730) **SUCCESS**. `inspect → prepare → verify`로 원본 월드 복사본을 네 가지 원작 기능 차단 상태로 유지한 후 별도 재검증, `restore`로 전체 원본 해시 복구. 원작 무기 보상 39개/자동 진입점 3개/Terminus 62개(30 region)/저장 예약 보상 1건. **원본/복사본 월드를 GitHub에 업로드하지 않음. 러너 임시 복사본은 검증 후 복구·폐기. 이것은 게임 실행 가능 판정 또는 전체 원작 게임 분리 완료가 아니다.** [세부 도구](DREHMAL_ISOLATED_COPY_PREPARATION.md).
 
+> **원작 게임모드 강제 전환 차단 + 5종 통합 분리 상태 (2026-11-10):** [공식 월드 5종 검증 #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42725309538) **SUCCESS**, [기존 4종 호환 검증](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42725309921) **SUCCESS**. `gamemode` 직접 실행 명령 블록 **29개(오버월드 26, space 차원 3, 7 region)**를 새 다섯 번째 분리 경계로 추가. 기존 원작 `load/tick` 진입 3, 무기 업적 보상 39, Terminus 명령 62, 저장 예약 선물 1과 함께 공식 월드의 **별도 오프라인 사본**에 적용·독립 재검증·정확한 복원을 확인. **전체 맵 분리/시설/실플레이/멀티 검증 아직 미완료. 원작 코드 재사용 없음, 월드 파일 배포 없음.** [기술 상세](DREHMAL_GAMEMODE_COMMAND_SEPARATION.md).
+
 ## Current build contract (supersedes historical implementation checkpoints below)
 - Slug: `projects/turnbound/`; Mod ID / namespace: `turnbound`.
 - Mod version: `0.1.0-alpha.17` (현재 마이그레이션 빌드의 식별자이며 플레이 가능 릴리스가 아님).

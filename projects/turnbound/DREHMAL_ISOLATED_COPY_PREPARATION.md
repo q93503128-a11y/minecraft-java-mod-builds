@@ -18,3 +18,7 @@
 ## 공식 v2.2.2f 통합 검증 상태
 
 [GitHub Actions #2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42616136730): **SUCCESS** (2026-11-09). 단순 적용·복구 외에, 차단된 **사본을 복구 전에 유지하여 독립적인 `verify` 검사를 수행**했다. 4개 경계/62개 명령 블록/30개 지역 파일을 확인했고 원본 ZIP과 `level.dat` 해시를 복구하였다. 원본 또는 가공한 월드 전체는 커밋·아티팩트에 포함되지 않았다. 정식 플레이테스트와 전체 원작 시스템 분리는 여전히 필요하다.
+
+## 2026-11-10 다섯 번째 선택적 분리 경계
+
+기존 `prepare_drehmal_isolated_copy.py`에 `--include-gamemode`를 붙이면 [원작 `gamemode` 블록 29개](DREHMAL_GAMEMODE_COMMAND_SEPARATION.md)를 추가한다. 기존 4종은 기본 동작으로 유지한다. 검증 결과: [5종 공식 검사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42725309538) / [4종 호환 검사 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42725309921). 작업은 검증된 월드 **사본**에서만 허용하며 배포/플레이는 아직 금지한다.
