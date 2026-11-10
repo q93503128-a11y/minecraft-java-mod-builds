@@ -1,0 +1,49 @@
+name: TURNBOUND Drehmal direct gameplay command and mechanism triage
+on:
+  push:
+    branches:
+      - turnbound-content-rebuild
+    paths:
+      - '.github/workflows/turnbound-drehmal-direct-gameplay-triage.yml'
+      - 'projects/turnbound/tools/review_drehmal_direct_gameplay_blocks.py'
+      - 'projects/turnbound/tools/test_review_drehmal_direct_gameplay_blocks.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test source command grammar and redaction boundaries
+        working-directory: projects/turnbound
+        run: python3 -m unittest discover -s tools -p 'test_review_drehmal_direct_gameplay_blocks.py'
+      - name: Retrieve earlier official verified command block metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42591982023 --repo "${GITHUB_REPOSITORY}" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/official-direct-source
+      - name: Obtain checksum-verified Drehmal 2.2.2f source on ephemeral runner
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/extract_official_drehmal_preview.py --download-dir "${RUNNER_TEMP}/official-shards" --world-dir "${RUNNER_TEMP}/drehmal-official"
+      - name: Compare all 2232 original command hashes then review direct gameplay targets
+        working-directory: projects/turnbound
+        run: |
+          set -euo pipefail
+          python3 tools/review_drehmal_direct_gameplay_blocks.py \
+            --world "${RUNNER_TEMP}/drehmal-official" \
+            --aux build/official-direct-source/drehmal-auxiliary-entrypoints.json \
+            --output build/direct-gameplay-review.json
+      - name: Publish derived metadata ONLY, not original world or command body
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-direct-gameplay-triage
+          path: projects/turnbound/build/direct-gameplay-review.json
+          retention-days: 14
+          if-no-files-found: warn
