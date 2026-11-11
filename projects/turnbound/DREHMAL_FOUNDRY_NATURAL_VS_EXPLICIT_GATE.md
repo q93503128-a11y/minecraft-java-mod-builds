@@ -49,3 +49,13 @@ CI: .github/workflows/turnbound-drehmal-foundry-natural-vs-function.yml
 - 아직 players:overworld_p 자연 실행/실제 door 경로 인과, 상위 스케줄·tick 분기와 동적 선택자 조건, 문 물리 통행은 확인되지 않았다. 새 정적 검사는 players:overworld_p의 door 호출 조건 및 상위 함수/함수 태그 연결을 좁혀 조사하도록 확장했다.
 
 본 증거에 근거해 원작 levers/main을 수정하거나 door 호출을 레버 콜백에 임의 추가해서는 안 된다. 기존 원본 문·레버·퍼즐 보존, 8단계 미적용, 실제 월드 불변, MAP SEPARATION COMPLETE = NO.
+
+## 2026-11-11 original `players:overworld_p` 문 조건 구조
+
+[원본 5,487개 함수 및 entity 선택자 정적 검사 #42943038839 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42943038839). 원본에서 `foundry:levers/door`를 호출하는 해당 함수 내 조건은 원작 levers/main과 **동일 점수 키**에 대한 `matches 3` 그리고 `if entity @s` 선택자를 함께 요구한다. 선택자는 좌표 (-3276,159,1570)에서 12블록 이하 범위를 가리키고 별도 `predicate` 리소스 필터가 있다. 이 조건들은 한 명령의 AND 조건이며, 실제 원본 명령행은 보고서에 포함하지 않았다.
+
+상위 리터럴 호출은 `players:main` → `players:overworld` → `players:overworld_p`. Minecraft tick/load 태그에 `overworld_p` 직접 등록은 없으며, 상위 엔트리포인트가 실제로 언제 어떤 실행자 컨텍스트로 활성화되는지는 아직 입증되지 않았다.
+
+기존 서버는 마지막 원격 레버에서 종료하여 위치 조건은 충족되지 않았다. 다음 폐기용 서버 실험에서는 기존 3레버 자연 우클릭과 3초 무입력 대조가 끝난 후 *새롭게* 플레이어가 확인된 조건 중심 반경 12 내의 안전한 발판으로 이동한다. 문 clone 90블록 전후 차이, 레버 상태 및 위치를 측정하며 원작 door 함수 직접 호출, `advancement grant`, 원작 원문·월드 편집 및 8단계 적용은 하지 않는다. 원작 `predicate`의 실제 판정도 해당 결과가 나오기 전까지 미검증.
+
+**MAP SEPARATION COMPLETE = NO**. 실제 통행·원작 6웨이브 비재진입·게임 START/클라이언트·멀티 승인 전.

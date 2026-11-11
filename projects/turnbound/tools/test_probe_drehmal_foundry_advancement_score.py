@@ -13,6 +13,9 @@ class FoundryAdvancementScoreTraceUnitTests(unittest.TestCase):
         observed=m.evaluate_main_scores({("#private","private_objective"):2},clauses)
         self.assertEqual([x["would_match_in_assumed_context"] for x in observed],[False,True,False])
         self.assertNotIn("private_objective",json.dumps(observed))
+    def test_gate_proximity_is_a_separate_natural_event(self):
+        self.assertEqual(m.GATE_PRESENCE_CENTER,(-3276,159,1570))
+        self.assertEqual(m.GATE_PRESENCE_MAX_RADIUS,12)
     def test_wrong_conditions_refused(self):
         with self.assertRaises(ValueError):
             m.parse_main_clauses("execute if score #a private matches 3 run function foundry:levers/door")

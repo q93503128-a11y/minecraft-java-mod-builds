@@ -15,7 +15,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from probe_drehmal_facility_callback_runtime import scoreboard_values
+from probe_drehmal_facility_callback_runtime import scoreboard_values, query_position
 from inspect_drehmal_foundry_main_baseline import source_destination_comparison, function_inventory
 
 import preview_drehmal_primordial_root_ninth as nine
@@ -28,6 +28,8 @@ LEVERS={
  "foundry_3":(-3394,146,1081),
 }
 MARKER=".turnbound-disposable-foundry-protocol"
+GATE_PRESENCE_CENTER=(-3276,159,1570)
+GATE_PRESENCE_MAX_RADIUS=12
 
 def powered(world,pos):
     x,y,z=pos
@@ -375,6 +377,52 @@ def probe(project,world):
         rcon.command("save-all flush")
         post_control_end=no_click_snapshot(world,clauses)
         post_control_background_changes=changed_score_entries(post_control_scores,scoreboard_values(world))
+        # New, separate physical hypothesis: original players:overworld_p requires
+        # score == 3 AND @s near a gate-centered 12 block predicate region.
+        # No original door function or advancement command is invoked here.
+        position_center=GATE_PRESENCE_CENTER
+        candidate=None
+        for dy in (0,-1,1,-2,2,-3,3):
+            try:
+                candidate=stand(world,(position_center[0],position_center[1]+dy,position_center[2]))
+                break
+            except ValueError:
+                pass
+        if candidate is None:
+            raise ValueError("No safe natural-player test position near original Foundry gate predicate center")
+        if sum((candidate[i]-position_center[i])**2 for i in range(3))>=GATE_PRESENCE_MAX_RADIUS**2:
+            raise ValueError("Cannot place natural protocol player within original gate distance predicate")
+        pre_presence=source_destination_comparison(world)
+        pre_presence_snapshot=gate_snapshot(world)
+        sx,sy,sz=candidate
+        moved=rcon.command(f"tp DrehmalAliceCI {sx} {sy} {sz}")
+        if "teleported" not in moved.lower():
+            raise ValueError("Natural presence probe teleport was not accepted")
+        time.sleep(3)
+        rcon.command("save-all flush")
+        actual_pos=query_position(rcon,"DrehmalAliceCI")
+        if sum((actual_pos[i]-position_center[i])**2 for i in range(3))>=GATE_PRESENCE_MAX_RADIUS**2:
+            raise ValueError("Original controller displaced the test player outside the gate predicate radius")
+        post_presence=source_destination_comparison(world)
+        post_presence_snapshot=gate_snapshot(world)
+        presence_delta=gate_diff(pre_presence_snapshot,post_presence_snapshot)
+        after_proximity_all_powered=all(powered(world,p) for p in LEVERS.values())
+        if not after_proximity_all_powered:
+            raise ValueError("Foundry lever state regressed during natural proximity intervention")
+        presence_observation={
+            "test_method":"natural_player_presence_after_three_real_lever_clicks",
+            "reference_center":list(position_center),
+            "reference_radius":GATE_PRESENCE_MAX_RADIUS,
+            "safe_player_teleport_accepted":True,
+            "player_within_reference_radius":True,
+            "three_levers_still_powered":True,
+            "source_dest_differences_before":pre_presence["source_destination_fullstate_differences"],
+            "source_dest_differences_after":post_presence["source_destination_fullstate_differences"],
+            "exact_clone_target_id_changes_after_arrival":presence_delta["original_clone_destination_changed_blocks"],
+            "original_function_explicitly_invoked":False,
+            "predicate_resource_condition_individually_verified":False,
+            "door_passage_playtested":False,
+        }
         rcon.command("stop")
         server.wait(timeout=90)
         if server.returncode!=0:raise ValueError("Drehmal copied server abnormal exit")
@@ -389,6 +437,7 @@ def probe(project,world):
             "no_click_control_after":{
                 "before":post_control_begin,"after":post_control_end,
                 "background_score_changed_entries":post_control_background_changes},
+            "natural_gate_proximity":presence_observation,
             "original_advancement_reward_links":rewards,
             "main_score_conditions":[{"clause":r["clause"],"polarity":r["polarity"],
                                       "required_match":[r["lower"],r["upper"]],

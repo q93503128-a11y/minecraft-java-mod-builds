@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-11 Foundry 원작 door 엔티티 조건 확인:** [정적 CI #42943038839 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42943038839). players:overworld_p에서 문을 호출할 때 동일 점수 키 matches 3 + `@s`의 (-3276,159,1570) 중심 반경 12 및 원작 predicate 조건을 동시에 검사함. 기존 원격 레버 최종 위치에서는 이 거리 조건 미충족. 다음은 3회 자연 클릭 이후 검증된 중심 근처 실제 플레이어 이동으로 문 변화를 측정. 원본/실사용 월드 변경 없음. MAP SEPARATION COMPLETE = NO. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md).
+
+
 > **2026-11-11 Foundry door 호출자 정적 #42942060986 PASS:** [원본 5,487개 함수 추적](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42942060986): 원래 levers/main의 matches 1/2/3은 모두 tellraw, 조건은 동일 점수 키. levers/1_check~3_check의 업적 동사는 revoke. door 함수의 발견된 원본 리터럴 호출자는 players:overworld_p 하나. 다음은 해당 상위 함수 실행 경로와 조건 분리. 시설/원작 함수 변경 없음, 전체 맵 분리 NO. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md).
 
 

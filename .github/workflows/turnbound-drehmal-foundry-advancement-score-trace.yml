@@ -87,8 +87,13 @@ jobs:
           assert data["advancement_file_observed"], "No saved advancement file; do not assert no progress"
           assert data["gate_exact_90_blocks"]["baseline_source_destination_differences"]>0
           assert not data["gate_exact_90_blocks"]["explicit_original_door_function_invoked"]
+          p=data["natural_gate_proximity"]
+          assert p["safe_player_teleport_accepted"] and p["player_within_reference_radius"]
+          assert p["three_levers_still_powered"] and not p["original_function_explicitly_invoked"]
+          assert p["source_dest_differences_before"]>0
+          assert p["source_dest_differences_after"]>=0
           assert not data["door_traversal_verified"] and not data["map_separation_complete"]
-          print("PASS: original Foundry natural use vs progress and score snapshots; original door function not invoked")
+          print("PASS: original Foundry natural use, score snapshots, and post-click gate proximity; direct door invocation absent")
           PY
           rm -rf -- "$copy"
       - name: Publish status flags only, no map/data/logs/player identities
