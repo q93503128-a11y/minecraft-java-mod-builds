@@ -93,4 +93,16 @@ class GateBaselineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"callsite count|Unsupported original upstream"):
                 probe.original_upstream_guard_clauses(path)
 
+
+    def test_entities_main_player_dispatch_selector_private_filter(self):
+        import probe_drehmal_foundry_advancement_score as probe
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/"original.zip"
+            with zipfile.ZipFile(path,"w") as z:
+                z.writestr("data/entities/functions/main.mcfunction",
+                           "execute as @a[gamemode=adventure,tag=!hidden] at @s run function players:main")
+            selector,shape=probe.original_entity_main_player_selector(path)
+            self.assertEqual(selector,"@a[gamemode=adventure,tag=!hidden]")
+            self.assertEqual(shape["filter_names"],["gamemode","tag"])
+            self.assertFalse(shape["original_selector_exported"])
 if __name__=="__main__":unittest.main()

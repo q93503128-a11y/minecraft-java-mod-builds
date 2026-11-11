@@ -104,6 +104,14 @@ jobs:
                      for e in upstream["callsite_evaluations"] for c in e["conditions"])
           assert not upstream["original_functions_explicitly_invoked"]
           assert not upstream["original_guard_literals_exported"]
+          dispatcher=p["entities_main_dispatch_selector_comparison"]
+          assert dispatcher["original_selector_shape"]["selector_kind"]=="@a"
+          assert all(isinstance(dispatcher[k],bool) for k in (
+              "original_selector_passed_from_console_context",
+              "original_selector_passed_from_player_context",
+              "self_equivalent_filter_passed"))
+          assert not dispatcher["original_function_explicitly_invoked"]
+          assert not dispatcher["original_selector_literals_exported"]
           assert not data["door_traversal_verified"] and not data["map_separation_complete"]
           print("PASS: original Foundry natural use, score snapshots, and post-click gate proximity; direct door invocation absent")
           PY

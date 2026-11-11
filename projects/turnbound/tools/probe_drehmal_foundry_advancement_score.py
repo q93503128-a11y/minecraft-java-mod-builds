@@ -348,6 +348,43 @@ def check_upstream_guard(rcon,world,polarity,kind,arg,objective):
     return bool(observed)
 
 
+
+def original_entity_main_player_selector(pack):
+    """Read original tick dispatcher player filter; never serialize its text."""
+    with zipfile.ZipFile(pack) as archive:
+        member="data/entities/functions/main.mcfunction"
+        if member not in archive.namelist():
+            raise ValueError("Original entities:main tick dispatcher missing")
+        calls=[]
+        for raw in archive.read(member).decode("utf-8").splitlines():
+            line=raw.strip().lstrip("/")
+            if line.startswith("#") or not line:
+                continue
+            if re.search(r"\bfunction\s+players:main(?![a-z0-9_./-])",line):
+                calls.append(line)
+        if len(calls)!=1:
+            raise ValueError("Original entities:main player dispatch count changed")
+        parsed=re.fullmatch(
+            r"execute\s+as\s+(@a(?:\[[^]]+\])?)\s+at\s+@s"
+            r"\s+run\s+function\s+players:main",calls[0])
+        if parsed is None:
+            raise ValueError("Original entities:main selector/context shape unsupported")
+        selector=parsed.group(1)
+        keys=sorted(set(re.findall(r"(?:\[|,)([a-z_]+)=",selector)))
+        return selector,{"selector_kind":"@a","filter_names":keys,
+                         "has_filters":bool(keys),"original_selector_exported":False}
+
+
+def check_dispatch_selector(rcon,world,selector,objective,player_context):
+    prefix=("execute as DrehmalAliceCI at @s " if player_context else "")
+    rcon.command(prefix+f"execute store success score #dispatcher_guard {objective} run execute if entity {selector}")
+    rcon.command("save-all flush")
+    result=scoreboard_values(world).get(("#dispatcher_guard",objective))
+    if result not in (0,1):
+        raise ValueError("Could not measure tick dispatcher player selector from copied scoreboard")
+    return bool(result)
+
+
 def check_door_selector_guard(rcon,world,selector,objective):
     # The command only evaluates a vanilla entity selector and stores 0/1 in
     # a newly-created diagnostic objective; no original function is invoked.
@@ -538,6 +575,11 @@ def probe(project,world):
         try:
             without_predicate=check_door_selector_guard(rcon,world,plain_selector,private_objective)
             with_predicate=check_door_selector_guard(rcon,world,full_selector,private_objective)
+            dispatch_selector,dispatch_shape=original_entity_main_player_selector(world/nine.PACK)
+            console_dispatch_pass=check_dispatch_selector(rcon,world,dispatch_selector,private_objective,False)
+            player_dispatch_pass=check_dispatch_selector(rcon,world,dispatch_selector,private_objective,True)
+            self_selector="@s"+dispatch_selector[2:]
+            self_dispatch_pass=check_dispatch_selector(rcon,world,self_selector,private_objective,True)
             upstream_conditions=[]
             for edge in original_upstream_guard_clauses(world/nine.PACK):
                 evaluations=[]
@@ -565,6 +607,15 @@ def probe(project,world):
             "original_door_command_invoked":False,
             "original_selector_text_exported":False,
             "diagnostic_score_objective_removed":True,
+        }
+        presence_observation["entities_main_dispatch_selector_comparison"]={
+            "original_selector_shape":dispatch_shape,
+            "protocol_player_gamemode":"creative",
+            "original_selector_passed_from_console_context":console_dispatch_pass,
+            "original_selector_passed_from_player_context":player_dispatch_pass,
+            "self_equivalent_filter_passed":self_dispatch_pass,
+            "original_function_explicitly_invoked":False,
+            "original_selector_literals_exported":False,
         }
         presence_observation["upstream_route_guard_comparison"]={
             "evaluated_as":"protocol_player_at_natural_foundry_gate_position",
