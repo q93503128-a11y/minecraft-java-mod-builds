@@ -105,4 +105,20 @@ class GateBaselineTests(unittest.TestCase):
             self.assertEqual(selector,"@a[gamemode=adventure,tag=!hidden]")
             self.assertEqual(shape["filter_names"],["gamemode","tag"])
             self.assertFalse(shape["original_selector_exported"])
+
+    def test_dispatch_player_context_executes_nested_vanilla_command(self):
+        import probe_drehmal_foundry_advancement_score as probe
+        class Rcon:
+            def __init__(self): self.commands=[]
+            def command(self,cmd): self.commands.append(cmd);return "ok"
+        r=Rcon()
+        with patch.object(probe,"scoreboard_values",
+                          return_value={("#dispatcher_guard","safe_test"):1}):
+            self.assertTrue(probe.check_dispatch_selector(
+                r,None,"@a[gamemode=creative]","safe_test",True))
+        self.assertTrue(r.commands[0].startswith(
+            "execute as DrehmalAliceCI at @s run execute store success score"))
+        self.assertIn("run execute if entity @a[gamemode=creative]",r.commands[0])
+        self.assertEqual(r.commands[1],"save-all flush")
+
 if __name__=="__main__":unittest.main()

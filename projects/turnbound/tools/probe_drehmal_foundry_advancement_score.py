@@ -376,7 +376,7 @@ def original_entity_main_player_selector(pack):
 
 
 def check_dispatch_selector(rcon,world,selector,objective,player_context):
-    prefix=("execute as DrehmalAliceCI at @s " if player_context else "")
+    prefix=("execute as DrehmalAliceCI at @s run " if player_context else "")
     rcon.command(prefix+f"execute store success score #dispatcher_guard {objective} run execute if entity {selector}")
     rcon.command("save-all flush")
     result=scoreboard_values(world).get(("#dispatcher_guard",objective))
