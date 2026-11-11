@@ -29,6 +29,7 @@ public final class Turnbound implements ModInitializer {
         TurnboundBattleBridge.register();
         TurnboundFieldEncounterService.register();
         TurnboundCheckpointService.register();
+        TurnboundFoundryGateService.register();
         ServerLifecycleEvents.SERVER_STOPPED.register(TurnboundWorldGate::close);
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             if (ServerPlayNetworking.canSend(handler.player, WORLD_MODE_PACKET)) {

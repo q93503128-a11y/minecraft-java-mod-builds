@@ -399,6 +399,18 @@ def check_door_selector_guard(rcon,world,selector,objective):
 def probe(project,world):
     if (world/"turnbound-world.marker").exists():raise ValueError("Active world forbidden")
     if not nine.verify(world)["verified"]:raise ValueError("7+9 receipts not valid")
+    adapter_enabled=os.getenv("TURNBOUND_FOUNDRY_ADAPTER_CI")=="1"
+    if adapter_enabled:
+        # This option is permitted only in the disposable GitHub-runner staging
+        # directory, after original SHA and seven+nine layer verification.
+        runner_temp=os.getenv("RUNNER_TEMP")
+        if (not runner_temp or
+                not world.is_relative_to(Path(runner_temp).resolve(strict=True))):
+            raise ValueError("Opt-in gate adapter probe requires disposable runner staging")
+        marker=world/"turnbound-world.marker"
+        if marker.exists():
+            raise ValueError("Disposable Foundry marker unexpectedly already exists")
+        marker.write_text("TURNBOUND_DREHMAL_WORLD_V1\n",encoding="utf-8")
     for pos in LEVERS.values():powered(world,pos)
     run=project/"run"
     if run.exists():
@@ -560,6 +572,7 @@ def probe(project,world):
             "three_levers_still_powered":True,
             "source_dest_differences_before":pre_presence["source_destination_fullstate_differences"],
             "source_dest_differences_after":post_presence["source_destination_fullstate_differences"],
+            "independent_adapter_enabled":adapter_enabled,
             "exact_clone_target_id_changes_after_arrival":presence_delta["original_clone_destination_changed_blocks"],
             "original_function_explicitly_invoked":False,
             "predicate_resource_condition_individually_verified":False,
@@ -623,6 +636,14 @@ def probe(project,world):
             "original_functions_explicitly_invoked":False,
             "original_guard_literals_exported":False,
         }
+        if adapter_enabled:
+            assert post_presence["source_destination_fullstate_differences"]==0, \
+                "Independent adapter did not transform all 90 cells to exact physical source states"
+            assert presence_delta["original_clone_destination_changed_blocks"]==59, \
+                "Independent adapter did not modify the verified 59 closed-gate states"
+        else:
+            assert post_presence["source_destination_fullstate_differences"]==59, \
+                "Unmarked-world original tick control unexpectedly changed gate"
         rcon.command("stop")
         server.wait(timeout=90)
         if server.returncode!=0:raise ValueError("Drehmal copied server abnormal exit")
@@ -653,6 +674,7 @@ def probe(project,world):
                 "natural_clone_target_id_changes":delta["original_clone_destination_changed_blocks"],
                 "explicit_original_door_function_invoked":False,
             },
+            "independent_turnbound_adapter_enabled":adapter_enabled,
             "original_datapack_enabled":True,"command_blocks_enabled":True,
             "advancement_file_observed":any(x["advancement_file_observed_after"] for x in observations),
             "original_commands_or_nbt_exported":False,
