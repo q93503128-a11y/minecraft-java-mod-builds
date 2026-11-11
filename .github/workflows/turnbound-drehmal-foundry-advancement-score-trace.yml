@@ -92,6 +92,11 @@ jobs:
           assert p["three_levers_still_powered"] and not p["original_function_explicitly_invoked"]
           assert p["source_dest_differences_before"]>0
           assert p["source_dest_differences_after"]>=0
+          g=p["selector_comparison"]
+          assert isinstance(g["distance_and_coordinate_selector_passed"],bool)
+          assert isinstance(g["full_original_predicate_selector_passed"],bool)
+          assert g["diagnostic_score_objective_removed"] and not g["original_door_command_invoked"]
+          assert not g["original_selector_text_exported"]
           assert not data["door_traversal_verified"] and not data["map_separation_complete"]
           print("PASS: original Foundry natural use, score snapshots, and post-click gate proximity; direct door invocation absent")
           PY

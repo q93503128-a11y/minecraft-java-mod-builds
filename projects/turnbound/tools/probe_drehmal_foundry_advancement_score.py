@@ -254,6 +254,58 @@ def no_click_snapshot(world, clauses):
             "main_scores":evaluate_main_scores(scoreboard_values(world),clauses)}
 
 
+
+def original_door_entity_guards(pack):
+    """Internal-only original selector source for positive/negative RCON predicate tests."""
+    with zipfile.ZipFile(pack) as archive:
+        item="data/players/functions/overworld_p.mcfunction"
+        if item not in archive.namelist():
+            raise ValueError("Original Foundry door controller missing")
+        matches=[]
+        for raw in archive.read(item).decode("utf-8").splitlines():
+            line=raw.strip().lstrip("/")
+            if not re.search(r"\bfunction\s+foundry:levers/door(?![a-z0-9_./-])",line):
+                continue
+            full=re.search(r"\bif entity\s+(@s\[[^\]]+\])",line)
+            if full is None:
+                raise ValueError("Original door entity check changed shape")
+            matches.append(full.group(1))
+        if len(matches)!=1:
+            raise ValueError("Original Foundry door predicate call count drift")
+        full_selector=matches[0]
+        plain_selector="@s["+",".join(piece for piece in full_selector[3:-1].split(",")
+                                     if not piece.startswith("predicate="))+"]"
+        if plain_selector==full_selector:
+            raise ValueError("No original predicate key to isolate")
+        m=re.search(r"(?:\[|,)predicate=([a-z0-9_.-]+:[a-z0-9_./-]+)",full_selector)
+        if not m:
+            raise ValueError("Cannot classify original predicate resource ID")
+        resource=m.group(1)
+        ns,name=resource.split(":",1)
+        member="data/"+ns+"/predicates/"+name+".json"
+        predicate_shape={"resource_id":resource,"present_in_original_pack":member in archive.namelist()}
+        if member in archive.namelist():
+            data=json.loads(archive.read(member))
+            if not isinstance(data,dict):
+                raise ValueError("Malformed original predicate resource")
+            predicate_shape["top_level_condition_type"]=data.get("condition")
+            predicate_shape["top_level_keys"]=sorted(data.keys())
+            predicate_shape["has_nested_entity_predicate"]=isinstance(data.get("predicate"),dict)
+            if isinstance(data.get("predicate"),dict):
+                predicate_shape["nested_predicate_keys"]=sorted(data["predicate"].keys())
+        return full_selector,plain_selector,predicate_shape
+
+def check_door_selector_guard(rcon,world,selector,objective):
+    # The command only evaluates a vanilla entity selector and stores 0/1 in
+    # a newly-created diagnostic objective; no original function is invoked.
+    rcon.command(f"execute as DrehmalAliceCI at @s store success score #door_guard {objective} run execute if entity {selector}")
+    rcon.command("save-all flush")
+    result=scoreboard_values(world).get(("#door_guard",objective))
+    if result not in (0,1):
+        raise ValueError("Cannot prove original selector truth value from exact copied scoreboard")
+    return bool(result)
+
+
 def probe(project,world):
     if (world/"turnbound-world.marker").exists():raise ValueError("Active world forbidden")
     if not nine.verify(world)["verified"]:raise ValueError("7+9 receipts not valid")
@@ -422,6 +474,26 @@ def probe(project,world):
             "original_function_explicitly_invoked":False,
             "predicate_resource_condition_individually_verified":False,
             "door_passage_playtested":False,
+        }
+        # Compare original location-only selector with the *same* selector
+        # containing its original predicate. Never run the door function.
+        full_selector,plain_selector,predicate_shape=original_door_entity_guards(world/nine.PACK)
+        private_objective="tb_gate_"+secrets.token_hex(3)
+        objective_add=rcon.command(f"scoreboard objectives add {private_objective} dummy")
+        if "already exists" in objective_add.lower() or "error" in objective_add.lower():
+            raise ValueError("Disposable diagnostic scoreboard could not be isolated")
+        try:
+            without_predicate=check_door_selector_guard(rcon,world,plain_selector,private_objective)
+            with_predicate=check_door_selector_guard(rcon,world,full_selector,private_objective)
+        finally:
+            rcon.command(f"scoreboard objectives remove {private_objective}")
+        presence_observation["selector_comparison"]={
+            "distance_and_coordinate_selector_passed":without_predicate,
+            "full_original_predicate_selector_passed":with_predicate,
+            "original_predicate_resource_metadata":predicate_shape,
+            "original_door_command_invoked":False,
+            "original_selector_text_exported":False,
+            "diagnostic_score_objective_removed":True,
         }
         rcon.command("stop")
         server.wait(timeout=90)
