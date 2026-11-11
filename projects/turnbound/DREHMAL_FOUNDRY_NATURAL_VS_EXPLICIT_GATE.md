@@ -15,3 +15,12 @@
 
 도구: tools/probe_drehmal_foundry_natural_vs_door.py
 CI: .github/workflows/turnbound-drehmal-foundry-natural-vs-function.yml
+
+
+## 2026-11-11 실제 공식 7+9 임시 서버 A/B 결과 — PASS
+
+[GitHub Actions #42935729498](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42935729498): 공식 SHA를 확인한 7+9 임시 사본, 원작 데이터팩·명령 블록 ON, 프로토콜 플레이어가 막대기를 들고 원래 Foundry 레버 3개를 차례로 실제 우클릭한 뒤 모두 ON 유지. 첫 세 단계에서 각각 원작 scoreboard 엔트리 2건의 변경을 관측했지만 **정확한 문 clone 대상 블록 변경 0개**, source/dest 90개 중 59개 불일치가 유지됐음.
+
+동일 폐기 사본에서 원래 설치돼 있던 `foundry:levers/door`를 **테스트용 명령어로 딱 한 번 직접 실행**하자 대상 블록 **59개 변화**, source/dest 90개 BlockState가 모두 같아짐(불일치 0). 원작 코드를 TURNBOUND 게임에 복사·이식하지 않았다. 이는 문 함수 자체가 작동한다는 제한된 원인 대조 증거다. 원작의 자연 업적 보상 실행 여부·구체적 scoreboard 누적 조건·원작 게임 전투 재진입 여부는 아직 검사하지 않았음.
+
+**다음 작업:** 공식 사본에서 `foundry:1/2/3` 실제 업적 상태와 `foundry:levers/main`의 matches 1·2·3 관련 scoreboard 상태를 동일한 클릭 이벤트별로 보수적으로 측정(클릭 없는 대조 시간 포함). 원작 문 함수는 보존하고, 문제가 확인된 자연 이벤트/점수판/호출 연결만 조정한다. 이후 Foundry 문 통과 및 별개 arena_start/wave_logic 원작 6웨이브 미재진입을 검사한다. MAP SEPARATION COMPLETE = NO.
