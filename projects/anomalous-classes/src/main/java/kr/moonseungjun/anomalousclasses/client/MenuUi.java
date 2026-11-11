@@ -38,6 +38,11 @@ final class MenuUi {
     private static final ResourceLocation NODE_STATES = ui("node_states");
     private static final ResourceLocation CONNECTION_PATHS = ui("connection_paths");
     private static final ResourceLocation PROGRESS_STATES = ui("progress_states");
+    // State rows in button_states.png contain different amounts of transparent top padding.
+    // Measured visible-art centers (within their 256-pixel rows): idle/hover/pressed/disabled.
+    // Recenter the artwork without changing button hitboxes, font positions, or texture scale.
+    private static final int[] BUTTON_ART_CENTERS = {165, 137, 113, 93};
+    private static final int BUTTON_STATE_SOURCE_HEIGHT = 256;
     private static final int[] ACCENTS = {0xFFC69AE9, 0xFFD6A36D, 0xFF8CBF82, 0xFF70BFD5, 0xFFD0B47C, 0xFFB4C875};
     private static final ResourceLocation[] CLASS_ICONS = new ResourceLocation[ClassId.values().length];
     private static final ResourceLocation[] CLASS_ART = new ResourceLocation[ClassId.values().length];
@@ -233,12 +238,17 @@ final class MenuUi {
 
     static void drawButtonSkin(GuiGraphics graphics, int x, int y, int width, int height, int state) {
         int row = Math.max(0, Math.min(3, state));
+        // Center the actual painted button, not the transparent 256-pixel source row.
+        // The same correction applies to each of the three slices so the frame stays joined.
+        int artOffsetY = Math.round((BUTTON_STATE_SOURCE_HEIGHT / 2f - BUTTON_ART_CENTERS[row])
+                * height / BUTTON_STATE_SOURCE_HEIGHT);
+        int drawY = y + artOffsetY;
         int cap = Math.min(height, Math.max(1, width / 2));
         int centerWidth = Math.max(0, width - cap * 2);
-        region(graphics, BUTTON_STATES, x, y, cap, height, 0, row * 256, 256, 256, 1024, 1024);
-        region(graphics, BUTTON_STATES, x + cap, y, centerWidth, height,
+        region(graphics, BUTTON_STATES, x, drawY, cap, height, 0, row * 256, 256, 256, 1024, 1024);
+        region(graphics, BUTTON_STATES, x + cap, drawY, centerWidth, height,
                 256, row * 256, 512, 256, 1024, 1024);
-        region(graphics, BUTTON_STATES, x + width - cap, y, cap, height,
+        region(graphics, BUTTON_STATES, x + width - cap, drawY, cap, height,
                 768, row * 256, 256, 256, 1024, 1024);
     }
 
@@ -333,10 +343,19 @@ final class MenuUi {
             int state = pressedFrames > 0 ? 2 : (!active ? 3 : (isHoveredOrFocused() ? 1 : 0));
             if (pressedFrames > 0) pressedFrames--;
             drawButtonSkin(graphics, getX(), getY(), width, height, state);
+            Font font = Minecraft.getInstance().font;
             int available = Math.max(1, width - Math.max(8, width / 12));
-            drawCentered(graphics, Minecraft.getInstance().font, getMessage(), getX() + width / 2,
-                    getY() + Math.max(1, (height - Minecraft.getInstance().font.lineHeight) / 2),
-                    available, active ? 0xFFF1E9DB : 0xFFAAA39B);
+            Component label = fit(font, getMessage(), available);
+            int textColor = switch (state) {
+                case 1 -> 0xFFFFF7E6; // hovered or keyboard-focused
+                case 2 -> 0xFFFFE8CB; // pressed
+                case 3 -> 0xFFAAA39B; // disabled
+                default -> 0xFFF1E9DB;
+            };
+            graphics.drawString(font, label,
+                    getX() + (width - font.width(label)) / 2,
+                    getY() + Math.max(1, (height - font.lineHeight) / 2),
+                    textColor, state == 1);
         }
     }
 }
