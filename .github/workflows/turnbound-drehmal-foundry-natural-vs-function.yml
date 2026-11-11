@@ -1,0 +1,100 @@
+name: TURNBOUND Foundry natural 3-lever door vs explicit original door function
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-foundry-natural-vs-function.yml'
+      - 'projects/turnbound/tools/probe_drehmal_foundry_natural_vs_door.py'
+      - 'projects/turnbound/tools/test_probe_drehmal_foundry_natural_vs_door.py'
+      - 'projects/turnbound/tools/probe_drehmal_foundry_block_use.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  foundry-levers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Narrow unit and protocol syntax checks
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_drehmal_foundry_natural_vs_door.py'
+          python3 -m py_compile tools/probe_drehmal_foundry_natural_vs_door.py
+          node --check tools/probe_drehmal_foundry_block_use.cjs
+          npm install --prefix "$RUNNER_TEMP/drehmal-pack-protocol" \
+            --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+      - name: Retrieve pinned source boundary metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Three remote levers concurrently powered and entrance source block differences
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 40
+        env:
+          TURNBOUND_PROBE_NODE_MODULES: ${{ runner.temp }}/drehmal-pack-protocol/node_modules
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/seven-plus-nine-foundry-disposable"
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare \
+            --world-copy "$copy" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/foundry-private-six.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply \
+            --world-copy "$copy" --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/foundry-private-seven.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py apply \
+            --world-copy "$copy" --output build/foundry-private-nine.json
+          python3 tools/probe_drehmal_foundry_natural_vs_door.py \
+            --project . --world-copy "$copy" --output build/foundry-natural-vs-direct-derived.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("build/foundry-natural-vs-direct-derived.json").read_text())
+          assert data["lever_tests"]==3 and data["command_blocks_enabled"]
+          assert data["all_three_powered"] and all(r["powered_after_activation"] and r["real_hand_item_equipped"] for r in data["observations"])
+          assert not data["door_opened_verified"] and not data["map_separation_complete"]
+          assert all("original_scoreboard_changed_entries" in r for r in data["observations"])
+          x=data["gate_exact_90_blocks"]
+          assert x["baseline_source_destination_differences"]>0
+          assert x["server_accepted_explicit_original_function"]
+          assert not x["explicit_invocation_is_gameplay_approval"]
+          assert not data["map_separation_complete"]
+          print("PASS: 7+9 Foundry natural lever vs single direct original door callback compared; actual traversal, wave suppression NOT tested")
+          PY
+          rm -rf -- "$copy"
+      - name: Publish status flags only, no map/data/logs/player identities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-foundry-direct-function-differential
+          path: projects/turnbound/build/foundry-natural-vs-direct-derived.json
+          retention-days: 14
+          if-no-files-found: warn
