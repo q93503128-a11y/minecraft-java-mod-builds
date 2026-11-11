@@ -296,6 +296,77 @@ def trace_overworld_door_dispatch(pack):
     }
 
 
+
+def trace_overworld_entity_guard(pack):
+    """Derive selector mechanics/coordinate constraints, never source commands."""
+    here="players:overworld_p"
+    target="foundry:levers/door"
+    parent_of={here:set(),"players:overworld":set()}
+    guards=[]
+    tag_chains=[]
+    functions_scanned=0
+    def guard_shape(arg):
+        m=re.match(r"(@[aeprs])(?:\[(.*)\])?$",arg)
+        if not m:
+            return {"selector_kind":"literal_or_dynamic","option_names":[],
+                    "literal_coordinates":None,"distance_bounds":None}
+        kind,settings=m.groups()
+        settings=settings or ""
+        names=sorted(set(re.findall(r"(?:^|,)([a-z_]+)=",settings)))
+        def raw_option(key):
+            q=re.search(r"(?:^|,)"+re.escape(key)+r"=([^,}\]]+)",settings)
+            return q.group(1) if q else None
+        coords=[raw_option(key) for key in ("x","y","z")]
+        parsed=None
+        if all(value is not None and re.fullmatch(r"-?\d+(?:\.\d+)?",value) for value in coords):
+            parsed=[float(v) for v in coords]
+        distance=raw_option("distance")
+        bound=None
+        if distance and re.fullmatch(r"(?:\d+(?:\.\d+)?)?(?:\.\.(?:\d+(?:\.\d+)?)?)?",distance):
+            bound=distance
+        return {"selector_kind":kind,"option_names":names,
+                "literal_coordinates":parsed,"distance_bounds":bound,
+                "has_tag_filter":"tag" in names,
+                "has_score_filter":"scores" in names,
+                "has_type_filter":"type" in names}
+    with zipfile.ZipFile(pack) as z:
+        for path in z.namelist():
+            if not path.startswith("data/"):
+                continue
+            if path.endswith(".mcfunction") and "/functions/" in path:
+                ns,rel=path[5:].split("/functions/",1)
+                fid=ns+":"+rel.removesuffix(".mcfunction")
+                functions_scanned+=1
+                for raw in z.read(path).decode("utf-8").splitlines():
+                    line=raw.strip().lstrip("/")
+                    if not line or line.startswith("#"):continue
+                    for dest in parent_of:
+                        if re.search(r"\bfunction\s+"+re.escape(dest)+r"(?![a-z0-9_./-])",line):
+                            parent_of[dest].add(fid)
+                    if fid==here and re.search(r"\bfunction\s+"+re.escape(target)+r"(?![a-z0-9_./-])",line):
+                        selectors=re.findall(r"\b(?:if|unless)\s+entity\s+(\S+)",line)
+                        guards.append({"selector_count":len(selectors),
+                                       "selectors":[guard_shape(arg) for arg in selectors]})
+            elif path.endswith(".json") and "/tags/functions/" in path:
+                ns,rel=path[5:].split("/tags/functions/",1)
+                tag=ns+":"+rel.removesuffix(".json")
+                data=json.loads(z.read(path))
+                values=data.get("values",[]) if isinstance(data,dict) else []
+                for item in values if isinstance(values,list) else []:
+                    literal=item.get("id") if isinstance(item,dict) else item
+                    if literal in parent_of:
+                        tag_chains.append({"tag":tag,"function":literal})
+    if not guards:
+        raise ValueError("Foundry overworld dispatch lost pinned entity condition")
+    return {"function_count":functions_scanned,
+            "door_entity_guards":guards,
+            "reverse_function_callers":{k:sorted(v) for k,v in parent_of.items()},
+            "direct_tag_memberships":tag_chains,
+            "selector_raw_text_exported":False,
+            "original_function_content_exported":False,
+            "runtime_entity_predicate_verified":False}
+
+
 def inspect(world):
     world=Path(world).resolve(strict=True)
     if (world/"turnbound-world.marker").exists():
@@ -311,6 +382,7 @@ def inspect(world):
         "foundry_lever_function_condition_shapes":funcs,
         "foundry_door_caller_trace":trace_foundry_door_callers(world/"datapacks"/"hi_drehmal.zip"),
         "foundry_overworld_door_dispatch":trace_overworld_door_dispatch(world/"datapacks"/"hi_drehmal.zip"),
+        "foundry_overworld_entity_guard":trace_overworld_entity_guard(world/"datapacks"/"hi_drehmal.zip"),
         "original_map_modified":False,
         "original_commands_or_nbt_exported":False,
         "dynamic_score_conditions_verified":False,

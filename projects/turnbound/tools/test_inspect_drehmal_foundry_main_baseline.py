@@ -66,6 +66,27 @@ class GateBaselineTests(unittest.TestCase):
             self.assertEqual(result["literal_function_callers_of_entry"],["players:tick"])
             self.assertFalse(result["minecraft_tick_and_load_tags"][0]["contains_overworld_controller"])
             self.assertNotIn("hidden_score",json.dumps(result))
+    def test_foundry_overworld_door_entity_selector_metadata(self):
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/"original.zip"
+            with zipfile.ZipFile(path,"w") as z:
+                z.writestr("data/players/functions/overworld_p.mcfunction",
+                    "execute if score #private private_obj matches 3 if entity @a[x=-3276,y=160,z=1576,distance=..6,tag=Foundry] run function foundry:levers/door")
+                z.writestr("data/players/functions/overworld.mcfunction",
+                    "function players:overworld_p")
+                z.writestr("data/players/functions/master.mcfunction",
+                    "function players:overworld")
+                z.writestr("data/minecraft/tags/functions/tick.json",
+                    '{"values":["players:master"]}')
+            r=m.trace_overworld_entity_guard(path)
+            guard=r["door_entity_guards"][0]["selectors"][0]
+            self.assertEqual(guard["selector_kind"],"@a")
+            self.assertEqual(guard["literal_coordinates"],[-3276.0,160.0,1576.0])
+            self.assertEqual(guard["distance_bounds"],"..6")
+            self.assertTrue(guard["has_tag_filter"])
+            self.assertEqual(r["reverse_function_callers"]["players:overworld"],["players:master"])
+            self.assertNotIn("private_obj",json.dumps(r))
+            self.assertNotIn("Foundry",json.dumps(r))
     def test_function_inventory_fails_closed_on_missing_pinned_member(self):
         with tempfile.TemporaryDirectory() as d:
             path=Path(d)/"original.zip"

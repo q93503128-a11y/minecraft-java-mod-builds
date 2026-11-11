@@ -48,6 +48,10 @@ jobs:
           assert o["door_call_sites"]
           assert o["original_functions_read"]>1000
           assert not o["original_score_key_names_exported"]
+          e=d["foundry_overworld_entity_guard"]
+          assert e["door_entity_guards"] and e["function_count"]>1000
+          assert not e["selector_raw_text_exported"]
+          assert not e["original_function_content_exported"]
           assert not o["original_function_source_exported"]
           assert not t["original_commands_exported"]
           assert not d["original_commands_or_nbt_exported"]
