@@ -1,6 +1,6 @@
 # Drehmal 원작 시스템 분리 — 현재 검증 범위
 
-> **2026-11-11 Foundry 자동 tick 단절의 원인 확정:** 공식 7+9 사본 준비 도구가 \`minecraft:tick\`에서 \`entities:main\`을 포함한 원작 진입점 두 개를 **의도적으로 제거**한다. 원본 ZIP의 호출 경로는 존재하지만 사본에서는 자동 실행되지 않는다. 레버·점수·문 주변·상위 조건·\`@a\` 선택은 모두 정상, 문 복제 함수도 명시적 테스트에서 정상이다. 원작 전체 tick 복원 금지, 시설별 독립 어댑터 검토. [원인/증거](DREHMAL_FOUNDRY_TICK_ROOT_CAUSE.md). 맵 분리 NO.
+> **2026-11-11 Foundry 자동 tick 단절의 원인 확정:** 공식 7+9 사본 준비 도구가 `minecraft:tick`에서 `entities:main`을 포함한 원작 진입점 두 개를 **의도적으로 제거**한다. 원본 ZIP의 호출 경로는 존재하지만 사본에서는 자동 실행되지 않는다. 레버·점수·문 주변·상위 조건·`@a` 선택은 모두 정상, 문 복제 함수도 명시적 테스트에서 정상이다. 원작 전체 tick 복원 금지, 시설별 독립 어댑터 검토. [원인/증거](DREHMAL_FOUNDRY_TICK_ROOT_CAUSE.md). 맵 분리 NO.
 
 
 > **2026-11-10 원작 자동 위치 복귀 경로 선별 차단 검증:** [primordial/root → players:sethost 실서버 원인 확인 및 제9 가역 분리 정본](DREHMAL_PRIMORDIAL_ENTRY_REWARD_NINTH.md). [원작 데이터팩 ON/OFF #42814595461 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42814595461) 이후 [원작 보상 함수 연결 **한 개만** 제거한 2인 실서버 비교 #42817029748 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42817029748)에서 원작 데이터팩은 두 경우 모두 **활성**, 두 서버 모두 **reload** 조건인 상태로, `advancements:primordial/root`의 보상 `players:sethost`를 해제한 쪽의 수평 이동이 두 플레이어 모두 **0블록**으로 사라졌다(유지 사본 공중 210.345·바닥 213.214). [제9단계 독립 7단계 사본 적용/검증/정확 복구 #42818384756 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42818384756). **원작 함수/다른 원본 ZIP member는 그대로**, 원본 SHA 유지. 단, **기존 8단계와 9단계는 아직 결합된 결과가 아니고**, 실제 시설 조작·시작 좌표·멀티플레이·전체 맵 분리는 **미검증**. 다음도 캐릭터/전투 콘텐츠가 아니라 맵 분리·시설 보존이 우선.

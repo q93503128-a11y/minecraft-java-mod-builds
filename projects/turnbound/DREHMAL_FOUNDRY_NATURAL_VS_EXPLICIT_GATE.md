@@ -1,6 +1,6 @@
 # TURNBOUND — Foundry 자연 레버 입력 vs 원작 문 함수 직접 진단 비교
 
-> **2026-11-11 Foundry 자동 tick 단절의 원인 확정:** 공식 7+9 사본 준비 도구가 \`minecraft:tick\`에서 \`entities:main\`을 포함한 원작 진입점 두 개를 **의도적으로 제거**한다. 원본 ZIP의 호출 경로는 존재하지만 사본에서는 자동 실행되지 않는다. 레버·점수·문 주변·상위 조건·\`@a\` 선택은 모두 정상, 문 복제 함수도 명시적 테스트에서 정상이다. 원작 전체 tick 복원 금지, 시설별 독립 어댑터 검토. [원인/증거](DREHMAL_FOUNDRY_TICK_ROOT_CAUSE.md). 맵 분리 NO.
+> **2026-11-11 Foundry 자동 tick 단절의 원인 확정:** 공식 7+9 사본 준비 도구가 `minecraft:tick`에서 `entities:main`을 포함한 원작 진입점 두 개를 **의도적으로 제거**한다. 원본 ZIP의 호출 경로는 존재하지만 사본에서는 자동 실행되지 않는다. 레버·점수·문 주변·상위 조건·`@a` 선택은 모두 정상, 문 복제 함수도 명시적 테스트에서 정상이다. 원작 전체 tick 복원 금지, 시설별 독립 어댑터 검토. [원인/증거](DREHMAL_FOUNDRY_TICK_ROOT_CAUSE.md). 맵 분리 NO.
 
 
 2026-11-11 · branch turnbound-content-rebuild · Drehmal: APOTHEOSIS 2.2.2f (Minecraft 1.20.1 Fabric).
