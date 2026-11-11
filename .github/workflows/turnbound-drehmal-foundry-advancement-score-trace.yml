@@ -1,0 +1,101 @@
+name: TURNBOUND Foundry natural advancements and scoreboard gate trace
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-foundry-advancement-score-trace.yml'
+      - 'projects/turnbound/tools/probe_drehmal_foundry_advancement_score.py'
+      - 'projects/turnbound/tools/test_probe_drehmal_foundry_advancement_score.py'
+      - 'projects/turnbound/tools/probe_drehmal_foundry_block_use.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  foundry-levers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+      - name: Narrow unit and protocol syntax checks
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_probe_drehmal_foundry_advancement_score.py'
+          python3 -m py_compile tools/probe_drehmal_foundry_advancement_score.py
+          node --check tools/probe_drehmal_foundry_block_use.cjs
+          npm install --prefix "$RUNNER_TEMP/drehmal-pack-protocol" \
+            --no-save --no-package-lock --ignore-scripts minecraft-protocol@1.60.1
+      - name: Retrieve pinned source boundary metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42568764777 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-map-structure-audit --dir projects/turnbound/build/original-graph
+          gh run download 42574103795 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-trigger-positions --dir projects/turnbound/build/original-triggers
+          gh run download 42591982023 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-auxiliary-execution-audit --dir projects/turnbound/build/original-aux
+          gh run download 42729125584 --repo "$GITHUB_REPOSITORY" --name turnbound-drehmal-direct-gameplay-triage --dir projects/turnbound/build/direct-source-review
+      - name: Three natural lever clicks with advancement and scoreboard no-click control
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 40
+        env:
+          TURNBOUND_PROBE_NODE_MODULES: ${{ runner.temp }}/drehmal-pack-protocol/node_modules
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          copy="$RUNNER_TEMP/seven-plus-nine-foundry-disposable"
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          python3 tools/drehmal_pack_boundary.py stage --source "$source" --destination "$copy"
+          python3 tools/prepare_drehmal_isolated_copy.py prepare \
+            --world-copy "$copy" \
+            --aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --graph build/original-graph/build/drehmal-official-2.2.2f-summary.json \
+            --positions build/original-triggers/command-trigger-positions.json \
+            --include-gamemode --include-starter-experiment \
+            --direct-report build/direct-source-review/direct-gameplay-review.json \
+            --output build/foundry-private-six.json
+          python3 tools/verify_drehmal_start_chain_isolation.py apply \
+            --world-copy "$copy" --source-aux build/original-aux/drehmal-auxiliary-entrypoints.json \
+            --output build/foundry-private-seven.json
+          python3 tools/preview_drehmal_primordial_root_ninth.py apply \
+            --world-copy "$copy" --output build/foundry-private-nine.json
+          python3 tools/probe_drehmal_foundry_advancement_score.py \
+            --project . --world-copy "$copy" --output build/foundry-advancement-score-derived.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("build/foundry-advancement-score-derived.json").read_text())
+          assert data["lever_tests"]==3 and data["command_blocks_enabled"]
+          assert data["all_three_powered"] and data["original_datapack_enabled"]
+          assert all(r["click_sent"] and r["powered_after_activation"] for r in data["observations"])
+          assert len(data["main_score_conditions"])==3
+          assert {tuple(x["required_match"]) for x in data["main_score_conditions"]}=={(1,1),(2,2),(3,3)}
+          assert len(data["original_advancement_reward_links"])==3
+          assert data["advancement_file_observed"], "No saved advancement file; do not assert no progress"
+          assert data["gate_exact_90_blocks"]["baseline_source_destination_differences"]>0
+          assert not data["gate_exact_90_blocks"]["explicit_original_door_function_invoked"]
+          assert not data["door_traversal_verified"] and not data["map_separation_complete"]
+          print("PASS: original Foundry natural use vs progress and score snapshots; original door function not invoked")
+          PY
+          rm -rf -- "$copy"
+      - name: Publish status flags only, no map/data/logs/player identities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-drehmal-foundry-advancement-score-trace
+          path: projects/turnbound/build/foundry-advancement-score-derived.json
+          retention-days: 14
+          if-no-files-found: warn
