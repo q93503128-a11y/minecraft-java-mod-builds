@@ -1,5 +1,8 @@
 # TURNBOUND — Foundry 원작 tick 진입점 차단의 원인 규명
 
+> **2026-11-11 Foundry 독립 어댑터 실서버 검증 성공:** [독립 시설 검증 #42952475774](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42952475774) **PASS**. 원본 `minecraft:tick` 자동 함수 2개를 차단한 7+9 폐기 사본에서, TURNBOUND 자체 서버 어댑터를 활성화하자 원본 레버 3개 실제 우클릭 후 문 근처 접근에 따라 **정확히 59개 대상 블록이 변경**, 소스와 대상 90개 전체 블록 상태가 일치함(차이 **59→0**). 원작 문 함수 호출 0. [미활성 대조 #42952475741](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42952475741) **PASS**: 마커 없는 사본은 차이 59 그대로. [Fabric 빌드 #42952475746](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42952475746) **PASS**. **문 통행·원작 웨이브 비재진입·실제 화면·4인 멀티·전체 맵 분리 미검증.** [상세](DREHMAL_FOUNDRY_INDEPENDENT_GATE_ADAPTER.md). MAP SEPARATION COMPLETE = NO.
+
+
 기준: 2026-11-11 · branch `turnbound-content-rebuild` · 원본 Drehmal: APOTHEOSIS v2.2.2f · Minecraft 1.20.1/Fabric.
 판정: **Foundry 자연 개방 실패의 직접적인 진입점 단절 원인 확인. 맵 분리 완료 아님.**
 

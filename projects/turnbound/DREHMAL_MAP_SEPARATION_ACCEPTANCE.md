@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-11 Foundry 독립 어댑터 실서버 검증 성공:** [독립 시설 검증 #42952475774](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42952475774) **PASS**. 원본 `minecraft:tick` 자동 함수 2개를 차단한 7+9 폐기 사본에서, TURNBOUND 자체 서버 어댑터를 활성화하자 원본 레버 3개 실제 우클릭 후 문 근처 접근에 따라 **정확히 59개 대상 블록이 변경**, 소스와 대상 90개 전체 블록 상태가 일치함(차이 **59→0**). 원작 문 함수 호출 0. [미활성 대조 #42952475741](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42952475741) **PASS**: 마커 없는 사본은 차이 59 그대로. [Fabric 빌드 #42952475746](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42952475746) **PASS**. **문 통행·원작 웨이브 비재진입·실제 화면·4인 멀티·전체 맵 분리 미검증.** [상세](DREHMAL_FOUNDRY_INDEPENDENT_GATE_ADAPTER.md). MAP SEPARATION COMPLETE = NO.
+
+
 > **2026-11-11 Foundry 자동 tick 단절의 원인 확정:** 공식 7+9 사본 준비 도구가 `minecraft:tick`에서 `entities:main`을 포함한 원작 진입점 두 개를 **의도적으로 제거**한다. 원본 ZIP의 호출 경로는 존재하지만 사본에서는 자동 실행되지 않는다. 레버·점수·문 주변·상위 조건·`@a` 선택은 모두 정상, 문 복제 함수도 명시적 테스트에서 정상이다. 원작 전체 tick 복원 금지, 시설별 독립 어댑터 검토. [원인/증거](DREHMAL_FOUNDRY_TICK_ROOT_CAUSE.md). 맵 분리 NO.
 
 
