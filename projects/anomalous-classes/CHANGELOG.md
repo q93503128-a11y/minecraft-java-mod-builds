@@ -1,5 +1,12 @@
 # Changelog
 
+## Shared menu-frame artifact root repair — 2026-11-11
+
+- Fixed the source of repeated rail seams: the previous renderer compressed and repeated non-seamless rail ornaments across the frame. Rails now extend from a single sampled cross-section.
+- Corrected the side and center ornament crops so they no longer include neighboring rail/background pixels, and changed atlas extraction to preserve every RGBA pixel exactly.
+- Kept the original atlas, frame art, panel surfaces, and shared screen behavior. Added before/after corner and center-ornament composites, full-frame static review, and pixel/alpha audit evidence.
+- The static reviewer and 9-viewport layout verifier were updated. Minecraft GPU rendering was not tested; the client review remains for the user.
+
 ## Profile and skill-tree UI visual repair — 2026-11-11
 
 - Split the original menu frame atlas into verified corner, rail, and jewel textures; frame rails now repeat at the same source scale as corners instead of stretching guessed atlas strips across the screen.

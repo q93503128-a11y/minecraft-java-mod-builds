@@ -294,8 +294,8 @@ def check_art_and_screen() -> None:
         "rail_top_left": (24, 64), "rail_top_right": (24, 64),
         "rail_bottom_left": (24, 64), "rail_bottom_right": (24, 64),
         "rail_side_left": (64, 24), "rail_side_right": (64, 24),
-        "jewel_side_left": (48, 64), "jewel_side_right": (48, 64),
-        "jewel_top": (64, 88), "jewel_bottom": (64, 88),
+        "jewel_side_left": (24, 64), "jewel_side_right": (24, 64),
+        "jewel_top": (32, 88), "jewel_bottom": (32, 88),
     }
     for name, dimensions in frame_parts.items():
         path = RES / f"textures/gui/menu_v1/frame_parts/{name}.png"
@@ -303,7 +303,9 @@ def check_art_and_screen() -> None:
             fail(f"isolated frame component has wrong dimensions: {path}")
     splitter = (ROOT / "tools/extract_menu_frame_parts.java").read_text(encoding="utf-8")
     if "new Part(\"corner_tl\", 32, 32, 160, 160)" not in splitter \
-            or "new Part(\"rail_top_left\", 318, 64, 24, 64)" not in splitter:
+            or "new Part(\"rail_top_left\", 318, 64, 24, 64)" not in splitter \
+            or "new Part(\"jewel_top\", 368, 48, 32, 88)" not in splitter \
+            or "image.setRGB(x, y, atlas.getRGB(part.x() + x, part.y() + y))" not in splitter:
         fail("frame component crops no longer match the inspected atlas bounds")
 
     screen = (SRC / "client/SkillTreeScreen.java").read_text(encoding="utf-8")
@@ -331,11 +333,12 @@ def check_art_and_screen() -> None:
     if "OPEN_PROFILE" not in (SRC / "client/ClassSelectionKeyMappings.java").read_text(encoding="utf-8"):
         fail("M profile key mapping was removed")
 
-    if "drawHorizontalTiles(graphics" not in menu or "drawVerticalTiles(graphics" not in menu:
-        fail("panel rails are not tiled from their isolated source strips")
-    if "railTileLength = scale(corner, 24, 160)" not in menu \
-            or "sideRailTileLength = scale(corner, 24, 160)" not in menu:
-        fail("frame rail tiles no longer preserve the inspected source-to-corner scale")
+    if "drawHorizontalTiles" in menu or "drawVerticalTiles" in menu \
+            or "region(graphics, texture, x, y, endX - x, height, sampleX, 0, 1, textureHeight" not in menu \
+            or "region(graphics, texture, x, y, width, endY - y, 0, sampleY, textureWidth, 1" not in menu:
+        fail("shared panel renderer must stretch a single rail cross-section, not repeat decorated chunks")
+    if "0, 0, 32, 88, 32, 88" not in menu or "0, 0, 24, 64, 24, 64" not in menu:
+        fail("frame jewels must use the isolated atlas crop dimensions")
     if "topRailY + (railThickness - jewelHeight) / 2" not in menu \
             or "sideLeftX + (railThickness - sideJewelWidth) / 2" not in menu:
         fail("frame jewels are not centered on the corresponding rail axes")

@@ -1,0 +1,9 @@
+# Temporary pixel-analysis outputs retained locally during review
+atlas_*.png
+*_alpha.png
+*_checker.png
+*_purple.png
+*_grid.png
+*_atlas_raw_purple.png
+screenshot_*.png
+before/*.png

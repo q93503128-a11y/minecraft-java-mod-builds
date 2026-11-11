@@ -204,8 +204,8 @@ def main() -> None:
                 "rail_top_left": (24, 64), "rail_top_right": (24, 64),
                 "rail_bottom_left": (24, 64), "rail_bottom_right": (24, 64),
                 "rail_side_left": (64, 24), "rail_side_right": (64, 24),
-                "jewel_side_left": (48, 64), "jewel_side_right": (48, 64),
-                "jewel_top": (64, 88), "jewel_bottom": (64, 88),
+                "jewel_side_left": (24, 64), "jewel_side_right": (24, 64),
+                "jewel_top": (32, 88), "jewel_bottom": (32, 88),
             }
             for part, dimensions in frame_parts.items():
                 entry = f"assets/anomalousclasses/textures/gui/menu_v1/frame_parts/{part}.png"

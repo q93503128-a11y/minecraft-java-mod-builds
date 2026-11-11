@@ -42,6 +42,11 @@ Minecraft Java 1.21.1 / NeoForge 21.1.244 모드. 6직업 선택·변경, M 키 
 - [대형 그래프 정적 검토와 이관 검증](ui/reviews/2026-11-10/SKILLTREE_GRAPH_STATIC_REVIEW.md)
 - 배경·아이콘 생성 원천과 사용 조건은 [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md)에 기록했다.
 
+## 공통 메뉴 프레임
+
+- [프로필·스킬트리 패널 프레임 잔상 및 모서리 원인 분석, RGBA 감사, 전후 합성 검토](ui/reviews/2026-11-11/FRAME_ROOT_CAUSE_REVIEW.md)
+- 이 정적 검토 이미지는 실제 Minecraft GPU 출력이 아니다. 클라이언트 화면 최종 확인은 사용자가 진행한다.
+
 ## 개발
 
 Java 21과 Gradle Wrapper를 사용한다.

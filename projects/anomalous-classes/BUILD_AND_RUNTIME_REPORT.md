@@ -178,28 +178,6 @@ The existing `ClientModEvents.java:14` `EventBusSubscriber.bus()` removal warnin
 - File: `anomalous-classes-0.1.0-alpha.1.jar`
 - Size: 31,372,781 bytes
 - SHA-256: `1a985b65ed7d433be0fc13eaab92bf21b1b9394bfd735f60b8c8edc68ebd943e`
-- Checksum file: `anomalous-classes-0.1.0-alpha.1.jar.sha256`
-
-The current JAR is delivered as a local artifact. The repository's previously tracked artifact files were left untouched.
-
-## Warnings and limits
-
-- Compilation reports the existing deprecated NeoForge `EventBusSubscriber.Bus` API use in the client event subscriber.
-- The client log includes nonfatal vanilla goat-horn sound and emissive-shader sampler warnings.
-- Static font and viewport checks do not substitute for opening the screen in Minecraft. Final visual quality, real font shaping, zoom feel, and click accuracy still require user review.
-- Major passive stage purchase state is persistent, but a stage whose combat implementation does not exist remains unimplemented in combat.
-
-## User UI check
-
-1. Enter a test world and open the profile with `M`.
-2. Select **Skill Tree** and verify the active class map, all three branch directions, labels, node hover card, and SP counts.
-3. Drag from empty space, zoom around the pointer, and check that releasing a drag does not purchase a node.
-4. Purchase an available minor/major node, reopen the screen, then confirm SP and ownership persisted. Try a blocked node and an insufficient-SP node.
-5. Reset while outside combat; confirm the full node cost is returned. Try again in combat and confirm reset is rejected.
-6. Change class through the existing class-selection screen and confirm the other class has its own tree. Repeat at GUI Scale 2, 3, and 4 in 16:9, 16:10, and 4:3 windows; review Korean and English.
-7. For authorized progression testing, use the existing admin command `/class test grant-levels 10`.
-
-Do not interpret this UI checklist as a gameplay balance or combat-effect evaluation.
 
 ---
 
@@ -303,3 +281,72 @@ The JDK compiler reports the existing `EventBusSubscriber.bus()` / `.Bus` remova
 ## User verification
 
 The development client remains running without GUI input. Open a test world, press `M`, and inspect all four profile frame corners, the top/bottom rails and ornaments, class artwork crop, stat columns, and buttons. Open the skill tree and hover a locked and purchasable major node; verify the concise status, wrapped effect, card bounds, SP HUD, and node icons. Repeat in Korean and English at GUI Scale 2/3/4 and 16:9/16:10/4:3. This is UI-only review; no gameplay, combat, balance, or multiplayer test was run.
+
+---
+
+# Build and Runtime Report — 2026-11-11 frame artifact repair
+
+## Baseline and scope
+
+- Fetched latest `origin/main` before editing: `93709c133b288fe046cf73f31be103ee78b8bc69`.
+- Source and resource changes are scoped to `projects/anomalous-classes/`; unrelated project files were not included.
+- Corrected shared profile, class-management, skill-tree HUD, and tooltip frame rendering. The 581-node graph, 900-SP totals, skill icons/backgrounds, purchases, resets, prerequisites, saves, migrations, profile contents, and class flow were preserved.
+
+## Cause and fix
+
+The frame art was drawn once; the bad pieces came from the source geometry. The previous panel code compressed non-seamless 24px-wide rail artwork to about 4 GUI pixels at GUI Scale 4 and repeated it along the whole edge. The previous side-jewel crops were 48×64 rather than the isolated 24×64 art, and the top/bottom crops were 64×88 rather than 32×88. Those wider crops included adjacent rail/background pixels and were overdrawn on top of the rails. The old `Graphics2D` extractor also changed RGB values on partially transparent pixels (alpha remained unchanged), adding a smaller edge-sampling risk.
+
+Rails now stretch a single-pixel cross-section along their long axis instead of repeating the non-seamless crop. Side and center ornaments use exact isolated atlas regions. The extractor copies each RGBA pixel without compositing. The original atlas and authored frame shapes remain unchanged. Details and atlas coordinates are in [FRAME_ROOT_CAUSE_REVIEW.md](ui/reviews/2026-11-11/FRAME_ROOT_CAUSE_REVIEW.md).
+
+## Verification
+
+| Check | Result |
+|---|---|
+| Java / Gradle | OpenJDK 21.0.10 / Gradle 8.8 |
+| RGBA crop comparison | **PASS** — all 14 runtime PNGs match the selected `frame_atlas.png` source pixels exactly; alpha and color deltas are zero |
+| Previous extractor comparison | **REVIEWED** — alpha was unchanged; prior corner RGB differed by up to 5, and 24–45 transparent corner RGB samples per part had been reset |
+| Before/after visual composites | **STATIC REVIEWED** — all four corners and both center ornaments, plus whole frame; original `surface_tile.png` under the panel and a checker outside it expose edge leakage |
+| Shared UI static review | **PASS** — refreshed profile/tooltip compositions; profile and tree layout checks across 16:9, 16:10, 4:3 × GUI Scale 2, 3, 4 (18 cases) |
+| `python tools/verify_graph_skilltree.py` | **PASS** — 581 nodes, six 900-SP trees, 61 icons, Korean/English, migration fixtures, and 18 viewport cases |
+| `.\gradlew.bat --no-daemon --console=plain clean build --stacktrace` | **PASS** — 7 tasks; graph/migration runtime fixtures passed; `test` has no sources |
+| JAR verifier | **PASS** — 31,652,487 bytes, 65 compiled classes, metadata and required resources present, no duplicate entries |
+| SHA-256 | `50c21d20acea1e3f913a576a337d1e02904da1132272510187411f3200e38607` |
+| Existing deprecation warnings | Two in `client/ClientModEvents.java:14` (`EventBusSubscriber.bus()` and `Bus`); unrelated and unchanged |
+
+The static render is Java2D using the runtime PNGs and current layout math. It does not emulate Minecraft's GPU sampling or prove the in-game result.
+
+## Runtime and user review
+
+- **CLIENT RUNNING: YES.** No matching client process was present before launch. Started one `runClient` after the patched build; its log records NeoForge 21.1.244, `anomalousclasses`, resource reload, and OpenAL. It remains open for the user's review.
+- **CLIENT TESTED: NOT RUN.** No Minecraft screen was opened or manipulated and no CUA was used. The user should enter a world and inspect Profile corners and center title trim, Skill Tree SP panel and hover card, and Class Management corners. Repeat at preferred GUI scales/aspect ratios.
+- Datagen: **NOT CONFIGURED / NOT RUN**. GameTest: **NOT RUN**. Dedicated-server smoke boot: **NOT RUN**.
+- Gameplay, balance, combat, saves/migration behavior, and multiplayer were not retested by this frame-only task.
+
+## Artifact
+
+- JAR: `artifacts/anomalous-classes-0.1.0-alpha.1.jar`
+- Checksum: `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`
+- Pixel audit and side-by-side render: `ui/reviews/2026-11-11/frame-root-cause/`
+- GitHub `main` commit: filled after push.
+- Checksum file: `anomalous-classes-0.1.0-alpha.1.jar.sha256`
+
+The verified JAR and checksum are included under the project artifacts directory. The sanitized build, JAR verifier, pixel audit, and client-startup logs are preserved in the artifacts raw-logs ZIP.
+
+## Warnings and limits
+
+- Compilation reports the existing deprecated NeoForge `EventBusSubscriber.Bus` API use in the client event subscriber.
+- The client log includes nonfatal vanilla goat-horn sound and emissive-shader sampler warnings.
+- Static font and viewport checks do not substitute for opening the screen in Minecraft. Final visual quality, real font shaping, zoom feel, and click accuracy still require user review.
+- Major passive stage purchase state is persistent, but a stage whose combat implementation does not exist remains unimplemented in combat.
+
+## User UI check
+
+1. Enter a test world and open the profile with `M`.
+2. Select **Skill Tree** and verify the active class map, all three branch directions, labels, node hover card, and SP counts.
+3. Drag from empty space, zoom around the pointer, and check that releasing a drag does not purchase a node.
+4. Purchase an available minor/major node, reopen the screen, then confirm SP and ownership persisted. Try a blocked node and an insufficient-SP node.
+5. Reset while outside combat; confirm the full node cost is returned. Try again in combat and confirm reset is rejected.
+6. Change class through the existing class-selection screen and confirm the other class has its own tree. Repeat at GUI Scale 2, 3, and 4 in 16:9, 16:10, and 4:3 windows; review Korean and English.
+7. For authorized progression testing, use the existing admin command `/class test grant-levels 10`.
+
+Do not interpret this UI checklist as a gameplay balance or combat-effect evaluation.

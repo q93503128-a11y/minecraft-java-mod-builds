@@ -1,0 +1,56 @@
+ATLAS 768x768 type=6
+corner_tl            160x160 clear=892 lowA=9469 opaque=13886 blackA=4036 alpha=0..255 bounds=0,0..159,159 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+  samples corner_tl:
+      0,  0 01000000
+      0, 80 01000000
+      0,159 00000000
+    159,  0 027F7F7F
+    159, 80 FD2A1728
+    159,159 027F7F7F
+     40, 40 FEEE91EC
+     80, 80 FD87476E
+    120,120 047F7F7F
+    150,150 03AAAAAA
+     16, 16 01000000
+     48, 48 FE45164A
+corner_tr            160x160 clear=1711 lowA=8666 opaque=13917 blackA=3279 alpha=0..255 bounds=0,0..159,159 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+corner_bl            160x160 clear=1502 lowA=8875 opaque=13707 blackA=3481 alpha=0..255 bounds=0,0..159,159 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+corner_br            160x160 clear=1821 lowA=8471 opaque=13717 blackA=3432 alpha=0..255 bounds=0,0..159,159 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+rail_top_left        24x64 clear=24 lowA=72 opaque=1416 blackA=0 alpha=0..255 bounds=0,0..23,63 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+rail_top_right       24x64 clear=0 lowA=96 opaque=1416 blackA=0 alpha=1..255 bounds=0,0..23,63 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+rail_bottom_left     24x64 clear=0 lowA=48 opaque=1260 blackA=0 alpha=10..254 bounds=0,0..23,63 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+rail_bottom_right    24x64 clear=0 lowA=59 opaque=1248 blackA=0 alpha=7..254 bounds=0,0..23,63 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+rail_side_left       64x24 clear=0 lowA=360 opaque=1118 blackA=122 alpha=1..255 bounds=0,0..63,23 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+rail_side_right      64x24 clear=46 lowA=314 opaque=1119 blackA=101 alpha=0..255 bounds=0,0..63,23 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+jewel_side_left      24x64 clear=0 lowA=0 opaque=1536 blackA=0 alpha=252..254 bounds=0,0..23,63 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+jewel_side_right     24x64 clear=0 lowA=0 opaque=1536 blackA=1 alpha=253..254 bounds=0,0..23,63 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+jewel_top            32x88 clear=0 lowA=540 opaque=2013 blackA=0 alpha=3..254 bounds=0,0..31,87 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+  samples jewel_top:
+      0,  0 047F7F7F
+      0, 80 FBAC7854
+      0, 87 0B735C73
+     31,  0 047F7F7F
+     31, 80 FBAA7155
+     31, 87 087F5F5F
+     31, 40 FD261411
+     31, 80 FBAA7155
+     31, 87 087F5F5F
+     31, 87 087F5F5F
+     16, 16 EE260A14
+     31, 48 FE170E16
+jewel_bottom         32x88 clear=5 lowA=564 opaque=1957 blackA=47 alpha=0..254 bounds=0,0..31,87 cropDiff=0(alpha=0,maxA=0 maxRGB=0 visibleRGB=0 transparentRGB=0)
+PREVIOUS EXTRACTOR PIXEL COMPARISON (against previous atlas crop):
+  corner_tl            160x160 diff=3951 alphaDiff=0 maxAlpha=0 maxRGB=4 visibleRGB=3922 transparentRGB=29
+  corner_tr            160x160 diff=4713 alphaDiff=0 maxAlpha=0 maxRGB=4 visibleRGB=4689 transparentRGB=24
+  corner_bl            160x160 diff=3969 alphaDiff=0 maxAlpha=0 maxRGB=5 visibleRGB=3924 transparentRGB=45
+  corner_br            160x160 diff=3688 alphaDiff=0 maxAlpha=0 maxRGB=5 visibleRGB=3663 transparentRGB=25
+  rail_top_left        24x64 diff=90 alphaDiff=0 maxAlpha=0 maxRGB=3 visibleRGB=66 transparentRGB=24
+  rail_top_right       24x64 diff=123 alphaDiff=0 maxAlpha=0 maxRGB=1 visibleRGB=123 transparentRGB=0
+  rail_bottom_left     24x64 diff=174 alphaDiff=0 maxAlpha=0 maxRGB=1 visibleRGB=174 transparentRGB=0
+  rail_bottom_right    24x64 diff=215 alphaDiff=0 maxAlpha=0 maxRGB=1 visibleRGB=215 transparentRGB=0
+  rail_side_left       64x24 diff=277 alphaDiff=0 maxAlpha=0 maxRGB=1 visibleRGB=277 transparentRGB=0
+  rail_side_right      64x24 diff=254 alphaDiff=0 maxAlpha=0 maxRGB=1 visibleRGB=254 transparentRGB=0
+  jewel_side_left      48x64 diff=160 alphaDiff=0 maxAlpha=0 maxRGB=1 visibleRGB=160 transparentRGB=0
+  jewel_side_right     48x64 diff=189 alphaDiff=0 maxAlpha=0 maxRGB=1 visibleRGB=189 transparentRGB=0
+  jewel_top            64x88 diff=947 alphaDiff=0 maxAlpha=0 maxRGB=2 visibleRGB=941 transparentRGB=6
+  jewel_bottom         64x88 diff=1068 alphaDiff=0 maxAlpha=0 maxRGB=3 visibleRGB=1065 transparentRGB=3

@@ -43,7 +43,7 @@ public final class render_ui_static_review {
         swarmBackground = load("textures/gui/skilltree_v1/backgrounds/swarm_caster.png");
         nodeFrames = load("textures/gui/menu_v1/node_states.png");
 
-        write(OUT.resolve("frame_before_after.png"), frameComparison());
+        write(OUT.resolve("frame_legacy_uv_reference.png"), frameComparison());
         write(OUT.resolve("profile_layout_ko.png"), profile("ko_kr"));
         write(OUT.resolve("profile_layout_en.png"), profile("en_us"));
         write(OUT.resolve("tooltip_ko.png"), tooltip("ko_kr"));
@@ -57,8 +57,8 @@ public final class render_ui_static_review {
         Graphics2D g = graphics(result, 2);
         panel(g, new Box(10, 10, 492, 268), true);
         panel(g, new Box(W + 10, 10, 492, 268), false);
-        text(g, "BEFORE | original guessed atlas UV", 22, 34, 0xFFFFFFFF, "en_us");
-        text(g, "AFTER | isolated source parts, fixed-scale tiled rails", W + 22, 34, 0xFFFFE4B4, "en_us");
+        text(g, "BEFORE | older atlas-UV reconstruction", 22, 34, 0xFFFFFFFF, "en_us");
+        text(g, "AFTER | exact source crops, continuous rails", W + 22, 34, 0xFFFFE4B4, "en_us");
         g.dispose();
         return result;
     }
@@ -232,34 +232,33 @@ public final class render_ui_static_review {
         int offset = scale(corner, 32, 160), thickness = Math.max(1, scale(corner, 64, 160));
         int centerX = b.x() + b.w() / 2;
         boolean ornaments = corner >= 14 && b.w() >= 120 && b.h() >= 48;
-        int jewelW = ornaments ? scale(corner, 64, 160) : 0;
+        int jewelW = ornaments ? scale(corner, 32, 160) : 0;
         int jewelH = ornaments ? scale(corner, 88, 160) : 0;
         int jewelLeft = centerX - jewelW / 2, jewelRight = centerX + (jewelW + 1) / 2;
         int edgeStart = b.x() + corner - 1, edgeEnd = b.right() - corner + 1;
         int topY = b.y() + offset, bottomY = b.bottom() - corner + offset;
-        int tile = scale(corner, 24, 160);
         if (ornaments) {
-            hTiles(g, part("rail_top_left"), edgeStart, topY, jewelLeft, thickness, tile, 24, 64);
-            hTiles(g, part("rail_top_right"), jewelRight, topY, edgeEnd, thickness, tile, 24, 64);
-            hTiles(g, part("rail_bottom_left"), edgeStart, bottomY, jewelLeft, thickness, tile, 24, 64);
-            hTiles(g, part("rail_bottom_right"), jewelRight, bottomY, edgeEnd, thickness, tile, 24, 64);
+            hRail(g, part("rail_top_left"), edgeStart, topY, jewelLeft, thickness, 12, 24, 64);
+            hRail(g, part("rail_top_right"), jewelRight, topY, edgeEnd, thickness, 12, 24, 64);
+            hRail(g, part("rail_bottom_left"), edgeStart, bottomY, jewelLeft, thickness, 12, 24, 64);
+            hRail(g, part("rail_bottom_right"), jewelRight, bottomY, edgeEnd, thickness, 12, 24, 64);
         } else {
-            hTiles(g, part("rail_top_left"), edgeStart, topY, edgeEnd, thickness, tile, 24, 64);
-            hTiles(g, part("rail_bottom_left"), edgeStart, bottomY, edgeEnd, thickness, tile, 24, 64);
+            hRail(g, part("rail_top_left"), edgeStart, topY, edgeEnd, thickness, 12, 24, 64);
+            hRail(g, part("rail_bottom_left"), edgeStart, bottomY, edgeEnd, thickness, 12, 24, 64);
         }
         int centerY = b.y() + b.h() / 2;
-        int sideW = ornaments ? scale(corner, 48, 160) : 0;
+        int sideW = ornaments ? scale(corner, 24, 160) : 0;
         int sideH = ornaments ? scale(corner, 64, 160) : 0;
         int sideY = centerY - sideH / 2, sideLX = b.x() + offset, sideRX = b.right() - corner + offset;
-        int sideTile = scale(corner, 24, 160), sideStart = b.y() + corner - 1, sideEnd = b.bottom() - corner + 1;
+        int sideStart = b.y() + corner - 1, sideEnd = b.bottom() - corner + 1;
         if (ornaments) {
-            vTiles(g, part("rail_side_left"), sideLX, sideStart, sideY, thickness, sideTile, 64, 24);
-            vTiles(g, part("rail_side_left"), sideLX, sideY + sideH, sideEnd, thickness, sideTile, 64, 24);
-            vTiles(g, part("rail_side_right"), sideRX, sideStart, sideY, thickness, sideTile, 64, 24);
-            vTiles(g, part("rail_side_right"), sideRX, sideY + sideH, sideEnd, thickness, sideTile, 64, 24);
+            vRail(g, part("rail_side_left"), sideLX, sideStart, sideY, thickness, 12, 64, 24);
+            vRail(g, part("rail_side_left"), sideLX, sideY + sideH, sideEnd, thickness, 12, 64, 24);
+            vRail(g, part("rail_side_right"), sideRX, sideStart, sideY, thickness, 12, 64, 24);
+            vRail(g, part("rail_side_right"), sideRX, sideY + sideH, sideEnd, thickness, 12, 64, 24);
         } else {
-            vTiles(g, part("rail_side_left"), sideLX, sideStart, sideEnd, thickness, sideTile, 64, 24);
-            vTiles(g, part("rail_side_right"), sideRX, sideStart, sideEnd, thickness, sideTile, 64, 24);
+            vRail(g, part("rail_side_left"), sideLX, sideStart, sideEnd, thickness, 12, 64, 24);
+            vRail(g, part("rail_side_right"), sideRX, sideStart, sideEnd, thickness, 12, 64, 24);
         }
         drawSprite(g, "corner_tl", b.x(), b.y(), corner, corner, 160, 160);
         drawSprite(g, "corner_tr", b.right() - corner, b.y(), corner, corner, 160, 160);
@@ -268,33 +267,23 @@ public final class render_ui_static_review {
         if (ornaments) {
             int sideJewelLeft = sideLX + (thickness - sideW) / 2;
             int sideJewelRight = sideRX + (thickness - sideW) / 2;
-            drawSprite(g, "jewel_side_left", sideJewelLeft, sideY, sideW, sideH, 48, 64);
-            drawSprite(g, "jewel_side_right", sideJewelRight, sideY, sideW, sideH, 48, 64);
+            drawSprite(g, "jewel_side_left", sideJewelLeft, sideY, sideW, sideH, 24, 64);
+            drawSprite(g, "jewel_side_right", sideJewelRight, sideY, sideW, sideH, 24, 64);
             int jewelTopY = topY + (thickness - jewelH) / 2;
             int jewelBottomY = bottomY + (thickness - jewelH) / 2;
-            drawSprite(g, "jewel_top", jewelLeft, jewelTopY, jewelW, jewelH, 64, 88);
-            drawSprite(g, "jewel_bottom", jewelLeft, jewelBottomY, jewelW, jewelH, 64, 88);
+            drawSprite(g, "jewel_top", jewelLeft, jewelTopY, jewelW, jewelH, 32, 88);
+            drawSprite(g, "jewel_bottom", jewelLeft, jewelBottomY, jewelW, jewelH, 32, 88);
         }
     }
 
-    private static void hTiles(Graphics2D g, BufferedImage texture, int x, int y, int end, int height,
-                               int tileWidth, int sw, int sh) {
-        while (x < end) {
-            int dw = Math.min(tileWidth, end - x);
-            int cropped = Math.min(sw, (int) Math.ceil(dw * sw / (double) tileWidth));
-            drawImage(g, texture, x, y, dw, height, 0, 0, cropped, sh);
-            x += dw;
-        }
+    private static void hRail(Graphics2D g, BufferedImage texture, int x, int y, int end, int height,
+                              int sampleX, int textureWidth, int textureHeight) {
+        drawImage(g, texture, x, y, end - x, height, sampleX, 0, 1, textureHeight);
     }
 
-    private static void vTiles(Graphics2D g, BufferedImage texture, int x, int y, int end, int width,
-                               int tileHeight, int sw, int sh) {
-        while (y < end) {
-            int dh = Math.min(tileHeight, end - y);
-            int cropped = Math.min(sh, (int) Math.ceil(dh * sh / (double) tileHeight));
-            drawImage(g, texture, x, y, width, dh, 0, 0, sw, cropped);
-            y += dh;
-        }
+    private static void vRail(Graphics2D g, BufferedImage texture, int x, int y, int end, int width,
+                              int sampleY, int textureWidth, int textureHeight) {
+        drawImage(g, texture, x, y, width, end - y, 0, sampleY, textureWidth, 1);
     }
 
     private static void drawSprite(Graphics2D g, String name, int x, int y, int w, int h, int sw, int sh) {
