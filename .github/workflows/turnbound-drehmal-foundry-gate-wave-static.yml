@@ -1,0 +1,54 @@
+name: TURNBOUND Foundry original gate and arena execution graph audit
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-foundry-gate-wave-static.yml'
+      - 'projects/turnbound/tools/inspect_drehmal_foundry_gate_wave_paths.py'
+      - 'projects/turnbound/tools/test_inspect_drehmal_foundry_gate_wave_paths.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-original:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Narrow literal parser and reward-graph tests
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_inspect_drehmal_foundry_gate_wave_paths.py'
+          python3 -m py_compile tools/inspect_drehmal_foundry_gate_wave_paths.py
+      - name: Download official three-part v2.2.2f release and inspect unchanged source
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          python3 tools/inspect_drehmal_foundry_gate_wave_paths.py \
+            --original "$source" --output build/foundry-gate-wave-static-derived.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("build/foundry-gate-wave-static-derived.json").read_text())
+          assert d["official_original_sha_verified"]
+          assert d["status"]=="OFFICIAL_ORIGINAL_FOUNDRY_STATIC_MECHANISM_BOUNDARY"
+          assert not d["original_code_exported"] and not d["source_world_modified"]
+          assert not d["wave_path_causally_verified"]
+          assert not d["game_map_separation_complete"]
+          print("PASS: Foundry source command categories, literal edit coordinates and wave reverse caller graph only")
+          PY
+      - name: Publish only derived command categories and coordinates, no scripts or map files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-foundry-original-static-gate-wave-metadata
+          path: projects/turnbound/build/foundry-gate-wave-static-derived.json
+          retention-days: 14
+          if-no-files-found: warn
