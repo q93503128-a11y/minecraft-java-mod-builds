@@ -341,12 +341,9 @@ The verified JAR and checksum are included under the project artifacts directory
 
 ## User UI check
 
-1. Enter a test world and open the profile with `M`.
-2. Select **Skill Tree** and verify the active class map, all three branch directions, labels, node hover card, and SP counts.
-3. Drag from empty space, zoom around the pointer, and check that releasing a drag does not purchase a node.
-4. Purchase an available minor/major node, reopen the screen, then confirm SP and ownership persisted. Try a blocked node and an insufficient-SP node.
-5. Reset while outside combat; confirm the full node cost is returned. Try again in combat and confirm reset is rejected.
-6. Change class through the existing class-selection screen and confirm the other class has its own tree. Repeat at GUI Scale 2, 3, and 4 in 16:9, 16:10, and 4:3 windows; review Korean and English.
-7. For authorized progression testing, use the existing admin command `/class test grant-levels 10`.
+1. In the running patched client, enter a test world and open Profile with M. Inspect all four corners, top/bottom rails and center ornaments for stray squares, dark flecks, clipping, gaps, or overlaps.
+2. Open Skill Tree and inspect the SP HUD frame and a hovered node card. Confirm the frame joins remain clean at the smaller panel size.
+3. Open Class Management and inspect its panel corners and rails.
+4. Repeat the visual check in Korean and English at GUI Scale 2, 3, and 4, using 16:9, 16:10, and 4:3 window shapes where available.
 
-Do not interpret this UI checklist as a gameplay balance or combat-effect evaluation.
+This is visual UI review only. No node purchase, reset, combat, balance, save, migration, or multiplayer test is part of this frame repair.
