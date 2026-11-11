@@ -93,4 +93,48 @@ class GateBaselineTests(unittest.TestCase):
             with zipfile.ZipFile(path,"w") as z:z.writestr("data/foundry/functions/main.mcfunction","say original")
             with self.assertRaisesRegex(ValueError,"Missing original Foundry function"):
                 m.function_inventory(path)
+
+    def test_original_tick_dispatch_route_and_redacted_execution_shapes(self):
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/"original.zip"
+            with zipfile.ZipFile(path,"w") as z:
+                z.writestr("data/minecraft/tags/functions/tick.json",
+                           '{"values":["#players:cycle"]}')
+                z.writestr("data/players/tags/functions/cycle.json",
+                           '{"values":["players:tick"]}')
+                z.writestr("data/players/functions/tick.mcfunction",
+                           "execute as @a if score #secret private_obj matches 1 run function players:main")
+                z.writestr("data/players/functions/main.mcfunction",
+                           "execute at @s run function players:overworld")
+                z.writestr("data/players/functions/overworld.mcfunction",
+                           "function players:overworld_p")
+                z.writestr("data/players/functions/overworld_p.mcfunction",
+                           "function foundry:levers/door")
+            result=m.trace_players_tick_dispatch(path)
+            self.assertTrue(result["minecraft_tick_tag_present"])
+            self.assertTrue(result["players_main_reachable_from_minecraft_tick"])
+            self.assertTrue(result["foundry_door_dispatch_reachable_from_minecraft_tick"])
+            self.assertEqual(result["tick_to_foundry_door_dispatch_function_route"],
+                             ["players:tick","players:main","players:overworld","players:overworld_p"])
+            self.assertEqual(result["related_direct_callsites"][0]["as_selector_types"],["@a"])
+            self.assertFalse(result["runtime_execution_verified"])
+            self.assertNotIn("private_obj",json.dumps(result))
+            self.assertNotIn("#secret",json.dumps(result))
+
+    def test_original_tick_dispatch_unreachable_is_not_reported_as_live(self):
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/"original.zip"
+            with zipfile.ZipFile(path,"w") as z:
+                z.writestr("data/minecraft/tags/functions/tick.json",
+                           '{"values":["misc:main"]}')
+                z.writestr("data/misc/functions/main.mcfunction","say hi")
+                z.writestr("data/players/functions/main.mcfunction",
+                           "function players:overworld")
+                z.writestr("data/players/functions/overworld.mcfunction",
+                           "function players:overworld_p")
+            result=m.trace_players_tick_dispatch(path)
+            self.assertFalse(result["players_main_reachable_from_minecraft_tick"])
+            self.assertFalse(result["foundry_door_dispatch_reachable_from_minecraft_tick"])
+            self.assertIsNone(result["tick_to_players_main_function_route"])
+
 if __name__=="__main__":unittest.main()

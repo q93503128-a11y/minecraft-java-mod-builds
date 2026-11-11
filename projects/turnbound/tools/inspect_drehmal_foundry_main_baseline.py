@@ -367,6 +367,115 @@ def trace_overworld_entity_guard(pack):
             "runtime_entity_predicate_verified":False}
 
 
+
+def trace_players_tick_dispatch(pack):
+    """Redacted reverse/forward route from original minecraft:tick to Foundry.
+
+    This does not prove any function executed at runtime: original world code
+    and predicate details remain in the official ZIP, never in the report.
+    """
+    stages=("players:main","players:overworld","players:overworld_p")
+    graph=collections.defaultdict(set)
+    callsites=[]
+    tags={}
+    function_count=0
+    with zipfile.ZipFile(pack) as source:
+        for member in source.namelist():
+            if not member.startswith("data/"):
+                continue
+            if member.endswith(".mcfunction") and "/functions/" in member:
+                namespace,rel=member[5:].split("/functions/",1)
+                fid=namespace+":"+rel.removesuffix(".mcfunction")
+                function_count+=1
+                for raw in source.read(member).decode("utf-8").splitlines():
+                    line=raw.strip().lstrip("/")
+                    if not line or line.startswith("#"):
+                        continue
+                    refs=REFERENCE_ID.findall(line)
+                    graph[fid].update(refs)
+                    for dest in stages:
+                        if dest not in refs:
+                            continue
+                        clause=classify_conditional(line)
+                        callsites.append({
+                            "caller":fid,"callee":dest,
+                            "root_operation":clause["root_operation"],
+                            "condition_shapes":clause["conditional_clauses"],
+                            "scheduled_call":bool(re.search(
+                                r"\bschedule\s+function\s+"+re.escape(dest)+r"\b",line)),
+                            "has_as_modifier":bool(re.search(r"\bas\s+\S+",line)),
+                            "as_selector_types":sorted(set(re.findall(
+                                r"\bas\s+(@[aeprs])(?:\[[^]]*\])?",line))),
+                            "has_at_modifier":bool(re.search(r"\bat\s+\S+",line)),
+                            "has_positioned_modifier":bool(re.search(r"\bpositioned\s+",line)),
+                            "has_in_modifier":bool(re.search(r"\bin\s+\S+",line)),
+                            "original_command_exported":False,
+                        })
+            elif member.endswith(".json") and "/tags/functions/" in member:
+                namespace,rel=member[5:].split("/tags/functions/",1)
+                name=namespace+":"+rel.removesuffix(".json")
+                data=json.loads(source.read(member))
+                if not isinstance(data,dict):
+                    continue
+                values=data.get("values",[])
+                if not isinstance(values,list):
+                    continue
+                tags[name]=tuple(
+                    v.get("id") if isinstance(v,dict) else v
+                    for v in values
+                    if isinstance(v,str) or isinstance(v,dict) and isinstance(v.get("id"),str))
+    def expand_tag(name,active=()):
+        if name in active:
+            raise ValueError("Cycle in original function tag expansion")
+        out=set()
+        for item in tags.get(name,()):
+            if item.startswith("#"):
+                out.update(expand_tag(item[1:],active+(name,)))
+            else:
+                out.add(item)
+        return out
+    def route_to(goal,roots):
+        visited=set()
+        queue=collections.deque((root,(root,)) for root in sorted(roots))
+        while queue:
+            current,route=queue.popleft()
+            if current in visited:
+                continue
+            visited.add(current)
+            if current==goal:
+                return list(route)
+            if len(route)>15:
+                continue
+            for next_id in sorted(graph.get(current,())):
+                if next_id not in visited:
+                    queue.append((next_id,route+(next_id,)))
+        return None
+    tick_direct=expand_tag("minecraft:tick")
+    load_direct=expand_tag("minecraft:load")
+    tick_to_main=route_to("players:main",tick_direct)
+    tick_to_entry=route_to("players:overworld_p",tick_direct)
+    main_to_entry=route_to("players:overworld_p",{"players:main"})
+    if not main_to_entry:
+        raise ValueError("Original players:main to Foundry entry route missing")
+    return {
+        "original_function_files_read":function_count,
+        "minecraft_tick_tag_present":"minecraft:tick" in tags,
+        "minecraft_load_tag_present":"minecraft:load" in tags,
+        "minecraft_tick_direct_function_count":len(tick_direct),
+        "minecraft_load_direct_function_count":len(load_direct),
+        "players_main_reachable_from_minecraft_tick":tick_to_main is not None,
+        "foundry_door_dispatch_reachable_from_minecraft_tick":tick_to_entry is not None,
+        "tick_to_players_main_function_route":tick_to_main,
+        "tick_to_foundry_door_dispatch_function_route":tick_to_entry,
+        "players_main_to_foundry_dispatch_function_route":main_to_entry,
+        "related_direct_callsites":callsites,
+        "function_tags_mentioning_players_main":sorted(
+            tag for tag,values in tags.items() if "players:main" in values),
+        "original_commands_exported":False,
+        "runtime_execution_verified":False,
+    }
+
+
 def inspect(world):
     world=Path(world).resolve(strict=True)
     if (world/"turnbound-world.marker").exists():
@@ -383,6 +492,7 @@ def inspect(world):
         "foundry_door_caller_trace":trace_foundry_door_callers(world/"datapacks"/"hi_drehmal.zip"),
         "foundry_overworld_door_dispatch":trace_overworld_door_dispatch(world/"datapacks"/"hi_drehmal.zip"),
         "foundry_overworld_entity_guard":trace_overworld_entity_guard(world/"datapacks"/"hi_drehmal.zip"),
+        "players_tick_dispatch":trace_players_tick_dispatch(world/"datapacks"/"hi_drehmal.zip"),
         "original_map_modified":False,
         "original_commands_or_nbt_exported":False,
         "dynamic_score_conditions_verified":False,
