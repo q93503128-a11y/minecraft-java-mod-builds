@@ -1,0 +1,55 @@
+name: TURNBOUND official Foundry gate clone baseline and main gate conditions
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-foundry-main-baseline.yml'
+      - 'projects/turnbound/tools/inspect_drehmal_foundry_main_baseline.py'
+      - 'projects/turnbound/tools/test_inspect_drehmal_foundry_main_baseline.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-only-original:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact 90-cell comparison and redacted gate branch tests
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_inspect_drehmal_foundry_main_baseline.py'
+          python3 -m py_compile tools/inspect_drehmal_foundry_main_baseline.py
+      - name: Verify official map SHA and read clone source/target plus branch shapes
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/official-original"
+          python3 tools/extract_official_drehmal_preview.py \
+            --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$source"
+          python3 tools/inspect_drehmal_foundry_main_baseline.py \
+            --original "$source" --output build/foundry-main-baseline-public-metadata.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("build/foundry-main-baseline-public-metadata.json").read_text())
+          x=d["clone_original_source_destination"]
+          assert x["count"]==90 and x["same_full_blockstate_before_clone"]+x["source_destination_fullstate_differences"]==90
+          assert d["foundry_lever_function_condition_shapes"]["foundry:levers/main"]["present"]
+          assert not d["original_commands_or_nbt_exported"]
+          assert not d["physical_gate_opened_verified"]
+          assert not d["map_separation_complete"]
+          print("PASS: original 90-block clone source/destination state and three-lever branch shapes, read-only")
+          PY
+      - name: Publish small derived metadata only, not source map or scripts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-foundry-gate-original-condition-and-clone-baseline
+          path: projects/turnbound/build/foundry-main-baseline-public-metadata.json
+          retention-days: 14
+          if-no-files-found: warn
