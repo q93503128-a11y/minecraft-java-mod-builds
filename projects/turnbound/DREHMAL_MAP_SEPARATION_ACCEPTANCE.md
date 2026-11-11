@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-11 Foundry door 호출자 정적 #42942060986 PASS:** [원본 5,487개 함수 추적](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42942060986): 원래 levers/main의 matches 1/2/3은 모두 tellraw, 조건은 동일 점수 키. levers/1_check~3_check의 업적 동사는 revoke. door 함수의 발견된 원본 리터럴 호출자는 players:overworld_p 하나. 다음은 해당 상위 함수 실행 경로와 조건 분리. 시설/원작 함수 변경 없음, 전체 맵 분리 NO. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md).
+
+
 > **2026-11-11 Foundry 자연 업적/score 실서버 #42940827429 PASS:** [증거](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42940827429). 세 레버 우클릭에 따라 levers/main 관련 원작 scoreboard 값 없음→1→2→3, matches 1/2/3 순차 충족, 무입력 대조 구간 변경 0. advancement 저장 완료 상태 false는 check 함수 내부 advancement 명령에 의한 회수 가능성 때문에 자연 보상 미발동 증거가 아님. 자연 입력 뒤 문 90블록의 source/target 차이 59개 유지. main 함수 내 door 리터럴 직접 호출 없음. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md). 수정·배포/실사용 승인 없음. MAP SEPARATION COMPLETE = NO.
 
 

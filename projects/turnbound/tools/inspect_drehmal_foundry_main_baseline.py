@@ -213,6 +213,89 @@ def trace_foundry_door_callers(pack):
             "runtime_callback_execution_proven":False}
 
 
+
+def trace_overworld_door_dispatch(pack):
+    """Inspect original tick controller-to-door path without original command export."""
+    target="foundry:levers/door"
+    entry="players:overworld_p"
+    score_rx=re.compile(r"\b(if|unless)\s+score\s+(\S+)\s+(\S+)\s+matches\s+(-?\d+)(?:\.\.(-?\d+)?)?")
+    main_score_keys=set()
+    door_call_sites=[]
+    direct_parent_functions=set()
+    tick_tag_memberships=[]
+    tag_memberships=[]
+    entry_roots=collections.Counter()
+    source_count=0
+    with zipfile.ZipFile(pack) as z:
+        for member in z.namelist():
+            if not member.startswith("data/"):
+                continue
+            if member.endswith(".mcfunction") and "/functions/" in member:
+                ns,path=member[5:].split("/functions/",1)
+                fid=ns+":"+path.removesuffix(".mcfunction")
+                source_count+=1
+                for raw in z.read(member).decode("utf-8").splitlines():
+                    line=raw.strip().lstrip("/")
+                    if not line or line.startswith("#"):
+                        continue
+                    if fid=="foundry:levers/main":
+                        for m in score_rx.finditer(line):
+                            main_score_keys.add((m.group(2),m.group(3)))
+                    if re.search(r"\bfunction\s+"+re.escape(entry)+r"(?![a-z0-9_./-])",line):
+                        direct_parent_functions.add(fid)
+                    if fid==entry:
+                        tokens=line.split()
+                        if not tokens:
+                            continue
+                        entry_roots[tokens[0]]+=1
+                        if re.search(r"\bfunction\s+"+re.escape(target)+r"(?![a-z0-9_./-])",line):
+                            original_keys={(m.group(2),m.group(3)) for m in score_rx.finditer(line)}
+                            shaped=classify_conditional(line)
+                            door_call_sites.append({
+                                "condition_shapes":shaped["conditional_clauses"],
+                                "root_operation":tokens[0],
+                                "score_clause_count":len(original_keys),
+                                "_score_keys_internal":original_keys,
+                                "has_dimension_guard":bool(re.search(r"\b(?:if|unless)\s+dimension\b",line)),
+                                "has_entity_guard":bool(re.search(r"\b(?:if|unless)\s+entity\b",line)),
+                                "has_block_guard":bool(re.search(r"\b(?:if|unless)\s+block\b",line)),
+                                "has_execution_context_change":bool(re.search(r"\b(?:as|at|positioned|in)\s+\S+",line)),
+                            })
+            elif member.endswith(".json") and "/tags/functions/" in member:
+                ns,path=member[5:].split("/tags/functions/",1)
+                fid=ns+":"+path.removesuffix(".json")
+                data=json.loads(z.read(member))
+                values=data.get("values",[]) if isinstance(data,dict) else []
+                if not isinstance(values,list):
+                    continue
+                normalized=[x.get("id") if isinstance(x,dict) else x for x in values]
+                if entry in normalized:
+                    tag_memberships.append(fid)
+                if fid in ("minecraft:tick","minecraft:load"):
+                    tick_tag_memberships.append({"tag_id":fid,
+                                                 "contains_overworld_controller":entry in normalized,
+                                                 "member_count":len(normalized)})
+    if not main_score_keys:
+        raise ValueError("Foundry main reference score identity not found")
+    if not door_call_sites:
+        raise ValueError("Pinned original overworld door dispatch missing")
+    # Never copy any original score owner/objective to derived metadata.
+    for item in door_call_sites:
+        item["score_key_same_as_main"]=bool(item.pop("_score_keys_internal") & main_score_keys)
+    return {
+        "original_functions_read":source_count,
+        "entry_function":entry,
+        "entry_root_operation_counts":dict(sorted(entry_roots.items())),
+        "door_call_sites":door_call_sites,
+        "literal_function_callers_of_entry":sorted(direct_parent_functions),
+        "function_tags_containing_entry":sorted(tag_memberships),
+        "minecraft_tick_and_load_tags":tick_tag_memberships,
+        "original_score_key_names_exported":False,
+        "original_function_source_exported":False,
+        "dynamically_executed_verified":False,
+    }
+
+
 def inspect(world):
     world=Path(world).resolve(strict=True)
     if (world/"turnbound-world.marker").exists():
@@ -227,6 +310,7 @@ def inspect(world):
         "clone_original_source_destination":comparison,
         "foundry_lever_function_condition_shapes":funcs,
         "foundry_door_caller_trace":trace_foundry_door_callers(world/"datapacks"/"hi_drehmal.zip"),
+        "foundry_overworld_door_dispatch":trace_overworld_door_dispatch(world/"datapacks"/"hi_drehmal.zip"),
         "original_map_modified":False,
         "original_commands_or_nbt_exported":False,
         "dynamic_score_conditions_verified":False,

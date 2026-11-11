@@ -37,3 +37,15 @@ CI: .github/workflows/turnbound-drehmal-foundry-natural-vs-function.yml
 - 다음: levers/1_check~3_check의 advancement 명령 동사 확인, levers/main 조건별 run 명령의 **종류만** 파악, 원본 전체 데이터팩 내 door 함수 역방향 caller 조사. 필요한 경우에만 새로운 폐기용 사본 실서버로 인과를 분리한다.
 
 **보존 경계:** 공식 원본 월드와 실사용 월드 변경 없음. 8단계 비무기 보상 차단 9건 미적용. 원작 문/아레나/웨이브 코드·지도 재배포·이식 없음. 문 실제 통행, arena_start/wave_logic/wave_1~6 비재진입, 클라이언트/멀티, 전체 맵 분리 **NOT VERIFIED**. MAP SEPARATION COMPLETE = NO.
+
+## 2026-11-11 원본 5,487개 함수 대상 문 호출자 역추적
+
+[정적 검증 #42942060986 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42942060986), 정본 SHA 검증 원본에 대한 읽기 전용 검사.
+
+- 원작 foundry:levers/main에 세 개의 matches 1/2/3 조건이 있으나 각 조건 뒤에서 실행하는 명령은 tellraw. 문 열기 명령이나 door 직접 호출이 아니다. 세 조건은 동일한 원작 scoreboard (owner, objective) 키 1쌍에 대한 값 비교다. 실제 이전 실서버 관측 값 없음→1→2→3 및 순차 메시지 조건 충족과 부합한다.
+- foundry:levers/1_check~3_check의 advancement 명령은 모두 revoke. 따라서 클릭 이후 저장된 업적 완료 false는 재발동을 위한 즉시 회수 과정일 수 있으며, 업적 콜백 미발동이라고 결론 낼 수 없다.
+- foundry:levers/1~3의 scoreboard 명령은 모두 set.
+- 전체 원본 mcfunction 5,487개를 조사한 리터럴 호출자 목록에서 foundry:levers/door의 유일한 caller는 players:overworld_p, foundry:levers/door1의 caller는 foundry:levers/door. 원작 문 함수 자체 직접 호출은 이전 실서버에서 정상 작동 확인.
+- 아직 players:overworld_p 자연 실행/실제 door 경로 인과, 상위 스케줄·tick 분기와 동적 선택자 조건, 문 물리 통행은 확인되지 않았다. 새 정적 검사는 players:overworld_p의 door 호출 조건 및 상위 함수/함수 태그 연결을 좁혀 조사하도록 확장했다.
+
+본 증거에 근거해 원작 levers/main을 수정하거나 door 호출을 레버 콜백에 임의 추가해서는 안 된다. 기존 원본 문·레버·퍼즐 보존, 8단계 미적용, 실제 월드 불변, MAP SEPARATION COMPLETE = NO.

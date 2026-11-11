@@ -49,6 +49,23 @@ class GateBaselineTests(unittest.TestCase):
             self.assertEqual(result["door_literal_callers"]["foundry:levers/door"],["foundry:triggers"])
             self.assertEqual(result["check_advancement_actions"]["foundry:levers/1_check"],["revoke"])
             self.assertNotIn("hidden_score",json.dumps(result))
+    def test_overworld_door_dispatch_score_key_is_redacted(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/"fixture.zip"
+            with zipfile.ZipFile(p,"w") as z:
+                z.writestr("data/players/functions/overworld_p.mcfunction",
+                    "execute if score #private hidden_score matches 3 if dimension minecraft:overworld run function foundry:levers/door")
+                z.writestr("data/foundry/functions/levers/main.mcfunction",
+                    "execute if score #private hidden_score matches 3 run tellraw @a hello")
+                z.writestr("data/players/functions/tick.mcfunction","function players:overworld_p")
+                z.writestr("data/minecraft/tags/functions/tick.json",
+                    '{"values":["players:tick"]}')
+            result=m.trace_overworld_door_dispatch(p)
+            self.assertTrue(result["door_call_sites"][0]["score_key_same_as_main"])
+            self.assertTrue(result["door_call_sites"][0]["has_dimension_guard"])
+            self.assertEqual(result["literal_function_callers_of_entry"],["players:tick"])
+            self.assertFalse(result["minecraft_tick_and_load_tags"][0]["contains_overworld_controller"])
+            self.assertNotIn("hidden_score",json.dumps(result))
     def test_function_inventory_fails_closed_on_missing_pinned_member(self):
         with tempfile.TemporaryDirectory() as d:
             path=Path(d)/"original.zip"
