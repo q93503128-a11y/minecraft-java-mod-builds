@@ -327,7 +327,7 @@ The static render is Java2D using the runtime PNGs and current layout math. It d
 - JAR: `artifacts/anomalous-classes-0.1.0-alpha.1.jar`
 - Checksum: `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`
 - Pixel audit and side-by-side render: `ui/reviews/2026-11-11/frame-root-cause/`
-- GitHub `main` commit: filled after push.
+- GitHub `main` implementation commit: `66e6e3a27dd694531ba781f6415a8c818c8cbf9b`.
 - Checksum file: `anomalous-classes-0.1.0-alpha.1.jar.sha256`
 
 The verified JAR and checksum are included under the project artifacts directory. The sanitized build, JAR verifier, pixel audit, and client-startup logs are preserved in the artifacts raw-logs ZIP.
