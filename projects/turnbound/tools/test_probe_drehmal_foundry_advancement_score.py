@@ -72,4 +72,25 @@ class GateBaselineTests(unittest.TestCase):
             with zipfile.ZipFile(path,"w") as z:z.writestr("data/foundry/functions/main.mcfunction","say original")
             with self.assertRaisesRegex(ValueError,"Missing original Foundry function"):
                 m.function_inventory(path)
+
+    def test_original_upstream_guards_extract_and_refuse_modified_syntax(self):
+        import probe_drehmal_foundry_advancement_score as probe
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/"original.zip"
+            with zipfile.ZipFile(path,"w") as z:
+                z.writestr("data/players/functions/main.mcfunction",
+                           "execute if predicate private:overworld unless entity @s[tag=secret] run function players:overworld")
+                z.writestr("data/players/functions/overworld.mcfunction",
+                           "execute if entity @s[gamemode=creative] run function players:overworld_p")
+            data=probe.original_upstream_guard_clauses(path)
+            self.assertEqual([len(x["clauses"]) for x in data],[2,1])
+            self.assertEqual([x["condition_type"] for x in data[0]["clauses"]],["predicate","entity"])
+            self.assertEqual(data[0]["clauses"][1]["polarity"],"unless")
+            # Extraction is private; no exporting the raw selector or predicate.
+            with zipfile.ZipFile(path,"a") as z:
+                z.writestr("data/players/functions/main.mcfunction",
+                           "execute positioned 1 2 3 if predicate private:overworld run function players:overworld")
+            with self.assertRaisesRegex(ValueError,"callsite count|Unsupported original upstream"):
+                probe.original_upstream_guard_clauses(path)
+
 if __name__=="__main__":unittest.main()

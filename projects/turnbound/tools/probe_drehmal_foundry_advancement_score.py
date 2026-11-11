@@ -295,6 +295,59 @@ def original_door_entity_guards(pack):
                 predicate_shape["nested_predicate_keys"]=sorted(data["predicate"].keys())
         return full_selector,plain_selector,predicate_shape
 
+
+UPSTREAM_EDGES=(
+    ("players:main","players:overworld"),
+    ("players:overworld","players:overworld_p"),
+)
+UPSTREAM_GUARD=re.compile(r"(if|unless)\s+(predicate|entity)\s+(\S+)")
+
+def original_upstream_guard_clauses(pack):
+    """Read 2 original function callsites, never execute/export original lines.
+
+    Deliberately rejects new syntax, unexpected modifiers or ambiguous caller
+    counts rather than silently evaluating only part of a changed condition.
+    """
+    result=[]
+    with zipfile.ZipFile(pack) as archive:
+        for caller,callee in UPSTREAM_EDGES:
+            ns,rel=caller.split(":",1)
+            member="data/"+ns+"/functions/"+rel+".mcfunction"
+            if member not in archive.namelist():
+                raise ValueError("Missing original upstream route")
+            lines=[x.strip().lstrip("/") for x in archive.read(member).decode("utf-8").splitlines()]
+            matching=[line for line in lines
+                      if line and not line.startswith("#") and
+                      re.search(r"\bfunction\s+"+re.escape(callee)+r"(?![a-z0-9_./-])",line)]
+            if len(matching)!=1:
+                raise ValueError("Original upstream callsite count changed")
+            raw=matching[0]
+            shape=re.fullmatch(
+                r"execute((?:\s+(?:if|unless)\s+(?:predicate|entity)\s+\S+)+)"
+                r"\s+run\s+function\s+"+re.escape(callee),raw)
+            if shape is None:
+                raise ValueError("Unsupported original upstream guard modifiers or syntax")
+            clauses=UPSTREAM_GUARD.findall(shape.group(1))
+            if not clauses:
+                raise ValueError("Original upstream route has no conditions")
+            result.append({"caller":caller,"callee":callee,
+                           "clauses":[{"polarity":polarity,"condition_type":kind,
+                                       "literal_private":arg}
+                                      for polarity,kind,arg in clauses]})
+    return result
+
+
+def check_upstream_guard(rcon,world,polarity,kind,arg,objective):
+    if polarity not in ("if","unless") or kind not in ("predicate","entity"):
+        raise ValueError("Unsupported original upstream clause")
+    rcon.command(f"execute as DrehmalAliceCI at @s store success score #upstream_guard {objective} run execute {polarity} {kind} {arg}")
+    rcon.command("save-all flush")
+    observed=scoreboard_values(world).get(("#upstream_guard",objective))
+    if observed not in (0,1):
+        raise ValueError("Cannot measure original upstream condition from copied-world scoreboard")
+    return bool(observed)
+
+
 def check_door_selector_guard(rcon,world,selector,objective):
     # The command only evaluates a vanilla entity selector and stores 0/1 in
     # a newly-created diagnostic objective; no original function is invoked.
@@ -485,6 +538,24 @@ def probe(project,world):
         try:
             without_predicate=check_door_selector_guard(rcon,world,plain_selector,private_objective)
             with_predicate=check_door_selector_guard(rcon,world,full_selector,private_objective)
+            upstream_conditions=[]
+            for edge in original_upstream_guard_clauses(world/nine.PACK):
+                evaluations=[]
+                for clause in edge["clauses"]:
+                    passed=check_upstream_guard(
+                        rcon,world,clause["polarity"],clause["condition_type"],
+                        clause["literal_private"],private_objective)
+                    evaluations.append({
+                        "condition_type":clause["condition_type"],
+                        "polarity":clause["polarity"],
+                        "passed_in_player_context":passed,
+                        "original_literal_exported":False,
+                    })
+                upstream_conditions.append({
+                    "caller":edge["caller"],"callee":edge["callee"],
+                    "conditions":evaluations,
+                    "all_guards_passed":all(x["passed_in_player_context"] for x in evaluations),
+                })
         finally:
             rcon.command(f"scoreboard objectives remove {private_objective}")
         presence_observation["selector_comparison"]={
@@ -494,6 +565,12 @@ def probe(project,world):
             "original_door_command_invoked":False,
             "original_selector_text_exported":False,
             "diagnostic_score_objective_removed":True,
+        }
+        presence_observation["upstream_route_guard_comparison"]={
+            "evaluated_as":"protocol_player_at_natural_foundry_gate_position",
+            "callsite_evaluations":upstream_conditions,
+            "original_functions_explicitly_invoked":False,
+            "original_guard_literals_exported":False,
         }
         rcon.command("stop")
         server.wait(timeout=90)
