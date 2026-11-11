@@ -1,0 +1,52 @@
+name: TURNBOUND Foundry original three lever predicate and reward path audit
+on:
+  push:
+    branches: [turnbound-content-rebuild]
+    paths:
+      - '.github/workflows/turnbound-drehmal-foundry-lever-predicate.yml'
+      - 'projects/turnbound/tools/inspect_drehmal_foundry_lever_predicates.py'
+      - 'projects/turnbound/tools/test_inspect_drehmal_foundry_lever_predicates.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-predicates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthetic tests of metadata only predicates
+        working-directory: projects/turnbound
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools -p 'test_inspect_drehmal_foundry_lever_predicates.py'
+          python3 -m py_compile tools/inspect_drehmal_foundry_lever_predicates.py
+      - name: Verify and inspect untouched original source
+        working-directory: projects/turnbound
+        shell: bash
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          orig="$RUNNER_TEMP/official-original"
+          python3 tools/extract_official_drehmal_preview.py --download-dir "$RUNNER_TEMP/official-shards" --world-dir "$orig"
+          python3 tools/inspect_drehmal_foundry_lever_predicates.py \
+            --original "$orig" --output build/foundry-lever-predicate-metadata.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("build/foundry-lever-predicate-metadata.json").read_text())
+          assert len(d["lever_advancement_conditions"])==3
+          assert not d["actual_live_advancement_granted_verified"]
+          assert not d["live_foundry_door_opened_verified"]
+          assert not d["map_separation_complete"]
+          print("PASS: pinned three original advancement predicate shapes and original reward function categories")
+          PY
+      - name: Publish derived predicates only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: turnbound-foundry-three-lever-advancement-predicates
+          path: projects/turnbound/build/foundry-lever-predicate-metadata.json
+          retention-days: 14
+          if-no-files-found: warn
