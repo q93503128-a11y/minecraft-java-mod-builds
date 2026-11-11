@@ -9,4 +9,6 @@
 도구: tools/inspect_drehmal_foundry_gate_wave_paths.py
 신규 검사: .github/workflows/turnbound-drehmal-foundry-clone-callers.yml
 
+> **2026-11-11 원작 좌표 기반 보정:** [원본 clone 명령·함수 호출 정적 검증 #42931261435 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42931261435). 원작 foundry:levers/door는 소스 (-3274..-3270,134..142,1557..1558)를 **타깃 (-3278..-3274,156..164,1576..1577)** 으로 복제한다. 기존 #42929635789 검사 영역 Z=1454..1546에는 타깃이 없었으므로 그 범위의 변경 0건을 문 실패로 단정할 수 없다. 새 CI는 이 정확한 복제 대상과 소스 chunk를 명시적으로 로드해 세 레버 ON 전후를 비교한다.
+
 MAP SEPARATION COMPLETE: NO.

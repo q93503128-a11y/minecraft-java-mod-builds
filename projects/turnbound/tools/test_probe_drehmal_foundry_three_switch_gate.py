@@ -37,7 +37,7 @@ class FoundryThreeSwitchTests(unittest.TestCase):
 
     def test_three_lever_manifest_and_search_boundary(self):
         self.assertEqual(len(test.LEVERS),3)
-        self.assertEqual(test.GATE_HINT,(-3276,157,1500))
+        self.assertEqual(test.GATE_HINT,(-3276,160,1576))
         self.assertLessEqual(test.GATE_XZ_RADIUS,48)
 
 if __name__=="__main__":

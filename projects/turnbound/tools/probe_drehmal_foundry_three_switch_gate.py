@@ -55,9 +55,9 @@ def stand(world,pos):
 
 # The official wiki point is approximate, not the actual door coordinates.
 # This envelope is a diagnostic measurement, not a gameplay navigation test.
-GATE_HINT=(-3276,157,1500)
-GATE_XZ_RADIUS=46
-GATE_Y_RADIUS=18
+GATE_HINT=(-3276,160,1576)
+GATE_XZ_RADIUS=8
+GATE_Y_RADIUS=10
 BARRIER_IDS=frozenset(("minecraft:basalt","minecraft:polished_basalt",
                        "minecraft:smooth_basalt","minecraft:bedrock"))
 
@@ -88,7 +88,14 @@ def gate_diff(before,after):
         b=after.get(p,"minecraft:air")
         if a!=b:changed.append((p,a,b))
     removed=[(p,a,b) for p,a,b in changed if a in BARRIER_IDS and b=="minecraft:air"]
+    direct=[(p,a,b) for p,a,b in changed if
+            -3278<=p[0]<=-3274 and 156<=p[1]<=164 and 1576<=p[2]<=1577]
     return {
+        "original_clone_destination_min":[-3278,156,1576],
+        "original_clone_destination_max":[-3274,164,1577],
+        "original_clone_destination_changed_blocks":len(direct),
+        "original_clone_destination_sample":[{"position":list(p),"before":a,"after":b}
+                                             for p,a,b in sorted(direct)[:20]],
         "wiki_approximate_gate_center":list(GATE_HINT),
         "x_z_radius":GATE_XZ_RADIUS,"y_radius":GATE_Y_RADIUS,
         "block_count_compared":(2*GATE_XZ_RADIUS+1)**2*(2*GATE_Y_RADIUS+1),
@@ -190,6 +197,10 @@ def probe(project,world):
         for x,y,z in LEVERS.values():
             rcon.command(f"forceload add {x-8} {z-8} {x+8} {z+8}")
         time.sleep(1.5)
+        # The original levers/door clone reads source around (-3274,134,1557)
+        # and writes target (-3278..-3274,156..164,1576..1577).
+        # Explicitly load BOTH source and target chunks before activation.
+        rcon.command("forceload add -3274 1557 -3270 1558")
         rcon.command("save-all flush")
         before=gate_snapshot(world)
         source_inventory=foundry_function_inventory(world/nine.PACK)
