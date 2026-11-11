@@ -1,5 +1,12 @@
 # Changelog
 
+## Profile and skill-tree UI visual repair — 2026-11-11
+
+- Split the original menu frame atlas into verified corner, rail, and jewel textures; frame rails now repeat at the same source scale as corners instead of stretching guessed atlas strips across the screen.
+- Grouped profile labels and values into measured two-column rows using the active Minecraft font width; kept the class illustration aspect-preserving and clipped.
+- Reduced hover cards to the node name, actual effect/stat, SP cost, and one purchase-status line. Repeated prerequisite names and stage/internal text are no longer shown; server-side purchase checks are unchanged.
+- Added Korean/English off-screen static review images and stricter graph/UI resource and layout checks. Minecraft client rendering and interaction were not tested.
+
 ## Six-class graph skill trees — 2026-11-10
 
 - Replaced the old three-column rank screen with the six approved full-map skill trees: 581 purchasable nodes and 900 SP per class.

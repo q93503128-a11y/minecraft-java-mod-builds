@@ -261,8 +261,11 @@ public final class SkillTreeScreen extends Screen {
         if (hovered == null || hovered.node().kind() == GraphSkillTreeCatalog.Kind.NAVIGATION) return;
         GraphSkillTreeCatalog.Node node = hovered.node();
         List<CardLine> lines = tooltipLines(node);
-        int maxWidth = Math.max(105, Math.min(230, width - 12));
-        int textWidth = Math.max(1, maxWidth - 16);
+        int maxWidth = Math.max(1, Math.min(160, width - 12));
+        int measuredWidth = lines.stream().mapToInt(line -> font.width(line.text())).max().orElse(1);
+        int minWidth = Math.min(116, maxWidth);
+        int cardWidth = Math.max(minWidth, Math.min(maxWidth, measuredWidth + 20));
+        int textWidth = Math.max(1, cardWidth - 16);
         List<WrappedLine> wrapped = new ArrayList<>();
         for (CardLine line : lines) {
             List<net.minecraft.util.FormattedCharSequence> split = font.split(line.text(), textWidth);
@@ -274,12 +277,11 @@ public final class SkillTreeScreen extends Screen {
             wrapped.set(maxCardLines - 1, new WrappedLine(font.split(Component.literal("…"), textWidth).get(0),
                     wrapped.get(maxCardLines - 1).color()));
         }
-        int cardHeight = 12 + wrapped.size() * (font.lineHeight + 2);
-        int cardWidth = maxWidth;
+        int cardHeight = 10 + wrapped.size() * (font.lineHeight + 2);
         int nodeRight = (int) Math.round(hovered.x() + hovered.size() / 2.0);
         int nodeLeft = (int) Math.round(hovered.x() - hovered.size() / 2.0);
         int cardX = nodeRight + cardWidth + 12 <= width ? nodeRight + 9 : nodeLeft - cardWidth - 9;
-        cardX = Math.max(6, Math.min(width - cardWidth - 6, cardX));
+        cardX = Math.max(6, Math.min(Math.max(6, width - cardWidth - 6), cardX));
         int cardY = Math.max(viewport.y() + 3, Math.min(height - cardHeight - 5, mouseY + 8));
         if (cardY < HUD_HEIGHT + 2) cardY = Math.min(height - cardHeight - 5, HUD_HEIGHT + 3);
         MenuUi.drawPanel(graphics, new MenuUi.Box(cardX, cardY, cardWidth, cardHeight));
@@ -295,41 +297,13 @@ public final class SkillTreeScreen extends Screen {
         lines.add(new CardLine(Component.translatable(node.nameKey(classId)), 0xFFFFE8BF));
         if (!node.major()) lines.add(new CardLine(Component.translatable(
                 "screen.anomalousclasses.skill_tree.node_stat", statAmount(node)), 0xFFE4D8C9));
-        lines.add(new CardLine(Component.translatable(owned.contains(node.id())
-                ? "screen.anomalousclasses.skill_tree.node_owned"
-                : "screen.anomalousclasses.skill_tree.node_unowned"),
-                owned.contains(node.id()) ? 0xFFBEE6A9 : 0xFFCFC1D7));
-        lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_cost", node.cost()), 0xFFF3D48D));
         if (node.major()) {
-            lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.passive_effect",
-                    Component.translatable(node.effectKey(classId))), 0xFFE7DFD4));
-            if (node.milestone()) {
-                lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_breakthrough",
-                        node.crossedMilestones().stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(", "))),
-                        0xFFFFD58A));
-            }
+            lines.add(new CardLine(Component.translatable(node.effectKey(classId)), 0xFFE7DFD4));
         }
+        lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_cost", node.cost()), 0xFFF3D48D));
         GraphSkillTreeCatalog.PurchaseCheck check = purchaseChecks.getOrDefault(node.id(),
                 GraphSkillTreeCatalog.PurchaseCheck.NOT_CONNECTED);
         lines.add(new CardLine(Component.translatable(statusKey(check)), statusColor(check)));
-        if (!owned.contains(node.id())) {
-            for (String required : node.requiresStageMinors()) {
-                GraphSkillTreeCatalog.Node prerequisite = tree.node(required);
-                if (prerequisite != null && !owned.contains(required)) {
-                    lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_requires",
-                            Component.translatable(prerequisite.nameKey(classId))), 0xFFC8B6A2));
-                }
-            }
-            if (node.requiresPreviousMajor() != null && !owned.contains(node.requiresPreviousMajor())) {
-                GraphSkillTreeCatalog.Node prerequisite = tree.node(node.requiresPreviousMajor());
-                if (prerequisite != null) lines.add(new CardLine(Component.translatable(
-                        "screen.anomalousclasses.skill_tree.node_requires",
-                        Component.translatable(prerequisite.nameKey(classId))), 0xFFC8B6A2));
-            }
-            if (check == GraphSkillTreeCatalog.PurchaseCheck.NOT_CONNECTED) {
-                lines.add(new CardLine(Component.translatable("screen.anomalousclasses.skill_tree.node_follow_path"), 0xFFC8B6A2));
-            }
-        }
         return lines;
     }
 

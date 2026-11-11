@@ -252,3 +252,54 @@ The off-screen preview checks frame texture geometry only. The nine layout cases
 ## User review
 
 The development client is left running. Open a test world in that window, press `M`, and inspect the profile frame, title/class alignment, artwork crop, stat rows, and navigation buttons. Open **스킬 트리 / Skill Tree** and verify that node icons appear, major nodes have no stage fractions, SP strings and hover-card arguments are formatted, and the tree remains legible over each class backdrop. Check Korean and English, then repeat at GUI Scale 2, 3, and 4 in 16:9, 16:10, and 4:3 layouts. This checklist is UI review only; no combat, balance, or progression test is requested.
+
+---
+
+# Build and Runtime Report — 2026-11-11 Profile/Skill-Tree Visual Repair
+
+## Baseline and scope
+
+- Repository: `q93503128-a11y/minecraft-java-mod-builds`
+- Project: `projects/anomalous-classes/`, branch `main`
+- Fetched `origin/main` before editing; local and remote baseline: `c71dd56b0bf9b77634546480b3fa551ff81b8d84`
+- Minecraft 1.21.1 / NeoForge 21.1.244 / OpenJDK 21.0.10 / Gradle 8.8
+- No gameplay, graph data, server purchase/reset, save/migration, class selection, K-key behavior, or pan/zoom code was changed.
+
+## Changes
+
+- **Frame root cause:** the previous horizontal helper sampled a guessed 24-pixel-wide strip around atlas x=84 and stretched it across each full-width rail. Its top/bottom source Y values were also guessed. The old corner crops began at 0/624 rather than the visible corner bounds at 32/576 and clipped the actual outer curve/gem. Rails, corners, and ornaments therefore included wrong source pixels and distorted artwork. The captured frame streaks match that source/scale error. The original 768×768 RGBA atlas is unchanged; 14 verified pieces are extracted to separate PNGs and rails repeat at the corner’s source scale. Static and runtime resource paths use these pieces.
+- **Profile:** labels and values are measured with the active Minecraft `Font.width()` and grouped into one centered two-column area; values are right-aligned within the value column. Existing art remains aspect-preserved and scissored to its area.
+- **Skill-tree cards:** only node name, actual effect/stat gain, SP cost, and one state line remain. Repeated prerequisite names, stage counts, the passive-description prefix, and duplicate path instructions are removed. Width is capped at 160 GUI units; height follows wrapped text. The actual purchase checks remain unchanged. Locale format arguments use `%s`, with no indexed `{0}` values found by validation.
+- Added `tools/render_ui_static_review.java` and five review images from the source textures/current layout. The old frame uses the pre-change UV/scale formula; the new frame uses separated crops and proportional tile scaling.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| Official NeoForge Maven 21.1.244 | HTTP 200 for the official POM |
+| `java -version` / `gradlew --version` | OpenJDK 21.0.10 / Gradle 8.8 |
+| `gradlew --no-daemon --console=plain clean build --stacktrace` | **PASS** — 28s; 7 tasks; `test` is `NO-SOURCE` |
+| Graph/runtime fixture | **PASS** — catalog, legacy migration, SP conservation, atomic failure, reset, NBT round trip |
+| Static graph/UI verifier | **PASS** — 581 nodes, six 900-SP totals, 61 skill icons, KO/EN, 18 screen-ratio × GUI-scale cases |
+| Static visual images | **RENDERED AND VISUALLY REVIEWED** — frame comparison, Korean/English profile, Korean/English tooltip. These are Java2D source/layout previews, not Minecraft screenshots. |
+| JAR verifier | **PASS** — 31,674,627 bytes, 65 classes, loader metadata, data/assets, 14 frame pieces, 61 tree icons, no duplicate entries |
+| Datagen / GameTest / dedicated server | **NOT RUN** — no UI-relevant configured datagen/GameTest; no server test was requested |
+| Minecraft development client | **RUNNING** — started after confirming no client was active. Log shows mod discovery, resource-manager reload including `mod/anomalousclasses`, and OpenAL initialization. No screen was opened or manipulated. |
+| Minecraft UI visual test / playtest | **NOT TESTED** — no CUA; actual GUI scale rendering, GPU filtering, and click behavior remain for user review |
+
+The static matrix covers 16:9, 16:10, and 4:3 at GUI Scale 2, 3, and 4 for both profile and skill-tree bounds. Preview text glyphs are rendered by Java2D; actual Minecraft glyph appearance was not inspected. The old frame reproduction illustrates the bad atlas sample/stretch but does not emulate Minecraft texture filtering or mipmaps pixel-for-pixel.
+
+## JAR and checksum
+
+- File: `artifacts/anomalous-classes-0.1.0-alpha.1.jar`
+- Size: `31,674,627` bytes
+- SHA-256: `fc9f8437295ce13eac2b87482ba1ffde58f7b9c4f60c35b3f7f83ea8a05e5aad`
+- Checksum: `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`
+- Sanitized logs: `artifacts/raw-logs.zip`
+- Visual review: `ui/reviews/2026-11-11/`
+
+The JDK compiler reports the existing `EventBusSubscriber.bus()` / `.Bus` removal warnings in `ClientModEvents.java:14`. Client startup also reported the existing vanilla goat-horn and emissive-shader warnings. No new UI startup error was observed.
+
+## User verification
+
+The development client remains running without GUI input. Open a test world, press `M`, and inspect all four profile frame corners, the top/bottom rails and ornaments, class artwork crop, stat columns, and buttons. Open the skill tree and hover a locked and purchasable major node; verify the concise status, wrapped effect, card bounds, SP HUD, and node icons. Repeat in Korean and English at GUI Scale 2/3/4 and 16:9/16:10/4:3. This is UI-only review; no gameplay, combat, balance, or multiplayer test was run.

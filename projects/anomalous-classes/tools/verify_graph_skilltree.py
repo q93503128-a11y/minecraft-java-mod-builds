@@ -288,6 +288,23 @@ def check_art_and_screen() -> None:
                            ("menu_v1/button_states.png", (1024, 1024)),
                            ("menu_v1/frame_atlas.png", (768, 768))):
         if png_info(RES / f"textures/gui/{relative}")[:2] != size: fail(f"shared UI texture mismatch: {relative}")
+    frame_parts = {
+        "corner_tl": (160, 160), "corner_tr": (160, 160),
+        "corner_bl": (160, 160), "corner_br": (160, 160),
+        "rail_top_left": (24, 64), "rail_top_right": (24, 64),
+        "rail_bottom_left": (24, 64), "rail_bottom_right": (24, 64),
+        "rail_side_left": (64, 24), "rail_side_right": (64, 24),
+        "jewel_side_left": (48, 64), "jewel_side_right": (48, 64),
+        "jewel_top": (64, 88), "jewel_bottom": (64, 88),
+    }
+    for name, dimensions in frame_parts.items():
+        path = RES / f"textures/gui/menu_v1/frame_parts/{name}.png"
+        if png_info(path)[:2] != dimensions:
+            fail(f"isolated frame component has wrong dimensions: {path}")
+    splitter = (ROOT / "tools/extract_menu_frame_parts.java").read_text(encoding="utf-8")
+    if "new Part(\"corner_tl\", 32, 32, 160, 160)" not in splitter \
+            or "new Part(\"rail_top_left\", 318, 64, 24, 64)" not in splitter:
+        fail("frame component crops no longer match the inspected atlas bounds")
 
     screen = (SRC / "client/SkillTreeScreen.java").read_text(encoding="utf-8")
     graph_source = (SRC / "state/GraphSkillTreeCatalog.java").read_text(encoding="utf-8")
@@ -314,12 +331,18 @@ def check_art_and_screen() -> None:
     if "OPEN_PROFILE" not in (SRC / "client/ClassSelectionKeyMappings.java").read_text(encoding="utf-8"):
         fail("M profile key mapping was removed")
 
-    if "sourceCellX + leftSourceX" not in menu or "sourceCellY + sourceY" not in menu:
-        fail("panel frame is no longer sampled from separate horizontal frame strips")
-    if "sourceCellX + railSourceX" not in menu or "sourceCellY + lowerSourceY" not in menu:
-        fail("panel side rails are not cropped independently from the frame atlas")
-    if "sourceWidth, sourceHeight, 768, 768" not in menu:
-        fail("panel patch renderer does not use explicit atlas crop dimensions")
+    if "drawHorizontalTiles(graphics" not in menu or "drawVerticalTiles(graphics" not in menu:
+        fail("panel rails are not tiled from their isolated source strips")
+    if "railTileLength = scale(corner, 24, 160)" not in menu \
+            or "sideRailTileLength = scale(corner, 24, 160)" not in menu:
+        fail("frame rail tiles no longer preserve the inspected source-to-corner scale")
+    if "topRailY + (railThickness - jewelHeight) / 2" not in menu \
+            or "sideLeftX + (railThickness - sideJewelWidth) / 2" not in menu:
+        fail("frame jewels are not centered on the corresponding rail axes")
+    if "PANEL_CORNERS[0]" not in menu or "PANEL_CORNERS[3]" not in menu:
+        fail("panel corners are not drawn as separately extracted fixed-size components")
+    if "sourceCellX + leftSourceX" in menu or "sourceCellX + railSourceX" in menu:
+        fail("the old guessed frame-atlas UV path is still used")
     if "0, row * 256, 1024, 256" in menu:
         fail("button skin again stretches its full 1024x256 source into the destination")
     if not all(term in menu for term in ("256, 256, 1024, 1024", "512, 256, 1024, 1024")):
@@ -335,7 +358,7 @@ def check_art_and_screen() -> None:
 
 def viewport_cases() -> int:
     screen = (SRC / "client/SkillTreeScreen.java").read_text(encoding="utf-8")
-    required = ("HUD_HEIGHT = 34", "MIN_ZOOM = 0.24", "MAX_ZOOM = 1.85", "Math.min(230, width - 12)",
+    required = ("HUD_HEIGHT = 34", "MIN_ZOOM = 0.24", "MAX_ZOOM = 1.85", "Math.min(160, width - 12)",
                 "maxCardLines", "clampCamera", "cameraX -= (mouseX - lastX) / zoom",
                 "beforeX = worldX(mouseX)", "screenX(double worldX)", "worldX(double screenX)")
     for term in required:
@@ -368,10 +391,10 @@ def viewport_cases() -> int:
             if map_top + max(1, height - map_top) > height:
                 fail(f"{aspect} scale {scale}: map viewport clipped")
             max_lines = max(3, (height - 34 - 18) // 11)
-            card_h = 12 + max_lines * 11
+            card_h = 10 + max_lines * 11
             if card_h > height - 34 - 5:
                 fail(f"{aspect} scale {scale}: tooltip exceeds available height")
-            card_w = max(105, min(230, width - 12))
+            card_w = min(160, width - 12)
             if card_w > width - 12:
                 fail(f"{aspect} scale {scale}: tooltip exceeds available width")
             for zoom in (0.24, 0.5, 1.0, 1.85):
@@ -393,9 +416,8 @@ def check_text() -> None:
         for key in ("screen.anomalousclasses.skill_tree.back", "screen.anomalousclasses.skill_tree.reset",
                     "screen.anomalousclasses.skill_tree.confirm_reset", "screen.anomalousclasses.skill_tree.points",
                     "screen.anomalousclasses.skill_tree.spent", "screen.anomalousclasses.skill_tree.node_stat",
-                    "screen.anomalousclasses.skill_tree.node_cost",
-                    "screen.anomalousclasses.skill_tree.node_breakthrough", "screen.anomalousclasses.skill_tree.ready",
-                    "screen.anomalousclasses.skill_tree.node_follow_path", "screen.anomalousclasses.skill_tree.migration_failed"):
+                    "screen.anomalousclasses.skill_tree.node_cost", "screen.anomalousclasses.skill_tree.ready",
+                    "screen.anomalousclasses.skill_tree.requirement_missing", "screen.anomalousclasses.skill_tree.migration_failed"):
             if not mapping.get(key): fail(f"{language}: missing player text {key}")
         for key, value in mapping.items():
             if key.startswith("screen.anomalousclasses.skill_tree.") and re.search(
@@ -409,6 +431,14 @@ def check_text() -> None:
         for key, value in mapping.items():
             if re.search(r"\{\d+\}", value):
                 fail(f"{language}: Java translation still contains a literal indexed placeholder: {key}")
+    if KO["screen.anomalousclasses.skill_tree.requirement_missing"] != "선행 경로 미해금" \
+            or EN["screen.anomalousclasses.skill_tree.requirement_missing"] != "Path not yet unlocked":
+        fail("skill-tree lock text is not concise and localized")
+    skill_screen = (SRC / "client/SkillTreeScreen.java").read_text(encoding="utf-8")
+    tooltip = skill_screen[skill_screen.index("private List<CardLine> tooltipLines"):skill_screen.index("private String statAmount")]
+    if any(term in tooltip for term in ("node_requires", "node_breakthrough", "passive_effect",
+                                        "node_follow_path", "requiresStageMinors()", "requiresPreviousMajor()")):
+        fail("tooltip contains repeated prerequisite names, stage data, or a development prefix")
     for key in KO:
         ko_args = re.findall(r"(?<!%)%(?:\d+\$)?s", KO[key])
         en_args = re.findall(r"(?<!%)%(?:\d+\$)?s", EN[key])
@@ -419,13 +449,10 @@ def check_text() -> None:
             "screen.anomalousclasses.skill_tree.spent": 1,
             "screen.anomalousclasses.skill_tree.node_stat": 1,
             "screen.anomalousclasses.skill_tree.node_cost": 1,
-            "screen.anomalousclasses.skill_tree.node_breakthrough": 1,
-            "screen.anomalousclasses.skill_tree.node_requires": 1,
             "screen.anomalousclasses.skill_tree.stat.max_health_hp": 1,
             "screen.anomalousclasses.skill_tree.stat.armor": 1,
             "screen.anomalousclasses.skill_tree.stat.movement_speed_percent": 1,
             "screen.anomalousclasses.skill_tree.stat.attack_damage": 1,
-            "screen.anomalousclasses.skill_tree.passive_effect": 1,
     }.items():
         for language, mapping in (("ko_kr", KO), ("en_us", EN)):
             args = re.findall(r"(?<!%)%(?:\d+\$)?s", mapping[key])
@@ -440,6 +467,9 @@ def profile_viewport_cases() -> int:
         fail("profile text is not fitted using Minecraft Font measurements")
     if "outer.x() + frameInset" not in profile or "outer.right() - frameInset" not in profile:
         fail("profile content does not respect the frame-safe inset")
+    if "drawMetricRows" not in profile or "font.width(row.label())" not in profile \
+            or "font.width(row.value())" not in profile or "MenuUi.drawFitRight" not in profile:
+        fail("profile metrics are not grouped into measured, aligned label/value columns")
     for language, mapping in (("ko_kr", KO), ("en_us", EN)):
         for key in ("screen.anomalousclasses.profile.title", "screen.anomalousclasses.profile.level",
                     "screen.anomalousclasses.profile.experience", "screen.anomalousclasses.profile.skill_points",
@@ -508,6 +538,19 @@ def profile_viewport_cases() -> int:
             final_stat_bottom = stats_y + 2 + line + 3 * stat_line + 9
             if stats_y + 1 > stats_bottom or final_stat_bottom > stats_bottom:
                 fail(f"{aspect} GUI {scale}: profile stat rows do not fit their information area")
+            for language, mapping in (("ko_kr", KO), ("en_us", EN)):
+                for labels, values, bounds_width in (
+                        (("screen.anomalousclasses.profile.level", "screen.anomalousclasses.profile.experience",
+                          "screen.anomalousclasses.profile.skill_points"), ("120", "1234567890", "900"), info_width),
+                        (("screen.anomalousclasses.profile.max_health", "screen.anomalousclasses.profile.attack_damage",
+                          "screen.anomalousclasses.profile.movement_speed", "screen.anomalousclasses.profile.armor"),
+                         ("200", "100", "0.12", "100"), info_width)):
+                    measured_label = max(approximate_font_width(mapping[key]) for key in labels)
+                    measured_value = max(approximate_font_width(value) for value in values)
+                    row_inset = min(5, max(2, bounds_width // 24))
+                    row_gap = min(12, max(5, bounds_width // 36))
+                    if measured_label + row_gap + measured_value > bounds_width - row_inset * 2:
+                        fail(f"{aspect} GUI {scale}: {language} profile metric columns overlap or truncate")
             cases += 1
             print(f"{aspect} GUI {scale}: profile frame inset, art clip, columns, stats, and buttons OK")
     return cases

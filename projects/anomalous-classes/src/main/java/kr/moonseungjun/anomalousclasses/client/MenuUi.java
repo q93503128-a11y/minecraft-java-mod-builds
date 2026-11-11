@@ -14,7 +14,24 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 
 final class MenuUi {
-    private static final ResourceLocation PANEL_ATLAS = ui("frame_atlas");
+    private static final ResourceLocation[] PANEL_CORNERS = {
+            ui("frame_parts/corner_tl"), ui("frame_parts/corner_tr"),
+            ui("frame_parts/corner_bl"), ui("frame_parts/corner_br")
+    };
+    private static final ResourceLocation[] TOP_RAILS = {
+            ui("frame_parts/rail_top_left"), ui("frame_parts/rail_top_right")
+    };
+    private static final ResourceLocation[] BOTTOM_RAILS = {
+            ui("frame_parts/rail_bottom_left"), ui("frame_parts/rail_bottom_right")
+    };
+    private static final ResourceLocation[] SIDE_RAILS = {
+            ui("frame_parts/rail_side_left"), ui("frame_parts/rail_side_right")
+    };
+    private static final ResourceLocation[] SIDE_JEWELS = {
+            ui("frame_parts/jewel_side_left"), ui("frame_parts/jewel_side_right")
+    };
+    private static final ResourceLocation TOP_JEWEL = ui("frame_parts/jewel_top");
+    private static final ResourceLocation BOTTOM_JEWEL = ui("frame_parts/jewel_bottom");
     private static final ResourceLocation TITLE_PLATE = ui("title_plate");
     private static final ResourceLocation SURFACE_TILE = ui("surface_tile");
     private static final ResourceLocation BUTTON_STATES = ui("button_states");
@@ -50,95 +67,115 @@ final class MenuUi {
 
     static void drawPanel(GuiGraphics graphics, Box box) {
         drawSurface(graphics, box);
-        int cell = 256;
         int corner = Math.max(6, Math.min(40, Math.min(box.width(), box.height()) / 10));
         corner = Math.min(corner, Math.min(box.width() / 2, box.height() / 2));
-        int edge = Math.max(4, Math.min(22, corner * 2 / 3));
-        int jewelWidth = Math.max(4, corner / 2);
-        jewelWidth = Math.min(jewelWidth, Math.max(1, box.width() - corner * 2));
-        int sideJewelWidth = Math.min(corner, Math.max(4, corner * 5 / 6));
-        int middleX = box.x() + box.width() / 2;
-        int topRailY = box.y() + corner / 2 - edge / 2;
-        int bottomRailY = box.bottom() - corner / 2 - edge / 2;
-        int topJewelY = box.y();
-        int bottomJewelY = box.bottom() - corner;
-        int horizontalSourceHeight = Math.min(50, Math.max(12, edge * 3));
+        int railOffset = scale(corner, 32, 160);
+        int railThickness = Math.max(1, scale(corner, 64, 160));
+        int centerX = box.x() + box.width() / 2;
+        boolean ornaments = corner >= 14 && box.width() >= 120 && box.height() >= 48;
+        int jewelWidth = ornaments ? Math.max(1, scale(corner, 64, 160)) : 0;
+        int jewelHeight = ornaments ? Math.max(1, scale(corner, 88, 160)) : 0;
+        int jewelLeft = centerX - jewelWidth / 2;
+        int jewelRight = centerX + (jewelWidth + 1) / 2;
+        int edgeStart = box.x() + corner - 1;
+        int edgeEnd = box.right() - corner + 1;
+        int topRailY = box.y() + railOffset;
+        int bottomRailY = box.bottom() - corner + railOffset;
+        int railTileLength = scale(corner, 24, 160);
 
-        // The atlas is a 3x3 panel sheet. Its edge cells include large transparent
-        // margins and center ornaments, so crop the actual rails instead of
-        // squeezing each 256x256 cell into a thin destination strip.
-        drawHorizontalRail(graphics, box, corner, edge, middleX, jewelWidth,
-                topRailY, cell, 0, 83 - horizontalSourceHeight / 2, 84, 24, horizontalSourceHeight);
-        drawHorizontalRail(graphics, box, corner, edge, middleX, jewelWidth,
-                bottomRailY, cell, cell * 2, 170 - horizontalSourceHeight / 2, 84, 24, horizontalSourceHeight);
-        drawVerticalRail(graphics, box, corner, edge, 0, cell, 54, 0, 106, 150, 106, 52, 104, 60, 50, sideJewelWidth);
-        drawVerticalRail(graphics, box, corner, edge, cell * 2, cell, 148, 0, 106, 150, 106, 148, 104, 60, 50, sideJewelWidth);
+        if (ornaments) {
+            drawHorizontalTiles(graphics, TOP_RAILS[0], edgeStart, topRailY, jewelLeft, railThickness,
+                    railTileLength, 24, 64);
+            drawHorizontalTiles(graphics, TOP_RAILS[1], jewelRight, topRailY, edgeEnd, railThickness,
+                    railTileLength, 24, 64);
+            drawHorizontalTiles(graphics, BOTTOM_RAILS[0], edgeStart, bottomRailY, jewelLeft, railThickness,
+                    railTileLength, 24, 64);
+            drawHorizontalTiles(graphics, BOTTOM_RAILS[1], jewelRight, bottomRailY, edgeEnd, railThickness,
+                    railTileLength, 24, 64);
+        } else {
+            drawHorizontalTiles(graphics, TOP_RAILS[0], edgeStart, topRailY, edgeEnd, railThickness,
+                    railTileLength, 24, 64);
+            drawHorizontalTiles(graphics, BOTTOM_RAILS[0], edgeStart, bottomRailY, edgeEnd, railThickness,
+                    railTileLength, 24, 64);
+        }
 
-        int topJewelHeight = corner;
-        int jewelSourceX = cell + 104;
-        region(graphics, PANEL_ATLAS, middleX - jewelWidth / 2, topJewelY,
-                jewelWidth, topJewelHeight, jewelSourceX, 16, 48, 128, 768, 768);
-        region(graphics, PANEL_ATLAS, middleX - jewelWidth / 2, bottomJewelY,
-                jewelWidth, topJewelHeight, jewelSourceX, cell * 2 + 112, 48, 128, 768, 768);
-
-        int cornerSource = 144;
-        region(graphics, PANEL_ATLAS, box.x(), box.y(), corner, corner,
-                0, 0, cornerSource, cornerSource, 768, 768);
-        region(graphics, PANEL_ATLAS, box.right() - corner, box.y(), corner, corner,
-                cell * 2 + 112, 0, cornerSource, cornerSource, 768, 768);
-        region(graphics, PANEL_ATLAS, box.x(), box.bottom() - corner, corner, corner,
-                0, cell * 2 + 112, cornerSource, cornerSource, 768, 768);
-        region(graphics, PANEL_ATLAS, box.right() - corner, box.bottom() - corner, corner, corner,
-                cell * 2 + 112, cell * 2 + 112, cornerSource, cornerSource, 768, 768);
-    }
-
-    private static void drawHorizontalRail(GuiGraphics graphics, Box box, int corner, int edge,
-                                           int middleX, int jewelWidth, int y,
-                                           int sourceCellX, int sourceCellY, int sourceY,
-                                           int leftSourceX, int sourceWidth, int sourceHeight) {
-        int left = box.x() + corner * 3 / 4;
-        int right = box.right() - corner * 3 / 4;
-        int jewelLeft = middleX - jewelWidth / 2;
-        int jewelRight = middleX + (jewelWidth + 1) / 2;
-        int leftWidth = Math.max(0, jewelLeft - left);
-        int rightWidth = Math.max(0, right - jewelRight);
-        region(graphics, PANEL_ATLAS, left, y, leftWidth, edge,
-                sourceCellX + leftSourceX, sourceCellY + sourceY, sourceWidth, sourceHeight, 768, 768);
-        region(graphics, PANEL_ATLAS, jewelRight, y, rightWidth, edge,
-                sourceCellX + 150, sourceCellY + sourceY, sourceWidth, sourceHeight, 768, 768);
-    }
-
-    private static void drawVerticalRail(GuiGraphics graphics, Box box, int corner, int edge,
-                                         int sourceCellX, int sourceCellY, int sourceRailX,
-                                         int upperStart, int upperHeight, int lowerStart, int lowerHeight,
-                                         int sourceJewelX, int sourceJewelY, int sourceJewelW, int sourceJewelH,
-                                         int jewelWidth) {
         int centerY = box.y() + box.height() / 2;
-        int jewelHeight = Math.max(4, corner * 3 / 4);
-        int top = box.y() + corner * 3 / 4;
-        int bottom = box.bottom() - corner * 3 / 4;
-        int jewelTop = centerY - jewelHeight / 2;
-        int jewelBottom = centerY + (jewelHeight + 1) / 2;
-        boolean leftSide = sourceCellX == 0;
-        int railX = leftSide ? box.x() + corner / 2 - edge / 2
-                : box.right() - corner / 2 - edge / 2;
-        int upperDestHeight = Math.max(0, jewelTop - top);
-        int lowerDestHeight = Math.max(0, bottom - jewelBottom);
-        int railSourceWidth = Math.min(58, Math.max(16, edge * 3));
-        int railSourceX = sourceRailX + (58 - railSourceWidth) / 2;
-        int upperSourceHeight = Math.min(upperHeight, Math.max(12, upperDestHeight * 4));
-        int lowerSourceHeight = Math.min(lowerHeight, Math.max(12, lowerDestHeight * 4));
-        int upperSourceY = upperStart + (upperHeight - upperSourceHeight) / 2;
-        int lowerSourceY = lowerStart + (lowerHeight - lowerSourceHeight) / 2;
-        region(graphics, PANEL_ATLAS, railX, top, edge, upperDestHeight,
-                sourceCellX + railSourceX, sourceCellY + upperSourceY, railSourceWidth, upperSourceHeight, 768, 768);
-        region(graphics, PANEL_ATLAS, railX, jewelBottom, edge, lowerDestHeight,
-                sourceCellX + railSourceX, sourceCellY + lowerSourceY, railSourceWidth, lowerSourceHeight, 768, 768);
-        int jewelX = leftSide ? box.x() + corner / 2 - jewelWidth / 2
-                : box.right() - corner / 2 - jewelWidth / 2;
-        region(graphics, PANEL_ATLAS, jewelX, jewelTop, jewelWidth, jewelHeight,
-                sourceCellX + sourceJewelX, sourceCellY + sourceJewelY,
-                sourceJewelW, sourceJewelH, 768, 768);
+        int sideJewelWidth = ornaments ? Math.max(1, scale(corner, 48, 160)) : 0;
+        int sideJewelHeight = ornaments ? Math.max(1, scale(corner, 64, 160)) : 0;
+        int sideJewelTop = centerY - sideJewelHeight / 2;
+        int sideLeftX = box.x() + railOffset;
+        int sideRightX = box.right() - corner + railOffset;
+        int sideRailTileLength = scale(corner, 24, 160);
+        int sideEnd = box.bottom() - corner + 1;
+        int sideStart = box.y() + corner - 1;
+        if (ornaments) {
+            drawVerticalTiles(graphics, SIDE_RAILS[0], sideLeftX, sideStart, sideJewelTop, railThickness,
+                    sideRailTileLength, 64, 24);
+            drawVerticalTiles(graphics, SIDE_RAILS[0], sideLeftX, sideJewelTop + sideJewelHeight,
+                    sideEnd, railThickness, sideRailTileLength, 64, 24);
+            drawVerticalTiles(graphics, SIDE_RAILS[1], sideRightX, sideStart, sideJewelTop, railThickness,
+                    sideRailTileLength, 64, 24);
+            drawVerticalTiles(graphics, SIDE_RAILS[1], sideRightX, sideJewelTop + sideJewelHeight,
+                    sideEnd, railThickness, sideRailTileLength, 64, 24);
+        } else {
+            drawVerticalTiles(graphics, SIDE_RAILS[0], sideLeftX, sideStart, sideEnd, railThickness,
+                    sideRailTileLength, 64, 24);
+            drawVerticalTiles(graphics, SIDE_RAILS[1], sideRightX, sideStart, sideEnd, railThickness,
+                    sideRailTileLength, 64, 24);
+        }
+
+        drawSprite(graphics, PANEL_CORNERS[0], box.x(), box.y(), corner, corner, 160, 160);
+        drawSprite(graphics, PANEL_CORNERS[1], box.right() - corner, box.y(), corner, corner, 160, 160);
+        drawSprite(graphics, PANEL_CORNERS[2], box.x(), box.bottom() - corner, corner, corner, 160, 160);
+        drawSprite(graphics, PANEL_CORNERS[3], box.right() - corner, box.bottom() - corner, corner, corner, 160, 160);
+
+        if (ornaments) {
+            int sideJewelLeft = sideLeftX + (railThickness - sideJewelWidth) / 2;
+            int sideJewelRight = sideRightX + (railThickness - sideJewelWidth) / 2;
+            region(graphics, SIDE_JEWELS[0], sideJewelLeft, sideJewelTop, sideJewelWidth, sideJewelHeight,
+                    0, 0, 48, 64, 48, 64);
+            region(graphics, SIDE_JEWELS[1], sideJewelRight, sideJewelTop, sideJewelWidth, sideJewelHeight,
+                    0, 0, 48, 64, 48, 64);
+            int topJewelY = topRailY + (railThickness - jewelHeight) / 2;
+            int bottomJewelY = bottomRailY + (railThickness - jewelHeight) / 2;
+            region(graphics, TOP_JEWEL, jewelLeft, topJewelY, jewelWidth, jewelHeight,
+                    0, 0, 64, 88, 64, 88);
+            region(graphics, BOTTOM_JEWEL, jewelLeft, bottomJewelY, jewelWidth, jewelHeight,
+                    0, 0, 64, 88, 64, 88);
+        }
+    }
+
+    private static int scale(int value, int numerator, int denominator) {
+        return Math.max(1, Math.round(value * (float) numerator / denominator));
+    }
+
+    private static void drawSprite(GuiGraphics graphics, ResourceLocation texture, int x, int y,
+                                   int width, int height, int sourceWidth, int sourceHeight) {
+        region(graphics, texture, x, y, width, height, 0, 0, sourceWidth, sourceHeight, sourceWidth, sourceHeight);
+    }
+
+    private static void drawHorizontalTiles(GuiGraphics graphics, ResourceLocation texture,
+                                            int x, int y, int endX, int height,
+                                            int tileWidth, int sourceWidth, int sourceHeight) {
+        while (x < endX) {
+            int destinationWidth = Math.min(tileWidth, endX - x);
+            int croppedWidth = Math.min(sourceWidth, (int) Math.ceil(destinationWidth * sourceWidth / (double) tileWidth));
+            region(graphics, texture, x, y, destinationWidth, height, 0, 0, croppedWidth, sourceHeight,
+                    sourceWidth, sourceHeight);
+            x += destinationWidth;
+        }
+    }
+
+    private static void drawVerticalTiles(GuiGraphics graphics, ResourceLocation texture,
+                                          int x, int y, int endY, int width,
+                                          int tileHeight, int sourceWidth, int sourceHeight) {
+        while (y < endY) {
+            int destinationHeight = Math.min(tileHeight, endY - y);
+            int croppedHeight = Math.min(sourceHeight, (int) Math.ceil(destinationHeight * sourceHeight / (double) tileHeight));
+            region(graphics, texture, x, y, width, destinationHeight, 0, 0, sourceWidth, croppedHeight,
+                    sourceWidth, sourceHeight);
+            y += destinationHeight;
+        }
     }
 
     static void drawTitle(GuiGraphics graphics, Font font, Component title, Box outer, int screenWidth, int screenHeight) {
@@ -262,6 +299,12 @@ final class MenuUi {
     static void drawFit(GuiGraphics graphics, Font font, Component text, int x, int y,
                         int maxWidth, int color) {
         graphics.drawString(font, fit(font, text, maxWidth), x, y, color, false);
+    }
+
+    static void drawFitRight(GuiGraphics graphics, Font font, Component text, int right, int y,
+                             int maxWidth, int color) {
+        Component display = fit(font, text, maxWidth);
+        graphics.drawString(font, display, right - font.width(display), y, color, false);
     }
 
     private static Component fit(Font font, Component text, int maxWidth) {

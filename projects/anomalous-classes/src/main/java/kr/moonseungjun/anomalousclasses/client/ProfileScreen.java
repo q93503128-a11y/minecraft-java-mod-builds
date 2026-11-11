@@ -1,6 +1,7 @@
 package kr.moonseungjun.anomalousclasses.client;
 
 import java.util.Locale;
+import java.util.List;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestSkillTreePayload;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
@@ -11,6 +12,8 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class ProfileScreen extends Screen {
+    private record MetricRow(Component label, Component value) {}
+
     private ProfileStatePayload state;
     private ClassId classId;
     private MenuUi.Box outer, artwork, information, stats;
@@ -89,19 +92,23 @@ public final class ProfileScreen extends Screen {
         int compact = width < 540 || height < 310 ? 1 : 0;
         int line = compact == 1 ? Math.max(10, font.lineHeight + 1) : font.lineHeight + 4;
         int rowY = information.y() + (compact == 1 ? 38 : 44);
-        drawPair(graphics, "screen.anomalousclasses.profile.level", Integer.toString(state.level()), rowY, information.width());
-        drawPair(graphics, "screen.anomalousclasses.profile.experience", Long.toString(state.experience()), rowY + line, information.width());
-        drawPair(graphics, "screen.anomalousclasses.profile.skill_points", Integer.toString(state.skillPoints()), rowY + line * 2, information.width());
+        drawMetricRows(graphics, information, List.of(
+                metric("screen.anomalousclasses.profile.level", Integer.toString(state.level())),
+                metric("screen.anomalousclasses.profile.experience", Long.toString(state.experience())),
+                metric("screen.anomalousclasses.profile.skill_points", Integer.toString(state.skillPoints()))
+        ), rowY, line);
 
         int statsTitleY = stats.y() + 2;
         MenuUi.drawCentered(graphics, font, Component.translatable("screen.anomalousclasses.profile.attributes"),
                 stats.x() + stats.width() / 2, statsTitleY, stats.width() - 8, 0xFFE6C788);
         int statY = statsTitleY + line;
         int statLine = Math.max(9, font.lineHeight + (compact == 1 ? 0 : 2));
-        drawPair(graphics, "screen.anomalousclasses.profile.max_health", format(state.maxHealth()), statY, stats.width());
-        drawPair(graphics, "screen.anomalousclasses.profile.attack_damage", format(state.attackDamage()), statY + statLine, stats.width());
-        drawPair(graphics, "screen.anomalousclasses.profile.movement_speed", format(state.movementSpeed()), statY + statLine * 2, stats.width());
-        drawPair(graphics, "screen.anomalousclasses.profile.armor", format(state.armor()), statY + statLine * 3, stats.width());
+        drawMetricRows(graphics, stats, List.of(
+                metric("screen.anomalousclasses.profile.max_health", format(state.maxHealth())),
+                metric("screen.anomalousclasses.profile.attack_damage", format(state.attackDamage())),
+                metric("screen.anomalousclasses.profile.movement_speed", format(state.movementSpeed())),
+                metric("screen.anomalousclasses.profile.armor", format(state.armor()))
+        ), statY, statLine);
 
         for (Renderable renderable : renderables) renderable.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -115,13 +122,30 @@ public final class ProfileScreen extends Screen {
 
     @Override public boolean isPauseScreen() { return false; }
 
-    private void drawPair(GuiGraphics graphics, String key, String value, int y, int availableWidth) {
-        Component label = Component.translatable(key);
-        int valueWidth = Math.min(Math.max(1, availableWidth / 2), Math.max(1, font.width(value)));
-        int labelWidth = Math.max(1, availableWidth - valueWidth - 8);
-        MenuUi.drawFit(graphics, font, label, information.x() + 3, y, labelWidth, 0xFFD8D0C5);
-        MenuUi.drawFit(graphics, font, Component.literal(value), information.right() - valueWidth, y,
-                Math.max(1, valueWidth), 0xFFF1E7D7);
+    private MetricRow metric(String key, String value) {
+        return new MetricRow(Component.translatable(key), Component.literal(value));
+    }
+
+    private void drawMetricRows(GuiGraphics graphics, MenuUi.Box bounds, List<MetricRow> rows, int y, int rowHeight) {
+        int inset = Math.min(5, Math.max(2, bounds.width() / 24));
+        int availableWidth = Math.max(1, bounds.width() - inset * 2);
+        int labelWidth = rows.stream().mapToInt(row -> font.width(row.label())).max().orElse(1);
+        int valueWidth = rows.stream().mapToInt(row -> font.width(row.value())).max().orElse(1);
+        int gap = Math.min(12, Math.max(5, bounds.width() / 36));
+        if (labelWidth + gap + valueWidth > availableWidth) {
+            gap = Math.min(gap, Math.max(2, availableWidth / 16));
+            valueWidth = Math.min(valueWidth, Math.max(1, availableWidth / 3));
+            labelWidth = Math.max(1, availableWidth - gap - valueWidth);
+        }
+        int groupWidth = Math.min(availableWidth, labelWidth + gap + valueWidth);
+        int groupX = bounds.x() + (bounds.width() - groupWidth) / 2;
+        int valueRight = groupX + labelWidth + gap + valueWidth;
+        for (int index = 0; index < rows.size(); index++) {
+            MetricRow row = rows.get(index);
+            int rowY = y + index * rowHeight;
+            MenuUi.drawFit(graphics, font, row.label(), groupX, rowY, labelWidth, 0xFFD8D0C5);
+            MenuUi.drawFitRight(graphics, font, row.value(), valueRight, rowY, valueWidth, 0xFFF1E7D7);
+        }
     }
 
     private static String format(double value) { return String.format(Locale.ROOT, "%.2f", value).replaceAll("\\.?0+$", ""); }

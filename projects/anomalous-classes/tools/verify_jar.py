@@ -198,6 +198,23 @@ def main() -> None:
                 if needs_alpha and not png_has_transparent_pixel(data):
                     fail(f"shared UI state texture has no transparent pixels: {entry}")
 
+            frame_parts = {
+                "corner_tl": (160, 160), "corner_tr": (160, 160),
+                "corner_bl": (160, 160), "corner_br": (160, 160),
+                "rail_top_left": (24, 64), "rail_top_right": (24, 64),
+                "rail_bottom_left": (24, 64), "rail_bottom_right": (24, 64),
+                "rail_side_left": (64, 24), "rail_side_right": (64, 24),
+                "jewel_side_left": (48, 64), "jewel_side_right": (48, 64),
+                "jewel_top": (64, 88), "jewel_bottom": (64, 88),
+            }
+            for part, dimensions in frame_parts.items():
+                entry = f"assets/anomalousclasses/textures/gui/menu_v1/frame_parts/{part}.png"
+                if entry not in names:
+                    fail(f"isolated frame texture missing from JAR: {entry}")
+                data = archive.read(entry)
+                if png_dimensions(data) != (*dimensions, 8, 6):
+                    fail(f"unexpected dimensions or PNG format for {entry}: {png_dimensions(data)}")
+
             if any("textures/gui/class_cards/" in name or "textures/gui/class_cards_v2/" in name
                    or "textures/gui/class_icons/" in name for name in names):
                 fail("archived class UI artwork was incorrectly packaged")
