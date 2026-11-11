@@ -59,3 +59,16 @@ CI: .github/workflows/turnbound-drehmal-foundry-natural-vs-function.yml
 기존 서버는 마지막 원격 레버에서 종료하여 위치 조건은 충족되지 않았다. 다음 폐기용 서버 실험에서는 기존 3레버 자연 우클릭과 3초 무입력 대조가 끝난 후 *새롭게* 플레이어가 확인된 조건 중심 반경 12 내의 안전한 발판으로 이동한다. 문 clone 90블록 전후 차이, 레버 상태 및 위치를 측정하며 원작 door 함수 직접 호출, `advancement grant`, 원작 원문·월드 편집 및 8단계 적용은 하지 않는다. 원작 `predicate`의 실제 판정도 해당 결과가 나오기 전까지 미검증.
 
 **MAP SEPARATION COMPLETE = NO**. 실제 통행·원작 6웨이브 비재진입·게임 START/클라이언트·멀티 승인 전.
+
+## 2026-11-11 공식 7+9 자연 문 접근 및 원본 predicate 분리 실서버 PASS
+
+[GitHub Actions #42944727206](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42944727206), `11e7731e73815b81d2fcfb5ced7eed89e505a350`. 기존 실제 레버 3회 자연 클릭·무입력 대조·점수 1→2→3 확인 후 문 조건 중심 (-3276,159,1570)의 반경 12블록 내 안전 위치에 프로토콜 플레이어를 둠.
+
+- 원작 문 호출 조건에서 `predicate` 항목만 제외한 `@s` 거리/좌표 선택자는 실서버 명령 평가에서 **true**.
+- 원래 `predicate`를 포함한 전체 엔티티 선택자도 **true**. 해당 원작 predicate 리소스 ID는 `players:is_not_dev`, `condition: inverted`이며 원본 데이터팩 내부에 존재.
+- 점수 `matches 3`은 직전 실서버 기준 충족되어 있고 레버 모두 ON. 자연 접근 이후 90블록 문 복제 source/dest 차이는 **59→59**, destination 블록 ID 변경은 **0**.
+- 새 시험에서 원작 `foundry:levers/door`나 상위 원작 함수는 직접 호출하지 않았다. `advancement grant/revoke` 사용 없음. 선택자 참/거짓은 진단용 신규 scoreboard objective에서만 읽었고 검사 뒤 제거했다.
+- 따라서 이번 폐기용 실서버 조건에서는 거리, 점수, 원작 predicate 미충족을 문 미개방 원인으로 볼 수 없다. **`players:main → players:overworld → players:overworld_p`의 자연 호출 여부와 실행자/실행 위치 컨텍스트는 여전히 미확인**이다. 이전에 원작 door 함수를 직접 1회 호출하면 59블록이 변했다는 제한 증거와 구분한다.
+- 다음: 원작 함수/태그에서 `players:main` 실제 tick 진입 경로와 실행자 컨텍스트를 추적하고, 필요한 경우 폐기 사본에서 실행 경로만 별도로 실증한다. 정상 원작 문 함수·레버·퍼즐을 삭제하거나 모드에 이식하지 않는다.
+
+**검증 경계:** original world SHA 보존, 공식 7+9 폐기 사본 한정, 8단계 미적용. 실제 문 통행, 6웨이브 비재진입, GUI 클라이언트, 4인 멀티, 사용자 START와 전체 맵 분리 **NOT VERIFIED**. MAP SEPARATION COMPLETE = NO.

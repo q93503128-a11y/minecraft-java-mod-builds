@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-11 Foundry 전체 엔티티 조건 자연 검증 #42944727206 PASS:** 원작 점수 3/레버 ON, 반경 12 내 플레이어 및 원작 `players:is_not_dev` predicate **모두 충족**, 그런데 자연 문 clone 0변경(소스/대상 59블록 차이 유지). 원작 문 직접 호출 0. 다음은 `players:main` 계열 실제 실행 및 실행 컨텍스트를 검증해야 함. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md). MAP SEPARATION COMPLETE = NO.
+
+
 > **2026-11-11 Foundry 원작 door 엔티티 조건 확인:** [정적 CI #42943038839 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42943038839). players:overworld_p에서 문을 호출할 때 동일 점수 키 matches 3 + `@s`의 (-3276,159,1570) 중심 반경 12 및 원작 predicate 조건을 동시에 검사함. 기존 원격 레버 최종 위치에서는 이 거리 조건 미충족. 다음은 3회 자연 클릭 이후 검증된 중심 근처 실제 플레이어 이동으로 문 변화를 측정. 원본/실사용 월드 변경 없음. MAP SEPARATION COMPLETE = NO. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md).
 
 

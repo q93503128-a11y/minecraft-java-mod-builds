@@ -1,5 +1,8 @@
 # TURNBOUND — Rebuild project contract
 
+> **2026-11-11 Foundry 전체 엔티티 조건 자연 검증 #42944727206 PASS:** 원작 점수 3/레버 ON, 반경 12 내 플레이어 및 원작 `players:is_not_dev` predicate **모두 충족**, 그런데 자연 문 clone 0변경(소스/대상 59블록 차이 유지). 원작 문 직접 호출 0. 다음은 `players:main` 계열 실제 실행 및 실행 컨텍스트를 검증해야 함. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md). MAP SEPARATION COMPLETE = NO.
+
+
 > **2026-11-11 Foundry door 호출자 정적 #42942060986 PASS:** [원본 5,487개 함수 추적](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42942060986): 원래 levers/main의 matches 1/2/3은 모두 tellraw, 조건은 동일 점수 키. levers/1_check~3_check의 업적 동사는 revoke. door 함수의 발견된 원본 리터럴 호출자는 players:overworld_p 하나. 다음은 해당 상위 함수 실행 경로와 조건 분리. 시설/원작 함수 변경 없음, 전체 맵 분리 NO. [상세](DREHMAL_FOUNDRY_NATURAL_VS_EXPLICIT_GATE.md).
 
 
