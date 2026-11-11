@@ -161,6 +161,58 @@ def function_inventory(pack):
     return result
 
 
+
+def trace_foundry_door_callers(pack):
+    """Metadata only. Do not export original command texts, map data or score names."""
+    watch=("foundry:levers/door","foundry:levers/door1")
+    incoming={key:set() for key in watch}
+    advancement_actions={}
+    score_actions={}
+    branches=[]
+    original_count=0
+    with zipfile.ZipFile(pack) as source:
+        for name in source.namelist():
+            if not name.startswith("data/") or not name.endswith(".mcfunction") or "/functions/" not in name:
+                continue
+            namespace,path=name[5:].split("/functions/",1)
+            func=namespace+":"+path.removesuffix(".mcfunction")
+            original_count+=1
+            lines=source.read(name).decode("utf-8").splitlines()
+            for raw in lines:
+                line=raw.strip().lstrip("/")
+                if not line or line.startswith("#"):
+                    continue
+                for target in watch:
+                    if re.search(r"\bfunction\s+"+re.escape(target)+r"(?![a-z0-9_./-])",line):
+                        incoming[target].add(func)
+                if func=="foundry:levers/main":
+                    match=re.search(r"\b(if|unless)\s+score\s+(\S+)\s+(\S+)\s+matches\s+(-?\d+)(?:\.\.(-?\d+)?)?",line)
+                    if match:
+                        post=line.split(" run ",1)[1].split() if " run " in line else []
+                        branches.append({"match":int(match.group(4)),
+                                         "polarity":match.group(1),
+                                         "redacted_target_key":(match.group(2),match.group(3)),
+                                         "run_root":post[0] if post else None,
+                                         "run_operation":post[2] if len(post)>2 and post[:2]==["scoreboard","players"] else None})
+                if func in ("foundry:levers/1_check","foundry:levers/2_check","foundry:levers/3_check") and line.startswith("advancement "):
+                    advancement_actions.setdefault(func,[]).append(line.split()[1])
+                if func in ("foundry:levers/1","foundry:levers/2","foundry:levers/3") and line.startswith("scoreboard players "):
+                    score_actions.setdefault(func,[]).append(line.split()[2])
+    if len(branches)!=3 or {x["match"] for x in branches}!={1,2,3}:
+        raise ValueError("Pinned main matches 1/2/3 drifted")
+    unique=len(set(x["redacted_target_key"] for x in branches))
+    for x in branches: x.pop("redacted_target_key")
+    return {"original_function_files_scanned":original_count,
+            "door_literal_callers":{k:sorted(v) for k,v in incoming.items()},
+            "main_condition_operations":branches,
+            "main_condition_distinct_score_keys":unique,
+            "check_advancement_actions":advancement_actions,
+            "lever_score_actions":score_actions,
+            "nonliteral_or_command_block_callers_excluded":True,
+            "original_commands_exported":False,
+            "runtime_callback_execution_proven":False}
+
+
 def inspect(world):
     world=Path(world).resolve(strict=True)
     if (world/"turnbound-world.marker").exists():
@@ -174,6 +226,7 @@ def inspect(world):
         "source_release":"Drehmal APOTHEOSIS 2.2.2f Minecraft 1.20.1",
         "clone_original_source_destination":comparison,
         "foundry_lever_function_condition_shapes":funcs,
+        "foundry_door_caller_trace":trace_foundry_door_callers(world/"datapacks"/"hi_drehmal.zip"),
         "original_map_modified":False,
         "original_commands_or_nbt_exported":False,
         "dynamic_score_conditions_verified":False,

@@ -40,6 +40,10 @@ jobs:
           x=d["clone_original_source_destination"]
           assert x["count"]==90 and x["same_full_blockstate_before_clone"]+x["source_destination_fullstate_differences"]==90
           assert d["foundry_lever_function_condition_shapes"]["foundry:levers/main"]["present"]
+          t=d["foundry_door_caller_trace"]
+          assert t["original_function_files_scanned"]>1000
+          assert {x["match"] for x in t["main_condition_operations"]}=={1,2,3}
+          assert not t["original_commands_exported"]
           assert not d["original_commands_or_nbt_exported"]
           assert not d["physical_gate_opened_verified"]
           assert not d["map_separation_complete"]

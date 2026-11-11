@@ -31,6 +31,24 @@ class GateBaselineTests(unittest.TestCase):
         self.assertEqual(data["conditional_clauses"][0]["matches_integer_range"],["3","5"])
         self.assertEqual(data["function_reference_ids"],["foundry:levers/door"])
         self.assertNotIn("OriginalPrivateObjective",json.dumps(data))
+    def test_redacted_main_score_gate_and_reverse_door_callers(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/"fixture.zip"
+            with zipfile.ZipFile(p,"w") as z:
+                z.writestr("data/foundry/functions/levers/main.mcfunction",
+                    "\n".join("execute if score #private hidden_score matches "+str(i)+
+                              " run scoreboard players add #private hidden_score 1" for i in (1,2,3)))
+                z.writestr("data/foundry/functions/levers/1_check.mcfunction",
+                           "advancement revoke @s only foundry:1")
+                z.writestr("data/foundry/functions/levers/1.mcfunction",
+                           "scoreboard players set #private hidden_score 1")
+                z.writestr("data/foundry/functions/triggers.mcfunction",
+                           "schedule function foundry:levers/door 2t")
+            result=m.trace_foundry_door_callers(p)
+            self.assertEqual(result["main_condition_distinct_score_keys"],1)
+            self.assertEqual(result["door_literal_callers"]["foundry:levers/door"],["foundry:triggers"])
+            self.assertEqual(result["check_advancement_actions"]["foundry:levers/1_check"],["revoke"])
+            self.assertNotIn("hidden_score",json.dumps(result))
     def test_function_inventory_fails_closed_on_missing_pinned_member(self):
         with tempfile.TemporaryDirectory() as d:
             path=Path(d)/"original.zip"
