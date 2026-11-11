@@ -182,6 +182,87 @@ def nearby_lever_controls(world):
     return out
 
 
+
+# Follow-up: literal clone destinations and a narrow all-namespaces caller search.
+# We do not infer command effects when coordinates are relative or macro-expanded.
+CLONE_RX=re.compile(r"\bclone\s+"+r"\s+".join([INT]*9))
+FOCUSED_IDS=(
+ "foundry:levers/1_check","foundry:levers/2_check",
+ "foundry:levers/3_check","foundry:open/1","foundry:open/2",
+ "foundry:open/3","foundry:arena_start","foundry:wave_logic",
+ "foundry:wave_1","foundry:arena_victory","foundry:reset_door",
+)
+
+def clone_coordinates(function_id,line):
+    out=[]
+    for match in CLONE_RX.finditer(line):
+        coords=[int(v) for v in match.groups()]
+        source_a=coords[:3]
+        source_b=coords[3:6]
+        destination=coords[6:9]
+        dims=[abs(source_b[i]-source_a[i]) for i in range(3)]
+        out.append({
+          "function_id":function_id,"operation":"clone",
+          "source_min":[min(source_a[i],source_b[i]) for i in range(3)],
+          "source_max":[max(source_a[i],source_b[i]) for i in range(3)],
+          "dest_min":destination,
+          "dest_max":[destination[i]+dims[i] for i in range(3)],
+          "execute_position_context_unresolved":"execute" in line[:match.start()],
+        })
+    return out
+
+def focused_path_inventory(pack):
+    reverse=collections.defaultdict(set)
+    profiles={}
+    clones=[]
+    with zipfile.ZipFile(pack) as z:
+        names=z.namelist()
+        for name in names:
+            if not name.startswith("data/") or not name.endswith(".mcfunction"):
+                continue
+            fid=source_id(name)
+            data=z.read(name)
+            if len(data)>2_000_000:
+                raise ValueError("Too many bytes in original function")
+            # Scan across all namespaces without writing original content to reports.
+            if b"foundry:" not in data and fid not in FOCUSED_IDS:
+                continue
+            content=data.decode("utf-8")
+            counts=collections.Counter()
+            out=set()
+            for line in content.splitlines():
+                line=line.strip().lstrip("/")
+                if not line or line.startswith("#"):continue
+                root=line.split(maxsplit=1)[0]
+                counts[root]+=1
+                for callee in FUNC_RX.findall(line):
+                    reverse[callee].add(fid)
+                    out.add(callee)
+                for callee in SCHEDULE_RX.findall(line):
+                    reverse[callee].add(fid)
+                    out.add(callee)
+                clones.extend(clone_coordinates(fid,line))
+            if fid in FOCUSED_IDS:
+                profiles[fid]={"exists":True,"direct_root_operations":dict(sorted(counts.items())),
+                               "literal_direct_callees":sorted(out)[:80]}
+        for fid in FOCUSED_IDS:
+            if fid not in profiles:
+                profiles[fid]={"exists":False,"direct_root_operations":{},"literal_direct_callees":[]}
+    return {
+        "focused_original_functions":profiles,
+        "all_namespaces_literal_callers_to_focused_functions":{
+            fid:sorted(reverse.get(fid,[]))[:64] for fid in FOCUSED_IDS
+        },
+        "all_namespaces_literal_caller_count":{
+            fid:len(reverse.get(fid,[])) for fid in FOCUSED_IDS
+        },
+        "literal_clone_operations_found":len(clones),
+        "original_clone_coordinate_targets":clones[:100],
+        "coordinate_relative_calls_exhaustively_parsed":False,
+        "runtime_invocation_verified":False,
+    }
+
+
 def audit(world):
     world=Path(world).resolve(strict=True)
     if (world/"turnbound-world.marker").exists():
@@ -191,6 +272,7 @@ def audit(world):
     if not source.is_file() or source.is_symlink():
         raise ValueError("Official source pack unavailable")
     result=inspect_datapack(source)
+    result["focused_facing_execution_and_clones"]=focused_path_inventory(source)
     result.update({
         "status":"OFFICIAL_ORIGINAL_FOUNDRY_STATIC_MECHANISM_BOUNDARY",
         "nearby_lever_command_block_surfaces":nearby_lever_controls(world),
