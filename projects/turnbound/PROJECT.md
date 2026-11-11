@@ -1,5 +1,8 @@
 # TURNBOUND — Rebuild project contract
 
+> **2026-11-11 Foundry 실제 시설 실서버 최신 정본:** [3개 레버 동시 ON #42929635789 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42929635789) → [원작 문 clone/source + 웨이브 호출 조사 #42931261435 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42931261435) → [정확한 clone 대상 라이브 검사 #42931701776 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42931701776) → [업적 predicate 검사 #42932597961 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42932597961) → [실제 손 아이템 우클릭/점수판/문 #42933135850 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42933135850). 원작 데이터팩·명령 블록 ON인 7+9 폐기 사본에서 레버 3개 모두 OFF→ON. 막대기 장착 클릭마다 **점수판 기록 변경 2건** 관측(다른 배경 원인 배제 못함). 그러나 실제 foundry:levers/door clone 대상 (-3278..-3274, Y156..164, Z1576..1577)의 블록 ID 변경 **0건**. 원작 함수 실행·정확한 문 개방/통행·6웨이브 미재진입 등은 **미검증**이며, 원본 clone 전후 소스·대상 비교와 levers/main 삼중 조건 검사 우선. 공식 맵·실사용 START 승인 = NO.
+
+
 > **2026-11-10 Drehmal 실제 시설 사용 최신 정본:** [7+9 공식 맵 사본 실제 레버 조작 #42824376001 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42824376001). 7단계와 `primordial/root` 강제 복귀 보상 연결 차단(9단계)을 적용한 공식 임시 사본에서 **원작 데이터팩·명령 블록 활성**, Fabric 1.20.1 프로토콜 클라이언트 실제 우클릭으로 Foundry 레버 3개 모두 첫 클릭 상태 전환 / 두 번째 클릭 복원 관측. [시설 좌표/물리 후보 원본·사본 비교 #42823505301 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42823505301). 8단계의 9개 실사용 차단은 미승인 상태로 이 시험에 **포함하지 않았다**. 문 개방·퍼즐·원작 전투 비재진입·실제 그래픽 클라이언트·멀티 미확인. **전체 맵 분리와 실사용 START 승인 아님.**
 
 

@@ -1,5 +1,8 @@
 # TURNBOUND — Drehmal 2.2.2f 맵 분리 실사용 승인 게이트
 
+> **2026-11-11 Foundry 실제 시설 실서버 최신 정본:** [3개 레버 동시 ON #42929635789 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42929635789) → [원작 문 clone/source + 웨이브 호출 조사 #42931261435 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42931261435) → [정확한 clone 대상 라이브 검사 #42931701776 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42931701776) → [업적 predicate 검사 #42932597961 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42932597961) → [실제 손 아이템 우클릭/점수판/문 #42933135850 PASS](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42933135850). 원작 데이터팩·명령 블록 ON인 7+9 폐기 사본에서 레버 3개 모두 OFF→ON. 막대기 장착 클릭마다 **점수판 기록 변경 2건** 관측(다른 배경 원인 배제 못함). 그러나 실제 foundry:levers/door clone 대상 (-3278..-3274, Y156..164, Z1576..1577)의 블록 ID 변경 **0건**. 원작 함수 실행·정확한 문 개방/통행·6웨이브 미재진입 등은 **미검증**이며, 원본 clone 전후 소스·대상 비교와 levers/main 삼중 조건 검사 우선. 공식 맵·실사용 START 승인 = NO.
+
+
 > **2026-11-10 7+9 실서버 Foundry 레버 실제 사용 PASS:** [시설 우클릭 #42824376001](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42824376001). 공식 원본 SHA 확인·폐기 사본·원작 데이터팩 ON·명령 블록 ON·Minecraft 1.20.1 프로토콜 클라이언트로 세 개 Foundry 레버의 첫 클릭 powered 전환, 두 번째 클릭 원복이 **모두 재현**됐다. [읽기 전용 시설 위치 선행 확인 #42823505301](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/42823505301)에서 원본/7+9 구역 블록이 일치함을 확인했다. **기존의 강제 advancement grant 검사와 달리 실제 사용 패킷**을 보냈지만, 문 개방/시설 동선/원작 전투 제거/전체 퍼즐/그래픽 클라이언트/4인 멀티는 검증하지 않았다. 실제 맵 승인 = NO.
 
 
