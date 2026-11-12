@@ -48,6 +48,7 @@
   "screen.anomalousclasses.profile.movement_speed": "Movement Speed",
   "screen.anomalousclasses.profile.armor": "Armor",
   "screen.anomalousclasses.profile.skill_tree": "Skill Tree",
+  "screen.anomalousclasses.profile.shortcut": "%1$s (%2$s)",
   "screen.anomalousclasses.profile.class_management": "Class Management",
   "screen.anomalousclasses.class_management.title": "Class Management",
   "screen.anomalousclasses.class_management.profile": "Profile",

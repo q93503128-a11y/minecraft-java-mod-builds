@@ -63,9 +63,11 @@ public final class ProfileScreen extends Screen {
         int buttonWidth = Math.max(1, Math.min(156, (innerWidth - buttonGap) / 2));
         int buttonX = outer.x() + (outer.width() - (buttonWidth * 2 + buttonGap)) / 2;
         skillButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(buttonX, navY, buttonWidth, navHeight),
-                Component.translatable("screen.anomalousclasses.profile.skill_tree"), button -> openSkillTree()));
+                shortcutLabel("screen.anomalousclasses.profile.skill_tree", ClassSelectionKeyMappings.OPEN_SKILL_TREE),
+                button -> openSkillTree()));
         managementButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(buttonX + buttonWidth + buttonGap, navY,
-                buttonWidth, navHeight), Component.translatable("screen.anomalousclasses.profile.class_management"),
+                buttonWidth, navHeight), shortcutLabel("screen.anomalousclasses.profile.class_management",
+                ClassSelectionKeyMappings.OPEN_CLASS_MANAGEMENT),
                 button -> minecraft.setScreen(new ClassManagementScreen(state))));
         refreshButtons();
     }
@@ -121,6 +123,11 @@ public final class ProfileScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
+
+    private static Component shortcutLabel(String labelKey, net.minecraft.client.KeyMapping shortcut) {
+        return Component.translatable("screen.anomalousclasses.profile.shortcut",
+                Component.translatable(labelKey), shortcut.getTranslatedKeyMessage());
+    }
 
     private MetricRow metric(String key, String value) {
         return new MetricRow(Component.translatable(key), Component.literal(value));

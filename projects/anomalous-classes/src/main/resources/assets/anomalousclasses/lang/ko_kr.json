@@ -48,6 +48,7 @@
   "screen.anomalousclasses.profile.movement_speed": "이동 속도",
   "screen.anomalousclasses.profile.armor": "방어력",
   "screen.anomalousclasses.profile.skill_tree": "스킬 트리",
+  "screen.anomalousclasses.profile.shortcut": "%1$s (%2$s)",
   "screen.anomalousclasses.profile.class_management": "직업 관리",
   "screen.anomalousclasses.class_management.title": "직업 관리",
   "screen.anomalousclasses.class_management.profile": "프로필",
