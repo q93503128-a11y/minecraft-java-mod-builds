@@ -1,6 +1,7 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
+import kr.moonseungjun.anomalousclasses.network.payload.ClassManagementStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -11,6 +12,14 @@ public final class ProfileService {
         PlayerClassProfile profile = ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
         profile.currentClass().ifPresentOrElse(id ->
                 ClassNetwork.sendToPlayer(player, ProfileStatePayload.from(player, profile, id)),
+                () -> ClassSelectionService.openMenu(player));
+    }
+
+    public static void openManagement(ServerPlayer player) {
+        PlayerClassProfile profile = ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
+        profile.currentClass().ifPresentOrElse(id ->
+                ClassNetwork.sendToPlayer(player, new ClassManagementStatePayload(
+                        ProfileStatePayload.from(player, profile, id))),
                 () -> ClassSelectionService.openMenu(player));
     }
 

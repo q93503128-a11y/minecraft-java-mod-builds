@@ -36,6 +36,8 @@
   "key.categories.anomalousclasses": "Anomalous Classes",
   "key.anomalousclasses.open_class_menu": "Open class selection/change",
   "key.anomalousclasses.open_profile": "Open profile",
+  "key.anomalousclasses.open_skill_tree": "Open skill tree",
+  "key.anomalousclasses.open_class_management": "Open class management",
   "screen.anomalousclasses.profile.title": "Profile",
   "screen.anomalousclasses.profile.level": "Level",
   "screen.anomalousclasses.profile.experience": "Experience",

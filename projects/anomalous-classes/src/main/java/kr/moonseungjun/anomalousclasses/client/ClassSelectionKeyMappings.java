@@ -13,5 +13,20 @@ public final class ClassSelectionKeyMappings {
             GLFW.GLFW_KEY_M,
             "key.categories.anomalousclasses");
 
+
+    public static final KeyMapping OPEN_SKILL_TREE = new KeyMapping(
+            "key.anomalousclasses.open_skill_tree",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_J,
+            "key.categories.anomalousclasses");
+
+    public static final KeyMapping OPEN_CLASS_MANAGEMENT = new KeyMapping(
+            "key.anomalousclasses.open_class_management",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_U,
+            "key.categories.anomalousclasses");
+
     private ClassSelectionKeyMappings() {}
 }

@@ -36,6 +36,8 @@
   "key.categories.anomalousclasses": "이능 직업 서바이벌",
   "key.anomalousclasses.open_class_menu": "직업 선택·변경 화면 열기",
   "key.anomalousclasses.open_profile": "프로필 열기",
+  "key.anomalousclasses.open_skill_tree": "스킬트리 열기",
+  "key.anomalousclasses.open_class_management": "직업 관리 열기",
   "screen.anomalousclasses.profile.title": "프로필",
   "screen.anomalousclasses.profile.level": "레벨",
   "screen.anomalousclasses.profile.experience": "경험치",

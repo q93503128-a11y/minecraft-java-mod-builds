@@ -1,5 +1,6 @@
 package kr.moonseungjun.anomalousclasses.network;
 
+import kr.moonseungjun.anomalousclasses.network.payload.RequestClassManagementPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestClassMenuPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestClassStatusPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SelectClassPayload;
@@ -43,6 +44,10 @@ public final class ClassNetwork {
         registrar.playToServer(RequestProfilePayload.TYPE, RequestProfilePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) ProfileService.open(player);
+                }));
+        registrar.playToServer(RequestClassManagementPayload.TYPE, RequestClassManagementPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) ProfileService.openManagement(player);
                 }));
         registrar.playToServer(RequestSkillTreePayload.TYPE, RequestSkillTreePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
