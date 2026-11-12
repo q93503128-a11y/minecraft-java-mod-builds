@@ -52,6 +52,8 @@
   "screen.anomalousclasses.profile.class_management": "직업 관리",
   "screen.anomalousclasses.class_management.title": "직업 관리",
   "screen.anomalousclasses.class_management.profile": "프로필",
+  "screen.anomalousclasses.class_management.skill_tree": "스킬 트리",
+  "screen.anomalousclasses.class_management.growth": "성장 정보",
   "screen.anomalousclasses.class_management.change_class": "직업 변경",
   "screen.anomalousclasses.skill_tree.title": "스킬 트리",
   "screen.anomalousclasses.skill_tree.skill_points": "보유 SP %s",

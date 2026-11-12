@@ -233,6 +233,60 @@ The development client is left running. Open a test world in that window, press 
 
 ---
 
+# Build and Runtime Report — Class-management overview hub — 2026-11-12
+
+## Baseline and authorized scope
+
+- Repository: `q93503128-a11y/minecraft-java-mod-builds`, project `projects/anomalous-classes/`, branch `main`.
+- Fetched and checked `origin/main` before editing; local and remote baseline: `b3849bb671ad08f7e4d3b63da6580b9edd86ac87`.
+- Checked the shared development playbook at `e022e9e4ff3947fcbd7f5b0237c5905d7c0409c7` and read the handoff ZIP's `CODEX_PROMPT.md`, `DESIGN_NOTES.md`, and all seven PNGs.
+- The user selected a current-functionality management hub. Latest project code has no class-specific management backends, focus-medium item, or recipe registry/recipe data. Those features were not fabricated; the existing class-management screen is an overview and route hub only.
+- No class selection, skill-tree, server persistence, save migration, outer frame, or unrelated project implementation was changed.
+
+## Implementation
+
+- Reworked `ClassManagementScreen` to use the six existing class illustrations/icons and the server profile snapshot: class, level, stored experience, available SP, and the actual current vanilla attributes.
+- Profile, Skill Tree, and Change Class controls route through the existing request payloads and server checks. The profile and tree buttons show the existing M/J shortcuts; the smaller Change Class route reuses the server class-selection flow.
+- Added `ClassManagementLayout`, with measured responsive bounds, and a verifier for 16:9, 16:10, and 4:3 at GUI Scale 2, 3, and 4.
+- Preserved the shared ornamental frame and its assets. Existing profile and skill-tree screens and all six class-specific backdrops remain intact.
+- Added Korean and English labels. No debug/internal text, mock management actions, default swarm tactics, or pretend focus recipe are shown.
+- Added Java2D static previews based on the existing runtime class art, icon, and UI frame textures:
+  - `ui/reviews/2026-11-12/class_management_mental_ko_static.png`
+  - `ui/reviews/2026-11-12/class_management_mental_en_static.png`
+  - `ui/reviews/2026-11-12/class_management_swarm_ko_static.png`
+
+The previews were visually reviewed for layout balance, alignment, and clipping after an initial overly empty information panel was compacted. They are static Java2D renders, not Minecraft GPU screenshots.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| Java / Gradle | OpenJDK 21.0.10 / Gradle 8.8 |
+| `verifyClassManagementLayout` | **PASS** — nine screen-aspect × GUI-scale combinations |
+| Existing graph/profile/resource/migration verifiers | **PASS** — 581 nodes, 900 SP per class, 61 icons, Korean/English, migration fixtures, and existing 18-viewport checks |
+| Java2D static review | **RENDERED AND VISUALLY REVIEWED** — Korean/English mental-control and Korean swarm-control previews; not an in-game capture |
+| `git diff --check` / resource JSON validation | **PASS** (run before commit) |
+| `clean build` | **PASS** — 10 actionable tasks; final build completed successfully |
+| First build attempt | **FAILED, then fixed** — the temporary verifier used the source-launcher's isolated classloader and could not load the package-private layout class. The verifier was moved onto the normal test runtime classpath; final clean build and check passed. |
+| Existing compile warnings | Existing NeoForge `EventBusSubscriber.bus()` / `Bus` deprecation/removal warnings in `ClientModEvents.java`; unrelated to this change |
+| JAR verification | **PASS** — 31,662,846 bytes, 69 compiled classes, loader metadata and required mod assets/data; no duplicate entries |
+| Datagen / GameTest / dedicated-server / multiplayer | **NOT RUN** — none was needed for this client UI scope |
+| Minecraft development client | **RUNNING** — after checking no runClient existed, started the project's normal `runClient`; Windows reports title `Minecraft NeoForge* 1.21.1` at last check. The process was left open. |
+| Minecraft UI interaction / client visual test | **NOT TESTED** — no screen was opened or manipulated, and no CUA was used. |
+
+## JAR and checksum
+
+- JAR: `build/libs/anomalous-classes-0.1.0-alpha.1.jar`
+- Size: `31,662,846` bytes
+- SHA-256: `d0a279f541186a92c374cefa56111f7436faf7ac3f109027b083a407084a3716`
+- Checksum sidecar: `build/libs/anomalous-classes-0.1.0-alpha.1.jar.sha256`
+
+## User review
+
+In the running development client, enter a world and press `U` to open the class-management overview. Verify the class art, profile values, compact button row, Korean/English labels, then open Profile, Skill Tree, and Change Class. Inspect GUI Scale 2, 3, and 4 and 16:9, 16:10, and 4:3 layouts. These checks are for screen layout and navigation only; no gameplay, combat, balance, or multiplayer review is requested. Class-specific management actions and the focus-medium recipe screen remain future work until their actual game systems are designed and implemented.
+
+---
+
 # Build and Runtime Report — 2026-11-11 Profile/Skill-Tree Visual Repair
 
 ## Baseline and scope

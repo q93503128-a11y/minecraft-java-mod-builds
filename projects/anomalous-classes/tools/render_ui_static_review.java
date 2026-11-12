@@ -21,6 +21,7 @@ public final class render_ui_static_review {
     private static final Path ROOT = Path.of("").toAbsolutePath();
     private static final Path RES = ROOT.resolve("src/main/resources/assets/anomalousclasses");
     private static final Path OUT = ROOT.resolve("ui/reviews/2026-11-11");
+    private static final Path MANAGEMENT_OUT = ROOT.resolve("ui/reviews/2026-11-12");
     private static BufferedImage atlas, surface, titlePlate, buttons, swarmArt, swarmIcon, swarmBackground, nodeFrames;
 
     private record Box(int x, int y, int w, int h) {
@@ -32,8 +33,11 @@ public final class render_ui_static_review {
     private render_ui_static_review() {}
 
     public static void main(String[] args) throws Exception {
-        if (args.length > 0) throw new IllegalArgumentException("Run from the anomalous-classes project directory.");
-        Files.createDirectories(OUT);
+        boolean managementOnly = args.length == 1 && args[0].equals("management-only");
+        if (args.length > 0 && !managementOnly) {
+            throw new IllegalArgumentException("Run from the anomalous-classes project directory.");
+        }
+        Files.createDirectories(managementOnly ? MANAGEMENT_OUT : OUT);
         atlas = load("textures/gui/menu_v1/frame_atlas.png");
         surface = load("textures/gui/menu_v1/surface_tile.png");
         titlePlate = load("textures/gui/menu_v1/title_plate.png");
@@ -42,6 +46,17 @@ public final class render_ui_static_review {
         swarmIcon = load("textures/gui/class_icons_v2/swarm_caster.png");
         swarmBackground = load("textures/gui/skilltree_v1/backgrounds/swarm_caster.png");
         nodeFrames = load("textures/gui/menu_v1/node_states.png");
+
+        if (managementOnly) {
+            write(MANAGEMENT_OUT.resolve("class_management_mental_ko_static.png"),
+                    management("mental_dominator", "ko_kr"));
+            write(MANAGEMENT_OUT.resolve("class_management_mental_en_static.png"),
+                    management("mental_dominator", "en_us"));
+            write(MANAGEMENT_OUT.resolve("class_management_swarm_ko_static.png"),
+                    management("swarm_caster", "ko_kr"));
+            System.out.println("STATIC MANAGEMENT PREVIEWS (Java2D, not Minecraft renderer): " + MANAGEMENT_OUT);
+            return;
+        }
 
         write(OUT.resolve("frame_legacy_uv_reference.png"), frameComparison());
         write(OUT.resolve("profile_layout_ko.png"), profile("ko_kr"));
@@ -61,6 +76,95 @@ public final class render_ui_static_review {
         text(g, "AFTER | exact source crops, continuous rails", W + 22, 34, 0xFFFFE4B4, "en_us");
         g.dispose();
         return result;
+    }
+
+    private static BufferedImage management(String classId, String locale) throws IOException {
+        BufferedImage result = canvas(W, H, SCALE, new Color(22, 15, 27));
+        Graphics2D g = graphics(result, SCALE);
+        g.setColor(new Color(13, 9, 19));
+        g.fillRect(0, 0, W, H);
+
+        int margin = W < 360 ? 5 : 10;
+        int top = H < 250 ? 4 : 10;
+        Box outer = new Box(margin, top, Math.max(1, W - margin * 2), Math.max(1, H - top * 2));
+        int frameInset = Math.min(30, Math.max(12, Math.min(outer.w(), outer.h()) / 10));
+        int contentX = outer.x() + frameInset;
+        int contentRight = outer.right() - frameInset;
+        int contentWidth = Math.max(1, contentRight - contentX);
+        int contentGap = Math.min(12, Math.max(6, contentWidth / 60));
+
+        int buttonHeight = Math.max(17, Math.min(24, H / 15));
+        int buttonGap = Math.min(8, Math.max(4, contentWidth / 80));
+        int switchWidth = Math.min(100, Math.max(58, contentWidth / 5));
+        int primaryWidth = Math.max(1, Math.min(160, (contentWidth - switchWidth - buttonGap * 2) / 2));
+        int rowWidth = primaryWidth * 2 + switchWidth + buttonGap * 2;
+        int buttonX = outer.x() + (outer.w() - rowWidth) / 2;
+        int buttonY = outer.bottom() - buttonHeight - Math.max(6, frameInset / 2);
+
+        int bodyTop = outer.y() + Math.max(39, frameInset + 12);
+        int bodyBottom = Math.max(bodyTop + 1, buttonY - 8);
+        int bodyHeight = Math.max(1, bodyBottom - bodyTop);
+        int artWidth = Math.max(1, Math.round(Math.max(1, contentWidth - contentGap) * 0.40f));
+        int artHeight = Math.max(1, Math.min(bodyHeight, Math.round(artWidth * 9.0f / 16.0f)));
+        Box artwork = new Box(contentX, bodyTop + (bodyHeight - artHeight) / 2, artWidth, artHeight);
+        Box overview = new Box(artwork.right() + contentGap, bodyTop,
+                Math.max(1, contentRight - artwork.right() - contentGap), bodyHeight);
+
+        panel(g, outer, false);
+        drawTitle(g, localized(locale, "screen.anomalousclasses.class_management.title"), outer, locale);
+        insetSurface(g, artwork);
+        drawArtCover(g, load("textures/gui/class_cards_v3/" + classId + ".png"),
+                new Box(artwork.x() + 2, artwork.y() + 2, Math.max(1, artwork.w() - 4), Math.max(1, artwork.h() - 4)));
+        insetSurface(g, overview);
+
+        int pad = Math.min(12, Math.max(7, overview.w() / 22));
+        int innerX = overview.x() + pad;
+        int innerRight = overview.right() - pad;
+        int innerWidth = Math.max(1, innerRight - innerX);
+        int iconSize = Math.min(28, Math.max(20, 9 + 16));
+        int iconY = overview.y() + 8;
+        BufferedImage classIcon = load("textures/gui/class_icons_v2/" + classId + ".png");
+        drawImage(g, classIcon, innerX, iconY, iconSize, iconSize, 0, 0, 96, 96);
+        String className = localized(locale, "class.anomalousclasses." + classId);
+        drawFit(g, className, innerX + iconSize + 6, iconY + Math.max(0, (iconSize - 9) / 2),
+                Math.max(1, innerRight - innerX - iconSize - 6), 0xFFF2E7D8, locale);
+        int sectionY = iconY + iconSize + 5;
+        int accent = classId.equals("mental_dominator") ? 0xFFC69AE9 : 0xFFD6A36D;
+        drawFit(g, localized(locale, "screen.anomalousclasses.class_management.growth"),
+                innerX, sectionY, innerWidth, 0xFFE6C788, locale);
+        int growthRowsY = sectionY + 12;
+        drawMetricRows(g, overview, List.of(
+                new Metric(localized(locale, "screen.anomalousclasses.profile.level"), "1"),
+                new Metric(localized(locale, "screen.anomalousclasses.profile.experience"), "0"),
+                new Metric(localized(locale, "screen.anomalousclasses.profile.skill_points"), "0")
+        ), growthRowsY, 12, locale);
+
+        int dividerY = growthRowsY + 36 + 2;
+        g.setColor(new Color(accent, true));
+        g.fillRect(innerX, dividerY, innerWidth, 1);
+        int attributesTitleY = dividerY + 7;
+        drawFit(g, localized(locale, "screen.anomalousclasses.profile.attributes"),
+                innerX, attributesTitleY, innerWidth, 0xFFE6C788, locale);
+        drawMetricRows(g, overview, List.of(
+                new Metric(localized(locale, "screen.anomalousclasses.profile.max_health"), "20"),
+                new Metric(localized(locale, "screen.anomalousclasses.profile.attack_damage"), "1"),
+                new Metric(localized(locale, "screen.anomalousclasses.profile.movement_speed"), "0.1"),
+                new Metric(localized(locale, "screen.anomalousclasses.profile.armor"), "0")
+        ), attributesTitleY + 12, 10, locale);
+
+        drawButton(g, new Box(buttonX, buttonY, primaryWidth, buttonHeight),
+                shortcut(locale, "screen.anomalousclasses.class_management.profile", "M"), locale);
+        drawButton(g, new Box(buttonX + primaryWidth + buttonGap, buttonY, primaryWidth, buttonHeight),
+                shortcut(locale, "screen.anomalousclasses.class_management.skill_tree", "J"), locale);
+        drawButton(g, new Box(buttonX + primaryWidth * 2 + buttonGap * 2, buttonY, switchWidth, buttonHeight),
+                localized(locale, "screen.anomalousclasses.class_management.change_class"), locale);
+        g.dispose();
+        return result;
+    }
+
+    private static String shortcut(String locale, String labelKey, String key) throws IOException {
+        return localized(locale, "screen.anomalousclasses.profile.shortcut")
+                .replace("%1$s", localized(locale, labelKey)).replace("%2$s", key);
     }
 
     private static BufferedImage profile(String locale) throws IOException {

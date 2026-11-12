@@ -1,5 +1,14 @@
 # Changelog
 
+## Class-management overview hub — 2026-11-12
+
+- Reworked the U screen into a class overview using each class's existing card art and icon, plus server-supplied level, experience, SP, and current vanilla attributes.
+- Added direct Profile (M), Skill Tree (J), and secondary Change Class routes using the existing server requests and validation.
+- Kept the shared ornate frame and all existing class-selection, profile, and graph-tree behavior unchanged.
+- Added 16:9, 16:10, and 4:3 logical viewport checks at GUI Scale 2–4, plus Korean/English static review images using the existing GUI textures.
+- Class-specific control systems and focus items/recipes remain unimplemented; the screen does not expose mock controls or recipe data as playable features.
+- The static previews are Java2D references, not Minecraft GPU screenshots. Client interaction status is recorded in `BUILD_AND_RUNTIME_REPORT.md`.
+
 ## Shared menu-frame artifact root repair — 2026-11-11
 
 - Fixed the source of repeated rail seams: the previous renderer compressed and repeated non-seamless rail ornaments across the frame. Rails now extend from a single sampled cross-section.

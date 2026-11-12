@@ -95,7 +95,16 @@ tasks.register('verifyGraphSkillTreeRuntime', Exec) {
     }
 }
 
+tasks.register('verifyClassManagementLayout', JavaExec) {
+    group = 'verification'
+    description = 'Checks class-management content and widget bounds at supported GUI scales and aspect ratios.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'kr.moonseungjun.anomalousclasses.client.ClassManagementLayoutVerifier'
+}
+
 tasks.named('check') {
     dependsOn tasks.named('verifyProfileSkillTree')
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
+    dependsOn tasks.named('verifyClassManagementLayout')
 }
