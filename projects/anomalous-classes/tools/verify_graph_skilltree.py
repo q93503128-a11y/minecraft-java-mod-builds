@@ -241,8 +241,10 @@ def check_migration_and_purchase(old: dict[str, list[dict]]) -> None:
     client_network = (SRC / "client/ClientModEvents.java").read_text(encoding="utf-8")
     if not all(term in profile for term in ("skillTreeVersion", "purchasedNodes", "withGraphTree")):
         fail("class progress is missing graph version/state")
-    if not all(term in saved for term in ("purchasedNodes", "skillTreeVersion", 'schemaVersion", 3')):
-        fail("saved data schema does not persist graph node ownership/version")
+    schema_match = re.search(r'putInt\("schemaVersion",\s*(\d+)\)', saved)
+    if (not all(term in saved for term in ("purchasedNodes", "skillTreeVersion", "equippedFocus"))
+            or schema_match is None or int(schema_match.group(1)) < 3):
+        fail("saved data schema does not persist graph ownership/version and the common focus slot")
     if not all(term in migration for term in ("updateProgressBatch", "oldSegmentSp", "SP conservation", "rank > oldNode.maxRank")):
         fail("legacy migration is missing atomic conversion/conservation checks")
     if not all(term in service for term in ("expectedRevision", "canPurchase", "CombatTracker.isLocked", "savedData.setDirty")):

@@ -1,6 +1,7 @@
 package kr.moonseungjun.anomalousclasses.client;
 
 import kr.moonseungjun.anomalousclasses.network.payload.ClassManagementStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
@@ -30,6 +31,12 @@ public final class ClassSelectionClient {
 
     public static void receive(ClassManagementStatePayload state) {
         Minecraft.getInstance().setScreen(new ClassManagementScreen(state.profile()));
+    }
+
+    public static void receive(ClassFocusStatePayload state) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof ClassFocusScreen screen) screen.applyServerState(state);
+        else minecraft.setScreen(new ClassFocusScreen(state));
     }
 
     public static void receive(SkillTreeStatePayload state) {

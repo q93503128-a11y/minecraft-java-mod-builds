@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "recipes": [
+    {"class":"mental_dominator","tier":"standard","pattern":["ACA","BDB","ACA"],"key":{"A":["minecraft:copper_ingot"],"B":["minecraft:amethyst_shard"],"C":["minecraft:redstone"],"D":["minecraft:glass_pane"]}},
+    {"class":"mental_dominator","tier":"altered","pattern":["ACA","BOB","ACA"],"key":{"A":["minecraft:gold_ingot"],"B":["minecraft:amethyst_shard"],"C":["minecraft:lapis_lazuli"],"O":["anomalousclasses:focus_mental_dominator_standard"]}},
+    {"class":"mental_dominator","tier":"anomalous","pattern":["ACA","BOB","ACA"],"key":{"A":["minecraft:emerald"],"B":["minecraft:ender_pearl"],"C":["minecraft:blaze_powder"],"O":["anomalousclasses:focus_mental_dominator_altered"]}},
+    {"class":"mental_dominator","tier":"eldritch","pattern":["ACA","BOB","ACA"],"key":{"A":["minecraft:diamond"],"B":["minecraft:ender_eye"],"C":["minecraft:amethyst_block"],"O":["anomalousclasses:focus_mental_dominator_anomalous"]}},
+    {"class":"mental_dominator","tier":"incomprehensible","pattern":["BAB","COC","D.D"],"key":{"A":["minecraft:enchanting_table"],"B":["minecraft:crying_obsidian"],"C":["minecraft:amethyst_block"],"D":["minecraft:lapis_block"],"O":["anomalousclasses:focus_mental_dominator_eldritch"]}},
+
+    {"class":"puppeteer","tier":"standard","pattern":["A.A","BCB","..."],"key":{"A":["minecraft:stick"],"B":["minecraft:string"],"C":["minecraft:copper_ingot"]}},
+    {"class":"puppeteer","tier":"altered","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:iron_ingot"],"B":["minecraft:redstone"],"C":["minecraft:string"],"O":["anomalousclasses:focus_puppeteer_standard"]}},
+    {"class":"puppeteer","tier":"anomalous","pattern":["ACA","BOB","ACA"],"key":{"A":["minecraft:amethyst_shard"],"B":["minecraft:gold_ingot"],"C":["minecraft:lapis_lazuli"],"O":["anomalousclasses:focus_puppeteer_altered"]}},
+    {"class":"puppeteer","tier":"eldritch","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:diamond"],"B":["minecraft:obsidian"],"C":["minecraft:slime_ball"],"O":["anomalousclasses:focus_puppeteer_anomalous"]}},
+    {"class":"puppeteer","tier":"incomprehensible","pattern":["BEB","COC","DAD"],"key":{"A":["minecraft:diamond_block"],"B":["minecraft:iron_block"],"C":["minecraft:copper_block"],"D":["minecraft:redstone_block"],"E":["minecraft:observer"],"O":["anomalousclasses:focus_puppeteer_eldritch"]}},
+
+    {"class":"parasite_morpher","tier":"standard","pattern":["ACA","BDB","..."],"key":{"A":["minecraft:copper_ingot"],"B":["minecraft:string"],"C":["minecraft:bone"],"D":["minecraft:rotten_flesh"]}},
+    {"class":"parasite_morpher","tier":"altered","pattern":["AAA","BOB",".C."],"key":{"A":["minecraft:iron_ingot"],"B":["minecraft:redstone"],"C":["minecraft:spider_eye"],"O":["anomalousclasses:focus_parasite_morpher_standard"]}},
+    {"class":"parasite_morpher","tier":"anomalous","pattern":["BBB","AOA","C.C"],"key":{"A":["minecraft:gold_ingot"],"B":["minecraft:amethyst_shard"],"C":["minecraft:lapis_lazuli"],"O":["anomalousclasses:focus_parasite_morpher_altered"]}},
+    {"class":"parasite_morpher","tier":"eldritch","pattern":["ACA","BOB",".D."],"key":{"A":["minecraft:diamond"],"B":["minecraft:obsidian"],"C":["minecraft:blaze_powder"],"D":["minecraft:fermented_spider_eye"],"O":["anomalousclasses:focus_parasite_morpher_anomalous"]}},
+    {"class":"parasite_morpher","tier":"incomprehensible","pattern":["ADA","BOB","C.C"],"key":{"A":["minecraft:golden_apple"],"B":["minecraft:ghast_tear"],"C":["minecraft:nether_wart_block"],"D":["minecraft:magma_cream"],"O":["anomalousclasses:focus_parasite_morpher_eldritch"]}},
+
+    {"class":"barrier_caster","tier":"standard","pattern":["ADA","BCB",".C."],"key":{"A":["minecraft:copper_ingot"],"B":["minecraft:glass"],"C":["minecraft:amethyst_shard"],"D":["minecraft:redstone"]}},
+    {"class":"barrier_caster","tier":"altered","pattern":["AAA","BOB","C.C"],"key":{"A":["minecraft:iron_ingot"],"B":["minecraft:lapis_lazuli"],"C":["minecraft:amethyst_shard"],"O":["anomalousclasses:focus_barrier_caster_standard"]}},
+    {"class":"barrier_caster","tier":"anomalous","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:gold_ingot"],"B":["minecraft:obsidian"],"C":["minecraft:glowstone_dust"],"O":["anomalousclasses:focus_barrier_caster_altered"]}},
+    {"class":"barrier_caster","tier":"eldritch","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:diamond"],"B":["minecraft:ender_pearl"],"C":["minecraft:glowstone"],"O":["anomalousclasses:focus_barrier_caster_anomalous"]}},
+    {"class":"barrier_caster","tier":"incomprehensible","pattern":["BAB","COC","D.D"],"key":{"A":["minecraft:end_crystal"],"B":["minecraft:crying_obsidian"],"C":["minecraft:amethyst_block"],"D":["minecraft:prismarine_crystals"],"O":["anomalousclasses:focus_barrier_caster_eldritch"]}},
+
+    {"class":"pact_caster","tier":"standard","pattern":["BAB","CDC","..."],"key":{"A":["minecraft:paper"],"B":["minecraft:copper_ingot"],"C":["minecraft:amethyst_shard"],"D":["minecraft:string"]}},
+    {"class":"pact_caster","tier":"altered","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:iron_ingot"],"B":["minecraft:lapis_lazuli"],"C":["minecraft:redstone"],"O":["anomalousclasses:focus_pact_caster_standard"]}},
+    {"class":"pact_caster","tier":"anomalous","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:gold_ingot"],"B":["minecraft:obsidian"],"C":["minecraft:amethyst_shard"],"O":["anomalousclasses:focus_pact_caster_altered"]}},
+    {"class":"pact_caster","tier":"eldritch","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:diamond"],"B":["minecraft:ender_pearl"],"C":["minecraft:writable_book"],"O":["anomalousclasses:focus_pact_caster_anomalous"]}},
+    {"class":"pact_caster","tier":"incomprehensible","pattern":["BAB","COC","D.D"],"key":{"A":["minecraft:totem_of_undying","minecraft:heart_of_the_sea"],"B":["minecraft:gold_block"],"C":["minecraft:emerald_block"],"D":["minecraft:amethyst_block"],"O":["anomalousclasses:focus_pact_caster_eldritch"]}},
+
+    {"class":"swarm_caster","tier":"standard","pattern":["ACA","BDB","..."],"key":{"A":["minecraft:copper_ingot"],"B":["minecraft:string"],"C":["minecraft:slime_ball"],"D":["minecraft:amethyst_shard"]}},
+    {"class":"swarm_caster","tier":"altered","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:iron_ingot"],"B":["minecraft:redstone"],"C":["minecraft:slime_ball"],"O":["anomalousclasses:focus_swarm_caster_standard"]}},
+    {"class":"swarm_caster","tier":"anomalous","pattern":["ADA","BOB","C.C"],"key":{"A":["minecraft:gold_ingot"],"B":["minecraft:obsidian"],"C":["minecraft:amethyst_shard"],"D":["minecraft:ender_pearl"],"O":["anomalousclasses:focus_swarm_caster_altered"]}},
+    {"class":"swarm_caster","tier":"eldritch","pattern":["ACA","BOB",".C."],"key":{"A":["minecraft:diamond"],"B":["minecraft:honey_block"],"C":["minecraft:prismarine_shard"],"O":["anomalousclasses:focus_swarm_caster_anomalous"]}},
+    {"class":"swarm_caster","tier":"incomprehensible","pattern":["BAB","COC","D.D"],"key":{"A":["minecraft:diamond_block"],"B":["minecraft:honeycomb_block"],"C":["minecraft:slime_block"],"D":["minecraft:prismarine_bricks"],"O":["anomalousclasses:focus_swarm_caster_eldritch"]}}
+  ]
+}

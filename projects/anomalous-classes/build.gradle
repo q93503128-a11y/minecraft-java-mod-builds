@@ -13,6 +13,9 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
+def generatedFocusResources = layout.buildDirectory.dir('generated/focus-resources')
+sourceSets.main.resources.srcDir(generatedFocusResources)
+
 neoForge {
     version = neo_version
 
@@ -68,6 +71,19 @@ tasks.processResources {
     }
 }
 
+tasks.register('generateFocusRecipes', Exec) {
+    group = 'generation'
+    description = 'Generates shaped focus crafting recipes from the shared recipe catalog.'
+    inputs.file('data/focus_recipes.json')
+    outputs.dir(generatedFocusResources)
+    commandLine 'python', 'tools/generate_focus_recipes.py', 'data/focus_recipes.json',
+            generatedFocusResources.get().asFile.absolutePath
+}
+
+tasks.named('processResources') {
+    dependsOn tasks.named('generateFocusRecipes')
+}
+
 tasks.jar {
     manifest {
         attributes(
@@ -103,8 +119,26 @@ tasks.register('verifyClassManagementLayout', JavaExec) {
     mainClass = 'kr.moonseungjun.anomalousclasses.client.ClassManagementLayoutVerifier'
 }
 
+tasks.register('verifyClassFocus', Exec) {
+    group = 'verification'
+    description = 'Checks focus registrations, recipe layout/output parity, textures, models, and translations.'
+    dependsOn tasks.named('generateFocusRecipes')
+    commandLine 'python', 'tools/verify_focus_recipes.py',
+            'data/focus_recipes.json', 'src/main/resources', generatedFocusResources.get().asFile.absolutePath
+}
+
+tasks.register('verifyClassFocusLayout', JavaExec) {
+    group = 'verification'
+    description = 'Checks the focus recipe screen at supported aspect ratios and GUI scales.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'kr.moonseungjun.anomalousclasses.client.ClassFocusScreenLayoutVerifier'
+}
+
 tasks.named('check') {
     dependsOn tasks.named('verifyProfileSkillTree')
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
     dependsOn tasks.named('verifyClassManagementLayout')
+    dependsOn tasks.named('verifyClassFocus')
+    dependsOn tasks.named('verifyClassFocusLayout')
 }

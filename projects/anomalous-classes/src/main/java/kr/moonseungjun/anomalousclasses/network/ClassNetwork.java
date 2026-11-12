@@ -8,11 +8,14 @@ import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePaylo
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestProfilePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestSkillTreePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestClassFocusPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.ProfileService;
 import kr.moonseungjun.anomalousclasses.state.SkillTreeService;
+import kr.moonseungjun.anomalousclasses.state.ClassFocusService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.IEventBus;
@@ -56,6 +59,14 @@ public final class ClassNetwork {
         registrar.playToServer(SkillTreeActionPayload.TYPE, SkillTreeActionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) SkillTreeService.handle(player, payload);
+                }));
+        registrar.playToServer(RequestClassFocusPayload.TYPE, RequestClassFocusPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) ClassFocusService.open(player);
+                }));
+        registrar.playToServer(ClassFocusActionPayload.TYPE, ClassFocusActionPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) ClassFocusService.handle(player, payload);
                 }));
     }
 

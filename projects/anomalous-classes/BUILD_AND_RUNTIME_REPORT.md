@@ -1,5 +1,58 @@
 # Build and Runtime Report
 
+## 2026-11-12 — Common focus items, recipes, and slot foundation
+
+### Baseline and scope
+
+- Fetched `origin/main` at the start. Baseline: `51e0de6ef8dbb9ee1fe1de5260849d0ab6199355`; work remains on `main`.
+- Scope: the first functional backend slice after the overview hub. This does **not** complete the six class-specific management systems.
+- Existing profile, graph tree, class change flow, M/J/U mappings, combat checks, and outer menu frame were preserved.
+
+### Implemented
+
+- Registered 30 stable focus item IDs (six classes × five grades), with item models/textures derived from existing class glyphs and grade markers. No outside artwork was added.
+- Added one server-owned focus slot to the existing player profile `SavedData` (schema 4). Old records without the field load with an empty slot; the item identity is stable across restarts. Death follows `keepInventory` and drops the slot item when that rule is off.
+- Added server-validated equip/unequip requests. Equipping requires the matching current-class item in the player's inventory; replacement returns the old item into the consumed item's inventory slot; unequip requires a free slot. Revision checks reject stale/duplicate requests.
+- Added 30 actual `minecraft:crafting_shaped` recipes from `data/focus_recipes.json`. The recipe viewer reads that same catalog, including each 3×3 pattern, repeated ingredient counts, the previous grade in the center, and the Pact incomprehensible-grade totem/heart alternative.
+- Added a compact focus recipe/equipment screen reachable from the class-management overview. Korean and English labels are included. The grade selector, ingredient/result hover tooltips, inventory count, equip, unequip, and server result states are wired.
+- Kept the two-column recipe/details body centered and height-limited on larger screens. On the compact 320×180 logical viewport, the alternative-material control, equipped-slot summary, inventory count, and response line occupy separate measured rows without running into the footer buttons.
+- Added a 30-icon contact sheet from the shipped 16×16 textures: [class_focus_item_icons_contact_sheet.png](ui/reviews/2026-11-12/class_focus_item_icons_contact_sheet.png). It is an asset review image, not an in-game screenshot.
+- Visually inspected the contact sheet: all six class glyphs remain distinct and grade pips form a clear 1–5 progression when enlarged. Native 16px legibility still needs the user’s Minecraft review.
+
+### Explicit remaining work
+
+- Focus items currently have **no class-specific effects**. Existing design effects require missing class backends (dominated mobs, puppets, hosts, barriers, contracts, or swarm entities); the UI does not claim that equipping a focus applies those bonuses.
+- Mental dominator, puppeteer, parasite, barrier, pact, and swarm management actions and persistent domain state are still unimplemented. In particular, user-created swarm tactics remain unimplemented; no default presets were added.
+- No focus effect tooltip/stat rows or fake management actions were added. The current `main` Java source contains no controlled-mob, puppet, host, barrier, pact-contract, or swarm entity/domain runtime to connect. The next units therefore need to implement those authoritative systems from their class plans before their management views can show live state; do not extend this screen with empty controls or sample data.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `java -version` / Gradle | OpenJDK 21.0.10 / Gradle 8.8 |
+| `.\gradlew.bat clean build --console plain --stacktrace` | **PASS** — all 13 tasks; `check` included |
+| Focus recipe/assets parity | **PASS** — 30 registered textures/models and 30 shaped recipe outputs/patterns; Pact alternative and previous-grade-center checks |
+| Focus screen layout | **PASS** — 12 logical viewport cases across 16:9, 16:10, 4:3, compact 16:9 and GUI Scale 2–4; recipe grid, arrow/result, panels and buttons remain in bounds and non-overlapping |
+| Management layout | **PASS** — 9 viewport/scale cases |
+| Existing graph/runtime regression | **PASS** — 581 nodes, six 900-SP graphs, legacy migration and SP conservation, focus-slot NBT round trip, old-save default, all 30 item identities |
+| Existing profile/tree static verifier | **PASS** — Korean/English and 18 prior viewport cases |
+| JAR verification | **PASS** — 31,745,646 bytes, 83 compiled classes; required class assets, 30 focus item models/textures and all 30 shaped recipes verified; no duplicate entries |
+| `git diff --check` | **PASS** — Git emitted only existing LF/CRLF normalization notices |
+| Compiler warnings | Two existing `EventBusSubscriber.bus()`/`Bus` removal warnings in `ClientModEvents.java`; Gradle 9 compatibility deprecation notice |
+| Development client | **RUNNING** — checked for an existing project `runClient` first, found none, then started `.\gradlew.bat runClient`. The log shows NeoForge 21.1.244, this mod discovered, resource reload, and graphics/audio initialization; the process remains open. |
+| Datagen / GameTest / dedicated server / multiplayer | **NOT RUN** |
+| Actual screen open, click, or Minecraft visual inspection | **NOT TESTED** — no screen was opened and no CUA was used. The user should open the focus screen for final visual/click review. |
+
+### Artifact
+
+- Build JAR: `build/libs/anomalous-classes-0.1.0-alpha.1.jar`
+- User deliverable: `artifacts/anomalous-classes-0.1.0-alpha.1.jar`
+- SHA-256: `91450e4277d267019e0e9a428f3f93c4849fb4899f8f960a097741e54bd2b732`
+- Sanitized logs: `artifacts/raw-logs.zip`
+- GitHub push result and final `main` SHA are in the completion summary.
+
+---
+
 Date: 2026-11-08
 
 Project: `anomalous-classes` · `0.1.0-alpha.1`

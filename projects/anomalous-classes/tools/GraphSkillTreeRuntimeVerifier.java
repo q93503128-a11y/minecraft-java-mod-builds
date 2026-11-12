@@ -4,8 +4,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
+import kr.moonseungjun.anomalousclasses.state.ClassFocus;
 import kr.moonseungjun.anomalousclasses.state.ClassProgress;
 import kr.moonseungjun.anomalousclasses.state.ClassProfileSavedData;
+import kr.moonseungjun.anomalousclasses.state.FocusTier;
 import kr.moonseungjun.anomalousclasses.state.GraphSkillTreeCatalog;
 import kr.moonseungjun.anomalousclasses.state.GraphSkillTreeMigration;
 import kr.moonseungjun.anomalousclasses.state.PlayerClassProfile;
@@ -25,7 +27,8 @@ public final class GraphSkillTreeRuntimeVerifier {
         verifyMultiClassAndReset();
         verifyAtomicFailure();
         verifyNbtPersistence();
-        System.out.println("PASS: runtime graph catalog, legacy migration, SP conservation, atomic failure, reset, and NBT round trip");
+        verifyFocusPersistence();
+        System.out.println("PASS: runtime graph catalog, legacy migration, SP conservation, reset, focus-slot persistence, and NBT round trips");
     }
 
     private static void verifyPurchaseReachability() {
@@ -195,6 +198,46 @@ public final class GraphSkillTreeRuntimeVerifier {
         require(restored.purchasedNodes().equals(nodes), "purchased node IDs round trip");
         require(restored.skillPoints() == 29, "remaining SP round trip");
         require(decoded.profile(playerId).currentClass().orElseThrow() == classId, "selected class round trip");
+    }
+
+    private static void verifyFocusPersistence() throws Exception {
+        ClassProfileSavedData data = new ClassProfileSavedData();
+        UUID playerId = UUID.fromString("c4412e33-9358-4fd0-b3d5-e41e28e5a117");
+        PlayerClassProfile profile = data.profile(playerId);
+        ClassFocus equipped = new ClassFocus(ClassId.SWARM_CASTER, FocusTier.ELDRITCH);
+        require(profile.equipFocus(equipped), "first focus equip changes state");
+        require(!profile.equipFocus(equipped), "same focus cannot be equipped twice in storage");
+        for (ClassId classId : ClassId.values()) {
+            profile.select(classId);
+            require(profile.equippedFocus().orElseThrow().equals(equipped),
+                    "common focus slot survives switching to " + classId.key());
+        }
+
+        CompoundTag encoded = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        ClassProfileSavedData decoded = load(encoded);
+        require(decoded.profile(playerId).equippedFocus().orElseThrow().equals(equipped),
+                "equipped focus survives SavedData round trip");
+
+        CompoundTag legacy = encoded.copy();
+        legacy.getList("players", net.minecraft.nbt.Tag.TAG_COMPOUND).getCompound(0).remove("equippedFocus");
+        ClassProfileSavedData migrated = load(legacy);
+        require(migrated.profile(playerId).equippedFocus().isEmpty(),
+                "pre-focus profile loads with an empty common slot");
+        require(migrated.profile(playerId).currentClass().orElseThrow() == ClassId.SWARM_CASTER,
+                "pre-focus migration preserves selected class");
+
+        for (ClassId classId : ClassId.values()) for (FocusTier tier : FocusTier.values()) {
+            ClassFocus value = new ClassFocus(classId, tier);
+            require(ClassFocus.fromKey(value.key()).orElseThrow().equals(value), "stable focus identity " + value.key());
+        }
+        require(ClassFocus.fromKey("unknown:standard").isEmpty(), "unknown focus identity is rejected");
+    }
+
+    private static ClassProfileSavedData load(CompoundTag tag) throws Exception {
+        Method load = ClassProfileSavedData.class.getDeclaredMethod("load", CompoundTag.class,
+                net.minecraft.core.HolderLookup.Provider.class);
+        load.setAccessible(true);
+        return (ClassProfileSavedData) load.invoke(null, tag, RegistryAccess.EMPTY);
     }
 
     private static ClassProgress oldProgress(int points, int[] ranks, int level, long experience) {

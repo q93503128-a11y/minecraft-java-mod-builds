@@ -1,10 +1,12 @@
 package kr.moonseungjun.anomalousclasses;
 
 import kr.moonseungjun.anomalousclasses.command.ClassCommands;
+import kr.moonseungjun.anomalousclasses.item.ClassFocusItems;
 import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.CombatTracker;
 import kr.moonseungjun.anomalousclasses.state.ClassRosterCatalog;
+import kr.moonseungjun.anomalousclasses.state.ClassFocusService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -18,6 +20,7 @@ public final class AnomalousClasses {
 
     public AnomalousClasses(IEventBus modEventBus) {
         ClassRosterCatalog.validate();
+        ClassFocusItems.ITEMS.register(modEventBus);
         ClassNetwork.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
@@ -37,6 +40,7 @@ public final class AnomalousClasses {
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
             ClassSelectionService.onPlayerRespawn(player);
+            ClassFocusService.onPlayerRespawn(player);
         }
     }
 

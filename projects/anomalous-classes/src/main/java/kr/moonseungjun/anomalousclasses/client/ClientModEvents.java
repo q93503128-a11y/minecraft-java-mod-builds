@@ -2,6 +2,7 @@ package kr.moonseungjun.anomalousclasses.client;
 
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassManagementStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
@@ -31,6 +32,8 @@ public final class ClientModEvents {
         registrar.playToClient(ProfileStatePayload.TYPE, ProfileStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(ClassManagementStatePayload.TYPE, ClassManagementStatePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
+        registrar.playToClient(ClassFocusStatePayload.TYPE, ClassFocusStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(SkillTreeStatePayload.TYPE, SkillTreeStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));

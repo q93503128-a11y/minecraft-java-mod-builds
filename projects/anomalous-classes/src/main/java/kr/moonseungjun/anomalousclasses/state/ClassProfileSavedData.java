@@ -41,6 +41,7 @@ public final class ClassProfileSavedData extends SavedData {
             CompoundTag playerTag = new CompoundTag();
             playerTag.putUUID("player", profileEntry.getKey());
             playerTag.putString("currentClass", profile.currentClass().map(ClassId::key).orElse(""));
+            playerTag.putString("equippedFocus", profile.equippedFocus().map(ClassFocus::key).orElse(""));
             playerTag.putInt("revision", profile.revision());
 
             ListTag progressList = new ListTag();
@@ -66,7 +67,7 @@ public final class ClassProfileSavedData extends SavedData {
             playerList.add(playerTag);
         }
         tag.put("players", playerList);
-        tag.putInt("schemaVersion", 3);
+        tag.putInt("schemaVersion", 4);
         return tag;
     }
 
@@ -78,6 +79,7 @@ public final class ClassProfileSavedData extends SavedData {
             if (!playerTag.hasUUID("player")) continue;
             UUID playerId = playerTag.getUUID("player");
             ClassId selected = ClassId.fromKey(playerTag.getString("currentClass")).orElse(null);
+            ClassFocus focus = ClassFocus.fromKey(playerTag.getString("equippedFocus")).orElse(null);
             EnumMap<ClassId, ClassProgress> progress = new EnumMap<>(ClassId.class);
             ListTag progressList = playerTag.getList("progress", Tag.TAG_COMPOUND);
             for (int progressIndex = 0; progressIndex < progressList.size(); progressIndex++) {
@@ -108,7 +110,7 @@ public final class ClassProfileSavedData extends SavedData {
                         purchasedNodes));
             }
             PlayerClassProfile profile = new PlayerClassProfile();
-            profile.load(selected, progress, playerTag.getInt("revision"));
+            profile.load(selected, progress, focus, playerTag.getInt("revision"));
             data.profiles.put(playerId, profile);
         }
         return data;

@@ -6,6 +6,7 @@ import java.util.Optional;
 
 public final class PlayerClassProfile {
     private ClassId currentClass;
+    private ClassFocus equippedFocus;
     private final EnumMap<ClassId, ClassProgress> progress = new EnumMap<>(ClassId.class);
     private int revision;
 
@@ -29,14 +30,19 @@ public final class PlayerClassProfile {
         return revision;
     }
 
+    public Optional<ClassFocus> equippedFocus() {
+        return Optional.ofNullable(equippedFocus);
+    }
+
     public void select(ClassId id) {
         currentClass = id;
         progress.put(id, progress(id).markPlayed());
         revision++;
     }
 
-    public void load(ClassId selected, Map<ClassId, ClassProgress> loaded, int loadedRevision) {
+    public void load(ClassId selected, Map<ClassId, ClassProgress> loaded, ClassFocus loadedFocus, int loadedRevision) {
         currentClass = selected;
+        equippedFocus = loadedFocus;
         for (ClassId id : ClassId.values()) {
             progress.put(id, loaded.getOrDefault(id, ClassProgress.fresh()));
         }
@@ -57,5 +63,12 @@ public final class PlayerClassProfile {
         }
         progress.putAll(validated);
         revision++;
+    }
+
+    public boolean equipFocus(ClassFocus focus) {
+        if (java.util.Objects.equals(equippedFocus, focus)) return false;
+        equippedFocus = focus;
+        revision++;
+        return true;
     }
 }

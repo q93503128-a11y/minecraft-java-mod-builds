@@ -2,7 +2,8 @@ package kr.moonseungjun.anomalousclasses.client;
 
 /** Logical GUI-space layout shared by the class-management screen and its viewport verifier. */
 record ClassManagementLayout(MenuUi.Box outer, MenuUi.Box artwork, MenuUi.Box overview,
-                             MenuUi.Box profileButton, MenuUi.Box skillTreeButton, MenuUi.Box changeButton) {
+                             MenuUi.Box profileButton, MenuUi.Box skillTreeButton, MenuUi.Box changeButton,
+                             MenuUi.Box focusButton) {
     static ClassManagementLayout calculate(int screenWidth, int screenHeight) {
         int width = Math.max(1, screenWidth);
         int height = Math.max(1, screenHeight);
@@ -41,8 +42,12 @@ record ClassManagementLayout(MenuUi.Box outer, MenuUi.Box artwork, MenuUi.Box ov
         MenuUi.Box artwork = new MenuUi.Box(contentX, artworkY, artworkWidth, artworkHeight);
         MenuUi.Box overview = new MenuUi.Box(artwork.right() + contentGap, bodyTop,
                 Math.max(1, contentRight - artwork.right() - contentGap), bodyHeight);
+        int focusWidth = Math.min(54, Math.max(40, overview.width() / 3));
+        int focusHeight = Math.max(16, Math.min(20, height / 18));
+        MenuUi.Box focusButton = new MenuUi.Box(overview.right() - focusWidth - 7,
+                overview.y() + 7, focusWidth, focusHeight);
 
         return new ClassManagementLayout(outer, artwork, overview,
-                profileButton, skillTreeButton, changeButton);
+                profileButton, skillTreeButton, changeButton, focusButton);
     }
 }

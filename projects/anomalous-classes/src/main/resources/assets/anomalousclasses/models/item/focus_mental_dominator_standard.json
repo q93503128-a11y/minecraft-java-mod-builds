@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "anomalousclasses:item/focus_mental_dominator_standard"
+  }
+}

@@ -104,6 +104,7 @@ def main() -> None:
                 "data/anomalousclasses/skill_point_cost_model_v2.json",
                 "data/anomalousclasses/skill_tree_branch_redesign_v1.json",
                 "data/anomalousclasses/skill_tree_graph_layout_v1.json",
+                "assets/anomalousclasses/focus_recipes.json",
                 "assets/anomalousclasses/lang/ko_kr.json",
                 "assets/anomalousclasses/lang/en_us.json",
             ]
@@ -118,6 +119,36 @@ def main() -> None:
                 fail("assets/anomalousclasses is missing")
             if not any(name.startswith("data/anomalousclasses/") for name in names):
                 fail("data/anomalousclasses is missing")
+
+            focus_catalog = json.loads(archive.read("assets/anomalousclasses/focus_recipes.json"))
+            focus_recipes = focus_catalog.get("recipes", [])
+            if len(focus_recipes) != 30:
+                fail(f"expected 30 packaged focus recipe definitions, found {len(focus_recipes)}")
+            if "kr/moonseungjun/anomalousclasses/state/ClassFocusService.class" not in names:
+                fail("server-authoritative focus slot service is missing from the JAR")
+            packaged_focus_recipes = 0
+            for definition in focus_recipes:
+                class_key, tier = definition.get("class"), definition.get("tier")
+                item_id = f"focus_{class_key}_{tier}"
+                model_path = f"assets/anomalousclasses/models/item/{item_id}.json"
+                texture_path = f"assets/anomalousclasses/textures/item/{item_id}.png"
+                recipe_path = f"data/anomalousclasses/recipe/focus/{class_key}/{tier}.json"
+                for entry in (model_path, texture_path, recipe_path):
+                    if entry not in names:
+                        fail(f"focus item or shaped recipe missing from JAR: {entry}")
+                if png_dimensions(archive.read(texture_path))[:2] != (16, 16):
+                    fail(f"focus item texture is not 16x16: {texture_path}")
+                model = json.loads(archive.read(model_path))
+                if model.get("textures", {}).get("layer0") != f"anomalousclasses:item/{item_id}":
+                    fail(f"focus item model points at the wrong texture: {model_path}")
+                recipe = json.loads(archive.read(recipe_path))
+                if recipe.get("type") != "minecraft:crafting_shaped" or recipe.get("pattern") != definition.get("pattern"):
+                    fail(f"packaged focus recipe is not the canonical shaped pattern: {recipe_path}")
+                if recipe.get("result", {}).get("id") != f"anomalousclasses:{item_id}":
+                    fail(f"packaged focus recipe has the wrong output: {recipe_path}")
+                packaged_focus_recipes += 1
+            if packaged_focus_recipes != 30:
+                fail("not all six classes and five focus grades were packaged")
 
             forbidden_suffixes = (".java", ".md", ".log", ".ps1", ".py")
             forbidden = [name for name in names if name.lower().endswith(forbidden_suffixes)]

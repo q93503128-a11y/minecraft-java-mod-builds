@@ -32,11 +32,16 @@ public final class ClassManagementLayoutVerifier {
         require(contains(outer, layout.profileButton()), "profile button outside outer frame", width, height);
         require(contains(outer, layout.skillTreeButton()), "skill-tree button outside outer frame", width, height);
         require(contains(outer, layout.changeButton()), "class-change button outside outer frame", width, height);
+        require(contains(layout.overview(), layout.focusButton()), "focus button outside overview", width, height);
         require(!overlaps(layout.artwork(), layout.overview()), "artwork overlaps overview", width, height);
         require(!overlaps(layout.profileButton(), layout.skillTreeButton()),
                 "profile overlaps skill-tree button", width, height);
         require(!overlaps(layout.skillTreeButton(), layout.changeButton()),
                 "skill-tree overlaps class-change button", width, height);
+        require(!overlaps(layout.focusButton(), layout.profileButton())
+                        && !overlaps(layout.focusButton(), layout.skillTreeButton())
+                        && !overlaps(layout.focusButton(), layout.changeButton()),
+                "focus button overlaps navigation", width, height);
         require(layout.profileButton().y() == layout.skillTreeButton().y()
                         && layout.profileButton().y() == layout.changeButton().y(),
                 "footer buttons are misaligned", width, height);

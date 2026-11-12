@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestClassMenuPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestClassFocusPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestProfilePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestSkillTreePayload;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
@@ -24,6 +25,7 @@ public final class ClassManagementScreen extends Screen {
     private MenuUi.Button profileButton;
     private MenuUi.Button skillTreeButton;
     private MenuUi.Button changeButton;
+    private MenuUi.Button focusButton;
     private boolean pending;
 
     public ClassManagementScreen(ProfileStatePayload profile) {
@@ -44,6 +46,9 @@ public final class ClassManagementScreen extends Screen {
         changeButton = addRenderableWidget(new MenuUi.Button(layout.changeButton(),
                 Component.translatable("screen.anomalousclasses.class_management.change_class"),
                 button -> openClassSelection()));
+        focusButton = addRenderableWidget(new MenuUi.Button(layout.focusButton(),
+                Component.translatable("screen.anomalousclasses.class_management.focus"),
+                button -> openFocus()));
         refreshButtons();
     }
 
@@ -86,7 +91,7 @@ public final class ClassManagementScreen extends Screen {
         MenuUi.drawClassIcon(graphics, classId, contentX, iconY, iconSize);
 
         int nameX = contentX + iconSize + Math.min(8, Math.max(4, panel.width() / 35));
-        int nameWidth = Math.max(1, contentRight - nameX);
+        int nameWidth = Math.max(1, Math.min(contentRight - nameX, layout.focusButton().x() - nameX - 4));
         int nameY = iconY + Math.max(0, (iconSize - font.lineHeight) / 2);
         MenuUi.drawFit(graphics, font, Component.translatable("class.anomalousclasses." + classId.key()),
                 nameX, nameY, nameWidth, 0xFFF2E7D8);
@@ -174,6 +179,10 @@ public final class ClassManagementScreen extends Screen {
         request(RequestClassMenuPayload.INSTANCE);
     }
 
+    private void openFocus() {
+        request(RequestClassFocusPayload.INSTANCE);
+    }
+
     private void request(net.minecraft.network.protocol.common.custom.CustomPacketPayload payload) {
         if (pending) return;
         pending = true;
@@ -185,6 +194,7 @@ public final class ClassManagementScreen extends Screen {
         if (profileButton != null) profileButton.active = !pending;
         if (skillTreeButton != null) skillTreeButton.active = !pending;
         if (changeButton != null) changeButton.active = !pending;
+        if (focusButton != null) focusButton.active = !pending;
     }
 
     @Override public boolean isPauseScreen() { return false; }
