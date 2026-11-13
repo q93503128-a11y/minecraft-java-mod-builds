@@ -142,6 +142,8 @@ public final class ClassFocusScreen extends Screen {
 
     private void drawRecipePanel(GuiGraphics graphics) {
         MenuUi.drawInsetSurface(graphics, layout.recipePanel());
+        graphics.fill(layout.recipePanel().x() + 6, layout.recipePanel().y() + 3,
+                layout.recipePanel().right() - 6, layout.recipePanel().y() + 5, MenuUi.accent(classId));
         int pad = Math.min(8, Math.max(4, layout.recipePanel().width() / 18));
         MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.class_focus.recipe"),
                 layout.recipePanel().x() + pad, layout.recipePanel().y() + 5,
@@ -175,42 +177,53 @@ public final class ClassFocusScreen extends Screen {
 
     private void drawInfoPanel(GuiGraphics graphics) {
         MenuUi.drawInsetSurface(graphics, layout.infoPanel());
+        graphics.fill(layout.infoPanel().x() + 6, layout.infoPanel().y() + 3,
+                layout.infoPanel().right() - 6, layout.infoPanel().y() + 5, MenuUi.accent(classId));
         int pad = Math.min(9, Math.max(5, layout.infoPanel().width() / 18));
         int x = layout.infoPanel().x() + pad;
         int width = Math.max(1, layout.infoPanel().width() - pad * 2);
         ItemStack selected = ClassFocusItems.stack(new ClassFocus(classId, selectedTier));
-        graphics.renderItem(selected, x, layout.infoPanel().y() + 7);
-        int nameX = x + 20;
+        boolean compact = layout.infoPanel().height() < 130;
+        int iconSize = compact ? 16 : 20;
+        int infoY = layout.infoPanel().y();
+        graphics.renderItem(selected, x, infoY + (compact ? 7 : 8));
+        int nameX = x + iconSize + 5;
         int nameWidth = Math.max(1, layout.infoPanel().right() - pad - nameX);
-        MenuUi.drawFit(graphics, font, selected.getHoverName(), nameX, layout.infoPanel().y() + 9,
+        MenuUi.drawFit(graphics, font, selected.getHoverName(), nameX, infoY + (compact ? 7 : 9),
                 nameWidth, 0xFFF2E7D8);
-        MenuUi.drawFit(graphics, font, tierName(selectedTier), x, layout.infoPanel().y() + 28,
+        MenuUi.drawFit(graphics, font, tierName(selectedTier), x, infoY + (compact ? 23 : 29),
                 width, MenuUi.accent(classId));
+        int dividerY = infoY + (compact ? 34 : 42);
+        graphics.fill(x, dividerY, layout.infoPanel().right() - pad, dividerY + 1, 0x806D4D7D);
 
         if (alternativeButton != null) {
             alternativeButton.setMessage(alternativeLabel());
         }
 
         ClassFocus equipped = equippedFocus();
-        int infoY = layout.infoPanel().y();
-        int inventoryY = infoY + 66;
-        int statusY = infoY + 76;
+        int rowGap = Math.max(2, font.lineHeight / 3);
+        int summaryY;
+        int inventoryY;
         if (alternativeButton == null) {
             MenuUi.drawFit(graphics, font,
                     Component.translatable("screen.anomalousclasses.class_focus.equipped_slot"),
-                    x, infoY + 46, width, 0xFFE6C788);
+                    x, dividerY + (compact ? 4 : 6), width, 0xFFE6C788);
+            summaryY = dividerY + (compact ? 4 : 6) + font.lineHeight + 1;
             MenuUi.drawFit(graphics, font, equipped == null
                             ? Component.translatable("screen.anomalousclasses.class_focus.empty_slot")
                             : Component.translatable("item.anomalousclasses." + equipped.itemPath()),
-                    x, infoY + 56, width,
+                    x, summaryY, width,
                     equipped != null && equipped.classId() != classId ? 0xFFE6C788 : 0xFFD8D0C5);
+            inventoryY = summaryY + font.lineHeight + rowGap;
         } else {
             Component equippedSummary = equipped == null
                     ? Component.translatable("screen.anomalousclasses.class_focus.empty_slot")
                     : Component.translatable("screen.anomalousclasses.class_focus.equipped_summary",
                             Component.translatable("item.anomalousclasses." + equipped.itemPath()));
-            MenuUi.drawFit(graphics, font, equippedSummary, x, infoY + 56, width,
+            summaryY = dividerY + (compact ? 21 : 28);
+            MenuUi.drawFit(graphics, font, equippedSummary, x, summaryY, width,
                     equipped != null && equipped.classId() != classId ? 0xFFE6C788 : 0xFFD8D0C5);
+            inventoryY = summaryY + font.lineHeight + rowGap;
         }
         int count = inventoryCount(selectedTier);
         MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.class_focus.inventory",
@@ -219,6 +232,7 @@ public final class ClassFocusScreen extends Screen {
         Component result = resultMessage(state.resultCode());
         if (result != null) {
             int color = state.resultCode() == 1 || state.resultCode() == 2 ? 0xFFA8D890 : 0xFFFFB2A0;
+            int statusY = inventoryY + font.lineHeight + rowGap;
             MenuUi.drawFit(graphics, font, result, x, statusY, width, color);
         }
     }

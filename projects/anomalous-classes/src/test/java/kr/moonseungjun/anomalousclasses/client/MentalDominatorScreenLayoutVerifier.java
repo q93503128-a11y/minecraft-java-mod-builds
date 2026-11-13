@@ -2,7 +2,7 @@ package kr.moonseungjun.anomalousclasses.client;
 
 /** Static regression checks for the real management widget geometry. */
 public final class MentalDominatorScreenLayoutVerifier {
-    private static final int[][] VIEWPORTS = {{1920, 1080}, {1920, 1200}, {1600, 1200}};
+    private static final int[][] VIEWPORTS = {{1920, 1080}, {1920, 1200}, {1600, 1200}, {1280, 720}};
 
     private MentalDominatorScreenLayoutVerifier() {}
 
@@ -30,6 +30,19 @@ public final class MentalDominatorScreenLayoutVerifier {
         require(!overlaps(layout.profile(), layout.focus()), "profile overlaps focus", width, height);
         require(!overlaps(layout.focus(), layout.codex()), "focus overlaps codex", width, height);
         require(!overlaps(layout.codex(), layout.changeClass()), "codex overlaps class change", width, height);
+        if (width >= 360) {
+            int titleWidth = Math.min(340, Math.max(150, outer.width() * 36 / 100));
+            titleWidth = Math.min(titleWidth, Math.max(1, outer.width() - 12));
+            int titleLeft = (width - titleWidth) / 2;
+            int titleRight = titleLeft + titleWidth;
+            require(layout.focus().right() <= titleLeft || layout.focus().x() >= titleRight,
+                    "left navigation overlaps title plate", width, height);
+            require(layout.codex().right() <= titleLeft || layout.codex().x() >= titleRight,
+                    "right navigation overlaps title plate", width, height);
+        } else {
+            require(layout.codex().x() - layout.focus().right() - 8 >= 100,
+                    "compact title area is too narrow", width, height);
+        }
         require(!overlaps(layout.list(), layout.allFollow()) && !overlaps(layout.list(), layout.allStay()),
                 "footer overlaps list", width, height);
         require(!overlaps(layout.detail(), layout.allFollow()) && !overlaps(layout.detail(), layout.allStay()),

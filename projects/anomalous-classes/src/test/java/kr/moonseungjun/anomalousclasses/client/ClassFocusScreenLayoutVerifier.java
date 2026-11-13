@@ -32,6 +32,13 @@ public final class ClassFocusScreenLayoutVerifier {
         require(contains(outer, layout.equipButton()), "equip button outside frame", width, height);
         require(contains(outer, layout.unequipButton()), "unequip button outside frame", width, height);
         require(contains(layout.infoPanel(), layout.alternativeButton()), "alternative selector outside info panel", width, height);
+        if (layout.infoPanel().height() >= 130) {
+            require(layout.alternativeButton().bottom() <= layout.infoPanel().y() + 70,
+                    "grade alternative overlaps focus status rows", width, height);
+        } else {
+            require(layout.alternativeButton().bottom() <= layout.infoPanel().y() + 55,
+                    "compact grade alternative overlaps focus status rows", width, height);
+        }
         require(layout.infoPanel().height() >= 86, "focus information rows do not fit vertically", width, height);
         require(!overlaps(layout.recipePanel(), layout.infoPanel()), "recipe and info panels overlap", width, height);
         require(!overlaps(layout.backButton(), layout.equipButton())

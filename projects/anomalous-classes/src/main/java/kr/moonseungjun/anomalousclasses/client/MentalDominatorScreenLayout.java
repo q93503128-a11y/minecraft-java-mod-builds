@@ -14,7 +14,9 @@ record MentalDominatorScreenLayout(MenuUi.Box outer, MenuUi.Box list, MenuUi.Box
         int inset = Math.min(28, Math.max(11, Math.min(outer.width(), outer.height()) / 10));
         int left = outer.x() + inset;
         int right = outer.right() - inset;
-        int bodyTop = outer.y() + 46;
+        // Keep the title plaque's horizontal center clear from the corner navigation.
+        // At narrow GUI-space widths the title is rendered as text-only by the screen.
+        int bodyTop = outer.y() + 58;
         int footerY = outer.bottom() - 34;
         int bodyBottom = Math.max(bodyTop + 1, footerY - 7);
         int gap = Math.min(10, Math.max(5, outer.width() / 70));
@@ -27,11 +29,12 @@ record MentalDominatorScreenLayout(MenuUi.Box outer, MenuUi.Box list, MenuUi.Box
 
         int buttonHeight = Math.max(16, Math.min(22, height / 20));
         int topButtonY = outer.y() + 4;
-        int navWidth = Math.max(42, Math.min(86, outer.width() / 7));
-        MenuUi.Box profile = new MenuUi.Box(left, topButtonY, navWidth, buttonHeight);
+        int navWidth = Math.max(40, Math.min(86, outer.width() / 8));
+        int navLeft = outer.x() + 4;
+        MenuUi.Box profile = new MenuUi.Box(navLeft, topButtonY, navWidth, buttonHeight);
         MenuUi.Box focus = new MenuUi.Box(profile.x() + navWidth + 3, topButtonY, navWidth, buttonHeight);
-        MenuUi.Box changeClass = new MenuUi.Box(right - navWidth, topButtonY, navWidth, buttonHeight);
-        int codexWidth = Math.max(48, Math.min(92, outer.width() / 6));
+        MenuUi.Box changeClass = new MenuUi.Box(outer.right() - 4 - navWidth, topButtonY, navWidth, buttonHeight);
+        int codexWidth = Math.max(44, Math.min(92, outer.width() / 8));
         MenuUi.Box codex = new MenuUi.Box(changeClass.x() - codexWidth - 4, topButtonY, codexWidth, buttonHeight);
 
         int footerWidth = Math.min(122, Math.max(74, (bodyWidth - gap) / 2));

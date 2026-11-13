@@ -73,7 +73,8 @@ record ClassFocusScreenLayout(MenuUi.Box outer, MenuUi.Box recipePanel, MenuUi.B
         MenuUi.Box equipButton = new MenuUi.Box(actionX, footerY, actionWidth, footerHeight);
         MenuUi.Box unequipButton = new MenuUi.Box(equipButton.right() + actionGap, footerY,
                 actionWidth, footerHeight);
-        MenuUi.Box alternativeButton = new MenuUi.Box(infoPanel.x() + 7, infoPanel.y() + 38,
+        int alternativeY = infoPanel.y() + (bodyHeight < 130 ? 38 : 47);
+        MenuUi.Box alternativeButton = new MenuUi.Box(infoPanel.x() + 7, alternativeY,
                 Math.max(1, infoWidth - 14), Math.max(16, Math.min(20, footerHeight)));
         return new ClassFocusScreenLayout(outer, recipePanel, infoPanel, List.copyOf(tierButtons),
                 List.copyOf(recipeCells), arrowMarker, resultSlot, backButton, equipButton, unequipButton,

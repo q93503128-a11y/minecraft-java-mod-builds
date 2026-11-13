@@ -515,3 +515,55 @@ Two existing NeoForge `EventBusSubscriber.bus()` / `Bus` removal warnings remain
 5. Use the same steps with each equipped Mental Dominator focus tier, especially the user-confirmed Incomprehensible tier. Repeat in a local multiplayer test only if needed; multiplayer has not been tested by this build task.
 
 These are player-run gameplay checks. The running client is **not** evidence that the capture, AI, UI interactions, balance, or multiplayer have been playtested.
+
+---
+
+# Build and Runtime Report — class-management UI/UX — 2026-11-13
+
+## Scope and baseline
+
+- Repository: `q93503128-a11y/minecraft-java-mod-builds`, project `projects/anomalous-classes/`, branch `main`.
+- Fetched `origin/main` before editing. Starting local/remote HEAD: `06fba9183e6f4630dfa4e60fe3f326f3031db1e4`.
+- Minecraft 1.21.1 / NeoForge 21.1.244 / OpenJDK 21.0.10 / Gradle 8.8.
+- This change is limited to the Mental Dominator manager presentation, focus recipe screen spacing/labels, layout regression checks, and offline design-review material. No gameplay, AI, combat, balance, persistence, or server payload code changed. Existing frame PNGs, 581-node trees, 30 focus items/recipes, and M/J/U mappings were left intact.
+
+## Implemented
+
+- Mental Dominator: grouped psyche/slot/upkeep summary with a server-backed psyche meter; larger creature list rows; real vanilla spawn-egg icons only when a matching item is registered; selected-row hierarchy and live health bars; type/status/health/command/upkeep/location/damage state in the detail surface; a pending server response notice; and compact navigation that clears the title area at small logical widths. The existing ownership, revision, server actions, two-step release, and codex flows are unchanged.
+- Focus recipe screen: kept the five grade selectors legible as compact numeric tabs; the selected grade remains named in the detail surface and hover tooltip. Reflowed the information panel so the alternative recipe selector no longer collides with equipment/inventory status; added class-accent surface rules. Recipe catalog, displayed 3×3 patterns, equip/unequip actions, and server behavior are unchanged.
+- Other five classes: created ten bilingual, offline-only layout review images plus a contact sheet, reusing existing class art/icons and menu textures. They carry a visible “DESIGN REVIEW · NOT IN GAME” badge and are not registered as screens. Swarm starts with no saved tactics and no built-in presets. The separate UI data-contract document lists what server responses are still required before these views can be connected.
+- The existing outer ornamental frame assets were not edited.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| `.\gradlew.bat --no-daemon --console=plain verifyMentalDominatorLayout verifyClassFocusLayout` | **PASS** — 12 viewport/GUI-scale combinations for each screen. |
+| `.\gradlew.bat --no-daemon --console=plain clean build --stacktrace` | **PASS** — 15 tasks; focus item/recipe parity, class management layouts, 581-node graph/migration, profile/skill-tree, focus, and Mental Dominator checks completed. |
+| Profile/skill-tree existing viewport checks | **PASS** — 16:9, 16:10, 4:3 × GUI Scale 2–4. |
+| Korean/English language JSON | **PASS** — both parsed successfully. |
+| Java2D review renderer | **PASS** — ten 1600×900 Korean/English images and contact sheet regenerated from current project art/texture files; representative full-size images and the contact sheet were visually inspected. |
+| `git diff --check` | **PASS** — no whitespace errors. Git only reports the repository's LF-to-CRLF conversion notices. |
+| `python tools/verify_jar.py artifacts/anomalous-classes-0.1.0-alpha.1.jar` | **PASS** — 31,820,748 bytes; 104 compiled classes; loader metadata and required resources present. |
+| Static render versus Minecraft | Static review images are **not** Minecraft screenshots and do not validate `GuiGraphics`, native font shaping, GPU filtering, or actual click feel. |
+
+The review renderer outputs only the five screens that do not yet have server systems; those images are design studies, not game states. Actual responsive behavior was checked for the two connected screens (Mental Dominator and Focus) and existing profile/skill-tree screens. The five review-only designs are single-canvas 1600×900 compositions, not runtime screens or viewport tests.
+
+## Runtime status and user review
+
+- **CLIENT RUNNING: YES.** No project `runClient` process existed before launch. Started the normal Gradle `runClient` after the clean build. Startup log shows NeoForge 21.1.244, `anomalousclasses`, resource reload, LWJGL, and audio initialization. The process remains open for the user.
+- **CLIENT TESTED: NOT RUN.** No world or class-management screen was opened or manipulated, and no CUA was used. Do not treat the startup log as visual QA.
+- **PLAYTESTED: NOT RUN. MULTIPLAYER TESTED: NOT RUN.** The five other class layouts are review-only images and their game backends remain absent.
+- Datagen: **NOT CONFIGURED / NOT RUN**. GameTest: **NOT RUN**. Dedicated-server boot: **NOT RUN**.
+
+To review the connected screens, enter a world and press `U` on Mental Dominator, then inspect the real server list/detail, pending response, row selection, follow/stay, damage toggle, codex, and two-step release states. Open the focus screen from its existing navigation and inspect each grade, the actual 3×3 recipe, equipment, and inventory status. Repeat in Korean/English at GUI Scale 2, 3, and 4. The five other class screens are not available in-game; inspect their bilingual review assets instead.
+
+## Artifacts
+
+- JAR: `artifacts/anomalous-classes-0.1.0-alpha.1.jar` — 31,820,748 bytes.
+- SHA-256: `a21eed743cb5ba892583abd15b65e1a2ceeb413a46ff47152fec559f85d18feb`.
+- Checksum: `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`.
+- Five-class bilingual review set: `ui/reviews/2026-11-13/class-management-design-review/`.
+- UI/server contract gaps: `ui/CLASS_MANAGEMENT_UI_DATA_CONTRACT_2026-11-13.md`.
+- Sanitized build, verification, and startup logs: `artifacts/raw-logs.zip`.
+- GitHub implementation commit: pending final push.
