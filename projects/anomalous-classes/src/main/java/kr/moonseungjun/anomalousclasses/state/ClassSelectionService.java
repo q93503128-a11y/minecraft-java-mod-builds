@@ -59,6 +59,12 @@ public final class ClassSelectionService {
                 return;
             }
 
+            ClassId previous = profile.currentClass().orElse(null);
+            if (!MentalDominatorService.prepareClassChange(player, previous, target)) {
+                send(player, profile, ClassSelectionStatePayload.Result.STALE_REQUEST);
+                return;
+            }
+
             profile.select(target);
             savedData.setDirty();
             SkillTreeAttributeService.apply(player, target, profile.progress(target));

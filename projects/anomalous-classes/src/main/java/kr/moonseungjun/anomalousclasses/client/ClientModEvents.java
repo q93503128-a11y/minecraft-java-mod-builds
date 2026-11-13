@@ -6,6 +6,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -22,6 +23,7 @@ public final class ClientModEvents {
         event.register(ClassSelectionKeyMappings.OPEN_PROFILE);
         event.register(ClassSelectionKeyMappings.OPEN_SKILL_TREE);
         event.register(ClassSelectionKeyMappings.OPEN_CLASS_MANAGEMENT);
+        event.register(ClassSelectionKeyMappings.MENTAL_INTRUSION);
     }
 
     @SubscribeEvent
@@ -36,6 +38,8 @@ public final class ClientModEvents {
         registrar.playToClient(ClassFocusStatePayload.TYPE, ClassFocusStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(SkillTreeStatePayload.TYPE, SkillTreeStatePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
+        registrar.playToClient(MentalDominatorStatePayload.TYPE, MentalDominatorStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
     }
 }

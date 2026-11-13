@@ -17,6 +17,10 @@ public final class ProfileService {
 
     public static void openManagement(ServerPlayer player) {
         PlayerClassProfile profile = ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
+        if (profile.currentClass().filter(id -> id == ClassId.MENTAL_DOMINATOR).isPresent()) {
+            MentalDominatorService.openManagement(player);
+            return;
+        }
         profile.currentClass().ifPresentOrElse(id ->
                 ClassNetwork.sendToPlayer(player, new ClassManagementStatePayload(
                         ProfileStatePayload.from(player, profile, id))),

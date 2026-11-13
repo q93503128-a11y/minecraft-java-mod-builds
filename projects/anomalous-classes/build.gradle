@@ -111,12 +111,30 @@ tasks.register('verifyGraphSkillTreeRuntime', Exec) {
     }
 }
 
+tasks.register('verifyMentalDominatorRules', Exec) {
+    group = 'verification'
+    description = 'Checks Mental Dominator candidate resource math, focus effects, and skill-rank wiring.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/MentalDominatorRulesVerifier.java').absolutePath
+    }
+}
+
 tasks.register('verifyClassManagementLayout', JavaExec) {
     group = 'verification'
     description = 'Checks class-management content and widget bounds at supported GUI scales and aspect ratios.'
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'kr.moonseungjun.anomalousclasses.client.ClassManagementLayoutVerifier'
+}
+
+tasks.register('verifyMentalDominatorLayout', JavaExec) {
+    group = 'verification'
+    description = 'Checks Mental Dominator management widget bounds at supported GUI scales and aspect ratios.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'kr.moonseungjun.anomalousclasses.client.MentalDominatorScreenLayoutVerifier'
 }
 
 tasks.register('verifyClassFocus', Exec) {
@@ -138,7 +156,9 @@ tasks.register('verifyClassFocusLayout', JavaExec) {
 tasks.named('check') {
     dependsOn tasks.named('verifyProfileSkillTree')
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
+    dependsOn tasks.named('verifyMentalDominatorRules')
     dependsOn tasks.named('verifyClassManagementLayout')
+    dependsOn tasks.named('verifyMentalDominatorLayout')
     dependsOn tasks.named('verifyClassFocus')
     dependsOn tasks.named('verifyClassFocusLayout')
 }

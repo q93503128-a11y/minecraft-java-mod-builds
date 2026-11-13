@@ -454,3 +454,64 @@ The verified JAR and checksum are included under the project artifacts directory
 4. Repeat the visual check in Korean and English at GUI Scale 2, 3, and 4, using 16:9, 16:10, and 4:3 window shapes where available.
 
 This is visual UI review only. No node purchase, reset, combat, balance, save, migration, or multiplayer test is part of this frame repair.
+
+---
+
+# Build and Runtime Report — Mental Dominator core loop — 2026-11-13
+
+## Baseline and scope
+
+- Repository: `q93503128-a11y/minecraft-java-mod-builds`, project `projects/anomalous-classes/`, branch `main`.
+- Fetched `origin/main` before final integration. Local baseline and remote `main` matched at `939ba3af7b35d39942cad03c3fb962f7a1bc7113`.
+- Minecraft 1.21.1 / NeoForge 21.1.244 / Java 21.0.10 / Gradle 8.8.
+- Added the Mental Dominator server loop and class-management screen. Existing profile, skill tree, other class screens, 30 focus items and shaped recipes, focus slot, save data, and class-change checks were retained.
+
+## Implemented
+
+- Server-side R-key channeling resolves the target from the player's actual aim, checks a clear raycast, class, target family, entity ownership, current slot capacity, and psyche, then revalidates the same target each tick. Start cost, per-second cost, interruption, progress decay, cooldown, and success are decided on the server.
+- Successful control keeps the original `Mob` and UUID. It adds a persistent owner marker and a world `SavedData` index. Capture clears the current combat target; release removes the marker and temporary control goals, stops navigation, clears the active target, and restores the saved `NoAI` state. The original entity, health, equipment, tame owner, villager data, native goal selectors, and other entity NBT remain in place. A persisted release tombstone protects the entity from regaining an old control link if entity NBT and the world index are saved on different ticks.
+- Vanilla `PathfinderMob` entities can be targeted, including passive creatures and villagers as well as attack-capable mobs. This supports their original native AI; it does not grant passive entities attacks. Controlled combat-capable mobs receive a target-selection goal that points their existing combat AI at valid targets. Follow uses native navigation; stay suppresses follow movement while still allowing the mob's native response to a valid target. Cross-dimension follow does not take over the mob's movement selector. No teleport, clone, forced chunk load, or resurrection was added.
+- Owner/team/controlled-entity checks guard target selection and damage. Player damage is denied unless the per-mob setting is enabled, server PvP is enabled, and the victim is not the owner or an ally. Loaded controlled mobs pause AI while their owner is offline, dead, or no longer the Mental Dominator; unloaded entities are never force-loaded. Loaded maintenance drains psyche, and shortage releases the lowest-threat entity first (newest first for ties). Death removes the entity record and returns its slot.
+- `U` opens the server-backed Mental Dominator manager for this class, while the other classes retain the common management hub. The screen shows current/max psyche, loaded upkeep, slots, a scrollable list, only-live health for loaded entities, command/location/status, per-entity upkeep, player-damage state, individual and all follow/stay, two-step release, and the captured-species codex. Results are applied from server responses; actions include an owner revision check. M/J/U mappings and the removed K shortcut remain unchanged. `R` is a rebindable default for mental intrusion.
+- Matching Mental Dominator focus equipment modifies the actual resource rules. Only the equipped matching class tier applies. The user-confirmed Incomprehensible values are max psyche +100%, upkeep −40%, and intrusion +28%; the lower tier values follow the existing class design table and remain unplaytested.
+
+## Balance source and limits
+
+The numeric runtime defaults are explicitly marked as **adjustable candidates**, not playtested constants. They follow `DOMINATION_BALANCE.md`, `MENTAL_DOMINATOR.md`, and the skill-tree slot/upkeep proposal: max psyche `100 + 5 × (level − 1)`, regeneration `2.5 + 0.06 × (level − 1)` per second, control factor `1 + 0.035 × (level − 1)`, 12 psyche to start, 5 per channeling second, 40 base progress per second, 20 interruption decay per second, 80 ticks cooldown, and 16-block unobstructed range. The configurable threat estimate uses base 4, max-health weight 4, attack-damage weight 1.4, and armor weight 0.3; resistance piercing affects intrusion only. Individual upkeep follows `max(0, 0.018 × T^1.4 − 0.006 × (level − 1))`, while group upkeep follows `0.05 × max(0, N − 1)^2`, with matching focus and passive reductions. Maximum control follows `3 + floor(sqrt((level − 1)/8)) + floor(multipleBondRanks/5)`.
+
+The proposal's special-ability threat term `E` is not inferred. The current capture scope is the `minecraft` namespace plus `PathfinderMob`; modded entity adapters and non-Pathfinder families such as the Ender Dragon are not supported. This is an AI compatibility boundary, not a blanket boss immunity. Vanilla bosses that satisfy the implemented family and state checks are not rejected by a boss flag. Target threat currently uses the available vanilla health, attack-damage, and armor attributes, so unmodeled projectile/special abilities are not represented. Candidate values need actual survival playtesting before balance claims.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| `java -version` / Gradle | OpenJDK 21.0.10 / Gradle 8.8 |
+| `gradlew --no-daemon --console=plain clean build --stacktrace` | **PASS** — 15 actionable tasks; `check` completed |
+| Mental rules verifier | **PASS** — psyche/regen, slots, 5 focus tiers and isolation, passive mapping/reductions, release-pending and tombstone NBT round-trip, and no cross-dimension follow movement |
+| Management layout verifier | **PASS** — 9 cases across 16:9, 16:10, 4:3 and GUI Scale 2–4 |
+| Existing regression checks | **PASS** — 581 tree nodes, six 900-SP trees, legacy migration/SP conservation, 61 skill icons, bilingual strings, existing profile/tree layouts, focus-slot persistence, and 30 shaped focus recipes |
+| `tools/verify_jar.py` | **PASS** — 31,818,553 bytes; 104 compiled classes; loader metadata/assets/data and all focus item/recipe parity checks; no duplicate ZIP entries |
+| Locale JSON / `git diff --check` | **PASS** |
+| Development client | **RUNNING** — checked for an existing project Java client first (none found), then started the normal Gradle `runClient`. Startup logs show NeoForge 21.1.244, this mod discovered, resource reload, and audio initialization. The Minecraft process remains open; no screen was inspected or interacted with. |
+| Client UI / gameplay / multiplayer | **NOT TESTED** — no world or screen was opened, no interaction or CUA was used, and no dedicated server or multiplayer session was run. |
+| Datagen / GameTest | **NOT RUN** — this project has no configured datagen or GameTest task/source. |
+
+Two existing NeoForge `EventBusSubscriber.bus()` / `Bus` removal warnings remain in `ClientModEvents.java`; Gradle also reports the project's existing Gradle 9 deprecation notice.
+
+## Artifact
+
+- JAR: `artifacts/anomalous-classes-0.1.0-alpha.1.jar`
+- Size: `31,818,553` bytes
+- SHA-256: `cb6851fc22705dd7779fc4b2a2db030628c83bbd0e3d305ce801278c7bcdac9b`
+- Checksum: `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`
+- Sanitized build and JAR-verification logs: `artifacts/raw-logs.zip`
+
+## User playtest procedure
+
+1. In the running dev client, create or enter a test world and select Mental Dominator. Use the existing OP-only `/class test grant-levels 10` command if level/SP test progression is needed.
+2. Summon a vanilla zombie with `/summon minecraft:zombie ~ ~ ~`, aim at it unobstructed within 16 blocks, and hold the default `R` key (rebindable) until the server reports success. Verify that the original zombie remains and begins following.
+3. Open `U`; select the controlled zombie, switch Follow/Stay, use All Follow/All Stay, toggle player damage, inspect live health/maintenance/location, and release after the second confirmation. Verify the released mob is the same entity and regains its normal AI.
+4. Try a villager and iron golem. Check that passive mobs do not gain attack behavior. Let a controlled mob die and verify its slot disappears. Then leave/re-enter the world and inspect the remaining list and codex.
+5. Use the same steps with each equipped Mental Dominator focus tier, especially the user-confirmed Incomprehensible tier. Repeat in a local multiplayer test only if needed; multiplayer has not been tested by this build task.
+
+These are player-run gameplay checks. The running client is **not** evidence that the capture, AI, UI interactions, balance, or multiplayer have been playtested.

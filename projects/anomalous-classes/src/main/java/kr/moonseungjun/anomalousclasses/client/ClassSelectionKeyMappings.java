@@ -28,5 +28,12 @@ public final class ClassSelectionKeyMappings {
             GLFW.GLFW_KEY_U,
             "key.categories.anomalousclasses");
 
+    public static final KeyMapping MENTAL_INTRUSION = new KeyMapping(
+            "key.anomalousclasses.mental_intrusion",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_R,
+            "key.categories.anomalousclasses");
+
     private ClassSelectionKeyMappings() {}
 }

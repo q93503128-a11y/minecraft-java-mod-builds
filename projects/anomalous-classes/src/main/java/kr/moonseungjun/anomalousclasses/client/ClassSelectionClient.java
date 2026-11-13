@@ -5,6 +5,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
 import net.minecraft.client.Minecraft;
 
 public final class ClassSelectionClient {
@@ -43,5 +44,15 @@ public final class ClassSelectionClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen instanceof SkillTreeScreen screen) screen.applyServerState(state);
         else minecraft.setScreen(new SkillTreeScreen(state));
+    }
+
+    public static void receive(MentalDominatorStatePayload state) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof MentalDominatorScreen screen) screen.applyServerState(state);
+        else if (state.openScreen() && (minecraft.screen == null
+                || minecraft.screen instanceof ClassFocusScreen
+                || minecraft.screen instanceof ClassManagementScreen)) {
+            minecraft.setScreen(new MentalDominatorScreen(state));
+        }
     }
 }

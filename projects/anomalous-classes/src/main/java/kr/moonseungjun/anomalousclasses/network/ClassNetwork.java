@@ -12,10 +12,15 @@ import kr.moonseungjun.anomalousclasses.network.payload.RequestClassFocusPayload
 import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorActionPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.MentalIntrusionPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.ProfileService;
 import kr.moonseungjun.anomalousclasses.state.SkillTreeService;
 import kr.moonseungjun.anomalousclasses.state.ClassFocusService;
+import kr.moonseungjun.anomalousclasses.state.MentalDominatorService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.IEventBus;
@@ -67,6 +72,18 @@ public final class ClassNetwork {
         registrar.playToServer(ClassFocusActionPayload.TYPE, ClassFocusActionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) ClassFocusService.handle(player, payload);
+                }));
+        registrar.playToServer(RequestMentalDominatorPayload.TYPE, RequestMentalDominatorPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) MentalDominatorService.refreshManagement(player);
+                }));
+        registrar.playToServer(MentalDominatorActionPayload.TYPE, MentalDominatorActionPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) MentalDominatorService.handleAction(player, payload);
+                }));
+        registrar.playToServer(MentalIntrusionPayload.TYPE, MentalIntrusionPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) MentalDominatorService.intrusionInput(player, payload.action());
                 }));
     }
 
