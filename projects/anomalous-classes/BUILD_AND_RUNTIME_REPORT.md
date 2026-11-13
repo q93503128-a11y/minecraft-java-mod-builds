@@ -566,4 +566,4 @@ To review the connected screens, enter a world and press `U` on Mental Dominator
 - Five-class bilingual review set: `ui/reviews/2026-11-13/class-management-design-review/`.
 - UI/server contract gaps: `ui/CLASS_MANAGEMENT_UI_DATA_CONTRACT_2026-11-13.md`.
 - Sanitized build, verification, and startup logs: `artifacts/raw-logs.zip`.
-- GitHub implementation commit: pending final push.
+- GitHub implementation commit: `ee02d5f40` (`Improve class management UI presentation`).
