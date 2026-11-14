@@ -142,8 +142,24 @@ def main() -> None:
                 if model.get("textures", {}).get("layer0") != f"anomalousclasses:item/{item_id}":
                     fail(f"focus item model points at the wrong texture: {model_path}")
                 recipe = json.loads(archive.read(recipe_path))
-                if recipe.get("type") != "minecraft:crafting_shaped" or recipe.get("pattern") != definition.get("pattern"):
-                    fail(f"packaged focus recipe is not the canonical shaped pattern: {recipe_path}")
+                # The UI catalog uses "." for empty cells; Minecraft 1.21.1
+                # requires literal SPACE in packaged shaped recipe patterns.
+                expected_pattern = [row.replace(".", " ") for row in definition["pattern"]]
+                if recipe.get("type") != "minecraft:crafting_shaped" or recipe.get("pattern") != expected_pattern:
+                    fail(f"packaged focus recipe is not the canonical 1.21.1 shaped pattern: {recipe_path}")
+                if set(recipe.get("key", {})) != set(definition["key"]):
+                    fail(f"packaged focus recipe key symbols differ from canonical data: {recipe_path}")
+                for symbol, ids in definition["key"].items():
+                    ingredient = recipe["key"][symbol]
+                    if isinstance(ingredient, dict) and set(ingredient) == {"item"}:
+                        actual_ids = [ingredient["item"]]
+                    elif isinstance(ingredient, list) and ingredient and all(
+                            isinstance(entry, dict) and set(entry) == {"item"} for entry in ingredient):
+                        actual_ids = [entry["item"] for entry in ingredient]
+                    else:
+                        fail(f"packaged focus recipe has invalid 1.21.1 ingredient: {recipe_path} / {symbol}")
+                    if actual_ids != ids:
+                        fail(f"packaged focus recipe ingredient differs from canonical data: {recipe_path} / {symbol}")
                 if recipe.get("result", {}).get("id") != f"anomalousclasses:{item_id}":
                     fail(f"packaged focus recipe has the wrong output: {recipe_path}")
                 packaged_focus_recipes += 1
