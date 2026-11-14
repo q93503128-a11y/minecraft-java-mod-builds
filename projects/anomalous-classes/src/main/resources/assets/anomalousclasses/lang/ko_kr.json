@@ -215,6 +215,7 @@
   "command.anomalousclasses.test.level_grant_failed": "현재 직업이 없거나 레벨 지급 범위를 벗어났습니다.",
   "command.anomalousclasses.test.level_granted": "시험용으로 레벨 %s만큼 올렸습니다.",
   "screen.anomalousclasses.skill_tree.back": "프로필",
+  "screen.anomalousclasses.skill_tree.close": "닫기",
   "screen.anomalousclasses.skill_tree.confirm_reset": "초기화 확인",
   "screen.anomalousclasses.skill_tree.points": "SP %s",
   "screen.anomalousclasses.skill_tree.spent": "사용 %s",

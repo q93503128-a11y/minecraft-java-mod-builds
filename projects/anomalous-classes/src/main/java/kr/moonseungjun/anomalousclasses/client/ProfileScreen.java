@@ -160,9 +160,16 @@ public final class ProfileScreen extends Screen {
 
     private void openSkillTree() {
         if (pending) return;
+        SkillTreeNavigation.begin(SkillTreeNavigation.ReturnTarget.PROFILE);
         pending = true;
         refreshButtons();
         PacketDistributor.sendToServer(RequestSkillTreePayload.INSTANCE);
+    }
+
+    @Override
+    public void removed() {
+        SkillTreeNavigation.cancel(SkillTreeNavigation.ReturnTarget.PROFILE);
+        super.removed();
     }
 
     private void openManagement() {

@@ -32,6 +32,7 @@ public final class SkillTreeScreen extends Screen {
     private static final int HUD_HEIGHT = 34;
 
     private SkillTreeStatePayload state;
+    private final SkillTreeNavigation.ReturnTarget returnTarget;
     private ClassId classId;
     private GraphSkillTreeCatalog.Tree tree;
     private MenuUi.Box viewport;
@@ -60,9 +61,10 @@ public final class SkillTreeScreen extends Screen {
     private long resetConfirmUntil;
     private long feedbackUntil;
 
-    public SkillTreeScreen(SkillTreeStatePayload state) {
+    public SkillTreeScreen(SkillTreeStatePayload state, SkillTreeNavigation.ReturnTarget returnTarget) {
         super(Component.translatable("screen.anomalousclasses.skill_tree.title"));
         this.state = state;
+        this.returnTarget = returnTarget;
         this.classId = ClassId.fromNetworkIndex(state.classIndex()).orElse(ClassId.MENTAL_DOMINATOR);
         this.tree = GraphSkillTreeCatalog.tree(classId);
         rebuildOwnership();
@@ -93,7 +95,9 @@ public final class SkillTreeScreen extends Screen {
         int classWidth = Math.min(158, availableClassWidth);
         profileButton = addRenderableWidget(new MenuUi.Button(
                 new MenuUi.Box(margin, 7, backWidth, 21),
-                Component.translatable("screen.anomalousclasses.skill_tree.back"), button -> requestProfile()));
+                Component.translatable(returnTarget == SkillTreeNavigation.ReturnTarget.PROFILE
+                        ? "screen.anomalousclasses.skill_tree.back"
+                        : "screen.anomalousclasses.skill_tree.close"), button -> returnToOrigin()));
         resetButton = addRenderableWidget(new MenuUi.Button(
                 new MenuUi.Box(width - margin - resetWidth, 7, resetWidth, 21),
                 resetLabel(), button -> confirmOrReset()));
@@ -502,10 +506,14 @@ public final class SkillTreeScreen extends Screen {
     }
 
     private void requestProfile() {
-        if (pending) return;
         pending = true;
         refreshControls();
         PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);
+    }
+
+    private void returnToOrigin() {
+        if (returnTarget == SkillTreeNavigation.ReturnTarget.PROFILE) requestProfile();
+        else onClose();
     }
 
     private void refreshControls() {
@@ -615,7 +623,12 @@ public final class SkillTreeScreen extends Screen {
 
     @Override
     public void onClose() {
-        requestProfile();
+        if (returnTarget == SkillTreeNavigation.ReturnTarget.PROFILE) {
+            requestProfile();
+        } else {
+            pending = false;
+            super.onClose();
+        }
     }
 
     @Override

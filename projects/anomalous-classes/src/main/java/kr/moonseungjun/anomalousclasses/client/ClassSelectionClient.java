@@ -43,7 +43,10 @@ public final class ClassSelectionClient {
     public static void receive(SkillTreeStatePayload state) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen instanceof SkillTreeScreen screen) screen.applyServerState(state);
-        else minecraft.setScreen(new SkillTreeScreen(state));
+        else {
+            SkillTreeNavigation.ReturnTarget returnTarget = SkillTreeNavigation.consumeForResponse(minecraft);
+            if (returnTarget != null) minecraft.setScreen(new SkillTreeScreen(state, returnTarget));
+        }
     }
 
     public static void receive(MentalDominatorStatePayload state) {

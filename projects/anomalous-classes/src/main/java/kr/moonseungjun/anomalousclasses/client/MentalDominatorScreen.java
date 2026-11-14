@@ -122,20 +122,33 @@ public final class MentalDominatorScreen extends Screen {
     private void drawResourceSummary(GuiGraphics graphics) {
         int left = outer.x() + 16;
         int contentWidth = Math.max(1, outer.width() - 32);
-        int column = contentWidth / 3;
-        int y = outer.y() + 32;
-        Component resource = Component.translatable("screen.anomalousclasses.mental.psyche",
-                number(state.psyche()), number(state.maximumPsyche()));
-        MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.mental.slots",
-                state.controlledCount(), state.maxControlled()), left, y, column - 5, 0xFFD8D0C5);
-        MenuUi.drawCentered(graphics, font, resource, left + column + column / 2, y,
-                column - 8, 0xFFF1E7D7);
-        Component upkeep = Component.translatable("screen.anomalousclasses.mental.upkeep", number(state.upkeepPerSecond()));
-        MenuUi.drawFitRight(graphics, font, upkeep, left + contentWidth, y, column - 5, 0xFFE6C788);
-        int meterWidth = Math.max(24, Math.min(108, column - 20));
-        MenuUi.drawRankProgress(graphics, left + column + (column - meterWidth) / 2,
-                y + font.lineHeight + 1, meterWidth, 3,
-                state.maximumPsyche() <= 0.0 ? 0.0 : state.psyche() / state.maximumPsyche());
+        int gap = Math.min(7, Math.max(3, contentWidth / 100));
+        int column = Math.max(1, (contentWidth - gap * 2) / 3);
+        int y = outer.y() + 30;
+        int tileHeight = 24;
+        Component[] values = {
+                Component.translatable("screen.anomalousclasses.mental.slots",
+                        state.controlledCount(), state.maxControlled()),
+                Component.translatable("screen.anomalousclasses.mental.psyche",
+                        number(state.psyche()), number(state.maximumPsyche())),
+                Component.translatable("screen.anomalousclasses.mental.upkeep", number(state.upkeepPerSecond()))
+        };
+        int[] colors = {0xFFD8D0C5, 0xFFF1E7D7, 0xFFE6C788};
+        for (int index = 0; index < values.length; index++) {
+            int x = left + index * (column + gap);
+            int tileWidth = index == values.length - 1 ? left + contentWidth - x : column;
+            MenuUi.Box tile = new MenuUi.Box(x, y, Math.max(1, tileWidth), tileHeight);
+            MenuUi.drawInsetSurface(graphics, tile);
+            graphics.fill(tile.x() + 5, tile.y() + 2, tile.right() - 5, tile.y() + 3,
+                    index == 1 ? MenuUi.accent(ClassId.MENTAL_DOMINATOR) : 0x907C6544);
+            MenuUi.drawCentered(graphics, font, values[index], tile.x() + tile.width() / 2,
+                    tile.y() + 6, Math.max(1, tile.width() - 10), colors[index]);
+            if (index == 1) {
+                MenuUi.drawRankProgress(graphics, tile.x() + 7, tile.bottom() - 4,
+                        Math.max(1, tile.width() - 14), 2,
+                        state.maximumPsyche() <= 0.0 ? 0.0 : state.psyche() / state.maximumPsyche());
+            }
+        }
     }
 
     private void drawList(GuiGraphics graphics) {

@@ -22,6 +22,7 @@ public final class ClientGameEvents {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
+        SkillTreeNavigation.tick(minecraft);
         if (minecraft.player == null || minecraft.level == null) return;
         boolean screenOpen = minecraft.screen != null;
         boolean intrusionDown = !screenOpen && ClassSelectionKeyMappings.MENTAL_INTRUSION.isDown();
@@ -45,6 +46,7 @@ public final class ClientGameEvents {
         if (ClassSelectionKeyMappings.OPEN_PROFILE.consumeClick()) {
             PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);
         } else if (ClassSelectionKeyMappings.OPEN_SKILL_TREE.consumeClick()) {
+            SkillTreeNavigation.begin(SkillTreeNavigation.ReturnTarget.WORLD);
             PacketDistributor.sendToServer(RequestSkillTreePayload.INSTANCE);
         } else if (ClassSelectionKeyMappings.OPEN_CLASS_MANAGEMENT.consumeClick()) {
             ClassManagementNavigation.enterFromWorld();

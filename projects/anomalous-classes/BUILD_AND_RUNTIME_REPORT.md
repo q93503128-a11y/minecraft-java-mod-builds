@@ -1,5 +1,46 @@
 # Build and Runtime Report
 
+## 2026-11-14 — Focus slot diagnosis, skill-tree return, and UI polish
+
+### Scope and findings
+
+- Started from fetched `origin/main` `408359f28750f7c0df85b2b7481ff9761a88d119`; changed only client UI/navigation, focus item textures/art tooling, translations, and this report.
+- The available `run/client/logs/latest.log` is a `forgeclientdev` session started before the previous local JAR was produced. It does not identify the packaged JAR used by the user's screenshot. Mixin 0.8.7 initialization is present, but there are no class-specific apply/failure lines for the focus-slot mixins. The exact screenshot runtime cause therefore remains unproven; see [static diagnosis](ui/reviews/2026-11-14/UI_FOLLOWUP_STATIC_REVIEW.md).
+- Current package verification confirms both focus-slot mixin classes, the Mixin JSON and NeoForge `[[mixins]]` registration. The static slot geometry check passes; no UI coordinate or server-slot change was made without evidence of overlap.
+- Skill-tree Esc/back now returns to the world for a direct `J` entry and to the profile for a profile entry. The client-only one-shot route expires on disconnect or after 200 ticks and rejects a response if its originating screen is no longer current.
+- Redesigned all 30 focus item tier textures using existing class glyphs and tier-specific silhouettes. Item IDs, models, recipes, effects, storage, and server behavior were not changed. The static side-by-side review is [class_focus_tiers_comparison.png](ui/reviews/2026-11-14/class_focus_tiers_comparison.png).
+- Mental Dominator resource values now sit in three aligned inset summary tiles. Existing list/detail data, server actions, codex, focus access, and class change remain connected; the outer frame is unchanged.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| Java / Gradle | OpenJDK 21.0.10 / Gradle 8.8 |
+| `./gradlew.bat clean build --console plain --stacktrace` | **PASS** — 16 tasks, including tests and project verification tasks |
+| Focus registry / recipe parity | **PASS** — 30 item IDs, 30 shaped recipe definitions, six classes × five tiers |
+| Focus screen layout | **PASS** — 12 aspect-ratio / GUI-scale viewports |
+| Class-management layout | **PASS** — 18 contexts / viewports |
+| Focus slot UI | **PASS (STATIC)** — slot 46 geometry, preview clearance, marker texture, KO/EN strings, nine viewports |
+| Mental Dominator layout | **PASS (STATIC)** — 24 viewports |
+| Profile / skill-tree regression | **PASS (STATIC)** — 581 nodes, six 900-SP trees, KO/EN and 18 viewport cases |
+| Focus art | **PASS (STATIC)** — 30 generated 16×16 textures; each class has five pixel-distinct tier variants |
+| JAR verification | **PASS** — 31,814,581 bytes, 110 classes, 30 focus textures, both mixin classes/config/metadata, no duplicate ZIP entries |
+| `git diff --check` | **PASS** — only existing LF/CRLF normalization notices |
+| `runClient` / actual screen inspection | **NOT RUN** — no CUA; user performs Minecraft visual and interaction review |
+| Datagen / GameTest / dedicated server / multiplayer | **NOT RUN** |
+
+Two existing compiler removal warnings for `EventBusSubscriber.bus()` / `Bus` and the Gradle 9 compatibility deprecation notice remain. The older development log separately contains focus recipe parse errors involving `.` as an undefined pattern symbol; recipes were out of scope and were not edited.
+
+### Artifact
+
+- Build JAR: `build/libs/anomalous-classes-0.1.0-alpha.1.jar`
+- Size: `31,814,581` bytes
+- SHA-256: `695B0AD678A2F338AF4C14835CB5D4AA22813A1AE8752136FCABE144FF8A83E8`
+- Static review: `ui/reviews/2026-11-14/UI_FOLLOWUP_STATIC_REVIEW.md`
+- Minecraft client / CLIENT TESTED / PLAYTESTED / MULTIPLAYER TESTED: **NOT RUN**
+
+---
+
 ## 2026-11-12 — Common focus items, recipes, and slot foundation
 
 ### Baseline and scope

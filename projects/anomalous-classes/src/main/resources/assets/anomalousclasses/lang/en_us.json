@@ -215,6 +215,7 @@
   "command.anomalousclasses.test.level_grant_failed": "No active class or the requested level grant is out of range.",
   "command.anomalousclasses.test.level_granted": "Granted %s test levels.",
   "screen.anomalousclasses.skill_tree.back": "Profile",
+  "screen.anomalousclasses.skill_tree.close": "Close",
   "screen.anomalousclasses.skill_tree.confirm_reset": "Confirm reset",
   "screen.anomalousclasses.skill_tree.points": "SP %s",
   "screen.anomalousclasses.skill_tree.spent": "Used %s",
