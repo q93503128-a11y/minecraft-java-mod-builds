@@ -47,6 +47,7 @@ public final class ClientGameEvents {
         } else if (ClassSelectionKeyMappings.OPEN_SKILL_TREE.consumeClick()) {
             PacketDistributor.sendToServer(RequestSkillTreePayload.INSTANCE);
         } else if (ClassSelectionKeyMappings.OPEN_CLASS_MANAGEMENT.consumeClick()) {
+            ClassManagementNavigation.enterFromWorld();
             PacketDistributor.sendToServer(RequestClassManagementPayload.INSTANCE);
         }
     }

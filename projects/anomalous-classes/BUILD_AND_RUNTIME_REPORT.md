@@ -567,3 +567,44 @@ To review the connected screens, enter a world and press `U` on Mental Dominator
 - UI/server contract gaps: `ui/CLASS_MANAGEMENT_UI_DATA_CONTRACT_2026-11-13.md`.
 - Sanitized build, verification, and startup logs: `artifacts/raw-logs.zip`.
 - GitHub implementation commit: `ee02d5f40` (`Improve class management UI presentation`).
+
+---
+
+# Build and Runtime Report — urgent UI corrections — 2026-11-14
+
+## Baseline and scope
+
+- Repository/project: `q93503128-a11y/minecraft-java-mod-builds`, `projects/anomalous-classes/`, branch `main`.
+- Fetched `origin/main` immediately before finalization. Both local `HEAD` and `origin/main` were `1fbc86e5e95d3a4b132e1f007c8a38b4354a4c65` before this change.
+- Runtime target: Minecraft 1.21.1, NeoForge 21.1.244, Java 21, Gradle wrapper 8.8.
+- Scope is client UI routing, screen layout, frame texture cleanup, and corresponding static regression checks. No gameplay rules, AI, balance, save format, or server ownership logic changed.
+
+## Changes
+
+- Profile → class management now sends `RequestClassManagementPayload`; `ClassSelectionClient` accepts the server's Mental Dominator screen response while Profile is open. Direct `U` entry clears the profile-return context. The Mental Dominator view only shows its small return-to-profile button for profile-origin navigation.
+- Focus screen back/Esc now requests the current class management route instead of constructing the legacy generic hub. The legacy hub no longer duplicates Profile/Skill Tree navigation, level/XP/SP, attributes, or a focus gear button. For classes without a management data contract it shows the real class identity, a concise unavailable state, and a small class-change action. A profile return action appears only when entered from Profile.
+- Mental Dominator class-change action moved into the safe lower-right footer. Follow/Stay group uses the remaining footer width. Focus recipe footer actions now clear the outer frame; compact recipe selector spacing was adjusted after the viewport verifier found an overlap.
+- The existing focus equip/unequip operation remains intact because the common vanilla inventory slot backend specified by `CLASS_FOCUS_SLOT.md` is not available in this UI change. No fake inventory slot was exposed. The 30 item definitions and shaped recipe patterns remain unchanged.
+- Original `frame_atlas.png` remains unchanged. Its four 160×160 corner crops matched the source atlas exactly; UV extraction was not the cause. The source corner pixels contained detached alpha 1–32 speckles (7,355–8,288 pixels per corner in the analyzed crops). The extraction tool now clears those detached low-alpha pixels and hidden RGB while retaining low-alpha antialiasing/shadow pixels within 3 px of alpha ≥33 art. The runtime crop audit reports zero mismatched pixels for all 14 parts. `MenuUi.drawPanel()` draws surface, rails, corners, and jewels once in order; no duplicate frame draw was found.
+- Review images under `ui/reviews/2026-11-14/frame-pixel-repair/` are **static Java2D composites** from the runtime PNG data and the panel geometry. They are not Minecraft screenshots. They show the pixel-level before/after and isolated joins; actual GPU/client confirmation remains for the user.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| `git diff --check` | PASS; only the repository's existing LF/CRLF conversion notices. |
+| `python tools/verify_graph_skilltree.py` | PASS; 581 nodes, six 900-SP trees, migration fixtures, 61 icons, KO/EN, and 18 profile/tree viewport cases. |
+| `tools/frame_asset_diagnostics.java` | PASS; source-atlas/crop dimensions and pixel parity for all 14 runtime frame parts; four corner crops use the cleanup transformation; static full-frame and corner/jewel comparisons generated. |
+| Gradle layout checks | PASS; class management 18 context/viewport cases, Mental Dominator 24, focus recipe 12; existing GUI Scale 2–4 and 16:9/16:10/4:3 profile/tree checks passed. |
+| `.\gradlew.bat --no-daemon build` | PASS after the screen layout regression verifier was updated for the new management layout and the compact focus selector was moved within the available panel. The final successful build ran all project verification tasks. |
+| `python tools/verify_jar.py artifacts/anomalous-classes-0.1.0-alpha.1.jar` | PASS — 31,805,091 bytes, 104 compiled classes, loader metadata and required mod resources present, no duplicate archive entries. |
+| Actual Minecraft screen inspection | NOT TESTED. No profile, U management, profile-to-management return, focus recipe screen, or GPU-rendered corners were verified in-game. |
+| `CLIENT TESTED` / `PLAYTESTED` / `MULTIPLAYER TESTED` | NOT TESTED / NOT TESTED / NOT TESTED. |
+
+## Artifacts and manual review
+
+- JAR: `artifacts/anomalous-classes-0.1.0-alpha.1.jar` — 31,805,091 bytes.
+- SHA-256: `d49aafed3d5c6b01572944799ff465597e276e3528c794ea869e1d1805a84848`.
+- Checksum file: `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`.
+- Static frame comparison: `ui/reviews/2026-11-14/frame-pixel-repair/profile_frame_before_after.png` and its `comparison/` crops.
+- User should manually inspect: M → Profile → class management → return to Profile; U direct entry and Esc; Mental Dominator back/Focus/class-change controls; focus recipe at all five grades; four frame corners and top/bottom jewels; Korean and English at GUI Scale 2, 3, and 4. Repeat at 16:9, 16:10, and 4:3 if available. The dedicated inventory focus slot remains a server-interface dependency and is not represented by a fake UI control.

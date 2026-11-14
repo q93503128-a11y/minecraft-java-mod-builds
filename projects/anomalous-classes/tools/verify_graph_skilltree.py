@@ -309,6 +309,8 @@ def check_art_and_screen() -> None:
             or "new Part(\"jewel_top\", 368, 48, 32, 88)" not in splitter \
             or "image.setRGB(x, y, atlas.getRGB(part.x() + x, part.y() + y))" not in splitter:
         fail("frame component crops no longer match the inspected atlas bounds")
+    if "cleanCornerAlphaNoise(image)" not in splitter or "hasNearbyVisibleEdge" not in splitter:
+        fail("frame corner alpha cleanup no longer preserves ornament edges while removing detached noise")
 
     screen = (SRC / "client/SkillTreeScreen.java").read_text(encoding="utf-8")
     graph_source = (SRC / "state/GraphSkillTreeCatalog.java").read_text(encoding="utf-8")

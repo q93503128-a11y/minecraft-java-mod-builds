@@ -49,12 +49,13 @@ public final class frame_asset_diagnostics {
         System.out.printf("ATLAS %dx%d type=%d%n", atlas.getWidth(), atlas.getHeight(), atlas.getType());
         for (Part part : PARTS) {
             BufferedImage crop = read(parts.resolve(part.name() + ".png"));
+            BufferedImage expected = expectedRuntimeCrop(atlas, part);
             int clear = 0, lowAlpha = 0, opaque = 0, nonBlack = 0, blackAlpha = 0;
             int minAlpha = 255, maxAlpha = 0, minX = crop.getWidth(), minY = crop.getHeight(), maxX = -1, maxY = -1;
             int mismatches = 0, alphaDiffs = 0, visibleRgbDiffs = 0, transparentRgbDiffs = 0, maxAlphaDiff = 0, maxRgbDiff = 0;
             for (int y = 0; y < crop.getHeight(); y++) for (int x = 0; x < crop.getWidth(); x++) {
                 int pixel = crop.getRGB(x, y), alpha = pixel >>> 24;
-                int sourcePixel = atlas.getRGB(part.x()+x, part.y()+y), sourceAlpha = sourcePixel >>> 24;
+                int sourcePixel = expected.getRGB(x, y), sourceAlpha = sourcePixel >>> 24;
                 if (alpha == 0) clear++;
                 if (alpha > 0 && alpha < 32) lowAlpha++;
                 if (alpha >= 250) opaque++;
@@ -73,13 +74,14 @@ public final class frame_asset_diagnostics {
             System.out.printf("%-20s %dx%d clear=%d lowA=%d opaque=%d blackA=%d alpha=%d..%d bounds=%d,%d..%d,%d cropDiff=%d(alpha=%d,maxA=%d maxRGB=%d visibleRGB=%d transparentRGB=%d)%n",
                     part.name(), crop.getWidth(), crop.getHeight(), clear, lowAlpha, opaque, blackAlpha,
                     minAlpha, maxAlpha, minX, minY, maxX, maxY, mismatches, alphaDiffs, maxAlphaDiff, maxRgbDiff, visibleRgbDiffs, transparentRgbDiffs);
-            if (mismatches != 0) throw new IOException("Extracted RGBA differs from source atlas for " + part.name());
+            if (mismatches != 0) throw new IOException("Runtime frame asset differs from extracted/cleaned atlas for " + part.name());
             if(part.name().equals("corner_tl")||part.name().equals("jewel_top")) printSamples(crop,part.name());
             crop.flush();
+            expected.flush();
         }
         extractPreviousParts(project, previousParts);
         auditPreviousCrops(previousParts,atlas);
-        BufferedImage previousPanel=renderProfileFrame(previousParts,surface,title,buttons,true);
+        BufferedImage previousPanel=renderProfileFrame(previousParts,surface,title,buttons,false);
         BufferedImage currentPanel=renderProfileFrame(parts,surface,title,buttons,false);
         write(previousPanel,output.resolve("profile_frame_before_scale4_static.png"));
         write(currentPanel,output.resolve("profile_frame_after_scale4_static.png"));
@@ -102,6 +104,38 @@ public final class frame_asset_diagnostics {
         deleteTemporaryDirectory(previousParts);
     }
 
+    private static BufferedImage expectedRuntimeCrop(BufferedImage atlas, Part part) {
+        BufferedImage expected = new BufferedImage(part.width(), part.height(), BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < part.height(); y++) for (int x = 0; x < part.width(); x++) {
+            expected.setRGB(x, y, atlas.getRGB(part.x() + x, part.y() + y));
+        }
+        if (part.name().startsWith("corner_")) cleanCornerAlphaNoise(expected);
+        return expected;
+    }
+
+    private static void cleanCornerAlphaNoise(BufferedImage image) {
+        int width = image.getWidth(), height = image.getHeight();
+        boolean[] visibleEdge = new boolean[width * height];
+        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) {
+            visibleEdge[y * width + x] = (image.getRGB(x, y) >>> 24) >= 33;
+        }
+        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++) {
+            int alpha = image.getRGB(x, y) >>> 24;
+            if (alpha == 0 || (alpha <= 32 && !hasNearbyVisibleEdge(visibleEdge, width, height, x, y))) {
+                image.setRGB(x, y, 0);
+            }
+        }
+    }
+
+    private static boolean hasNearbyVisibleEdge(boolean[] visibleEdge, int width, int height, int x, int y) {
+        for (int dy = -3; dy <= 3; dy++) for (int dx = -3; dx <= 3; dx++) {
+            if (dx * dx + dy * dy > 9) continue;
+            int nx = x + dx, ny = y + dy;
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height && visibleEdge[ny * width + nx]) return true;
+        }
+        return false;
+    }
+
     private static void extractPreviousParts(Path project, Path destination) throws Exception {
         Path repository = project.getParent().getParent();
         for (Part part : PARTS) {
@@ -119,8 +153,8 @@ public final class frame_asset_diagnostics {
     }
 
     private static void auditPreviousCrops(Path previousParts,BufferedImage atlas)throws IOException {
-        System.out.println("PREVIOUS EXTRACTOR PIXEL COMPARISON (against previous atlas crop):");
-        for(Part part:PREVIOUS_PARTS){
+        System.out.println("PRE-REPAIR COMMITTED FRAME PIXEL COMPARISON (against source atlas):");
+        for(Part part:PARTS){
             BufferedImage image=read(previousParts.resolve(part.name()+".png"));
             int mismatches=0,alphaDiffs=0,visibleRgbDiffs=0,transparentRgbDiffs=0,maxRgb=0,maxAlpha=0;
             for(int y=0;y<part.height();y++)for(int x=0;x<part.width();x++){
@@ -291,8 +325,8 @@ public final class frame_asset_diagnostics {
         BufferedImage result=new BufferedImage(halfWidth*2,halfHeight+header,BufferedImage.TYPE_INT_ARGB);
         Graphics2D g=result.createGraphics();g.setColor(new Color(20,13,27));g.fillRect(0,0,result.getWidth(),result.getHeight());
         g.setColor(new Color(237,224,205));g.setFont(new java.awt.Font("SansSerif",java.awt.Font.BOLD,13));
-        g.drawString("BEFORE: committed runtime + old crops/tiling",8,17);
-        g.drawString("AFTER: isolated crops + continuous rails",halfWidth+8,17);
+         g.drawString("BEFORE: original corner alpha",8,17);
+         g.drawString("AFTER: detached alpha noise cleared",halfWidth+8,17);
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         g.drawImage(before,0,header,halfWidth,halfHeight,null);
         g.drawImage(after,halfWidth,header,halfWidth*2,halfHeight+header,0,0,after.getWidth(),after.getHeight(),null);

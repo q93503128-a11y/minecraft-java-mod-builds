@@ -7,6 +7,7 @@ import kr.moonseungjun.anomalousclasses.item.ClassFocusItems;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestClassManagementPayload;
 import kr.moonseungjun.anomalousclasses.state.ClassFocus;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
 import kr.moonseungjun.anomalousclasses.state.FocusTier;
@@ -57,7 +58,7 @@ public final class ClassFocusScreen extends Screen {
         }
         backButton = addRenderableWidget(new MenuUi.Button(layout.backButton(),
                 Component.translatable("screen.anomalousclasses.class_focus.back"),
-                ignored -> minecraft.setScreen(new ClassManagementScreen(state.profile()))));
+                ignored -> returnToManagement()));
         equipButton = addRenderableWidget(new MenuUi.Button(layout.equipButton(),
                 Component.translatable("screen.anomalousclasses.class_focus.equip"), ignored -> sendAction(ClassFocusActionPayload.EQUIP)));
         unequipButton = addRenderableWidget(new MenuUi.Button(layout.unequipButton(),
@@ -98,8 +99,15 @@ public final class ClassFocusScreen extends Screen {
                 action, selectedTier.index(), state.profile().revision()));
     }
 
+    private void returnToManagement() {
+        if (pending) return;
+        pending = true;
+        refreshButtons();
+        PacketDistributor.sendToServer(RequestClassManagementPayload.INSTANCE);
+    }
+
     private void refreshButtons() {
-        if (backButton != null) backButton.active = true;
+        if (backButton != null) backButton.active = !pending;
         if (equipButton != null) equipButton.active = !pending && inventoryCount(selectedTier) > 0;
         if (unequipButton != null) unequipButton.active = !pending && equippedFocus() != null;
     }
@@ -309,10 +317,7 @@ public final class ClassFocusScreen extends Screen {
         return x >= box.x() && x < box.right() && y >= box.y() && y < box.bottom();
     }
 
-    @Override
-    public void onClose() {
-        minecraft.setScreen(new ClassManagementScreen(state.profile()));
-    }
+    @Override public void onClose() { returnToManagement(); }
 
     @Override public boolean isPauseScreen() { return false; }
 }

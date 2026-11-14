@@ -23,7 +23,8 @@ record ClassFocusScreenLayout(MenuUi.Box outer, MenuUi.Box recipePanel, MenuUi.B
         int tierWidth = Math.min(56, Math.max(30, (innerWidth - tierGap * 4) / 5));
         int tierTotal = tierWidth * 5 + tierGap * 4;
         int tierX = outer.x() + (outer.width() - tierTotal) / 2;
-        int tierY = outer.y() + 29;
+        boolean tinyViewport = height < 200;
+        int tierY = outer.y() + (tinyViewport ? 21 : 29);
         int tierHeight = Math.max(16, Math.min(22, height / 12));
         List<MenuUi.Box> tierButtons = new ArrayList<>(5);
         for (int index = 0; index < 5; index++) {
@@ -31,9 +32,11 @@ record ClassFocusScreenLayout(MenuUi.Box outer, MenuUi.Box recipePanel, MenuUi.B
         }
 
         int footerHeight = Math.max(17, Math.min(22, height / 12));
-        int footerY = outer.bottom() - footerHeight - 6;
-        int bodyY = tierY + tierHeight + 5;
-        int bodyBottom = Math.max(bodyY + 1, footerY - 5);
+        int corner = Math.max(6, Math.min(40, Math.min(outer.width(), outer.height()) / 10));
+        corner = Math.min(corner, Math.min(outer.width() / 2, outer.height() / 2));
+        int footerY = outer.bottom() - corner - footerHeight - 4;
+        int bodyY = tierY + tierHeight + (tinyViewport ? 4 : 5);
+        int bodyBottom = Math.max(bodyY + 1, footerY - (tinyViewport ? 0 : 5));
         int availableBodyHeight = Math.max(1, bodyBottom - bodyY);
         int preferredBodyHeight = Math.max(150, Math.min(280, Math.round(height * 0.44f)));
         int bodyHeight = Math.min(availableBodyHeight, preferredBodyHeight);
@@ -74,8 +77,9 @@ record ClassFocusScreenLayout(MenuUi.Box outer, MenuUi.Box recipePanel, MenuUi.B
         MenuUi.Box unequipButton = new MenuUi.Box(equipButton.right() + actionGap, footerY,
                 actionWidth, footerHeight);
         int alternativeY = infoPanel.y() + (bodyHeight < 130 ? 38 : 47);
+        int alternativeHeight = Math.max(16, Math.min(bodyHeight < 130 ? 16 : 20, footerHeight));
         MenuUi.Box alternativeButton = new MenuUi.Box(infoPanel.x() + 7, alternativeY,
-                Math.max(1, infoWidth - 14), Math.max(16, Math.min(20, footerHeight)));
+                Math.max(1, infoWidth - 14), alternativeHeight);
         return new ClassFocusScreenLayout(outer, recipePanel, infoPanel, List.copyOf(tierButtons),
                 List.copyOf(recipeCells), arrowMarker, resultSlot, backButton, equipButton, unequipButton,
                 alternativeButton);

@@ -1,6 +1,6 @@
 package kr.moonseungjun.anomalousclasses.client;
 
-/** Static regression check for the manager layout at the supported screen ratios and GUI scales. */
+/** Static regression check for the class-management fallback at supported viewports. */
 public final class ClassManagementLayoutVerifier {
     private static final int[][] PHYSICAL_VIEWPORTS = {
             {1920, 1080}, // 16:9
@@ -16,38 +16,31 @@ public final class ClassManagementLayoutVerifier {
             for (int guiScale = 2; guiScale <= 4; guiScale++) {
                 int width = viewport[0] / guiScale;
                 int height = viewport[1] / guiScale;
-                verify(width, height);
-                checked++;
+                verify(width, height, false);
+                verify(width, height, true);
+                checked += 2;
             }
         }
         System.out.println("Class management layout: " + checked
-                + " viewports passed (16:9, 16:10, 4:3 × GUI 2–4).");
+                + " context/viewports passed (16:9, 16:10, 4:3 × GUI 2–4).");
     }
 
-    private static void verify(int width, int height) {
-        ClassManagementLayout layout = ClassManagementLayout.calculate(width, height);
+    private static void verify(int width, int height, boolean returnToProfile) {
+        ClassManagementLayout layout = ClassManagementLayout.calculate(width, height, returnToProfile);
         MenuUi.Box outer = layout.outer();
-        require(contains(outer, layout.artwork()), "artwork outside outer frame", width, height);
-        require(contains(outer, layout.overview()), "overview outside outer frame", width, height);
-        require(contains(outer, layout.profileButton()), "profile button outside outer frame", width, height);
-        require(contains(outer, layout.skillTreeButton()), "skill-tree button outside outer frame", width, height);
-        require(contains(outer, layout.changeButton()), "class-change button outside outer frame", width, height);
-        require(contains(layout.overview(), layout.focusButton()), "focus button outside overview", width, height);
-        require(!overlaps(layout.artwork(), layout.overview()), "artwork overlaps overview", width, height);
-        require(!overlaps(layout.profileButton(), layout.skillTreeButton()),
-                "profile overlaps skill-tree button", width, height);
-        require(!overlaps(layout.skillTreeButton(), layout.changeButton()),
-                "skill-tree overlaps class-change button", width, height);
-        require(!overlaps(layout.focusButton(), layout.profileButton())
-                        && !overlaps(layout.focusButton(), layout.skillTreeButton())
-                        && !overlaps(layout.focusButton(), layout.changeButton()),
-                "focus button overlaps navigation", width, height);
-        require(layout.profileButton().y() == layout.skillTreeButton().y()
-                        && layout.profileButton().y() == layout.changeButton().y(),
-                "footer buttons are misaligned", width, height);
-        require(layout.artwork().width() > 0 && layout.artwork().height() > 0
-                        && layout.overview().width() > 0 && layout.overview().height() > 0,
-                "content area collapsed", width, height);
+        MenuUi.Box content = layout.content();
+        MenuUi.Box back = layout.backButton();
+        MenuUi.Box change = layout.changeButton();
+        require(contains(outer, content), "content outside outer frame", width, height);
+        require(contains(outer, change), "class-change button outside outer frame", width, height);
+        require(!overlaps(content, change), "content overlaps footer action", width, height);
+        require(!overlaps(back, change), "back overlaps class-change button", width, height);
+        require(change.y() == back.y(), "footer buttons are misaligned", width, height);
+        require(change.width() > 0 && change.height() > 0 && content.width() > 0 && content.height() > 0,
+                "content or class-change action collapsed", width, height);
+        require(returnToProfile ? back.width() > 1 : back.width() == 1,
+                "back-to-profile visibility does not match navigation context", width, height);
+        if (returnToProfile) require(contains(outer, back), "back button outside outer frame", width, height);
     }
 
     private static boolean contains(MenuUi.Box parent, MenuUi.Box child) {

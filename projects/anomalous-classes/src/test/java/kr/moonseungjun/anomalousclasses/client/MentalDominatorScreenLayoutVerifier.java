@@ -12,22 +12,24 @@ public final class MentalDominatorScreenLayoutVerifier {
             for (int scale = 2; scale <= 4; scale++) {
                 int width = viewport[0] / scale;
                 int height = viewport[1] / scale;
-                verify(width, height);
-                checked++;
+                verify(width, height, false);
+                verify(width, height, true);
+                checked += 2;
             }
         }
         System.out.println("Mental Dominator layout: " + checked
                 + " viewports passed (16:9, 16:10, 4:3 × GUI 2–4).");
     }
 
-    private static void verify(int width, int height) {
-        MentalDominatorScreenLayout layout = MentalDominatorScreenLayout.calculate(width, height);
+    private static void verify(int width, int height, boolean returnToProfile) {
+        MentalDominatorScreenLayout layout = MentalDominatorScreenLayout.calculate(width, height, returnToProfile);
         MenuUi.Box outer = layout.outer();
-        MenuUi.Box[] inside = {layout.list(), layout.detail(), layout.profile(), layout.focus(),
+        MenuUi.Box[] inside = {layout.list(), layout.detail(), layout.focus(),
                 layout.changeClass(), layout.codex(), layout.allFollow(), layout.allStay()};
         for (MenuUi.Box box : inside) require(contains(outer, box), "element outside outer frame", width, height);
+        if (returnToProfile) require(contains(outer, layout.profile()), "profile return outside outer frame", width, height);
         require(!overlaps(layout.list(), layout.detail()), "list overlaps detail", width, height);
-        require(!overlaps(layout.profile(), layout.focus()), "profile overlaps focus", width, height);
+        if (returnToProfile) require(!overlaps(layout.profile(), layout.focus()), "profile overlaps focus", width, height);
         require(!overlaps(layout.focus(), layout.codex()), "focus overlaps codex", width, height);
         require(!overlaps(layout.codex(), layout.changeClass()), "codex overlaps class change", width, height);
         if (width >= 360) {
@@ -47,6 +49,12 @@ public final class MentalDominatorScreenLayoutVerifier {
                 "footer overlaps list", width, height);
         require(!overlaps(layout.detail(), layout.allFollow()) && !overlaps(layout.detail(), layout.allStay()),
                 "footer overlaps details", width, height);
+        require(!overlaps(layout.allFollow(), layout.allStay())
+                        && !overlaps(layout.allStay(), layout.changeClass()),
+                "footer controls overlap", width, height);
+        require(layout.allFollow().y() == layout.allStay().y()
+                        && layout.allStay().y() == layout.changeClass().y(),
+                "footer controls are misaligned", width, height);
         MenuUi.Box[] actions = {layout.follow(), layout.stay(), layout.damage(), layout.release()};
         for (MenuUi.Box action : actions) require(contains(layout.detail(), action), "action outside detail", width, height);
         require(!overlaps(layout.follow(), layout.stay()) && !overlaps(layout.damage(), layout.release()),

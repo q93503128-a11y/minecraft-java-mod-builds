@@ -3,6 +3,7 @@ package kr.moonseungjun.anomalousclasses.client;
 import java.util.Locale;
 import java.util.List;
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestClassManagementPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestSkillTreePayload;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
 import net.minecraft.client.gui.GuiGraphics;
@@ -68,7 +69,7 @@ public final class ProfileScreen extends Screen {
         managementButton = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(buttonX + buttonWidth + buttonGap, navY,
                 buttonWidth, navHeight), shortcutLabel("screen.anomalousclasses.profile.class_management",
                 ClassSelectionKeyMappings.OPEN_CLASS_MANAGEMENT),
-                button -> minecraft.setScreen(new ClassManagementScreen(state))));
+                button -> openManagement()));
         refreshButtons();
     }
 
@@ -162,6 +163,14 @@ public final class ProfileScreen extends Screen {
         pending = true;
         refreshButtons();
         PacketDistributor.sendToServer(RequestSkillTreePayload.INSTANCE);
+    }
+
+    private void openManagement() {
+        if (pending) return;
+        ClassManagementNavigation.enterFromProfile();
+        pending = true;
+        refreshButtons();
+        PacketDistributor.sendToServer(RequestClassManagementPayload.INSTANCE);
     }
 
     private void refreshButtons() {

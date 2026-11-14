@@ -50,6 +50,7 @@ public final class ClassSelectionClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen instanceof MentalDominatorScreen screen) screen.applyServerState(state);
         else if (state.openScreen() && (minecraft.screen == null
+                || minecraft.screen instanceof ProfileScreen
                 || minecraft.screen instanceof ClassFocusScreen
                 || minecraft.screen instanceof ClassManagementScreen)) {
             minecraft.setScreen(new MentalDominatorScreen(state));

@@ -42,13 +42,19 @@ public final class MentalDominatorScreen extends Screen {
     @Override
     protected void init() {
         if (selectedEntityId.isBlank() && !state.mobs().isEmpty()) selectedEntityId = state.mobs().get(0).id();
-        MentalDominatorScreenLayout layout = MentalDominatorScreenLayout.calculate(width, height);
+        boolean returnToProfile = ClassManagementNavigation.shouldReturnToProfile();
+        MentalDominatorScreenLayout layout = MentalDominatorScreenLayout.calculate(width, height, returnToProfile);
         outer = layout.outer();
         listBox = layout.list();
         detailBox = layout.detail();
         int buttonHeight = layout.buttonHeight();
-        profileButton = addRenderableWidget(new MenuUi.Button(layout.profile(),
-                Component.translatable("screen.anomalousclasses.mental.profile"), button -> request(RequestProfilePayload.INSTANCE)));
+        if (returnToProfile) {
+            profileButton = addRenderableWidget(new MenuUi.Button(layout.profile(),
+                    Component.translatable("screen.anomalousclasses.mental.back_to_profile"), button -> {
+                        ClassManagementNavigation.clearReturnToProfile();
+                        request(RequestProfilePayload.INSTANCE);
+                    }));
+        }
         focusButton = addRenderableWidget(new MenuUi.Button(layout.focus(), Component.translatable("screen.anomalousclasses.mental.focus"),
                 button -> request(RequestClassFocusPayload.INSTANCE)));
         classButton = addRenderableWidget(new MenuUi.Button(layout.changeClass(),
