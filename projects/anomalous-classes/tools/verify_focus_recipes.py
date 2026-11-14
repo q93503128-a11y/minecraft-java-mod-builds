@@ -94,7 +94,10 @@ def main() -> None:
         generated = json.loads(path.read_text(encoding="utf-8"))
         if generated.get("type") != "minecraft:crafting_shaped":
             fail(f"recipe is not shaped: {path}")
-        if generated.get("pattern") != definition["pattern"]:
+        # Canonical UI patterns use "." but the runtime recipe parser reserves
+        # literal SPACE as the empty slot. Never ship undefined '.' keys.
+        runtime_pattern = [row.replace(".", " ") for row in definition["pattern"]]
+        if generated.get("pattern") != runtime_pattern:
             fail(f"generated shape differs from catalog: {path}")
         result_id = f"anomalousclasses:focus_{class_id}_{tier}"
         if generated.get("result", {}).get("id") != result_id or generated["result"].get("count", 1) != 1:
@@ -103,7 +106,14 @@ def main() -> None:
         if set(keys) != set(definition["key"]):
             fail(f"ingredient symbols differ from catalog: {path}")
         for symbol, item_ids in definition["key"].items():
-            actual = keys[symbol].get("items", [keys[symbol].get("item")])
+            ingredient = keys[symbol]
+            if isinstance(ingredient, dict) and set(ingredient) == {"item"}:
+                actual = [ingredient["item"]]
+            elif isinstance(ingredient, list) and ingredient and all(
+                    isinstance(entry, dict) and set(entry) == {"item"} for entry in ingredient):
+                actual = [entry["item"] for entry in ingredient]
+            else:
+                fail(f"invalid 1.21.1 ingredient JSON for {symbol} in {path}")
             if actual != item_ids:
                 fail(f"ingredient alternatives differ for {symbol} in {path}")
         used = Counter(char for row in definition["pattern"] for char in row if char != ".")

@@ -76,11 +76,16 @@ def main() -> None:
         tier = recipe["tier"]
         vanilla_key = {}
         for symbol, ids in recipe["key"].items():
-            vanilla_key[symbol] = {"item": ids[0]} if len(ids) == 1 else {"items": ids}
+            # Minecraft/NeoForge 1.21.1 ingredients accept a single item object or
+            # an array of item objects for alternatives (not {"items": [...]}).
+            vanilla_key[symbol] = ({"item": ids[0]} if len(ids) == 1
+                                   else [{"item": item_id} for item_id in ids])
         generated = {
             "type": "minecraft:crafting_shaped",
             "category": "misc",
-            "pattern": recipe["pattern"],
+            # The UI catalog uses "." as its visible empty-cell marker. Vanilla
+            # shaped recipes reserve a literal SPACE for empty cells.
+            "pattern": [row.replace(".", " ") for row in recipe["pattern"]],
             "key": vanilla_key,
             "result": {"id": f"anomalousclasses:focus_{class_id}_{tier}", "count": 1},
         }
