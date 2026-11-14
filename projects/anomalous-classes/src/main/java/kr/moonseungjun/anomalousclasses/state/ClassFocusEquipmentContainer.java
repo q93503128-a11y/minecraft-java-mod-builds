@@ -1,34 +1,39 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import kr.moonseungjun.anomalousclasses.item.ClassFocusItems;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * The single class-focus equipment slot, backed by the existing player profile.
+ * A profile-backed server inventory slot. The backing profile is resolved lazily:
+ * vanilla constructs Player.inventoryMenu in the Player superclass constructor,
+ * before ServerPlayer has finished initializing its server reference.
  *
- * <p>Only a server-side menu should create this container. Client menus should use a
- * one-slot dummy container and let vanilla slot synchronization supply the stack.
- * There is no separate item store: the old saved focus remains authoritative, so
- * previously equipped items are preserved across this UI migration.</p>
+ * There is deliberately no second stored ItemStack. The established persisted
+ * equippedFocus field owns the item, including equipment saved by older builds.
  */
 public final class ClassFocusEquipmentContainer implements Container {
     public static final int FOCUS_SLOT = 0;
     public static final int SLOT_COUNT = 1;
 
     private final ServerPlayer owner;
-    private final ClassProfileSavedData profiles;
-    private final PlayerClassProfile profile;
 
     public ClassFocusEquipmentContainer(ServerPlayer owner) {
-        if (owner == null || owner.getServer() == null) {
-            throw new IllegalArgumentException("The equipment container requires a server player");
-        }
+        if (owner == null) throw new IllegalArgumentException("A server player is required");
         this.owner = owner;
-        this.profiles = ClassProfileSavedData.get(owner.getServer());
-        this.profile = profiles.profile(owner.getUUID());
+    }
+
+    private ClassProfileSavedData saved() {
+        MinecraftServer server = owner.getServer();
+        return server == null ? null : ClassProfileSavedData.get(server);
+    }
+
+    private PlayerClassProfile profile() {
+        ClassProfileSavedData data = saved();
+        return data == null ? null : data.profile(owner.getUUID());
     }
 
     @Override
@@ -38,22 +43,24 @@ public final class ClassFocusEquipmentContainer implements Container {
 
     @Override
     public boolean isEmpty() {
-        return profile.equippedFocus().isEmpty();
+        return getItem(FOCUS_SLOT).isEmpty();
     }
 
     @Override
     public ItemStack getItem(int slot) {
         if (slot != FOCUS_SLOT) return ItemStack.EMPTY;
-        // This is a read-only snapshot; all mutations must go through Container methods.
-        return profile.equippedFocus().map(ClassFocusItems::stack).orElse(ItemStack.EMPTY);
+        PlayerClassProfile playerProfile = profile();
+        if (playerProfile == null) return ItemStack.EMPTY;
+        // A snapshot, not a mutable reference to another inventory.
+        return playerProfile.equippedFocus().map(ClassFocusItems::stack).orElse(ItemStack.EMPTY);
     }
 
     @Override
     public ItemStack removeItem(int slot, int amount) {
         if (slot != FOCUS_SLOT || amount <= 0) return ItemStack.EMPTY;
-        ItemStack removed = getItem(slot);
-        if (!removed.isEmpty()) setFocus(null);
-        return removed;
+        ItemStack previous = getItem(slot);
+        if (!previous.isEmpty()) change(null);
+        return previous;
     }
 
     @Override
@@ -65,20 +72,20 @@ public final class ClassFocusEquipmentContainer implements Container {
     public void setItem(int slot, ItemStack stack) {
         if (slot != FOCUS_SLOT || stack == null) return;
         if (stack.isEmpty()) {
-            setFocus(null);
+            change(null);
             return;
         }
-        // An item can be inserted only if the server currently approves its class.
         if (!canPlaceItem(slot, stack)) return;
-        setFocus(ClassFocusItems.identity(stack).orElseThrow());
+        change(ClassFocusItems.identity(stack).orElseThrow());
     }
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
         if (slot != FOCUS_SLOT || stack == null || stack.isEmpty() || stack.getCount() != 1) return false;
-        if (!stillValid(owner)) return false;
+        PlayerClassProfile playerProfile = profile();
+        if (playerProfile == null || !stillValid(owner)) return false;
         ClassFocus focus = ClassFocusItems.identity(stack).orElse(null);
-        return focus != null && profile.currentClass().filter(focus.classId()::equals).isPresent();
+        return focus != null && playerProfile.currentClass().filter(focus.classId()::equals).isPresent();
     }
 
     @Override
@@ -88,8 +95,8 @@ public final class ClassFocusEquipmentContainer implements Container {
 
     @Override
     public void setChanged() {
-        // Preserve vanilla Container notification semantics for menu observers.
-        profiles.setDirty();
+        ClassProfileSavedData data = saved();
+        if (data != null) data.setDirty();
     }
 
     @Override
@@ -99,10 +106,13 @@ public final class ClassFocusEquipmentContainer implements Container {
 
     @Override
     public void clearContent() {
-        setFocus(null);
+        change(null);
     }
 
-    private void setFocus(ClassFocus next) {
-        if (profile.equipFocus(next)) profiles.setDirty();
+    private void change(ClassFocus focus) {
+        ClassProfileSavedData data = saved();
+        if (data != null && data.profile(owner.getUUID()).equipFocus(focus)) {
+            data.setDirty();
+        }
     }
 }

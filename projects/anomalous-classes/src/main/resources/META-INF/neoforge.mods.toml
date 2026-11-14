@@ -11,6 +11,9 @@ description='''
 Minecraft survival RPG with six distinct class identities.
 '''
 
+[[mixins]]
+config="anomalousclasses.mixins.json"
+
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
