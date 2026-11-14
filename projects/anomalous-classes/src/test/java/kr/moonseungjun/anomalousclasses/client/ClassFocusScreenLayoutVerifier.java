@@ -29,21 +29,16 @@ public final class ClassFocusScreenLayoutVerifier {
         require(contains(layout.recipePanel(), layout.arrowMarker()), "arrow outside recipe panel", width, height);
         require(!overlaps(layout.arrowMarker(), layout.resultSlot()), "recipe arrow overlaps result", width, height);
         require(contains(outer, layout.backButton()), "back button outside frame", width, height);
-        require(contains(outer, layout.equipButton()), "equip button outside frame", width, height);
-        require(contains(outer, layout.unequipButton()), "unequip button outside frame", width, height);
+        require(contains(layout.infoPanel(), layout.effectArea()), "effect text outside info panel", width, height);
         require(contains(layout.infoPanel(), layout.alternativeButton()), "alternative selector outside info panel", width, height);
-        if (layout.infoPanel().height() >= 130) {
-            require(layout.alternativeButton().bottom() <= layout.infoPanel().y() + 70,
-                    "grade alternative overlaps focus status rows", width, height);
-        } else {
-            require(layout.alternativeButton().bottom() <= layout.infoPanel().y() + 55,
-                    "compact grade alternative overlaps focus status rows", width, height);
-        }
-        require(layout.infoPanel().height() >= 86, "focus information rows do not fit vertically", width, height);
+        require(layout.effectArea().height() >= 27,
+                "three mental-focus effect lines do not fit", width, height);
+        require(!overlaps(layout.effectArea(), layout.alternativeButton()),
+                "effect lines overlap material alternative control", width, height);
         require(!overlaps(layout.recipePanel(), layout.infoPanel()), "recipe and info panels overlap", width, height);
-        require(!overlaps(layout.backButton(), layout.equipButton())
-                        && !overlaps(layout.backButton(), layout.unequipButton()),
-                "footer actions overlap", width, height);
+        require(!overlaps(layout.backButton(), layout.recipePanel())
+                        && !overlaps(layout.backButton(), layout.infoPanel()),
+                "back control overlaps recipe content", width, height);
         require(layout.tierButtons().size() == 5, "expected five grade selectors", width, height);
         require(layout.recipeCells().size() == 9, "expected a three-by-three recipe grid", width, height);
         for (MenuUi.Box box : layout.tierButtons()) require(contains(outer, box), "tier selector outside frame", width, height);

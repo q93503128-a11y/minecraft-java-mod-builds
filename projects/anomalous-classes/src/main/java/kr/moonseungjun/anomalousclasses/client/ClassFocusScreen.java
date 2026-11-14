@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import kr.moonseungjun.anomalousclasses.item.ClassFocusItems;
-import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
-import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestClassManagementPayload;
 import kr.moonseungjun.anomalousclasses.state.ClassFocus;
 import kr.moonseungjun.anomalousclasses.state.ClassId;
@@ -20,17 +18,18 @@ import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-/** Browse the real shaped recipe and operate the single server-owned focus slot. */
+/** Read-only guide to the existing class-focus items and their shaped recipes. */
 public final class ClassFocusScreen extends Screen {
-    private ClassFocusStatePayload state;
-    private final ClassId classId;
+    private static final int[] MAX_PSYCHE_PERCENT = {15, 25, 40, 60, 100};
+    private static final int[] UPKEEP_REDUCTION_PERCENT = {4, 10, 17, 25, 40};
+    private static final int[] INTRUSION_PROGRESS_PERCENT = {0, 4, 8, 13, 28};
+
+    private ClassId classId;
     private final List<ClassFocusRecipeCatalog.Recipe> recipes;
     private ClassFocusRecipeCatalog.Recipe recipe;
     private ClassFocusScreenLayout layout;
     private final List<MenuUi.Button> tierButtons = new ArrayList<>();
     private MenuUi.Button backButton;
-    private MenuUi.Button equipButton;
-    private MenuUi.Button unequipButton;
     private MenuUi.Button alternativeButton;
     private FocusTier selectedTier;
     private int alternative;
@@ -38,11 +37,9 @@ public final class ClassFocusScreen extends Screen {
 
     public ClassFocusScreen(ClassFocusStatePayload state) {
         super(Component.translatable("screen.anomalousclasses.class_focus.title"));
-        this.state = state;
         this.classId = ClassId.fromNetworkIndex(state.profile().classIndex()).orElse(ClassId.MENTAL_DOMINATOR);
         this.recipes = ClassFocusRecipeCatalog.load(Minecraft.getInstance().getResourceManager());
-        this.selectedTier = FocusTier.fromIndex(state.equippedClassIndex() == classId.networkIndex()
-                ? state.equippedTierIndex() : FocusTier.STANDARD.index()).orElse(FocusTier.STANDARD);
+        this.selectedTier = FocusTier.STANDARD;
         updateRecipe();
     }
 
@@ -59,10 +56,6 @@ public final class ClassFocusScreen extends Screen {
         backButton = addRenderableWidget(new MenuUi.Button(layout.backButton(),
                 Component.translatable("screen.anomalousclasses.class_focus.back"),
                 ignored -> returnToManagement()));
-        equipButton = addRenderableWidget(new MenuUi.Button(layout.equipButton(),
-                Component.translatable("screen.anomalousclasses.class_focus.equip"), ignored -> sendAction(ClassFocusActionPayload.EQUIP)));
-        unequipButton = addRenderableWidget(new MenuUi.Button(layout.unequipButton(),
-                Component.translatable("screen.anomalousclasses.class_focus.unequip"), ignored -> sendAction(ClassFocusActionPayload.UNEQUIP)));
         if (recipe != null && hasAlternative(recipe)) {
             alternativeButton = addRenderableWidget(new MenuUi.Button(layout.alternativeButton(),
                     alternativeLabel(), ignored -> {
@@ -86,17 +79,14 @@ public final class ClassFocusScreen extends Screen {
     }
 
     public void applyServerState(ClassFocusStatePayload state) {
-        this.state = state;
-        pending = false;
-        refreshButtons();
-    }
-
-    private void sendAction(int action) {
-        if (pending || minecraft.player == null) return;
-        pending = true;
-        refreshButtons();
-        PacketDistributor.sendToServer(new ClassFocusActionPayload(
-                action, selectedTier.index(), state.profile().revision()));
+        ClassId updatedClass = ClassId.fromNetworkIndex(state.profile().classIndex())
+                .orElse(ClassId.MENTAL_DOMINATOR);
+        if (updatedClass == classId) return;
+        classId = updatedClass;
+        selectedTier = FocusTier.STANDARD;
+        alternative = 0;
+        updateRecipe();
+        rebuildWidgets();
     }
 
     private void returnToManagement() {
@@ -108,26 +98,8 @@ public final class ClassFocusScreen extends Screen {
 
     private void refreshButtons() {
         if (backButton != null) backButton.active = !pending;
-        if (equipButton != null) equipButton.active = !pending && inventoryCount(selectedTier) > 0;
-        if (unequipButton != null) unequipButton.active = !pending && equippedFocus() != null;
-    }
-
-    private int inventoryCount(FocusTier tier) {
-        if (minecraft.player == null) return 0;
-        ClassFocus requested = new ClassFocus(classId, tier);
-        net.minecraft.world.item.Item requestedItem = ClassFocusItems.item(requested);
-        int count = 0;
-        for (int slot = 0; slot < minecraft.player.getInventory().items.size(); slot++) {
-            ItemStack stack = minecraft.player.getInventory().getItem(slot);
-            if (stack.is(requestedItem)) count += stack.getCount();
-        }
-        return count;
-    }
-
-    private ClassFocus equippedFocus() {
-        return ClassId.fromNetworkIndex(state.equippedClassIndex()).flatMap(equippedClass ->
-                FocusTier.fromIndex(state.equippedTierIndex()).map(tier -> new ClassFocus(equippedClass, tier)))
-                .orElse(null);
+        for (MenuUi.Button button : tierButtons) button.active = !pending;
+        if (alternativeButton != null) alternativeButton.active = !pending;
     }
 
     @Override
@@ -203,46 +175,14 @@ public final class ClassFocusScreen extends Screen {
                 width, MenuUi.accent(classId));
         int dividerY = infoY + (compact ? 34 : 42);
         graphics.fill(x, dividerY, layout.infoPanel().right() - pad, dividerY + 1, 0x806D4D7D);
-
-        if (alternativeButton != null) {
-            alternativeButton.setMessage(alternativeLabel());
+        List<Component> effects = effectLines();
+        int effectY = layout.effectArea().y();
+        for (Component effect : effects) {
+            MenuUi.drawFit(graphics, font, effect, layout.effectArea().x(), effectY,
+                    layout.effectArea().width(), 0xFFD8D0C5);
+            effectY += font.lineHeight;
         }
-
-        ClassFocus equipped = equippedFocus();
-        int rowGap = Math.max(2, font.lineHeight / 3);
-        int summaryY;
-        int inventoryY;
-        if (alternativeButton == null) {
-            MenuUi.drawFit(graphics, font,
-                    Component.translatable("screen.anomalousclasses.class_focus.equipped_slot"),
-                    x, dividerY + (compact ? 4 : 6), width, 0xFFE6C788);
-            summaryY = dividerY + (compact ? 4 : 6) + font.lineHeight + 1;
-            MenuUi.drawFit(graphics, font, equipped == null
-                            ? Component.translatable("screen.anomalousclasses.class_focus.empty_slot")
-                            : Component.translatable("item.anomalousclasses." + equipped.itemPath()),
-                    x, summaryY, width,
-                    equipped != null && equipped.classId() != classId ? 0xFFE6C788 : 0xFFD8D0C5);
-            inventoryY = summaryY + font.lineHeight + rowGap;
-        } else {
-            Component equippedSummary = equipped == null
-                    ? Component.translatable("screen.anomalousclasses.class_focus.empty_slot")
-                    : Component.translatable("screen.anomalousclasses.class_focus.equipped_summary",
-                            Component.translatable("item.anomalousclasses." + equipped.itemPath()));
-            summaryY = dividerY + (compact ? 21 : 28);
-            MenuUi.drawFit(graphics, font, equippedSummary, x, summaryY, width,
-                    equipped != null && equipped.classId() != classId ? 0xFFE6C788 : 0xFFD8D0C5);
-            inventoryY = summaryY + font.lineHeight + rowGap;
-        }
-        int count = inventoryCount(selectedTier);
-        MenuUi.drawFit(graphics, font, Component.translatable("screen.anomalousclasses.class_focus.inventory",
-                        count), x, inventoryY, width, 0xFFD8D0C5);
-
-        Component result = resultMessage(state.resultCode());
-        if (result != null) {
-            int color = state.resultCode() == 1 || state.resultCode() == 2 ? 0xFFA8D890 : 0xFFFFB2A0;
-            int statusY = inventoryY + font.lineHeight + rowGap;
-            MenuUi.drawFit(graphics, font, result, x, statusY, width, color);
-        }
+        if (alternativeButton != null) alternativeButton.setMessage(alternativeLabel());
     }
 
     private void renderHoverTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -299,18 +239,16 @@ public final class ClassFocusScreen extends Screen {
         return Component.translatable("screen.anomalousclasses.class_focus.tier." + tier.key());
     }
 
-    private Component resultMessage(int code) {
-        String key = switch (code) {
-            case 1 -> "screen.anomalousclasses.class_focus.action_equip";
-            case 2 -> "screen.anomalousclasses.class_focus.action_unequip";
-            case 3 -> "screen.anomalousclasses.class_focus.need_item";
-            case 4 -> "screen.anomalousclasses.class_focus.wrong_class";
-            case 5 -> "screen.anomalousclasses.class_focus.inventory_full";
-            case 6 -> "screen.anomalousclasses.class_focus.stale";
-            case 7 -> "screen.anomalousclasses.class_focus.invalid";
-            default -> null;
-        };
-        return key == null ? null : Component.translatable(key);
+    private List<Component> effectLines() {
+        if (classId != ClassId.MENTAL_DOMINATOR) return List.of();
+        int tier = selectedTier.index();
+        return List.of(
+                Component.translatable("screen.anomalousclasses.class_focus.effect.max_psyche",
+                        MAX_PSYCHE_PERCENT[tier]),
+                Component.translatable("screen.anomalousclasses.class_focus.effect.upkeep",
+                        UPKEEP_REDUCTION_PERCENT[tier]),
+                Component.translatable("screen.anomalousclasses.class_focus.effect.intrusion",
+                        INTRUSION_PROGRESS_PERCENT[tier]));
     }
 
     private static boolean contains(MenuUi.Box box, int x, int y) {

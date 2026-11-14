@@ -22,10 +22,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Adds exactly one real synchronized equipment slot to the existing vanilla
  * inventory menu. Index 46 follows vanilla's 0-45 slots without renumbering
- * crafting, armor, inventory, hotbar or offhand slots.
+ * crafting, armor, inventory, hotbar or offhand slots. The client UI draws
+ * the corresponding frame and empty marker around this slot.
  *
- * Its position is a minimal logical anchor. UI styling/visual integration is
- * intentionally left to the UI owner and must not change the server slot rules.
+ * Its position and server slot rules remain unchanged by the UI integration.
  */
 @Mixin(InventoryMenu.class)
 public abstract class InventoryMenuFocusMixin extends AbstractContainerMenu {

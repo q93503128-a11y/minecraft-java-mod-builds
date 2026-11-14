@@ -608,3 +608,43 @@ To review the connected screens, enter a world and press `U` on Mental Dominator
 - Checksum file: `artifacts/anomalous-classes-0.1.0-alpha.1.jar.sha256`.
 - Static frame comparison: `ui/reviews/2026-11-14/frame-pixel-repair/profile_frame_before_after.png` and its `comparison/` crops.
 - User should manually inspect: M → Profile → class management → return to Profile; U direct entry and Esc; Mental Dominator back/Focus/class-change controls; focus recipe at all five grades; four frame corners and top/bottom jewels; Korean and English at GUI Scale 2, 3, and 4. Repeat at 16:9, 16:10, and 4:3 if available. The dedicated inventory focus slot remains a server-interface dependency and is not represented by a fake UI control.
+
+## 2026-11-14 — Inventory focus slot UI and read-only recipe guide
+
+### Baseline and scope
+
+- Repository/project: `q93503128-a11y/minecraft-java-mod-builds`, `projects/anomalous-classes/`, branch `main`.
+- Fetched baseline at task start: `06824d1d6ef4f601c7edabc667f983e4c6a7416a`.
+- Scope: visual integration of the existing server-backed inventory slot and separating equipment transactions from the read-only focus recipe guide. Slot storage, validation, item movement, recipes, and class rules were not changed.
+
+### Changes
+
+- The existing inventory menu slot remains index `46`, with its existing 16×16 hitbox at `(77, 35)`. The client draws the vanilla 18×18 slot sprite at `(76, 34)` and directly blits the 16×16 focus marker only while the synchronized slot is empty. Direct texture rendering avoids relying on a GUI-atlas registration for this standalone PNG. Occupied stacks and their vanilla item tooltips remain rendered by the real menu slot.
+- The focus screen is now a read-only recipe guide: the equip/unequip controls, equipment status, inventory count, and transaction-result display were removed. The six-class × five-tier recipe catalog, shaped 3×3 layouts, grade selectors, material alternatives, ingredient/result tooltips, and server-routed return to class management remain.
+- Grade effect rows are shown only for Mental Dominator, where their values match the existing server rule arrays. No effect values are invented for classes without implemented effect rules.
+- Korean and English labels were updated. Existing manager navigation now names the destination as the focus recipe guide.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `python tools/verify_focus_inventory_ui.py` | PASS — slot index/geometry, vanilla preview and slot clearance, real-slot empty state, direct marker texture, read-only actions, rule-value parity, KO/EN keys, and nine 16:9/16:10/4:3 × GUI Scale 2–4 viewports. |
+| `python tools/verify_focus_recipes.py data/focus_recipes.json src/main/resources build/generated/focus-resources` | PASS — all 30 shaped recipes and item definitions. |
+| Translation JSON parse | PASS — `ko_kr.json` and `en_us.json`. |
+| `git diff --check` | PASS — line-ending notices only. |
+| `.\gradlew.bat --no-daemon --console plain clean build --stacktrace` | BLOCKED at `clean`: an already-running project `runClient` process held the generated NeoForge/Minecraft artifact JARs open. The process was not stopped. |
+| `.\gradlew.bat --no-daemon --console plain build --stacktrace` | PASS — 15 tasks, including the complete project `check` task and all existing profile/tree/management verifiers. |
+| `python tools/verify_jar.py build/libs/anomalous-classes-0.1.0-alpha.1.jar` | PASS — 31,812,076 bytes, 108 compiled classes, required loader metadata/assets/data, and no duplicate entries. The inventory client mixin and marker PNG are present. |
+| Datagen / GameTest / dedicated-server smoke test | NOT RUN — no task was configured or requested for this UI-only change. |
+| Minecraft GUI / item transaction / multiplayer review | NOT TESTED — no GUI automation was used; these checks remain for the user. |
+
+The non-clean build reported two existing `EventBusSubscriber.bus()` / `Bus` deprecation warnings in `client/ClientModEvents.java:17`. No code was changed to address unrelated warnings.
+
+### Artifact and manual review
+
+- JAR: `build/libs/anomalous-classes-0.1.0-alpha.1.jar` — 31,812,076 bytes.
+- SHA-256: `a0e71b1aea64d0abe066a66605577cf926dd07119a6ae5f577c3e26823f61fea`.
+- Static inventory preview: [full view](ui/reviews/2026-11-14/focus-inventory-slot/inventory_static_preview.png), [slot close-up](ui/reviews/2026-11-14/focus-inventory-slot/slot_detail_static_preview.png), and [review notes](ui/reviews/2026-11-14/focus-inventory-slot/STATIC_REVIEW.md). These are static composites using the 1.21.1 vanilla inventory/slot textures and the project marker, not Minecraft screenshots.
+- The existing `runClient` process was already active and held generated game artifacts during `clean`; its loaded screen classes were not inspected or considered updated by this build. Restart the client from the new JAR before manual review.
+- User review: press `E`, confirm the extra focus slot is above the offhand slot and does not cover the player model or crafting slots, equip/remove the correct focus, test Shift+Click and item tooltip, then open Focus Recipes and review all five tiers and the 3×3 patterns in Korean/English at GUI Scale 2–4. Review 16:9, 16:10, and 4:3 if available.
+- `CLIENT TESTED: NOT TESTED`; `PLAYTESTED: NOT TESTED`; `MULTIPLAYER TESTED: NOT TESTED`.

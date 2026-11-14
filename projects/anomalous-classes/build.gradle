@@ -153,6 +153,12 @@ tasks.register('verifyClassFocusLayout', JavaExec) {
     mainClass = 'kr.moonseungjun.anomalousclasses.client.ClassFocusScreenLayoutVerifier'
 }
 
+tasks.register('verifyFocusInventoryUi', Exec) {
+    group = 'verification'
+    description = 'Checks the UI-only focus slot geometry, empty marker, effect text parity, and read-only recipe controls.'
+    commandLine 'python', 'tools/verify_focus_inventory_ui.py'
+}
+
 tasks.named('check') {
     dependsOn tasks.named('verifyProfileSkillTree')
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
@@ -161,4 +167,5 @@ tasks.named('check') {
     dependsOn tasks.named('verifyMentalDominatorLayout')
     dependsOn tasks.named('verifyClassFocus')
     dependsOn tasks.named('verifyClassFocusLayout')
+    dependsOn tasks.named('verifyFocusInventoryUi')
 }
