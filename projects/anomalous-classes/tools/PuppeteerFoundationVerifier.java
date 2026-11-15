@@ -8,6 +8,7 @@ import kr.moonseungjun.anomalousclasses.state.ClassId;
 import kr.moonseungjun.anomalousclasses.state.FocusTier;
 import kr.moonseungjun.anomalousclasses.state.PuppetBlueprint;
 import kr.moonseungjun.anomalousclasses.state.PuppetEconomy;
+import kr.moonseungjun.anomalousclasses.item.PuppetPartItem;
 import kr.moonseungjun.anomalousclasses.state.PuppetRegistrySavedData;
 import kr.moonseungjun.anomalousclasses.state.PuppeteerRules;
 import kr.moonseungjun.anomalousclasses.state.PuppetAbilitySavedData;
@@ -205,6 +206,66 @@ public final class PuppeteerFoundationVerifier {
         check(salvage.deploy(owner, brokenId, 4).isPresent(),
                 "fixed broken puppet can deploy with new revision");
 
+        // Physical replacement transfers only the actual outgoing part; the
+        // old body identity, damage and recovery remain unchanged.
+        PuppetBlueprint initialParts = new PuppetBlueprint(UUID.randomUUID(), owner,
+                PuppetBlueprint.Frame.LIGHT, PuppetBlueprint.Device.BLADE,
+                PuppetBlueprint.Core.BASIC, PuppetBlueprint.Size.NORMAL, .46, 900, paid);
+        Map<String,Integer> heavyLedger = PuppetEconomy.partReplacementLedger(
+                initialParts, PuppetPartItem.Kind.FRAME, PuppetBlueprint.Frame.HEAVY.ordinal());
+        PuppetBlueprint heavy = initialParts.withParts(PuppetBlueprint.Frame.HEAVY,
+                initialParts.device(), initialParts.core(), initialParts.size(), heavyLedger);
+        check(heavy.puppetId().equals(initialParts.puppetId())
+                && heavy.healthRatio() == .46 && heavy.nextAttackTick() == 900,
+                "frame refit retains ID, damage and cooldown");
+        check(!PuppetEconomy.repairMaterials(heavy, 0).isEmpty(),
+                "heavy-frame repair is supported");
+        check(!PuppetEconomy.emergencyStitchMaterials(heavy, .18).isEmpty(),
+                "heavy-frame combat stitching remains paid");
+        Map<String,Integer> swiftLedger = PuppetEconomy.partReplacementLedger(
+                heavy, PuppetPartItem.Kind.CORE, PuppetBlueprint.Core.SWIFT.ordinal());
+        PuppetBlueprint swift = heavy.withParts(heavy.frame(), heavy.device(),
+                PuppetBlueprint.Core.SWIFT, heavy.size(), swiftLedger);
+        check(PuppeteerRules.stats(swift, 1, ordinary).attackIntervalTicks()
+                < PuppeteerRules.stats(heavy, 1, ordinary).attackIntervalTicks(),
+                "swift core changes actual attack frequency");
+        check(PuppeteerRules.stats(swift, 1, ordinary).maxHealth()
+                < PuppeteerRules.stats(heavy, 1, ordinary).maxHealth(),
+                "swift core pays a health tradeoff");
+        Map<String,Integer> returnedBasic = PuppetEconomy.partReplacementLedger(
+                swift, PuppetPartItem.Kind.CORE, PuppetBlueprint.Core.BASIC.ordinal());
+        Map<String,Integer> returnedLight = PuppetEconomy.partReplacementLedger(
+                swift.withParts(swift.frame(), swift.device(), PuppetBlueprint.Core.BASIC,
+                    swift.size(), returnedBasic),
+                PuppetPartItem.Kind.FRAME, PuppetBlueprint.Frame.LIGHT.ordinal());
+        check(returnedLight.equals(paid),
+                "reinstalling physical old parts restores exact starting raw ledger");
+        for (PuppetBlueprint.Frame frame : PuppetBlueprint.Frame.values())
+            for (PuppetBlueprint.Size size : PuppetBlueprint.Size.values()) {
+                var cost = PuppetEconomy.frameMaterials(frame, size);
+                check(cost.values().stream().allMatch(v -> v > 0),
+                        "all fifteen frame costs are positive");
+                if (size != PuppetBlueprint.Size.GIANT) {
+                    var increase = PuppetEconomy.extraFrameMaterials(frame, size,
+                            PuppetBlueprint.Size.values()[size.ordinal() + 1]);
+                    check(increase.values().stream().allMatch(v -> v > 0),
+                            "frame growth never refunds free materials");
+                }
+            }
+        for (PuppetBlueprint.Core core : PuppetBlueprint.Core.values())
+            check(PuppetEconomy.coreMaterials(core).values().stream()
+                    .allMatch(v -> v > 0), "all four drive cores have a real recipe");
+        PuppetRegistrySavedData refitRegistry = new PuppetRegistrySavedData();
+        check(refitRegistry.registerCrafted(initialParts), "refit register");
+        check(refitRegistry.reviseStored(owner, initialParts.puppetId(), 1,
+                initialParts, heavy, false).isPresent(), "frame CAS");
+        check(refitRegistry.reviseStored(owner, initialParts.puppetId(), 1,
+                initialParts, heavy, false).isEmpty(), "stale frame exchange rejected");
+        check(refitRegistry.reviseStored(owner, initialParts.puppetId(), 2,
+                heavy, swift, false).isPresent(), "core CAS");
+        check(refitRegistry.find(initialParts.puppetId()).orElseThrow().blueprint().core()
+                == PuppetBlueprint.Core.SWIFT, "core preserved in authoritative ledger");
+
         PuppetAbilitySavedData abilities = new PuppetAbilitySavedData();
         UUID abilityOwner = UUID.randomUUID();
         check(abilities.ready(abilityOwner, 0, 200), "initial pull ready");
@@ -243,7 +304,7 @@ public final class PuppeteerFoundationVerifier {
         check(restored.find(id).orElseThrow().location() == PuppetRegistrySavedData.Location.RETIRED,
                 "retired identity persists");
         check(restored.deploy(owner, id, 6).isEmpty(), "retired identity cannot redeploy after reload");
-        System.out.println("PASS: puppet 3 paid weapons, 27 roles, size costs, repair/expansion/refund CAS, broken recovery, save and anti-duplication");
+        System.out.println("PASS: puppet actives save/cooldown, 15 frames, 3 weapons, 4 cores, refit/return ledger, repair/salvage CAS");
     }
     private static boolean close(double a, double b) { return Math.abs(a-b) < 1e-8; }
     private static void check(boolean result, String name) {

@@ -15,19 +15,25 @@ import net.minecraft.resources.ResourceLocation;
 public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, int result,
                                          List<PuppetView> puppets, List<CraftChoice> craftChoices) implements CustomPacketPayload {
     public static final int OPEN = 0, CRAFTED = 1, REJECTED = 2,
-            REPAIRED = 3, EXPANDED = 4, DISMANTLED = 5;
+            REPAIRED = 3, EXPANDED = 4, DISMANTLED = 5, REFITTED = 6;
     /** Three server-priced starting devices; UI cannot authorize material cost. */
     public record CraftChoice(int device, boolean craftable, Map<String, Integer> bill) {
         public CraftChoice { bill = Map.copyOf(bill); }
     }
+    public record RefitChoice(int kind, int variant, boolean possible, boolean usingModule,
+                              Map<String,Integer> cost) {
+        public RefitChoice { cost = Map.copyOf(cost); }
+    }
     public record PuppetView(int slot, UUID id, int revision, int size, int condition,
                              boolean broken, boolean canRepair, boolean canExpand, boolean canDismantle,
                              Map<String, Integer> repairCost, Map<String, Integer> expandCost,
-                             Map<String, Integer> refund) {
+                             Map<String, Integer> refund, List<RefitChoice> refits) {
         public PuppetView {
             repairCost = Map.copyOf(repairCost);
             expandCost = Map.copyOf(expandCost);
             refund = Map.copyOf(refund);
+            refits = List.copyOf(refits);
+            if (refits.size() != 10) throw new IllegalArgumentException("Expected ten part roles");
         }
     }
 
@@ -65,6 +71,14 @@ public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, in
                     writeBill(buffer, puppet.repairCost);
                     writeBill(buffer, puppet.expandCost);
                     writeBill(buffer, puppet.refund);
+                    buffer.writeVarInt(puppet.refits.size());
+                    for (RefitChoice choice : puppet.refits) {
+                        buffer.writeVarInt(choice.kind());
+                        buffer.writeVarInt(choice.variant());
+                        buffer.writeBoolean(choice.possible());
+                        buffer.writeBoolean(choice.usingModule());
+                        writeBill(buffer, choice.cost());
+                    }
                 }
             }, buffer -> {
                 BlockPos station = buffer.readBlockPos();
@@ -92,8 +106,15 @@ public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, in
                     Map<String, Integer> repair = readBill(buffer);
                     Map<String, Integer> expand = readBill(buffer);
                     Map<String, Integer> refund = readBill(buffer);
+                    int options = buffer.readVarInt();
+                    if (options != 10) throw new IllegalArgumentException("Invalid refit option count");
+                    java.util.ArrayList<RefitChoice> refits = new java.util.ArrayList<>(options);
+                    for (int choice = 0; choice < options; choice++) {
+                        refits.add(new RefitChoice(buffer.readVarInt(), buffer.readVarInt(),
+                                buffer.readBoolean(), buffer.readBoolean(), readBill(buffer)));
+                    }
                     puppets.add(new PuppetView(slot, id, revision, size, condition,
-                            broken, repairable, expandable, dismantleable, repair, expand, refund));
+                            broken, repairable, expandable, dismantleable, repair, expand, refund, refits));
                 }
                 return new PuppetWorkshopStatePayload(station, craftable, result, puppets, choices);
             });

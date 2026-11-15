@@ -18,6 +18,7 @@ import kr.moonseungjun.anomalousclasses.block.PuppetBlocks;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntities;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 import kr.moonseungjun.anomalousclasses.item.PuppetItem;
+import kr.moonseungjun.anomalousclasses.item.PuppetPartItem;
 import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopActionPayload;
@@ -163,6 +164,36 @@ public final class PuppetService {
         return Optional.of(new Held(item, entry));
     }
 
+    /** Stable 0..9 choices: three frames, three weapons, four drive cores. */
+    private static PuppetPartItem.Kind refitKind(int choice) {
+        return choice < 3 ? PuppetPartItem.Kind.FRAME :
+                choice < 6 ? PuppetPartItem.Kind.DEVICE : PuppetPartItem.Kind.CORE;
+    }
+
+    private static int refitVariant(int choice) {
+        return choice < 3 ? choice : choice < 6 ? choice - 3 : choice - 6;
+    }
+
+    private static int installedVariant(PuppetBlueprint blueprint, PuppetPartItem.Kind kind) {
+        return switch (kind) {
+            case FRAME -> blueprint.frame().ordinal();
+            case DEVICE -> blueprint.device().ordinal();
+            case CORE -> blueprint.core().ordinal();
+        };
+    }
+
+    private static int matchingModuleSlot(Inventory inventory, PuppetPartItem.Kind kind,
+                                           int variant, PuppetBlueprint.Size size) {
+        for (int slot = 0; slot < 36; slot++) {
+            var module = PuppetPartItem.read(inventory.getItem(slot)).orElse(null);
+            if (module != null && module.kind() == kind && module.variant() == variant
+                    && module.size() == (kind == PuppetPartItem.Kind.FRAME
+                            ? size : PuppetBlueprint.Size.NORMAL))
+                return slot;
+        }
+        return -1;
+    }
+
     private static int modifyStored(ServerPlayer player, PuppetWorkshopActionPayload request) {
         Optional<Held> held = authenticHeld(player, request.inventorySlot(),
                 request.puppetId(), request.expectedRevision());
@@ -187,11 +218,10 @@ public final class PuppetService {
             return PuppetWorkshopStatePayload.REPAIRED;
         }
         if (request.operation() == PuppetWorkshopActionPayload.EXPAND) {
-            if (item.broken() || blueprint.frame() != PuppetBlueprint.Frame.LIGHT
-                    || blueprint.size() == PuppetBlueprint.Size.GIANT)
+            if (item.broken() || blueprint.size() == PuppetBlueprint.Size.GIANT)
                 return PuppetWorkshopStatePayload.REJECTED;
             PuppetBlueprint.Size next = PuppetBlueprint.Size.values()[blueprint.size().ordinal() + 1];
-            Map<String,Integer> bill = PuppetEconomy.extraLightFrameMaterials(blueprint.size(), next);
+            Map<String,Integer> bill = PuppetEconomy.extraFrameMaterials(blueprint.frame(), blueprint.size(), next);
             if (bill.isEmpty() || !hasMaterials(inventory, bill)) return PuppetWorkshopStatePayload.REJECTED;
             PuppetBlueprint bigger = blueprint.withParts(blueprint.frame(), blueprint.device(),
                     blueprint.core(), next, PuppetEconomy.expandLedger(blueprint, next));
@@ -202,6 +232,53 @@ public final class PuppetService {
             inventory.setItem(request.inventorySlot(), PuppetItem.make(bigger, revised.get().revision(), false));
             message(player, "message.anomalousclasses.puppet.expanded");
             return PuppetWorkshopStatePayload.EXPANDED;
+        }
+        if (request.operation() == PuppetWorkshopActionPayload.REFIT) {
+            int selected = request.craftDevice();
+            if (item.broken() || selected < 0 || selected >= 10) return PuppetWorkshopStatePayload.REJECTED;
+            PuppetPartItem.Kind kind = refitKind(selected);
+            int variant = refitVariant(selected);
+            int previous = installedVariant(blueprint, kind);
+            if (previous == variant) return PuppetWorkshopStatePayload.REJECTED;
+            PuppetBlueprint.Size partSize = kind == PuppetPartItem.Kind.FRAME
+                    ? blueprint.size() : PuppetBlueprint.Size.NORMAL;
+            Map<String,Integer> replacementLedger;
+            try {
+                replacementLedger = PuppetEconomy.partReplacementLedger(blueprint, kind, variant);
+            } catch (IllegalArgumentException ex) {
+                return PuppetWorkshopStatePayload.REJECTED;
+            }
+            Map<String,Integer> rawBill = PuppetEconomy.partMaterials(kind, variant, partSize);
+            int reusable = matchingModuleSlot(inventory, kind, variant, blueprint.size());
+            if (reusable < 0 && (inventory.getFreeSlot() < 0 || !hasMaterials(inventory, rawBill)))
+                return PuppetWorkshopStatePayload.REJECTED;
+            double condition = blueprint.healthRatio();
+            if (reusable >= 0) {
+                var module = PuppetPartItem.read(inventory.getItem(reusable)).orElseThrow();
+                // A salvaged worn module may never heal the puppet when re-installed.
+                condition = Math.min(condition, module.condition());
+            }
+            PuppetBlueprint changed = blueprint.withParts(
+                    kind == PuppetPartItem.Kind.FRAME
+                            ? PuppetBlueprint.Frame.values()[variant] : blueprint.frame(),
+                    kind == PuppetPartItem.Kind.DEVICE
+                            ? PuppetBlueprint.Device.values()[variant] : blueprint.device(),
+                    kind == PuppetPartItem.Kind.CORE
+                            ? PuppetBlueprint.Core.values()[variant] : blueprint.core(),
+                    blueprint.size(), replacementLedger).withCondition(condition, blueprint.nextAttackTick());
+            var updated = registry.reviseStored(player.getUUID(), blueprint.puppetId(), item.revision(),
+                    blueprint, changed, false);
+            if (updated.isEmpty()) return PuppetWorkshopStatePayload.REJECTED;
+            if (reusable >= 0) inventory.getItem(reusable).shrink(1);
+            else consume(inventory, rawBill);
+            inventory.setItem(request.inventorySlot(), PuppetItem.make(changed, updated.get().revision(), false));
+            // Old module is a reusable physical item. It is NOT refunded as raw ingredients.
+            ItemStack oldModule = PuppetPartItem.create(kind, previous, partSize, blueprint.healthRatio());
+            inventory.add(oldModule);
+            if (!oldModule.isEmpty()) player.drop(oldModule, false);
+            inventory.setChanged();
+            message(player, "message.anomalousclasses.puppet.refitted");
+            return PuppetWorkshopStatePayload.REFITTED;
         }
         if (request.operation() == PuppetWorkshopActionPayload.DISMANTLE) {
             Map<String,Integer> refund = PuppetEconomy.dismantleReturn(blueprint,
@@ -252,18 +329,31 @@ public final class PuppetService {
             if (authenticHeld(player, slot, blueprint.puppetId(), identity.revision()).isEmpty()) continue;
             Map<String, Integer> repair = PuppetEconomy.repairMaterials(blueprint, materialRanks);
             Map<String, Integer> expansion = !identity.broken()
-                    && blueprint.frame() == PuppetBlueprint.Frame.LIGHT
                     && blueprint.size() != PuppetBlueprint.Size.GIANT
-                    ? PuppetEconomy.extraLightFrameMaterials(blueprint.size(),
+                    ? PuppetEconomy.extraFrameMaterials(blueprint.frame(), blueprint.size(),
                         PuppetBlueprint.Size.values()[blueprint.size().ordinal() + 1]) : Map.of();
             Map<String, Integer> refund = PuppetEconomy.dismantleReturn(blueprint,
                     identity.broken(), 0.006 * Math.min(25, materialRanks));
+            List<PuppetWorkshopStatePayload.RefitChoice> refits = new ArrayList<>();
+            for (int choice = 0; choice < 10; choice++) {
+                PuppetPartItem.Kind kind = refitKind(choice);
+                int variant = refitVariant(choice);
+                PuppetBlueprint.Size moduleSize = kind == PuppetPartItem.Kind.FRAME
+                        ? blueprint.size() : PuppetBlueprint.Size.NORMAL;
+                Map<String,Integer> bill = PuppetEconomy.partMaterials(kind, variant, moduleSize);
+                boolean installed = installedVariant(blueprint, kind) == variant;
+                int reusable = matchingModuleSlot(inventory, kind, variant, blueprint.size());
+                boolean possible = safe && !identity.broken() && !installed
+                        && (reusable >= 0 || inventory.getFreeSlot() >= 0 && hasMaterials(inventory, bill));
+                refits.add(new PuppetWorkshopStatePayload.RefitChoice(kind.ordinal(), variant,
+                        possible, reusable >= 0, reusable >= 0 ? Map.of() : bill));
+            }
             views.add(new PuppetWorkshopStatePayload.PuppetView(slot, blueprint.puppetId(),
                     identity.revision(), blueprint.size().ordinal(),
                     (int) Math.round(blueprint.healthRatio() * 100.0), identity.broken(),
                     safe && !repair.isEmpty() && hasMaterials(inventory, repair),
                     safe && !expansion.isEmpty() && hasMaterials(inventory, expansion),
-                    safe, repair, expansion, refund));
+                    safe, repair, expansion, refund, refits));
         }
         ClassNetwork.sendToPlayer(player, new PuppetWorkshopStatePayload(station, craftable, result, views, crafts));
     }

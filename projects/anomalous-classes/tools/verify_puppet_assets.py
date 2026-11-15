@@ -44,6 +44,10 @@ def main():
           == "anomalousclasses:item/assembled_marionette", "marionette item art")
     check(dimensions(ASSETS / "textures/item/assembled_marionette.png") == (32, 32),
           "item icon dimensions")
+    check(j(ASSETS / "models/item/puppet_module.json")["textures"]["layer0"]
+          == "anomalousclasses:item/puppet_module", "puppet component icon model")
+    check(dimensions(ASSETS / "textures/item/puppet_module.png") == (32, 32),
+          "puppet component icon dimensions")
     check(dimensions(ASSETS / "textures/entity/marionette.png") == (64, 64),
           "entity texture dimensions")
 
@@ -62,6 +66,11 @@ def main():
         "screen.anomalousclasses.puppet_workbench.confirm",
         "screen.anomalousclasses.puppet_workbench.assemble_choice",
         "screen.anomalousclasses.puppet_workbench.refund",
+        "screen.anomalousclasses.puppet_workbench.refit",
+        "screen.anomalousclasses.puppet_workbench.dismantle_confirm",
+        "screen.anomalousclasses.puppet_workbench.dismantle_warning",
+        "message.anomalousclasses.puppet_ability.failed_2",
+        "item.anomalousclasses.puppet_module",
         "screen.anomalousclasses.puppet_workbench.repaired",
         "screen.anomalousclasses.puppet_workbench.dismantled",
     }

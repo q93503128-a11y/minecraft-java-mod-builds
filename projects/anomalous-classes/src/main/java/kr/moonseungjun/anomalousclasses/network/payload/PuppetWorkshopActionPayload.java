@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 public record PuppetWorkshopActionPayload(BlockPos station, int operation, int inventorySlot,
                                           UUID puppetId, int expectedRevision, int craftDevice)
         implements CustomPacketPayload {
-    public static final int CRAFT = 0, REPAIR = 1, EXPAND = 2, DISMANTLE = 3;
+    public static final int CRAFT = 0, REPAIR = 1, EXPAND = 2, DISMANTLE = 3, REFIT = 4;
     public static final Type<PuppetWorkshopActionPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(AnomalousClasses.MOD_ID, "puppet_workbench_action"));
     public static final StreamCodec<RegistryFriendlyByteBuf, PuppetWorkshopActionPayload> STREAM_CODEC =

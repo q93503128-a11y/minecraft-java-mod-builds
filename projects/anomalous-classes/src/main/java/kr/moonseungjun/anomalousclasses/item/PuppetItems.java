@@ -14,6 +14,8 @@ public final class PuppetItems {
             DeferredRegister.create(Registries.ITEM, AnomalousClasses.MOD_ID);
     public static final DeferredHolder<Item, PuppetItem> PUPPET = ITEMS.register(
             "assembled_marionette", () -> new PuppetItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredHolder<Item, PuppetPartItem> PART = ITEMS.register(
+            "puppet_module", () -> new PuppetPartItem(new Item.Properties().stacksTo(1)));
     public static final DeferredHolder<Item, Item> WORKSHOP = ITEMS.register(
             "puppet_workbench", () -> new BlockItem(PuppetBlocks.WORKSHOP.get(),
                     new Item.Properties()));

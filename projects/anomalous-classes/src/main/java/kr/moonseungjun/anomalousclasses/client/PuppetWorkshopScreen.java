@@ -25,10 +25,12 @@ public final class PuppetWorkshopScreen extends Screen {
     private PuppetWorkshopStatePayload state;
     private MenuUi.Box outer;
     private MenuUi.Button[] tabs;
-    private MenuUi.Button prevButton, nextButton, confirmButton, closeButton;
+    private MenuUi.Button prevButton, nextButton, refitPrev, refitNext, confirmButton, closeButton;
     private int mode = PuppetWorkshopActionPayload.CRAFT;
     private int selectedIndex;
     private int selectedDevice;
+    private int selectedRefit;
+    private boolean dismantleArmed;
     private UUID selectedId;
     private boolean pending;
 
@@ -44,6 +46,7 @@ public final class PuppetWorkshopScreen extends Screen {
     public void applyServerState(PuppetWorkshopStatePayload updated) {
         state = updated;
         pending = false;
+        dismantleArmed = false;
         if (selectedId != null) {
             for (int i = 0; i < updated.puppets().size(); i++) {
                 if (updated.puppets().get(i).id().equals(selectedId)) {
@@ -71,16 +74,19 @@ public final class PuppetWorkshopScreen extends Screen {
         int width = Math.max(160, Math.min(this.width - 12, 466));
         int height = Math.max(140, Math.min(this.height - 12, 274));
         outer = new MenuUi.Box((this.width - width) / 2, (this.height - height) / 2, width, height);
-        int tabWidth = Math.max(22, (outer.width() - 26) / 4);
+        int tabWidth = Math.max(22, (outer.width() - 26) / 5);
         int tabX = outer.x() + 10, tabY = outer.y() + 36;
-        String[] keys = {"assemble", "repair", "expand", "dismantle"};
-        tabs = new MenuUi.Button[4];
+        String[] keys = {"assemble", "repair", "expand", "refit", "dismantle"};
+        int[] operations = {PuppetWorkshopActionPayload.CRAFT,
+                PuppetWorkshopActionPayload.REPAIR, PuppetWorkshopActionPayload.EXPAND,
+                PuppetWorkshopActionPayload.REFIT, PuppetWorkshopActionPayload.DISMANTLE};
+        tabs = new MenuUi.Button[5];
         for (int i = 0; i < tabs.length; i++) {
-            final int action = i;
+            final int action = operations[i];
             tabs[i] = addRenderableWidget(new MenuUi.Button(
                     new MenuUi.Box(tabX + i * tabWidth, tabY, tabWidth - 2, 22),
                     Component.translatable("screen.anomalousclasses.puppet_workbench." + keys[i]),
-                    button -> { mode = action; refresh(); }));
+                    button -> { mode = action; dismantleArmed = false; refresh(); }));
         }
         int navigationY = tabY + 29;
         prevButton = addRenderableWidget(new MenuUi.Button(
@@ -89,6 +95,12 @@ public final class PuppetWorkshopScreen extends Screen {
         nextButton = addRenderableWidget(new MenuUi.Button(
                 new MenuUi.Box(outer.right()-45, navigationY, 34, 19),
                 Component.literal("▶"), b -> select(1)));
+        refitPrev = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(
+                outer.x()+11, navigationY+24, 34, 18),
+                Component.literal("◀"), b -> chooseRefit(-1)));
+        refitNext = addRenderableWidget(new MenuUi.Button(new MenuUi.Box(
+                outer.right()-45, navigationY+24, 34, 18),
+                Component.literal("▶"), b -> chooseRefit(1)));
         int bottom = outer.bottom()-32;
         confirmButton = addRenderableWidget(new MenuUi.Button(
                 new MenuUi.Box(outer.x()+12, bottom, Math.max(50, outer.width()-111), 22),
@@ -110,6 +122,7 @@ public final class PuppetWorkshopScreen extends Screen {
 
     private void select(int delta) {
         if (pending) return;
+        dismantleArmed = false;
         if (mode == PuppetWorkshopActionPayload.CRAFT) {
             selectedDevice = Math.floorMod(selectedDevice + delta, state.craftChoices().size());
         } else {
@@ -118,6 +131,19 @@ public final class PuppetWorkshopScreen extends Screen {
             selectedId = selected().id();
         }
         refresh();
+    }
+
+    private void chooseRefit(int delta) {
+        if (pending || selected() == null) return;
+        selectedRefit = Math.floorMod(selectedRefit + delta, selected().refits().size());
+        dismantleArmed = false;
+        refresh();
+    }
+
+    private PuppetWorkshopStatePayload.RefitChoice selectedRefit() {
+        var puppet = selected();
+        if (puppet == null) return null;
+        return puppet.refits().get(selectedRefit);
     }
 
     private PuppetWorkshopStatePayload.CraftChoice selectedRecipe() {
@@ -132,6 +158,7 @@ public final class PuppetWorkshopScreen extends Screen {
             case PuppetWorkshopActionPayload.REPAIR -> puppet != null && puppet.canRepair();
             case PuppetWorkshopActionPayload.EXPAND -> puppet != null && puppet.canExpand();
             case PuppetWorkshopActionPayload.DISMANTLE -> puppet != null && puppet.canDismantle();
+            case PuppetWorkshopActionPayload.REFIT -> selectedRefit() != null && selectedRefit().possible();
             default -> false;
         };
     }
@@ -141,11 +168,15 @@ public final class PuppetWorkshopScreen extends Screen {
         for (MenuUi.Button tab : tabs) tab.active = !pending;
         prevButton.active = nextButton.active = !pending &&
                 (mode == PuppetWorkshopActionPayload.CRAFT || !state.puppets().isEmpty());
+        refitPrev.visible = refitNext.visible = mode == PuppetWorkshopActionPayload.REFIT;
+        refitPrev.active = refitNext.active = !pending && selected() != null;
         confirmButton.active = available();
         confirmButton.setMessage(Component.translatable(
                 mode == PuppetWorkshopActionPayload.CRAFT ? "screen.anomalousclasses.puppet_workbench.assemble"
                 : mode == PuppetWorkshopActionPayload.REPAIR ? "screen.anomalousclasses.puppet_workbench.repair"
                 : mode == PuppetWorkshopActionPayload.EXPAND ? "screen.anomalousclasses.puppet_workbench.expand"
+                : mode == PuppetWorkshopActionPayload.REFIT ? "screen.anomalousclasses.puppet_workbench.refit"
+                : dismantleArmed ? "screen.anomalousclasses.puppet_workbench.dismantle_confirm"
                 : "screen.anomalousclasses.puppet_workbench.dismantle"));
     }
 
@@ -153,13 +184,19 @@ public final class PuppetWorkshopScreen extends Screen {
         if (!available()) return;
         PuppetWorkshopStatePayload.PuppetView puppet = selected();
         if (mode != PuppetWorkshopActionPayload.CRAFT && puppet == null) return;
+        if (mode == PuppetWorkshopActionPayload.DISMANTLE && !dismantleArmed) {
+            dismantleArmed = true;
+            refresh();
+            return;
+        }
         int slot = puppet == null ? -1 : puppet.slot();
         int revision = puppet == null ? 0 : puppet.revision();
         UUID id = puppet == null ? new UUID(0,0) : puppet.id();
         pending = true;
         refresh();
         PacketDistributor.sendToServer(new PuppetWorkshopActionPayload(
-                state.station(), mode, slot, id, revision, selectedDevice));
+                state.station(), mode, slot, id, revision,
+                mode == PuppetWorkshopActionPayload.REFIT ? selectedRefit : selectedDevice));
     }
 
     private Map<String,Integer> quote() {
@@ -171,6 +208,7 @@ public final class PuppetWorkshopScreen extends Screen {
             case PuppetWorkshopActionPayload.REPAIR -> puppet.repairCost();
             case PuppetWorkshopActionPayload.EXPAND -> puppet.expandCost();
             case PuppetWorkshopActionPayload.DISMANTLE -> puppet.refund();
+            case PuppetWorkshopActionPayload.REFIT -> selectedRefit().cost();
             default -> Map.of();
         };
     }
@@ -201,7 +239,22 @@ public final class PuppetWorkshopScreen extends Screen {
         }
         MenuUi.drawFit(graphics, font, detail, outer.x()+52,naviY+5,outer.width()-104,0xFFF0DEBC);
 
-        int qY = Math.min(outer.y()+107, outer.bottom()-109);
+        if (mode == PuppetWorkshopActionPayload.REFIT && selectedRefit() != null) {
+            var choice = selectedRefit();
+            String key = choice.kind() == 0 ? "frame" : choice.kind() == 1 ? "device" : "core";
+            String name = choice.kind() == 0
+                    ? PuppetBlueprint.Frame.values()[choice.variant()].name().toLowerCase()
+                    : choice.kind() == 1
+                    ? PuppetBlueprint.Device.values()[choice.variant()].name().toLowerCase()
+                    : PuppetBlueprint.Core.values()[choice.variant()].name().toLowerCase();
+            MenuUi.drawFit(graphics, font, Component.translatable(
+                    "screen.anomalousclasses.puppet_workbench.refit_choice",
+                    Component.translatable("puppet.anomalousclasses." + key + "." + name),
+                    selectedRefit + 1, 10), outer.x()+52, naviY+27,
+                    outer.width()-104, 0xFFF0DEBC);
+        }
+        int qY = Math.min(outer.y()+
+                (mode == PuppetWorkshopActionPayload.REFIT ? 126 : 107), outer.bottom()-109);
         String type = mode == PuppetWorkshopActionPayload.DISMANTLE
                 ? "screen.anomalousclasses.puppet_workbench.refund"
                 : "screen.anomalousclasses.puppet_workbench.cost";
@@ -231,17 +284,22 @@ public final class PuppetWorkshopScreen extends Screen {
             case PuppetWorkshopStatePayload.REPAIRED -> "screen.anomalousclasses.puppet_workbench.repaired";
             case PuppetWorkshopStatePayload.EXPANDED -> "screen.anomalousclasses.puppet_workbench.expanded";
             case PuppetWorkshopStatePayload.DISMANTLED -> "screen.anomalousclasses.puppet_workbench.dismantled";
+            case PuppetWorkshopStatePayload.REFITTED -> "screen.anomalousclasses.puppet_workbench.refitted";
             case PuppetWorkshopStatePayload.REJECTED -> "screen.anomalousclasses.puppet_workbench.rejected";
-            default -> available() ? "screen.anomalousclasses.puppet_workbench.ready"
+            default -> mode == PuppetWorkshopActionPayload.DISMANTLE && dismantleArmed
+                    ? "screen.anomalousclasses.puppet_workbench.dismantle_warning"
+                    : available() ? "screen.anomalousclasses.puppet_workbench.ready"
                     : "screen.anomalousclasses.puppet_workbench.missing";
         };
         MenuUi.drawFit(graphics,font,Component.translatable(info),outer.x()+16,
                 outer.bottom()-54,outer.width()-32,
                 available() ? 0xFFB6E2C0 : 0xFFE6B18C);
         for (int i=0;i<tabs.length;i++){
+            int tabOperation = i == 3 ? PuppetWorkshopActionPayload.REFIT
+                    : i == 4 ? PuppetWorkshopActionPayload.DISMANTLE : i;
             MenuUi.Box tabBox=new MenuUi.Box(tabs[i].getX(),tabs[i].getY(),
                     tabs[i].getWidth(),tabs[i].getHeight());
-            if(mode==i)graphics.fill(tabBox.x()+3,tabBox.bottom()-2,
+            if(mode==tabOperation)graphics.fill(tabBox.x()+3,tabBox.bottom()-2,
                     tabBox.right()-3,tabBox.bottom(),MenuUi.accent(ClassId.PUPPETEER));
         }
         for (Renderable renderable : renderables) renderable.render(graphics,mouseX,mouseY,partialTick);

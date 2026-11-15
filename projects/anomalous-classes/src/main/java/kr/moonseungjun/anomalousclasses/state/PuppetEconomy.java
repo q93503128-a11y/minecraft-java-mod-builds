@@ -1,6 +1,7 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import java.util.LinkedHashMap;
+import kr.moonseungjun.anomalousclasses.item.PuppetPartItem;
 import java.util.Map;
 
 /**
@@ -51,6 +52,88 @@ public final class PuppetEconomy {
         };
     }
 
+    /**
+     * Specialist frame and drive-core costs are tunable overworld recipe candidates.
+     * The existing light and basic costs are retained exactly.
+     */
+    public static Map<String,Integer> frameMaterials(PuppetBlueprint.Frame frame,
+                                                    PuppetBlueprint.Size size) {
+        Map<String,Integer> light = lightFrameMaterials(size);
+        int wood = light.get("minecraft:oak_planks");
+        int sticks = light.get("minecraft:stick");
+        int strings = light.get("minecraft:string");
+        int copper = light.get("minecraft:copper_ingot");
+        return switch (frame) {
+            case LIGHT -> light;
+            case BALANCED -> Map.of("minecraft:oak_planks", Math.max(2, wood / 2),
+                    "minecraft:iron_ingot", wood, "minecraft:stick", sticks,
+                    "minecraft:string", strings, "minecraft:copper_ingot", copper + 1);
+            case HEAVY -> Map.of("minecraft:oak_planks", Math.max(2, wood / 2),
+                    "minecraft:iron_ingot", wood * 2, "minecraft:stick", sticks + 1,
+                    "minecraft:string", strings, "minecraft:copper_ingot", copper + 2);
+        };
+    }
+
+    public static Map<String,Integer> coreMaterials(PuppetBlueprint.Core core) {
+        return switch (core) {
+            case BASIC -> starterCoreMaterials();
+            case SWIFT -> Map.of("minecraft:redstone", 4, "minecraft:gold_ingot", 2,
+                    "minecraft:copper_ingot", 2, "minecraft:glass", 1);
+            case STABLE -> Map.of("minecraft:lapis_lazuli", 4,
+                    "minecraft:amethyst_shard", 2, "minecraft:copper_ingot", 2,
+                    "minecraft:glass", 1);
+            case OUTPUT -> Map.of("minecraft:redstone", 4,
+                    "minecraft:gold_ingot", 3, "minecraft:iron_ingot", 2,
+                    "minecraft:glass", 1);
+        };
+    }
+
+    public static Map<String,Integer> partMaterials(PuppetPartItem.Kind kind, int variant,
+                                                    PuppetBlueprint.Size size) {
+        if (kind == null || size == null) throw new IllegalArgumentException("Unknown puppet module");
+        return switch (kind) {
+            case FRAME -> frameMaterials(PuppetBlueprint.Frame.values()[variant], size);
+            case DEVICE -> weaponMaterials(PuppetBlueprint.Device.values()[variant]);
+            case CORE -> coreMaterials(PuppetBlueprint.Core.values()[variant]);
+        };
+    }
+
+    public static Map<String,Integer> partReplacementLedger(PuppetBlueprint original,
+                                                               PuppetPartItem.Kind kind, int variant) {
+        int current = switch(kind) {
+            case FRAME -> original.frame().ordinal();
+            case DEVICE -> original.device().ordinal();
+            case CORE -> original.core().ordinal();
+        };
+        if (current == variant) return Map.of();
+        PuppetBlueprint.Size size = kind == PuppetPartItem.Kind.FRAME
+                ? original.size() : PuppetBlueprint.Size.NORMAL;
+        Map<String,Integer> old = partMaterials(kind, current, size);
+        Map<String,Integer> fresh = partMaterials(kind, variant, size);
+        Map<String,Integer> ledger = new LinkedHashMap<>(original.materialLedger());
+        old.forEach((id, count) -> {
+            int remaining = ledger.getOrDefault(id, 0) - count;
+            if (remaining < 0) throw new IllegalArgumentException("Part ledger missing materials");
+            if (remaining == 0) ledger.remove(id); else ledger.put(id, remaining);
+        });
+        add(ledger, fresh);
+        return Map.copyOf(ledger);
+    }
+
+    public static Map<String,Integer> extraFrameMaterials(PuppetBlueprint.Frame frame,
+                                                           PuppetBlueprint.Size from,
+                                                           PuppetBlueprint.Size to) {
+        if (to.ordinal() <= from.ordinal()) throw new IllegalArgumentException("Must grow body");
+        Map<String,Integer> original = frameMaterials(frame, from);
+        Map<String,Integer> next = frameMaterials(frame, to);
+        Map<String,Integer> delta = new LinkedHashMap<>();
+        next.forEach((id, amount) -> {
+            int need = amount - original.getOrDefault(id, 0);
+            if (need > 0) delta.put(id, need);
+        });
+        return Map.copyOf(delta);
+    }
+
     public static Map<String, Integer> starterBlueprintLedger(PuppetBlueprint.Size size,
                                                                PuppetBlueprint.Device device) {
         Map<String, Integer> materials = new LinkedHashMap<>();
@@ -90,14 +173,15 @@ public final class PuppetEconomy {
      * This is a tunable balance candidate, using only the initial wood-frame bill.
      */
     public static Map<String, Integer> repairMaterials(PuppetBlueprint puppet, int materialUseRanks) {
-        if (puppet.frame() != PuppetBlueprint.Frame.LIGHT) return Map.of();
         double missing = 1.0 - puppet.healthRatio();
         if (missing <= 0.000001) return Map.of();
         double discount = 1.0 - 0.006 * Math.min(25, Math.max(0, materialUseRanks));
-        int structuralPlanks = lightFrameMaterials(puppet.size()).get("minecraft:oak_planks");
-        int planks = Math.max(1, (int) Math.ceil(structuralPlanks * missing * 0.5 * discount));
+        String primary = puppet.frame() == PuppetBlueprint.Frame.LIGHT
+                ? "minecraft:oak_planks" : "minecraft:iron_ingot";
+        int structural = frameMaterials(puppet.frame(), puppet.size()).get(primary);
+        int units = Math.max(1, (int) Math.ceil(structural * missing * 0.5 * discount));
         int strings = Math.max(1, (int) Math.ceil(2.0 * missing * discount));
-        return Map.of("minecraft:oak_planks", planks, "minecraft:string", strings);
+        return Map.of(primary, units, "minecraft:string", strings);
     }
 
     /**
@@ -106,10 +190,9 @@ public final class PuppetEconomy {
      */
     public static Map<String, Integer> expandLedger(PuppetBlueprint puppet,
                                                      PuppetBlueprint.Size destination) {
-        if (puppet.frame() != PuppetBlueprint.Frame.LIGHT
-                || destination.ordinal() <= puppet.size().ordinal()) return Map.of();
+        if (destination.ordinal() <= puppet.size().ordinal()) return Map.of();
         Map<String, Integer> next = new LinkedHashMap<>(puppet.materialLedger());
-        extraLightFrameMaterials(puppet.size(), destination).forEach(
+        extraFrameMaterials(puppet.frame(), puppet.size(), destination).forEach(
                 (material, amount) -> next.merge(material, amount, Math::addExact));
         return Map.copyOf(next);
     }
@@ -123,12 +206,9 @@ public final class PuppetEconomy {
                                                                   double maxHpFraction) {
         if (puppet == null || !Double.isFinite(maxHpFraction)
                 || maxHpFraction <= 0.0 || maxHpFraction > .25) return Map.of();
-        Map<String, Integer> structural = puppet.frame() == PuppetBlueprint.Frame.LIGHT
-                ? lightFrameMaterials(puppet.size()) : puppet.materialLedger();
-        String primary = structural.containsKey("minecraft:oak_planks")
-                ? "minecraft:oak_planks" : structural.containsKey("minecraft:iron_ingot")
-                ? "minecraft:iron_ingot" : null;
-        if (primary == null) return Map.of();
+        Map<String, Integer> structural = frameMaterials(puppet.frame(), puppet.size());
+        String primary = puppet.frame() == PuppetBlueprint.Frame.LIGHT
+                ? "minecraft:oak_planks" : "minecraft:iron_ingot";
         int count = Math.max(1, (int) Math.ceil(structural.get(primary)
                 * maxHpFraction * .5));
         return Map.of(primary, count, "minecraft:string", 1);

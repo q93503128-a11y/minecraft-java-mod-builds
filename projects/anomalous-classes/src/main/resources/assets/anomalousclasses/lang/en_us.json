@@ -438,5 +438,18 @@
   "message.anomalousclasses.puppet_ability.success_2": "Link Drive empowers every active puppet.",
   "message.anomalousclasses.puppet_ability.failed_0": "Aim at your puppet within 12 blocks and clear its pull path.",
   "message.anomalousclasses.puppet_ability.failed_1": "Aim at a damaged puppet within 8 blocks and gather repair materials.",
-  "message.anomalousclasses.puppet_ability.failed_2": "Link Drive requires at least one active deployed puppet."
+  "message.anomalousclasses.puppet_ability.failed_2": "Link Drive requires at least one active deployed puppet.",
+  "item.anomalousclasses.puppet_module": "Marionette Component",
+  "puppet.anomalousclasses.part.frame": "Frame",
+  "puppet.anomalousclasses.part.device": "Weapon Device",
+  "puppet.anomalousclasses.part.core": "Drive Core",
+  "tooltip.anomalousclasses.puppet.part": "%1$s · %2$s",
+  "tooltip.anomalousclasses.puppet.part_size": "Frame height %s blocks",
+  "tooltip.anomalousclasses.puppet.part_condition": "Stored condition %s%%",
+  "screen.anomalousclasses.puppet_workbench.refit": "Refit",
+  "screen.anomalousclasses.puppet_workbench.refit_choice": "%1$s (%2$s/%3$s)",
+  "screen.anomalousclasses.puppet_workbench.refitted": "Refit complete; original component returned.",
+  "screen.anomalousclasses.puppet_workbench.dismantle_confirm": "Dismantle now",
+  "screen.anomalousclasses.puppet_workbench.dismantle_warning": "This destroys the puppet permanently. Press again to confirm.",
+  "message.anomalousclasses.puppet.refitted": "Component installed. Previous component returned."
 }
