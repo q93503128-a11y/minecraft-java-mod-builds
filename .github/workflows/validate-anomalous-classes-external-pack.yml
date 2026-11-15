@@ -18,7 +18,7 @@ concurrency:
 jobs:
   resolve-download-and-server-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
     defaults:
       run:
         working-directory: projects/anomalous-classes/modpack
@@ -44,6 +44,15 @@ jobs:
             --download-jars \
             --server-dir "${RUNNER_TEMP}/anomalous-pack-server" \
             --output "${RUNNER_TEMP}/anomalous-pack-out" 2>&1 | tee "${RUNNER_TEMP}/modpack-validation.log"
+      - name: Build class JAR for external co-load and registration audit
+        working-directory: projects/anomalous-classes
+        run: |
+          set -euo pipefail
+          bash ./gradlew --no-daemon jar
+          test -f build/libs/anomalous-classes-0.1.0-alpha.1.jar
+          python tools/verify_jar.py build/libs/anomalous-classes-0.1.0-alpha.1.jar
+          cp build/libs/anomalous-classes-0.1.0-alpha.1.jar "${RUNNER_TEMP}/anomalous-pack-server/mods/"
+          echo "OWN CLASS MOD INSTALLED WITH EXTERNAL PACK"
       - name: Verify NeoForge official installer and install server
         run: |
           set -euo pipefail
@@ -71,14 +80,17 @@ jobs:
           logfile = pathlib.Path(os.environ["RUNNER_TEMP"]) / "neoforge-server-smoke.log"
           success = False
           with logfile.open("w", encoding="utf-8") as f:
-              proc = subprocess.Popen(["bash", "run.sh", "nogui"], cwd=work,
+              env = dict(os.environ)
+              env["JAVA_TOOL_OPTIONS"] = "-Danomalousclasses.auditExternalMobs=true"
+              proc = subprocess.Popen(["bash", "run.sh", "nogui"], cwd=work, env=env,
                                       stdin=subprocess.PIPE, stdout=f, stderr=subprocess.STDOUT)
               deadline = time.monotonic() + 250
               while time.monotonic() < deadline:
                   if proc.poll() is not None:
                       break
                   log = logfile.read_text(encoding="utf-8", errors="replace")
-                  if re.search(r"\bDone \([0-9.]+s\)! For help", log):
+                  if (re.search(r"\bDone \([0-9.]+s\)! For help", log)
+                          and "ANOMALOUS_HOST_AUDIT_END|" in log):
                       success = True
                       break
                   time.sleep(2)
@@ -105,6 +117,46 @@ jobs:
           areas = work / "config" / "incontrol" / "areas.json"
           if not areas.is_file() or not isinstance(__import__("json").loads(areas.read_text()), list):
               print("FAILED: In Control! default areas.json missing or malformed")
+              success = False
+          # The audit runs inside the actual 1.21.1 NeoForge registry, not
+          # through guesses from jar strings or unrelated online mod wikis.
+          import json
+          audit = []
+          namespaces = {}
+          for line in lines:
+              if "ANOMALOUS_HOST_AUDIT_ENTITY|" in line:
+                  rest = line.split("ANOMALOUS_HOST_AUDIT_ENTITY|", 1)[1]
+                  parts = rest.split("|")
+                  if len(parts) >= 5:
+                      record = {"id": parts[0]}
+                      record.update(dict(part.split("=", 1) for part in parts[1:] if "=" in part))
+                      audit.append(record)
+              if "ANOMALOUS_HOST_AUDIT_NAMESPACE|" in line:
+                  rest = line.split("ANOMALOUS_HOST_AUDIT_NAMESPACE|", 1)[1]
+                  parts = rest.split("|")
+                  namespaces[parts[0]] = dict(part.split("=", 1) for part in parts[1:] if "=" in part)
+          report = {
+              "source": "live integrated NeoForge 21.1.244 registry after class/external co-load",
+              "registered_external_entities": audit,
+              "namespaces": namespaces,
+              "mod_jar_count": len(list((work / "mods").glob("*.jar"))),
+              "server_boot_completed": success,
+              "not_verified": ["player-controlled movement", "native boss scripting",
+                               "client rendering", "multiplayer behavior"],
+          }
+          out = pathlib.Path(os.environ["RUNNER_TEMP"]) / "anomalous-pack-out"
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "EXTERNAL_ENTITY_REGISTRY_AUDIT.json").write_text(
+              json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+          print(f"REGISTERED EXTERNAL ENTITY TYPES: {len(audit)}")
+          for record in audit:
+              if record.get("mob") == "true":
+                  print(f"AUDIT_MOB|{record['id']}|class={record.get('class')}")
+          if not audit or not any(x.get("mob") == "true" for x in audit):
+              print("FAILED: integrated external registry audit yielded no Mob entries")
+              success = False
+          if len(list((work / "mods").glob("*.jar"))) != 13:
+              print("FAILED: expected exact 12 server external jars plus 1 class jar")
               success = False
           print(f"SERVER-REQUIRED MOD DISCOVERY: {len(list((work / 'mods').glob('*.jar')))} checked")
           print(f"IN CONTROL DEFAULT RULES VERIFIED: {areas.is_file()}")
