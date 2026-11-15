@@ -20,7 +20,7 @@ Current source-of-truth: `projects/anomalous-classes/` at `main`, with original 
 ### Verification
 - The first commit `7f5657a9102fbfa818f4273d7aa3aa231adbf976` failed one Java static compile check (incompatible Monster/PuppetEntity comparison).
 - Correction plus gameplay improvements commit `fc2f1b7a4aa399fcd706dd1b7b1b194bdd161186` passed [Actions #43707583059](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43707583059): **BUILD VERIFIED / JAR PRODUCED**, not yet Minecraft-playtested.
-- Added explicit workbench confirmation UI and asset verifier in the following code checkpoint; record its CI result separately when available.
+- Added explicit workbench confirmation UI and asset verifier in checkpoint `a764c5b3f0bd233e791fc627bb4d88c2cc04c882`. [GitHub Actions #43708192243](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43708192243) **SUCCESS** (3m04s): `verifyPuppetAssets` PASS for original PNGs, recipe/loot/model assets and localization; `verifyPuppeteerFoundation` PASS for construction, state and anti-duplication fixtures; **BUILD VERIFIED / JAR PRODUCED** (deliverables artifact ID `14159177142`). Actual Minecraft client and multi-client play are **NOT TESTED**.
 
 ---
 
