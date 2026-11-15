@@ -44,9 +44,35 @@ public final class ParasiteFoundationVerifier {
                 && !ParasiteRules.hasEnderDodge(false, 99)
                 && ParasiteRules.hasEnderDodge(false, 100),
                 "enderman projectile evasion unlock boundary");
-        // The catalog contains the 10 previous adapters plus 24 ordinary
-        // original-body ground hosts. Unlisted bosses/modded entity types stay blocked.
-        check(ParasiteRules.supportedCount() == 34, "complete data-driven vanilla host catalog");
+        // 34 vanilla original bodies + 20 audited external non-boss profiles.
+        // Exact mod Java fingerprints are a safety boundary after updates.
+        check(ParasiteRules.supportedCount() == 54, "34 vanilla + 20 pinned external profiles");
+        String[] externalIds = {
+                "born_in_chaos_v1:maggot", "born_in_chaos_v1:baby_spider",
+                "born_in_chaos_v1:diamond_termite", "born_in_chaos_v1:decaying_zombie",
+                "born_in_chaos_v1:barrel_zombie", "born_in_chaos_v1:zombie_fisherman",
+                "born_in_chaos_v1:zombie_clown", "born_in_chaos_v1:zombie_lumberjack",
+                "born_in_chaos_v1:dread_hound", "born_in_chaos_v1:zombie_bruiser",
+                "cataclysm:koboleton", "cataclysm:draugr", "cataclysm:deepling",
+                "cataclysm:elite_draugr", "cataclysm:deepling_brute",
+                "cataclysm:royal_draugr", "cataclysm:coral_golem",
+                "mowziesmobs:grottol", "mowziesmobs:bluff",
+                "mutantmonsters:spider_pig"
+        };
+        check(externalIds.length == 20, "bounded curated external set");
+        for (String id : externalIds) {
+            var key = ResourceLocation.parse(id);
+            var spec = ParasiteRules.supported(key);
+            check(spec != null && !spec.expectedClass().isBlank()
+                    && ParasiteRules.matchesHostClass(key, spec.expectedClass())
+                    && !ParasiteRules.matchesHostClass(key, "unverified.mod.Entity"),
+                    "exact external EntityType/class fingerprint " + id);
+        }
+        check(ParasiteRules.matchesHostClass(ResourceLocation.parse("minecraft:pig"),
+                "net.minecraft.world.entity.animal.Pig")
+                && !ParasiteRules.matchesHostClass(ResourceLocation.parse("cataclysm:ignis"),
+                "any.ClassName"),
+                "unlisted bosses cannot be authorized");
         String[] newGroundHosts = {
                 "mooshroom", "rabbit", "fox", "goat", "horse", "donkey", "mule",
                 "panda", "polar_bear", "hoglin", "zoglin", "husk", "zombie_villager",
@@ -64,6 +90,30 @@ public final class ParasiteFoundationVerifier {
                 && ParasiteRules.supported(ResourceLocation.parse("cataclysm:ignis")) == null,
                 "unimplemented flying/ranged/external boss must remain unsupported");
         check("aquatic".equals(guardian.adapter()), "guardian catalog aquatic control");
+        var amphibious = new ParasiteSavedData();
+        UUID swimmer = UUID.randomUUID();
+        check(ParasiteRules.hasAquaticAdaptation("cataclysm:deepling", amphibious.player(swimmer))
+                && !ParasiteRules.hasAquaticAdaptation("minecraft:pig", amphibious.player(swimmer)),
+                "modded deepling water affinity native but not inherited");
+        amphibious.reward(swimmer, "cataclysm:deepling", 999, new PlayerClassProfile());
+        check(!ParasiteRules.hasAquaticAdaptation("minecraft:pig", amphibious.player(swimmer)),
+                "aquatic affinity must not transfer at mastery 99");
+        amphibious.reward(swimmer, "cataclysm:deepling", 1, new PlayerClassProfile());
+        check(ParasiteRules.hasAquaticAdaptation("minecraft:pig", amphibious.player(swimmer)),
+                "aquatic affinity transfers only at mastery 100");
+        var climbing = new ParasiteSavedData();
+        UUID climber = UUID.randomUUID();
+        check(ParasiteRules.hasWallClimb("born_in_chaos_v1:baby_spider", climbing.player(climber))
+                && !ParasiteRules.hasWallClimb("minecraft:pig", climbing.player(climber)),
+                "modded native spider climb");
+        climbing.reward(climber, "born_in_chaos_v1:baby_spider", 999,
+                new PlayerClassProfile());
+        check(!ParasiteRules.hasWallClimb("minecraft:pig", climbing.player(climber)),
+                "modded spider climb must not transfer at mastery 99");
+        climbing.reward(climber, "born_in_chaos_v1:baby_spider", 1,
+                new PlayerClassProfile());
+        check(ParasiteRules.hasWallClimb("minecraft:pig", climbing.player(climber)),
+                "modded spider climb transfers permanently at 100");
         var leapData = new ParasiteSavedData();
         UUID jumper = UUID.randomUUID();
         check(ParasiteRules.jumpImpulse("minecraft:goat", leapData.player(jumper)) == 0.56
@@ -207,7 +257,7 @@ public final class ParasiteFoundationVerifier {
                 && !savedTraits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 200, 560, 0)
                 && savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 531, 480, 60),
                 "guardian and enderman cooldowns persist separately after restart");
-        System.out.println("PASS: 34 explicit host profiles, ownership, BD, 99/100 species jump inheritance, guardian/enderman/slime mastery, abilities and cooldown persistence");
+        System.out.println("PASS: 54 verified host profiles, 20 exact-class external adapters, aquatic/climb/jump mastery 99/100, ownership, BD and saved cooldowns");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

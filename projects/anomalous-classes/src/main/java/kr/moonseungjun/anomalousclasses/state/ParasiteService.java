@@ -508,6 +508,7 @@ public final class ParasiteService {
     private static void moveHost(ServerPlayer owner, Mob host, ParasiteSavedData.State state) {
         Motion m = MOTIONS.computeIfAbsent(owner.getUUID(), unused -> new Motion());
         long tick = clock(owner);
+        String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
         if (tick - m.lastInput > 10) m.mask = 0;
         double front = ((m.mask & 1) != 0 ? 1 : 0) - ((m.mask & 2) != 0 ? 1 : 0);
         double sideways = ((m.mask & 8) != 0 ? 1 : 0) - ((m.mask & 4) != 0 ? 1 : 0);
@@ -538,9 +539,7 @@ public final class ParasiteService {
             // Aquatic bodies and fully-inherited guardian adaptation swim with
             // their actual look pitch; no flight when out of water.
             boolean aquatic = host.isInWaterOrBubble()
-                    && ("aquatic".equals(spec.adapter())
-                    || ParasiteRules.hasGuardianAdaptation(false,
-                    state.mastery("minecraft:guardian")));
+                    && ParasiteRules.hasAquaticAdaptation(species, state);
             double swimY = aquatic ? Math.max(-.24, Math.min(.24,
                     -Math.sin(Math.toRadians(m.pitch)) * velocity)) : 0.0;
             host.move(MoverType.SELF, new Vec3(dx * Math.min(.50, velocity),
@@ -552,26 +551,18 @@ public final class ParasiteService {
         // Jump works from standstill too, independent of horizontal motion.
         // Slime elasticity is innate, and mastery-100 inheritance has no timed cooldown.
         if (host.isInWaterOrBubble()
-                && (ParasiteRules.hasGuardianAdaptation(
-                host.getType() == net.minecraft.world.entity.EntityType.GUARDIAN,
-                state.mastery("minecraft:guardian"))
-                || "aquatic".equals(ParasiteRules.supported(
-                BuiltInRegistries.ENTITY_TYPE.getKey(host.getType())).adapter()))
+                && ParasiteRules.hasAquaticAdaptation(species, state)
                 && (m.mask & 16) != 0) {
             Vec3 velocity = host.getDeltaMovement();
             host.setDeltaMovement(velocity.x, Math.max(velocity.y, 0.18), velocity.z);
         }
         if ((m.mask & 16) != 0 && host.onGround()) {
-            String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
             double impulse = ParasiteRules.jumpImpulse(species, state);
             Vec3 velocity = host.getDeltaMovement();
             host.setDeltaMovement(velocity.x, Math.max(velocity.y, impulse), velocity.z);
         }
         // Wall climbing is environmental: jump-only works even without horizontal travel.
-        if ((host.getType() == net.minecraft.world.entity.EntityType.SPIDER
-                || host.getType() == net.minecraft.world.entity.EntityType.CAVE_SPIDER
-                || state.mastery("minecraft:spider") >= 100
-                || state.mastery("minecraft:cave_spider") >= 100)
+        if (ParasiteRules.hasWallClimb(species, state)
                 && host.horizontalCollision && ((m.mask & 16) != 0 || front > 0))
             host.setDeltaMovement(host.getDeltaMovement().x, .18, host.getDeltaMovement().z);
         if (tick % ACTION_INTERVAL == 0) {
@@ -614,7 +605,9 @@ public final class ParasiteService {
         ParasiteSavedData data = ParasiteSavedData.get(player.getServer());
         if (data.ownerOf(host.getUUID()) != null) return false;
         var spec = ParasiteRules.supported(BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()));
-        if (spec == null) {
+        if (spec == null || !spec.matchesClass(host.getClass().getName())) {
+            // The exact EntityType may still exist after an external update,
+            // but a changed implementation must be re-audited before possession.
             if (announce) message(player, "message.anomalousclasses.parasite.unsupported");
             return false;
         }
@@ -658,7 +651,9 @@ public final class ParasiteService {
         ParasiteSavedData data = ParasiteSavedData.get(player.getServer());
         return player.getUUID().equals(owner)
                 && player.getUUID().equals(data.ownerOf(host.getUUID()))
-                && host.getUUID().equals(data.player(owner).host());
+                && host.getUUID().equals(data.player(owner).host())
+                && ParasiteRules.matchesHostClass(
+                BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()), host.getClass().getName());
     }
 
     private static UUID hostOwner(Mob host) {

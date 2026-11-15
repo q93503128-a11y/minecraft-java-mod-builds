@@ -55,10 +55,13 @@ public final class ExternalMobAudit {
                 errors++;
                 entityClass = "ERROR_" + failure.getClass().getSimpleName();
             }
+            boolean declared = ParasiteRules.supported(id) != null;
+            boolean classVerified = declared && "true".equals(isMob)
+                    && ParasiteRules.matchesHostClass(id, entityClass);
             System.out.println("ANOMALOUS_HOST_AUDIT_ENTITY|"
                     + id + "|mob=" + isMob + "|class=" + entityClass
                     + "|category=" + type.getCategory()
-                    + "|declaredHost=" + (ParasiteRules.supported(id) != null));
+                    + "|declaredHost=" + declared + "|verifiedHost=" + classVerified);
         }
         for (var entry : counts.entrySet()) {
             System.out.println("ANOMALOUS_HOST_AUDIT_NAMESPACE|"

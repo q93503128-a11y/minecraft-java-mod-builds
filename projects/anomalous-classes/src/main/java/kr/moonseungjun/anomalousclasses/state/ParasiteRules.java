@@ -19,23 +19,36 @@ import net.minecraft.resources.ResourceLocation;
 public final class ParasiteRules {
     /** One catalog entry is a declared, audited original-host control adapter. */
     public record HostSpec(long requiredBd, int intrusionTicks, double speedFactor,
-                           String adapter, double innateJump) {
+                           String adapter, double innateJump, String expectedClass,
+                           boolean wallClimb) {
         public HostSpec {
             if (requiredBd < 0 || intrusionTicks < 10 || intrusionTicks > 1200
                     || !Double.isFinite(speedFactor) || speedFactor < .2 || speedFactor > 3.0
                     || !("ground".equals(adapter) || "aquatic".equals(adapter))
-                    || !Double.isFinite(innateJump) || innateJump < .42 || innateJump > .8)
+                    || !Double.isFinite(innateJump) || innateJump < .42 || innateJump > .8
+                    || expectedClass == null || expectedClass.length() > 220)
                 throw new IllegalArgumentException("Invalid parasite host profile");
+        }
+        public HostSpec(long bd, int ticks, double speed, String adapter, double jump) {
+            this(bd, ticks, speed, adapter, jump, "", false);
         }
         /** Preserve the original three-argument API used by server rules/tests. */
         public HostSpec(long bd, int ticks, double speed) {
-            this(bd, ticks, speed, "ground", .42);
+            this(bd, ticks, speed, "ground", .42, "", false);
+        }
+        /** Pin non-vanilla hosts to the observed, exact Java class for that release. */
+        public boolean matchesClass(String realClass) {
+            return expectedClass.isEmpty() || expectedClass.equals(realClass);
         }
     }
     private static final Map<String, HostSpec> SUPPORTED = loadCatalog();
     private static final List<Map.Entry<String, HostSpec>> JUMP_TRAITS = SUPPORTED.entrySet().stream()
             .filter(entry -> entry.getValue().innateJump() > .42)
             .toList();
+    private static final List<Map.Entry<String, HostSpec>> AQUATIC_TRAITS = SUPPORTED.entrySet().stream()
+            .filter(entry -> "aquatic".equals(entry.getValue().adapter())).toList();
+    private static final List<Map.Entry<String, HostSpec>> CLIMB_TRAITS = SUPPORTED.entrySet().stream()
+            .filter(entry -> entry.getValue().wallClimb()).toList();
 
     /**
      * Bundled data catalog. Adding a modded host requires an exact EntityType ID,
@@ -57,10 +70,15 @@ public final class ParasiteRules {
                 ResourceLocation key = ResourceLocation.tryParse(id);
                 if (key == null || !id.equals(key.toString()))
                     throw new IllegalStateException("Invalid host EntityType: " + id);
+                String expectedClass = node.has("expectedClass")
+                        ? node.get("expectedClass").getAsString() : "";
+                if (!"minecraft".equals(key.getNamespace()) && expectedClass.isBlank())
+                    throw new IllegalStateException("Nonvanilla host must pin observed class: " + id);
                 HostSpec spec = new HostSpec(node.get("requiredBd").getAsLong(),
                         node.get("intrusionTicks").getAsInt(),
                         node.get("speedFactor").getAsDouble(),
-                        node.get("adapter").getAsString(), node.get("innateJump").getAsDouble());
+                        node.get("adapter").getAsString(), node.get("innateJump").getAsDouble(),
+                        expectedClass, node.has("wallClimb") && node.get("wallClimb").getAsBoolean());
                 if (hosts.putIfAbsent(id, spec) != null)
                     throw new IllegalStateException("Duplicate host EntityType: " + id);
             }
@@ -78,6 +96,27 @@ public final class ParasiteRules {
 
     public static HostSpec supported(ResourceLocation id) {
         return id == null ? null : SUPPORTED.get(id.toString());
+    }
+    /** Fail closed after a mod update changes the actual class behind an old ID. */
+    public static boolean matchesHostClass(ResourceLocation id, String actualClass) {
+        HostSpec spec = supported(id);
+        return spec != null && actualClass != null && spec.matchesClass(actualClass);
+    }
+    /** Native adapted bodies swim; mastered aquatic species grant the same passive. */
+    public static boolean hasAquaticAdaptation(String species, ParasiteSavedData.State progression) {
+        HostSpec nativeSpec = SUPPORTED.get(species);
+        if (nativeSpec != null && "aquatic".equals(nativeSpec.adapter())) return true;
+        for (var entry : AQUATIC_TRAITS)
+            if (progression.mastery(entry.getKey()) >= 100) return true;
+        return false;
+    }
+    /** Environmental wall climbing is unconditional for the native species and mastery100. */
+    public static boolean hasWallClimb(String species, ParasiteSavedData.State progression) {
+        HostSpec nativeSpec = SUPPORTED.get(species);
+        if (nativeSpec != null && nativeSpec.wallClimb()) return true;
+        for (var entry : CLIMB_TRAITS)
+            if (progression.mastery(entry.getKey()) >= 100) return true;
+        return false;
     }
     public static long plannedRequirement(ResourceLocation id) {
         if (id == null) return -1;

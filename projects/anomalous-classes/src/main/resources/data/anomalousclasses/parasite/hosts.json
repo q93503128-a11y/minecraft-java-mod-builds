@@ -1,6 +1,6 @@
 {
   "schema": "anomalousclasses:parasite_hosts_v1",
-  "notes": "Curated ground-mob control profiles. Listed species gain original-body movement/melee, not unimplemented special attacks. Bosses and modded species require explicit audited profiles.",
+  "notes": "Exact-ID original Mob host profiles. External entries were observed in pinned 1.21.1 NeoForge live registry audit #43740134017 with expectedClass fingerprints. External hosts receive only baseline body movement/melee and declared environmental adaptations; scripted native boss skills are NOT claimed as implemented.",
   "hosts": [
     {
       "id": "minecraft:pig",
@@ -48,7 +48,8 @@
       "intrusionTicks": 100,
       "speedFactor": 1.1,
       "adapter": "ground",
-      "innateJump": 0.42
+      "innateJump": 0.42,
+      "wallClimb": true
     },
     {
       "id": "minecraft:slime",
@@ -248,7 +249,8 @@
       "intrusionTicks": 120,
       "speedFactor": 1.18,
       "adapter": "ground",
-      "innateJump": 0.42
+      "innateJump": 0.42,
+      "wallClimb": true
     },
     {
       "id": "minecraft:frog",
@@ -273,6 +275,187 @@
       "speedFactor": 0.72,
       "adapter": "ground",
       "innateJump": 0.42
+    },
+    {
+      "id": "born_in_chaos_v1:maggot",
+      "requiredBd": 20,
+      "intrusionTicks": 40,
+      "speedFactor": 1.12,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.MaggotEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:baby_spider",
+      "requiredBd": 55,
+      "intrusionTicks": 65,
+      "speedFactor": 1.15,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.BabySpiderEntity",
+      "wallClimb": true
+    },
+    {
+      "id": "born_in_chaos_v1:diamond_termite",
+      "requiredBd": 90,
+      "intrusionTicks": 65,
+      "speedFactor": 1.1,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.DiamondThermiteEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:decaying_zombie",
+      "requiredBd": 110,
+      "intrusionTicks": 85,
+      "speedFactor": 0.93,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.DecayingZombieEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:barrel_zombie",
+      "requiredBd": 140,
+      "intrusionTicks": 95,
+      "speedFactor": 0.92,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.BarrelZombieEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:zombie_fisherman",
+      "requiredBd": 150,
+      "intrusionTicks": 90,
+      "speedFactor": 0.92,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.ZombieFishermanEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:zombie_clown",
+      "requiredBd": 170,
+      "intrusionTicks": 100,
+      "speedFactor": 1,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.ZombieClownEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:zombie_lumberjack",
+      "requiredBd": 200,
+      "intrusionTicks": 110,
+      "speedFactor": 0.94,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.ZombieLumberjackEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:dread_hound",
+      "requiredBd": 220,
+      "intrusionTicks": 110,
+      "speedFactor": 1.14,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.DreadHoundEntity"
+    },
+    {
+      "id": "born_in_chaos_v1:zombie_bruiser",
+      "requiredBd": 300,
+      "intrusionTicks": 125,
+      "speedFactor": 0.91,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "net.mcreator.borninchaosv.entity.ZombieBruiserEntity"
+    },
+    {
+      "id": "cataclysm:koboleton",
+      "requiredBd": 300,
+      "intrusionTicks": 125,
+      "speedFactor": 1.04,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "com.github.L_Ender.cataclysm.entity.AnimationMonster.Koboleton_Entity"
+    },
+    {
+      "id": "cataclysm:draugr",
+      "requiredBd": 380,
+      "intrusionTicks": 135,
+      "speedFactor": 0.94,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "com.github.L_Ender.cataclysm.entity.InternalAnimationMonster.Draugar.Draugr_Entity"
+    },
+    {
+      "id": "cataclysm:deepling",
+      "requiredBd": 420,
+      "intrusionTicks": 135,
+      "speedFactor": 1.02,
+      "adapter": "aquatic",
+      "innateJump": 0.42,
+      "expectedClass": "com.github.L_Ender.cataclysm.entity.Deepling.Deepling_Entity"
+    },
+    {
+      "id": "cataclysm:elite_draugr",
+      "requiredBd": 540,
+      "intrusionTicks": 145,
+      "speedFactor": 0.98,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "com.github.L_Ender.cataclysm.entity.InternalAnimationMonster.Draugar.Elite_Draugr_Entity"
+    },
+    {
+      "id": "cataclysm:deepling_brute",
+      "requiredBd": 600,
+      "intrusionTicks": 155,
+      "speedFactor": 0.93,
+      "adapter": "aquatic",
+      "innateJump": 0.42,
+      "expectedClass": "com.github.L_Ender.cataclysm.entity.Deepling.Deepling_Brute_Entity"
+    },
+    {
+      "id": "cataclysm:royal_draugr",
+      "requiredBd": 650,
+      "intrusionTicks": 155,
+      "speedFactor": 0.98,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "com.github.L_Ender.cataclysm.entity.InternalAnimationMonster.Draugar.Royal_Draugr_Entity"
+    },
+    {
+      "id": "cataclysm:coral_golem",
+      "requiredBd": 750,
+      "intrusionTicks": 170,
+      "speedFactor": 0.86,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "com.github.L_Ender.cataclysm.entity.Deepling.Coral_Golem_Entity"
+    },
+    {
+      "id": "mowziesmobs:grottol",
+      "requiredBd": 100,
+      "intrusionTicks": 70,
+      "speedFactor": 1.18,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "com.bobmowzie.mowziesmobs.server.entity.grottol.EntityGrottol"
+    },
+    {
+      "id": "mowziesmobs:bluff",
+      "requiredBd": 600,
+      "intrusionTicks": 150,
+      "speedFactor": 0.98,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "com.bobmowzie.mowziesmobs.server.entity.bluff.EntityBluff"
+    },
+    {
+      "id": "mutantmonsters:spider_pig",
+      "requiredBd": 900,
+      "intrusionTicks": 170,
+      "speedFactor": 1.07,
+      "adapter": "ground",
+      "innateJump": 0.42,
+      "expectedClass": "fuzs.mutantmonsters.world.entity.mutant.SpiderPig"
     }
   ]
 }

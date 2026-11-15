@@ -28,6 +28,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            projects/anomalous-classes/*.gradle*
+            projects/anomalous-classes/gradle/**
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -154,6 +158,18 @@ jobs:
                   print(f"AUDIT_MOB|{record['id']}|class={record.get('class')}")
           if not audit or not any(x.get("mob") == "true" for x in audit):
               print("FAILED: integrated external registry audit yielded no Mob entries")
+              success = False
+          # Every explicit external host must be a real registered Mob AND match
+          # its pinned Java class, not just a name-based whitelist.
+          declared = [x for x in audit if x.get("declaredHost") == "true"]
+          validated = [x for x in declared if x.get("verifiedHost") == "true"]
+          print(f"PINNED EXTERNAL HOST AUDIT: {len(validated)}/{len(declared)} verified")
+          if len(declared) != 20 or len(validated) != 20:
+              print("FAILED: expected exactly 20 audited external host profiles")
+              success = False
+          boss = next((x for x in audit if x.get("id") == "cataclysm:ignis"), None)
+          if boss is None or boss.get("declaredHost") != "false":
+              print("FAILED: scripted Cataclysm boss must remain unpossessable")
               success = False
           if len(list((work / "mods").glob("*.jar"))) != 13:
               print("FAILED: expected exact 12 server external jars plus 1 class jar")

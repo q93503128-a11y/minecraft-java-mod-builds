@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -31,8 +32,10 @@ public final class ParasiteSpeciesService {
 
     /** Passive water adaptation is independent of V's temporary numeric hotbar mode. */
     public static void tick(ServerPlayer owner, Mob host, ParasiteSavedData.State state) {
-        if (!ParasiteRules.hasGuardianAdaptation(host.getType() == EntityType.GUARDIAN,
-                state.mastery("minecraft:guardian"))) return;
+        // Water affinity is a common environmental host trait; explicit
+        // nonvanilla aquatic profiles inherit it at species mastery 100 too.
+        String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
+        if (!ParasiteRules.hasAquaticAdaptation(species, state)) return;
         if (host.isInWaterOrBubble()) {
             // The original host and its passenger each have real air counters.
             // Do not grant breathing to the unhosted human.
