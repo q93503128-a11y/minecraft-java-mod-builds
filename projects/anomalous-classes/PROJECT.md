@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-16 기생술사 34종 공통화:** 기존 10종에 **일반 지상형 24종** 추가, 내장 JSON 숙주 카탈로그·종별 점프 숙련100 계승·동굴거미 벽 타기·길들인 말 점유 방지. [CI #43735461247](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43735461247) BUILD VERIFIED/JAR PRODUCED. 신규 몹은 **공통 이동·근접 전투 중심**, 원본 모든 특수 기술을 재현한 것이 아니다. **실게임/멀티/외부 모드 동시 로딩 미검증**. [숙주/외부 호환 계약](./modpack/PARASITE_HOST_CATALOG_EXPANSION_2026-11-16.md).
+
+
 > **2026-11-16 기생술사 숙주 확장 묶음:** 가디언(수중 적응/광선)·엔더맨(안전 순간이동/조건부 투사체 회피)을 신규 숙주로 통합하고 숙련 100 계승·V+2/3 직접 입력·쿨다운 저장·숙주 카메라 회전 방향을 수정. [CI #43729597678](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43729597678) BUILD VERIFIED/JAR PRODUCED; **실제 게임/클라이언트/멀티는 미검증**. [최신 기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
 
 

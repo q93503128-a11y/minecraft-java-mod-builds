@@ -1,5 +1,22 @@
 # Build and Runtime Report
 
+## 2026-11-16 — 34-species data-driven original-host catalog
+
+- Source [`d52996e432ab39dbd95ba3a566ff3fd98bc41207`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/d52996e432ab39dbd95ba3a566ff3fd98bc41207) (`main`).
+- [**Build anomalous-classes #43735461247**](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43735461247) SUCCESS. **BUILD VERIFIED / JAR PRODUCED** — `anomalous-classes-0.1.0-alpha.1.jar` **32,056,584 bytes / 185 classes**. [Deliverables with JAR and checksum](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43735461247/artifacts/14170476905), [logs](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43735461247/artifacts/14169624215).
+- Replaced source-only `Map.of(...)` in `ParasiteRules` with bundled strict, validated [JSON host profile catalog](./src/main/resources/data/anomalousclasses/parasite/hosts.json). Entries declare `id`, `requiredBd`, `intrusionTicks`, `speedFactor`, `adapter` and `innateJump`. Exact registered mob ID (not wildcard or tag) is the eligibility key. Existing original 10 specs remain unchanged. **24 additional vanilla ground species; 34 total explicitly declared host profiles.**
+- Common original-mob logic reuses single UUID ownership, NoAI/restoration, host-eye camera/attack/LOS, permanent BD/mastery, save data, lockout, multiplayer ownership checks and movement. No copy-spawning or fake substitute mobs.
+- Added native and mastery100 transferred environmental jump profiles (rabbit, goat, horse, donkey, mule, frog), conserves stronger native slime impulse, and treats cave spider as native spider wall-climber with mastery100 transfer. No ability equipment slots or new currency.
+- Existing tamed `TamableAnimal` protection extended to **tamed `AbstractHorse`**. Hosts already being ridden or themselves riding another entity remain barred, as before. Villagers, absent scripts, tamed animals and externally owned bodies remain barred.
+- The **24 new entries are generic walking/jumping/basic melee** support, NOT their entire native AI, special abilities, riding inventory, boss phases or combat spell mechanics. In particular the ravager roar/stun, piglin ranged actions, fox target behavior and underwater turtle/frog locomotion are not yet fully adapted. Certain mobs/animations may fail to feel good as player-controlled hosts until actual playtests.
+- Non-vanilla entities are **not registered** in this catalog yet. Modpack selections stay fixed at 9 gameplay/QoL mods +6 libraries and their external-pack server smoke was previously run separately. Schema is namespace-aware; adding a known third-party EntityType still requires verified compatibility, valid custom AI/animations, hitboxes and boss-state transitions. The combined class mod + 15 dependencies and actual external boss/host interaction **NOT TESTED**.
+- Deterministic verifier passed for all 34 explicit profiles, 24 additions, unsupported ranged/flying/external boss exclusions, 99↔100 jump inheritance, preexisting guardian/enderman/slime/creeper ability gates, save data and cooldown restore. Existing class management / graph skill tree / puppeteer checks passed, and JAR verification passed in the same workflow.
+- **CLIENT RUNTIME / ACTUAL POSSESSION OF ALL 34 / MOUNT & MOVEMENT PHYSICS / VISUAL QA / EXTERNAL CO-LOAD / MULTIPLAYER = NOT TESTED.** BUILD VERIFIED does not claim in-game quality. Keep expanding body-type-specific adapters and testing before treating all native species skills as complete.
+
+
+---
+
+
 ## 2026-11-16 — Parasite coherent species/gameplay bundle: guardian and enderman
 
 - Latest source commit [`b976a5be0`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b976a5be0db80680f57683745a2f05ac3617a0c7).
