@@ -370,5 +370,18 @@
   "message.anomalousclasses.mental.intrusion_progress": "Mental intrusion %1$s%%",
   "message.anomalousclasses.mental.intrusion_interrupted": "Mental intrusion was interrupted.",
   "message.anomalousclasses.mental.capture_success": "Creature dominated.",
-  "message.anomalousclasses.mental.capture_failed": "Mental intrusion could not be completed."
+  "message.anomalousclasses.mental.capture_failed": "Mental intrusion could not be completed.",
+  "key.anomalousclasses.mental_shock": "Mental Shock",
+  "key.anomalousclasses.mental_suggestion": "Self-Attack Suggestion",
+  "key.anomalousclasses.mental_overload": "Mental Overload",
+  "key.anomalousclasses.mental_containment": "Consciousness Seal",
+  "message.anomalousclasses.mental_spell.channeling": "Finish mental intrusion before using another skill.",
+  "message.anomalousclasses.mental_spell.cooldown": "Skill ready in %s seconds",
+  "message.anomalousclasses.mental_spell.need_controlled": "Overload requires one of your controlled creatures.",
+  "message.anomalousclasses.mental_spell.invalid_target": "This target cannot be affected.",
+  "message.anomalousclasses.mental_spell.no_targets": "No valid targets are nearby.",
+  "message.anomalousclasses.mental_spell.shock": "Mental Shock",
+  "message.anomalousclasses.mental_spell.suggestion": "Self-Attack Suggestion",
+  "message.anomalousclasses.mental_spell.overload": "Mental Overload",
+  "message.anomalousclasses.mental_spell.containment": "Consciousness Seal"
 }

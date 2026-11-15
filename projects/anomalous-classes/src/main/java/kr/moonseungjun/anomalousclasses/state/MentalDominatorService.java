@@ -205,6 +205,7 @@ public final class MentalDominatorService {
         tickCounter++;
         tickChannels(server);
         if (tickCounter % TICKS_PER_SECOND == 0L) tickResources(server);
+        MentalDominatorCombatService.tick(server, tickCounter);
     }
 
     private static void tickChannels(MinecraftServer server) {
@@ -246,6 +247,8 @@ public final class MentalDominatorService {
                     .progress(ClassId.MENTAL_DOMINATOR);
             channel.progress = Math.min(100.0, channel.progress
                     + MentalDominatorRules.intrusionProgressPerSecond(progress.level(), healthRatio, threat,
+                    ClassProfileSavedData.get(server).profile(player.getUUID()))
+                    * MentalDominatorCombatService.echoMultiplier(player, target,
                     ClassProfileSavedData.get(server).profile(player.getUUID())) / TICKS_PER_SECOND);
             if (tickCounter % 5L == 0L) {
                 player.displayClientMessage(Component.translatable(
@@ -325,7 +328,8 @@ public final class MentalDominatorService {
         if (records.isEmpty()) return 0.0;
         double total = 0.0;
         for (MentalDominatorSavedData.ControlledRecord record : records) {
-            total += MentalDominatorRules.maintenancePerSecond(record.threat(), level, profile);
+            total += MentalDominatorRules.maintenancePerSecond(record.threat(), level, profile)
+                    * MentalDominatorCombatService.upkeepMultiplier(record.entityId());
         }
         return total + MentalDominatorRules.groupMaintenancePerSecond(records.size(), profile);
     }
@@ -383,6 +387,7 @@ public final class MentalDominatorService {
 
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         if (!(event.getEntity() instanceof Mob mob) || event.getLevel().isClientSide()) return;
+        MentalDominatorCombatService.onMobJoin(mob);
         MinecraftServer server = event.getLevel().getServer();
         if (server == null) return;
         MentalDominatorSavedData data = MentalDominatorSavedData.get(server);
@@ -440,6 +445,7 @@ public final class MentalDominatorService {
 
     public static void onEntityLeave(EntityLeaveLevelEvent event) {
         if (!(event.getEntity() instanceof Mob mob) || event.getLevel().isClientSide()) return;
+        MentalDominatorCombatService.onMobLeave(mob);
         RuntimeGoals goals = RUNTIME_GOALS.remove(mob.getUUID());
         if (goals != null) {
             mob.goalSelector.removeGoal(goals.command());
@@ -616,6 +622,7 @@ public final class MentalDominatorService {
     }
 
     private static void resume(Mob mob, MentalDominatorSavedData.ControlledRecord record, ServerPlayer owner) {
+        if (MentalDominatorCombatService.isStunned(mob.getUUID())) return;
         CompoundTag marker = mob.getPersistentData().getCompound(ENTITY_TAG);
         if (!marker.hasUUID("owner") || !record.ownerId().equals(marker.getUUID("owner"))) return;
         boolean originalNoAi = marker.getBoolean("originalNoAi");
@@ -713,6 +720,30 @@ public final class MentalDominatorService {
         tell(player, message);
     }
 
+    static boolean isChanneling(ServerPlayer player) {
+        return channelActive(player.getUUID());
+    }
+
+    static boolean hasPsyche(ServerPlayer player, double cost) {
+        if (!isMental(player) || !player.isAlive() || !Double.isFinite(cost) || cost < 0) return false;
+        PlayerClassProfile profile = ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
+        MentalDominatorSavedData.PlayerState state = MentalDominatorSavedData.get(player.getServer())
+                .player(player.getUUID());
+        double maximum = MentalDominatorRules.maxPsyche(profile.progress(ClassId.MENTAL_DOMINATOR).level(), profile);
+        initializePsyche(state, maximum);
+        return state.psyche() + 1.0e-8 >= cost;
+    }
+
+    static boolean spendPsyche(ServerPlayer player, double cost) {
+        if (!hasPsyche(player, cost) || isChanneling(player)) return false;
+        MentalDominatorSavedData data = MentalDominatorSavedData.get(player.getServer());
+        MentalDominatorSavedData.PlayerState state = data.player(player.getUUID());
+        state.setPsyche(state.psyche() - cost);
+        state.bumpRevision();
+        data.changed();
+        return true;
+    }
+
     private static void initializePsyche(MentalDominatorSavedData.PlayerState state, double maximum) {
         if (!state.initialized()) {
             state.setPsyche(maximum);
@@ -728,7 +759,7 @@ public final class MentalDominatorService {
         return channel != null && channel.active;
     }
 
-    private static Mob findAimedMob(ServerPlayer player) {
+    static Mob findAimedMob(ServerPlayer player) {
         double range = MentalDominatorConfig.value(MentalDominatorConfig.VALUES.maxCaptureRange);
         Vec3 start = player.getEyePosition();
         Vec3 end = start.add(player.getLookAngle().scale(range));
@@ -795,7 +826,7 @@ public final class MentalDominatorService {
         return server == null || ownerId == null ? null : server.getPlayerList().getPlayer(ownerId);
     }
 
-    private static boolean isMental(ServerPlayer player) {
+    static boolean isMental(ServerPlayer player) {
         if (player == null || player.getServer() == null) return false;
         return ClassProfileSavedData.get(player.getServer()).profile(player.getUUID()).currentClass()
                 .filter(id -> id == ClassId.MENTAL_DOMINATOR).isPresent();
@@ -853,7 +884,7 @@ public final class MentalDominatorService {
                 name = entity.hasCustomName() ? entity.getCustomName().getString() : "";
                 dimension = entity.level().dimension().location().toString();
                 x = entity.blockPosition().getX(); y = entity.blockPosition().getY(); z = entity.blockPosition().getZ();
-                upkeep += mobUpkeep;
+                upkeep += mobUpkeep * MentalDominatorCombatService.upkeepMultiplier(record.entityId());
                 loadedCount++;
             }
             views.add(new MentalDominatorStatePayload.MobView(record.entityId().toString(), name, record.entityType(),

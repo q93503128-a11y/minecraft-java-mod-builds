@@ -15,12 +15,14 @@ import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorActionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalIntrusionPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.MentalSpellPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.ProfileService;
 import kr.moonseungjun.anomalousclasses.state.SkillTreeService;
 import kr.moonseungjun.anomalousclasses.state.ClassFocusService;
 import kr.moonseungjun.anomalousclasses.state.MentalDominatorService;
+import kr.moonseungjun.anomalousclasses.state.MentalDominatorCombatService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.IEventBus;
@@ -80,6 +82,10 @@ public final class ClassNetwork {
         registrar.playToServer(MentalDominatorActionPayload.TYPE, MentalDominatorActionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) MentalDominatorService.handleAction(player, payload);
+                }));
+        registrar.playToServer(MentalSpellPayload.TYPE, MentalSpellPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) MentalDominatorCombatService.use(player, payload.ability());
                 }));
         registrar.playToServer(MentalIntrusionPayload.TYPE, MentalIntrusionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

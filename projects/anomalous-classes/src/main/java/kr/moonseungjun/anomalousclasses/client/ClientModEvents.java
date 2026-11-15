@@ -24,6 +24,10 @@ public final class ClientModEvents {
         event.register(ClassSelectionKeyMappings.OPEN_SKILL_TREE);
         event.register(ClassSelectionKeyMappings.OPEN_CLASS_MANAGEMENT);
         event.register(ClassSelectionKeyMappings.MENTAL_INTRUSION);
+        event.register(ClassSelectionKeyMappings.MENTAL_SHOCK);
+        event.register(ClassSelectionKeyMappings.MENTAL_SUGGESTION);
+        event.register(ClassSelectionKeyMappings.MENTAL_OVERLOAD);
+        event.register(ClassSelectionKeyMappings.MENTAL_CONTAINMENT);
     }
 
     @SubscribeEvent

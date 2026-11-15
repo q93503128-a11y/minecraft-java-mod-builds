@@ -370,5 +370,18 @@
   "message.anomalousclasses.mental.intrusion_progress": "정신 침투 %1$s%%",
   "message.anomalousclasses.mental.intrusion_interrupted": "정신 침투가 중단되었습니다.",
   "message.anomalousclasses.mental.capture_success": "생명체를 지배했습니다.",
-  "message.anomalousclasses.mental.capture_failed": "정신 침투를 완료하지 못했습니다."
+  "message.anomalousclasses.mental.capture_failed": "정신 침투를 완료하지 못했습니다.",
+  "key.anomalousclasses.mental_shock": "정신 충격",
+  "key.anomalousclasses.mental_suggestion": "자해 암시",
+  "key.anomalousclasses.mental_overload": "정신 과부하",
+  "key.anomalousclasses.mental_containment": "의식 봉쇄",
+  "message.anomalousclasses.mental_spell.channeling": "정신 침투 집중 중에는 다른 기술을 사용할 수 없습니다.",
+  "message.anomalousclasses.mental_spell.cooldown": "기술 재사용까지 %s초",
+  "message.anomalousclasses.mental_spell.need_controlled": "이미 지배한 대상에게만 과부하를 사용할 수 있습니다.",
+  "message.anomalousclasses.mental_spell.invalid_target": "이 대상에게는 사용할 수 없습니다.",
+  "message.anomalousclasses.mental_spell.no_targets": "봉쇄할 대상이 없습니다.",
+  "message.anomalousclasses.mental_spell.shock": "정신 충격",
+  "message.anomalousclasses.mental_spell.suggestion": "자해 암시",
+  "message.anomalousclasses.mental_spell.overload": "정신 과부하",
+  "message.anomalousclasses.mental_spell.containment": "의식 봉쇄"
 }

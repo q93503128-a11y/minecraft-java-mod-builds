@@ -1,5 +1,16 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Mental Dominator direct-combat skill integration
+
+- Added four server-authoritative direct skills after the existing Mental Intrusion hold-to-capture loop: Mental Shock (damage + short interruption), Self-Attack Suggestion (creature's own attack-source self-damage), Mental Overload (temporary +30% attack / +15% movement speed to an owned creature with +50% upkeep while active), and area Consciousness Seal (threat-scaled temporary AI interruption).
+- Four remappable in-game key mappings (Z/X/C/V) send ability IDs, not targets, stats or costs. Server validates class, aim, entity ownership, safe target, psychic resource, cooldown and active intrusion; rejected casts have no resource cost. Existing R hold-to-intrude remains unchanged.
+- Added configurable psychic cost/cooldown/duration/radius/damage values to the existing world server config. Hooked existing purchased passives: Shock Echo, Suggestion Depth, Overload Duration, and Containment Expansion. Existing equipment modifiers, passive tree and class ownership are preserved.
+- Timed statuses clean up on expiry, unload/death, class-controlled mob release and server session changes. A persistent temporary-stun marker is removed at entity join after unexpected restart; overload uses transient attributes rather than permanently altering entity stats.
+- This is a **combat implementation increment**, not proof of all-class completeness. External entity-specific animation/AI compatibility, full visual fidelity, PvP-specific player CC, physical player controls, genuine playfeel and multiplayer require later verification. No player playtest requested for this patch.
+- **Verification:** source authored, CI/build outcome to be observed; in-game / multiplayer **NOT TESTED**.
+
+---
+
 ## 2026-11-15 — In-game focus-slot feedback: hover effects and recipe discovery
 
 - User screenshots in Minecraft 1.21.1 NeoForge confirm the inventory focus slot renders without visible overlap, a Mental Dominator focus appears in the slot, and the standard shaped recipe produces an item. Cursor/swap/Shift-click integrity, J/M navigation, multiplayer, and re-login are separate runtime checks.

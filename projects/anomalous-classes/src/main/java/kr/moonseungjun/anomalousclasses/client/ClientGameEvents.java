@@ -5,6 +5,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.RequestClassManagementPa
 import kr.moonseungjun.anomalousclasses.network.payload.RequestProfilePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestSkillTreePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalIntrusionPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.MentalSpellPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -43,6 +44,19 @@ public final class ClientGameEvents {
             return;
         }
         mentalRefreshTicks = 0;
+        // Direct keybinds request stable IDs; the server rejects all other classes.
+        if (ClassSelectionKeyMappings.MENTAL_SHOCK.consumeClick()) {
+            PacketDistributor.sendToServer(new MentalSpellPayload(0));
+        }
+        if (ClassSelectionKeyMappings.MENTAL_SUGGESTION.consumeClick()) {
+            PacketDistributor.sendToServer(new MentalSpellPayload(1));
+        }
+        if (ClassSelectionKeyMappings.MENTAL_OVERLOAD.consumeClick()) {
+            PacketDistributor.sendToServer(new MentalSpellPayload(2));
+        }
+        if (ClassSelectionKeyMappings.MENTAL_CONTAINMENT.consumeClick()) {
+            PacketDistributor.sendToServer(new MentalSpellPayload(3));
+        }
         if (ClassSelectionKeyMappings.OPEN_PROFILE.consumeClick()) {
             PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);
         } else if (ClassSelectionKeyMappings.OPEN_SKILL_TREE.consumeClick()) {

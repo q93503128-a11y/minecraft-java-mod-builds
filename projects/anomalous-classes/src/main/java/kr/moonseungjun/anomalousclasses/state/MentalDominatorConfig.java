@@ -36,6 +36,10 @@ public final class MentalDominatorConfig {
     public final ModConfigSpec.DoubleValue maintenanceLevelDiscount;
     public final ModConfigSpec.DoubleValue groupMaintenanceFactor;
     public final ModConfigSpec.DoubleValue followSpeed;
+    public final ModConfigSpec.DoubleValue shockCost, suggestionCost, overloadCost, containmentCost;
+    public final ModConfigSpec.DoubleValue shockDamage, containmentRadius;
+    public final ModConfigSpec.IntValue shockCooldown, suggestionCooldown, overloadCooldown, containmentCooldown;
+    public final ModConfigSpec.IntValue overloadDuration, containmentDuration;
 
     private MentalDominatorConfig(ModConfigSpec.Builder builder) {
         builder.comment("Adjustable initial values for the Mental Dominator. All gameplay values are decided by the server.",
@@ -86,6 +90,20 @@ public final class MentalDominatorConfig {
                 "Additional maintenance factor for controlling multiple loaded entities.");
         followSpeed = decimal(builder, "follow_speed", 1.0, 0.1, 4.0,
                 "Path navigation speed for controlled PathfinderMob entities.");
+        builder.comment("Direct-skill costs and durations are server-owned balance candidates.").push("abilities");
+        shockCost = decimal(builder, "shock_cost", 12.0, 0.0, 100_000.0, "Mental shock psyche cost.");
+        suggestionCost = decimal(builder, "suggestion_cost", 24.0, 0.0, 100_000.0, "Self-attack suggestion psyche cost.");
+        overloadCost = decimal(builder, "overload_cost", 28.0, 0.0, 100_000.0, "Owned-mob overload psyche cost.");
+        containmentCost = decimal(builder, "containment_cost", 55.0, 0.0, 100_000.0, "Area containment psyche cost.");
+        shockDamage = decimal(builder, "shock_damage", 5.0, 0.1, 200.0, "Mental shock damage before level scaling.");
+        containmentRadius = decimal(builder, "containment_radius", 8.0, 1.0, 32.0, "Base containment area radius.");
+        shockCooldown = builder.defineInRange("shock_cooldown_ticks", 120, 0, 72000);
+        suggestionCooldown = builder.defineInRange("suggestion_cooldown_ticks", 360, 0, 72000);
+        overloadCooldown = builder.defineInRange("overload_cooldown_ticks", 520, 0, 72000);
+        containmentCooldown = builder.defineInRange("containment_cooldown_ticks", 900, 0, 72000);
+        overloadDuration = builder.defineInRange("overload_duration_ticks", 160, 1, 12000);
+        containmentDuration = builder.defineInRange("containment_duration_ticks", 40, 1, 12000);
+        builder.pop();
         builder.pop();
     }
 

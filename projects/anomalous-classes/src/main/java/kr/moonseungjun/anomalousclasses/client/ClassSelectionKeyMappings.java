@@ -35,5 +35,15 @@ public final class ClassSelectionKeyMappings {
             GLFW.GLFW_KEY_R,
             "key.categories.anomalousclasses");
 
-    private ClassSelectionKeyMappings() {}
+    public static final KeyMapping MENTAL_SHOCK = skill("key.anomalousclasses.mental_shock", GLFW.GLFW_KEY_Z);
+    public static final KeyMapping MENTAL_SUGGESTION = skill("key.anomalousclasses.mental_suggestion", GLFW.GLFW_KEY_X);
+    public static final KeyMapping MENTAL_OVERLOAD = skill("key.anomalousclasses.mental_overload", GLFW.GLFW_KEY_C);
+    public static final KeyMapping MENTAL_CONTAINMENT = skill("key.anomalousclasses.mental_containment", GLFW.GLFW_KEY_V);
+
+    private static KeyMapping skill(String key, int glfw) {
+        return new KeyMapping(key, KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM,
+                glfw, "key.categories.anomalousclasses");
+    }
+
+    private ClassSelectionKeyMappings() {
 }
