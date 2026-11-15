@@ -8,6 +8,7 @@ import kr.moonseungjun.anomalousclasses.state.PuppetBlueprint;
 import kr.moonseungjun.anomalousclasses.state.PuppetCombatService;
 import kr.moonseungjun.anomalousclasses.state.PuppetRegistrySavedData;
 import kr.moonseungjun.anomalousclasses.state.PuppetService;
+import kr.moonseungjun.anomalousclasses.state.PuppetAbilityService;
 import kr.moonseungjun.anomalousclasses.state.PuppeteerRules;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -176,6 +177,10 @@ public final class PuppetEntity extends PathfinderMob {
             return;
         }
         PlayerClassProfile profile = ClassProfileSavedData.get(world.getServer()).profile(owner.getUUID());
+        if (PuppetAbilityService.tickPull(this)) {
+            guarding = false;
+            return;
+        }
         if (++statRefresh >= 40) {
             statRefresh = 0;
             applyStats(profile, false);
@@ -187,12 +192,14 @@ public final class PuppetEntity extends PathfinderMob {
             PuppeteerRules.Stats stats = PuppeteerRules.stats(blueprint,
                     profile.progress(ClassId.PUPPETEER).level(), profile);
             getLookControl().setLookAt(target, 30.0F, 30.0F);
+            double driveDamage = PuppetAbilityService.driveActive(world.getServer(), owner.getUUID())
+                    ? 1.20 : 1.0;
             switch (blueprint.device()) {
                 case BLADE -> {
                     if (tickCount % 10 == 0 && distanceToSqr(target) > stats.reach() * stats.reach())
                         getNavigation().moveTo(target, 1.03);
                     if (inReach(target, stats.reach()) && ready(world)) {
-                        if (target.hurt(damageSources().mobAttack(this), (float) stats.damage()))
+                        if (target.hurt(damageSources().mobAttack(this), (float) (stats.damage() * driveDamage)))
                             markOwnerCombat(owner);
                         finishAttack(world, stats);
                     }
@@ -213,7 +220,7 @@ public final class PuppetEntity extends PathfinderMob {
                         else getNavigation().stop();
                     }
                     if (inReach(target, stats.reach()) && distance > 3.0 && ready(world))
-                        shootBolt(world, target, stats, owner);
+                        shootBolt(world, target, stats, owner, driveDamage);
                 }
                 case SHIELD -> {
                     // Body blocking is location-based. Guard physically between the
@@ -227,7 +234,7 @@ public final class PuppetEntity extends PathfinderMob {
                             getNavigation().moveTo(intercept.x, intercept.y, intercept.z, 1.1);
                     }
                     if (inReach(target, stats.reach()) && ready(world)) {
-                        if (target.hurt(damageSources().mobAttack(this), (float) stats.damage())) {
+                        if (target.hurt(damageSources().mobAttack(this), (float) (stats.damage() * driveDamage))) {
                             target.knockback(.36, target.getX() - getX(), target.getZ() - getZ());
                             markOwnerCombat(owner);
                         }
@@ -252,7 +259,11 @@ public final class PuppetEntity extends PathfinderMob {
 
     private void finishAttack(ServerLevel world, PuppeteerRules.Stats stats) {
         swing(InteractionHand.MAIN_HAND);
-        nextAttack = world.getGameTime() + stats.attackIntervalTicks();
+        boolean powered = blueprint != null
+                && PuppetAbilityService.driveActive(world.getServer(), blueprint.ownerId());
+        nextAttack = world.getGameTime() + (powered
+                ? Math.max(4, (int) Math.ceil(stats.attackIntervalTicks() / 1.10))
+                : stats.attackIntervalTicks());
         syncSnapshot();
     }
 
@@ -261,10 +272,10 @@ public final class PuppetEntity extends PathfinderMob {
     }
 
     private void shootBolt(ServerLevel world, Monster target, PuppeteerRules.Stats stats,
-                           ServerPlayer owner) {
+                           ServerPlayer owner, double driveDamage) {
         Arrow bolt = new Arrow(world, this, new ItemStack(Items.ARROW), ItemStack.EMPTY);
         bolt.pickup = AbstractArrow.Pickup.DISALLOWED;
-        bolt.setBaseDamage(Math.max(.1, stats.damage() / 1.7));
+        bolt.setBaseDamage(Math.max(.1, (stats.damage() * driveDamage) / 1.7));
         Vec3 muzzle = position().add(0, getBbHeight() * .72, 0);
         Vec3 aim = target.position().add(0, target.getBbHeight() * .55, 0);
         Vec3 direction = aim.subtract(muzzle);
@@ -344,6 +355,7 @@ public final class PuppetEntity extends PathfinderMob {
 
     @Override
     public void die(DamageSource source) {
+        PuppetAbilityService.stopPull(puppetId());
         if (!dropHandled && blueprint != null && level() instanceof ServerLevel) {
             dropHandled = true;
             PuppetService.breakEntity(this);

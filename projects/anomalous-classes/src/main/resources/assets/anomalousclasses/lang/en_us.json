@@ -431,5 +431,12 @@
   "message.anomalousclasses.puppet.repaired": "Marionette restored.",
   "message.anomalousclasses.puppet.expanded": "Frame expanded.",
   "message.anomalousclasses.puppet.dismantled": "Puppet dismantled; materials recovered.",
-  "screen.anomalousclasses.puppet_workbench.assemble_choice": "Build %1$s marionette (%2$s/%3$s)"
+  "screen.anomalousclasses.puppet_workbench.assemble_choice": "Build %1$s marionette (%2$s/%3$s)",
+  "message.anomalousclasses.puppet_ability.cooldown": "Skill ready in %s seconds",
+  "message.anomalousclasses.puppet_ability.success_0": "Reeling the puppet along its strings.",
+  "message.anomalousclasses.puppet_ability.success_1": "Materials consumed to stitch the puppet.",
+  "message.anomalousclasses.puppet_ability.success_2": "Link Drive empowers every active puppet.",
+  "message.anomalousclasses.puppet_ability.failed_0": "Aim at your puppet within 12 blocks and clear its pull path.",
+  "message.anomalousclasses.puppet_ability.failed_1": "Aim at a damaged puppet within 8 blocks and gather repair materials.",
+  "message.anomalousclasses.puppet_ability.failed_2": "Link Drive requires at least one active deployed puppet."
 }

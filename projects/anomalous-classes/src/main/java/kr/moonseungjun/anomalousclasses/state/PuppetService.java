@@ -112,8 +112,10 @@ public final class PuppetService {
     }
 
     public static void onEntityLeave(EntityLeaveLevelEvent event) {
-        if (!event.getLevel().isClientSide() && event.getEntity() instanceof PuppetEntity puppet)
+        if (!event.getLevel().isClientSide() && event.getEntity() instanceof PuppetEntity puppet) {
             puppet.syncSnapshot();
+            PuppetAbilityService.stopPull(puppet.puppetId());
+        }
     }
 
     private static boolean validWorkbench(ServerPlayer player, BlockPos station) {
@@ -361,7 +363,7 @@ public final class PuppetService {
         changed.ifPresent(e -> entity.spawnAtLocation(PuppetItem.make(destroyed, e.revision(), true)));
     }
 
-    private static boolean hasMaterials(Inventory inventory, Map<String,Integer> bill) {
+    static boolean hasMaterials(Inventory inventory, Map<String,Integer> bill) {
         for (var req : bill.entrySet()) {
             Item material = item(req.getKey());
             int owned = 0;
@@ -372,7 +374,7 @@ public final class PuppetService {
         return true;
     }
 
-    private static void consume(Inventory inventory, Map<String,Integer> bill) {
+    static void consume(Inventory inventory, Map<String,Integer> bill) {
         for (var req : bill.entrySet()) {
             Item material = item(req.getKey());
             int left = req.getValue();

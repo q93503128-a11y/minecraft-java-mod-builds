@@ -431,5 +431,12 @@
   "message.anomalousclasses.puppet.repaired": "마리오네트의 파손을 복구했습니다.",
   "message.anomalousclasses.puppet.expanded": "인형의 골격이 확장되었습니다.",
   "message.anomalousclasses.puppet.dismantled": "인형을 분해하여 소재를 회수했습니다.",
-  "screen.anomalousclasses.puppet_workbench.assemble_choice": "%1$s 인형 제작 (%2$s/%3$s)"
+  "screen.anomalousclasses.puppet_workbench.assemble_choice": "%1$s 인형 제작 (%2$s/%3$s)",
+  "message.anomalousclasses.puppet_ability.cooldown": "기술 재사용까지 %s초",
+  "message.anomalousclasses.puppet_ability.success_0": "실을 당겨 인형을 끌어옵니다.",
+  "message.anomalousclasses.puppet_ability.success_1": "소재를 사용해 인형을 접합했습니다.",
+  "message.anomalousclasses.puppet_ability.success_2": "조종 실이 공명하며 모든 인형의 공격이 강화됩니다.",
+  "message.anomalousclasses.puppet_ability.failed_0": "12블록 안에서 자신의 인형을 조준하고 안전한 견인 경로를 확보하세요.",
+  "message.anomalousclasses.puppet_ability.failed_1": "8블록 안에서 손상된 인형을 조준하고 수리 재료를 준비하세요.",
+  "message.anomalousclasses.puppet_ability.failed_2": "현재 활동 중인 인형이 있어야 연계 구동을 사용할 수 있습니다."
 }

@@ -17,6 +17,8 @@ import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayl
 import kr.moonseungjun.anomalousclasses.network.payload.MentalIntrusionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalSpellPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetTargetPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.PuppetAbilityPayload;
+import kr.moonseungjun.anomalousclasses.state.PuppetAbilityService;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopActionPayload;
 import kr.moonseungjun.anomalousclasses.state.PuppetService;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
@@ -90,6 +92,11 @@ public final class ClassNetwork {
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player)
                         PuppetService.workshopAction(player, payload);
+                }));
+        registrar.playToServer(PuppetAbilityPayload.TYPE, PuppetAbilityPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        PuppetAbilityService.use(player, payload.skill());
                 }));
         registrar.playToServer(PuppetTargetPayload.TYPE, PuppetTargetPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

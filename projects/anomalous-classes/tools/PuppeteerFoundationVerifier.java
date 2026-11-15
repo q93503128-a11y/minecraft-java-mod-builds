@@ -10,6 +10,7 @@ import kr.moonseungjun.anomalousclasses.state.PuppetBlueprint;
 import kr.moonseungjun.anomalousclasses.state.PuppetEconomy;
 import kr.moonseungjun.anomalousclasses.state.PuppetRegistrySavedData;
 import kr.moonseungjun.anomalousclasses.state.PuppeteerRules;
+import kr.moonseungjun.anomalousclasses.state.PuppetAbilitySavedData;
 import kr.moonseungjun.anomalousclasses.state.PlayerClassProfile;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
@@ -203,6 +204,35 @@ public final class PuppeteerFoundationVerifier {
                 == PuppetRegistrySavedData.Location.STORED, "repaired puppet stored");
         check(salvage.deploy(owner, brokenId, 4).isPresent(),
                 "fixed broken puppet can deploy with new revision");
+
+        PuppetAbilitySavedData abilities = new PuppetAbilitySavedData();
+        UUID abilityOwner = UUID.randomUUID();
+        check(abilities.ready(abilityOwner, 0, 200), "initial pull ready");
+        check(abilities.use(abilityOwner, 0, 200), "first pull cast");
+        check(!abilities.use(abilityOwner, 0, 201), "pull cannot be immediately repeated");
+        check(abilities.ready(abilityOwner, 0, 520), "16 second pull cooldown");
+        check(abilities.use(abilityOwner, 1, 200), "field stitch cast");
+        check(!abilities.ready(abilityOwner, 1, 679), "24 second field stitch cooldown");
+        check(abilities.ready(abilityOwner, 1, 680), "field stitch cooldown expiry");
+        check(abilities.use(abilityOwner, 2, 200), "link drive cast");
+        check(abilities.driveActive(abilityOwner, 319), "buff remains for 6 seconds");
+        check(!abilities.driveActive(abilityOwner, 320), "buff expires at exact tick");
+        check(!abilities.ready(abilityOwner, 2, 799), "drive re-use not prematurely ready");
+        check(abilities.ready(abilityOwner, 2, 800), "30 second cooldown");
+        CompoundTag abilityTag = abilities.save(new CompoundTag(), RegistryAccess.EMPTY);
+        Method loadAbilities = PuppetAbilitySavedData.class.getDeclaredMethod(
+                "load", CompoundTag.class, net.minecraft.core.HolderLookup.Provider.class);
+        loadAbilities.setAccessible(true);
+        PuppetAbilitySavedData restoredAbilities = (PuppetAbilitySavedData) loadAbilities.invoke(
+                null, abilityTag, RegistryAccess.EMPTY);
+        check(restoredAbilities.state(abilityOwner).driveUntil() == 320,
+                "buff expiry persists through server save/load");
+        check(!restoredAbilities.ready(abilityOwner, 2, 799),
+                "skill cooldown persists through server save/load");
+        check(PuppetEconomy.emergencyStitchMaterials(damaged, .18)
+                .get("minecraft:string") == 1, "field stitch always costs material");
+        check(PuppetEconomy.emergencyStitchMaterials(damaged, 0).isEmpty(),
+                "zero healing never charges ingredients");
 
         CompoundTag saved = ledger.save(new CompoundTag(), RegistryAccess.EMPTY);
         Method load = PuppetRegistrySavedData.class.getDeclaredMethod(

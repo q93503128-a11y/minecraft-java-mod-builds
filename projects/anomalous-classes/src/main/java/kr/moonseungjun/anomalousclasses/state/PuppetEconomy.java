@@ -114,6 +114,26 @@ public final class PuppetEconomy {
         return Map.copyOf(next);
     }
 
+    /**
+     * Emergency field stitching: always paid, smaller than full workshop repair.
+     * Size and actual structural investment determine material volume; the
+     * standard repair discount does not silently make combat restoration free.
+     */
+    public static Map<String, Integer> emergencyStitchMaterials(PuppetBlueprint puppet,
+                                                                  double maxHpFraction) {
+        if (puppet == null || !Double.isFinite(maxHpFraction)
+                || maxHpFraction <= 0.0 || maxHpFraction > .25) return Map.of();
+        Map<String, Integer> structural = puppet.frame() == PuppetBlueprint.Frame.LIGHT
+                ? lightFrameMaterials(puppet.size()) : puppet.materialLedger();
+        String primary = structural.containsKey("minecraft:oak_planks")
+                ? "minecraft:oak_planks" : structural.containsKey("minecraft:iron_ingot")
+                ? "minecraft:iron_ingot" : null;
+        if (primary == null) return Map.of();
+        int count = Math.max(1, (int) Math.ceil(structural.get(primary)
+                * maxHpFraction * .5));
+        return Map.of(primary, count, "minecraft:string", 1);
+    }
+
     /** No material can be refunded twice or above what was actually paid. */
     public static Map<String, Integer> dismantleReturn(PuppetBlueprint blueprint, boolean broken,
                                                         double materialUseBonus) {
