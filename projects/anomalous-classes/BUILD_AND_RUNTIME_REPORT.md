@@ -8,7 +8,7 @@
 - Timed statuses clean up on expiry, unload/death, class-controlled mob release and server session changes. A persistent temporary-stun marker is removed at entity join after unexpected restart; overload uses transient attributes rather than permanently altering entity stats.
 - Damage multiplier applies once in LivingDamageEvent.Pre for both melee and projectile damage sources; the speed attribute remains transient. PathfinderMob-based creatures from compatible mod namespaces are no longer blanket-denied capture, while non-Pathfinder bosses remain unsupported until a safe adapter is implemented.
 - This is a **combat implementation increment**, not proof of all-class completeness. External entity-specific animation/AI compatibility, full visual fidelity, PvP-specific player CC, physical player controls, genuine playfeel and multiplayer require later verification. No player playtest requested for this patch.
-- **Verification:** source authored, CI/build outcome to be observed; in-game / multiplayer **NOT TESTED**.
+- **Verification:** GitHub Actions [Build anomalous-classes #43698474566](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43698474566) **PASS**, then [#43698759086](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43698759086) **PASS** after compatible-mod capture and ranged overload changes. Final implementation commit: `49a3ab001dab0caa1725a3f0a7652fd178109e39`. Final JAR artifact: `anomalous-classes-0.1.0-alpha.1-deliverables` (ID `14155915518`). **BUILD VERIFIED / JAR PRODUCED; PLAYTESTED / MULTIPLAYER TESTED = NO.**
 
 ---
 
