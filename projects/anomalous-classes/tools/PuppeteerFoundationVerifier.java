@@ -108,6 +108,69 @@ public final class PuppeteerFoundationVerifier {
         check(ledger.dismantle(owner, id, 5).isPresent(), "broken item disassembled once");
         check(ledger.dismantle(owner, id, 6).isEmpty(), "retired puppet cannot be refunded twice");
 
+        // Workbench edits must advance the same identity, never reset damage/cooldown.
+        UUID workshopId = UUID.randomUUID();
+        PuppetBlueprint damaged = new PuppetBlueprint(workshopId, owner,
+                PuppetBlueprint.Frame.LIGHT, PuppetBlueprint.Device.BLADE,
+                PuppetBlueprint.Core.BASIC, PuppetBlueprint.Size.NORMAL, .5, 135, paid);
+        PuppetRegistrySavedData workbench = new PuppetRegistrySavedData();
+        check(workbench.registerCrafted(damaged), "workshop register");
+        check(PuppetEconomy.repairMaterials(damaged, 0).get("minecraft:oak_planks") == 1,
+                "half-health plank repair");
+        check(PuppetEconomy.repairMaterials(damaged, 0).get("minecraft:string") == 1,
+                "half-health string repair");
+        check(PuppetEconomy.repairMaterials(damaged, 25)
+                .get("minecraft:oak_planks") <= PuppetEconomy.repairMaterials(damaged, 0)
+                .get("minecraft:oak_planks"), "material-use skill lowers repair cost");
+        PuppetBlueprint expanded = damaged.withParts(damaged.frame(), damaged.device(),
+                damaged.core(), PuppetBlueprint.Size.GIANT,
+                PuppetEconomy.expandLedger(damaged, PuppetBlueprint.Size.GIANT));
+        check(expanded.healthRatio() == .5 && expanded.nextAttackTick() == 135,
+                "expansion retains damage and attack recovery");
+        check(expanded.materialLedger().get("minecraft:oak_planks") == 15,
+                "investment recorded without counting base twice");
+        check(PuppetEconomy.refundNeverExceedsInput(expanded,
+                PuppetEconomy.dismantleReturn(expanded, false, .15)),
+                "expanded inventory refund bounded");
+        check(workbench.reviseStored(owner, workshopId, 1, damaged, expanded, false).isPresent(),
+                "server expands same physical puppet");
+        check(workbench.reviseStored(owner, workshopId, 1, damaged, expanded, false).isEmpty(),
+                "replayed expansion rejected");
+        check(workbench.reviseStored(UUID.randomUUID(), workshopId, 2, expanded,
+                expanded.withCondition(1, 135), true).isEmpty(), "foreign repair rejected");
+        PuppetBlueprint repaired = expanded.withCondition(1.0, 135);
+        check(workbench.reviseStored(owner, workshopId, 2, expanded, repaired, true).isPresent(),
+                "valid workshop repair");
+        check(workbench.find(workshopId).orElseThrow().revision() == 3,
+                "repair revision increment");
+        check(workbench.reviseStored(owner, workshopId, 2, expanded, repaired, true).isEmpty(),
+                "duplicate repair cannot replay");
+        check(workbench.dismantle(owner, workshopId, 3).isPresent(),
+                "permanent dismantle");
+        check(workbench.dismantle(owner, workshopId, 4).isEmpty(),
+                "dismantle cannot grant a second refund");
+        check(workbench.reviseStored(owner, workshopId, 4, repaired, repaired, true).isEmpty(),
+                "retired item cannot be repaired back into world");
+
+        UUID brokenId = UUID.randomUUID();
+        PuppetBlueprint whole = new PuppetBlueprint(brokenId, owner,
+                PuppetBlueprint.Frame.LIGHT, PuppetBlueprint.Device.BLADE,
+                PuppetBlueprint.Core.BASIC, PuppetBlueprint.Size.NORMAL, 1.0, 75, paid);
+        PuppetRegistrySavedData salvage = new PuppetRegistrySavedData();
+        check(salvage.registerCrafted(whole), "salvage register");
+        check(salvage.deploy(owner, brokenId, 1).isPresent(), "salvage deploy");
+        PuppetBlueprint smashed = whole.withCondition(0.0, 75);
+        check(salvage.breakPuppet(owner, brokenId, 2, smashed).isPresent(),
+                "salvage broken record");
+        check(PuppetEconomy.repairMaterials(smashed, 0)
+                .get("minecraft:oak_planks") == 2, "broken full plank repair");
+        check(salvage.reviseStored(owner, brokenId, 3, smashed,
+                smashed.withCondition(1.0, 75), true).isPresent(), "broken puppet repaired");
+        check(salvage.find(brokenId).orElseThrow().location()
+                == PuppetRegistrySavedData.Location.STORED, "repaired puppet stored");
+        check(salvage.deploy(owner, brokenId, 4).isPresent(),
+                "fixed broken puppet can deploy with new revision");
+
         CompoundTag saved = ledger.save(new CompoundTag(), RegistryAccess.EMPTY);
         Method load = PuppetRegistrySavedData.class.getDeclaredMethod(
                 "load", CompoundTag.class, net.minecraft.core.HolderLookup.Provider.class);
@@ -117,7 +180,7 @@ public final class PuppeteerFoundationVerifier {
         check(restored.find(id).orElseThrow().location() == PuppetRegistrySavedData.Location.RETIRED,
                 "retired identity persists");
         check(restored.deploy(owner, id, 6).isEmpty(), "retired identity cannot redeploy after reload");
-        System.out.println("PASS: puppet 27 roles, 5 sizes, gear slots, NBT data, material costs/refunds and anti-duplication lifecycle");
+        System.out.println("PASS: puppet 27 roles, size costs, repair/expansion/refund CAS, broken recovery, save and anti-duplication");
     }
     private static boolean close(double a, double b) { return Math.abs(a-b) < 1e-8; }
     private static void check(boolean result, String name) {

@@ -18,6 +18,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -85,7 +87,31 @@ public final class PuppetEntity extends PathfinderMob {
 
     public int frameIndex() { return this.entityData.get(FRAME); }
     public int deviceIndex() { return this.entityData.get(DEVICE); }
-    public float puppetScale() { return (float) (1.0 + (this.entityData.get(HEIGHT) - 1) / 3.0); }
+    public float puppetScale() {
+        int value = Math.max(0, Math.min(PuppetBlueprint.Size.values().length - 1,
+                this.entityData.get(HEIGHT)));
+        return (float) (PuppetBlueprint.Size.values()[value].height() / 1.5);
+    }
+
+    /**
+     * The visible 1–3-block body and the server/client physical hitbox must
+     * agree. A larger puppet cannot walk through a two-block-tall doorway.
+     */
+    @Override
+    public EntityDimensions getDimensions(Pose pose) {
+        if (this.entityData == null) return super.getDimensions(pose);
+        int value = Math.max(0, Math.min(PuppetBlueprint.Size.values().length - 1,
+                this.entityData.get(HEIGHT)));
+        double height = PuppetBlueprint.Size.values()[value].height();
+        float width = (float) (0.60 + 0.16 * value);
+        return EntityDimensions.scalable(width, (float) height);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (HEIGHT.equals(key)) refreshDimensions();
+    }
     public UUID puppetId() { return blueprint == null ? null : blueprint.puppetId(); }
     public UUID puppetOwner() { return blueprint == null ? null : blueprint.ownerId(); }
     public int revision() { return revision; }

@@ -56,6 +56,13 @@ def main():
         "screen.anomalousclasses.puppet_workbench.rejected",
         "message.anomalousclasses.puppet.no_space_class_change",
         "tooltip.anomalousclasses.puppet.broken",
+        "screen.anomalousclasses.puppet_workbench.repair",
+        "screen.anomalousclasses.puppet_workbench.expand",
+        "screen.anomalousclasses.puppet_workbench.dismantle",
+        "screen.anomalousclasses.puppet_workbench.confirm",
+        "screen.anomalousclasses.puppet_workbench.refund",
+        "screen.anomalousclasses.puppet_workbench.repaired",
+        "screen.anomalousclasses.puppet_workbench.dismantled",
     }
     for locale in ("ko_kr", "en_us"):
         strings = j(ASSETS / f"lang/{locale}.json")

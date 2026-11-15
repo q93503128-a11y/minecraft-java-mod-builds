@@ -1,5 +1,25 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Puppeteer one-station maintenance and physical growth
+
+### User-facing game loop added
+- The existing puppet workbench now has **four operations in one screen**: initial assembly, full workshop repair, stepwise body expansion, and permanent material dismantle. The screen lists authentic owner-held marionettes from inventory and displays **server-calculated** repair/expansion quotes or dismantle returns before the player confirms an action.
+- Each non-assembly action includes actual inventory slot + puppet UUID + expected revision; **none are trusted by the server**. After checking workshop position, current class, combat lock, exclusive registry record, matching inventory snapshot, location and material availability, the server performs one compare-and-swap entry transition and consumes/upgrades or retires the single item.
+- Normal and broken puppets may be repaired with documented wood-frame materials; repair expense depends on missing HP, physical frame size, and the existing `material_use` passive. This is a *tunable recipe candidate*, not a newly user-approved fixed balance. Broken puppets return to STORED with the same UUID; full repair restores HP but preserves the attack recovery timer and paid upgrade ledger. Spent repair materials **never increase the dismantle refund ledger**.
+- Existing light-frame puppets may grow from 1.0 to 3.0 blocks, one size option at a time, with the **exact incremental raw material cost** in `classes/PUPPET_SCALE_AND_WORKBENCH.md`. The old body, ownership, HP ratio and attack recovery are preserved while added structure is booked exactly once. No shrink or size-based refunds are silently invented.
+- Permanent dismantle uses the existing 75% normal / 45% broken **candidate** rates, bounded by the one real material contribution ledger and the existing material-use skill. Item is retired first; any stack that cannot fit the inventory drops at the workbench position rather than vanishing. Replayed/stale/foreign requests cannot mint additional outputs.
+- A physical `EntityDimensions` change now matches the synced 1.0–3.0-block size and model scaling. Larger marionettes must fit through actual corridors; navigation/animation quality is still awaiting client playtest.
+
+### Automatic verification
+- Extended `PuppeteerFoundationVerifier` to cover repair quotes, passive discounts, 1.5→3.0 raw material ledger growth, HP/cooldown retention, stored repair and revision CAS, foreign/replayed mutation rejection, one-way dismantle, broken-puppet recovery, and bounded salvage.
+- Extended `verify_puppet_assets.py` for repair/expansion/dismantle UI translations.
+- GitHub Actions compile and verification result: **pending this commit**. No Minecraft rendering, client interaction, multiplayer or real TPS measured.
+
+### Still open under the original class plan
+- Frame/device/core replacement including returning intact old part items, the remaining blade/launcher/shield distinct AI and animation, three direct active skills, real strings from controller to joints, richer model/art, workshop 3D preview, sizes for non-wood frames, shrink cost/refunds, and collision-friendly formation behavior. **Not class-complete; no user playtest requested.**
+
+---
+
 ## 2026-11-15 — Puppeteer first in-world gameplay slice
 
 Current source-of-truth: `projects/anomalous-classes/` at `main`, with original first marionette blueprint from `classes/PUPPET_CRAFTING_ECONOMY.md`, combat/size roles from `PUPPET_COMBAT_MATRIX.md` and `PUPPET_SCALE_AND_WORKBENCH.md`, equipment progression from `MARIONETTE_CONTROL_BAR.md`, no-cooldown R priority target from D09 and class-change recovery from `CLASS_SWITCH_ORIGINAL_STATE_POLICY_V2.md`.

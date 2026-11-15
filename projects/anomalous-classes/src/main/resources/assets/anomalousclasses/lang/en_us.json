@@ -416,5 +416,19 @@
   "screen.anomalousclasses.puppet_workbench.ready": "Materials are ready.",
   "screen.anomalousclasses.puppet_workbench.missing": "Insufficient materials or inventory space.",
   "screen.anomalousclasses.puppet_workbench.done": "Marionette stored in your inventory.",
-  "screen.anomalousclasses.puppet_workbench.rejected": "Assembly conditions not met."
+  "screen.anomalousclasses.puppet_workbench.rejected": "Assembly conditions not met.",
+  "screen.anomalousclasses.puppet_workbench.expand": "Enlarge",
+  "screen.anomalousclasses.puppet_workbench.repair": "Repair",
+  "screen.anomalousclasses.puppet_workbench.dismantle": "Dismantle",
+  "screen.anomalousclasses.puppet_workbench.confirm": "Confirm action",
+  "screen.anomalousclasses.puppet_workbench.selected": "Puppet %1$s/%2$s · %3$s blocks · %4$s%% condition",
+  "screen.anomalousclasses.puppet_workbench.no_puppet": "No stored puppet in inventory",
+  "screen.anomalousclasses.puppet_workbench.refund": "Returns on dismantle (puppet permanently lost)",
+  "screen.anomalousclasses.puppet_workbench.cost": "Required materials",
+  "screen.anomalousclasses.puppet_workbench.repaired": "The marionette has been repaired.",
+  "screen.anomalousclasses.puppet_workbench.expanded": "The frame has been enlarged.",
+  "screen.anomalousclasses.puppet_workbench.dismantled": "The puppet was dismantled into materials.",
+  "message.anomalousclasses.puppet.repaired": "Marionette restored.",
+  "message.anomalousclasses.puppet.expanded": "Frame expanded.",
+  "message.anomalousclasses.puppet.dismantled": "Puppet dismantled; materials recovered."
 }

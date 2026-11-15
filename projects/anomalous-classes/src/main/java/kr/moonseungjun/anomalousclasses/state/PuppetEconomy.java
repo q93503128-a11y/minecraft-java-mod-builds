@@ -62,6 +62,37 @@ public final class PuppetEconomy {
         return Map.copyOf(addition);
     }
 
+    /**
+     * Full workshop repair. The consumed frame materials reflect damage and
+     * actual size, while the material-use passive reduces the necessary volume.
+     * Repair expenditure is NOT an upgrade investment: never add it to refund ledger.
+     * This is a tunable balance candidate, using only the initial wood-frame bill.
+     */
+    public static Map<String, Integer> repairMaterials(PuppetBlueprint puppet, int materialUseRanks) {
+        if (puppet.frame() != PuppetBlueprint.Frame.LIGHT) return Map.of();
+        double missing = 1.0 - puppet.healthRatio();
+        if (missing <= 0.000001) return Map.of();
+        double discount = 1.0 - 0.006 * Math.min(25, Math.max(0, materialUseRanks));
+        int structuralPlanks = lightFrameMaterials(puppet.size()).get("minecraft:oak_planks");
+        int planks = Math.max(1, (int) Math.ceil(structuralPlanks * missing * 0.5 * discount));
+        int strings = Math.max(1, (int) Math.ceil(2.0 * missing * discount));
+        return Map.of("minecraft:oak_planks", planks, "minecraft:string", strings);
+    }
+
+    /**
+     * Only material added to the physical frame is refundable. Changing size
+     * never refunds more than the initial + actual expansion investment.
+     */
+    public static Map<String, Integer> expandLedger(PuppetBlueprint puppet,
+                                                     PuppetBlueprint.Size destination) {
+        if (puppet.frame() != PuppetBlueprint.Frame.LIGHT
+                || destination.ordinal() <= puppet.size().ordinal()) return Map.of();
+        Map<String, Integer> next = new LinkedHashMap<>(puppet.materialLedger());
+        extraLightFrameMaterials(puppet.size(), destination).forEach(
+                (material, amount) -> next.merge(material, amount, Math::addExact));
+        return Map.copyOf(next);
+    }
+
     /** No material can be refunded twice or above what was actually paid. */
     public static Map<String, Integer> dismantleReturn(PuppetBlueprint blueprint, boolean broken,
                                                         double materialUseBonus) {

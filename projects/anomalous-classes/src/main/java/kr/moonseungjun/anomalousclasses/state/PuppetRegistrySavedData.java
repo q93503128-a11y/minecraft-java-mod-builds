@@ -87,6 +87,29 @@ public final class PuppetRegistrySavedData extends SavedData {
         return transition(owner, id, expectedRevision, Location.DEPLOYED, Location.BROKEN, snapshot);
     }
 
+    /**
+     * CAS for an inventory-held puppet at the workbench. Never accepts caller-made
+     * raw materials or ownership changes; all materials originate on the server.
+     * Repairs may restore BROKEN to STORED, while size increases require STORED.
+     */
+    public Optional<Entry> reviseStored(UUID owner, UUID id, int expectedRevision,
+                                         PuppetBlueprint expectedSnapshot, PuppetBlueprint updated,
+                                         boolean repair) {
+        Entry current = entries.get(id);
+        if (current == null || current.revision() != expectedRevision
+                || current.revision() == Integer.MAX_VALUE
+                || !(current.location() == Location.STORED ||
+                     repair && current.location() == Location.BROKEN)
+                || !current.blueprint().ownerId().equals(owner)
+                || !current.blueprint().equals(expectedSnapshot)
+                || updated == null || !updated.puppetId().equals(id)
+                || !updated.ownerId().equals(owner)) return Optional.empty();
+        Entry replaced = new Entry(updated, Location.STORED, expectedRevision + 1);
+        entries.put(id, replaced);
+        setDirty();
+        return Optional.of(replaced);
+    }
+
     /** One-way disassembly: no later stale item may redeploy that ID. */
     public Optional<Entry> dismantle(UUID owner, UUID id, int expectedRevision) {
         Entry current = entries.get(id);

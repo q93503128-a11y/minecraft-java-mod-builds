@@ -89,7 +89,7 @@ public final class ClassNetwork {
         registrar.playToServer(PuppetWorkshopActionPayload.TYPE, PuppetWorkshopActionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player)
-                        PuppetService.workshopCraft(player, payload.station());
+                        PuppetService.workshopAction(player, payload);
                 }));
         registrar.playToServer(PuppetTargetPayload.TYPE, PuppetTargetPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

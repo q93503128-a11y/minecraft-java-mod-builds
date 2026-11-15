@@ -20,6 +20,7 @@ import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 import kr.moonseungjun.anomalousclasses.item.PuppetItem;
 import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopActionPayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -126,19 +127,138 @@ public final class PuppetService {
         sendWorkshopState(player, station, PuppetWorkshopStatePayload.OPEN);
     }
 
-    public static void workshopCraft(ServerPlayer player, BlockPos station) {
+    public static void workshopAction(ServerPlayer player, PuppetWorkshopActionPayload request) {
+        BlockPos station = request.station();
         if (!validWorkbench(player, station)) return;
-        boolean success = assembleStarter(player, station);
-        sendWorkshopState(player, station, success
-                ? PuppetWorkshopStatePayload.CRAFTED : PuppetWorkshopStatePayload.REJECTED);
+        int outcome = PuppetWorkshopStatePayload.REJECTED;
+        if (isPuppeteer(player) && !CombatTracker.isLocked(player)) {
+            if (request.operation() == PuppetWorkshopActionPayload.CRAFT) {
+                outcome = assembleStarter(player, station)
+                        ? PuppetWorkshopStatePayload.CRAFTED : PuppetWorkshopStatePayload.REJECTED;
+            } else {
+                outcome = modifyStored(player, request);
+            }
+        }
+        sendWorkshopState(player, station, outcome);
+    }
+
+    private record Held(PuppetItem.Identity item, PuppetRegistrySavedData.Entry entry) {}
+
+    /** World ledger and the actual inventory slot must agree byte-for-byte. */
+    private static Optional<Held> authenticHeld(ServerPlayer player, int slot, UUID claimed,
+                                                 int revision) {
+        if (slot < 0 || slot >= 36 || claimed == null || revision < 1) return Optional.empty();
+        var item = PuppetItem.read(player.getInventory().getItem(slot)).orElse(null);
+        if (item == null || item.revision() != revision
+                || !item.blueprint().puppetId().equals(claimed)
+                || !item.blueprint().ownerId().equals(player.getUUID())) return Optional.empty();
+        var entry = PuppetRegistrySavedData.get(player.getServer()).find(claimed).orElse(null);
+        if (entry == null || entry.revision() != revision
+                || !entry.blueprint().equals(item.blueprint())
+                || entry.location() != (item.broken() ?
+                    PuppetRegistrySavedData.Location.BROKEN : PuppetRegistrySavedData.Location.STORED))
+            return Optional.empty();
+        return Optional.of(new Held(item, entry));
+    }
+
+    private static int modifyStored(ServerPlayer player, PuppetWorkshopActionPayload request) {
+        Optional<Held> held = authenticHeld(player, request.inventorySlot(),
+                request.puppetId(), request.expectedRevision());
+        if (held.isEmpty()) return PuppetWorkshopStatePayload.REJECTED;
+        PuppetItem.Identity item = held.get().item();
+        PuppetBlueprint blueprint = item.blueprint();
+        PuppetRegistrySavedData registry = PuppetRegistrySavedData.get(player.getServer());
+        Inventory inventory = player.getInventory();
+        var profile = ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
+        int materialRanks = PuppeteerRules.rank(profile, "material_use");
+        if (request.operation() == PuppetWorkshopActionPayload.REPAIR) {
+            if (blueprint.healthRatio() >= 0.999999) return PuppetWorkshopStatePayload.REJECTED;
+            Map<String, Integer> bill = PuppetEconomy.repairMaterials(blueprint, materialRanks);
+            if (bill.isEmpty() || !hasMaterials(inventory, bill)) return PuppetWorkshopStatePayload.REJECTED;
+            PuppetBlueprint repaired = blueprint.withCondition(1.0, blueprint.nextAttackTick());
+            var revised = registry.reviseStored(player.getUUID(), blueprint.puppetId(), item.revision(),
+                    blueprint, repaired, true);
+            if (revised.isEmpty()) return PuppetWorkshopStatePayload.REJECTED;
+            consume(inventory, bill);
+            inventory.setItem(request.inventorySlot(), PuppetItem.make(repaired, revised.get().revision(), false));
+            message(player, "message.anomalousclasses.puppet.repaired");
+            return PuppetWorkshopStatePayload.REPAIRED;
+        }
+        if (request.operation() == PuppetWorkshopActionPayload.EXPAND) {
+            if (item.broken() || blueprint.frame() != PuppetBlueprint.Frame.LIGHT
+                    || blueprint.size() == PuppetBlueprint.Size.GIANT)
+                return PuppetWorkshopStatePayload.REJECTED;
+            PuppetBlueprint.Size next = PuppetBlueprint.Size.values()[blueprint.size().ordinal() + 1];
+            Map<String,Integer> bill = PuppetEconomy.extraLightFrameMaterials(blueprint.size(), next);
+            if (bill.isEmpty() || !hasMaterials(inventory, bill)) return PuppetWorkshopStatePayload.REJECTED;
+            PuppetBlueprint bigger = blueprint.withParts(blueprint.frame(), blueprint.device(),
+                    blueprint.core(), next, PuppetEconomy.expandLedger(blueprint, next));
+            var revised = registry.reviseStored(player.getUUID(), blueprint.puppetId(), item.revision(),
+                    blueprint, bigger, false);
+            if (revised.isEmpty()) return PuppetWorkshopStatePayload.REJECTED;
+            consume(inventory, bill);
+            inventory.setItem(request.inventorySlot(), PuppetItem.make(bigger, revised.get().revision(), false));
+            message(player, "message.anomalousclasses.puppet.expanded");
+            return PuppetWorkshopStatePayload.EXPANDED;
+        }
+        if (request.operation() == PuppetWorkshopActionPayload.DISMANTLE) {
+            Map<String,Integer> refund = PuppetEconomy.dismantleReturn(blueprint,
+                    item.broken(), 0.006 * Math.min(25, materialRanks));
+            if (!PuppetEconomy.refundNeverExceedsInput(blueprint, refund))
+                return PuppetWorkshopStatePayload.REJECTED;
+            var retired = registry.dismantle(player.getUUID(), blueprint.puppetId(), item.revision());
+            if (retired.isEmpty()) return PuppetWorkshopStatePayload.REJECTED;
+            inventory.setItem(request.inventorySlot(), ItemStack.EMPTY);
+            // Every output is material from the historical ledger, never a new puppet.
+            for (var entry : refund.entrySet()) {
+                int remaining = entry.getValue();
+                Item material = item(entry.getKey());
+                while (remaining > 0) {
+                    int amount = Math.min(material.getDefaultMaxStackSize(), remaining);
+                    ItemStack stack = new ItemStack(material, amount);
+                    inventory.add(stack);
+                    if (!stack.isEmpty()) player.drop(stack, false);
+                    remaining -= amount;
+                }
+            }
+            message(player, "message.anomalousclasses.puppet.dismantled");
+            return PuppetWorkshopStatePayload.DISMANTLED;
+        }
+        return PuppetWorkshopStatePayload.REJECTED;
     }
 
     private static void sendWorkshopState(ServerPlayer player, BlockPos station, int result) {
-        boolean craftable = isPuppeteer(player)
-                && player.getInventory().getFreeSlot() >= 0
-                && hasMaterials(player.getInventory(),
+        Inventory inventory = player.getInventory();
+        boolean ownerClass = isPuppeteer(player);
+        boolean safe = ownerClass && !CombatTracker.isLocked(player);
+        boolean craftable = safe && inventory.getFreeSlot() >= 0
+                && hasMaterials(inventory,
                         PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL));
-        ClassNetwork.sendToPlayer(player, new PuppetWorkshopStatePayload(station, craftable, result));
+        int materialRanks = ownerClass ? PuppeteerRules.rank(
+                ClassProfileSavedData.get(player.getServer()).profile(player.getUUID()), "material_use") : 0;
+        List<PuppetWorkshopStatePayload.PuppetView> views = new ArrayList<>();
+        for (int slot = 0; slot < 36; slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            var identity = PuppetItem.read(stack).orElse(null);
+            if (identity == null) continue;
+            var blueprint = identity.blueprint();
+            if (authenticHeld(player, slot, blueprint.puppetId(), identity.revision()).isEmpty()) continue;
+            Map<String, Integer> repair = PuppetEconomy.repairMaterials(blueprint, materialRanks);
+            Map<String, Integer> expansion = !identity.broken()
+                    && blueprint.frame() == PuppetBlueprint.Frame.LIGHT
+                    && blueprint.size() != PuppetBlueprint.Size.GIANT
+                    ? PuppetEconomy.extraLightFrameMaterials(blueprint.size(),
+                        PuppetBlueprint.Size.values()[blueprint.size().ordinal() + 1]) : Map.of();
+            Map<String, Integer> refund = PuppetEconomy.dismantleReturn(blueprint,
+                    identity.broken(), 0.006 * Math.min(25, materialRanks));
+            views.add(new PuppetWorkshopStatePayload.PuppetView(slot, blueprint.puppetId(),
+                    identity.revision(), blueprint.size().ordinal(),
+                    (int) Math.round(blueprint.healthRatio() * 100.0), identity.broken(),
+                    safe && !repair.isEmpty() && hasMaterials(inventory, repair),
+                    safe && !expansion.isEmpty() && hasMaterials(inventory, expansion),
+                    safe, repair, expansion, refund));
+        }
+        ClassNetwork.sendToPlayer(player, new PuppetWorkshopStatePayload(station, craftable, result, views));
     }
 
     public static boolean assembleStarter(ServerPlayer player, BlockPos station) {
