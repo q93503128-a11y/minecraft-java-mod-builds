@@ -45,5 +45,5 @@ public final class ClassSelectionKeyMappings {
                 glfw, "key.categories.anomalousclasses");
     }
 
-    private ClassSelectionKeyMappings() {
+    private ClassSelectionKeyMappings() {}
 }
