@@ -1,5 +1,23 @@
 # 기생술사 — 2026-11-15 구현·검증 체크포인트
 
+## 2026-11-16 — 숙주 직접 조작 안정화: 입력·시선·AI·무효화 복구
+
+- **구현 코드:** [`b217a05fb73e04ba834ac216b0d2f94d4d42817d`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b217a05fb73e04ba834ac216b0d2f94d4d42817d). 기존 숙주 바닐라34/외부20 **54개 프로필 보존**. 기존 외부 모드 9+6, 저장 NBT 키, 종족 직접 능력 슬롯, 다른 직업 변경 없음.
+- **BUILD VERIFIED / JAR PRODUCED:** [GitHub Actions Build #43744893340](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43744893340) **SUCCESS**. `anomalous-classes-0.1.0-alpha.1.jar` **32,064,956 bytes, 187 classes**. [JAR+SHA256 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43744893340/artifacts/14173509953). `verifyParasiteFoundation`, `verifyPuppeteerFoundation`, `verifyGraphSkillTreeRuntime`, UI/layout/resource verification and JAR integrity checks PASS.
+- **Stationary aim bug:** previously host yaw/head/pitch rotation was updated only while horizontal input had movement. While stopped, the player could turn their camera and the authoritative original host would remain facing its prior direction. Moved `setYRot`, `setYHeadRot`, `setYBodyRot`, `setXRot` into a fresh-look-input path **independent of planar movement**; no empty-key 0° forced turn after packet expiration. Client stays the input/view capture point, server the authoritative world entity.
+- **Shared deterministic motion math:** new `ParasiteMotionRules.java` validates finite camera yaw/pitch, keymask, maximum packet staleness (10 server ticks and monotonic age), normalizes diagonals, prevents backward/forward co-press from triggering sprint, normalizes yaw and bounds pitch-controlled water ascent/descent. `ParasiteService.movement` now also verifies the current claimed original host before accepting rotation/keys. Server still derives all speed, damage, target and world effects; no client coordinates.
+- **External Mob direct control:** while actively riding the claimed original Mob, if third-party AI unexpectedly becomes enabled between ticks, stop navigation and restore NoAI. This prevents concurrent AI pathfinding and player movement competing for a single host; it does not claim native scripted attacks are reproduced.
+- **Stale saved host recovery:** if the exact registered external EntityType still exists but Java class fingerprint changed on entity join, detach the present player from that invalid original host, stop that host's per-host ability effects, clear in-flight input/possession, restore original NoAI state, release only the current matching claim and resync human health/camera. Existing unloaded-host claim preservation for valid entities remains.
+- **Deterministic regression verifier:** invalid keymasks, NaN/infinity and pitch range; 10-tick freshness boundary and clock rollback; 0-movement fresh look; 0° forward and diagonal normalization; reverse+sprint rejection; ±90° underwater pitch and bounded swim speed; wrapped yaw; 54 profiles, 20 external fingerprints and previous saved masteries/cooldowns all pass. This fixture is **CODE/RULES TESTED**, not an in-game mouse/collision test.
+- **Earlier external pack simultaneous server test remains:** [#43741441267](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741441267) PASS 20/20 classes, 13 server JARs. The present commit did **not** rerun a dedicated external pack with player-connected possession.
+- **CLIENT RUNTIME TESTED: NO / ACTUAL PLAYTESTED: NO / MULTIPLAYER TESTED: NO.** Real client camera rotation when stationary, walk/jump/collision per original body, dismount resistance, external AI resumption, backup host in unloaded chunks, mining from original host eye, performance/animation still require actual gameplay QA before declaring the experience complete.
+
+
+---
+
+> 아래 내용은 이전 시점의 구현·검증 스냅샷이다. 현재 조작 안정화 상태는 위 최신 체크포인트를 우선한다.
+
+
 ## 2026-11-16 — 기생술사 계승 전투 안전성 + 파괴수 포효 + 거북 방어
 
 - **소스 변경:** [`c122b90808c3b02523ab6ca7cb101cf48e506e21`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/c122b90808c3b02523ab6ca7cb101cf48e506e21). 바닐라 34 + 외부 20 = **54개 원본 숙주 프로필 유지**. 타 직업/기존 저장 키/고정 외부 모드팩 9+6 구성 불변.

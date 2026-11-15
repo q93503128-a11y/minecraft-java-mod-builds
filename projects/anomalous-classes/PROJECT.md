@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-16 최신 기생술사 조작 안정화:** [게임 코드 `b217a05`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b217a05fb73e04ba834ac216b0d2f94d4d42817d)에서 **제자리 숙주 시선 회전 서버 동기화**, 대각선/질주/수중 입력 규칙 공통화, 오래되거나 소유권 없는 입력 차단, 외부 몹 AI 재활성화 억제, 외부 클래스 변경 시 탑승·상태·카메라 복구 구현. **54종 숙주 유지.** [CI #43744893340](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43744893340) BUILD VERIFIED/JAR PRODUCED. **CLIENT/PLAYTEST/MULTIPLAYER NOT TESTED**. [상세 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
+
+
 > **2026-11-16 최신 기생술사 전투 품질:** 바닐라34+외부20 **숙주 총54종 유지**. [게임 코드 `c122b90`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/c122b90808c3b02523ab6ca7cb101cf48e506e21)에서 전투 계승 쿨다운 선검사·실패 시 미소모·재진입 방지, 파괴수 V+4 포효·숙련100 계승, 거북 밀침 저항·숙련100 계승, 외부 모드 클래스 변경 시 기존 숙주 NoAI 복원·claim 해제 구현. [CI #43743671415](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43743671415) **BUILD VERIFIED / JAR PRODUCED**. **CLIENT/PLAYTEST/MULTIPLAYER NOT TESTED**. 아래 문서의 이전 상태는 해당 일자 스냅샷이며 [최신 기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md)가 우선.
 
 
