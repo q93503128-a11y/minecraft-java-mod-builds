@@ -17,6 +17,7 @@ public final class ClassSelectionService {
             profile.currentClass().ifPresent(id -> SkillTreeAttributeService.apply(player, id, profile.progress(id)));
         }
         if (profile.currentClass().isEmpty()) send(player, profile, ClassSelectionStatePayload.Result.OPEN);
+        else send(player, profile, ClassSelectionStatePayload.Result.STATUS);
     }
 
     public static void onPlayerRespawn(ServerPlayer player) {
@@ -26,6 +27,7 @@ public final class ClassSelectionService {
         if (migrate(player, savedData, profile)) {
             profile.currentClass().ifPresent(id -> SkillTreeAttributeService.apply(player, id, profile.progress(id)));
         }
+        send(player, profile, ClassSelectionStatePayload.Result.STATUS);
     }
 
     public static void openMenu(ServerPlayer player) {

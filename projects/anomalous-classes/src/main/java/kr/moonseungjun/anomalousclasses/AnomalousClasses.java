@@ -16,6 +16,7 @@ import kr.moonseungjun.anomalousclasses.state.MentalDominatorService;
 import kr.moonseungjun.anomalousclasses.state.PuppetService;
 import kr.moonseungjun.anomalousclasses.state.PuppetCombatService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteService;
+import kr.moonseungjun.anomalousclasses.state.ParasiteTraitService;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.bus.api.IEventBus;
@@ -76,6 +77,7 @@ public final class AnomalousClasses {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
             MentalDominatorService.onPlayerRespawn(player);
             ParasiteService.onLogin(player);
+            ParasiteTraitService.reset(player);
         }
     }
 
@@ -83,6 +85,7 @@ public final class AnomalousClasses {
         CombatTracker.remove(event.getEntity().getUUID());
         MentalDominatorService.onPlayerLogout(event.getEntity());
         ParasiteService.onLogout(event.getEntity());
+        ParasiteTraitService.logout(event.getEntity().getUUID());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -91,6 +94,7 @@ public final class AnomalousClasses {
             ClassFocusService.onPlayerRespawn(player);
             MentalDominatorService.onPlayerRespawn(player);
             ParasiteService.onRespawn(player);
+            ParasiteTraitService.reset(player);
         }
     }
 

@@ -30,7 +30,10 @@ public final class ClientGameEvents {
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         SkillTreeNavigation.tick(minecraft);
-        if (minecraft.player == null || minecraft.level == null) return;
+        if (minecraft.player == null || minecraft.level == null) {
+            ParasiteTraitClientControls.reset();
+            return;
+        }
         boolean screenOpen = minecraft.screen != null;
         boolean intrusionDown = !screenOpen && ClassSelectionKeyMappings.MENTAL_INTRUSION.isDown();
         if (intrusionDown != intrusionWasDown) {
@@ -80,7 +83,10 @@ public final class ClientGameEvents {
             PacketDistributor.sendToServer(new ParasiteAbilityPayload(2));
         }
         if (ClassSelectionKeyMappings.MENTAL_CONTAINMENT.consumeClick()) {
-            PacketDistributor.sendToServer(new MentalSpellPayload(3));
+            if (ParasiteTraitClientControls.isParasite())
+                ParasiteTraitClientControls.toggle();
+            else
+                PacketDistributor.sendToServer(new MentalSpellPayload(3));
         }
         if (ClassSelectionKeyMappings.OPEN_PROFILE.consumeClick()) {
             PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);

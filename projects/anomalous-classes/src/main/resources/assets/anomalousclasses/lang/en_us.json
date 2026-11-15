@@ -468,5 +468,10 @@
   "message.anomalousclasses.parasite_ability.full_health": "Your host is already at full health.",
   "message.anomalousclasses.parasite_ability.success_0": "Your intrusion focus steadies for the next attempt.",
   "message.anomalousclasses.parasite_ability.success_1": "The host's tissues begin to recover.",
-  "message.anomalousclasses.parasite_ability.success_2": "Instinct surges: greater power, greater vulnerability."
+  "message.anomalousclasses.parasite_ability.success_2": "Instinct surges: greater power, greater vulnerability.",
+  "message.anomalousclasses.parasite_trait.enabled": "Inherited abilities ON: 1–9/0 cast, V returns to the hotbar.",
+  "message.anomalousclasses.parasite_trait.disabled": "Inherited abilities OFF: number keys select the hotbar.",
+  "message.anomalousclasses.parasite_trait.empty": "No direct inherited ability is assigned to this key.",
+  "message.anomalousclasses.parasite_trait.unlearned": "Creeper burst requires a creeper host or creeper mastery 100.",
+  "message.anomalousclasses.parasite_trait.burst": "The host releases a biological burst."
 }

@@ -468,5 +468,10 @@
   "message.anomalousclasses.parasite_ability.full_health": "숙주가 이미 건강합니다.",
   "message.anomalousclasses.parasite_ability.success_0": "침투 감각이 고정됩니다. 다음 집중이 안정됩니다.",
   "message.anomalousclasses.parasite_ability.success_1": "숙주의 조직이 서서히 회복됩니다.",
-  "message.anomalousclasses.parasite_ability.success_2": "본능이 깨어납니다. 더 강해지지만 상처도 깊어집니다."
+  "message.anomalousclasses.parasite_ability.success_2": "본능이 깨어납니다. 더 강해지지만 상처도 깊어집니다.",
+  "message.anomalousclasses.parasite_trait.enabled": "계승 기술 모드 ON · 숫자 1~9/0으로 발동, V로 핫바 복귀",
+  "message.anomalousclasses.parasite_trait.disabled": "계승 기술 모드 OFF · 숫자키로 핫바 선택",
+  "message.anomalousclasses.parasite_trait.empty": "이 번호에는 사용할 수 있는 계승 기술이 없습니다.",
+  "message.anomalousclasses.parasite_trait.unlearned": "크리퍼 숙주이거나 크리퍼 숙련도가 100이어야 합니다.",
+  "message.anomalousclasses.parasite_trait.burst": "숙주의 몸에서 생체 폭발이 터져 나왔습니다."
 }

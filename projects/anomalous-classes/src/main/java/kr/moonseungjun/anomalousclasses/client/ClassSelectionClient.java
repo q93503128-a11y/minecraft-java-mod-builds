@@ -13,6 +13,7 @@ public final class ClassSelectionClient {
     private ClassSelectionClient() {}
 
     public static void receive(ClassSelectionStatePayload state) {
+        ParasiteTraitClientControls.updateClass(state.currentClassIndex());
         Minecraft minecraft = Minecraft.getInstance();
         if (state.result() == ClassSelectionStatePayload.Result.OPEN) {
             if (minecraft.screen instanceof ClassSelectionScreen screen) {

@@ -14,8 +14,10 @@ public final class ParasiteFoundationVerifier {
         var cow = ParasiteRules.supported(ResourceLocation.parse("minecraft:cow"));
         var zombie = ParasiteRules.supported(ResourceLocation.parse("minecraft:zombie"));
         var spider = ParasiteRules.supported(ResourceLocation.parse("minecraft:spider"));
+        var creeper = ParasiteRules.supported(ResourceLocation.parse("minecraft:creeper"));
         check(pig.requiredBd() == 0 && cow.requiredBd() == 20
-                && zombie.requiredBd() == 100 && spider.requiredBd() == 160, "starter BD gates");
+                && zombie.requiredBd() == 100 && spider.requiredBd() == 160
+                && creeper.requiredBd() == 240, "starter and creeper BD gates");
         check(ParasiteRules.supported(ResourceLocation.parse("minecraft:warden")) == null
                 && ParasiteRules.plannedRequirement(ResourceLocation.parse("minecraft:warden")) == 5000,
                 "unsupported boss must not appear as controllable");
@@ -100,7 +102,24 @@ public final class ParasiteFoundationVerifier {
                 && restoredAbilities.player(owner).readyAt(1) == 1000L
                 && restoredAbilities.player(owner).readyAt(2) == 800L,
                 "ability cooldown save/load");
-        System.out.println("PASS: parasite claims, BD, death lock, survival milestones, abilities and persistence");
+        ParasiteTraitSavedData traits = new ParasiteTraitSavedData();
+        String blast = "anomalousclasses:creeper_blast";
+        check(traits.cast(owner, blast, 50, 600, 60), "first inherited cast");
+        check(!traits.cast(owner, blast, 100, 600, 60), "individual cooldown blocks repeat");
+        check(!traits.cast(owner, "anomalousclasses:other_trait", 100, 200, 60),
+                "shared cooldown blocks chained attacks");
+        check(traits.cast(owner, "anomalousclasses:other_trait", 110, 200, 60),
+                "shared recovery expires independently");
+        CompoundTag traitTag = traits.save(new CompoundTag(), RegistryAccess.EMPTY);
+        Method traitLoad = ParasiteTraitSavedData.class.getDeclaredMethod(
+                "load", CompoundTag.class, HolderLookup.Provider.class);
+        traitLoad.setAccessible(true);
+        ParasiteTraitSavedData savedTraits = (ParasiteTraitSavedData)
+                traitLoad.invoke(null, traitTag, RegistryAccess.EMPTY);
+        check(!savedTraits.cast(owner, blast, 120, 600, 60)
+                && savedTraits.cast(owner, blast, 650, 600, 60),
+                "inherited cooldown persists through save/load");
+        System.out.println("PASS: parasite claims, BD, death lock, milestones, 3 actives and inherited cooldowns");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

@@ -20,7 +20,8 @@ public final class ParasiteRules {
         "minecraft:sheep", new HostSpec(0, 30, 0.95),
         "minecraft:cow", new HostSpec(20, 50, 0.90),
         "minecraft:zombie", new HostSpec(100, 80, 0.90),
-        "minecraft:spider", new HostSpec(160, 100, 1.10)
+        "minecraft:spider", new HostSpec(160, 100, 1.10),
+        "minecraft:creeper", new HostSpec(240, 120, 0.95)
     );
     private static final double[] FOCUS = {0.05, 0.10, 0.15, 0.20, 0.40};
     private ParasiteRules() {}

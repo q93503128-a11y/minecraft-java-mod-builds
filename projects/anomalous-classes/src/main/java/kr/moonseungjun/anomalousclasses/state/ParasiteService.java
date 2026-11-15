@@ -152,6 +152,7 @@ public final class ParasiteService {
         end(player, false);
         CHANNELS.remove(player.getUUID());
         MOTIONS.remove(player.getUUID());
+        ParasiteTraitService.reset(player);
         return true;
     }
 

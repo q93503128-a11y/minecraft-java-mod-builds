@@ -10,6 +10,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteTraitModeStatePayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -46,6 +47,9 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void registerClientPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("2");
+        registrar.playToClient(ParasiteTraitModeStatePayload.TYPE, ParasiteTraitModeStatePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        ParasiteTraitClientControls.confirm(payload.enabled())));
         registrar.playToClient(PuppetWorkshopStatePayload.TYPE, PuppetWorkshopStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(ClassSelectionStatePayload.TYPE, ClassSelectionStatePayload.STREAM_CODEC,
