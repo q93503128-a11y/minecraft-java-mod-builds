@@ -2,6 +2,25 @@
 
 > 최신 GitHub `main` + 실제 코드가 정본이며, 이 기록은 2026-11-15 기준 확인 상태다. 기획을 새로 설계하지 않는다.
 
+## 2026-11-16 — 실외부 모드 20종 기생 어댑터 검증 및 54종 숙주 통합
+
+- **게임 코드:** [`b45e05dd2d006e0543211a6410bf329b622b8d10`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b45e05dd2d006e0543211a6410bf329b622b8d10) + 첫 컴파일 오류를 바로잡은 [`001b52750e110b10f25556624ed21643b655a83a`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/001b52750e110b10f25556624ed21643b655a83a). [통합 감사 워크플로 `1d384ee`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/1d384eeb320a9d473a9ad6fee2b1eb0d4c22aead).
+- **BUILD VERIFIED / JAR PRODUCED:** [Game build #43741286060](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741286060) SUCCESS, `anomalous-classes-0.1.0-alpha.1.jar` 32,061,417 bytes / 186 classes. [JAR+SHA256 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741286060/artifacts/14172467653). 관련 `verifyParasiteFoundation`, 다른 직업·스킬트리·JAR 검증 PASS.
+- **DEDICATED SERVER CO-LOAD / EXTERNAL CLASS REGISTRY VERIFIED:** [External pack integration #43741441267](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741441267) SUCCESS, [감사 JSON/원본 서버 로그 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741441267/artifacts/14172409041). NeoForge 21.1.244 / Java 21, 외부 서버 필수 JAR 12개 + 우리 모드 JAR 1개 동시 로딩·월드 시작·정상 종료.
+- 네 모드의 실제 런타임 레지스트리에 외부 엔티티 유형 **256개**, 그중 `Mob` 인스턴스 **149개** 등록 확인: Born in Chaos **98/84**, Cataclysm **103/39**, Mowzie's Mobs **41/18**, Mutant Monsters **14/8**(표기 유형/Mob). 인스턴스 생성 검사 오류 **0건**.
+- **선정한 20개 호스트 모두 실제 EntityType ID와 Java 클래스 fingerprint 일치(20/20)**. 새 구성 총 **바닐라 34 + 외부 20 = 54종**. 출처별 외부 프로필 수: Born **10**, Cataclysm **7**, Mowzie **2**, Mutant **1**. 네임스페이스와 클래스가 예상과 다르면 서버가 해당 기생 시도를 거부한다. 다른 몹·보스는 등록만 됐다고 자동 기생 불가.
+- 외부 몹은 원본 `Mob` 몸 1기를 사용해 서버 권위의 침투·기본 이동/근접 공격·BD·숙련·사망/이탈 로직을 공유한다. **특수 AI, 고유 투사체/보스 phase, 애니메이션 재현 및 능력 완성까지 보장하지 않는다.** 외부 `deepling` 계열의 내장 수중 적응·`baby_spider`의 벽 타기를 공통 환경형 속성으로 등록해 해당 종 숙련100 이후 타종에 영구 계승, 바닐라 거미·가디언·슬라임 등 기존 원리는 유지.
+- 별도 클래스 실행/JAR이 없는 일반 서버에서도 외부 모드 의존성이 강제되지 않는다. 외부 몹이 실제로 없으면 해당 `EntityType`을 만날 수 없으며, 코드에는 제3자 클래스를 직접 import하지 않고 문자열 ID+실제 클래스 비교로 검증한다. 정확한 고정 버전은 [`pack-source.json`](./modpack/pack-source.json).
+- 명시적 기생 제외 보스: `cataclysm:ignis`, `the_harbinger`, `netherite_monstrosity`, `mowziesmobs:ferrous_wroughtnaut`, `frostmaw`, `mutantmonsters:mutant_zombie`, `mutant_creeper`, `born_in_chaos_v1:supreme_bonescaller`. 관련 원본 phase·AI·보상 어댑터 제작 전에는 허용하지 않는다.
+- 첫 CI [#43741135487](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741135487)은 이동 메서드의 중복 `species` 지역변수 선언 때문에 컴파일 실패. 정확한 중복 선언 제거 뒤 게임 build 및 외부 동시 로딩을 모두 다시 검증해 통과.
+- **실제 CLIENT RUNTIME / PLAYTESTED / MULTIPLAYER TESTED = NO.** 개별 신규 20종의 탑승, 원본 AI 해제·복귀, 타격/무기/애니메이션, 이동·카메라 손맛, 보스 전투와 드롭/서버 지연은 미검증. 외부팩 통합 서버 부팅과 20/20 엔티티 실등록 확인은 **실게임 기생 조작 성공을 뜻하지 않는다**.
+- [외부 20종 전용 선정·검증·잔여 QA 기록](./modpack/EXTERNAL_HOST_RUNTIME_BINDING_2026-11-16.md) 참고.
+
+
+---
+
+> 이하 34종 표기는 2026-11-16 중간 스냅샷이다. 현재 지원 범위는 위의 54종 프로필이 우선한다.
+
 ## 2026-11-16 — 34-species data-driven original-host catalog
 
 - Source [`d52996e432ab39dbd95ba3a566ff3fd98bc41207`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/d52996e432ab39dbd95ba3a566ff3fd98bc41207) (`main`).
