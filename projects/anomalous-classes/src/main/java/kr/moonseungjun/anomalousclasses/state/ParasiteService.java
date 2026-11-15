@@ -13,6 +13,8 @@ import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostViewPayload;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.util.Mth;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -73,6 +75,7 @@ public final class ParasiteService {
     private static final class Motion {
         int mask;
         float yaw;
+        float pitch;
         long lastInput;
         Vec3 lastPosition;
         long lastActivityTick;
@@ -125,16 +128,26 @@ public final class ParasiteService {
         CHANNELS.put(player.getUUID(), channel);
     }
 
-    public static void movement(ServerPlayer player, int mask, float yaw) {
-        if (!current(player) || !Float.isFinite(yaw) || mask < 0 || (mask & ~63) != 0) return;
+    public static void movement(ServerPlayer player, int mask, float yaw, float pitch) {
+        if (!current(player) || !Float.isFinite(yaw) || !Float.isFinite(pitch)
+                || pitch < -90.0F || pitch > 90.0F || mask < 0 || (mask & ~63) != 0) return;
         ParasiteSavedData.State state = ParasiteSavedData.get(player.getServer()).player(player.getUUID());
         if (state.host() == null) return;
         Mob host = loadedHost(player, state.host());
         if (host == null || player.getVehicle() != host) return;
         Motion m = MOTIONS.computeIfAbsent(player.getUUID(), unused -> new Motion());
         m.mask = mask;
-        m.yaw = yaw;
+        m.yaw = Mth.wrapDegrees(yaw);
+        m.pitch = pitch;
         m.lastInput = clock(player);
+    }
+
+    /** Validated server snapshot of camera aim, independent of passenger eye height. */
+    public static Vec3 viewDirection(ServerPlayer player) {
+        Motion motion = MOTIONS.get(player.getUUID());
+        if (motion != null && clock(player) - motion.lastInput <= 10L)
+            return Vec3.directionFromRotation(motion.pitch, motion.yaw);
+        return player.getLookAngle();
     }
 
     public static Mob activeHost(ServerPlayer player) {
@@ -274,6 +287,13 @@ public final class ParasiteService {
             if (ownerId != null) {
                 ServerPlayer owner = host.level().getServer().getPlayerList().getPlayer(ownerId);
                 if (owner != null && ownsHost(owner, host)) {
+                    if (event.getSource().is(DamageTypes.FALL)) {
+                        String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
+                        int slimeMastery = ParasiteSavedData.get(owner.getServer())
+                                .player(ownerId).mastery("minecraft:slime");
+                        event.setNewDamage(event.getNewDamage()
+                                * ParasiteRules.fallDamageFactor(species, slimeMastery));
+                    }
                     CombatTracker.markOwnedCombat(owner);
                     ParasiteAbilityService.interruptOnDamage(owner, host, event.getNewDamage());
                     if (ParasiteAbilityService.awakened(owner, host))
@@ -462,6 +482,8 @@ public final class ParasiteService {
         applyHumanStats(player);
         Motion motion = new Motion();
         motion.yaw = player.getYRot();
+        motion.pitch = player.getXRot();
+        motion.lastInput = clock(player);
         MOTIONS.put(player.getUUID(), motion);
         syncView(player);
         return true;
@@ -501,9 +523,15 @@ public final class ParasiteService {
                     dz * Math.min(.50, velocity)));
             host.setYRot(m.yaw);
             host.setYHeadRot(m.yaw);
-            host.setXRot(owner.getXRot());
-            if ((m.mask & 16) != 0 && host.onGround())
-                host.setDeltaMovement(host.getDeltaMovement().add(0, .42, 0));
+            host.setXRot(m.pitch);
+        }
+        // Jump works from standstill too, independent of horizontal motion.
+        // Slime elasticity is innate, and mastery-100 inheritance has no timed cooldown.
+        if ((m.mask & 16) != 0 && host.onGround()) {
+            String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
+            double impulse = ParasiteRules.jumpImpulse(species, state.mastery("minecraft:slime"));
+            Vec3 velocity = host.getDeltaMovement();
+            host.setDeltaMovement(velocity.x, Math.max(velocity.y, impulse), velocity.z);
         }
         // Wall climbing is environmental: jump-only works even without horizontal travel.
         if ((host.getType() == net.minecraft.world.entity.EntityType.SPIDER
@@ -567,9 +595,10 @@ public final class ParasiteService {
         // inhabited one, rather than raycasting above its body from the passenger.
         Mob source = activeHost(player);
         Vec3 eye = source == null ? player.getEyePosition() : source.getEyePosition();
-        Vec3 end = eye.add(player.getLookAngle().scale(AIM_RANGE));
+        Vec3 look = viewDirection(player);
+        Vec3 end = eye.add(look.scale(AIM_RANGE));
         AABB area = (source == null ? player.getBoundingBox() : source.getBoundingBox())
-                .expandTowards(player.getLookAngle().scale(AIM_RANGE)).inflate(1.0);
+                .expandTowards(look.scale(AIM_RANGE)).inflate(1.0);
         Mob best = null;
         double bestDist = AIM_RANGE * AIM_RANGE;
         for (Mob mob : player.level().getEntitiesOfClass(Mob.class, area,

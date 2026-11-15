@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.ClipContext;
@@ -50,8 +49,8 @@ public final class ParasiteHostCombatService {
         long now = owner.serverLevel().getGameTime();
         long previous = LAST_INTENT.getOrDefault(owner.getUUID(), Long.MIN_VALUE / 2);
         if (now - previous < 4) return; // Resist replay/spam; do not double-hit.
-        LAST_INTENT.put(owner.getUUID(), now);
         if (owner.getAttackStrengthScale(0.5F) < .80F) return;
+        LAST_INTENT.put(owner.getUUID(), now);
 
         LivingEntity target = aimedEnemy(owner, host);
         if (target == null || !ParasiteTraitService.canHit(owner, target)) return;
@@ -75,7 +74,7 @@ public final class ParasiteHostCombatService {
     private static LivingEntity aimedEnemy(ServerPlayer owner, Mob host) {
         double range = Math.min(4.0, Math.max(2.5, owner.entityInteractionRange()));
         Vec3 eye = host.getEyePosition();
-        Vec3 look = owner.getLookAngle();
+        Vec3 look = ParasiteService.viewDirection(owner);
         Vec3 far = eye.add(look.scale(range));
         AABB search = host.getBoundingBox().expandTowards(look.scale(range)).inflate(1.0);
         LivingEntity closest = null;

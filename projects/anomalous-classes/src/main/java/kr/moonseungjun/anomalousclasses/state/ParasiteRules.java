@@ -21,6 +21,7 @@ public final class ParasiteRules {
         "minecraft:cow", new HostSpec(20, 50, 0.90),
         "minecraft:zombie", new HostSpec(100, 80, 0.90),
         "minecraft:spider", new HostSpec(160, 100, 1.10),
+        "minecraft:slime", new HostSpec(180, 110, 1.00),
         "minecraft:creeper", new HostSpec(240, 120, 0.95)
     );
     private static final double[] FOCUS = {0.05, 0.10, 0.15, 0.20, 0.40};
@@ -67,6 +68,22 @@ public final class ParasiteRules {
                 * (1 + rank(profile, "attack_adaptation") * 0.0035)
                 * (1 + focus(profile));
     }
+    /** Slime's innate elasticity and its mastery-100 passive are always-on environmental traits. */
+    public static boolean hasSlimeElasticity(String species, int slimeMastery) {
+        return "minecraft:slime".equals(species) || slimeMastery >= 100;
+    }
+
+    /** The normal vanilla jump remains available for every other species. */
+    public static double jumpImpulse(String species, int slimeMastery) {
+        return "minecraft:slime".equals(species) ? 0.58
+                : slimeMastery >= 100 ? 0.50 : 0.42;
+    }
+
+    /** Only transferred elasticity reduces fall damage; native slime immunity stays vanilla. */
+    public static float fallDamageFactor(String species, int slimeMastery) {
+        return hasSlimeElasticity(species, slimeMastery) ? 0.5F : 1.0F;
+    }
+
     public static double movementMultiplier(PlayerClassProfile profile) {
         return 1 + rank(profile, "body_control") * 0.003;
     }

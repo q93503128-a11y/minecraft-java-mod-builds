@@ -13,8 +13,8 @@ import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostAttackPayload;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import net.minecraft.client.Minecraft;
@@ -34,11 +34,12 @@ public final class ClientGameEvents {
     @SubscribeEvent
     public static void onAttackInput(InputEvent.InteractionKeyMappingTriggered event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!event.isAttack() || minecraft.screen != null || !ParasiteViewClient.isControlling()
-                || !(minecraft.hitResult instanceof EntityHitResult result)
-                || !(result.getEntity() instanceof LivingEntity)) return;
-        // Avoid a second, passenger-eye vanilla attack. Host reach and target
-        // are independently recomputed on the authoritative server.
+        if (!event.isAttack() || minecraft.screen != null || !ParasiteViewClient.isControlling()) return;
+        // Keep ordinary survival mining functional. The camera's apparent
+        // entity hit can disagree with the passenger's vanilla reach check;
+        // send any non-block attack intent and let the server raycast the host.
+        if (minecraft.hitResult instanceof BlockHitResult hit
+                && hit.getType() == HitResult.Type.BLOCK) return;
         event.setCanceled(true);
         PacketDistributor.sendToServer(ParasiteHostAttackPayload.INSTANCE);
     }
@@ -82,15 +83,15 @@ public final class ClientGameEvents {
             return;
         }
         mentalRefreshTicks = 0;
-        if (minecraft.player.getVehicle() instanceof net.minecraft.world.entity.Mob
-                && ++parasiteMovementTicks % 2 == 0) {
+        if (ParasiteViewClient.isControlling() && ++parasiteMovementTicks % 2 == 0) {
             int mask = (minecraft.options.keyUp.isDown() ? 1 : 0)
                     | (minecraft.options.keyDown.isDown() ? 2 : 0)
                     | (minecraft.options.keyLeft.isDown() ? 4 : 0)
                     | (minecraft.options.keyRight.isDown() ? 8 : 0)
                     | (minecraft.options.keyJump.isDown() ? 16 : 0)
                     | (minecraft.options.keySprint.isDown() ? 32 : 0);
-            PacketDistributor.sendToServer(new ParasiteMovePayload(mask, minecraft.player.getYRot()));
+            PacketDistributor.sendToServer(new ParasiteMovePayload(mask,
+                    minecraft.player.getYRot(), minecraft.player.getXRot()));
         }
         // Direct keybinds request stable IDs; the server rejects all other classes.
         if (ClassSelectionKeyMappings.MENTAL_SHOCK.consumeClick()) {

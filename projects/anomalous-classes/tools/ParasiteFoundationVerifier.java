@@ -15,9 +15,22 @@ public final class ParasiteFoundationVerifier {
         var zombie = ParasiteRules.supported(ResourceLocation.parse("minecraft:zombie"));
         var spider = ParasiteRules.supported(ResourceLocation.parse("minecraft:spider"));
         var creeper = ParasiteRules.supported(ResourceLocation.parse("minecraft:creeper"));
+        var slime = ParasiteRules.supported(ResourceLocation.parse("minecraft:slime"));
         check(pig.requiredBd() == 0 && cow.requiredBd() == 20
                 && zombie.requiredBd() == 100 && spider.requiredBd() == 160
-                && creeper.requiredBd() == 240, "starter and creeper BD gates");
+                && creeper.requiredBd() == 240 && slime.requiredBd() == 180,
+                "starter, slime and creeper BD gates");
+        check(ParasiteRules.jumpImpulse("minecraft:slime", 0) == 0.58
+                && ParasiteRules.jumpImpulse("minecraft:pig", 99) == 0.42
+                && ParasiteRules.jumpImpulse("minecraft:pig", 100) == 0.50,
+                "slime jump is innate and transfers only at mastery 100");
+        check(ParasiteRules.hasSlimeElasticity("minecraft:slime", 0)
+                && !ParasiteRules.hasSlimeElasticity("minecraft:zombie", 99)
+                && ParasiteRules.hasSlimeElasticity("minecraft:zombie", 100),
+                "slime environmental passive mastery boundary");
+        check(ParasiteRules.fallDamageFactor("minecraft:zombie", 99) == 1.0F
+                && ParasiteRules.fallDamageFactor("minecraft:zombie", 100) == 0.5F,
+                "elastic fall mitigation only after inheritance");
         check(ParasiteRules.supported(ResourceLocation.parse("minecraft:warden")) == null
                 && ParasiteRules.plannedRequirement(ResourceLocation.parse("minecraft:warden")) == 5000,
                 "unsupported boss must not appear as controllable");
@@ -119,7 +132,7 @@ public final class ParasiteFoundationVerifier {
         check(!savedTraits.cast(owner, blast, 120, 600, 60)
                 && savedTraits.cast(owner, blast, 650, 600, 60),
                 "inherited cooldown persists through save/load");
-        System.out.println("PASS: parasite claims, BD, death lock, milestones, 3 actives and inherited cooldowns");
+        System.out.println("PASS: parasite claims, BD, death lock, milestones, slime inheritance, 3 actives and cooldowns");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

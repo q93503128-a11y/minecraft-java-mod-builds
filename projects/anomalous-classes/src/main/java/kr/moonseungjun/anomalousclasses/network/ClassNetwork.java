@@ -138,7 +138,7 @@ public final class ClassNetwork {
         registrar.playToServer(ParasiteMovePayload.TYPE, ParasiteMovePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player)
-                        ParasiteService.movement(player, payload.mask(), payload.yaw());
+                        ParasiteService.movement(player, payload.mask(), payload.yaw(), payload.pitch());
                 }));
         registrar.playToServer(MentalIntrusionPayload.TYPE, MentalIntrusionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
