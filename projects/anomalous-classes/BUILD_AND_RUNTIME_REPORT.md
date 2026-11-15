@@ -13,7 +13,7 @@
 ### Automatic verification
 - Extended `PuppeteerFoundationVerifier` to cover repair quotes, passive discounts, 1.5→3.0 raw material ledger growth, HP/cooldown retention, stored repair and revision CAS, foreign/replayed mutation rejection, one-way dismantle, broken-puppet recovery, and bounded salvage.
 - Extended `verify_puppet_assets.py` for repair/expansion/dismantle UI translations.
-- GitHub Actions compile and verification result: **pending this commit**. No Minecraft rendering, client interaction, multiplayer or real TPS measured.
+- GitHub Actions [Build anomalous-classes #43709842268](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43709842268) **SUCCESS** on code commit `2b864a9b21e5e93ac77c0fa7917ea060182ff0fc`; 24-second clean build includes `verifyPuppetAssets` PASS and extended `verifyPuppeteerFoundation` PASS (repair, expansion, refunds, broken recovery, save, anti-duplication). JAR artifact: `anomalous-classes-0.1.0-alpha.1-deliverables` ID `14160520295`. The earlier `0f61f92` attempt failed because `LivingEntity.getDimensions(Pose)` is final in Minecraft 1.21.1; fixed via the supported protected `getDefaultDimensions(Pose)` override. **BUILD VERIFIED / JAR PRODUCED; CLIENT PLAYTEST / MULTIPLAYER = NOT TESTED.**
 
 ### Still open under the original class plan
 - Frame/device/core replacement including returning intact old part items, the remaining blade/launcher/shield distinct AI and animation, three direct active skills, real strings from controller to joints, richer model/art, workshop 3D preview, sizes for non-wood frames, shrink cost/refunds, and collision-friendly formation behavior. **Not class-complete; no user playtest requested.**
