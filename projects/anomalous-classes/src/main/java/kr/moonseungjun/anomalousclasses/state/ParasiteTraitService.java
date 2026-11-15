@@ -95,7 +95,7 @@ public final class ParasiteTraitService {
         level.sendParticles(ParticleTypes.EXPLOSION,
                 host.getX(), host.getY() + host.getBbHeight() * .5,
                 host.getZ(), 6, 0.75, 0.5, 0.75, 0.06);
-        level.playSound(null, host.blockPosition(), SoundEvents.GENERIC_EXPLODE,
+        level.playSound(null, host.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(),
                 SoundSource.HOSTILE, 0.9F, nativeCreeper ? 0.85F : 1.15F);
         tell(owner, "message.anomalousclasses.parasite_trait.burst");
         if (nativeCreeper) {
