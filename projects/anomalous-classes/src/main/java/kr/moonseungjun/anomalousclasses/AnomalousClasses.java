@@ -13,6 +13,7 @@ import kr.moonseungjun.anomalousclasses.state.ClassRosterCatalog;
 import kr.moonseungjun.anomalousclasses.state.ClassFocusService;
 import kr.moonseungjun.anomalousclasses.state.MentalDominatorConfig;
 import kr.moonseungjun.anomalousclasses.state.MentalDominatorService;
+import kr.moonseungjun.anomalousclasses.state.PuppetService;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.bus.api.IEventBus;
@@ -52,6 +53,7 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onMobDespawn);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onEntityLeave);
+        NeoForge.EVENT_BUS.addListener(PuppetService::onEntityLeave);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::tick);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
     }

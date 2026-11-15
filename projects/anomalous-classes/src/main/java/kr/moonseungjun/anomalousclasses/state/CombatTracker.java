@@ -20,6 +20,9 @@ public final class CombatTracker {
         if (event.getEntity() instanceof ServerPlayer player) mark(player);
     }
 
+    /** Controlled companion combat must lock class changes just like player attacks. */
+    public static void markOwnedCombat(ServerPlayer player) { mark(player); }
+
     public static boolean isLocked(ServerPlayer player) {
         Integer last = LAST_COMBAT_TICK.get(player.getUUID());
         if (last == null || player.getServer() == null) return false;

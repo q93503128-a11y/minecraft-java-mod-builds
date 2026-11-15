@@ -6,6 +6,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.RequestProfilePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestSkillTreePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalIntrusionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalSpellPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.PuppetTargetPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -30,6 +31,7 @@ public final class ClientGameEvents {
         if (intrusionDown != intrusionWasDown) {
             PacketDistributor.sendToServer(new MentalIntrusionPayload(intrusionDown
                     ? MentalIntrusionPayload.START : MentalIntrusionPayload.STOP));
+            if (intrusionDown) PacketDistributor.sendToServer(PuppetTargetPayload.INSTANCE);
             intrusionWasDown = intrusionDown;
         }
         if (screenOpen) {

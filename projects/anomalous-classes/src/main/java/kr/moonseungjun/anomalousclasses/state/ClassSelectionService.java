@@ -60,7 +60,8 @@ public final class ClassSelectionService {
             }
 
             ClassId previous = profile.currentClass().orElse(null);
-            if (!MentalDominatorService.prepareClassChange(player, previous, target)) {
+            if (!MentalDominatorService.prepareClassChange(player, previous, target)
+                    || !PuppetService.prepareClassChange(player, previous)) {
                 send(player, profile, ClassSelectionStatePayload.Result.STALE_REQUEST);
                 return;
             }

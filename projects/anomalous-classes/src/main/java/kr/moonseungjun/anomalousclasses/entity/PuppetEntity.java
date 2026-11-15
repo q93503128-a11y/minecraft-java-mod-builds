@@ -39,6 +39,10 @@ public final class PuppetEntity extends PathfinderMob {
     private long nextAttack;
     private int statRefresh;
     private boolean dropHandled;
+    private boolean registryValidated;
+    private UUID priorityTarget;
+    private UUID cachedTarget;
+    private long nextTargetScan;
 
     public PuppetEntity(EntityType<? extends PuppetEntity> type, Level level) {
         super(type, level);
@@ -86,6 +90,18 @@ public final class PuppetEntity extends PathfinderMob {
     public UUID puppetOwner() { return blueprint == null ? null : blueprint.ownerId(); }
     public int revision() { return revision; }
 
+    public void designateTarget(UUID target) {
+        priorityTarget = target;
+        cachedTarget = target;
+        nextTargetScan = 0L;
+        // Target changes must not reset the stored attack recovery.
+    }
+
+    public void syncSnapshot() {
+        if (blueprint != null && level() instanceof ServerLevel world)
+            PuppetRegistrySavedData.get(world.getServer()).updateDeployedSnapshot(snapshot(), revision);
+    }
+
     public PuppetBlueprint snapshot() {
         if (blueprint == null) throw new IllegalStateException("Unbound puppet");
         return blueprint.withCondition(Math.max(0, getHealth() / Math.max(1, getMaxHealth())), nextAttack);
@@ -104,7 +120,8 @@ public final class PuppetEntity extends PathfinderMob {
     protected void customServerAiStep() {
         super.customServerAiStep();
         if (blueprint == null || !(level() instanceof ServerLevel world)) return;
-        if (tickCount % 40 == 0) {
+        if (!registryValidated || tickCount % 40 == 0) {
+            registryValidated = true;
             var entry = PuppetRegistrySavedData.get(world.getServer()).find(blueprint.puppetId());
             if (entry.isEmpty() || entry.get().location() != PuppetRegistrySavedData.Location.DEPLOYED
                     || entry.get().revision() != revision) {
@@ -124,6 +141,7 @@ public final class PuppetEntity extends PathfinderMob {
         if (++statRefresh >= 40) {
             statRefresh = 0;
             applyStats(profile, false);
+            syncSnapshot();
         }
         Monster target = selectHostile(world, owner);
         if (target != null) {
@@ -136,6 +154,8 @@ public final class PuppetEntity extends PathfinderMob {
                     target.hurt(this.damageSources().mobAttack(this), (float) stats.damage());
                     swing(InteractionHand.MAIN_HAND);
                     nextAttack = world.getGameTime() + stats.attackIntervalTicks();
+                    syncSnapshot();
+                    kr.moonseungjun.anomalousclasses.state.CombatTracker.markOwnedCombat(owner);
                 }
             }
         } else if (distanceToSqr(owner) > 16 && distanceToSqr(owner) < 24 * 24) {
@@ -146,17 +166,28 @@ public final class PuppetEntity extends PathfinderMob {
     }
 
     private Monster selectHostile(ServerLevel world, ServerPlayer owner) {
+        if (priorityTarget != null && world.getEntity(priorityTarget) instanceof Monster forced
+                && forced.isAlive() && !forced.isAlliedTo(owner) && distanceToSqr(forced) <= 24 * 24)
+            return forced;
+        if (world.getGameTime() < nextTargetScan) {
+            if (cachedTarget != null && world.getEntity(cachedTarget) instanceof Monster cached
+                    && cached.isAlive() && !cached.isAlliedTo(owner)
+                    && distanceToSqr(cached) < 13 * 13) return cached;
+            return null;
+        }
+        nextTargetScan = world.getGameTime() + 20L;
         AABB range = getBoundingBox().inflate(11.0);
         Monster closest = null;
         double best = Double.MAX_VALUE;
         for (Monster candidate : world.getEntitiesOfClass(Monster.class, range,
-                mob -> mob.isAlive() && mob != this && !mob.isAlliedTo(owner))) {
+                mob -> mob.isAlive() && !mob.isAlliedTo(owner))) {
             double distance = distanceToSqr(candidate);
             if (distance < best && getSensing().hasLineOfSight(candidate)) {
                 closest = candidate;
                 best = distance;
             }
         }
+        cachedTarget = closest == null ? null : closest.getUUID();
         return closest;
     }
 
@@ -168,7 +199,7 @@ public final class PuppetEntity extends PathfinderMob {
         getAttribute(Attributes.MAX_HEALTH).setBaseValue(stats.maxHealth());
         getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.28 * stats.moveSpeedFactor());
         getAttribute(Attributes.ARMOR).setBaseValue(stats.armor());
-        setHealth(Math.max(1f, (float) stats.maxHealth() * ratio));
+        setHealth(Math.max(.01F, (float) stats.maxHealth() * ratio));
     }
 
     @Override
@@ -182,7 +213,14 @@ public final class PuppetEntity extends PathfinderMob {
             if (attacker instanceof PuppetEntity other
                     && other.puppetOwner() != null && other.puppetOwner().equals(blueprint.ownerId())) return false;
         }
-        return super.hurt(source, amount);
+        boolean damaged = super.hurt(source, amount);
+        if (damaged && blueprint != null && level() instanceof ServerLevel world) {
+            syncSnapshot();
+            ServerPlayer owner = world.getServer().getPlayerList().getPlayer(blueprint.ownerId());
+            if (owner != null && source.getEntity() != null)
+                kr.moonseungjun.anomalousclasses.state.CombatTracker.markOwnedCombat(owner);
+        }
+        return damaged;
     }
 
     @Override

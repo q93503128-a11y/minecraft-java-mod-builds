@@ -406,5 +406,7 @@
   "puppet.anomalousclasses.core.basic": "Basic Core",
   "puppet.anomalousclasses.core.swift": "Swift Core",
   "puppet.anomalousclasses.core.stable": "Stable Core",
-  "puppet.anomalousclasses.core.output": "Output Core"
+  "puppet.anomalousclasses.core.output": "Output Core",
+  "message.anomalousclasses.puppet.target": "Priority target assigned to your deployed marionettes.",
+  "message.anomalousclasses.puppet.no_space_class_change": "Not enough inventory space to safely recall your marionettes."
 }

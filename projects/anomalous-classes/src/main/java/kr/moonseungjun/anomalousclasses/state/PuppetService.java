@@ -1,6 +1,16 @@
 package kr.moonseungjun.anomalousclasses.state;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.ClipContext;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +40,77 @@ public final class PuppetService {
         return player != null && player.getServer() != null
                 && ClassProfileSavedData.get(player.getServer()).profile(player.getUUID())
                     .currentClass().orElse(null) == ClassId.PUPPETEER;
+    }
+
+    /** R: select a hostile creature as the priority target for every loaded owned puppet. */
+    public static void designateTarget(ServerPlayer player) {
+        if (!isPuppeteer(player) || !player.isAlive()) return;
+        PlayerClassProfile profile = ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
+        double range = 20.0 + .25 * PuppeteerRules.rank(profile, "connection_strength");
+        Vec3 eye = player.getEyePosition();
+        Vec3 ray = player.getLookAngle().scale(range);
+        Vec3 end = eye.add(ray);
+        var hit = ProjectileUtil.getEntityHitResult(player, eye, end,
+                player.getBoundingBox().expandTowards(ray).inflate(1.0),
+                entity -> entity instanceof Monster monster && monster.isAlive()
+                        && !monster.isAlliedTo(player), range * range);
+        if (hit == null || !(hit.getEntity() instanceof Monster target)) return;
+        BlockHitResult wall = player.level().clip(new ClipContext(eye, end,
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        if (wall.getType() != HitResult.Type.MISS
+                && wall.getLocation().distanceToSqr(eye) < hit.getLocation().distanceToSqr(eye)) return;
+        int count = 0;
+        for (var entry : PuppetRegistrySavedData.get(player.getServer()).deployedBy(player.getUUID())) {
+            Entity entity = player.serverLevel().getEntity(entry.blueprint().puppetId());
+            if (entity instanceof PuppetEntity puppet && puppet.revision() == entry.revision()) {
+                puppet.designateTarget(target.getUUID());
+                count++;
+            }
+        }
+        if (count > 0) message(player, "message.anomalousclasses.puppet.target");
+    }
+
+    /** A class change stores every puppet, including safely snapshotted unloaded puppets. */
+    public static boolean prepareClassChange(ServerPlayer player, ClassId previous) {
+        if (previous != ClassId.PUPPETEER) return true;
+        PuppetRegistrySavedData registry = PuppetRegistrySavedData.get(player.getServer());
+        List<PuppetRegistrySavedData.Entry> deployed = registry.deployedBy(player.getUUID());
+        int empty = 0;
+        for (int slot=0;slot<36;slot++) if(player.getInventory().getItem(slot).isEmpty()) empty++;
+        if (empty < deployed.size()) {
+            message(player, "message.anomalousclasses.puppet.no_space_class_change");
+            return false;
+        }
+        // Capture live HP/attack recovery before transferring exclusive ownership to items.
+        for (var entry : deployed) {
+            PuppetEntity entity = loadedPuppet(player, entry.blueprint().puppetId());
+            if (entity != null && entity.revision() == entry.revision()) entity.syncSnapshot();
+        }
+        for (var entry : registry.deployedBy(player.getUUID())) {
+            PuppetEntity entity = loadedPuppet(player, entry.blueprint().puppetId());
+            PuppetBlueprint snapshot = entity != null && entity.revision() == entry.revision()
+                    ? entity.snapshot() : entry.blueprint();
+            var stored = registry.recall(player.getUUID(), snapshot.puppetId(), entry.revision(), snapshot);
+            if (stored.isEmpty()) throw new IllegalStateException("Puppet class-change state changed mid-tick");
+            if (entity != null) entity.discard();
+            ItemStack item = PuppetItem.make(snapshot, stored.get().revision(), false);
+            if (!player.getInventory().add(item))
+                throw new IllegalStateException("Puppet inventory reservation failed");
+        }
+        return true;
+    }
+
+    private static PuppetEntity loadedPuppet(ServerPlayer owner, UUID id) {
+        for (ServerLevel world : owner.getServer().getAllLevels()) {
+            Entity entity = world.getEntity(id);
+            if (entity instanceof PuppetEntity puppet) return puppet;
+        }
+        return null;
+    }
+
+    public static void onEntityLeave(EntityLeaveLevelEvent event) {
+        if (!event.getLevel().isClientSide() && event.getEntity() instanceof PuppetEntity puppet)
+            puppet.syncSnapshot();
     }
 
     public static boolean assembleStarter(ServerPlayer player, BlockPos station) {

@@ -1,6 +1,8 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +39,25 @@ public final class PuppetRegistrySavedData extends SavedData {
     }
 
     public Optional<Entry> find(UUID id) { return Optional.ofNullable(entries.get(id)); }
+
+    public List<Entry> deployedBy(UUID owner) {
+        return entries.values().stream().filter(e -> e.location() == Location.DEPLOYED
+                && e.blueprint().ownerId().equals(owner))
+                .sorted(Comparator.comparing(e -> e.blueprint().puppetId())).toList();
+    }
+
+    /** Sync last-known damage/recovery for unloaded, crash-recovered and cross-class recalls. */
+    public boolean updateDeployedSnapshot(PuppetBlueprint snapshot, int revision) {
+        Entry entry = entries.get(snapshot.puppetId());
+        if (entry == null || entry.location() != Location.DEPLOYED
+                || entry.revision() != revision
+                || !entry.blueprint().ownerId().equals(snapshot.ownerId())) return false;
+        if (!entry.blueprint().equals(snapshot)) {
+            entries.put(snapshot.puppetId(), new Entry(snapshot, Location.DEPLOYED, revision));
+            setDirty();
+        }
+        return true;
+    }
 
     public long deployedCount(UUID owner) {
         return entries.values().stream().filter(e -> e.location() == Location.DEPLOYED
