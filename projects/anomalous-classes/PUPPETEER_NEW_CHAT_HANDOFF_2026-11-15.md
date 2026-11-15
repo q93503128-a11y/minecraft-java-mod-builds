@@ -19,7 +19,7 @@
 ## 이 단계의 자동 검증
 - 이전 [`#43712379602`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43712379602): 액티브 빌드 PASS.
 - 이전 [`#43713540476`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43713540476): 부품 개조·원가 보존 자동 검증 PASS, JAR 생성.
-- 최종 동행/대기 및 일부 패시브/외형 계약의 CI 상태는 최신 `BUILD_AND_RUNTIME_REPORT.md`에서 확인. 이전 테스트의 빌드 성공으로 이후 커밋을 검증했다고 주장하지 않는다.
+- [최종 인형술사 통합 `#43714568562`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43714568562): 코드 HEAD `88c818e220b4e2a27afc708a9a4f825bb74fa4ab`, **BUILD VERIFIED + JAR PRODUCED**. Deliverables `14161818133`; PASS: 부품 원가/개조, 3액티브 저장, 동행·대기 앵커, 구조·수리·분해. 이 SHA는 인계 시점 코드 관측값이고 현재 main 정본을 대신하지 않는다.
 - 자동 테스트: `tools/PuppeteerFoundationVerifier.java`, `tools/verify_puppet_assets.py`, `build.gradle`의 관련 `check` 의존성.
 - **실제 클라이언트·플레이 감각·다인 멀티 검수는 수행하지 않았다.** 특히 실제 렌더/개조 UI 가독성/실·사운드/충돌/전투 AI/프레임 성능을 플레이테스트 전 통과 처리하지 않는다.
 
