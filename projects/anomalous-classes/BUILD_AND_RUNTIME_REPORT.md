@@ -1,5 +1,14 @@
 # Build and Runtime Report
 
+## 2026-11-15 — In-game focus-slot feedback: hover effects and recipe discovery
+
+- User screenshots in Minecraft 1.21.1 NeoForge confirm the inventory focus slot renders without visible overlap, a Mental Dominator focus appears in the slot, and the standard shaped recipe produces an item. Cursor/swap/Shift-click integrity, J/M navigation, multiplayer, and re-login are separate runtime checks.
+- Added hover details to the existing 30 focus item definitions. For Mental Dominator, the actual implemented max-psyche/upkeep/intrusion modifiers come directly from server rule constants. The other five classes show identity, grade and slot instructions, without misrepresenting their not-yet-wired combat modifiers as active.
+- Added 30 hidden vanilla recipe advancements: each base recipe unlocks from a representative ingredient; higher grades unlock on acquiring the preceding focus. The generator retains the same 30 shaped recipe IDs, layouts, quantities and result items, and the verifier checks all 30 advancements/recipe pairs.
+- **Validation at authoring:** reviewed source and added deterministic parity assertions; **local Java build NOT RUN / CI result pending / generated JAR NOT PRODUCED in this change / Minecraft gameplay NOT RETESTED**.
+
+---
+
 ## 2026-11-14 — Focus slot diagnosis, skill-tree return, and UI polish
 
 ### Scope and findings

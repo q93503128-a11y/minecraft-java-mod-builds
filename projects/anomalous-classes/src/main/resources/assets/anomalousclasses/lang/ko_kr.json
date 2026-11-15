@@ -255,6 +255,8 @@
   "skill_node.anomalousclasses.swarm_caster.stat.movement_speed_percent": "이동 속도",
   "skill_node.anomalousclasses.swarm_caster.stat.attack_damage": "공격력",
   "screen.anomalousclasses.class_management.focus": "매개체",
+  "tooltip.anomalousclasses.focus.identity": "%1$s 전용 · %2$s 등급",
+  "tooltip.anomalousclasses.focus.slot": "전용 매개체 슬롯에 장착",
   "screen.anomalousclasses.class_focus.title": "직업 매개체",
   "screen.anomalousclasses.class_focus.back": "뒤로",
   "screen.anomalousclasses.class_focus.recipe": "제작법",

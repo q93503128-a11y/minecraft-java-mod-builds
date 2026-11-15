@@ -7,6 +7,17 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+# Discover a class's first recipe through a distinctive early material;
+# upgrades appear when the immediately preceding focus enters the inventory.
+FIRST_DISCOVERY_ITEMS = {
+    "mental_dominator": "minecraft:amethyst_shard",
+    "puppeteer": "minecraft:string",
+    "parasite_morpher": "minecraft:rotten_flesh",
+    "barrier_caster": "minecraft:glass",
+    "pact_caster": "minecraft:paper",
+    "swarm_caster": "minecraft:slime_ball",
+}
+
 
 def fail(message: str) -> None:
     raise SystemExit(message)
@@ -69,6 +80,7 @@ def main() -> None:
     recipe_dir = output / "data" / "anomalousclasses" / "recipe" / "focus"
     assets.mkdir(parents=True)
     recipe_dir.mkdir(parents=True)
+    advancement_dir = output / "data" / "anomalousclasses" / "advancement" / "recipes" / "focus"
     shutil.copyfile(source, assets / "focus_recipes.json")
 
     for recipe in recipes:
@@ -92,7 +104,30 @@ def main() -> None:
         path = recipe_dir / class_id / f"{tier}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(generated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Generated {len(recipes)} shaped focus recipes from {source.name}.")
+        unlock_item = (FIRST_DISCOVERY_ITEMS[class_id] if tier == "standard"
+                       else recipe["key"]["O"][0])
+        if unlock_item not in {item for alternatives in recipe["key"].values() for item in alternatives}:
+            fail(f"{class_id}/{tier}: discovery item must be a recipe ingredient")
+        recipe_id = f"anomalousclasses:focus/{class_id}/{tier}"
+        advancement = {
+            "parent": "minecraft:recipes/root",
+            "criteria": {
+                "has_the_recipe": {
+                    "trigger": "minecraft:recipe_unlocked",
+                    "conditions": {"recipe": recipe_id},
+                },
+                "has_ingredient": {
+                    "trigger": "minecraft:inventory_changed",
+                    "conditions": {"items": [{"items": [unlock_item]}]},
+                },
+            },
+            "requirements": [["has_the_recipe", "has_ingredient"]],
+            "rewards": {"recipes": [recipe_id]},
+        }
+        advancement_path = advancement_dir / class_id / f"{tier}.json"
+        advancement_path.parent.mkdir(parents=True, exist_ok=True)
+        advancement_path.write_text(json.dumps(advancement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"Generated {len(recipes)} shaped focus recipes and recipe-book discoveries from {source.name}.")
 
 
 if __name__ == "__main__":

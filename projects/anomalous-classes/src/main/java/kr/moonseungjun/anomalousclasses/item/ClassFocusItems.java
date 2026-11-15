@@ -2,6 +2,11 @@ package kr.moonseungjun.anomalousclasses.item;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.List;
+import kr.moonseungjun.anomalousclasses.state.MentalDominatorRules;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.TooltipFlag;
 import java.util.Optional;
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import kr.moonseungjun.anomalousclasses.state.ClassFocus;
@@ -64,6 +69,29 @@ public final class ClassFocusItems {
 
         public ClassFocus focus() {
             return focus;
+        }
+
+        @Override
+        public void appendHoverText(ItemStack stack, TooltipContext context,
+                                    List<Component> tooltip, TooltipFlag flag) {
+            super.appendHoverText(stack, context, tooltip, flag);
+            tooltip.add(Component.translatable("tooltip.anomalousclasses.focus.identity",
+                    Component.translatable("class.anomalousclasses." + focus.classId().key()),
+                    Component.translatable("screen.anomalousclasses.class_focus.tier." + focus.tier().key()))
+                    .withStyle(ChatFormatting.GRAY));
+            if (focus.classId() == ClassId.MENTAL_DOMINATOR) {
+                tooltip.add(Component.translatable("screen.anomalousclasses.class_focus.effect.max_psyche",
+                        MentalDominatorRules.focusMaxPsychePercent(focus.tier())).withStyle(ChatFormatting.AQUA));
+                tooltip.add(Component.translatable("screen.anomalousclasses.class_focus.effect.upkeep",
+                        MentalDominatorRules.focusUpkeepReductionPercent(focus.tier())).withStyle(ChatFormatting.AQUA));
+                int intrusion = MentalDominatorRules.focusIntrusionBonusPercent(focus.tier());
+                if (intrusion > 0) {
+                    tooltip.add(Component.translatable("screen.anomalousclasses.class_focus.effect.intrusion",
+                            intrusion).withStyle(ChatFormatting.AQUA));
+                }
+            }
+            tooltip.add(Component.translatable("tooltip.anomalousclasses.focus.slot")
+                    .withStyle(ChatFormatting.DARK_GRAY));
         }
 
         @Override

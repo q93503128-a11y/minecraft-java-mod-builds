@@ -13,6 +13,19 @@ public final class MentalDominatorRules {
 
     private MentalDominatorRules() {}
 
+    // Item descriptions use these exact live modifiers, not a separate tooltip-only table.
+    public static int focusMaxPsychePercent(FocusTier tier) {
+        return (int) Math.round(FOCUS_MAX_PSYCHIC[tier.index()] * 100.0);
+    }
+
+    public static int focusUpkeepReductionPercent(FocusTier tier) {
+        return (int) Math.round(FOCUS_UPKEEP_REDUCTION[tier.index()] * 100.0);
+    }
+
+    public static int focusIntrusionBonusPercent(FocusTier tier) {
+        return (int) Math.round(FOCUS_INTRUSION_BONUS[tier.index()] * 100.0);
+    }
+
     public record Threat(double score, double maxHealth, double attackDamage, double armor) {}
 
     public static int passiveRanks(PlayerClassProfile profile, String skillId) {

@@ -13,6 +13,14 @@ CLASSES = (
     "barrier_caster", "pact_caster", "swarm_caster",
 )
 TIERS = ("standard", "altered", "anomalous", "eldritch", "incomprehensible")
+FIRST_DISCOVERY_ITEMS = {
+    "mental_dominator": "minecraft:amethyst_shard",
+    "puppeteer": "minecraft:string",
+    "parasite_morpher": "minecraft:rotten_flesh",
+    "barrier_caster": "minecraft:glass",
+    "pact_caster": "minecraft:paper",
+    "swarm_caster": "minecraft:slime_ball",
+}
 
 
 def fail(message: str) -> None:
@@ -74,6 +82,12 @@ def main() -> None:
         if missing:
             fail(f"missing {language} focus UI translations: {missing}")
         for key in (
+            "tooltip.anomalousclasses.focus.identity",
+            "tooltip.anomalousclasses.focus.slot",
+        ):
+            if not strings.get(key):
+                fail(f"missing {language} focus hover translation: {key}")
+        for key in (
             "screen.anomalousclasses.class_focus.inventory",
             "screen.anomalousclasses.class_focus.required_count",
             "screen.anomalousclasses.class_focus.alternative",
@@ -124,6 +138,28 @@ def main() -> None:
             if definition["pattern"][1][1] != "O" or definition["key"].get("O") != [f"anomalousclasses:focus_{class_id}_{previous}"]:
                 fail(f"upgrade must consume the previous grade in the center: {path}")
 
+        advancement_path = (generated_resources / "data" / "anomalousclasses" / "advancement"
+                            / "recipes" / "focus" / class_id / f"{tier}.json")
+        advancement = json.loads(advancement_path.read_text(encoding="utf-8"))
+        expected_recipe = f"anomalousclasses:focus/{class_id}/{tier}"
+        expected_item = (FIRST_DISCOVERY_ITEMS[class_id] if tier == "standard"
+                         else definition["key"]["O"][0])
+        if advancement.get("parent") != "minecraft:recipes/root":
+            fail(f"invalid recipe-book advancement parent: {advancement_path}")
+        if advancement.get("rewards", {}).get("recipes") != [expected_recipe]:
+            fail(f"missing recipe-book unlock reward: {advancement_path}")
+        criteria = advancement.get("criteria", {})
+        if criteria.get("has_the_recipe") != {
+                "trigger": "minecraft:recipe_unlocked",
+                "conditions": {"recipe": expected_recipe}}:
+            fail(f"invalid recipe-unlocked criterion: {advancement_path}")
+        if criteria.get("has_ingredient") != {
+                "trigger": "minecraft:inventory_changed",
+                "conditions": {"items": [{"items": [expected_item]}]}}:
+            fail(f"invalid inventory discovery criterion: {advancement_path}")
+        if advancement.get("requirements") != [["has_the_recipe", "has_ingredient"]]:
+            fail(f"recipe-book discovery must have OR conditions: {advancement_path}")
+
     pact_highest = by_pair[("pact_caster", "incomprehensible")]["key"].get("A", [])
     if set(pact_highest) != {"minecraft:totem_of_undying", "minecraft:heart_of_the_sea"}:
         fail("Pact highest-grade recipe must accept either approved alternative")
@@ -131,7 +167,11 @@ def main() -> None:
     recipe_files = list((generated_resources / "data" / "anomalousclasses" / "recipe" / "focus").rglob("*.json"))
     if len(recipe_files) != 30:
         fail(f"expected 30 generated shaped recipe files, found {len(recipe_files)}")
-    print("Focus registry assets and recipe parity: PASS (30 items, 30 shaped recipes, 6 classes x 5 tiers).")
+    advancements = list((generated_resources / "data" / "anomalousclasses" / "advancement"
+                         / "recipes" / "focus").rglob("*.json"))
+    if len(advancements) != 30:
+        fail(f"expected 30 generated recipe-book advancements, found {len(advancements)}")
+    print("Focus registry/recipe parity: PASS (30 items, 30 shaped recipes, 30 discovery advancements).")
 
 
 if __name__ == "__main__":

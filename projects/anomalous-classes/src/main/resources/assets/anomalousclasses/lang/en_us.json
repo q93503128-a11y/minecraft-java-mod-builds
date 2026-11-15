@@ -255,6 +255,8 @@
   "skill_node.anomalousclasses.swarm_caster.stat.movement_speed_percent": "Movement Speed",
   "skill_node.anomalousclasses.swarm_caster.stat.attack_damage": "Attack Damage",
   "screen.anomalousclasses.class_management.focus": "Focus",
+  "tooltip.anomalousclasses.focus.identity": "%1$s · %2$s tier",
+  "tooltip.anomalousclasses.focus.slot": "Equip in the class-focus slot",
   "screen.anomalousclasses.class_focus.title": "Class Focus",
   "screen.anomalousclasses.class_focus.back": "Back",
   "screen.anomalousclasses.class_focus.recipe": "Recipe",
