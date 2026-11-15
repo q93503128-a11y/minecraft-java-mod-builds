@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-16 최신 기생술사 전투 품질:** 바닐라34+외부20 **숙주 총54종 유지**. [게임 코드 `c122b90`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/c122b90808c3b02523ab6ca7cb101cf48e506e21)에서 전투 계승 쿨다운 선검사·실패 시 미소모·재진입 방지, 파괴수 V+4 포효·숙련100 계승, 거북 밀침 저항·숙련100 계승, 외부 모드 클래스 변경 시 기존 숙주 NoAI 복원·claim 해제 구현. [CI #43743671415](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43743671415) **BUILD VERIFIED / JAR PRODUCED**. **CLIENT/PLAYTEST/MULTIPLAYER NOT TESTED**. 아래 문서의 이전 상태는 해당 일자 스냅샷이며 [최신 기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md)가 우선.
+
+
 > **2026-11-16 최신 기생술사 외부 모드 통합:** 바닐라 숙주 34종 + 실제 외부 몬스터 20종 = **총 54종**. 선정 외부 팩 12서버 JAR+게임 본체 JAR 동시 로딩·월드 부팅 [#43741441267](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741441267) 성공, 외부 256종 EntityType/149 Mob 확인, 20/20 클래스 지문 일치, 보스 미지원 확인. 게임 본체 [#43741286060](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741286060) BUILD VERIFIED/JAR PRODUCED. **실제 기생 조작·클라/멀티 미검증**. [외부 20종 상세 검증 보고](./modpack/EXTERNAL_HOST_RUNTIME_BINDING_2026-11-16.md).
 
 

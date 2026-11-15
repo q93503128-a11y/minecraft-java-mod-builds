@@ -1,5 +1,21 @@
 # Build and Runtime Report
 
+## 2026-11-16 — 기생술사 계승 전투 안전성 + 파괴수 포효 + 거북 방어
+
+- **소스 변경:** [`c122b90808c3b02523ab6ca7cb101cf48e506e21`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/c122b90808c3b02523ab6ca7cb101cf48e506e21). 바닐라 34 + 외부 20 = **54개 원본 숙주 프로필 유지**. 타 직업/기존 저장 키/고정 외부 모드팩 9+6 구성 불변.
+- **BUILD VERIFIED / JAR PRODUCED:** [Build anomalous-classes #43743671415](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43743671415) **SUCCESS**. `anomalous-classes-0.1.0-alpha.1.jar`: **32,063,691 bytes, 186 classes**, [JAR·SHA256 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43743671415/artifacts/14172778208). `verifyParasiteFoundation`, `verifyPuppeteerFoundation`, `verifyGraphSkillTreeRuntime`, 전체 기존 project 검사, JAR 구조 검사 PASS.
+- **원인 수정 — 전투 쿨다운:** 기존 가디언 광선/엔더맨 순간이동은 실제 피해·위치 변경을 먼저 실행하고 이후 `ParasiteTraitSavedData.cast`로 공통 후딜/개별 cooldown을 확인했다. 이전 공격의 공통 회복 중 다음 기술이 **쿨다운 소비 없이 효과만 일으킬 수 있는 실행 순서 결함**을 수정했다. `ParasiteTraitSavedData.castIf`가 먼저 권한/개별·공통 쿨다운을 확인하고, 같은 서버 스레드에서 효과를 시도하며, **유효한 효과가 성공했을 때만** 영구 cooldown을 기록한다. 오류 또는 목표/착지 실패는 cooldown 미소모. transient 재진입 플래그로 피격 콜백 중 기술 재실행 차단. 기존 `cast` API와 NBT 스키마 유지.
+- **고유 직접 발동 추가:** 파괴수(`minecraft:ravager`)가 선천으로 쓰거나 파괴수 종 숙련100 달성 후 다른 몸에서도 V 모드 **숫자 4(코드 슬롯3)**로 사용. 5블록 이내 벽으로 가려지지 않은 적에게 기본 피해 6 후보와 밀쳐내기, 40초 개별 쿨다운/3초 공격형 공통 후딜(후보). 유효 피격 대상이 없다면 시전하지 않음. 플레이어·다른 직업의 지배체·기생 소유물·길들인 동물 등 기존 friendly-fire 권한 적용. 첫 기본 서버 효과음·파티클 적용, **원본 Ravager 포효 애니메이션의 최종 시각 재현은 미완료**.
+- **상시 생존 특성:** 거북(`minecraft:turtle`)이 현재 숙주이거나 해당 종 숙련100이면 현재 숙주에 일시적 밀침 저항 속성 `+0.35` 후보. 기술 모드 V, 숫자키, 추가 자원과 무관하게 상시 적용. 숙주 이탈 시 transient modifier와 HP modifier 복구; 다른 종의 base knockback resistance를 삭제하지 않음. 숙주 스탯 주기 갱신 또는 신규 기생 시 적용.
+- **외부 호환 실패 경계:** 외부 모드 업데이트로 기존 `EntityType` ID가 유지되더라도 실제 Java 클래스가 지정된 `expectedClass`와 다르면 서버 `onEntityJoin`에서 기존 숙주의 원래 AI를 복원하고 그 원본 claim을 해제해, 무한 NoAI/frozen body 상태가 남지 않도록 수정.
+- **검증된 회귀:** 시전 중 실제 효과 콜백 전에 공통 후딜을 검사하는지, 거절된 광선/순간이동이 콜백을 실행하지 않는지, 무효 대상·실패 시전이 cooldown을 소비하지 않는지, 같은 동기 콜백에서 재진입이 차단되는지, 거북 native/숙련99·100, 54종/외부20종 기존 프로필·지배/인형술사 회귀 테스트.
+- **별도 실제 서버 동시 부팅 정본:** [이전 외부 통합 #43741441267](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741441267)에서 이미 20/20 외부 원본 클래스 및 13 JAR 동시 부팅 PASS. 이번 코드 커밋은 **일반 game build만 재검증했으며 변경된 포효/거북·updated host reload를 실제 월드에서 직접 실행한 테스트는 아님**.
+- **CLIENT RUNTIME TESTED: NO / PLAYTESTED: NO / MULTIPLAYER TESTED: NO.** 파괴수 포효 적 대상, 벽 시야, sound/VFX sync, turtle knockback actual physics, camera/mount/dismount, mod class change on real persisted host는 실게임 검증이 필요. 기능 카탈로그 수를 완성도 지표로 오인하지 말 것.
+
+
+---
+
+
 ## 2026-11-16 — 실외부 모드 20종 기생 어댑터 검증 및 54종 숙주 통합
 
 - **게임 코드:** [`b45e05dd2d006e0543211a6410bf329b622b8d10`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b45e05dd2d006e0543211a6410bf329b622b8d10) + 첫 컴파일 오류를 바로잡은 [`001b52750e110b10f25556624ed21643b655a83a`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/001b52750e110b10f25556624ed21643b655a83a). [통합 감사 워크플로 `1d384ee`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/1d384eeb320a9d473a9ad6fee2b1eb0d4c22aead).
