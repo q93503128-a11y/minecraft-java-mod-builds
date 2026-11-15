@@ -1,5 +1,19 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Puppeteer construction and identity foundation
+
+The current user-directed development batch moves from Mental Dominator to Puppeteer. Source-of-truth references: `classes/PUPPETEER.md`, `PUPPET_COMBAT_MATRIX.md`, `PUPPET_SCALE_AND_WORKBENCH.md`, `PUPPET_CRAFTING_ECONOMY.md`, `PUPPET_ACTIVES_AND_GROWTH.md`, `PUPPET_SKILL_TREE.md`, `MARIONETTE_CONTROL_BAR.md`, D09/D11.
+
+- Added server-side `PuppetBlueprint`: immutable identity/owner, 3 frames × 3 weapon devices × basic/3 specialized cores, independent 1.0–3.0 body heights, health ratio, next attack recovery, canonical actual-material ledger, versioned NBT validation and save/load.
+- Added `PuppeteerRules`: size/frame/device/core tradeoffs, remapped graph passives, gentle class-level scaling and class-only control-bar stat/slot bonuses. Highest control bar correctly provides **+5 active slots** and **+40% attack/HP** without changing range/attack speed.
+- Added `PuppetEconomy`: verified documented first light-frame+blade+basic-core raw input baseline and all five documented frame sizes. Expansion only spends the positive delta. Refunding is strictly bounded by actual recorded contributions, with lower returns on a broken puppet.
+- Added `PuppetRegistrySavedData`: one world-owned identity record with monotonic revisions across **STORED -> DEPLOYED -> STORED/BROKEN -> RETIRED**. A replayed item revision, wrong owner or repeated dismantle cannot mint a second valid asset. Unloaded deployed records still occupy a slot; no forced chunks.
+- Added JVM fixture `verifyPuppeteerFoundation` and attached it to `check`. The fixture covers canonical ingredient totals, all 27 specialized frame/device/core combinations, five size options, equipment isolation, body height stat effects, refund limits, NBT roundtrip, expired revisions, foreign owner attempts, damaged recalls and retired assets across server save/load.
+- **Important implementation boundary:** actual `PuppetEntity`, dedicated renderer/strings, puppet part item registrations, puppet workbench menu, direct R target-command, three direct abilities and server-authoritative workshop inventory transactions are **NOT IMPLEMENTED** by this foundation. No dummy vanilla mob, no fake crafting or developer-only player UI has been added. Continue those as a single player-facing production slice rather than asking for repeated playtests.
+- **Verification:** CI run pending at write time; not playable until entity/workbench/control bindings are completed. **CLIENT PLAYTEST / MULTIPLAYER TESTED: NO.**
+
+---
+
 ## 2026-11-15 — Mental Dominator direct-combat skill integration
 
 - Added four server-authoritative direct skills after the existing Mental Intrusion hold-to-capture loop: Mental Shock (damage + short interruption), Self-Attack Suggestion (creature's own attack-source self-damage), Mental Overload (temporary +30% attack / +15% movement speed to an owned creature with +50% upkeep while active), and area Consciousness Seal (threat-scaled temporary AI interruption).

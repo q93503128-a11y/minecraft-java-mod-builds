@@ -121,6 +121,16 @@ tasks.register('verifyMentalDominatorRules', Exec) {
     }
 }
 
+tasks.register('verifyPuppeteerFoundation', Exec) {
+    group = 'verification'
+    description = 'Checks puppeteer 27 combinations, scaling, material accounting, and saved identity transitions.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PuppeteerFoundationVerifier.java').absolutePath
+    }
+}
+
 tasks.register('verifyClassManagementLayout', JavaExec) {
     group = 'verification'
     description = 'Checks class-management content and widget bounds at supported GUI scales and aspect ratios.'
@@ -163,6 +173,7 @@ tasks.named('check') {
     dependsOn tasks.named('verifyProfileSkillTree')
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
     dependsOn tasks.named('verifyMentalDominatorRules')
+    dependsOn tasks.named('verifyPuppeteerFoundation')
     dependsOn tasks.named('verifyClassManagementLayout')
     dependsOn tasks.named('verifyMentalDominatorLayout')
     dependsOn tasks.named('verifyClassFocus')
