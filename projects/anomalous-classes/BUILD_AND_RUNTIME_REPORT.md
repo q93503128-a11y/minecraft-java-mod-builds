@@ -1,5 +1,19 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Parasite original-host camera and authoritative melee checkpoint
+
+- **Gameplay commit:** `29eacf9025584d4b8f8f79c9aed203acc497cc5f`.
+- [**Build anomalous-classes #43725526476**](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43725526476): **SUCCESS / BUILD VERIFIED / JAR PRODUCED**. Verified packaged JAR `anomalous-classes-0.1.0-alpha.1.jar`, 32,044,062 bytes, 184 compiled classes. [Deliverables](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43725526476/artifacts/14165683534).
+- Existing deterministic `verifyParasiteFoundation` (claims/BD/milestones/death/skills/trait cooldown persistence), Puppeteer and graph-skill-tree checks passed. **No in-game camera, combat, or multiplayer test was run.**
+- Implemented server-issued `ParasiteHostViewPayload` binding local camera to the original controlled Mob entity ID+UUID only when the actual passenger vehicle matches. Local camera automatically restores on release, host death, respawn, logout/world swap, or dimension/class change. The server resends host view on successful possession/re-mount/relogin. Client copies local view rotation to host for first-person alignment; authoritative movement and look validation remain on server.
+- Added `ParasiteHostAttackPayload`: a target-free single attack intent. Server independently searches for the nearest physically ray-intersected living target from the **host eye**, applies block occlusion, caps reach to vanilla-sized values, checks alliance/PvP/owned puppets/dominated creatures/other parasite hosts and normal vanilla attack cooldown. It then invokes the standard `ServerPlayer.attack` pipeline for weapon effects, damage attribution, drops and XP. Direct vanilla attack packets are canceled while host-controlling to resist double attacks.
+- Living incoming damage to the passenger redirects to the original host exactly once; a failed host hurt no longer applies a second independent hit to the player.
+- Player remains original inventory/XP and block-interaction authority. Camera is local visual state, not a separate spawned player/entity. **Third-person remote-player floating passenger visibility, real movement/camera interpolation, block interaction reach from different host heights, cross-dimensional chunk unloading and multiplayer latency remain explicit QA gaps.**
+- Continued scope and handoff: [PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
+
+---
+
+
 ## 2026-11-15 — Parasite V inherited skills / Creeper burst checkpoint
 
 - Implemented commit: `3b8cd95f8c99ef5c218c9a27dfce3344f991bbe7`.

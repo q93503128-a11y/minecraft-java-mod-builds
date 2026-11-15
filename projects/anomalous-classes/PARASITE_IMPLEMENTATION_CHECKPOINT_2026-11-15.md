@@ -48,3 +48,15 @@
 4. 자연스러운 BD를 240 이상 축적한 뒤 `/summon minecraft:creeper ~2 ~ ~`로 크리퍼 기생 시험. 크리퍼 숙주에서 V→1 폭발→사망·인간형 배출·재기생 잠금 확인.
 5. 실제 유효 활동으로 크리퍼 종 숙련100 뒤 다른 종 숙주에서 V→1을 누르면 숙주 HP 반동을 받는 지형 비파괴 폭발이 발동해야 함.
 6. 월드 저장/재접속, 서버 PvP=false/true, 다른 플레이어 숙주 소유권을 별도로 검수. **위 순서는 테스트 계획이며 실제 시행 결과가 아님.**
+
+## 2026-11-15 후속 구현 — 원본 숙주 시점·서버 근접 공격
+
+- Commit `29eacf9025584d4b8f8f79c9aed203acc497cc5f`; `main` 통합.
+- [CI #43725526476](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43725526476) **SUCCESS / BUILD VERIFIED / JAR PRODUCED**, JAR 32,044,062 bytes/184 classes, [JAR artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43725526476/artifacts/14165683534).
+- `ParasiteHostViewPayload` broadcasts the authentic host entity ID+UUID to its player only; `ParasiteViewClient` only changes Minecraft camera after client confirms matching mounted entity. View is restored when the server ends possession or when local world is unloaded. Local player's redundant mounted renderer is suppressed; other clients' rendering not yet adapted.
+- `ParasiteHostAttackPayload` carries **no target ID and no damage value**. `ParasiteHostCombatService` raycasts living entity/blocks from the original host's eye, enforces valid allied/PvP/ownership target, player attack strength/cooldown and throttled intents, and then calls vanilla `ServerPlayer.attack` for item attribution. Server cancels an alternative vanilla attacker packet while a host is controlled.
+- Intrusion raycast now starts from current host eye when already inhabited; host rotation includes player pitch. Host release restores old-dimension Mob if already loaded and releases claim safely when dimension changes; it never forcibly loads remote chunks.
+- Passenger incoming damage redirects to real host without charging the player a second hit if the host is temporarily immune.
+- **NOT PLAYTESTED**: camera mouse-look/interpolation and first/third-person collision, world chunk/portal transfer, player-body visibility for remote multiplayer clients, vanilla mining/block range alignment, physical swings and attack feel, PvP modes, real entity drops and TPS profiling.
+- The UI/model/animation polish remains under Codex per [UI ownership](./ui/WORK_OWNERSHIP_AND_UI_HANDOFF_2026-11-13.md); gameplay authority and preservation remain in the server modules.
+

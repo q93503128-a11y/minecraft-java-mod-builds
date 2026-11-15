@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-15 기생술사 직접 시점·전투 통합:** 원본 숙주 눈높이 카메라, 서버 권위 숙주 시점 근접 공격, 이중 공격·피해 방지 및 차원/전직/사망 시 시점 복귀를 `29eacf9`에 연결했다. [CI #43725526476](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43725526476) BUILD VERIFIED/JAR PRODUCED. **실제 Minecraft 클라이언트·게임플레이·멀티 테스트는 아직 미실행.** 상세 [기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
+
+
 > **2026-11-15 기생술사 서버 구현 최신 체크포인트:** V 계승 기술 모드·크리퍼 선천/숙련100 계승 폭발·영구 쿨다운 저장까지 구현했으며 [#43722781049](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43722781049) 빌드/JAR 검증 통과. 실제 클라이언트·플레이/멀티는 미검증. 상세 [기생술사 구현 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md). 개발 정본은 최신 `main` 및 실제 소스.
 
 
