@@ -98,13 +98,13 @@ public final class PuppetEntity extends PathfinderMob {
      * agree. A larger puppet cannot walk through a two-block-tall doorway.
      */
     @Override
-    public EntityDimensions getDimensions(Pose pose) {
-        if (this.entityData == null) return super.getDimensions(pose);
+    protected EntityDimensions getDefaultDimensions(Pose pose) {
+        if (this.entityData == null) return super.getDefaultDimensions(pose);
         int value = Math.max(0, Math.min(PuppetBlueprint.Size.values().length - 1,
                 this.entityData.get(HEIGHT)));
-        double height = PuppetBlueprint.Size.values()[value].height();
-        float width = (float) (0.60 + 0.16 * value);
-        return EntityDimensions.scalable(width, (float) height);
+        float height = (float) PuppetBlueprint.Size.values()[value].height();
+        // Model is 1.5 blocks at scale 1.0; the physical width scales with it.
+        return EntityDimensions.scalable(.68F * height / 1.5F, height);
     }
 
     @Override
