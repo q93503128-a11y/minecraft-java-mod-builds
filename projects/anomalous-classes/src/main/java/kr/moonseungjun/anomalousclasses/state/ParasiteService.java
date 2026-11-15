@@ -7,6 +7,10 @@ import java.util.Map;
 import java.util.UUID;
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostViewPayload;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -170,6 +174,7 @@ public final class ParasiteService {
             // Never abandon its saved claim merely because getEntity() returns null.
         }
         applyHumanStats(player);
+        syncView(player);
     }
 
     public static void onLogout(Entity entity) {
@@ -187,6 +192,24 @@ public final class ParasiteService {
         if (player.getServer() == null) return;
         end(player, false);
         applyHumanStats(player);
+        syncView(player);
+    }
+
+    /** Cross-dimensional possession cannot strand an owner or leave an active remote body. */
+    public static void onChangedDimension(ServerPlayer player) {
+        if (player.getServer() == null) return;
+        end(player, false);
+        CHANNELS.remove(player.getUUID());
+        MOTIONS.remove(player.getUUID());
+        syncView(player);
+    }
+
+    public static void syncView(ServerPlayer player) {
+        if (player == null || player.getServer() == null) return;
+        Mob host = activeHost(player);
+        ClassNetwork.sendToPlayer(player, new ParasiteHostViewPayload(
+                host == null ? -1 : host.getId(),
+                host == null ? ParasiteHostViewPayload.NONE : host.getUUID()));
     }
 
     public static void applyHumanStats(ServerPlayer player) {
@@ -209,8 +232,10 @@ public final class ParasiteService {
         if (!(event.getEntity() instanceof ServerPlayer owner) || !current(owner)) return;
         Mob host = loadedHost(owner, ParasiteSavedData.get(owner.getServer()).player(owner.getUUID()).host());
         if (host == null || owner.getVehicle() != host || !host.isAlive()) return;
-        // Only one body takes the incoming attack; the passenger cannot absorb a second copy.
-        if (host.hurt(event.getSource(), event.getAmount())) event.setCanceled(true);
+        // Redirect exactly once even when the host is temporarily invulnerable;
+        // the passenger must not become a second damageable body.
+        event.setCanceled(true);
+        host.hurt(event.getSource(), event.getAmount());
     }
 
     public static void onDamage(LivingDamageEvent.Pre event) {
@@ -311,6 +336,7 @@ public final class ParasiteService {
             applyHumanStats(owner);
             if (owner.isAlive()) owner.setHealth(Math.max(1.0F, owner.getMaxHealth() * .75F));
             message(owner, "message.anomalousclasses.parasite.host_died");
+            syncView(owner);
         }
         CHANNELS.remove(ownerId);
         MOTIONS.remove(ownerId);
@@ -358,12 +384,9 @@ public final class ParasiteService {
                     continue;
                 }
                 if (player.getVehicle() != host) {
-                    // Sneak/dismount must not be an instant, free host release.
-                    // The R channel is the sole deliberate voluntary exit route.
-                    if (!player.startRiding(host, true)) {
-                        // Keep the saved claim intact if mounting was temporarily rejected.
-                        continue;
-                    }
+                    // Sneak/dismount must not bypass the 30-tick deliberate exit.
+                    if (!player.startRiding(host, true)) continue;
+                    syncView(player);
                 }
                 moveHost(player, host, state);
                 ParasiteAbilityService.tick(player, host);
@@ -440,6 +463,7 @@ public final class ParasiteService {
         Motion motion = new Motion();
         motion.yaw = player.getYRot();
         MOTIONS.put(player.getUUID(), motion);
+        syncView(player);
         return true;
     }
 
@@ -477,6 +501,7 @@ public final class ParasiteService {
                     dz * Math.min(.50, velocity)));
             host.setYRot(m.yaw);
             host.setYHeadRot(m.yaw);
+            host.setXRot(owner.getXRot());
             if ((m.mask & 16) != 0 && host.onGround())
                 host.setDeltaMovement(host.getDeltaMovement().add(0, .42, 0));
         }
@@ -538,8 +563,13 @@ public final class ParasiteService {
     }
 
     private static Mob aimed(ServerPlayer player) {
-        Vec3 eye = player.getEyePosition(), end = eye.add(player.getLookAngle().scale(AIM_RANGE));
-        AABB area = player.getBoundingBox().expandTowards(player.getLookAngle().scale(AIM_RANGE)).inflate(1.0);
+        // The player can reach a new host through the senses of the currently
+        // inhabited one, rather than raycasting above its body from the passenger.
+        Mob source = activeHost(player);
+        Vec3 eye = source == null ? player.getEyePosition() : source.getEyePosition();
+        Vec3 end = eye.add(player.getLookAngle().scale(AIM_RANGE));
+        AABB area = (source == null ? player.getBoundingBox() : source.getBoundingBox())
+                .expandTowards(player.getLookAngle().scale(AIM_RANGE)).inflate(1.0);
         Mob best = null;
         double bestDist = AIM_RANGE * AIM_RANGE;
         for (Mob mob : player.level().getEntitiesOfClass(Mob.class, area,
@@ -574,6 +604,16 @@ public final class ParasiteService {
         Entity entity = owner.serverLevel().getEntity(id);
         return entity instanceof Mob mob ? mob : null;
     }
+    private static Mob loadedSavedHost(ServerPlayer owner, UUID id) {
+        if (id == null || owner == null || owner.getServer() == null) return null;
+        ParasiteSavedData.State state = ParasiteSavedData.get(owner.getServer()).player(owner.getUUID());
+        ResourceLocation key = ResourceLocation.tryParse(state.dimension());
+        if (key == null) return null;
+        ServerLevel level = owner.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, key));
+        Entity loaded = level == null ? null : level.getEntity(id); // no chunk forcing
+        return loaded instanceof Mob mob ? mob : null;
+    }
+
     private static void applyHostStats(ServerPlayer owner, Mob host) {
         if (!ownsHost(owner,host)) return;
         var data = ParasiteSavedData.get(owner.getServer()).player(owner.getUUID());
@@ -603,7 +643,7 @@ public final class ParasiteService {
         ParasiteSavedData data = ParasiteSavedData.get(owner.getServer());
         UUID hostId = data.player(owner.getUUID()).host();
         if (hostId == null) return;
-        Mob host = loadedHost(owner, hostId);
+        Mob host = loadedSavedHost(owner, hostId);
         if (owner.getVehicle() != null) owner.stopRiding();
         if (host != null) {
             ParasiteAbilityService.endHost(owner, host);
@@ -611,6 +651,7 @@ public final class ParasiteService {
         }
         data.release(owner.getUUID(), hostId);
         if (!death) applyHumanStats(owner);
+        syncView(owner);
     }
     private static void onDeadHost(ServerPlayer owner, Mob host) {
         ParasiteSavedData data = ParasiteSavedData.get(owner.getServer());
@@ -624,6 +665,7 @@ public final class ParasiteService {
         CHANNELS.remove(owner.getUUID());
         MOTIONS.remove(owner.getUUID());
         message(owner, "message.anomalousclasses.parasite.host_died");
+        syncView(owner);
     }
 
     private static void trackHit(ServerPlayer owner, LivingEntity victim, float damage) {

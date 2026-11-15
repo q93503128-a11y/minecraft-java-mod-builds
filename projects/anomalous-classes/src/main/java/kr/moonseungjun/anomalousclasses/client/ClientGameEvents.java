@@ -12,6 +12,11 @@ import kr.moonseungjun.anomalousclasses.network.payload.ParasiteInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostAttackPayload;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -27,8 +32,29 @@ public final class ClientGameEvents {
     private ClientGameEvents() {}
 
     @SubscribeEvent
+    public static void onAttackInput(InputEvent.InteractionKeyMappingTriggered event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!event.isAttack() || minecraft.screen != null || !ParasiteViewClient.isControlling()
+                || !(minecraft.hitResult instanceof EntityHitResult result)
+                || !(result.getEntity() instanceof LivingEntity)) return;
+        // Avoid a second, passenger-eye vanilla attack. Host reach and target
+        // are independently recomputed on the authoritative server.
+        event.setCanceled(true);
+        PacketDistributor.sendToServer(ParasiteHostAttackPayload.INSTANCE);
+    }
+
+    @SubscribeEvent
+    public static void onRenderLocalPlayer(RenderPlayerEvent.Pre event) {
+        // The passenger's logical body remains real for inventory/XP, but it
+        // must not visually hover above the host from its owner's camera.
+        if (event.getEntity() == Minecraft.getInstance().player
+                && ParasiteViewClient.isControlling()) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
+        ParasiteViewClient.tick(minecraft);
         SkillTreeNavigation.tick(minecraft);
         if (minecraft.player == null || minecraft.level == null) {
             ParasiteTraitClientControls.reset();

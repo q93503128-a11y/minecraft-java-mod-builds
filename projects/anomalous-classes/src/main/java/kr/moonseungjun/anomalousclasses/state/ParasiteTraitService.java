@@ -110,7 +110,8 @@ public final class ParasiteTraitService {
         }
     }
 
-    private static boolean canHit(ServerPlayer owner, LivingEntity target) {
+    /** Shared hostile/friendly authorization for inherited bursts and host melee. */
+    static boolean canHit(ServerPlayer owner, LivingEntity target) {
         if (owner.isAlliedTo(target)) return false;
         if (target instanceof Player && !owner.getServer().isPvpAllowed()) return false;
         if (target instanceof TamableAnimal tame && tame.isTame()) return false;

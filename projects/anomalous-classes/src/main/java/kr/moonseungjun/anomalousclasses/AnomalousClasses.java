@@ -17,6 +17,7 @@ import kr.moonseungjun.anomalousclasses.state.PuppetService;
 import kr.moonseungjun.anomalousclasses.state.PuppetCombatService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteTraitService;
+import kr.moonseungjun.anomalousclasses.state.ParasiteHostCombatService;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.bus.api.IEventBus;
@@ -57,6 +58,8 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(ParasiteService::onDeath);
         NeoForge.EVENT_BUS.addListener(ParasiteService::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(ParasiteService::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(ParasiteHostCombatService::onAttackEntity);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(ParasiteService::tick);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onChangeTarget);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onLivingDeath);
@@ -86,6 +89,7 @@ public final class AnomalousClasses {
         MentalDominatorService.onPlayerLogout(event.getEntity());
         ParasiteService.onLogout(event.getEntity());
         ParasiteTraitService.logout(event.getEntity().getUUID());
+        ParasiteHostCombatService.logout(event.getEntity().getUUID());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -96,6 +100,11 @@ public final class AnomalousClasses {
             ParasiteService.onRespawn(player);
             ParasiteTraitService.reset(player);
         }
+    }
+
+    private void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)
+            ParasiteService.onChangedDimension(player);
     }
 
     private void onLivingDamage(LivingDamageEvent.Post event) {
