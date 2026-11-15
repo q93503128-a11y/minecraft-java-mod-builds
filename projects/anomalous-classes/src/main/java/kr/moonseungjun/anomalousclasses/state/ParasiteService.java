@@ -157,7 +157,7 @@ public final class ParasiteService {
         if (current(player) && ParasiteSavedData.get(player.getServer()).player(player.getUUID()).host() == null) {
             PlayerClassProfile profile = ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
             // Base player health is 20. Do not erase purchased generic graph bonuses.
-            instance.addOrReplaceTransientModifier(new AttributeModifier(HUMAN_HP,
+            instance.addOrUpdateTransientModifier(new AttributeModifier(HUMAN_HP,
                     ParasiteRules.humanMaximum(profile) - 20.0, AttributeModifier.Operation.ADD_VALUE));
         }
         if (player.isAlive()) player.setHealth(Math.max(.5F,
@@ -456,7 +456,7 @@ public final class ParasiteService {
         if (hp == null) return;
         float ratio = host.getMaxHealth() <= 0 ? 1.0F : host.getHealth() / host.getMaxHealth();
         hp.removeModifier(HOST_HP);
-        hp.addOrReplaceTransientModifier(new AttributeModifier(HOST_HP,
+        hp.addOrUpdateTransientModifier(new AttributeModifier(HOST_HP,
                 ParasiteRules.healthMultiplier(data.bd(), data.mastery(species), profile) - 1.0,
                 AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
         if (host.isAlive()) host.setHealth(Math.max(.5F, host.getMaxHealth() * ratio));
