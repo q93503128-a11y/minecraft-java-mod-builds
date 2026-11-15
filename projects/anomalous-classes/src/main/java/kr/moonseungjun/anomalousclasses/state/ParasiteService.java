@@ -14,7 +14,6 @@ import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostViewPayload;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.damagesource.DamageTypes;
-import net.minecraft.util.Mth;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -131,15 +130,14 @@ public final class ParasiteService {
     }
 
     public static void movement(ServerPlayer player, int mask, float yaw, float pitch) {
-        if (!current(player) || !Float.isFinite(yaw) || !Float.isFinite(pitch)
-                || pitch < -90.0F || pitch > 90.0F || mask < 0 || (mask & ~63) != 0) return;
+        if (!current(player) || !ParasiteMotionRules.validInput(mask, yaw, pitch)) return;
         ParasiteSavedData.State state = ParasiteSavedData.get(player.getServer()).player(player.getUUID());
         if (state.host() == null) return;
         Mob host = loadedHost(player, state.host());
-        if (host == null || player.getVehicle() != host) return;
+        if (host == null || player.getVehicle() != host || !ownsHost(player, host)) return;
         Motion m = MOTIONS.computeIfAbsent(player.getUUID(), unused -> new Motion());
         m.mask = mask;
-        m.yaw = Mth.wrapDegrees(yaw);
+        m.yaw = ParasiteMotionRules.yaw(yaw);
         m.pitch = pitch;
         m.lastInput = clock(player);
     }
@@ -147,7 +145,7 @@ public final class ParasiteService {
     /** Validated server snapshot of camera aim, independent of passenger eye height. */
     public static Vec3 viewDirection(ServerPlayer player) {
         Motion motion = MOTIONS.get(player.getUUID());
-        if (motion != null && clock(player) - motion.lastInput <= 10L)
+        if (motion != null && ParasiteMotionRules.fresh(clock(player), motion.lastInput))
             return Vec3.directionFromRotation(motion.pitch, motion.yaw);
         return player.getLookAngle();
     }
@@ -395,8 +393,21 @@ public final class ParasiteService {
         // only the now-invalid original claim; never strand a frozen Mob.
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
         if (!ParasiteRules.matchesHostClass(typeId, mob.getClass().getName())) {
+            ServerPlayer owner = server.getPlayerList().getPlayer(ownerId);
+            if (owner != null) {
+                // Release the human from the now-invalid real host, not merely
+                // its saved claim. Never leave a camera on an unowned Mob.
+                if (owner.getVehicle() == mob) owner.stopRiding();
+                ParasiteAbilityService.endHost(owner, mob);
+                CHANNELS.remove(ownerId);
+                MOTIONS.remove(ownerId);
+            }
             restore(mob);
             data.release(ownerId, mob.getUUID());
+            if (owner != null) {
+                applyHumanStats(owner);
+                syncView(owner);
+            }
             return;
         }
         mob.setNoAi(true);
@@ -432,6 +443,12 @@ public final class ParasiteService {
                     // Sneak/dismount must not bypass the 30-tick deliberate exit.
                     if (!player.startRiding(host, true)) continue;
                     syncView(player);
+                }
+                // Certain third-party Mob subclasses restart navigation/goals
+                // during lifecycle events; keep server-owned direct control.
+                if (!host.isNoAi()) {
+                    host.getNavigation().stop();
+                    host.setNoAi(true);
                 }
                 moveHost(player, host, state);
                 ParasiteSpeciesService.tick(player, host, state);
@@ -519,23 +536,26 @@ public final class ParasiteService {
         Motion m = MOTIONS.computeIfAbsent(owner.getUUID(), unused -> new Motion());
         long tick = clock(owner);
         String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
-        if (tick - m.lastInput > 10) m.mask = 0;
-        double front = ((m.mask & 1) != 0 ? 1 : 0) - ((m.mask & 2) != 0 ? 1 : 0);
-        double sideways = ((m.mask & 8) != 0 ? 1 : 0) - ((m.mask & 4) != 0 ? 1 : 0);
-        double length = Math.hypot(front, sideways);
-        boolean sprint = (m.mask & 32) != 0 && front > 0;
+        int mask = ParasiteMotionRules.fresh(tick, m.lastInput) ? m.mask : 0;
+        Vec3 direction = ParasiteMotionRules.planar(mask, m.yaw);
+        boolean sprint = ParasiteMotionRules.sprint(mask);
         if (host.getType() == net.minecraft.world.entity.EntityType.PIG
                 && sprint && !m.sprintWasDown && tick >= m.dashReadyAt) {
-            // Pig's own short burst is available immediately, without trait inheritance.
+            // The pig's original body briefly accelerates on a fresh sprint.
             m.dashUntil = tick + 12;
             m.dashReadyAt = tick + 100;
         }
         m.sprintWasDown = sprint;
-        if (length > 0) {
-            front /= length; sideways /= length;
-            double rad = Math.toRadians(m.yaw);
-            double dx = (-Math.sin(rad) * front + Math.cos(rad) * sideways);
-            double dz = ( Math.cos(rad) * front + Math.sin(rad) * sideways);
+        // Always synchronize the REAL host's orientation. Previously this was
+        // gated by horizontal movement, so an idle aiming player could see a
+        // different camera/look direction from the server and other players.
+        if (ParasiteMotionRules.fresh(tick, m.lastInput)) {
+            host.setYRot(m.yaw);
+            host.setYHeadRot(m.yaw);
+            host.setYBodyRot(m.yaw);
+            host.setXRot(m.pitch);
+        }
+        if (direction.lengthSqr() > 0) {
             var spec = ParasiteRules.supported(BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()));
             double base = host.getAttributeValue(Attributes.MOVEMENT_SPEED);
             double velocity = Math.min(.32, Math.max(.065, base * 1.45))
@@ -546,34 +566,27 @@ public final class ParasiteService {
             if (sprint) velocity *= 1.20;
             if (host.getType() == net.minecraft.world.entity.EntityType.PIG && tick < m.dashUntil)
                 velocity *= 1.60;
-            // Aquatic bodies and fully-inherited guardian adaptation swim with
-            // their actual look pitch; no flight when out of water.
             boolean aquatic = host.isInWaterOrBubble()
                     && ParasiteRules.hasAquaticAdaptation(species, state);
-            double swimY = aquatic ? Math.max(-.24, Math.min(.24,
-                    -Math.sin(Math.toRadians(m.pitch)) * velocity)) : 0.0;
-            host.move(MoverType.SELF, new Vec3(dx * Math.min(.50, velocity),
-                    swimY, dz * Math.min(.50, velocity)));
-            host.setYRot(m.yaw);
-            host.setYHeadRot(m.yaw);
-            host.setXRot(m.pitch);
+            double swimY = aquatic ? ParasiteMotionRules.swimVertical(m.pitch, velocity) : 0.0;
+            host.move(MoverType.SELF, new Vec3(direction.x * Math.min(.50, velocity),
+                    swimY, direction.z * Math.min(.50, velocity)));
         }
-        // Jump works from standstill too, independent of horizontal motion.
-        // Slime elasticity is innate, and mastery-100 inheritance has no timed cooldown.
+        // Jump works from standstill. In water, jump means a controlled ascent;
+        // the vertical impulse is not compounded on each physics tick.
         if (host.isInWaterOrBubble()
                 && ParasiteRules.hasAquaticAdaptation(species, state)
-                && (m.mask & 16) != 0) {
+                && (mask & 16) != 0) {
             Vec3 velocity = host.getDeltaMovement();
             host.setDeltaMovement(velocity.x, Math.max(velocity.y, 0.18), velocity.z);
         }
-        if ((m.mask & 16) != 0 && host.onGround()) {
+        if ((mask & 16) != 0 && host.onGround()) {
             double impulse = ParasiteRules.jumpImpulse(species, state);
             Vec3 velocity = host.getDeltaMovement();
             host.setDeltaMovement(velocity.x, Math.max(velocity.y, impulse), velocity.z);
         }
-        // Wall climbing is environmental: jump-only works even without horizontal travel.
         if (ParasiteRules.hasWallClimb(species, state)
-                && host.horizontalCollision && ((m.mask & 16) != 0 || front > 0))
+                && host.horizontalCollision && ((mask & 16) != 0 || (mask & 1) != 0))
             host.setDeltaMovement(host.getDeltaMovement().x, .18, host.getDeltaMovement().z);
         if (tick % ACTION_INTERVAL == 0) {
             Vec3 pos = host.position();

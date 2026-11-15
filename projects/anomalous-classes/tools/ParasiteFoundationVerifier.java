@@ -10,6 +10,41 @@ import net.minecraft.resources.ResourceLocation;
 /** Deterministic server-contract fixtures. This is not a Minecraft client or multiplayer test. */
 public final class ParasiteFoundationVerifier {
     public static void main(String[] args) throws Exception {
+        // Ground/camera contract: no diagonal speed advantage, no forged
+        // NaN/pitch or keymask, zero-motion LOOK stays valid for stationary aim.
+        check(ParasiteMotionRules.validInput(0, 0F, -90F)
+                && ParasiteMotionRules.validInput(63, 360F, 90F)
+                && !ParasiteMotionRules.validInput(64, 0F, 0F)
+                && !ParasiteMotionRules.validInput(-1, 0F, 0F)
+                && !ParasiteMotionRules.validInput(1, Float.NaN, 0F)
+                && !ParasiteMotionRules.validInput(1, Float.POSITIVE_INFINITY, 0F)
+                && !ParasiteMotionRules.validInput(1, 0F, -90.1F),
+                "reject invalid movement masks and angles");
+        check(ParasiteMotionRules.fresh(100, 90)
+                && ParasiteMotionRules.fresh(100, 100)
+                && !ParasiteMotionRules.fresh(101, 90)
+                && !ParasiteMotionRules.fresh(90, 101),
+                "ten-tick input freshness and monotonic server time");
+        check(ParasiteMotionRules.planar(0, 75F).lengthSqr() == 0
+                && ParasiteMotionRules.fresh(100, 95),
+                "stationary host still has fresh camera rotation");
+        check(Math.abs(ParasiteMotionRules.planar(1, 0).z - 1) < .0001
+                && Math.abs(ParasiteMotionRules.planar(1 | 8, 0).length() - 1) < .0001
+                && Math.abs(ParasiteMotionRules.planar(1 | 2, 0).length()) < .0001,
+                "forward, diagonal normalization and opposing movement keys");
+        check(ParasiteMotionRules.sprint(1 | 32)
+                && !ParasiteMotionRules.sprint(2 | 32)
+                && !ParasiteMotionRules.sprint(1 | 2 | 32)
+                && !ParasiteMotionRules.sprint(8 | 32),
+                "sprint requires forward travel and cannot activate when blocked by reverse");
+        check(Math.abs(ParasiteMotionRules.swimVertical(-90F, .1) - .1) < .0001
+                && Math.abs(ParasiteMotionRules.swimVertical(90F, .1) + .1) < .0001
+                && ParasiteMotionRules.swimVertical(-90F, 2) == .24
+                && ParasiteMotionRules.swimVertical(0F, .5) == 0,
+                "aquatic pitch and bounded vertical movement");
+        check(ParasiteMotionRules.yaw(360F) == 0F
+                && ParasiteMotionRules.yaw(-270F) == 90F,
+                "canonical wraparound camera yaw");
         PlayerClassProfile profile = new PlayerClassProfile();
         var pig = ParasiteRules.supported(ResourceLocation.parse("minecraft:pig"));
         var cow = ParasiteRules.supported(ResourceLocation.parse("minecraft:cow"));
@@ -294,7 +329,7 @@ public final class ParasiteFoundationVerifier {
                 && !savedTraits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 200, 560, 0)
                 && savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 531, 480, 60),
                 "guardian and enderman cooldowns persist separately after restart");
-        System.out.println("PASS: 54 verified host profiles, 20 pinned external adapters, turtle shell and ravager unlock, pre-effect atomic trait cooldown, 99/100 mastery and NBT persistence");
+        System.out.println("PASS: 54 host profiles, pinned external identities, input/standing-aim/diagonal/swim motion, turtle/ravager, atomic trait cooldown, mastery and NBT");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);
