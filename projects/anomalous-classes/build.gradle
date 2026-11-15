@@ -131,6 +131,12 @@ tasks.register('verifyPuppeteerFoundation', Exec) {
     }
 }
 
+tasks.register('verifyPuppetAssets', Exec) {
+    group = 'verification'
+    description = 'Checks marionette icon/model assets, workshop crafting/loot data and translations.'
+    commandLine 'python', 'tools/verify_puppet_assets.py'
+}
+
 tasks.register('verifyClassManagementLayout', JavaExec) {
     group = 'verification'
     description = 'Checks class-management content and widget bounds at supported GUI scales and aspect ratios.'
@@ -174,6 +180,7 @@ tasks.named('check') {
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
     dependsOn tasks.named('verifyMentalDominatorRules')
     dependsOn tasks.named('verifyPuppeteerFoundation')
+    dependsOn tasks.named('verifyPuppetAssets')
     dependsOn tasks.named('verifyClassManagementLayout')
     dependsOn tasks.named('verifyMentalDominatorLayout')
     dependsOn tasks.named('verifyClassFocus')

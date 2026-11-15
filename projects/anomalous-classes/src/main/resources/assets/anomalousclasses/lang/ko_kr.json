@@ -408,5 +408,13 @@
   "puppet.anomalousclasses.core.stable": "안정 구동핵",
   "puppet.anomalousclasses.core.output": "고출력 구동핵",
   "message.anomalousclasses.puppet.target": "전개한 인형들의 우선 표적을 지정했습니다.",
-  "message.anomalousclasses.puppet.no_space_class_change": "인형을 안전하게 회수할 인벤토리 칸이 부족합니다."
+  "message.anomalousclasses.puppet.no_space_class_change": "인형을 안전하게 회수할 인벤토리 칸이 부족합니다.",
+  "screen.anomalousclasses.puppet_workbench.title": "인형제작대",
+  "screen.anomalousclasses.puppet_workbench.intro": "경량 골격 · 칼날 장치 · 기본 구동핵",
+  "screen.anomalousclasses.puppet_workbench.assemble": "인형 제작",
+  "screen.anomalousclasses.puppet_workbench.close": "닫기",
+  "screen.anomalousclasses.puppet_workbench.ready": "재료가 준비되었습니다.",
+  "screen.anomalousclasses.puppet_workbench.missing": "재료 또는 인벤토리 공간이 부족합니다.",
+  "screen.anomalousclasses.puppet_workbench.done": "새 인형이 인벤토리에 보관되었습니다.",
+  "screen.anomalousclasses.puppet_workbench.rejected": "제작 조건이 충족되지 않았습니다."
 }

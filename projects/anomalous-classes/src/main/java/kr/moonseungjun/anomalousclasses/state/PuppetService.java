@@ -18,6 +18,8 @@ import kr.moonseungjun.anomalousclasses.block.PuppetBlocks;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntities;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 import kr.moonseungjun.anomalousclasses.item.PuppetItem;
+import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
+import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -113,10 +115,34 @@ public final class PuppetService {
             puppet.syncSnapshot();
     }
 
+    private static boolean validWorkbench(ServerPlayer player, BlockPos station) {
+        return player != null && player.getServer() != null
+                && player.distanceToSqr(station.getX()+.5, station.getY()+.5, station.getZ()+.5) <= 64.0
+                && player.serverLevel().getBlockState(station).is(PuppetBlocks.WORKSHOP.get());
+    }
+
+    public static void openWorkshop(ServerPlayer player, BlockPos station) {
+        if (!validWorkbench(player, station)) return;
+        sendWorkshopState(player, station, PuppetWorkshopStatePayload.OPEN);
+    }
+
+    public static void workshopCraft(ServerPlayer player, BlockPos station) {
+        if (!validWorkbench(player, station)) return;
+        boolean success = assembleStarter(player, station);
+        sendWorkshopState(player, station, success
+                ? PuppetWorkshopStatePayload.CRAFTED : PuppetWorkshopStatePayload.REJECTED);
+    }
+
+    private static void sendWorkshopState(ServerPlayer player, BlockPos station, int result) {
+        boolean craftable = isPuppeteer(player)
+                && player.getInventory().getFreeSlot() >= 0
+                && hasMaterials(player.getInventory(),
+                        PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL));
+        ClassNetwork.sendToPlayer(player, new PuppetWorkshopStatePayload(station, craftable, result));
+    }
+
     public static boolean assembleStarter(ServerPlayer player, BlockPos station) {
-        if (!isPuppeteer(player) || player.distanceToSqr(station.getX()+.5,
-                station.getY()+.5, station.getZ()+.5) > 64
-                || !player.serverLevel().getBlockState(station).is(PuppetBlocks.WORKSHOP.get())) return false;
+        if (!isPuppeteer(player) || !validWorkbench(player, station)) return false;
         Inventory inventory = player.getInventory();
         if (inventory.getFreeSlot() < 0) {
             message(player, "message.anomalousclasses.puppet.no_space");

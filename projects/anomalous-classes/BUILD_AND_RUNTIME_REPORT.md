@@ -1,5 +1,29 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Puppeteer first in-world gameplay slice
+
+Current source-of-truth: `projects/anomalous-classes/` at `main`, with original first marionette blueprint from `classes/PUPPET_CRAFTING_ECONOMY.md`, combat/size roles from `PUPPET_COMBAT_MATRIX.md` and `PUPPET_SCALE_AND_WORKBENCH.md`, equipment progression from `MARIONETTE_CONTROL_BAR.md`, no-cooldown R priority target from D09 and class-change recovery from `CLASS_SWITCH_ORIGINAL_STATE_POLICY_V2.md`.
+
+### Player-facing implementation present
+- Registered a dedicated persistent `marionette` `PathfinderMob` subclass, with its own articulated geometric model, original pixel texture, generated item icon, proper entity renderer and attributes (not a vanilla zombie/armor stand surrogate).
+- Added a placeable puppet workbench block and legal 3×3 workbench crafting recipe. Opening it uses a purpose-specific screen in the existing `MenuUi` visual language: readable starter bill, craft confirmation and server-returned availability/result. The server consumes exact canonical starter resources and produces a uniquely registered marionette item.
+- An authentic crafted item carries a versioned `PuppetBlueprint` plus registry revision through `DataComponents.CUSTOM_DATA`. Placing it checks owner, previous record, slot limit, available space, dimension, world border and real collision. The only entity created uses that original UUID; the item is consumed once. Forged, stale, duplicated or foreign items cannot redeploy.
+- First assembled light-frame/blade/basic-core puppet follows owner without forced teleport, searches nearby hostile monsters on a throttled cadence and auto-attacks with server-authoritative distance, sight, attack interval and damage. Clicking R is a zero-cost/cooldown target command; repeated commands do not reset swing recovery. Companion combat marks the owner combat-locked for class changes/recalls.
+- Right-click recall checks owner, safe interaction radius, combat restriction, free inventory capacity and authoritative entity revision. The existing unique blueprint receives a new revision with preserved HP ratio and attack cooldown; death yields one broken physical item instead of free resurrection. Damage/unload syncs last known state; changing away from Puppeteer atomically recalls deployed and unloaded puppets as items if space permits, while stale entities self-discard on loading.
+- Added automatic visual/recipe/translation static checks to `check` alongside the previous 27-combination/identity fixtures.
+
+### Completion boundary
+- **Only the initial light/blade/basic 1.5-block puppet is assembled and fights.** Existing 27 role calculations are present but the other weapons/cores, modular customization and exact 1.0–3.0 collision dimensions are NOT yet player-selectable/executable.
+- Workbench currently supports the **starter assembly** screen only. Resize/refit, repair and dismantle preview/confirmation are still missing. Launcher projectile AI, shield intercept AI, the three Puppeteer combat actives, string-to-owner VFX, native animation fidelity, and post-respawn asset recovery need dedicated implementation. No claims of full class completion.
+- Client visuals and game feel have not been inspected in Minecraft; build is not equivalent to playtest. Multi-client gameplay and remote unload/rejoin behavior remain **NOT TESTED**.
+
+### Verification
+- The first commit `7f5657a9102fbfa818f4273d7aa3aa231adbf976` failed one Java static compile check (incompatible Monster/PuppetEntity comparison).
+- Correction plus gameplay improvements commit `fc2f1b7a4aa399fcd706dd1b7b1b194bdd161186` passed [Actions #43707583059](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43707583059): **BUILD VERIFIED / JAR PRODUCED**, not yet Minecraft-playtested.
+- Added explicit workbench confirmation UI and asset verifier in the following code checkpoint; record its CI result separately when available.
+
+---
+
 ## 2026-11-15 — Puppeteer construction and identity foundation
 
 The current user-directed development batch moves from Mental Dominator to Puppeteer. Source-of-truth references: `classes/PUPPETEER.md`, `PUPPET_COMBAT_MATRIX.md`, `PUPPET_SCALE_AND_WORKBENCH.md`, `PUPPET_CRAFTING_ECONOMY.md`, `PUPPET_ACTIVES_AND_GROWTH.md`, `PUPPET_SKILL_TREE.md`, `MARIONETTE_CONTROL_BAR.md`, D09/D11.

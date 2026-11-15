@@ -408,5 +408,13 @@
   "puppet.anomalousclasses.core.stable": "Stable Core",
   "puppet.anomalousclasses.core.output": "Output Core",
   "message.anomalousclasses.puppet.target": "Priority target assigned to your deployed marionettes.",
-  "message.anomalousclasses.puppet.no_space_class_change": "Not enough inventory space to safely recall your marionettes."
+  "message.anomalousclasses.puppet.no_space_class_change": "Not enough inventory space to safely recall your marionettes.",
+  "screen.anomalousclasses.puppet_workbench.title": "Puppet Workbench",
+  "screen.anomalousclasses.puppet_workbench.intro": "Light Frame · Blade · Basic Core",
+  "screen.anomalousclasses.puppet_workbench.assemble": "Assemble",
+  "screen.anomalousclasses.puppet_workbench.close": "Close",
+  "screen.anomalousclasses.puppet_workbench.ready": "Materials are ready.",
+  "screen.anomalousclasses.puppet_workbench.missing": "Insufficient materials or inventory space.",
+  "screen.anomalousclasses.puppet_workbench.done": "Marionette stored in your inventory.",
+  "screen.anomalousclasses.puppet_workbench.rejected": "Assembly conditions not met."
 }

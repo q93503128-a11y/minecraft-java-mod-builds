@@ -9,6 +9,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePaylo
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -45,6 +46,8 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void registerClientPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("2");
+        registrar.playToClient(PuppetWorkshopStatePayload.TYPE, PuppetWorkshopStatePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(ClassSelectionStatePayload.TYPE, ClassSelectionStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(ProfileStatePayload.TYPE, ProfileStatePayload.STREAM_CODEC,

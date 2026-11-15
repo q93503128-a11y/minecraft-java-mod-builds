@@ -6,6 +6,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePaylo
 import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
 import net.minecraft.client.Minecraft;
 
 public final class ClassSelectionClient {
@@ -46,6 +47,16 @@ public final class ClassSelectionClient {
         else {
             SkillTreeNavigation.ReturnTarget returnTarget = SkillTreeNavigation.consumeForResponse(minecraft);
             if (returnTarget != null) minecraft.setScreen(new SkillTreeScreen(state, returnTarget));
+        }
+    }
+
+    public static void receive(PuppetWorkshopStatePayload state) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof PuppetWorkshopScreen screen) {
+            if (screen.matches(state)) screen.applyServerState(state);
+        } else if (state.result() == PuppetWorkshopStatePayload.OPEN
+                && minecraft.player != null && minecraft.level != null) {
+            minecraft.setScreen(new PuppetWorkshopScreen(state));
         }
     }
 

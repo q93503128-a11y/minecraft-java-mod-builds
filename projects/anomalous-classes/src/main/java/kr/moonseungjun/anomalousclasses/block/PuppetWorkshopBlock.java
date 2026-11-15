@@ -18,7 +18,7 @@ public final class PuppetWorkshopBlock extends Block {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hit) {
         if (!level.isClientSide() && player instanceof ServerPlayer server) {
-            PuppetService.assembleStarter(server, pos);
+            PuppetService.openWorkshop(server, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
