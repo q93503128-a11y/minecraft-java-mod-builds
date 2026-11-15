@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "anomalousclasses:block/puppet_workbench"
+    }
+  }
+}

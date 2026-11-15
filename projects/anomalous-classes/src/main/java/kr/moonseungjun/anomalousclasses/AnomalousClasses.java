@@ -2,6 +2,10 @@ package kr.moonseungjun.anomalousclasses;
 
 import kr.moonseungjun.anomalousclasses.command.ClassCommands;
 import kr.moonseungjun.anomalousclasses.item.ClassFocusItems;
+import kr.moonseungjun.anomalousclasses.item.PuppetItems;
+import kr.moonseungjun.anomalousclasses.block.PuppetBlocks;
+import kr.moonseungjun.anomalousclasses.entity.PuppetEntities;
+import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.CombatTracker;
@@ -15,6 +19,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -31,6 +36,10 @@ public final class AnomalousClasses {
     public AnomalousClasses(IEventBus modEventBus, ModContainer modContainer) {
         ClassRosterCatalog.validate();
         ClassFocusItems.ITEMS.register(modEventBus);
+        PuppetBlocks.BLOCKS.register(modEventBus);
+        PuppetItems.ITEMS.register(modEventBus);
+        PuppetEntities.ENTITIES.register(modEventBus);
+        modEventBus.addListener(this::onEntityAttributes);
         ClassNetwork.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.SERVER, MentalDominatorConfig.SPEC, "anomalousclasses-server.toml");
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogin);
@@ -45,6 +54,10 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onEntityLeave);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::tick);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
+    }
+
+    private void onEntityAttributes(EntityAttributeCreationEvent event) {
+        event.put(PuppetEntities.MARIONETTE.get(), PuppetEntity.createAttributes().build());
     }
 
     private void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {

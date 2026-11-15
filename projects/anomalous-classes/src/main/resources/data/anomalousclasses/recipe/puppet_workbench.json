@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "PPP",
+    "SCS",
+    "TWT"
+  ],
+  "key": {
+    "P": "minecraft:oak_planks",
+    "S": "minecraft:stick",
+    "C": "minecraft:copper_ingot",
+    "T": "minecraft:string",
+    "W": "minecraft:crafting_table"
+  },
+  "result": {
+    "id": "anomalousclasses:puppet_workbench",
+    "count": 1
+  }
+}

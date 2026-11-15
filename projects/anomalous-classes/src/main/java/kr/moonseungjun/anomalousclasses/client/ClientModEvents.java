@@ -1,6 +1,8 @@
 package kr.moonseungjun.anomalousclasses.client;
 
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
+import kr.moonseungjun.anomalousclasses.entity.PuppetEntities;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassManagementStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassSelectionStatePayload;
@@ -17,6 +19,16 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = AnomalousClasses.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientModEvents {
     private ClientModEvents() {}
+
+    @SubscribeEvent
+    public static void registerPuppetRenderer(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(PuppetEntities.MARIONETTE.get(), PuppetRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void registerPuppetLayer(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(PuppetModel.LAYER, PuppetModel::createBodyLayer);
+    }
 
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
