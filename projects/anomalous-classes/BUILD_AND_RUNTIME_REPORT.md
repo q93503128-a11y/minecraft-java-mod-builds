@@ -1,5 +1,17 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Parasite V inherited skills / Creeper burst checkpoint
+
+- Implemented commit: `3b8cd95f8c99ef5c218c9a27dfce3344f991bbe7`.
+- CI [#43722781049](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43722781049): **SUCCESS, BUILD VERIFIED, JAR PRODUCED**, packaged JAR 32,034,081 bytes, 180 compiled classes, SHA-256 generated in artifact.
+- JVM `verifyParasiteFoundation`: PASS including exclusive host claim, BD and survival milestones, death lock, Z/X/C, inherited cooldown and SavedData roundtrip. Existing puppet and six-class graph checks also ran in this build.
+- New V ON/OFF inherits direct ability number-key input (1-9, 0), server-confirmed mode with authoritative per-ability checks and persistent ability cooldowns. Creeper BD240 host and native/inherited blast adapter (100 mastery cross-species); original host death vs inherited HP feedback preserved. 11+ ability input paging/HUD not yet implemented.
+- Source of detailed behavior and untested conditions: [PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
+- **CLIENT RUNTIME / PLAYTEST / MULTIPLAYER: NOT TESTED**. The initial CI failed one sound-holder type; fixed before the final successful run.
+
+---
+
+
 ## 2026-11-15 — Puppeteer integrated combat and modular workshop checkpoint
 
 ### Source-of-truth scope
