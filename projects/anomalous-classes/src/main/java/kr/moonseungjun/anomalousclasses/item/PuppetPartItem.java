@@ -79,7 +79,7 @@ public final class PuppetPartItem extends Item {
                                     ? PuppetBlueprint.Frame.values()[part.variant()].name().toLowerCase()
                                     : part.kind() == Kind.DEVICE
                                     ? PuppetBlueprint.Device.values()[part.variant()].name().toLowerCase()
-                                    : PuppetBlueprint.Core.values()[part.variant()].name().toLowerCase()))
+                                    : PuppetBlueprint.Core.values()[part.variant()].name().toLowerCase())))
                     .withStyle(ChatFormatting.GRAY));
             if (part.kind() == Kind.FRAME)
                 tooltip.add(Component.translatable("tooltip.anomalousclasses.puppet.part_size",
