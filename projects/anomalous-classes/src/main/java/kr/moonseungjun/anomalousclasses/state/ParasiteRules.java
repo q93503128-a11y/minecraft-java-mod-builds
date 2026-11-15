@@ -1,6 +1,14 @@
 package kr.moonseungjun.anomalousclasses.state;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -9,23 +17,62 @@ import net.minecraft.resources.ResourceLocation;
  * explicitly unsupported rather than pretending to possess every LivingEntity.
  */
 public final class ParasiteRules {
-    public record HostSpec(long requiredBd, int intrusionTicks, double speedFactor) {
+    /** One catalog entry is a declared, audited original-host control adapter. */
+    public record HostSpec(long requiredBd, int intrusionTicks, double speedFactor,
+                           String adapter, double innateJump) {
         public HostSpec {
-            if (requiredBd < 0 || intrusionTicks < 10 || speedFactor <= 0) throw new IllegalArgumentException();
+            if (requiredBd < 0 || intrusionTicks < 10 || intrusionTicks > 1200
+                    || !Double.isFinite(speedFactor) || speedFactor < .2 || speedFactor > 3.0
+                    || !("ground".equals(adapter) || "aquatic".equals(adapter))
+                    || !Double.isFinite(innateJump) || innateJump < .42 || innateJump > .8)
+                throw new IllegalArgumentException("Invalid parasite host profile");
+        }
+        /** Preserve the original three-argument API used by server rules/tests. */
+        public HostSpec(long bd, int ticks, double speed) {
+            this(bd, ticks, speed, "ground", .42);
         }
     }
-    private static final Map<String, HostSpec> SUPPORTED = Map.of(
-        "minecraft:pig", new HostSpec(0, 30, 1.00),
-        "minecraft:chicken", new HostSpec(0, 30, 1.10),
-        "minecraft:sheep", new HostSpec(0, 30, 0.95),
-        "minecraft:cow", new HostSpec(20, 50, 0.90),
-        "minecraft:zombie", new HostSpec(100, 80, 0.90),
-        "minecraft:spider", new HostSpec(160, 100, 1.10),
-        "minecraft:slime", new HostSpec(180, 110, 1.00),
-        "minecraft:creeper", new HostSpec(240, 120, 0.95),
-        "minecraft:guardian", new HostSpec(600, 160, 1.00),
-        "minecraft:enderman", new HostSpec(900, 160, 1.10)
-    );
+    private static final Map<String, HostSpec> SUPPORTED = loadCatalog();
+    private static final List<Map.Entry<String, HostSpec>> JUMP_TRAITS = SUPPORTED.entrySet().stream()
+            .filter(entry -> entry.getValue().innateJump() > .42)
+            .toList();
+
+    /**
+     * Bundled data catalog. Adding a modded host requires an exact EntityType ID,
+     * audited Mob movement/ownership behavior, and a dedicated compatibility test.
+     * Unknown modded entities and scripted bosses are NOT automatically eligible.
+     */
+    private static Map<String, HostSpec> loadCatalog() {
+        String resource = "/data/anomalousclasses/parasite/hosts.json";
+        try (InputStream stream = ParasiteRules.class.getResourceAsStream(resource)) {
+            if (stream == null) throw new IllegalStateException("Missing host catalog: " + resource);
+            JsonObject root = JsonParser.parseReader(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+            if (!"anomalousclasses:parasite_hosts_v1".equals(root.get("schema").getAsString()))
+                throw new IllegalStateException("Unsupported host catalog schema");
+            Map<String, HostSpec> hosts = new HashMap<>();
+            for (JsonElement entry : root.getAsJsonArray("hosts")) {
+                JsonObject node = entry.getAsJsonObject();
+                String id = node.get("id").getAsString();
+                ResourceLocation key = ResourceLocation.tryParse(id);
+                if (key == null || !id.equals(key.toString()))
+                    throw new IllegalStateException("Invalid host EntityType: " + id);
+                HostSpec spec = new HostSpec(node.get("requiredBd").getAsLong(),
+                        node.get("intrusionTicks").getAsInt(),
+                        node.get("speedFactor").getAsDouble(),
+                        node.get("adapter").getAsString(), node.get("innateJump").getAsDouble());
+                if (hosts.putIfAbsent(id, spec) != null)
+                    throw new IllegalStateException("Duplicate host EntityType: " + id);
+            }
+            if (hosts.isEmpty() || !hosts.containsKey("minecraft:pig"))
+                throw new IllegalStateException("No starter host declared");
+            return Map.copyOf(hosts);
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException("Unable to load parasite host profiles", exception);
+        }
+    }
+    /** Concrete registered profiles only. No tag-based wildcard support for third-party bosses. */
+    public static int supportedCount() { return SUPPORTED.size(); }
     private static final double[] FOCUS = {0.05, 0.10, 0.15, 0.20, 0.40};
     private ParasiteRules() {}
 
@@ -34,11 +81,9 @@ public final class ParasiteRules {
     }
     public static long plannedRequirement(ResourceLocation id) {
         if (id == null) return -1;
-        return switch (id.toString()) {
-            case "minecraft:guardian" -> 600;
-            case "minecraft:warden" -> 5000;
-            default -> supported(id) == null ? -1 : supported(id).requiredBd();
-        };
+        if ("minecraft:warden".equals(id.toString())) return 5000;
+        HostSpec spec = supported(id);
+        return spec == null ? -1 : spec.requiredBd();
     }
     public static int rank(PlayerClassProfile profile, String id) {
         if (profile == null || id == null) return 0;
@@ -79,6 +124,21 @@ public final class ParasiteRules {
     public static double jumpImpulse(String species, int slimeMastery) {
         return "minecraft:slime".equals(species) ? 0.58
                 : slimeMastery >= 100 ? 0.50 : 0.42;
+    }
+
+    /**
+     * Ground-jump inheritance uses the same persisted species mastery as combat.
+     * New ordinary species can declare their native jump in JSON; at mastery 100
+     * this same movement becomes usable on every later host, without more slots.
+     */
+    public static double jumpImpulse(String species, ParasiteSavedData.State progression) {
+        double jump = jumpImpulse(species, progression.mastery("minecraft:slime"));
+        HostSpec nativeSpec = SUPPORTED.get(species);
+        if (nativeSpec != null) jump = Math.max(jump, nativeSpec.innateJump());
+        for (var entry : JUMP_TRAITS)
+            if (progression.mastery(entry.getKey()) >= 100)
+                jump = Math.max(jump, entry.getValue().innateJump());
+        return jump;
     }
 
     /** Only transferred elasticity reduces fall damage; native slime immunity stays vanilla. */

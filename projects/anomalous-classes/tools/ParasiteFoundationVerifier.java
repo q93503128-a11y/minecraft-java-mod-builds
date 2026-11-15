@@ -44,6 +44,39 @@ public final class ParasiteFoundationVerifier {
                 && !ParasiteRules.hasEnderDodge(false, 99)
                 && ParasiteRules.hasEnderDodge(false, 100),
                 "enderman projectile evasion unlock boundary");
+        // The catalog contains the 10 previous adapters plus 24 ordinary
+        // original-body ground hosts. Unlisted bosses/modded entity types stay blocked.
+        check(ParasiteRules.supportedCount() == 34, "complete data-driven vanilla host catalog");
+        String[] newGroundHosts = {
+                "mooshroom", "rabbit", "fox", "goat", "horse", "donkey", "mule",
+                "panda", "polar_bear", "hoglin", "zoglin", "husk", "zombie_villager",
+                "zombified_piglin", "piglin", "piglin_brute", "vindicator", "ravager",
+                "sniffer", "armadillo", "cave_spider", "frog", "ocelot", "turtle"
+        };
+        for (String species : newGroundHosts) {
+            var entry = ParasiteRules.supported(ResourceLocation.parse("minecraft:" + species));
+            check(entry != null && "ground".equals(entry.adapter())
+                    && entry.requiredBd() >= 0 && entry.speedFactor() > 0,
+                    "configured original ground host " + species);
+        }
+        check(ParasiteRules.supported(ResourceLocation.parse("minecraft:witch")) == null
+                && ParasiteRules.supported(ResourceLocation.parse("minecraft:phantom")) == null
+                && ParasiteRules.supported(ResourceLocation.parse("cataclysm:ignis")) == null,
+                "unimplemented flying/ranged/external boss must remain unsupported");
+        check("aquatic".equals(guardian.adapter()), "guardian catalog aquatic control");
+        var leapData = new ParasiteSavedData();
+        UUID jumper = UUID.randomUUID();
+        check(ParasiteRules.jumpImpulse("minecraft:goat", leapData.player(jumper)) == 0.56
+                && ParasiteRules.jumpImpulse("minecraft:pig", leapData.player(jumper)) == 0.42,
+                "native goat leap must work on first possession");
+        leapData.reward(jumper, "minecraft:goat", 999, new PlayerClassProfile());
+        check(leapData.player(jumper).mastery("minecraft:goat") == 99
+                && ParasiteRules.jumpImpulse("minecraft:pig", leapData.player(jumper)) == 0.42,
+                "goat jump does not transfer at mastery 99");
+        leapData.reward(jumper, "minecraft:goat", 1, new PlayerClassProfile());
+        check(ParasiteRules.jumpImpulse("minecraft:pig", leapData.player(jumper)) == 0.56
+                && ParasiteRules.jumpImpulse("minecraft:slime", leapData.player(jumper)) == 0.58,
+                "ground jump transfers at 100 without replacing stronger native slime");
         check(ParasiteRules.supported(ResourceLocation.parse("minecraft:warden")) == null
                 && ParasiteRules.plannedRequirement(ResourceLocation.parse("minecraft:warden")) == 5000,
                 "unsupported boss must not appear as controllable");
@@ -174,7 +207,7 @@ public final class ParasiteFoundationVerifier {
                 && !savedTraits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 200, 560, 0)
                 && savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 531, 480, 60),
                 "guardian and enderman cooldowns persist separately after restart");
-        System.out.println("PASS: parasite claims, BD, host gates, guardian/enderman/slime mastery, 3 actives and inherited cooldown persistence");
+        System.out.println("PASS: 34 explicit host profiles, ownership, BD, 99/100 species jump inheritance, guardian/enderman/slime mastery, abilities and cooldown persistence");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

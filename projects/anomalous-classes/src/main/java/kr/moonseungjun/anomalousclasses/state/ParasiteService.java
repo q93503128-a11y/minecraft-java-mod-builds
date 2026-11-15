@@ -28,6 +28,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -537,8 +538,9 @@ public final class ParasiteService {
             // Aquatic bodies and fully-inherited guardian adaptation swim with
             // their actual look pitch; no flight when out of water.
             boolean aquatic = host.isInWaterOrBubble()
-                    && ParasiteRules.hasGuardianAdaptation(host.getType() == net.minecraft.world.entity.EntityType.GUARDIAN,
-                    state.mastery("minecraft:guardian"));
+                    && ("aquatic".equals(spec.adapter())
+                    || ParasiteRules.hasGuardianAdaptation(false,
+                    state.mastery("minecraft:guardian")));
             double swimY = aquatic ? Math.max(-.24, Math.min(.24,
                     -Math.sin(Math.toRadians(m.pitch)) * velocity)) : 0.0;
             host.move(MoverType.SELF, new Vec3(dx * Math.min(.50, velocity),
@@ -550,22 +552,26 @@ public final class ParasiteService {
         // Jump works from standstill too, independent of horizontal motion.
         // Slime elasticity is innate, and mastery-100 inheritance has no timed cooldown.
         if (host.isInWaterOrBubble()
-                && ParasiteRules.hasGuardianAdaptation(
+                && (ParasiteRules.hasGuardianAdaptation(
                 host.getType() == net.minecraft.world.entity.EntityType.GUARDIAN,
                 state.mastery("minecraft:guardian"))
+                || "aquatic".equals(ParasiteRules.supported(
+                BuiltInRegistries.ENTITY_TYPE.getKey(host.getType())).adapter()))
                 && (m.mask & 16) != 0) {
             Vec3 velocity = host.getDeltaMovement();
             host.setDeltaMovement(velocity.x, Math.max(velocity.y, 0.18), velocity.z);
         }
         if ((m.mask & 16) != 0 && host.onGround()) {
             String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
-            double impulse = ParasiteRules.jumpImpulse(species, state.mastery("minecraft:slime"));
+            double impulse = ParasiteRules.jumpImpulse(species, state);
             Vec3 velocity = host.getDeltaMovement();
             host.setDeltaMovement(velocity.x, Math.max(velocity.y, impulse), velocity.z);
         }
         // Wall climbing is environmental: jump-only works even without horizontal travel.
         if ((host.getType() == net.minecraft.world.entity.EntityType.SPIDER
-                || state.mastery("minecraft:spider") >= 100)
+                || host.getType() == net.minecraft.world.entity.EntityType.CAVE_SPIDER
+                || state.mastery("minecraft:spider") >= 100
+                || state.mastery("minecraft:cave_spider") >= 100)
                 && host.horizontalCollision && ((m.mask & 16) != 0 || front > 0))
             host.setDeltaMovement(host.getDeltaMovement().x, .18, host.getDeltaMovement().z);
         if (tick % ACTION_INTERVAL == 0) {
@@ -600,6 +606,7 @@ public final class ParasiteService {
                 || player.distanceToSqr(host) > AIM_RANGE * AIM_RANGE
                 || player.isAlliedTo(host) || host instanceof net.minecraft.world.entity.npc.AbstractVillager
                 || (host instanceof TamableAnimal animal && animal.isTame())
+                || (host instanceof AbstractHorse horse && horse.isTamed())
                 || host.getPersistentData().contains(MARK)
                 || MentalDominatorSavedData.get(player.getServer()).controlled(host.getUUID()) != null
                 || host instanceof kr.moonseungjun.anomalousclasses.entity.PuppetEntity)

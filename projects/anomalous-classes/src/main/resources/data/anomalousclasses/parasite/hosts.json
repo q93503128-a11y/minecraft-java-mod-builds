@@ -1,0 +1,278 @@
+{
+  "schema": "anomalousclasses:parasite_hosts_v1",
+  "notes": "Curated ground-mob control profiles. Listed species gain original-body movement/melee, not unimplemented special attacks. Bosses and modded species require explicit audited profiles.",
+  "hosts": [
+    {
+      "id": "minecraft:pig",
+      "requiredBd": 0,
+      "intrusionTicks": 30,
+      "speedFactor": 1,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:chicken",
+      "requiredBd": 0,
+      "intrusionTicks": 30,
+      "speedFactor": 1.1,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:sheep",
+      "requiredBd": 0,
+      "intrusionTicks": 30,
+      "speedFactor": 0.95,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:cow",
+      "requiredBd": 20,
+      "intrusionTicks": 50,
+      "speedFactor": 0.9,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:zombie",
+      "requiredBd": 100,
+      "intrusionTicks": 80,
+      "speedFactor": 0.9,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:spider",
+      "requiredBd": 160,
+      "intrusionTicks": 100,
+      "speedFactor": 1.1,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:slime",
+      "requiredBd": 180,
+      "intrusionTicks": 110,
+      "speedFactor": 1,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:creeper",
+      "requiredBd": 240,
+      "intrusionTicks": 120,
+      "speedFactor": 0.95,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:guardian",
+      "requiredBd": 600,
+      "intrusionTicks": 160,
+      "speedFactor": 1,
+      "adapter": "aquatic",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:enderman",
+      "requiredBd": 900,
+      "intrusionTicks": 160,
+      "speedFactor": 1.1,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:mooshroom",
+      "requiredBd": 25,
+      "intrusionTicks": 55,
+      "speedFactor": 0.92,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:rabbit",
+      "requiredBd": 20,
+      "intrusionTicks": 40,
+      "speedFactor": 1.2,
+      "adapter": "ground",
+      "innateJump": 0.56
+    },
+    {
+      "id": "minecraft:fox",
+      "requiredBd": 50,
+      "intrusionTicks": 60,
+      "speedFactor": 1.16,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:goat",
+      "requiredBd": 80,
+      "intrusionTicks": 70,
+      "speedFactor": 1.1,
+      "adapter": "ground",
+      "innateJump": 0.56
+    },
+    {
+      "id": "minecraft:horse",
+      "requiredBd": 95,
+      "intrusionTicks": 70,
+      "speedFactor": 1.25,
+      "adapter": "ground",
+      "innateJump": 0.52
+    },
+    {
+      "id": "minecraft:donkey",
+      "requiredBd": 80,
+      "intrusionTicks": 70,
+      "speedFactor": 1.08,
+      "adapter": "ground",
+      "innateJump": 0.49
+    },
+    {
+      "id": "minecraft:mule",
+      "requiredBd": 95,
+      "intrusionTicks": 70,
+      "speedFactor": 1.12,
+      "adapter": "ground",
+      "innateJump": 0.5
+    },
+    {
+      "id": "minecraft:panda",
+      "requiredBd": 110,
+      "intrusionTicks": 75,
+      "speedFactor": 0.85,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:polar_bear",
+      "requiredBd": 260,
+      "intrusionTicks": 125,
+      "speedFactor": 1.06,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:hoglin",
+      "requiredBd": 330,
+      "intrusionTicks": 130,
+      "speedFactor": 1.08,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:zoglin",
+      "requiredBd": 400,
+      "intrusionTicks": 135,
+      "speedFactor": 1.05,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:husk",
+      "requiredBd": 120,
+      "intrusionTicks": 90,
+      "speedFactor": 0.9,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:zombie_villager",
+      "requiredBd": 135,
+      "intrusionTicks": 90,
+      "speedFactor": 0.92,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:zombified_piglin",
+      "requiredBd": 210,
+      "intrusionTicks": 100,
+      "speedFactor": 1.02,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:piglin",
+      "requiredBd": 240,
+      "intrusionTicks": 100,
+      "speedFactor": 1.03,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:piglin_brute",
+      "requiredBd": 480,
+      "intrusionTicks": 155,
+      "speedFactor": 1.08,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:vindicator",
+      "requiredBd": 420,
+      "intrusionTicks": 140,
+      "speedFactor": 1,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:ravager",
+      "requiredBd": 1250,
+      "intrusionTicks": 220,
+      "speedFactor": 0.9,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:sniffer",
+      "requiredBd": 100,
+      "intrusionTicks": 95,
+      "speedFactor": 0.95,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:armadillo",
+      "requiredBd": 40,
+      "intrusionTicks": 60,
+      "speedFactor": 1,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:cave_spider",
+      "requiredBd": 240,
+      "intrusionTicks": 120,
+      "speedFactor": 1.18,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:frog",
+      "requiredBd": 40,
+      "intrusionTicks": 55,
+      "speedFactor": 1.15,
+      "adapter": "ground",
+      "innateJump": 0.55
+    },
+    {
+      "id": "minecraft:ocelot",
+      "requiredBd": 65,
+      "intrusionTicks": 65,
+      "speedFactor": 1.25,
+      "adapter": "ground",
+      "innateJump": 0.42
+    },
+    {
+      "id": "minecraft:turtle",
+      "requiredBd": 25,
+      "intrusionTicks": 55,
+      "speedFactor": 0.72,
+      "adapter": "ground",
+      "innateJump": 0.42
+    }
+  ]
+}
