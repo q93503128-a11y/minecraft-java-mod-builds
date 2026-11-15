@@ -53,6 +53,8 @@ public final class PuppetItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
+        tooltip.add(Component.translatable("tooltip.anomalousclasses.puppet.basic_controls")
+                .withStyle(ChatFormatting.DARK_GRAY));
         read(stack).ifPresent(identity -> {
             PuppetBlueprint b = identity.blueprint();
             tooltip.add(Component.translatable("tooltip.anomalousclasses.puppet.configuration",

@@ -451,5 +451,8 @@
   "screen.anomalousclasses.puppet_workbench.refitted": "부품 개조가 완료되었습니다. 기존 부품은 보관됩니다.",
   "screen.anomalousclasses.puppet_workbench.dismantle_confirm": "분해 확정",
   "screen.anomalousclasses.puppet_workbench.dismantle_warning": "분해하면 이 인형은 영구적으로 사라집니다. 다시 누르면 확정합니다.",
-  "message.anomalousclasses.puppet.refitted": "부품이 교체되었습니다. 기존 부품은 회수했습니다."
+  "message.anomalousclasses.puppet.refitted": "부품이 교체되었습니다. 기존 부품은 회수했습니다.",
+  "message.anomalousclasses.puppet.stay": "실을 고정했습니다. 이곳을 지킵니다.",
+  "message.anomalousclasses.puppet.follow": "실의 고정을 풀었습니다. 다시 동행합니다.",
+  "tooltip.anomalousclasses.puppet.basic_controls": "인형 우클릭: 회수 · 웅크리고 우클릭: 동행/대기"
 }

@@ -265,6 +265,36 @@ public final class PuppeteerFoundationVerifier {
                 heavy, swift, false).isPresent(), "core CAS");
         check(refitRegistry.find(initialParts.puppetId()).orElseThrow().blueprint().core()
                 == PuppetBlueprint.Core.SWIFT, "core preserved in authoritative ledger");
+        UUID holdId = UUID.randomUUID();
+        PuppetBlueprint holdBlueprint = new PuppetBlueprint(holdId, owner,
+                PuppetBlueprint.Frame.LIGHT, PuppetBlueprint.Device.SHIELD,
+                PuppetBlueprint.Core.BASIC, PuppetBlueprint.Size.NORMAL, 1.0, 0,
+                PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL,
+                        PuppetBlueprint.Device.SHIELD));
+        PuppetRegistrySavedData holdLedger = new PuppetRegistrySavedData();
+        check(holdLedger.registerCrafted(holdBlueprint), "hold position register");
+        check(holdLedger.deploy(owner, holdId, 1).isPresent(), "hold position deploy");
+        var anchor = new PuppetRegistrySavedData.HoldPosition("minecraft:overworld",
+                12.5, 69.0, -31.5);
+        check(holdLedger.setHold(owner, holdId, 2, anchor), "owner may anchor a puppet");
+        check(!holdLedger.setHold(UUID.randomUUID(), holdId, 2, anchor),
+                "foreign player cannot change guard state");
+        check(!holdLedger.setHold(owner, holdId, 1, anchor),
+                "stale revision cannot change guard state");
+        check(holdLedger.hold(holdId).orElseThrow().equals(anchor),
+                "guard location retained");
+        CompoundTag anchorTag = holdLedger.save(new CompoundTag(), RegistryAccess.EMPTY);
+        Method holdLoad = PuppetRegistrySavedData.class.getDeclaredMethod(
+                "load", CompoundTag.class, net.minecraft.core.HolderLookup.Provider.class);
+        holdLoad.setAccessible(true);
+        PuppetRegistrySavedData restoredHold = (PuppetRegistrySavedData) holdLoad.invoke(
+                null, anchorTag, RegistryAccess.EMPTY);
+        check(restoredHold.hold(holdId).orElseThrow().equals(anchor),
+                "hold anchor survives world save/reload");
+        check(restoredHold.recall(owner, holdId, 2, holdBlueprint).isPresent(),
+                "guarding puppet may still be recalled");
+        check(restoredHold.hold(holdId).isEmpty(), "recall clears old guarding position");
+
 
         PuppetAbilitySavedData abilities = new PuppetAbilitySavedData();
         UUID abilityOwner = UUID.randomUUID();
@@ -304,7 +334,7 @@ public final class PuppeteerFoundationVerifier {
         check(restored.find(id).orElseThrow().location() == PuppetRegistrySavedData.Location.RETIRED,
                 "retired identity persists");
         check(restored.deploy(owner, id, 6).isEmpty(), "retired identity cannot redeploy after reload");
-        System.out.println("PASS: puppet actives save/cooldown, 15 frames, 3 weapons, 4 cores, refit/return ledger, repair/salvage CAS");
+        System.out.println("PASS: puppet actives save/cooldown, 15 frames, 3 weapons, 4 cores, refit/return, follow/stay save, repair/salvage CAS");
     }
     private static boolean close(double a, double b) { return Math.abs(a-b) < 1e-8; }
     private static void check(boolean result, String name) {

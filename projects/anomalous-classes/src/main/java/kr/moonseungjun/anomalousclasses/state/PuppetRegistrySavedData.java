@@ -32,7 +32,34 @@ public final class PuppetRegistrySavedData extends SavedData {
         }
     }
 
+    public record HoldPosition(String dimension, double x, double y, double z) {
+        public HoldPosition {
+            if (dimension == null || dimension.length() > 128
+                    || net.minecraft.resources.ResourceLocation.tryParse(dimension) == null
+                    || !Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z))
+                throw new IllegalArgumentException("Invalid puppet hold position");
+        }
+    }
     private final Map<UUID, Entry> entries = new HashMap<>();
+    private final Map<UUID, HoldPosition> holds = new HashMap<>();
+
+    public Optional<HoldPosition> hold(UUID id) {
+        return Optional.ofNullable(holds.get(id));
+    }
+
+    /** Owner-controlled positional command, independent of the player's active skills. */
+    public boolean setHold(UUID owner, UUID id, int revision, HoldPosition pos) {
+        Entry e = entries.get(id);
+        if (e == null || e.location() != Location.DEPLOYED || e.revision() != revision
+                || !e.blueprint().ownerId().equals(owner)) return false;
+        if (pos == null) holds.remove(id); else holds.put(id, pos);
+        setDirty();
+        return true;
+    }
+
+    public void clearHold(UUID id) {
+        if (holds.remove(id) != null) setDirty();
+    }
 
     public static PuppetRegistrySavedData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(FACTORY, DATA_NAME);
@@ -129,6 +156,7 @@ public final class PuppetRegistrySavedData extends SavedData {
         Entry updated = new Entry(replacement == null ? existing.blueprint() : replacement,
                 to, existing.revision() + 1);
         entries.put(id, updated);
+        if (to != Location.DEPLOYED) holds.remove(id);
         setDirty();
         return Optional.of(updated);
     }
@@ -144,6 +172,17 @@ public final class PuppetRegistrySavedData extends SavedData {
             list.add(item);
         }
         tag.put("entries", list);
+        ListTag holdList = new ListTag();
+        holds.forEach((id, pos) -> {
+            CompoundTag hold = new CompoundTag();
+            hold.putUUID("puppet", id);
+            hold.putString("dimension", pos.dimension());
+            hold.putDouble("x", pos.x());
+            hold.putDouble("y", pos.y());
+            hold.putDouble("z", pos.z());
+            holdList.add(hold);
+        });
+        tag.put("holds", holdList);
         return tag;
     }
 
@@ -159,6 +198,18 @@ public final class PuppetRegistrySavedData extends SavedData {
                 result.entries.putIfAbsent(blueprint.get().puppetId(), entry);
             } catch (IllegalArgumentException ignored) {
                 // Corrupt records never become deployable assets.
+            }
+        }
+        for (Tag element : tag.getList("holds", Tag.TAG_COMPOUND)) {
+            if (!(element instanceof CompoundTag hold) || !hold.hasUUID("puppet")) continue;
+            UUID id = hold.getUUID("puppet");
+            Entry owner = result.entries.get(id);
+            if (owner == null || owner.location() != Location.DEPLOYED) continue;
+            try {
+                result.holds.putIfAbsent(id, new HoldPosition(hold.getString("dimension"),
+                        hold.getDouble("x"), hold.getDouble("y"), hold.getDouble("z")));
+            } catch (IllegalArgumentException ignored) {
+                // Invalid anchors never create permanent forced navigation.
             }
         }
         return result;

@@ -451,5 +451,8 @@
   "screen.anomalousclasses.puppet_workbench.refitted": "Refit complete; original component returned.",
   "screen.anomalousclasses.puppet_workbench.dismantle_confirm": "Dismantle now",
   "screen.anomalousclasses.puppet_workbench.dismantle_warning": "This destroys the puppet permanently. Press again to confirm.",
-  "message.anomalousclasses.puppet.refitted": "Component installed. Previous component returned."
+  "message.anomalousclasses.puppet.refitted": "Component installed. Previous component returned.",
+  "message.anomalousclasses.puppet.stay": "Strings anchored. The puppet will guard this position.",
+  "message.anomalousclasses.puppet.follow": "Strings released. The puppet will follow.",
+  "tooltip.anomalousclasses.puppet.basic_controls": "Right-click puppet: recall · Sneak-right-click: follow/stay"
 }

@@ -85,7 +85,14 @@ public final class PuppetCombatService {
             double projected = offset.dot(direction) / lengthSquared;
             if (projected <= 0.05 || projected >= 0.98) continue;
             double perpendicular = offset.subtract(direction.scale(projected)).lengthSqr();
-            double coverage = shield.getBbWidth() * .5 + .45;
+            ServerPlayer shieldOwner = level.getServer().getPlayerList()
+                    .getPlayer(shield.puppetOwner());
+            int moduleRanks = shieldOwner == null ? 0 : PuppeteerRules.rank(
+                    ClassProfileSavedData.get(level.getServer()).profile(shieldOwner.getUUID()),
+                    "module_adaptation");
+            // Adaptive shielding widens the *real projected geometry*, not a global aura.
+            double coverage = shield.getBbWidth() * .5 + .45
+                    + (moduleRanks >= 30 ? .25 : moduleRanks >= 10 ? .12 : 0.0);
             if (perpendicular > coverage * coverage) continue;
             // Defense takes place at this shield's actual server hitbox location.
             float blockFraction = shield.frame() == PuppetBlueprint.Frame.HEAVY ? .48F : .36F;

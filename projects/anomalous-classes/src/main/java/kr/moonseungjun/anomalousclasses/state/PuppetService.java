@@ -74,6 +74,25 @@ public final class PuppetService {
         if (count > 0) message(player, "message.anomalousclasses.puppet.target");
     }
 
+    /** Sneak + right click: server-toggle follow versus one persisted guard position. */
+    public static boolean toggleHold(ServerPlayer owner, PuppetEntity puppet) {
+        if (!isPuppeteer(owner) || !owner.getUUID().equals(puppet.puppetOwner())
+                || !puppet.isAlive() || owner.level() != puppet.level()
+                || owner.distanceToSqr(puppet) > 64.0 || CombatTracker.isLocked(owner))
+            return false;
+        PuppetRegistrySavedData ledger = PuppetRegistrySavedData.get(owner.getServer());
+        var held = ledger.hold(puppet.puppetId());
+        var location = new PuppetRegistrySavedData.HoldPosition(
+                owner.serverLevel().dimension().location().toString(),
+                puppet.getX(), puppet.getY(), puppet.getZ());
+        if (!ledger.setHold(owner.getUUID(), puppet.puppetId(), puppet.revision(),
+                held.isPresent() ? null : location)) return false;
+        owner.displayClientMessage(Component.translatable(held.isPresent()
+                ? "message.anomalousclasses.puppet.follow"
+                : "message.anomalousclasses.puppet.stay"), true);
+        return true;
+    }
+
     /** A class change stores every puppet, including safely snapshotted unloaded puppets. */
     public static boolean prepareClassChange(ServerPlayer player, ClassId previous) {
         if (previous != ClassId.PUPPETEER) return true;

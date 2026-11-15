@@ -46,6 +46,7 @@ public final class PuppetEntity extends PathfinderMob {
     private int revision;
     private long nextAttack;
     private int statRefresh;
+    private int bladeSequence;
     private boolean dropHandled;
     private boolean guarding;
     private boolean registryValidated;
@@ -149,7 +150,9 @@ public final class PuppetEntity extends PathfinderMob {
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (level().isClientSide()) return InteractionResult.SUCCESS;
         if (player instanceof ServerPlayer owner && blueprint != null && hand == InteractionHand.MAIN_HAND) {
-            return PuppetService.recall(owner, this) ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+            return (owner.isShiftKeyDown() ? PuppetService.toggleHold(owner, this)
+                    : PuppetService.recall(owner, this))
+                    ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }
         return InteractionResult.PASS;
     }
@@ -186,7 +189,17 @@ public final class PuppetEntity extends PathfinderMob {
             applyStats(profile, false);
             syncSnapshot();
         }
-        Monster target = selectHostile(world, owner);
+        var stay = PuppetRegistrySavedData.get(world.getServer()).hold(blueprint.puppetId())
+                .filter(h -> h.dimension().equals(world.dimension().location().toString()))
+                .orElse(null);
+        Vec3 anchor = stay == null ? null : new Vec3(stay.x(), stay.y(), stay.z());
+        if (anchor != null && distanceToSqr(anchor) > 144) {
+            guarding = false;
+            if (tickCount % 15 == 0)
+                getNavigation().moveTo(anchor.x, anchor.y, anchor.z, 1.0);
+            return;
+        }
+        Monster target = selectHostile(world, owner, anchor, profile);
         guarding = target != null && blueprint.device() == PuppetBlueprint.Device.SHIELD;
         if (target != null) {
             PuppeteerRules.Stats stats = PuppeteerRules.stats(blueprint,
@@ -199,8 +212,23 @@ public final class PuppetEntity extends PathfinderMob {
                     if (tickCount % 10 == 0 && distanceToSqr(target) > stats.reach() * stats.reach())
                         getNavigation().moveTo(target, 1.03);
                     if (inReach(target, stats.reach()) && ready(world)) {
-                        if (target.hurt(damageSources().mobAttack(this), (float) (stats.damage() * driveDamage)))
+                        if (target.hurt(damageSources().mobAttack(this), (float) (stats.damage() * driveDamage))) {
                             markOwnerCombat(owner);
+                            bladeSequence++;
+                            if (PuppeteerRules.rank(profile, "module_adaptation") >= 20
+                                    && bladeSequence % 3 == 0) {
+                                for (Monster second : world.getEntitiesOfClass(Monster.class,
+                                        target.getBoundingBox().inflate(1.6),
+                                        other -> other != target && other.isAlive()
+                                                && !PuppetCombatService.allied(this, other))) {
+                                    if (getSensing().hasLineOfSight(second)) {
+                                        second.hurt(damageSources().mobAttack(this),
+                                                (float) (stats.damage() * driveDamage * .40));
+                                        break; // One genuine, nearby secondary hit; never an infinite sweep.
+                                    }
+                                }
+                            }
+                        }
                         finishAttack(world, stats);
                     }
                 }
@@ -220,7 +248,8 @@ public final class PuppetEntity extends PathfinderMob {
                         else getNavigation().stop();
                     }
                     if (inReach(target, stats.reach()) && distance > 3.0 && ready(world))
-                        shootBolt(world, target, stats, owner, driveDamage);
+                        shootBolt(world, target, stats, owner, driveDamage,
+                                PuppeteerRules.rank(profile, "module_adaptation"));
                 }
                 case SHIELD -> {
                     // Body blocking is location-based. Guard physically between the
@@ -242,6 +271,11 @@ public final class PuppetEntity extends PathfinderMob {
                     }
                 }
             }
+        } else if (anchor != null && distanceToSqr(anchor) > 4.0) {
+            if (tickCount % 14 == 0)
+                getNavigation().moveTo(anchor.x, anchor.y, anchor.z, 1.0);
+        } else if (anchor != null) {
+            getNavigation().stop();
         } else if (distanceToSqr(owner) > 16 && distanceToSqr(owner) < 24 * 24) {
             if (tickCount % 12 == 0) getNavigation().moveTo(owner, 1.05);
         } else if (distanceToSqr(owner) <= 9) {
@@ -272,7 +306,7 @@ public final class PuppetEntity extends PathfinderMob {
     }
 
     private void shootBolt(ServerLevel world, Monster target, PuppeteerRules.Stats stats,
-                           ServerPlayer owner, double driveDamage) {
+                           ServerPlayer owner, double driveDamage, int adaptationRanks) {
         Arrow bolt = new Arrow(world, this, new ItemStack(Items.ARROW), ItemStack.EMPTY);
         bolt.pickup = AbstractArrow.Pickup.DISALLOWED;
         bolt.setBaseDamage(Math.max(.1, (stats.damage() * driveDamage) / 1.7));
@@ -284,6 +318,7 @@ public final class PuppetEntity extends PathfinderMob {
         // Real projectile collision/flight; shots cannot hit through solid walls.
         float spread = frame() == PuppetBlueprint.Frame.LIGHT ? 2.5F
                 : frame() == PuppetBlueprint.Frame.HEAVY ? .45F : 1.2F;
+        if (adaptationRanks >= 20) spread *= .65F;
         bolt.shoot(direction.x, direction.y + direction.horizontalDistance() * .02,
                 direction.z, 1.7F, spread);
         if (world.addFreshEntity(bolt)) {
@@ -292,14 +327,24 @@ public final class PuppetEntity extends PathfinderMob {
         }
     }
 
-    private Monster selectHostile(ServerLevel world, ServerPlayer owner) {
+    private Monster selectHostile(ServerLevel world, ServerPlayer owner, Vec3 anchor,
+                                  PlayerClassProfile profile) {
         if (priorityTarget != null && world.getEntity(priorityTarget) instanceof Monster forced
-                && forced.isAlive() && !PuppetCombatService.allied(this, forced) && distanceToSqr(forced) <= 24 * 24)
+                && forced.isAlive() && !PuppetCombatService.allied(this, forced) && distanceToSqr(forced) <= 24 * 24
+                && (anchor == null || forced.distanceToSqr(anchor) <= 144))
             return forced;
+        if (PuppeteerRules.rank(profile, "response_attunement") >= 10
+                && owner.getLastHurtByMob() instanceof Monster threat && threat.isAlive()
+                && !PuppetCombatService.allied(this, threat)
+                && distanceToSqr(threat) <= 16 * 16
+                && (anchor == null || threat.distanceToSqr(anchor) <= 144)
+                && getSensing().hasLineOfSight(threat))
+            return threat;
         if (world.getGameTime() < nextTargetScan) {
             if (cachedTarget != null && world.getEntity(cachedTarget) instanceof Monster cached
                     && cached.isAlive() && !PuppetCombatService.allied(this, cached)
-                    && distanceToSqr(cached) < 13 * 13) return cached;
+                    && distanceToSqr(cached) < 13 * 13
+                    && (anchor == null || cached.distanceToSqr(anchor) <= 144)) return cached;
             return null;
         }
         nextTargetScan = world.getGameTime() + 20L;
@@ -307,7 +352,8 @@ public final class PuppetEntity extends PathfinderMob {
         Monster closest = null;
         double best = Double.MAX_VALUE;
         for (Monster candidate : world.getEntitiesOfClass(Monster.class, range,
-                mob -> mob.isAlive() && !PuppetCombatService.allied(this, mob))) {
+                mob -> mob.isAlive() && !PuppetCombatService.allied(this, mob)
+                        && (anchor == null || mob.distanceToSqr(anchor) <= 144))) {
             double distance = distanceToSqr(candidate);
             if (distance < best && getSensing().hasLineOfSight(candidate)) {
                 closest = candidate;
@@ -327,8 +373,9 @@ public final class PuppetEntity extends PathfinderMob {
         getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.28 * stats.moveSpeedFactor());
         getAttribute(Attributes.ARMOR).setBaseValue(stats.armor());
         getAttribute(Attributes.KNOCKBACK_RESISTANCE)
-                .setBaseValue(frame() == PuppetBlueprint.Frame.HEAVY ? .55
-                        : frame() == PuppetBlueprint.Frame.BALANCED ? .15 : 0.0);
+                .setBaseValue(Math.min(.90, (frame() == PuppetBlueprint.Frame.HEAVY ? .55
+                        : frame() == PuppetBlueprint.Frame.BALANCED ? .15 : 0.0)
+                        + (blueprint.core() == PuppetBlueprint.Core.STABLE ? .20 : 0.0)));
         setHealth(Math.max(.01F, (float) stats.maxHealth() * ratio));
     }
 
@@ -373,6 +420,7 @@ public final class PuppetEntity extends PathfinderMob {
         if (blueprint != null) {
             tag.put("puppet", snapshot().save());
             tag.putInt("puppetRevision", revision);
+            tag.putInt("bladeSequence", bladeSequence);
         }
     }
 
@@ -381,6 +429,7 @@ public final class PuppetEntity extends PathfinderMob {
         super.readAdditionalSaveData(tag);
         this.blueprint = PuppetBlueprint.load(tag.getCompound("puppet")).orElse(null);
         this.revision = tag.getInt("puppetRevision");
+        this.bladeSequence = Math.max(0, tag.getInt("bladeSequence"));
         if (blueprint != null) {
             nextAttack = blueprint.nextAttackTick();
             entityData.set(FRAME, blueprint.frame().ordinal());
