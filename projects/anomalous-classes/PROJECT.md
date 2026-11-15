@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-16 기생술사 숙주 확장 묶음:** 가디언(수중 적응/광선)·엔더맨(안전 순간이동/조건부 투사체 회피)을 신규 숙주로 통합하고 숙련 100 계승·V+2/3 직접 입력·쿨다운 저장·숙주 카메라 회전 방향을 수정. [CI #43729597678](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43729597678) BUILD VERIFIED/JAR PRODUCED; **실제 게임/클라이언트/멀티는 미검증**. [최신 기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
+
+
 > **2026-11-15 슬라임·숙주 시점 후속:** 서버 시선 패킷에 pitch를 추가해 숙주 눈높이 침투/공격 방향을 정합화하고, 제자리 점프 및 슬라임 숙주·숙련100 탄성 점프/낙하 피해 완화를 추가. [CI #43727647235](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43727647235) BUILD VERIFIED/JAR PRODUCED. **실제 게임 화면/플레이/멀티 검증은 아직 미실행.** [기생술사 현황](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
 
 

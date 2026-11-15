@@ -2,6 +2,24 @@
 
 > 최신 GitHub `main` + 실제 코드가 정본이며, 이 기록은 2026-11-15 기준 확인 상태다. 기획을 새로 설계하지 않는다.
 
+## 2026-11-16 current integrated gameplay: guardian + enderman + camera controls
+
+- **Source commit:** [`b976a5be0db80680f57683745a2f05ac3617a0c7`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b976a5be0db80680f57683745a2f05ac3617a0c7).
+- [**Build anomalous-classes #43729597678**](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43729597678) **SUCCESS / BUILD VERIFIED / JAR PRODUCED**. JAR `anomalous-classes-0.1.0-alpha.1.jar` **32,053,032 bytes / 185 classes**. [Deliverables](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43729597678/artifacts/14167608277).
+- Original vanilla host adapters now **10 supported species**: pig, chicken, sheep, cow, zombie, spider, slime, creeper, **guardian**, **enderman**. Warden and external/modded boss adapters are still unsupported.
+- **Guardian:** trial BD requirement **600**, base hold intrusion **160 ticks**. Guardian host has innate water adaptation and aim-directed 14-block instant focus beam (base 7 damage, normal server combat ownership, block LOS and owned/team/PvP protection); at guardian mastery100, other hosts gain water adaptation and the beam. Swimming uses host rotation pitch, water-only ascent and ordinary water oxygen refill for both the host and its passenger. **Slot 2** (`V` + `2`) triggers guardian beam, separate 480-tick cooldown and 60-tick offensive shared recovery. Invalid beam targets do not consume cooldown. This is a candidate balance and basic audiovisual effect, not validated polished final beam animation.
+- **Enderman:** trial BD requirement **900**, base hold intrusion **160 ticks**. Original host can use its short controlled teleport without prior mastery; at enderman mastery100, other hosts inherit active teleport and automatic projectile-only evasions. **Slot 3** (`V` + `3`) requests a forward up-to-8-block blink, only to loaded, grounded, collision-free, nonfluid positions within world borders; otherwise no cooldown spent. Separate 560-tick cooldown, 0 offensive shared recovery. When a real projectile hits an inhabited host, the server applies a **35% conditional attempt** with projectile-UUID dedup and a 12-tick dodge guard, then cancels the hit **only on a safe successful relocation**. Ordinary melee, magic and waves are not covered. These numerical constraints remain playtest candidates, not exact reproductions of native Minecraft Enderman odds.
+- **Camera/input correction:** Minecraft mouse rotates the active camera entity. After initial view transfer, the active host's mouse yaw/pitch are copied to LocalPlayer before sending authoritative movement/look input; previously copying player yaw into the host every tick could undo mouse movement. The original player's server-authoritative inventory, combat and data remain unchanged.
+- **Persistent trait behavior:** V controls direct slots only. Slot1 creeper, slot2 guardian, slot3 enderman; slots4–10 have no implemented active. Environmental guardian adaptation and conditional Enderman projectile evasion are independent of the V toggle. All three abilities share existing per-player persistent cooldown IDs and global offensive recovery. Creature mastery remains the source of permanent acquisition; no new currency, equip restriction or skill tree replacement.
+- **Verification:** `verifyParasiteFoundation` PASS (guardian/enderman BD, slime/guardian/enderman 99↔100 mastery policies, guardian mastery NBT reload, 3 actives, individual/global cooldown and saved cooldown reload). `verifyPuppeteerFoundation`, `verifyGraphSkillTreeRuntime`, existing class/UI layout checks and packaged JAR PASS.
+- **Explicitly NOT TESTED:** actual Minecraft client, mouse rotation after camera takeover, Guardian underwater pitch/mob physics, blast+beam native visuals and hit feeling, Enderman passenger teleport with loaded chunk boundaries, projectiles from mods, vanilla block mining and PvP, multiplayer latency. Do not equate build success with these outcomes.
+- Next implementation/QA: stabilize real-client camera/attack/interaction behavior and in-game species ability animations; then expand higher-tier species and earned-ability UI without adding unnecessary menus.
+
+
+---
+
+> 아래는 2026-11-15 단계별 구현 당시의 기록이다. 현재 상태는 위 2026-11-16 통합 체크포인트가 우선한다.
+
 ## 기준
 
 - Repository: `q93503128-a11y/minecraft-java-mod-builds`, branch `main`

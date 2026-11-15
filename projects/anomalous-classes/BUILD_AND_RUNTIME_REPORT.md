@@ -1,5 +1,21 @@
 # Build and Runtime Report
 
+## 2026-11-16 — Parasite coherent species/gameplay bundle: guardian and enderman
+
+- Latest source commit [`b976a5be0`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b976a5be0db80680f57683745a2f05ac3617a0c7).
+- [**Build anomalous-classes #43729597678**](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43729597678) **SUCCESS, BUILD VERIFIED, JAR PRODUCED**. `anomalous-classes-0.1.0-alpha.1.jar` 32,053,032 bytes, 185 classes. [Packaged deliverables](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43729597678/artifacts/14167608277).
+- Expanded full server-owned host adapters from 8 to **10 species** with native and permanent mastery100 inheritance: Guardian aquatic adaptation + 14-block aimed beam/24-second cooldown; Enderman short safe-ground teleport/28-second cooldown plus projectile-only conditional 35% successful dodge when a safe destination exists. Trial gates Guardian600BD/Enderman900BD. Both have 160-tick basic intrusion.
+- Guardian water adaptation refills oxygen for the actual Mob host and its passenger only while inhabited/in-water, and derives vertical swim movement from actual camera pitch. Full mastery transfers environment-only aquatic adaptation and directly activated guardian beam to other hosts.
+- Enderman combat dodge triggers only in server `LivingIncomingDamageEvent` addressed to a possessed original host and caused by a physical `Projectile`, requires an available safe landing space and tracks projectile UUID/tick to avoid repeated dodge rolls. Manual blink scans only already loaded, solid-supported, collision-free, nonfluid and border-valid positions. Invalid target/movement requests do not burn cooldown.
+- Existing V direct slots: 1 creeper, 2 guardian, 3 enderman. Independent persistent cooldowns; 60-tick shared offensive cooldown applies to creeper and guardian, not passive survival skills or blink.
+- Fixed camera aim control direction after `setCameraEntity(host)`: copy active-camera rotation to the owning player for input transfer rather than reset host yaw/pitch from stale LocalPlayer after every mouse movement. No new HUD or UI asset changes.
+- Tests: `verifyParasiteFoundation` 99/100 mastery boundaries, 10-species gates, Guardian NBT and newly exercised saved cooldowns; graph skill tree, Puppeteer, layout and JAR checks succeeded.
+- **NOT PLAYTESTED / NOT CLIENT RUNTIME TESTED / NOT MULTIPLAYER TESTED.** Actual projectile evasion, guardian swim pitch and laser effects, riding teleports, camera feel and input alignment require in-game validation. Basic particles/sounds are not a final VFX quality pass.
+- [Implementation checkpoint](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md) includes remaining scope and prior verified runs.
+
+---
+
+
 ## 2026-11-15 — Parasite look synchronization, melee input and slime elasticity
 
 - **Implementation:** [`01d50f7d62eae97d01199e0f8dc5ad7533611a3a`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/01d50f7d62eae97d01199e0f8dc5ad7533611a3a), `main`.
