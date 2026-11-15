@@ -571,7 +571,6 @@ public final class ParasiteService {
                     && tick - m.lastActivityTick >= 20) {
                 m.lastActivityTick = tick;
                 PlayerClassProfile profile = ClassProfileSavedData.get(owner.getServer()).profile(owner.getUUID());
-                String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
                 if (ParasiteSavedData.get(owner.getServer()).recordActiveTicks(owner.getUUID(), 20, profile))
                     ParasiteSavedData.get(owner.getServer()).reward(owner.getUUID(), species, 4, profile);
                 String biome = owner.serverLevel().dimension().location() + "/" +
