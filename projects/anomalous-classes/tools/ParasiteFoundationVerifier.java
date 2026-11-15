@@ -46,6 +46,9 @@ public final class ParasiteFoundationVerifier {
         check(data.firstBiome(owner, "anomalousclasses:minecraft_overworld_minecraft_plains")
                 && !data.firstBiome(owner, "anomalousclasses:minecraft_overworld_minecraft_plains"),
                 "new biome bonus is one-time");
+        check(data.firstMilestone(owner, "anomalousclasses:mine_iron")
+                && !data.firstMilestone(owner, "anomalousclasses:mine_iron"),
+                "survival milestones cannot be replayed");
         check(!data.recordActiveTicks(owner, 4000, new PlayerClassProfile()), "no passive early activity reward");
         check(data.recordActiveTicks(owner, 800, new PlayerClassProfile()), "4 minutes eligible activity");
         check(data.hostDied(owner, second, 100L, 1200), "host death is single transition");
@@ -62,7 +65,8 @@ public final class ParasiteFoundationVerifier {
         check(restored.player(owner).bd() == 12
                 && restored.player(owner).mastery("minecraft:pig") == 1
                 && restored.player(owner).host() == null
-                && restored.player(owner).deathLockUntil() == 1300L,
+                && restored.player(owner).deathLockUntil() == 1300L
+                && !restored.firstMilestone(owner, "anomalousclasses:mine_iron"),
                 "permanent BD, species, claim and death timer save/load");
 
         ParasiteAbilitySavedData abilities = new ParasiteAbilitySavedData();
@@ -96,7 +100,7 @@ public final class ParasiteFoundationVerifier {
                 && restoredAbilities.player(owner).readyAt(1) == 1000L
                 && restoredAbilities.player(owner).readyAt(2) == 800L,
                 "ability cooldown save/load");
-        System.out.println("PASS: parasite host claims, BD, death lock, three ability cooldowns and persistence");
+        System.out.println("PASS: parasite claims, BD, death lock, survival milestones, abilities and persistence");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

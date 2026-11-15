@@ -24,6 +24,7 @@ public final class ParasiteSavedData extends SavedData {
         private final Map<String, Integer> mastery = new HashMap<>();
         private final Map<String, Integer> masteryRemainder = new HashMap<>();
         private final Set<String> biomes = new HashSet<>();
+        private final Set<String> milestones = new HashSet<>();
         private UUID host;
         private String dimension = "";
         private long deathLockUntil;
@@ -102,6 +103,13 @@ public final class ParasiteSavedData extends SavedData {
         setDirty();
         return true;
     }
+    /** World-save persistent, exactly-once survival objectives; does not reset on host change. */
+    public boolean firstMilestone(UUID owner, String id) {
+        if (id == null || ResourceLocation.tryParse(id) == null) return false;
+        if (!player(owner).milestones.add(id)) return false;
+        setDirty();
+        return true;
+    }
     public void reward(UUID owner, String species, int amount, PlayerClassProfile profile) {
         if (amount <= 0 || species == null || ResourceLocation.tryParse(species) == null) return;
         State state = player(owner);
@@ -167,6 +175,10 @@ public final class ParasiteSavedData extends SavedData {
             ListTag biomes = new ListTag();
             state.biomes.stream().sorted().forEach(b -> biomes.add(net.minecraft.nbt.StringTag.valueOf(b)));
             tag.put("biomes", biomes);
+            ListTag milestones = new ListTag();
+            state.milestones.stream().sorted().forEach(m ->
+                    milestones.add(net.minecraft.nbt.StringTag.valueOf(m)));
+            tag.put("milestones", milestones);
             list.add(tag);
         }
         out.put("players", list);
@@ -203,6 +215,11 @@ public final class ParasiteSavedData extends SavedData {
             for (Tag val : node.getList("biomes", Tag.TAG_STRING)) {
                 String biome = val.getAsString();
                 if (ResourceLocation.tryParse(biome) != null && state.biomes.size() < 4096) state.biomes.add(biome);
+            }
+            for (Tag val : node.getList("milestones", Tag.TAG_STRING)) {
+                String objective = val.getAsString();
+                if (ResourceLocation.tryParse(objective) != null && state.milestones.size() < 256)
+                    state.milestones.add(objective);
             }
             result.players.putIfAbsent(id, state);
         }

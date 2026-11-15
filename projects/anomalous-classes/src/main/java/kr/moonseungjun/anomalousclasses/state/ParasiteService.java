@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.UUID;
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CropBlock;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -69,6 +72,9 @@ public final class ParasiteService {
         long lastInput;
         Vec3 lastPosition;
         long lastActivityTick;
+        boolean sprintWasDown;
+        long dashUntil;
+        long dashReadyAt;
     }
     private ParasiteService() {}
 
@@ -116,7 +122,7 @@ public final class ParasiteService {
     }
 
     public static void movement(ServerPlayer player, int mask, float yaw) {
-        if (!current(player) || !Float.isFinite(yaw) || mask < 0 || (mask & ~31) != 0) return;
+        if (!current(player) || !Float.isFinite(yaw) || mask < 0 || (mask & ~63) != 0) return;
         ParasiteSavedData.State state = ParasiteSavedData.get(player.getServer()).player(player.getUUID());
         if (state.host() == null) return;
         Mob host = loadedHost(player, state.host());
@@ -158,10 +164,9 @@ public final class ParasiteService {
             Mob host = loadedHost(player, state.host());
             if (host != null && ownsHost(player, host) && player.getVehicle() != host) {
                 player.startRiding(host, true);
-            } else if (state.host() != null && host == null) {
-                // Host has no loaded entity in the player's dimension: do not soft-lock on relog.
-                ParasiteSavedData.get(player.getServer()).release(player.getUUID(), state.host());
             }
+            // The original host may be in an unloaded chunk during login.
+            // Never abandon its saved claim merely because getEntity() returns null.
         }
         applyHumanStats(player);
     }
@@ -218,7 +223,14 @@ public final class ParasiteService {
                 double multiplier = ParasiteRules.damageMultiplier(st.bd(), st.mastery(species),
                         ClassProfileSavedData.get(attacker.getServer()).profile(attacker.getUUID()));
                 if (ParasiteAbilityService.awakened(attacker, host)) multiplier *= 1.15;
-                event.setNewDamage((float) Math.min(2000, event.getNewDamage() * multiplier));
+                float base = event.getNewDamage();
+                if (attacker.getMainHandItem().isEmpty()) {
+                    // Bare hands use the host's actual natural attack when that species has one.
+                    AttributeInstance natural = host.getAttribute(Attributes.ATTACK_DAMAGE);
+                    double inherent = natural == null ? 1.5 : natural.getValue();
+                    base = Math.max(base, (float) Math.max(1, inherent));
+                }
+                event.setNewDamage((float) Math.min(2000, base * multiplier));
                 trackHit(attacker, event.getEntity(), event.getNewDamage());
                 CombatTracker.markOwnedCombat(attacker);
             } else if (st.host() == null) {
@@ -245,6 +257,37 @@ public final class ParasiteService {
                         ch.ticks = Math.max(0, ch.ticks - (ch.anchored ? 2 : 8));
                 }
             }
+        }
+    }
+
+    /** Capped, one-time survival milestones supplement movement and combat BD. */
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (event.isCanceled() || !(event.getPlayer() instanceof ServerPlayer owner)
+                || owner.isCreative() || owner.isSpectator()) return;
+        Mob host = activeHost(owner);
+        if (host == null) return;
+        var block = event.getState();
+        String milestone = null;
+        int amount = 0;
+        if (block.is(Blocks.IRON_ORE) || block.is(Blocks.DEEPSLATE_IRON_ORE)) {
+            milestone = "anomalousclasses:mine_iron";
+            amount = 12;
+        } else if (block.is(Blocks.DIAMOND_ORE) || block.is(Blocks.DEEPSLATE_DIAMOND_ORE)) {
+            milestone = "anomalousclasses:mine_diamond";
+            amount = 24;
+        } else if (block.getBlock() instanceof CropBlock crop && crop.isMaxAge(block)) {
+            milestone = "anomalousclasses:harvest_crop";
+            amount = 12;
+        } else if (block.is(Blocks.DEEPSLATE) && event.getPos().getY() <= -16) {
+            milestone = "anomalousclasses:deep_mining";
+            amount = 12;
+        }
+        if (milestone == null) return;
+        ParasiteSavedData data = ParasiteSavedData.get(owner.getServer());
+        if (data.firstMilestone(owner.getUUID(), milestone)) {
+            String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
+            data.reward(owner.getUUID(), species, amount,
+                    ClassProfileSavedData.get(owner.getServer()).profile(owner.getUUID()));
         }
     }
 
@@ -302,7 +345,10 @@ public final class ParasiteService {
             ParasiteSavedData.State state = data.player(player.getUUID());
             Mob host = loadedHost(player, state.host());
             if (state.host() != null && (host == null || !ownsHost(player, host))) {
-                // If the chunk is unloaded, preserve the claim and wait. No teleport or chunk forcing.
+                // Preserve unloaded host identity. R can still perform the deliberate 30-tick
+                // human-form exit when recovery is impossible; no chunk forcing.
+                Channel ch = CHANNELS.get(player.getUUID());
+                if (ch != null && ch.exit) tickChannel(player, ch);
                 continue;
             }
             if (host != null) {
@@ -311,9 +357,12 @@ public final class ParasiteService {
                     continue;
                 }
                 if (player.getVehicle() != host) {
-                    // Do not allow dismount to bypass the combat escape cast.
-                    if (CombatTracker.isLocked(player)) player.startRiding(host, true);
-                    else { end(player, false); applyHumanStats(player); continue; }
+                    // Sneak/dismount must not be an instant, free host release.
+                    // The R channel is the sole deliberate voluntary exit route.
+                    if (!player.startRiding(host, true)) {
+                        // Keep the saved claim intact if mounting was temporarily rejected.
+                        continue;
+                    }
                 }
                 moveHost(player, host, state);
                 ParasiteAbilityService.tick(player, host);
@@ -400,6 +449,14 @@ public final class ParasiteService {
         double front = ((m.mask & 1) != 0 ? 1 : 0) - ((m.mask & 2) != 0 ? 1 : 0);
         double sideways = ((m.mask & 8) != 0 ? 1 : 0) - ((m.mask & 4) != 0 ? 1 : 0);
         double length = Math.hypot(front, sideways);
+        boolean sprint = (m.mask & 32) != 0 && front > 0;
+        if (host.getType() == net.minecraft.world.entity.EntityType.PIG
+                && sprint && !m.sprintWasDown && tick >= m.dashReadyAt) {
+            // Pig's own short burst is available immediately, without trait inheritance.
+            m.dashUntil = tick + 12;
+            m.dashReadyAt = tick + 100;
+        }
+        m.sprintWasDown = sprint;
         if (length > 0) {
             front /= length; sideways /= length;
             double rad = Math.toRadians(m.yaw);
@@ -412,17 +469,21 @@ public final class ParasiteService {
                     * ParasiteRules.movementMultiplier(ClassProfileSavedData.get(owner.getServer())
                     .profile(owner.getUUID()))
                     * (ParasiteAbilityService.awakened(owner, host) ? 1.15 : 1.0);
-            host.move(MoverType.SELF, new Vec3(dx * velocity, 0, dz * velocity));
+            if (sprint) velocity *= 1.20;
+            if (host.getType() == net.minecraft.world.entity.EntityType.PIG && tick < m.dashUntil)
+                velocity *= 1.60;
+            host.move(MoverType.SELF, new Vec3(dx * Math.min(.50, velocity), 0,
+                    dz * Math.min(.50, velocity)));
             host.setYRot(m.yaw);
             host.setYHeadRot(m.yaw);
             if ((m.mask & 16) != 0 && host.onGround())
                 host.setDeltaMovement(host.getDeltaMovement().add(0, .42, 0));
-            // Spider's own wall mobility is available without another unlock or cooldown.
-            if ((host.getType() == net.minecraft.world.entity.EntityType.SPIDER
-                    || state.mastery("minecraft:spider") >= 100)
-                    && host.horizontalCollision && ((m.mask & 16) != 0 || front > 0))
-                host.setDeltaMovement(host.getDeltaMovement().x, .18, host.getDeltaMovement().z);
         }
+        // Wall climbing is environmental: jump-only works even without horizontal travel.
+        if ((host.getType() == net.minecraft.world.entity.EntityType.SPIDER
+                || state.mastery("minecraft:spider") >= 100)
+                && host.horizontalCollision && ((m.mask & 16) != 0 || front > 0))
+            host.setDeltaMovement(host.getDeltaMovement().x, .18, host.getDeltaMovement().z);
         if (tick % ACTION_INTERVAL == 0) {
             Vec3 pos = host.position();
             if (m.lastPosition != null && m.lastPosition.distanceToSqr(pos) > 2.25

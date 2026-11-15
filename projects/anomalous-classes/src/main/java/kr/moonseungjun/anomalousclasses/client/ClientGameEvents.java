@@ -59,7 +59,8 @@ public final class ClientGameEvents {
                     | (minecraft.options.keyDown.isDown() ? 2 : 0)
                     | (minecraft.options.keyLeft.isDown() ? 4 : 0)
                     | (minecraft.options.keyRight.isDown() ? 8 : 0)
-                    | (minecraft.options.keyJump.isDown() ? 16 : 0);
+                    | (minecraft.options.keyJump.isDown() ? 16 : 0)
+                    | (minecraft.options.keySprint.isDown() ? 32 : 0);
             PacketDistributor.sendToServer(new ParasiteMovePayload(mask, minecraft.player.getYRot()));
         }
         // Direct keybinds request stable IDs; the server rejects all other classes.

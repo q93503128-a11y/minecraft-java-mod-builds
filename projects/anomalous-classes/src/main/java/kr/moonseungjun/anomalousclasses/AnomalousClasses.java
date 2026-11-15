@@ -54,6 +54,7 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(ParasiteService::onDamage);
         NeoForge.EVENT_BUS.addListener(ParasiteService::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ParasiteService::onDeath);
+        NeoForge.EVENT_BUS.addListener(ParasiteService::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(ParasiteService::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(ParasiteService::tick);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onChangeTarget);
