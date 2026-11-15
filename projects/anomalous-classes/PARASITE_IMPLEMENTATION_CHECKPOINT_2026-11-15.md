@@ -60,3 +60,11 @@
 - **NOT PLAYTESTED**: camera mouse-look/interpolation and first/third-person collision, world chunk/portal transfer, player-body visibility for remote multiplayer clients, vanilla mining/block range alignment, physical swings and attack feel, PvP modes, real entity drops and TPS profiling.
 - The UI/model/animation polish remains under Codex per [UI ownership](./ui/WORK_OWNERSHIP_AND_UI_HANDOFF_2026-11-13.md); gameplay authority and preservation remain in the server modules.
 
+
+## 2026-11-15 subsequent gameplay checkpoint — host look + slime
+
+- Main game commit: `01d50f7d62eae97d01199e0f8dc5ad7533611a3a`.
+- [Build CI #43727647235](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43727647235) SUCCESS; **BUILD VERIFIED / JAR PRODUCED** (JAR 32,044,952 bytes / 184 classes); [latest JAR package](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43727647235/artifacts/14166767379).
+- Client look requests now carry yaw/pitch; server validates and stores direction for original host's LOS-targeted intrusion and direct melee. Vanilla block mining retains the left-click path when crosshair hits a block; host attack intents also work on non-block hits even when the passenger's vanilla raycast disagrees.
+- Added slime original host support with trial BD180 and 110-tick concentration. Elastic native jump and cross-species inherited jump/fall softening at slime mastery100 are no-cooldown environmental traits. Slime passives and gates covered in server-contract fixture.
+- **Runtime Minecraft QA / real client camera rotation / multiplayer not executed**. Main client and host camera interplay, entity-hit/block-hit discrimination and actual jumper physics require in-game verification; don't claim these are verified from CI alone.

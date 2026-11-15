@@ -1,5 +1,18 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Parasite look synchronization, melee input and slime elasticity
+
+- **Implementation:** [`01d50f7d62eae97d01199e0f8dc5ad7533611a3a`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/01d50f7d62eae97d01199e0f8dc5ad7533611a3a), `main`.
+- **CI:** [Build anomalous-classes #43727647235](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43727647235) SUCCESS, **BUILD VERIFIED / JAR PRODUCED**. Packaged JAR `anomalous-classes-0.1.0-alpha.1.jar`, 32,044,952 bytes, 184 classes. [Deliverables artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43727647235/artifacts/14166767379), [logs](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43727647235/artifacts/14166982099). The separate `cd-a15-export-exact3` workflow failed and is unrelated to this project-specific build.
+- `ParasiteMovePayload` now carries yaw **and pitch**. Server rejects invalid masks, nonfinite directions and pitch outside ±90°, storing direction in an owned Motion snapshot. `ParasiteService.viewDirection()` derives current look for both host-eye intrusion and `ParasiteHostCombatService` attack; when no recent motion packet it falls back to the player look. The host's pitch follows the motion snapshot rather than stale passenger yaw/pitch.
+- Client attack input is intercepted for **entity/miss** while the camera controls a real host; server raycasts target and block collision from the host. A real hit on a block retains vanilla mining. Nonparasite clients no longer transmit parasite motion packets merely for riding unrelated mobs.
+- Slime is now an eligible original living host (BD180, initial intrusion110 ticks, movement speed 1.00; **candidate values**, not approved balance). Slime innate ground jump impulse0.58, mastery100 enables a 0.50 passive jump on other hosts and halves their fall damage; mastery99 has no transferred benefit. Jump is possible from a standstill and has no separate cooldown. Natural slime fall immunity remains governed by vanilla.
+- `ParasiteFoundationVerifier` PASS: exclusive claims, growth, lockout, milestones, actives, trait cooldown saving, **slime BD gate/99 vs100 mastery boundary/elastic landing factor**. Existing `verifyGraphSkillTreeRuntime`, `verifyPuppeteerFoundation`, UI static and other Gradle checks also passed in the same run.
+- **CLIENT RUNTIME / CAMERA ORIENTATION / ACTUAL COMBAT-MINING / SLIME JUMP PHYSICS / PLAYTEST / MULTIPLAYER = NOT TESTED.** Build/fixture validation is not an in-game collision or UX test. In particular, test mouse look after camera transfer, rapid R transfer, first/third person, slime size variants, block-hit vs enemy-hit actions, repeated Space, fall landing/collisions, camera restoration on host death/dimension exit, and host-eye versus player-eye reach.
+
+---
+
+
 ## 2026-11-15 — Parasite original-host camera and authoritative melee checkpoint
 
 - **Gameplay commit:** `29eacf9025584d4b8f8f79c9aed203acc497cc5f`.

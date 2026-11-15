@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-15 슬라임·숙주 시점 후속:** 서버 시선 패킷에 pitch를 추가해 숙주 눈높이 침투/공격 방향을 정합화하고, 제자리 점프 및 슬라임 숙주·숙련100 탄성 점프/낙하 피해 완화를 추가. [CI #43727647235](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43727647235) BUILD VERIFIED/JAR PRODUCED. **실제 게임 화면/플레이/멀티 검증은 아직 미실행.** [기생술사 현황](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
+
+
 > **2026-11-15 기생술사 직접 시점·전투 통합:** 원본 숙주 눈높이 카메라, 서버 권위 숙주 시점 근접 공격, 이중 공격·피해 방지 및 차원/전직/사망 시 시점 복귀를 `29eacf9`에 연결했다. [CI #43725526476](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43725526476) BUILD VERIFIED/JAR PRODUCED. **실제 Minecraft 클라이언트·게임플레이·멀티 테스트는 아직 미실행.** 상세 [기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
 
 
