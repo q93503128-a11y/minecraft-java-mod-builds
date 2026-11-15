@@ -41,6 +41,7 @@ public final class PuppetEntity extends PathfinderMob {
     private long nextAttack;
     private int statRefresh;
     private boolean dropHandled;
+    private boolean guarding;
     private boolean registryValidated;
     private UUID priorityTarget;
     private UUID cachedTarget;
@@ -115,6 +116,7 @@ public final class PuppetEntity extends PathfinderMob {
     public UUID puppetId() { return blueprint == null ? null : blueprint.puppetId(); }
     public UUID puppetOwner() { return blueprint == null ? null : blueprint.ownerId(); }
     public int revision() { return revision; }
+    public boolean guarding() { return guarding; }
 
     public void designateTarget(UUID target) {
         priorityTarget = target;
@@ -161,6 +163,7 @@ public final class PuppetEntity extends PathfinderMob {
                         .currentClass().orElse(null) != ClassId.PUPPETEER) {
             getNavigation().stop();
             setTarget(null);
+            guarding = false;
             return;
         }
         PlayerClassProfile profile = ClassProfileSavedData.get(world.getServer()).profile(owner.getUUID());
@@ -170,6 +173,7 @@ public final class PuppetEntity extends PathfinderMob {
             syncSnapshot();
         }
         Monster target = selectHostile(world, owner);
+        guarding = target != null && blueprint.device() == PuppetBlueprint.Device.SHIELD;
         if (target != null) {
             if (tickCount % 10 == 0) getNavigation().moveTo(target, 1.02);
             PuppeteerRules.Stats stats = PuppeteerRules.stats(blueprint,

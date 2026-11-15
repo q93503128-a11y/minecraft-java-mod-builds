@@ -13,9 +13,13 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Server-computed assembly and maintenance quotes; never a client authority. */
 public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, int result,
-                                         List<PuppetView> puppets) implements CustomPacketPayload {
+                                         List<PuppetView> puppets, List<CraftChoice> craftChoices) implements CustomPacketPayload {
     public static final int OPEN = 0, CRAFTED = 1, REJECTED = 2,
             REPAIRED = 3, EXPANDED = 4, DISMANTLED = 5;
+    /** Three server-priced starting devices; UI cannot authorize material cost. */
+    public record CraftChoice(int device, boolean craftable, Map<String, Integer> bill) {
+        public CraftChoice { bill = Map.copyOf(bill); }
+    }
     public record PuppetView(int slot, UUID id, int revision, int size, int condition,
                              boolean broken, boolean canRepair, boolean canExpand, boolean canDismantle,
                              Map<String, Integer> repairCost, Map<String, Integer> expandCost,
@@ -29,6 +33,8 @@ public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, in
 
     public PuppetWorkshopStatePayload {
         puppets = List.copyOf(puppets);
+        craftChoices = List.copyOf(craftChoices);
+        if (craftChoices.size() != 3) throw new IllegalArgumentException("Three device choices required");
         if (puppets.size() > 36) throw new IllegalArgumentException("Too many workbench items");
     }
 
@@ -39,6 +45,12 @@ public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, in
                 buffer.writeBlockPos(value.station);
                 buffer.writeBoolean(value.craftable);
                 buffer.writeVarInt(value.result);
+                buffer.writeVarInt(value.craftChoices.size());
+                for (CraftChoice choice : value.craftChoices) {
+                    buffer.writeVarInt(choice.device);
+                    buffer.writeBoolean(choice.craftable);
+                    writeBill(buffer, choice.bill);
+                }
                 buffer.writeVarInt(value.puppets.size());
                 for (PuppetView puppet : value.puppets) {
                     buffer.writeVarInt(puppet.slot);
@@ -58,6 +70,12 @@ public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, in
                 BlockPos station = buffer.readBlockPos();
                 boolean craftable = buffer.readBoolean();
                 int result = buffer.readVarInt();
+                int recipes = buffer.readVarInt();
+                if (recipes != 3) throw new IllegalArgumentException("Expected three weapon recipes");
+                java.util.ArrayList<CraftChoice> choices = new java.util.ArrayList<>(recipes);
+                for (int i = 0; i < recipes; i++) {
+                    choices.add(new CraftChoice(buffer.readVarInt(), buffer.readBoolean(), readBill(buffer)));
+                }
                 int count = buffer.readVarInt();
                 if (count < 0 || count > 36) throw new IllegalArgumentException("Invalid workbench item count");
                 java.util.ArrayList<PuppetView> puppets = new java.util.ArrayList<>(count);
@@ -77,7 +95,7 @@ public record PuppetWorkshopStatePayload(BlockPos station, boolean craftable, in
                     puppets.add(new PuppetView(slot, id, revision, size, condition,
                             broken, repairable, expandable, dismantleable, repair, expand, refund));
                 }
-                return new PuppetWorkshopStatePayload(station, craftable, result, puppets);
+                return new PuppetWorkshopStatePayload(station, craftable, result, puppets, choices);
             });
 
     private static void writeBill(RegistryFriendlyByteBuf buffer, Map<String, Integer> bill) {

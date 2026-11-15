@@ -33,6 +33,39 @@ public final class PuppeteerFoundationVerifier {
                 "3m expansion plank delta");
         check(PuppetEconomy.lightFrameMaterials(PuppetBlueprint.Size.GIANT)
                 .get("minecraft:oak_planks") == 15, "3m frame cost");
+        // A weapon choice is a paid, distinct role, not three identical item variants.
+        java.util.Set<Map<String, Integer>> distinctWeapons = new java.util.HashSet<>();
+        for (PuppetBlueprint.Device device : PuppetBlueprint.Device.values()) {
+            Map<String, Integer> weapon = PuppetEconomy.weaponMaterials(device);
+            Map<String, Integer> bill = PuppetEconomy.starterBlueprintLedger(
+                    PuppetBlueprint.Size.NORMAL, device);
+            check(weapon.values().stream().allMatch(amount -> amount > 0),
+                    "weapon modules require real materials");
+            check(bill.values().stream().allMatch(amount -> amount > 0),
+                    "no negative craft bill");
+            check(bill.get("minecraft:string") >= 2, "string remains part of assembly");
+            check(distinctWeapons.add(weapon), "three weapon modules must differ in ingredients");
+        }
+        check(distinctWeapons.size() == 3, "all three combat devices can be crafted");
+        PuppetBlueprint launcher = new PuppetBlueprint(UUID.randomUUID(), owner,
+                PuppetBlueprint.Frame.LIGHT, PuppetBlueprint.Device.LAUNCHER,
+                PuppetBlueprint.Core.BASIC, PuppetBlueprint.Size.NORMAL, 1, 0,
+                PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL, PuppetBlueprint.Device.LAUNCHER));
+        PuppetBlueprint shield = new PuppetBlueprint(UUID.randomUUID(), owner,
+                PuppetBlueprint.Frame.LIGHT, PuppetBlueprint.Device.SHIELD,
+                PuppetBlueprint.Core.BASIC, PuppetBlueprint.Size.NORMAL, 1, 0,
+                PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL, PuppetBlueprint.Device.SHIELD));
+        check(PuppetBlueprint.load(launcher.save()).orElseThrow().device()
+                == PuppetBlueprint.Device.LAUNCHER, "launcher serialized");
+        check(PuppetBlueprint.load(shield.save()).orElseThrow().device()
+                == PuppetBlueprint.Device.SHIELD, "shield serialized");
+        check(PuppeteerRules.stats(launcher, 1, new PlayerClassProfile()).reach()
+                > PuppeteerRules.stats(shield, 1, new PlayerClassProfile()).reach(),
+                "launcher has genuine ranged reach");
+        check(PuppeteerRules.stats(shield, 1, new PlayerClassProfile()).attackIntervalTicks()
+                > PuppeteerRules.stats(launcher, 1, new PlayerClassProfile()).attackIntervalTicks(),
+                "shield attack rate reflects defensive role");
+
 
         PuppetBlueprint initial = new PuppetBlueprint(id, owner, PuppetBlueprint.Frame.LIGHT,
                 PuppetBlueprint.Device.BLADE, PuppetBlueprint.Core.BASIC,
@@ -180,7 +213,7 @@ public final class PuppeteerFoundationVerifier {
         check(restored.find(id).orElseThrow().location() == PuppetRegistrySavedData.Location.RETIRED,
                 "retired identity persists");
         check(restored.deploy(owner, id, 6).isEmpty(), "retired identity cannot redeploy after reload");
-        System.out.println("PASS: puppet 27 roles, size costs, repair/expansion/refund CAS, broken recovery, save and anti-duplication");
+        System.out.println("PASS: puppet 3 paid weapons, 27 roles, size costs, repair/expansion/refund CAS, broken recovery, save and anti-duplication");
     }
     private static boolean close(double a, double b) { return Math.abs(a-b) < 1e-8; }
     private static void check(boolean result, String name) {

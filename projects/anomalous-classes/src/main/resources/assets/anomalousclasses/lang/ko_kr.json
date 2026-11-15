@@ -430,5 +430,6 @@
   "screen.anomalousclasses.puppet_workbench.dismantled": "인형을 분해하고 재료를 회수했습니다.",
   "message.anomalousclasses.puppet.repaired": "마리오네트의 파손을 복구했습니다.",
   "message.anomalousclasses.puppet.expanded": "인형의 골격이 확장되었습니다.",
-  "message.anomalousclasses.puppet.dismantled": "인형을 분해하여 소재를 회수했습니다."
+  "message.anomalousclasses.puppet.dismantled": "인형을 분해하여 소재를 회수했습니다.",
+  "screen.anomalousclasses.puppet_workbench.assemble_choice": "%1$s 인형 제작 (%2$s/%3$s)"
 }

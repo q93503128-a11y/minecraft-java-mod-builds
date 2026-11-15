@@ -1,5 +1,21 @@
 # Build and Runtime Report
 
+## 2026-11-15 — Puppeteer blade / launcher / shield first operational roles
+
+- Preserved the single dedicated puppet workbench, unique owner/puppet UUIDs, immutable paid material contribution ledger, real deployed entities, attack recovery, 1.0–3.0-body collision sizing and existing mental-dominator state.
+- **All three initial action devices can now be crafted** on the light frame with the basic neutral core: blade, launcher, and shield. The workshop's assembly view cycles these weapon choices, displaying server-calculated item bills and affordability; every request is revalidated on the server against selected device, profession, workbench range, inventory and stored class state. Blade uses the existing first-recipe contract; launcher/shield material quantities are adjustable design candidates (not independently user-approved balance).
+- The dedicated marionette AI now has three actual server roles:
+  - **Blade** approaches and melee attacks with size/frame/core-derived range, damage and interval.
+  - **Launcher** retreats if too close, holds an intermediate line-of-sight range and shoots server-spawned, non-pickup physical arrows; the projectile's owner/damage is the puppet rather than client-trusted targeting or infinite collectable ammunition.
+  - **Shield** physically intercepts the line from attacker to owner and counterattacks nearby enemies. One nearby shield may reduce owner or teammate damage only when its active body is on the incoming segment; shields do not stack into a global invulnerability aura.
+- Added authoritative projectile/puppet damage filtering: current owner and scoreboard allies, allied puppet owners, and friendly Mental Dominator controlled creatures do not take puppet-origin damage; incoming enemy damage on puppets accounts for core mitigation, and heavy-frame knockback resistance is applied as an actual entity attribute. Armor and directional shield coverage are not unconditional immunities.
+- Original puppet model now exposes a distinct attached blade, launcher and shielding plate with corresponding held poses; heavier frame gains a visible torso brace. Role geometry uses one common articulated mannequin and avoids spawning extra decoration entities.
+- Added JVM verifier cases covering three distinct paid material bills, server blueprint NBT representation for launcher/shield, and distinct attack interval/range for ranged/guard roles. Asset verifier requires the new translated weapon selection text.
+- **Known incomplete:** weapon module replacement on an existing ID (with an intact returned old part), crafting advanced balanced/heavy frames, specialized swift/stable/output cores, all three Puppeteer active abilities, polished 3D workshop preview, silk string geometry from player to puppet, live damage interception tests and multiplayer/renderer playtests remain. Do **not** call Puppeteer complete merely because its three initial weapon variants exist.
+- **Validation:** source authored; the corresponding CI/build result is recorded separately after the run. No user playtest requested.
+
+---
+
 ## 2026-11-15 — Puppeteer one-station maintenance and physical growth
 
 ### User-facing game loop added

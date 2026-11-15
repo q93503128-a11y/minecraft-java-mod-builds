@@ -35,14 +35,35 @@ public final class PuppetEconomy {
                 "minecraft:glass", 1);
     }
 
-    /** Frame, blade and base core are distinct parts, then 2 strings to assemble. */
-    public static Map<String, Integer> starterBlueprintLedger(PuppetBlueprint.Size size) {
+    /**
+     * Weapon hardware uses ordinary overworld materials. Launcher and shield
+     * quantities are explicit first-balance candidates, not approved final costs.
+     * All three forms retain real resource expenditure instead of free switching.
+     */
+    public static Map<String, Integer> weaponMaterials(PuppetBlueprint.Device device) {
+        return switch (device) {
+            case BLADE -> starterBladeMaterials();
+            case LAUNCHER -> Map.of("minecraft:iron_ingot", 1,
+                    "minecraft:copper_ingot", 2, "minecraft:redstone", 2,
+                    "minecraft:stick", 2);
+            case SHIELD -> Map.of("minecraft:iron_ingot", 3,
+                    "minecraft:oak_planks", 3, "minecraft:copper_ingot", 1);
+        };
+    }
+
+    public static Map<String, Integer> starterBlueprintLedger(PuppetBlueprint.Size size,
+                                                               PuppetBlueprint.Device device) {
         Map<String, Integer> materials = new LinkedHashMap<>();
         add(materials, lightFrameMaterials(size));
-        add(materials, starterBladeMaterials());
+        add(materials, weaponMaterials(device));
         add(materials, starterCoreMaterials());
         materials.merge("minecraft:string", 2, Integer::sum);
         return Map.copyOf(materials);
+    }
+
+    /** Backwards-compatible convenience for the original blade baseline. */
+    public static Map<String, Integer> starterBlueprintLedger(PuppetBlueprint.Size size) {
+        return starterBlueprintLedger(size, PuppetBlueprint.Device.BLADE);
     }
 
     private static void add(Map<String, Integer> into, Map<String, Integer> from) {

@@ -430,5 +430,6 @@
   "screen.anomalousclasses.puppet_workbench.dismantled": "The puppet was dismantled into materials.",
   "message.anomalousclasses.puppet.repaired": "Marionette restored.",
   "message.anomalousclasses.puppet.expanded": "Frame expanded.",
-  "message.anomalousclasses.puppet.dismantled": "Puppet dismantled; materials recovered."
+  "message.anomalousclasses.puppet.dismantled": "Puppet dismantled; materials recovered.",
+  "screen.anomalousclasses.puppet_workbench.assemble_choice": "Build %1$s marionette (%2$s/%3$s)"
 }

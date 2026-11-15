@@ -60,6 +60,7 @@ def main():
         "screen.anomalousclasses.puppet_workbench.expand",
         "screen.anomalousclasses.puppet_workbench.dismantle",
         "screen.anomalousclasses.puppet_workbench.confirm",
+        "screen.anomalousclasses.puppet_workbench.assemble_choice",
         "screen.anomalousclasses.puppet_workbench.refund",
         "screen.anomalousclasses.puppet_workbench.repaired",
         "screen.anomalousclasses.puppet_workbench.dismantled",

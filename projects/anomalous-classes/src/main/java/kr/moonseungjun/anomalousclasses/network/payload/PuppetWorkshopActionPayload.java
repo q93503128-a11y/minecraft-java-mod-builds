@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Untrusted request: the server re-reads inventory slot, ID and revision. */
 public record PuppetWorkshopActionPayload(BlockPos station, int operation, int inventorySlot,
-                                          UUID puppetId, int expectedRevision)
+                                          UUID puppetId, int expectedRevision, int craftDevice)
         implements CustomPacketPayload {
     public static final int CRAFT = 0, REPAIR = 1, EXPAND = 2, DISMANTLE = 3;
     public static final Type<PuppetWorkshopActionPayload> TYPE = new Type<>(
@@ -22,7 +22,8 @@ public record PuppetWorkshopActionPayload(BlockPos station, int operation, int i
                 buffer.writeVarInt(value.inventorySlot);
                 buffer.writeUUID(value.puppetId);
                 buffer.writeVarInt(value.expectedRevision);
+                buffer.writeVarInt(value.craftDevice);
             }, buffer -> new PuppetWorkshopActionPayload(buffer.readBlockPos(), buffer.readVarInt(),
-                    buffer.readVarInt(), buffer.readUUID(), buffer.readVarInt()));
+                    buffer.readVarInt(), buffer.readUUID(), buffer.readVarInt(), buffer.readVarInt()));
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

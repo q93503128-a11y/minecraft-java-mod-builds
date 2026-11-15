@@ -133,7 +133,7 @@ public final class PuppetService {
         int outcome = PuppetWorkshopStatePayload.REJECTED;
         if (isPuppeteer(player) && !CombatTracker.isLocked(player)) {
             if (request.operation() == PuppetWorkshopActionPayload.CRAFT) {
-                outcome = assembleStarter(player, station)
+                outcome = assembleStarter(player, station, request.craftDevice())
                         ? PuppetWorkshopStatePayload.CRAFTED : PuppetWorkshopStatePayload.REJECTED;
             } else {
                 outcome = modifyStored(player, request);
@@ -231,9 +231,14 @@ public final class PuppetService {
         Inventory inventory = player.getInventory();
         boolean ownerClass = isPuppeteer(player);
         boolean safe = ownerClass && !CombatTracker.isLocked(player);
-        boolean craftable = safe && inventory.getFreeSlot() >= 0
-                && hasMaterials(inventory,
-                        PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL));
+        List<PuppetWorkshopStatePayload.CraftChoice> crafts = new ArrayList<>();
+        for (PuppetBlueprint.Device device : PuppetBlueprint.Device.values()) {
+            Map<String, Integer> bill = PuppetEconomy.starterBlueprintLedger(
+                    PuppetBlueprint.Size.NORMAL, device);
+            crafts.add(new PuppetWorkshopStatePayload.CraftChoice(device.ordinal(),
+                    safe && inventory.getFreeSlot() >= 0 && hasMaterials(inventory, bill), bill));
+        }
+        boolean craftable = crafts.get(0).craftable();
         int materialRanks = ownerClass ? PuppeteerRules.rank(
                 ClassProfileSavedData.get(player.getServer()).profile(player.getUUID()), "material_use") : 0;
         List<PuppetWorkshopStatePayload.PuppetView> views = new ArrayList<>();
@@ -258,17 +263,23 @@ public final class PuppetService {
                     safe && !expansion.isEmpty() && hasMaterials(inventory, expansion),
                     safe, repair, expansion, refund));
         }
-        ClassNetwork.sendToPlayer(player, new PuppetWorkshopStatePayload(station, craftable, result, views));
+        ClassNetwork.sendToPlayer(player, new PuppetWorkshopStatePayload(station, craftable, result, views, crafts));
     }
 
     public static boolean assembleStarter(ServerPlayer player, BlockPos station) {
-        if (!isPuppeteer(player) || !validWorkbench(player, station)) return false;
+        return assembleStarter(player, station, PuppetBlueprint.Device.BLADE.ordinal());
+    }
+
+    public static boolean assembleStarter(ServerPlayer player, BlockPos station, int deviceIndex) {
+        if (!isPuppeteer(player) || !validWorkbench(player, station)
+                || deviceIndex < 0 || deviceIndex >= PuppetBlueprint.Device.values().length) return false;
+        PuppetBlueprint.Device device = PuppetBlueprint.Device.values()[deviceIndex];
         Inventory inventory = player.getInventory();
         if (inventory.getFreeSlot() < 0) {
             message(player, "message.anomalousclasses.puppet.no_space");
             return false;
         }
-        Map<String,Integer> bill = PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL);
+        Map<String,Integer> bill = PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL, device);
         if (!hasMaterials(inventory, bill)) {
             message(player, "message.anomalousclasses.puppet.materials");
             return false;
@@ -276,7 +287,7 @@ public final class PuppetService {
         // No visible item leaves the craft station until all material counts are proven.
         consume(inventory, bill);
         PuppetBlueprint puppet = new PuppetBlueprint(UUID.randomUUID(), player.getUUID(),
-                PuppetBlueprint.Frame.LIGHT, PuppetBlueprint.Device.BLADE,
+                PuppetBlueprint.Frame.LIGHT, device,
                 PuppetBlueprint.Core.BASIC, PuppetBlueprint.Size.NORMAL, 1.0, 0L, bill);
         PuppetRegistrySavedData registry = PuppetRegistrySavedData.get(player.getServer());
         if (!registry.registerCrafted(puppet)) throw new IllegalStateException("Duplicate puppet UUID");

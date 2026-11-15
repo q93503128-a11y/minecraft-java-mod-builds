@@ -28,6 +28,7 @@ public final class PuppetWorkshopScreen extends Screen {
     private MenuUi.Button prevButton, nextButton, confirmButton, closeButton;
     private int mode = PuppetWorkshopActionPayload.CRAFT;
     private int selectedIndex;
+    private int selectedDevice;
     private UUID selectedId;
     private boolean pending;
 
@@ -108,17 +109,26 @@ public final class PuppetWorkshopScreen extends Screen {
     }
 
     private void select(int delta) {
-        if (pending || state.puppets().isEmpty()) return;
-        selectedIndex = Math.floorMod(selectedIndex+delta, state.puppets().size());
-        selectedId = selected().id();
+        if (pending) return;
+        if (mode == PuppetWorkshopActionPayload.CRAFT) {
+            selectedDevice = Math.floorMod(selectedDevice + delta, state.craftChoices().size());
+        } else {
+            if (state.puppets().isEmpty()) return;
+            selectedIndex = Math.floorMod(selectedIndex + delta, state.puppets().size());
+            selectedId = selected().id();
+        }
         refresh();
+    }
+
+    private PuppetWorkshopStatePayload.CraftChoice selectedRecipe() {
+        return state.craftChoices().get(selectedDevice);
     }
 
     private boolean available() {
         if (pending) return false;
         var puppet = selected();
         return switch (mode) {
-            case PuppetWorkshopActionPayload.CRAFT -> state.craftable();
+            case PuppetWorkshopActionPayload.CRAFT -> selectedRecipe().craftable();
             case PuppetWorkshopActionPayload.REPAIR -> puppet != null && puppet.canRepair();
             case PuppetWorkshopActionPayload.EXPAND -> puppet != null && puppet.canExpand();
             case PuppetWorkshopActionPayload.DISMANTLE -> puppet != null && puppet.canDismantle();
@@ -129,8 +139,14 @@ public final class PuppetWorkshopScreen extends Screen {
     private void refresh() {
         if (tabs == null) return;
         for (MenuUi.Button tab : tabs) tab.active = !pending;
-        prevButton.active = nextButton.active = !pending && !state.puppets().isEmpty();
+        prevButton.active = nextButton.active = !pending &&
+                (mode == PuppetWorkshopActionPayload.CRAFT || !state.puppets().isEmpty());
         confirmButton.active = available();
+        confirmButton.setMessage(Component.translatable(
+                mode == PuppetWorkshopActionPayload.CRAFT ? "screen.anomalousclasses.puppet_workbench.assemble"
+                : mode == PuppetWorkshopActionPayload.REPAIR ? "screen.anomalousclasses.puppet_workbench.repair"
+                : mode == PuppetWorkshopActionPayload.EXPAND ? "screen.anomalousclasses.puppet_workbench.expand"
+                : "screen.anomalousclasses.puppet_workbench.dismantle"));
     }
 
     private void confirm() {
@@ -143,13 +159,13 @@ public final class PuppetWorkshopScreen extends Screen {
         pending = true;
         refresh();
         PacketDistributor.sendToServer(new PuppetWorkshopActionPayload(
-                state.station(), mode, slot, id, revision));
+                state.station(), mode, slot, id, revision, selectedDevice));
     }
 
     private Map<String,Integer> quote() {
         var puppet = selected();
         if (mode == PuppetWorkshopActionPayload.CRAFT)
-            return PuppetEconomy.starterBlueprintLedger(PuppetBlueprint.Size.NORMAL);
+            return selectedRecipe().bill();
         if (puppet == null) return Map.of();
         return switch (mode) {
             case PuppetWorkshopActionPayload.REPAIR -> puppet.repairCost();
@@ -170,7 +186,12 @@ public final class PuppetWorkshopScreen extends Screen {
         var puppet = selected();
         int naviY = outer.y()+69;
         Component detail;
-        if (puppet == null) detail = Component.translatable(
+        if (mode == PuppetWorkshopActionPayload.CRAFT) {
+            detail = Component.translatable("screen.anomalousclasses.puppet_workbench.assemble_choice",
+                    Component.translatable("puppet.anomalousclasses.device." +
+                            PuppetBlueprint.Device.values()[selectedDevice].name().toLowerCase()),
+                    selectedDevice + 1, state.craftChoices().size());
+        } else if (puppet == null) detail = Component.translatable(
                 "screen.anomalousclasses.puppet_workbench.no_puppet");
         else {
             double size = PuppetBlueprint.Size.values()[Math.max(0, Math.min(4, puppet.size()))].height();
