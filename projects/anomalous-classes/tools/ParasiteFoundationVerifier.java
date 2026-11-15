@@ -1,5 +1,6 @@
 import java.lang.reflect.Method;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import kr.moonseungjun.anomalousclasses.state.*;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
@@ -44,6 +45,12 @@ public final class ParasiteFoundationVerifier {
                 && !ParasiteRules.hasEnderDodge(false, 99)
                 && ParasiteRules.hasEnderDodge(false, 100),
                 "enderman projectile evasion unlock boundary");
+        check(ParasiteRules.hasTurtleStability("minecraft:turtle", 0)
+                && !ParasiteRules.hasTurtleStability("minecraft:pig", 99)
+                && ParasiteRules.hasTurtleStability("minecraft:pig", 100),
+                "turtle innate shell resistance and mastery-100 permanent inheritance");
+        check(ParasiteRules.supported(ResourceLocation.parse("minecraft:ravager")) != null,
+                "native ravager may use the fourth direct species slot");
         // 34 vanilla original bodies + 20 audited external non-boss profiles.
         // Exact mod Java fingerprints are a safety boundary after updates.
         check(ParasiteRules.supportedCount() == 54, "34 vanilla + 20 pinned external profiles");
@@ -229,6 +236,36 @@ public final class ParasiteFoundationVerifier {
                 && restoredAbilities.player(owner).readyAt(1) == 1000L
                 && restoredAbilities.player(owner).readyAt(2) == 800L,
                 "ability cooldown save/load");
+        // Regression: applying guardian damage or moving the ender host before
+        // checking global recovery previously allowed free effects on rejected casts.
+        ParasiteTraitSavedData transactional = new ParasiteTraitSavedData();
+        UUID actor = UUID.randomUUID();
+        AtomicInteger effects = new AtomicInteger();
+        check(!transactional.castIf(actor, ParasiteTraitService.GUARDIAN_BEAM,
+                80, 480, 60, () -> { effects.incrementAndGet(); return false; })
+                && transactional.remaining(actor, ParasiteTraitService.GUARDIAN_BEAM, 80) == 0,
+                "failed beam target spends no cooldown");
+        check(transactional.castIf(actor, ParasiteTraitService.RAVAGER_ROAR,
+                100, 800, 60, () -> { effects.incrementAndGet(); return true; }),
+                "ravager roar successfully executes and commits its cooldown");
+        check(!transactional.castIf(actor, ParasiteTraitService.GUARDIAN_BEAM,
+                105, 480, 60, () -> { effects.incrementAndGet(); return true; })
+                && effects.get() == 2,
+                "shared recovery rejects guardian effect BEFORE its damage callback");
+        check(!transactional.castIf(actor, ParasiteTraitService.ENDER_BLINK,
+                105, 560, 0, () -> { effects.incrementAndGet(); return true; })
+                && effects.get() == 2,
+                "shared recovery rejects ender teleport BEFORE the relocation");
+        check(transactional.castIf(actor, ParasiteTraitService.GUARDIAN_BEAM,
+                160, 480, 60, () -> {
+                    effects.incrementAndGet();
+                    return !transactional.castIf(actor, ParasiteTraitService.ENDER_BLINK,
+                            160, 560, 0, () -> { effects.incrementAndGet(); return true; });
+                }) && effects.get() == 3,
+                "reentrant cast blocked while a valid beam executes");
+        check(transactional.remaining(actor, ParasiteTraitService.GUARDIAN_BEAM, 200) > 0
+                && transactional.remaining(actor, ParasiteTraitService.RAVAGER_ROAR, 200) > 0,
+                "individual cooldowns remain intact after both successful casts");
         ParasiteTraitSavedData traits = new ParasiteTraitSavedData();
         String blast = "anomalousclasses:creeper_blast";
         check(traits.cast(owner, blast, 50, 600, 60), "first inherited cast");
@@ -257,7 +294,7 @@ public final class ParasiteFoundationVerifier {
                 && !savedTraits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 200, 560, 0)
                 && savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 531, 480, 60),
                 "guardian and enderman cooldowns persist separately after restart");
-        System.out.println("PASS: 54 verified host profiles, 20 exact-class external adapters, aquatic/climb/jump mastery 99/100, ownership, BD and saved cooldowns");
+        System.out.println("PASS: 54 verified host profiles, 20 pinned external adapters, turtle shell and ravager unlock, pre-effect atomic trait cooldown, 99/100 mastery and NBT persistence");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

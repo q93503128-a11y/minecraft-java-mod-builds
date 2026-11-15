@@ -479,5 +479,8 @@
   "message.anomalousclasses.parasite_trait.beam_no_target": "광선이 닿는 유효한 대상이 없습니다.",
   "message.anomalousclasses.parasite_trait.blink_no_space": "이동할 수 있는 안전한 공간을 찾지 못했습니다.",
   "message.anomalousclasses.parasite_trait.guardian_beam": "가디언의 집중 광선이 발사되었습니다.",
-  "message.anomalousclasses.parasite_trait.ender_blink": "숙주의 몸이 공간을 가로질렀습니다."
+  "message.anomalousclasses.parasite_trait.ender_blink": "숙주의 몸이 공간을 가로질렀습니다.",
+  "message.anomalousclasses.parasite_trait.ravager_unlearned": "파괴수 숙주이거나 파괴수 숙련도 100이어야 포효를 사용할 수 있습니다.",
+  "message.anomalousclasses.parasite_trait.roar_no_target": "포효가 닿는 적이 없습니다.",
+  "message.anomalousclasses.parasite_trait.ravager_roar": "숙주의 포효가 주변의 적을 밀어냈습니다."
 }

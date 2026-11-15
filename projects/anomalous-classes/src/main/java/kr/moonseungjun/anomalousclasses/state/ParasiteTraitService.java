@@ -15,21 +15,28 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
 /**
  * V controls number-key access; species mastery is the permanent unlock.
- * Slot 1: creeper burst. Slot 2: guardian beam. Slot 3: ender blink.
+ * Slots 1–4: creeper blast, guardian beam, ender blink, ravager roar.
  * Environmental adaptations and automatic dodge remain active with V OFF.
  */
 public final class ParasiteTraitService {
     public static final int CREEPER_SLOT = 0;
     public static final int GUARDIAN_SLOT = 1;
     public static final int ENDERMAN_SLOT = 2;
+    public static final int RAVAGER_SLOT = 3;
     public static final String CREEPER_BLAST = "anomalousclasses:creeper_blast";
     public static final String GUARDIAN_BEAM = "anomalousclasses:guardian_beam";
     public static final String ENDER_BLINK = "anomalousclasses:ender_blink";
+    public static final String RAVAGER_ROAR = "anomalousclasses:ravager_roar";
     private static final Map<UUID, Boolean> MODES = new HashMap<>();
     private ParasiteTraitService() {}
 
@@ -80,6 +87,13 @@ public final class ParasiteTraitService {
                 cooldownTicks = 560;
                 recoveryTicks = 0;
             }
+            case RAVAGER_SLOT -> {
+                ability = RAVAGER_ROAR;
+                species = "minecraft:ravager";
+                nativeSpecies = host.getType() == EntityType.RAVAGER;
+                cooldownTicks = 800;
+                recoveryTicks = 60;
+            }
             default -> {
                 tell(owner, "message.anomalousclasses.parasite_trait.empty");
                 return;
@@ -90,6 +104,7 @@ public final class ParasiteTraitService {
             tell(owner, switch (slot) {
                 case GUARDIAN_SLOT -> "message.anomalousclasses.parasite_trait.guardian_unlearned";
                 case ENDERMAN_SLOT -> "message.anomalousclasses.parasite_trait.ender_unlearned";
+                case RAVAGER_SLOT -> "message.anomalousclasses.parasite_trait.ravager_unlearned";
                 default -> "message.anomalousclasses.parasite_trait.unlearned";
             });
             return;
@@ -104,20 +119,36 @@ public final class ParasiteTraitService {
                     (remaining + 19L) / 20L), true);
             return;
         }
-        // Only a successfully landed beam or safe teleport charges cooldown.
-        if (slot == GUARDIAN_SLOT && !ParasiteSpeciesService.guardianBeam(owner, host)) {
-            tell(owner, "message.anomalousclasses.parasite_trait.beam_no_target");
+        // The persisted per-ability AND shared offensive cooldown must be
+        // cleared BEFORE damage/teleport. A failed target/landing consumes nothing.
+        boolean success = cooldowns.castIf(owner.getUUID(), ability, now,
+                cooldownTicks, recoveryTicks, () -> switch (slot) {
+                    case CREEPER_SLOT -> {
+                        burst(owner, host, nativeSpecies);
+                        yield true;
+                    }
+                    case GUARDIAN_SLOT -> ParasiteSpeciesService.guardianBeam(owner, host);
+                    case ENDERMAN_SLOT -> ParasiteSpeciesService.blink(owner, host);
+                    case RAVAGER_SLOT -> roar(owner, host);
+                    default -> false;
+                });
+        if (!success) {
+            // A false effect after the ready check is an ordinary targeting
+            // failure, not a cooldown-spending cast.
+            if (slot == GUARDIAN_SLOT)
+                tell(owner, "message.anomalousclasses.parasite_trait.beam_no_target");
+            else if (slot == ENDERMAN_SLOT)
+                tell(owner, "message.anomalousclasses.parasite_trait.blink_no_space");
+            else if (slot == RAVAGER_SLOT)
+                tell(owner, "message.anomalousclasses.parasite_trait.roar_no_target");
             return;
         }
-        if (slot == ENDERMAN_SLOT && !ParasiteSpeciesService.blink(owner, host)) {
-            tell(owner, "message.anomalousclasses.parasite_trait.blink_no_space");
-            return;
-        }
-        if (!cooldowns.cast(owner.getUUID(), ability, now, cooldownTicks, recoveryTicks)) return;
-        if (slot == CREEPER_SLOT) burst(owner, host, nativeSpecies);
-        else tell(owner, slot == GUARDIAN_SLOT
-                ? "message.anomalousclasses.parasite_trait.guardian_beam"
-                : "message.anomalousclasses.parasite_trait.ender_blink");
+        if (slot != CREEPER_SLOT)
+            tell(owner, switch (slot) {
+                case GUARDIAN_SLOT -> "message.anomalousclasses.parasite_trait.guardian_beam";
+                case ENDERMAN_SLOT -> "message.anomalousclasses.parasite_trait.ender_blink";
+                default -> "message.anomalousclasses.parasite_trait.ravager_roar";
+            });
     }
 
     public static void reset(ServerPlayer owner) {
@@ -158,11 +189,49 @@ public final class ParasiteTraitService {
         }
     }
 
+    /**
+     * Ravager's supported native/inherited roar. The host remains the actual
+     * body; no fake spawned ravager, griefing, or friendly-fire splash.
+     * Only real exposed targets can be struck or pushed.
+     */
+    private static boolean roar(ServerPlayer owner, Mob host) {
+        var level = owner.serverLevel();
+        Vec3 center = host.getBoundingBox().getCenter();
+        int hits = 0;
+        double range = 5.0;
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
+                host.getBoundingBox().inflate(range),
+                entity -> entity.isAlive() && entity != owner && entity != host)) {
+            if (center.distanceToSqr(target.getBoundingBox().getCenter()) > range * range
+                    || !canHit(owner, target)) continue;
+            BlockHitResult wall = level.clip(new ClipContext(
+                    host.getEyePosition(), target.getEyePosition(),
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, host));
+            if (wall.getType() == HitResult.Type.BLOCK) continue;
+            if (!target.hurt(owner.damageSources().playerAttack(owner), 6.0F)) continue;
+            Vec3 planar = target.position().subtract(host.position()).multiply(1, 0, 1);
+            if (planar.lengthSqr() < .001)
+                planar = ParasiteService.viewDirection(owner).multiply(1, 0, 1);
+            if (planar.lengthSqr() > .001) {
+                Vec3 away = planar.normalize();
+                target.push(away.x * 1.2, 0.30, away.z * 1.2);
+            }
+            hits++;
+        }
+        if (hits == 0) return false;
+        level.sendParticles(ParticleTypes.POOF, center.x, center.y, center.z,
+                22, 1.8, 0.75, 1.8, .08);
+        level.playSound(null, host.blockPosition(), SoundEvents.RAVAGER_ROAR,
+                SoundSource.HOSTILE, 1.1F, 0.9F);
+        return true;
+    }
+
     /** Shared hostile/friendly authorization for inherited bursts and host melee. */
     static boolean canHit(ServerPlayer owner, LivingEntity target) {
         if (owner.isAlliedTo(target)) return false;
         if (target instanceof Player && !owner.getServer().isPvpAllowed()) return false;
         if (target instanceof TamableAnimal tame && tame.isTame()) return false;
+        if (target instanceof AbstractHorse horse && horse.isTamed()) return false;
         if (target instanceof PuppetEntity puppet) {
             UUID ownerId = puppet.puppetOwner();
             if (ownerId != null) {

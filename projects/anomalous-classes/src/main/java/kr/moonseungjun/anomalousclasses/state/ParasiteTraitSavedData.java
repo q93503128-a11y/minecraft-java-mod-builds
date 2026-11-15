@@ -3,6 +3,7 @@ package kr.moonseungjun.anomalousclasses.state;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -20,6 +21,7 @@ public final class ParasiteTraitSavedData extends SavedData {
 
     private static final class State {
         long globalUntil;
+        boolean executing;
         final Map<String, Long> readyAt = new HashMap<>();
     }
     private final Map<UUID, State> players = new HashMap<>();
@@ -34,15 +36,34 @@ public final class ParasiteTraitSavedData extends SavedData {
         State state = state(owner);
         return Math.max(0L, Math.max(state.globalUntil, state.readyAt.getOrDefault(ability, 0L)) - now);
     }
-    /** Atomic server-only activation. Rejected actions consume no cooldown. */
-    public boolean cast(UUID owner, String ability, long now, int cooldown, int sharedRecovery) {
+    /**
+     * Validate the persisted individual/global cooldown BEFORE applying an
+     * ability's effects, then record cooldown only if the effect succeeds.
+     *
+     * Must be called on the server thread. A transient guard also blocks
+     * re-entrant ability activation triggered by damage/teleport callbacks.
+     * Failed targeting, unsafe blink or an exception spend no cooldown.
+     */
+    public boolean castIf(UUID owner, String ability, long now, int cooldown,
+                          int sharedRecovery, BooleanSupplier effect) {
         if (owner == null || ResourceLocation.tryParse(ability) == null
-                || cooldown < 1 || sharedRecovery < 0 || remaining(owner, ability, now) > 0) return false;
+                || cooldown < 1 || sharedRecovery < 0 || effect == null) return false;
         State state = state(owner);
-        state.globalUntil = now + sharedRecovery;
-        state.readyAt.put(ability, now + cooldown);
-        setDirty();
-        return true;
+        if (state.executing || remaining(owner, ability, now) > 0) return false;
+        state.executing = true;
+        try {
+            if (!effect.getAsBoolean()) return false;
+            state.globalUntil = now + sharedRecovery;
+            state.readyAt.put(ability, now + cooldown);
+            setDirty();
+            return true;
+        } finally {
+            state.executing = false;
+        }
+    }
+    /** Compatibility entry-point for unconditional effects and existing saves. */
+    public boolean cast(UUID owner, String ability, long now, int cooldown, int sharedRecovery) {
+        return castIf(owner, ability, now, cooldown, sharedRecovery, () -> true);
     }
     @Override public CompoundTag save(CompoundTag out, HolderLookup.Provider registries) {
         ListTag list = new ListTag();

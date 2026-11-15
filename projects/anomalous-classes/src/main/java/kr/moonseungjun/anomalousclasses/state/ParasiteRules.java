@@ -159,6 +159,15 @@ public final class ParasiteRules {
         return "minecraft:slime".equals(species) || slimeMastery >= 100;
     }
 
+    /**
+     * Turtle's shell makes the current inhabited body harder to knock back.
+     * At turtle mastery 100 this becomes a permanent environmental inheritance,
+     * independent of direct-trait mode and without another timed cooldown.
+     */
+    public static boolean hasTurtleStability(String species, int turtleMastery) {
+        return "minecraft:turtle".equals(species) || turtleMastery >= 100;
+    }
+
     /** The normal vanilla jump remains available for every other species. */
     public static double jumpImpulse(String species, int slimeMastery) {
         return "minecraft:slime".equals(species) ? 0.58

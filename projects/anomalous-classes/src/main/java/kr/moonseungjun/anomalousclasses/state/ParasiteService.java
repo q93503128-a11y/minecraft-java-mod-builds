@@ -52,6 +52,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public final class ParasiteService {
     private static final String MARK = "anomalousclasses_parasite_host";
     private static final ResourceLocation HOST_HP = id("parasite_host_health");
+    private static final ResourceLocation TURTLE_STABILITY = id("parasite_turtle_stability");
     private static final ResourceLocation HUMAN_HP = id("parasite_human_health");
     private static final int AIM_RANGE = 8;
     private static final int ACTION_INTERVAL = 20;
@@ -389,6 +390,15 @@ public final class ParasiteService {
             restore(mob);
             return;
         }
+        // A pinned external EntityType can survive a mod upgrade while its Java
+        // implementation changes. Restore the original body's AI and release
+        // only the now-invalid original claim; never strand a frozen Mob.
+        ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        if (!ParasiteRules.matchesHostClass(typeId, mob.getClass().getName())) {
+            restore(mob);
+            data.release(ownerId, mob.getUUID());
+            return;
+        }
         mob.setNoAi(true);
     }
 
@@ -679,6 +689,13 @@ public final class ParasiteService {
         var data = ParasiteSavedData.get(owner.getServer()).player(owner.getUUID());
         PlayerClassProfile profile = ClassProfileSavedData.get(owner.getServer()).profile(owner.getUUID());
         String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
+        AttributeInstance resistance = host.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+        if (resistance != null) {
+            resistance.removeModifier(TURTLE_STABILITY);
+            if (ParasiteRules.hasTurtleStability(species, data.mastery("minecraft:turtle")))
+                resistance.addOrUpdateTransientModifier(new AttributeModifier(TURTLE_STABILITY,
+                        0.35, AttributeModifier.Operation.ADD_VALUE));
+        }
         AttributeInstance hp = host.getAttribute(Attributes.MAX_HEALTH);
         if (hp == null) return;
         float ratio = host.getMaxHealth() <= 0 ? 1.0F : host.getHealth() / host.getMaxHealth();
@@ -694,6 +711,8 @@ public final class ParasiteService {
         AttributeInstance hp = host.getAttribute(Attributes.MAX_HEALTH);
         float ratio = host.getMaxHealth() <= 0 ? 1.0F : host.getHealth() / host.getMaxHealth();
         if (hp != null) hp.removeModifier(HOST_HP);
+        AttributeInstance resistance = host.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+        if (resistance != null) resistance.removeModifier(TURTLE_STABILITY);
         if (host.isAlive()) host.setHealth(Math.max(.5F, host.getMaxHealth() * ratio));
         if (host.getPersistentData().contains(MARK)) host.setNoAi(mark.getBoolean("originalNoAi"));
         host.getPersistentData().remove(MARK);
