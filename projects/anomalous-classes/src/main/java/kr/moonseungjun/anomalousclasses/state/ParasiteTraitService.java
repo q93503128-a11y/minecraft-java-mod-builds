@@ -19,13 +19,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
 /**
- * V mode grants numeric access, not new unlocked powers. The only currently
- * implemented direct species ability is creeper burst at slot 1. Other slots
- * are deliberately unassigned until their real host adapters are implemented.
+ * V controls number-key access; species mastery is the permanent unlock.
+ * Slot 1: creeper burst. Slot 2: guardian beam. Slot 3: ender blink.
+ * Environmental adaptations and automatic dodge remain active with V OFF.
  */
 public final class ParasiteTraitService {
     public static final int CREEPER_SLOT = 0;
+    public static final int GUARDIAN_SLOT = 1;
+    public static final int ENDERMAN_SLOT = 2;
     public static final String CREEPER_BLAST = "anomalousclasses:creeper_blast";
+    public static final String GUARDIAN_BEAM = "anomalousclasses:guardian_beam";
+    public static final String ENDER_BLINK = "anomalousclasses:ender_blink";
     private static final Map<UUID, Boolean> MODES = new HashMap<>();
     private ParasiteTraitService() {}
 
@@ -49,27 +53,71 @@ public final class ParasiteTraitService {
             tell(owner, "message.anomalousclasses.parasite_ability.no_host");
             return;
         }
-        if (slot != CREEPER_SLOT) {
-            tell(owner, "message.anomalousclasses.parasite_trait.empty");
-            return;
+        String ability;
+        String species;
+        boolean nativeSpecies;
+        int cooldownTicks;
+        int recoveryTicks;
+        switch (slot) {
+            case CREEPER_SLOT -> {
+                ability = CREEPER_BLAST;
+                species = "minecraft:creeper";
+                nativeSpecies = host.getType() == EntityType.CREEPER;
+                cooldownTicks = 600;
+                recoveryTicks = 60;
+            }
+            case GUARDIAN_SLOT -> {
+                ability = GUARDIAN_BEAM;
+                species = "minecraft:guardian";
+                nativeSpecies = host.getType() == EntityType.GUARDIAN;
+                cooldownTicks = 480;
+                recoveryTicks = 60;
+            }
+            case ENDERMAN_SLOT -> {
+                ability = ENDER_BLINK;
+                species = "minecraft:enderman";
+                nativeSpecies = host.getType() == EntityType.ENDERMAN;
+                cooldownTicks = 560;
+                recoveryTicks = 0;
+            }
+            default -> {
+                tell(owner, "message.anomalousclasses.parasite_trait.empty");
+                return;
+            }
         }
         var parasite = ParasiteSavedData.get(owner.getServer()).player(owner.getUUID());
-        boolean nativeCreeper = host.getType() == EntityType.CREEPER;
-        if (!nativeCreeper && parasite.mastery("minecraft:creeper") < 100) {
-            tell(owner, "message.anomalousclasses.parasite_trait.unlearned");
+        if (!nativeSpecies && parasite.mastery(species) < 100) {
+            tell(owner, switch (slot) {
+                case GUARDIAN_SLOT -> "message.anomalousclasses.parasite_trait.guardian_unlearned";
+                case ENDERMAN_SLOT -> "message.anomalousclasses.parasite_trait.ender_unlearned";
+                default -> "message.anomalousclasses.parasite_trait.unlearned";
+            });
             return;
         }
+
         long now = owner.serverLevel().getGameTime();
         ParasiteTraitSavedData cooldowns = ParasiteTraitSavedData.get(owner.getServer());
-        long remaining = cooldowns.remaining(owner.getUUID(), CREEPER_BLAST, now);
-        if (remaining > 0L) {
+        long remaining = cooldowns.remaining(owner.getUUID(), ability, now);
+        if (remaining > 0) {
             owner.displayClientMessage(Component.translatable(
                     "message.anomalousclasses.parasite_ability.cooldown",
                     (remaining + 19L) / 20L), true);
             return;
         }
-        if (!cooldowns.cast(owner.getUUID(), CREEPER_BLAST, now, 600, 60)) return;
-        burst(owner, host, nativeCreeper);
+        // Only a successfully landed beam or safe teleport charges cooldown.
+        if (slot == GUARDIAN_SLOT && !ParasiteSpeciesService.guardianBeam(owner, host)) {
+            tell(owner, "message.anomalousclasses.parasite_trait.beam_no_target");
+            return;
+        }
+        if (slot == ENDERMAN_SLOT && !ParasiteSpeciesService.blink(owner, host)) {
+            tell(owner, "message.anomalousclasses.parasite_trait.blink_no_space");
+            return;
+        }
+        if (!cooldowns.cast(owner.getUUID(), ability, now, cooldownTicks, recoveryTicks)) return;
+        if (slot == CREEPER_SLOT) burst(owner, host, nativeSpecies);
+        else tell(owner, slot == GUARDIAN_SLOT
+                ? "message.anomalousclasses.parasite_trait.guardian_beam"
+                : "message.anomalousclasses.parasite_trait.ender_blink");
     }
 
     public static void reset(ServerPlayer owner) {

@@ -473,5 +473,11 @@
   "message.anomalousclasses.parasite_trait.disabled": "Inherited abilities OFF: number keys select the hotbar.",
   "message.anomalousclasses.parasite_trait.empty": "No direct inherited ability is assigned to this key.",
   "message.anomalousclasses.parasite_trait.unlearned": "Creeper burst requires a creeper host or creeper mastery 100.",
-  "message.anomalousclasses.parasite_trait.burst": "The host releases a biological burst."
+  "message.anomalousclasses.parasite_trait.burst": "The host releases a biological burst.",
+  "message.anomalousclasses.parasite_trait.guardian_unlearned": "Guardian beam requires a guardian host or guardian mastery 100.",
+  "message.anomalousclasses.parasite_trait.ender_unlearned": "Ender blink requires an enderman host or enderman mastery 100.",
+  "message.anomalousclasses.parasite_trait.beam_no_target": "No valid target is within the beam's line of sight.",
+  "message.anomalousclasses.parasite_trait.blink_no_space": "No safe destination could be found.",
+  "message.anomalousclasses.parasite_trait.guardian_beam": "The host releases a focused guardian beam.",
+  "message.anomalousclasses.parasite_trait.ender_blink": "The host folds through space."
 }

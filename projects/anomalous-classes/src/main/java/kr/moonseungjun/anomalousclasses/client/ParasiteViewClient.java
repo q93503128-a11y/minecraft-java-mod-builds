@@ -51,13 +51,21 @@ public final class ParasiteViewClient {
             return;
         }
         pendingTicks = 0;
+        // Minecraft's MouseHandler rotates the active camera entity. Once the
+        // camera is the host, copying LocalPlayer -> host here would reset every
+        // mouse movement. Seed the first frame, then copy host -> player so the
+        // standard input/movement packet carries the real camera direction.
+        boolean firstFrame = applied != host || minecraft.getCameraEntity() != host;
+        if (firstFrame) {
+            host.setYRot(minecraft.player.getYRot());
+            host.setYHeadRot(minecraft.player.getYRot());
+            host.setXRot(minecraft.player.getXRot());
+            minecraft.setCameraEntity(host);
+        } else {
+            minecraft.player.setYRot(host.getYRot());
+            minecraft.player.setXRot(host.getXRot());
+        }
         applied = host;
-        // Mouse look turns LocalPlayer, not the remote-controlled Mob. Copy
-        // look only on the local client; authoritative movement comes from input.
-        host.setYRot(minecraft.player.getYRot());
-        host.setYHeadRot(minecraft.player.getYRot());
-        host.setXRot(minecraft.player.getXRot());
-        if (minecraft.getCameraEntity() != host) minecraft.setCameraEntity(host);
     }
 
     public static boolean isControlling() {

@@ -196,6 +196,7 @@ public final class ParasiteService {
         MOTIONS.remove(player.getUUID());
         CONTRIBUTIONS.remove(player.getUUID());
         RECENT_KILLS.remove(player.getUUID());
+        ParasiteSpeciesService.logout(player.getUUID());
         Mob host = loadedHost(player, ParasiteSavedData.get(player.getServer()).player(player.getUUID()).host());
         if (host != null) ParasiteAbilityService.endHost(player, host);
         // Do not forcibly load a chunk. The original host/claim remain saved.
@@ -242,6 +243,19 @@ public final class ParasiteService {
     }
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
+        // First inspect damage addressed to a real inhabited Mob; a successful
+        // inherited Enderman dodge cancels this hit before armor or health loss.
+        if (event.getEntity() instanceof Mob occupied && occupied.getPersistentData().contains(MARK)
+                && occupied.level().getServer() != null) {
+            UUID controllingId = hostOwner(occupied);
+            ServerPlayer controller = controllingId == null ? null
+                    : occupied.level().getServer().getPlayerList().getPlayer(controllingId);
+            if (controller != null && ownsHost(controller, occupied)
+                    && ParasiteSpeciesService.dodge(controller, occupied, event.getSource())) {
+                event.setCanceled(true);
+                return;
+            }
+        }
         if (!(event.getEntity() instanceof ServerPlayer owner) || !current(owner)) return;
         Mob host = loadedHost(owner, ParasiteSavedData.get(owner.getServer()).player(owner.getUUID()).host());
         if (host == null || owner.getVehicle() != host || !host.isAlive()) return;
@@ -409,6 +423,7 @@ public final class ParasiteService {
                     syncView(player);
                 }
                 moveHost(player, host, state);
+                ParasiteSpeciesService.tick(player, host, state);
                 ParasiteAbilityService.tick(player, host);
                 if (server.getTickCount() % 100 == 0) applyHostStats(player, host);
             }
@@ -519,14 +534,29 @@ public final class ParasiteService {
             if (sprint) velocity *= 1.20;
             if (host.getType() == net.minecraft.world.entity.EntityType.PIG && tick < m.dashUntil)
                 velocity *= 1.60;
-            host.move(MoverType.SELF, new Vec3(dx * Math.min(.50, velocity), 0,
-                    dz * Math.min(.50, velocity)));
+            // Aquatic bodies and fully-inherited guardian adaptation swim with
+            // their actual look pitch; no flight when out of water.
+            boolean aquatic = host.isInWaterOrBubble()
+                    && ParasiteRules.hasGuardianAdaptation(host.getType() == net.minecraft.world.entity.EntityType.GUARDIAN,
+                    state.mastery("minecraft:guardian"));
+            double swimY = aquatic ? Math.max(-.24, Math.min(.24,
+                    -Math.sin(Math.toRadians(m.pitch)) * velocity)) : 0.0;
+            host.move(MoverType.SELF, new Vec3(dx * Math.min(.50, velocity),
+                    swimY, dz * Math.min(.50, velocity)));
             host.setYRot(m.yaw);
             host.setYHeadRot(m.yaw);
             host.setXRot(m.pitch);
         }
         // Jump works from standstill too, independent of horizontal motion.
         // Slime elasticity is innate, and mastery-100 inheritance has no timed cooldown.
+        if (host.isInWaterOrBubble()
+                && ParasiteRules.hasGuardianAdaptation(
+                host.getType() == net.minecraft.world.entity.EntityType.GUARDIAN,
+                state.mastery("minecraft:guardian"))
+                && (m.mask & 16) != 0) {
+            Vec3 velocity = host.getDeltaMovement();
+            host.setDeltaMovement(velocity.x, Math.max(velocity.y, 0.18), velocity.z);
+        }
         if ((m.mask & 16) != 0 && host.onGround()) {
             String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
             double impulse = ParasiteRules.jumpImpulse(species, state.mastery("minecraft:slime"));

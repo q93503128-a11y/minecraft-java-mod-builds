@@ -22,7 +22,9 @@ public final class ParasiteRules {
         "minecraft:zombie", new HostSpec(100, 80, 0.90),
         "minecraft:spider", new HostSpec(160, 100, 1.10),
         "minecraft:slime", new HostSpec(180, 110, 1.00),
-        "minecraft:creeper", new HostSpec(240, 120, 0.95)
+        "minecraft:creeper", new HostSpec(240, 120, 0.95),
+        "minecraft:guardian", new HostSpec(600, 160, 1.00),
+        "minecraft:enderman", new HostSpec(900, 160, 1.10)
     );
     private static final double[] FOCUS = {0.05, 0.10, 0.15, 0.20, 0.40};
     private ParasiteRules() {}
@@ -82,6 +84,16 @@ public final class ParasiteRules {
     /** Only transferred elasticity reduces fall damage; native slime immunity stays vanilla. */
     public static float fallDamageFactor(String species, int slimeMastery) {
         return hasSlimeElasticity(species, slimeMastery) ? 0.5F : 1.0F;
+    }
+
+    /** Native Guardian adapts immediately; other host bodies require complete mastery. */
+    public static boolean hasGuardianAdaptation(boolean nativeGuardian, int guardianMastery) {
+        return nativeGuardian || guardianMastery >= 100;
+    }
+
+    /** Enderman passive dodge is a conditional projectile response, not universal immunity. */
+    public static boolean hasEnderDodge(boolean nativeEnderman, int endermanMastery) {
+        return nativeEnderman || endermanMastery >= 100;
     }
 
     public static double movementMultiplier(PlayerClassProfile profile) {

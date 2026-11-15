@@ -16,6 +16,8 @@ public final class ParasiteFoundationVerifier {
         var spider = ParasiteRules.supported(ResourceLocation.parse("minecraft:spider"));
         var creeper = ParasiteRules.supported(ResourceLocation.parse("minecraft:creeper"));
         var slime = ParasiteRules.supported(ResourceLocation.parse("minecraft:slime"));
+        var guardian = ParasiteRules.supported(ResourceLocation.parse("minecraft:guardian"));
+        var enderman = ParasiteRules.supported(ResourceLocation.parse("minecraft:enderman"));
         check(pig.requiredBd() == 0 && cow.requiredBd() == 20
                 && zombie.requiredBd() == 100 && spider.requiredBd() == 160
                 && creeper.requiredBd() == 240 && slime.requiredBd() == 180,
@@ -31,6 +33,17 @@ public final class ParasiteFoundationVerifier {
         check(ParasiteRules.fallDamageFactor("minecraft:zombie", 99) == 1.0F
                 && ParasiteRules.fallDamageFactor("minecraft:zombie", 100) == 0.5F,
                 "elastic fall mitigation only after inheritance");
+        check(guardian.requiredBd() == 600 && enderman.requiredBd() == 900
+                && ParasiteRules.infiltrationTicks(guardian, 600, profile) == 160,
+                "guardian and enderman BD gates / starting intrusion");
+        check(ParasiteRules.hasGuardianAdaptation(true, 0)
+                && !ParasiteRules.hasGuardianAdaptation(false, 99)
+                && ParasiteRules.hasGuardianAdaptation(false, 100),
+                "guardian native vs mastery-100 water passive");
+        check(ParasiteRules.hasEnderDodge(true, 0)
+                && !ParasiteRules.hasEnderDodge(false, 99)
+                && ParasiteRules.hasEnderDodge(false, 100),
+                "enderman projectile evasion unlock boundary");
         check(ParasiteRules.supported(ResourceLocation.parse("minecraft:warden")) == null
                 && ParasiteRules.plannedRequirement(ResourceLocation.parse("minecraft:warden")) == 5000,
                 "unsupported boss must not appear as controllable");
@@ -72,6 +85,24 @@ public final class ParasiteFoundationVerifier {
                 "lockout survives repeated attempts");
         check(data.player(owner).bd() == 12, "host death never consumes BD");
 
+        ParasiteSavedData speciesData = new ParasiteSavedData();
+        UUID collector = UUID.randomUUID();
+        PlayerClassProfile collectorProfile = new PlayerClassProfile();
+        speciesData.reward(collector, "minecraft:guardian", 999, collectorProfile);
+        check(speciesData.player(collector).mastery("minecraft:guardian") == 99,
+                "mastery 99 must not prematurely unlock cross-host traits");
+        speciesData.reward(collector, "minecraft:guardian", 1, collectorProfile);
+        check(speciesData.player(collector).mastery("minecraft:guardian") == 100
+                && speciesData.player(collector).mastery("minecraft:enderman") == 0,
+                "guardian proficiency reaches 100 without cross-species inflation");
+        CompoundTag collection = speciesData.save(new CompoundTag(), RegistryAccess.EMPTY);
+        Method readCollection = ParasiteSavedData.class.getDeclaredMethod(
+                "load", CompoundTag.class, HolderLookup.Provider.class);
+        readCollection.setAccessible(true);
+        ParasiteSavedData reloadedCollection = (ParasiteSavedData)
+                readCollection.invoke(null, collection, RegistryAccess.EMPTY);
+        check(reloadedCollection.player(collector).mastery("minecraft:guardian") == 100,
+                "guardian mastery 100 survives server NBT round-trip");
         CompoundTag encoded = data.save(new CompoundTag(), RegistryAccess.EMPTY);
         Method load = ParasiteSavedData.class.getDeclaredMethod(
                 "load", CompoundTag.class, HolderLookup.Provider.class);
@@ -123,6 +154,13 @@ public final class ParasiteFoundationVerifier {
                 "shared cooldown blocks chained attacks");
         check(traits.cast(owner, "anomalousclasses:other_trait", 110, 200, 60),
                 "shared recovery expires independently");
+        UUID fighter = UUID.randomUUID();
+        check(traits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 50, 480, 60)
+                && !traits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 80, 560, 0)
+                && traits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 110, 560, 0)
+                && !traits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 160, 560, 0)
+                && traits.cast(fighter, ParasiteTraitService.CREEPER_BLAST, 111, 600, 60),
+                "guardian attack recovery vs non-offensive blink and per-ability cooldown");
         CompoundTag traitTag = traits.save(new CompoundTag(), RegistryAccess.EMPTY);
         Method traitLoad = ParasiteTraitSavedData.class.getDeclaredMethod(
                 "load", CompoundTag.class, HolderLookup.Provider.class);
@@ -132,7 +170,11 @@ public final class ParasiteFoundationVerifier {
         check(!savedTraits.cast(owner, blast, 120, 600, 60)
                 && savedTraits.cast(owner, blast, 650, 600, 60),
                 "inherited cooldown persists through save/load");
-        System.out.println("PASS: parasite claims, BD, death lock, milestones, slime inheritance, 3 actives and cooldowns");
+        check(!savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 200, 480, 60)
+                && !savedTraits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 200, 560, 0)
+                && savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 531, 480, 60),
+                "guardian and enderman cooldowns persist separately after restart");
+        System.out.println("PASS: parasite claims, BD, host gates, guardian/enderman/slime mastery, 3 actives and inherited cooldown persistence");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);
