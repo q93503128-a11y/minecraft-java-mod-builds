@@ -122,12 +122,16 @@ public final class ParasiteSavedData extends SavedData {
         if (ticks <= 0) return false;
         State state = player(owner);
         state.validActivityTicks += ticks;
-        state.chargeActivityTicks += ticks;
         int limit = ParasiteRules.maxEmergencyCharges(profile);
         if (state.charges > limit) state.charges = limit;
-        if (limit > 0 && state.charges < limit && state.chargeActivityTicks >= 4800) {
-            state.charges++;
-            state.chargeActivityTicks -= 4800;
+        // A full emergency reserve does not bank infinite charge time for future deaths.
+        if (limit <= 0 || state.charges >= limit) state.chargeActivityTicks = 0;
+        else {
+            state.chargeActivityTicks = Math.min(4800, state.chargeActivityTicks + ticks);
+            if (state.chargeActivityTicks >= 4800) {
+                state.charges++;
+                state.chargeActivityTicks = 0;
+            }
         }
         if (state.validActivityTicks < 4800) { setDirty(); return false; }
         state.validActivityTicks -= 4800;

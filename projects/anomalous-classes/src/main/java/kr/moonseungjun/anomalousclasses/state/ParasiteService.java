@@ -1,6 +1,8 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import java.util.HashMap;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 import java.util.UUID;
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
@@ -13,6 +15,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -43,6 +47,8 @@ public final class ParasiteService {
     private static final int ACTION_INTERVAL = 20;
     private static final Map<UUID, Channel> CHANNELS = new HashMap<>();
     private static final Map<UUID, Motion> MOTIONS = new HashMap<>();
+    private static final Map<UUID, Map<UUID, Contribution>> CONTRIBUTIONS = new HashMap<>();
+    private static final Map<UUID, Map<String, Deque<Long>>> RECENT_KILLS = new HashMap<>();
     private static MinecraftServer activeServer;
 
     private static final class Channel {
@@ -51,6 +57,11 @@ public final class ParasiteService {
         int lostTicks;
         boolean pressed;
         boolean exit;
+        boolean anchored;
+    }
+    private static final class Contribution {
+        float damage;
+        long lastTick;
     }
     private static final class Motion {
         int mask;
@@ -76,6 +87,11 @@ public final class ParasiteService {
         }
         if (action != 0 || !current(player)) return;
         ParasiteSavedData data = ParasiteSavedData.get(player.getServer());
+        if (data.player(player.getUUID()).host() == null
+                && !data.mayAttempt(player.getUUID(), clock(player))) {
+            message(player, "message.anomalousclasses.parasite.death_lock");
+            return;
+        }
         Channel previous = CHANNELS.get(player.getUUID());
         if (previous != null && previous.pressed) return;
         Mob target = aimed(player);
@@ -88,6 +104,7 @@ public final class ParasiteService {
                 return;
             }
             channel.target = target.getUUID();
+            channel.anchored = ParasiteAbilityService.takeAnchoring(player);
         } else if (data.player(player.getUUID()).host() != null && target == null) {
             // Unoccupied aim: hold R to exit, rather than an instantaneous dodge.
             channel.exit = true;
@@ -108,6 +125,20 @@ public final class ParasiteService {
         m.mask = mask;
         m.yaw = yaw;
         m.lastInput = clock(player);
+    }
+
+    public static Mob activeHost(ServerPlayer player) {
+        if (!current(player)) return null;
+        UUID id = ParasiteSavedData.get(player.getServer()).player(player.getUUID()).host();
+        Mob host = loadedHost(player, id);
+        return host != null && host.isAlive() && ownsHost(player, host)
+                && player.getVehicle() == host ? host : null;
+    }
+
+    public static boolean canPrepareIntrusion(ServerPlayer player) {
+        if (!current(player) || !player.isAlive()) return false;
+        Mob host = aimed(player);
+        return host != null && eligible(player, host, false);
     }
 
     public static boolean prepareClassChange(ServerPlayer player, ClassId previous) {
@@ -139,6 +170,10 @@ public final class ParasiteService {
         if (!(entity instanceof ServerPlayer player) || player.getServer() == null) return;
         CHANNELS.remove(player.getUUID());
         MOTIONS.remove(player.getUUID());
+        CONTRIBUTIONS.remove(player.getUUID());
+        RECENT_KILLS.remove(player.getUUID());
+        Mob host = loadedHost(player, ParasiteSavedData.get(player.getServer()).player(player.getUUID()).host());
+        if (host != null) ParasiteAbilityService.endHost(player, host);
         // Do not forcibly load a chunk. The original host/claim remain saved.
     }
 
@@ -182,22 +217,39 @@ public final class ParasiteService {
                 String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
                 double multiplier = ParasiteRules.damageMultiplier(st.bd(), st.mastery(species),
                         ClassProfileSavedData.get(attacker.getServer()).profile(attacker.getUUID()));
+                if (ParasiteAbilityService.awakened(attacker, host)) multiplier *= 1.15;
                 event.setNewDamage((float) Math.min(2000, event.getNewDamage() * multiplier));
+                trackHit(attacker, event.getEntity(), event.getNewDamage());
                 CombatTracker.markOwnedCombat(attacker);
             } else if (st.host() == null) {
                 event.setNewDamage(event.getNewDamage() * .4F);
             }
         }
+        if (event.getEntity() instanceof ServerPlayer victim && current(victim)
+                && event.getNewDamage() > 0) {
+            Channel ch = CHANNELS.get(victim.getUUID());
+            if (ch != null && !ch.exit)
+                ch.ticks = Math.max(0, ch.ticks - (ch.anchored ? 2 : 8));
+        }
         if (event.getEntity() instanceof Mob host && host.getPersistentData().contains(MARK)) {
             UUID ownerId = hostOwner(host);
             if (ownerId != null) {
                 ServerPlayer owner = host.level().getServer().getPlayerList().getPlayer(ownerId);
-                if (owner != null && ownsHost(owner, host)) CombatTracker.markOwnedCombat(owner);
+                if (owner != null && ownsHost(owner, host)) {
+                    CombatTracker.markOwnedCombat(owner);
+                    ParasiteAbilityService.interruptOnDamage(owner, host, event.getNewDamage());
+                    if (ParasiteAbilityService.awakened(owner, host))
+                        event.setNewDamage(Math.min(2000.0F, event.getNewDamage() * 1.15F));
+                    Channel ch = CHANNELS.get(owner.getUUID());
+                    if (ch != null && !ch.exit && event.getNewDamage() > 0)
+                        ch.ticks = Math.max(0, ch.ticks - (ch.anchored ? 2 : 8));
+                }
             }
         }
     }
 
     public static void onDeath(LivingDeathEvent event) {
+        if (!event.getEntity().level().isClientSide()) awardHostCombat(event);
         if (!(event.getEntity() instanceof Mob host) || host.level().isClientSide()
                 || !host.getPersistentData().contains(MARK)) return;
         UUID ownerId = hostOwner(host);
@@ -208,6 +260,7 @@ public final class ParasiteService {
         int lock = owner == null ? 1200 : ParasiteRules.lockoutTicks(
                 ClassProfileSavedData.get(server).profile(ownerId));
         if (!data.hostDied(ownerId, host.getUUID(), host.level().getGameTime(), lock)) return;
+        if (owner != null) ParasiteAbilityService.endHost(owner, host);
         host.getPersistentData().remove(MARK);
         if (owner != null) {
             owner.stopRiding();
@@ -239,6 +292,8 @@ public final class ParasiteService {
         if (server != activeServer) {
             CHANNELS.clear();
             MOTIONS.clear();
+            CONTRIBUTIONS.clear();
+            RECENT_KILLS.clear();
             activeServer = server;
         }
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -261,6 +316,7 @@ public final class ParasiteService {
                     else { end(player, false); applyHumanStats(player); continue; }
                 }
                 moveHost(player, host, state);
+                ParasiteAbilityService.tick(player, host);
                 if (server.getTickCount() % 100 == 0) applyHostStats(player, host);
             }
             Channel ch = CHANNELS.get(player.getUUID());
@@ -282,7 +338,11 @@ public final class ParasiteService {
         }
         Mob target = aimed(player);
         if (target == null || !target.getUUID().equals(ch.target) || !eligible(player, target, false)) {
-            if (++ch.lostTicks > 8) { CHANNELS.remove(player.getUUID()); return; }
+            ch.ticks = Math.max(0, ch.ticks - (ch.anchored ? 2 : 4));
+            if (++ch.lostTicks > (ch.anchored ? 14 : 8)) {
+                CHANNELS.remove(player.getUUID());
+                return;
+            }
             return;
         }
         ch.lostTicks = 0;
@@ -314,7 +374,10 @@ public final class ParasiteService {
             if (previous != null) player.startRiding(previous, true);
             return false;
         }
-        if (previous != null) restore(previous);
+        if (previous != null) {
+            ParasiteAbilityService.endHost(player, previous);
+            restore(previous);
+        }
         CompoundTag mark = new CompoundTag();
         mark.putUUID("owner", player.getUUID());
         mark.putBoolean("originalNoAi", target.isNoAi());
@@ -347,14 +410,16 @@ public final class ParasiteService {
             double velocity = Math.min(.32, Math.max(.065, base * 1.45))
                     * spec.speedFactor()
                     * ParasiteRules.movementMultiplier(ClassProfileSavedData.get(owner.getServer())
-                    .profile(owner.getUUID()));
+                    .profile(owner.getUUID()))
+                    * (ParasiteAbilityService.awakened(owner, host) ? 1.15 : 1.0);
             host.move(MoverType.SELF, new Vec3(dx * velocity, 0, dz * velocity));
             host.setYRot(m.yaw);
             host.setYHeadRot(m.yaw);
             if ((m.mask & 16) != 0 && host.onGround())
                 host.setDeltaMovement(host.getDeltaMovement().add(0, .42, 0));
             // Spider's own wall mobility is available without another unlock or cooldown.
-            if (host.getType() == net.minecraft.world.entity.EntityType.SPIDER
+            if ((host.getType() == net.minecraft.world.entity.EntityType.SPIDER
+                    || state.mastery("minecraft:spider") >= 100)
                     && host.horizontalCollision && ((m.mask & 16) != 0 || front > 0))
                 host.setDeltaMovement(host.getDeltaMovement().x, .18, host.getDeltaMovement().z);
         }
@@ -478,7 +543,10 @@ public final class ParasiteService {
         if (hostId == null) return;
         Mob host = loadedHost(owner, hostId);
         if (owner.getVehicle() != null) owner.stopRiding();
-        if (host != null) restore(host);
+        if (host != null) {
+            ParasiteAbilityService.endHost(owner, host);
+            restore(host);
+        }
         data.release(owner.getUUID(), hostId);
         if (!death) applyHumanStats(owner);
     }
@@ -487,12 +555,52 @@ public final class ParasiteService {
         if (!data.hostDied(owner.getUUID(), host.getUUID(), clock(owner),
                 ParasiteRules.lockoutTicks(ClassProfileSavedData.get(owner.getServer()).profile(owner.getUUID())))) return;
         owner.stopRiding();
+        ParasiteAbilityService.endHost(owner, host);
         host.getPersistentData().remove(MARK);
         applyHumanStats(owner);
         if (owner.isAlive()) owner.setHealth(Math.max(1.0F, owner.getMaxHealth() * .75F));
         CHANNELS.remove(owner.getUUID());
         MOTIONS.remove(owner.getUUID());
         message(owner, "message.anomalousclasses.parasite.host_died");
+    }
+
+    private static void trackHit(ServerPlayer owner, LivingEntity victim, float damage) {
+        if (!(victim instanceof Monster) || !victim.isAlive()
+                || owner.isAlliedTo(victim) || damage <= 0 || !Float.isFinite(damage)) return;
+        Map<UUID, Contribution> hits = CONTRIBUTIONS.computeIfAbsent(
+                owner.getUUID(), unused -> new HashMap<>());
+        long now = clock(owner);
+        if (hits.size() >= 64) hits.entrySet().removeIf(e -> now - e.getValue().lastTick > 200);
+        if (hits.size() >= 64 && !hits.containsKey(victim.getUUID())) return;
+        Contribution hit = hits.computeIfAbsent(victim.getUUID(), unused -> new Contribution());
+        hit.damage = Math.min(victim.getMaxHealth(), hit.damage + damage);
+        hit.lastTick = now;
+    }
+
+    private static void awardHostCombat(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof Monster target)
+                || !(event.getSource().getEntity() instanceof ServerPlayer owner)
+                || !current(owner) || activeHost(owner) == null) return;
+        Map<UUID, Contribution> hits = CONTRIBUTIONS.get(owner.getUUID());
+        if (hits == null) return;
+        Contribution hit = hits.remove(target.getUUID());
+        if (hit == null || clock(owner) - hit.lastTick > 100
+                || hit.damage < Math.min(8.0F, target.getMaxHealth() * .25F)) return;
+        String enemy = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()).toString();
+        Map<String, Deque<Long>> speciesHistory = RECENT_KILLS.computeIfAbsent(
+                owner.getUUID(), unused -> new HashMap<>());
+        Deque<Long> recent = speciesHistory.computeIfAbsent(enemy, unused -> new ArrayDeque<>());
+        long now = clock(owner);
+        while (!recent.isEmpty() && now - recent.peekFirst() > 1200L) recent.removeFirst();
+        int repeated = recent.size();
+        recent.addLast(now);
+        if (repeated >= 6) return; // Dense mob farms cannot scale BD without bound.
+        int base = Math.max(3, Math.min(60, (int) Math.ceil(target.getMaxHealth() / 4.0)));
+        int earned = repeated >= 3 ? Math.max(1, base / 3) : base;
+        Mob host = activeHost(owner);
+        String species = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
+        ParasiteSavedData.get(owner.getServer()).reward(owner.getUUID(), species, earned,
+                ClassProfileSavedData.get(owner.getServer()).profile(owner.getUUID()));
     }
     private static long clock(ServerPlayer player) {
         return player.serverLevel().getGameTime();

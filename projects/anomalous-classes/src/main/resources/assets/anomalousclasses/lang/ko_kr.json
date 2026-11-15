@@ -461,5 +461,12 @@
   "message.anomalousclasses.parasite.death_lock": "숙주 상실의 충격으로 아직 기생할 수 없습니다.",
   "message.anomalousclasses.parasite.progress": "기생 침투 %s%%",
   "message.anomalousclasses.parasite.possessed": "새로운 숙주의 감각이 연결되었습니다.",
-  "message.anomalousclasses.parasite.host_died": "숙주의 몸이 무너졌습니다. 인간의 형태로 돌아왔습니다."
+  "message.anomalousclasses.parasite.host_died": "숙주의 몸이 무너졌습니다. 인간의 형태로 돌아왔습니다.",
+  "message.anomalousclasses.parasite_ability.cooldown": "기술 재사용까지 %s초",
+  "message.anomalousclasses.parasite_ability.failed_0": "침투할 수 있는 생물을 조준해야 합니다.",
+  "message.anomalousclasses.parasite_ability.no_host": "숙주의 몸에 기생한 상태여야 합니다.",
+  "message.anomalousclasses.parasite_ability.full_health": "숙주가 이미 건강합니다.",
+  "message.anomalousclasses.parasite_ability.success_0": "침투 감각이 고정됩니다. 다음 집중이 안정됩니다.",
+  "message.anomalousclasses.parasite_ability.success_1": "숙주의 조직이 서서히 회복됩니다.",
+  "message.anomalousclasses.parasite_ability.success_2": "본능이 깨어납니다. 더 강해지지만 상처도 깊어집니다."
 }

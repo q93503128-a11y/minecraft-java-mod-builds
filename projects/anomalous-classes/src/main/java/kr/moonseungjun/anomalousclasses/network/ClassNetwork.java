@@ -24,6 +24,8 @@ import kr.moonseungjun.anomalousclasses.state.PuppetService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteService;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteAbilityPayload;
+import kr.moonseungjun.anomalousclasses.state.ParasiteAbilityService;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.ProfileService;
@@ -108,6 +110,11 @@ public final class ClassNetwork {
         registrar.playToServer(MentalSpellPayload.TYPE, MentalSpellPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) MentalDominatorCombatService.use(player, payload.ability());
+                }));
+        registrar.playToServer(ParasiteAbilityPayload.TYPE, ParasiteAbilityPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        ParasiteAbilityService.use(player, payload.slot());
                 }));
         registrar.playToServer(ParasiteInputPayload.TYPE, ParasiteInputPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

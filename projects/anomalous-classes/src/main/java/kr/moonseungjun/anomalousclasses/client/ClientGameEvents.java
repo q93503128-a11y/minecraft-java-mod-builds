@@ -10,6 +10,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.PuppetTargetPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -65,14 +66,17 @@ public final class ClientGameEvents {
         if (ClassSelectionKeyMappings.MENTAL_SHOCK.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(0));
             PacketDistributor.sendToServer(new PuppetAbilityPayload(0));
+            PacketDistributor.sendToServer(new ParasiteAbilityPayload(0));
         }
         if (ClassSelectionKeyMappings.MENTAL_SUGGESTION.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(1));
             PacketDistributor.sendToServer(new PuppetAbilityPayload(1));
+            PacketDistributor.sendToServer(new ParasiteAbilityPayload(1));
         }
         if (ClassSelectionKeyMappings.MENTAL_OVERLOAD.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(2));
             PacketDistributor.sendToServer(new PuppetAbilityPayload(2));
+            PacketDistributor.sendToServer(new ParasiteAbilityPayload(2));
         }
         if (ClassSelectionKeyMappings.MENTAL_CONTAINMENT.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(3));

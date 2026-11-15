@@ -64,7 +64,39 @@ public final class ParasiteFoundationVerifier {
                 && restored.player(owner).host() == null
                 && restored.player(owner).deathLockUntil() == 1300L,
                 "permanent BD, species, claim and death timer save/load");
-        System.out.println("PASS: parasite starter gates, one-host claims, no dupes, permanent BD, activity, death lock and save");
+
+        ParasiteAbilitySavedData abilities = new ParasiteAbilitySavedData();
+        UUID body = UUID.randomUUID();
+        check(abilities.ready(owner, 0, 100L) && abilities.anchor(owner, 100L),
+                "anchoring consumes first Z cooldown");
+        check(!abilities.ready(owner, 0, 100L)
+                && abilities.consumeAnchor(owner, 101L)
+                && !abilities.consumeAnchor(owner, 102L),
+                "anchoring is a single-use buff");
+        check(abilities.heal(owner, body, 10.0F, 100L), "X starts gradual repair");
+        check(abilities.healTick(owner, body, 101L, 20.0F) > 0.0F,
+                "X heals original body over time");
+        check(!abilities.heal(owner, body, 10.0F, 102L), "X cooldown cannot be bypassed");
+        check(abilities.awaken(owner, body, 100L), "C awakens the original body");
+        check(abilities.isAwakened(owner, body, 101L)
+                && !abilities.isAwakened(owner, UUID.randomUUID(), 101L),
+                "C cannot transfer onto another body");
+        abilities.endHost(owner, body);
+        check(!abilities.isAwakened(owner, body, 101L)
+                && abilities.player(owner).healHost() == null
+                && !abilities.ready(owner, 1, 101L),
+                "leaving body cancels effects but not cooldowns");
+        CompoundTag encodedAbilities = abilities.save(new CompoundTag(), RegistryAccess.EMPTY);
+        Method abilityLoad = ParasiteAbilitySavedData.class.getDeclaredMethod(
+                "load", CompoundTag.class, HolderLookup.Provider.class);
+        abilityLoad.setAccessible(true);
+        ParasiteAbilitySavedData restoredAbilities = (ParasiteAbilitySavedData)
+                abilityLoad.invoke(null, encodedAbilities, RegistryAccess.EMPTY);
+        check(restoredAbilities.player(owner).readyAt(0) == 900L
+                && restoredAbilities.player(owner).readyAt(1) == 1000L
+                && restoredAbilities.player(owner).readyAt(2) == 800L,
+                "ability cooldown save/load");
+        System.out.println("PASS: parasite host claims, BD, death lock, three ability cooldowns and persistence");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

@@ -461,5 +461,12 @@
   "message.anomalousclasses.parasite.death_lock": "The loss of your host prevents another intrusion for now.",
   "message.anomalousclasses.parasite.progress": "Intrusion %s%%",
   "message.anomalousclasses.parasite.possessed": "Your senses settle into a new host.",
-  "message.anomalousclasses.parasite.host_died": "Your host has perished. You return to human form."
+  "message.anomalousclasses.parasite.host_died": "Your host has perished. You return to human form.",
+  "message.anomalousclasses.parasite_ability.cooldown": "Ability ready in %s seconds",
+  "message.anomalousclasses.parasite_ability.failed_0": "Aim at a creature you can currently infiltrate.",
+  "message.anomalousclasses.parasite_ability.no_host": "You must be inhabiting a host.",
+  "message.anomalousclasses.parasite_ability.full_health": "Your host is already at full health.",
+  "message.anomalousclasses.parasite_ability.success_0": "Your intrusion focus steadies for the next attempt.",
+  "message.anomalousclasses.parasite_ability.success_1": "The host's tissues begin to recover.",
+  "message.anomalousclasses.parasite_ability.success_2": "Instinct surges: greater power, greater vulnerability."
 }
