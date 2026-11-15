@@ -21,6 +21,9 @@ import kr.moonseungjun.anomalousclasses.network.payload.PuppetAbilityPayload;
 import kr.moonseungjun.anomalousclasses.state.PuppetAbilityService;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopActionPayload;
 import kr.moonseungjun.anomalousclasses.state.PuppetService;
+import kr.moonseungjun.anomalousclasses.state.ParasiteService;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteInputPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.ProfileService;
@@ -105,6 +108,16 @@ public final class ClassNetwork {
         registrar.playToServer(MentalSpellPayload.TYPE, MentalSpellPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) MentalDominatorCombatService.use(player, payload.ability());
+                }));
+        registrar.playToServer(ParasiteInputPayload.TYPE, ParasiteInputPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        ParasiteService.input(player, payload.action());
+                }));
+        registrar.playToServer(ParasiteMovePayload.TYPE, ParasiteMovePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        ParasiteService.movement(player, payload.mask(), payload.yaw());
                 }));
         registrar.playToServer(MentalIntrusionPayload.TYPE, MentalIntrusionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

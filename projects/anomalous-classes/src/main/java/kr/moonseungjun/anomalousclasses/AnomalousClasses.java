@@ -15,6 +15,7 @@ import kr.moonseungjun.anomalousclasses.state.MentalDominatorConfig;
 import kr.moonseungjun.anomalousclasses.state.MentalDominatorService;
 import kr.moonseungjun.anomalousclasses.state.PuppetService;
 import kr.moonseungjun.anomalousclasses.state.PuppetCombatService;
+import kr.moonseungjun.anomalousclasses.state.ParasiteService;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.bus.api.IEventBus;
@@ -50,6 +51,11 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(this::onLivingDamage);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onLivingDamagePre);
         NeoForge.EVENT_BUS.addListener(PuppetCombatService::onLivingDamage);
+        NeoForge.EVENT_BUS.addListener(ParasiteService::onDamage);
+        NeoForge.EVENT_BUS.addListener(ParasiteService::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(ParasiteService::onDeath);
+        NeoForge.EVENT_BUS.addListener(ParasiteService::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(ParasiteService::tick);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onChangeTarget);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onMobDespawn);
@@ -68,12 +74,14 @@ public final class AnomalousClasses {
         ClassSelectionService.onPlayerLogin(event.getEntity());
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
             MentalDominatorService.onPlayerRespawn(player);
+            ParasiteService.onLogin(player);
         }
     }
 
     private void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         CombatTracker.remove(event.getEntity().getUUID());
         MentalDominatorService.onPlayerLogout(event.getEntity());
+        ParasiteService.onLogout(event.getEntity());
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -81,6 +89,7 @@ public final class AnomalousClasses {
             ClassSelectionService.onPlayerRespawn(player);
             ClassFocusService.onPlayerRespawn(player);
             MentalDominatorService.onPlayerRespawn(player);
+            ParasiteService.onRespawn(player);
         }
     }
 

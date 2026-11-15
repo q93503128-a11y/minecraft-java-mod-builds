@@ -8,6 +8,8 @@ import kr.moonseungjun.anomalousclasses.network.payload.MentalIntrusionPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalSpellPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetTargetPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetAbilityPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteInputPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -20,6 +22,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class ClientGameEvents {
     private static boolean intrusionWasDown;
     private static int mentalRefreshTicks;
+    private static int parasiteMovementTicks;
     private ClientGameEvents() {}
 
     @SubscribeEvent
@@ -32,6 +35,8 @@ public final class ClientGameEvents {
         if (intrusionDown != intrusionWasDown) {
             PacketDistributor.sendToServer(new MentalIntrusionPayload(intrusionDown
                     ? MentalIntrusionPayload.START : MentalIntrusionPayload.STOP));
+            PacketDistributor.sendToServer(new ParasiteInputPayload(intrusionDown
+                    ? ParasiteInputPayload.START : ParasiteInputPayload.STOP));
             if (intrusionDown) PacketDistributor.sendToServer(PuppetTargetPayload.INSTANCE);
             intrusionWasDown = intrusionDown;
         }
@@ -47,6 +52,15 @@ public final class ClientGameEvents {
             return;
         }
         mentalRefreshTicks = 0;
+        if (minecraft.player.getVehicle() instanceof net.minecraft.world.entity.Mob
+                && ++parasiteMovementTicks % 2 == 0) {
+            int mask = (minecraft.options.keyUp.isDown() ? 1 : 0)
+                    | (minecraft.options.keyDown.isDown() ? 2 : 0)
+                    | (minecraft.options.keyLeft.isDown() ? 4 : 0)
+                    | (minecraft.options.keyRight.isDown() ? 8 : 0)
+                    | (minecraft.options.keyJump.isDown() ? 16 : 0);
+            PacketDistributor.sendToServer(new ParasiteMovePayload(mask, minecraft.player.getYRot()));
+        }
         // Direct keybinds request stable IDs; the server rejects all other classes.
         if (ClassSelectionKeyMappings.MENTAL_SHOCK.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(0));

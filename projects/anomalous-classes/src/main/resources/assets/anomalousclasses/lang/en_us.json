@@ -454,5 +454,12 @@
   "message.anomalousclasses.puppet.refitted": "Component installed. Previous component returned.",
   "message.anomalousclasses.puppet.stay": "Strings anchored. The puppet will guard this position.",
   "message.anomalousclasses.puppet.follow": "Strings released. The puppet will follow.",
-  "tooltip.anomalousclasses.puppet.basic_controls": "Right-click puppet: recall · Sneak-right-click: follow/stay"
+  "tooltip.anomalousclasses.puppet.basic_controls": "Right-click puppet: recall · Sneak-right-click: follow/stay",
+  "message.anomalousclasses.parasite.no_target": "Aim at a creature you can inhabit.",
+  "message.anomalousclasses.parasite.unsupported": "You cannot yet control this creature's body.",
+  "message.anomalousclasses.parasite.insufficient_bd": "Insufficient biological data to inhabit this creature.",
+  "message.anomalousclasses.parasite.death_lock": "The loss of your host prevents another intrusion for now.",
+  "message.anomalousclasses.parasite.progress": "Intrusion %s%%",
+  "message.anomalousclasses.parasite.possessed": "Your senses settle into a new host.",
+  "message.anomalousclasses.parasite.host_died": "Your host has perished. You return to human form."
 }

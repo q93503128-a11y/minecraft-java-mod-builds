@@ -61,7 +61,8 @@ public final class ClassSelectionService {
 
             ClassId previous = profile.currentClass().orElse(null);
             if (!MentalDominatorService.prepareClassChange(player, previous, target)
-                    || !PuppetService.prepareClassChange(player, previous)) {
+                    || !PuppetService.prepareClassChange(player, previous)
+                    || !ParasiteService.prepareClassChange(player, previous)) {
                 send(player, profile, ClassSelectionStatePayload.Result.STALE_REQUEST);
                 return;
             }
@@ -69,6 +70,7 @@ public final class ClassSelectionService {
             profile.select(target);
             savedData.setDirty();
             SkillTreeAttributeService.apply(player, target, profile.progress(target));
+            ParasiteService.applyHumanStats(player);
             send(player, profile, ClassSelectionStatePayload.Result.SAVED);
         }, () -> send(player, profile, ClassSelectionStatePayload.Result.INVALID_CLASS));
     }

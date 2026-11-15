@@ -1,0 +1,72 @@
+import java.lang.reflect.Method;
+import java.util.UUID;
+import kr.moonseungjun.anomalousclasses.state.*;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+
+/** Deterministic server-contract fixtures. This is not a Minecraft client or multiplayer test. */
+public final class ParasiteFoundationVerifier {
+    public static void main(String[] args) throws Exception {
+        PlayerClassProfile profile = new PlayerClassProfile();
+        var pig = ParasiteRules.supported(ResourceLocation.parse("minecraft:pig"));
+        var cow = ParasiteRules.supported(ResourceLocation.parse("minecraft:cow"));
+        var zombie = ParasiteRules.supported(ResourceLocation.parse("minecraft:zombie"));
+        var spider = ParasiteRules.supported(ResourceLocation.parse("minecraft:spider"));
+        check(pig.requiredBd() == 0 && cow.requiredBd() == 20
+                && zombie.requiredBd() == 100 && spider.requiredBd() == 160, "starter BD gates");
+        check(ParasiteRules.supported(ResourceLocation.parse("minecraft:warden")) == null
+                && ParasiteRules.plannedRequirement(ResourceLocation.parse("minecraft:warden")) == 5000,
+                "unsupported boss must not appear as controllable");
+        check(ParasiteRules.infiltrationTicks(pig, 0, profile) == 30, "pig infiltration");
+        check(ParasiteRules.infiltrationTicks(zombie, 100, profile) == 80, "zombie infiltration");
+        check(ParasiteRules.infiltrationTicks(zombie, 10000, profile) >= 44,
+                "infiltration never becomes instant");
+        check(ParasiteRules.lockoutTicks(profile) == 1200
+                && ParasiteRules.maxEmergencyCharges(profile) == 0, "untrained death lock");
+        check(ParasiteRules.humanMaximum(profile) == 8.0F, "weak human");
+        check(ParasiteRules.healthMultiplier(100, 0, profile) > 1.049
+                && ParasiteRules.damageMultiplier(100, 0, profile) > 1.059, "permanent BD scales host");
+        profile.equipFocus(new ClassFocus(ClassId.PARASITE_MORPHER, FocusTier.values()[4]));
+        check(ParasiteRules.focus(profile) == .40, "final focus +40%");
+        check(ParasiteRules.healthMultiplier(0, 0, profile) == 1.40, "only single focus tier");
+
+        UUID owner = UUID.randomUUID(), other = UUID.randomUUID(), first = UUID.randomUUID(), second = UUID.randomUUID();
+        ParasiteSavedData data = new ParasiteSavedData();
+        check(data.claim(owner, first, "minecraft:overworld"), "claim starter host");
+        check(!data.claim(other, first, "minecraft:overworld"), "no competing player can claim");
+        check(data.ownerOf(first).equals(owner), "claim owner index");
+        check(data.claim(owner, second, "minecraft:overworld"), "atomic transfer");
+        check(data.ownerOf(first) == null && owner.equals(data.ownerOf(second)), "old claim released on transfer");
+        check(!data.release(other, second), "foreign owner cannot release");
+        data.reward(owner, "minecraft:pig", 12, new PlayerClassProfile());
+        check(data.player(owner).bd() == 12 && data.player(owner).mastery("minecraft:pig") == 1,
+                "BD and species proficiency are separate permanent progress");
+        check(data.firstBiome(owner, "anomalousclasses:minecraft_overworld_minecraft_plains")
+                && !data.firstBiome(owner, "anomalousclasses:minecraft_overworld_minecraft_plains"),
+                "new biome bonus is one-time");
+        check(!data.recordActiveTicks(owner, 4000, new PlayerClassProfile()), "no passive early activity reward");
+        check(data.recordActiveTicks(owner, 800, new PlayerClassProfile()), "4 minutes eligible activity");
+        check(data.hostDied(owner, second, 100L, 1200), "host death is single transition");
+        check(!data.hostDied(owner, second, 101L, 1200), "death replay rejected");
+        check(!data.mayAttempt(owner, 200L) && data.mayAttempt(owner, 1300L),
+                "lockout survives repeated attempts");
+        check(data.player(owner).bd() == 12, "host death never consumes BD");
+
+        CompoundTag encoded = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        Method load = ParasiteSavedData.class.getDeclaredMethod(
+                "load", CompoundTag.class, HolderLookup.Provider.class);
+        load.setAccessible(true);
+        ParasiteSavedData restored = (ParasiteSavedData) load.invoke(null, encoded, RegistryAccess.EMPTY);
+        check(restored.player(owner).bd() == 12
+                && restored.player(owner).mastery("minecraft:pig") == 1
+                && restored.player(owner).host() == null
+                && restored.player(owner).deathLockUntil() == 1300L,
+                "permanent BD, species, claim and death timer save/load");
+        System.out.println("PASS: parasite starter gates, one-host claims, no dupes, permanent BD, activity, death lock and save");
+    }
+    private static void check(boolean truth, String label) {
+        if (!truth) throw new AssertionError(label);
+    }
+}

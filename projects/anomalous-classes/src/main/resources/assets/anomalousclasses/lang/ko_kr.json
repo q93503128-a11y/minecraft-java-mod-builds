@@ -454,5 +454,12 @@
   "message.anomalousclasses.puppet.refitted": "부품이 교체되었습니다. 기존 부품은 회수했습니다.",
   "message.anomalousclasses.puppet.stay": "실을 고정했습니다. 이곳을 지킵니다.",
   "message.anomalousclasses.puppet.follow": "실의 고정을 풀었습니다. 다시 동행합니다.",
-  "tooltip.anomalousclasses.puppet.basic_controls": "인형 우클릭: 회수 · 웅크리고 우클릭: 동행/대기"
+  "tooltip.anomalousclasses.puppet.basic_controls": "인형 우클릭: 회수 · 웅크리고 우클릭: 동행/대기",
+  "message.anomalousclasses.parasite.no_target": "기생할 수 있는 생물을 조준하세요.",
+  "message.anomalousclasses.parasite.unsupported": "이 생물의 신체는 아직 지배할 수 없습니다.",
+  "message.anomalousclasses.parasite.insufficient_bd": "이 생물에게 기생할 생체 데이터가 부족합니다.",
+  "message.anomalousclasses.parasite.death_lock": "숙주 상실의 충격으로 아직 기생할 수 없습니다.",
+  "message.anomalousclasses.parasite.progress": "기생 침투 %s%%",
+  "message.anomalousclasses.parasite.possessed": "새로운 숙주의 감각이 연결되었습니다.",
+  "message.anomalousclasses.parasite.host_died": "숙주의 몸이 무너졌습니다. 인간의 형태로 돌아왔습니다."
 }

@@ -131,6 +131,16 @@ tasks.register('verifyPuppeteerFoundation', Exec) {
     }
 }
 
+tasks.register('verifyParasiteFoundation', Exec) {
+    group = 'verification'
+    description = 'Checks parasite host eligibility, owner exclusivity, permanent BD, death lockout and save data.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/ParasiteFoundationVerifier.java').absolutePath
+    }
+}
+
 tasks.register('verifyPuppetAssets', Exec) {
     group = 'verification'
     description = 'Checks marionette icon/model assets, workshop crafting/loot data and translations.'
@@ -180,6 +190,7 @@ tasks.named('check') {
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
     dependsOn tasks.named('verifyMentalDominatorRules')
     dependsOn tasks.named('verifyPuppeteerFoundation')
+    dependsOn tasks.named('verifyParasiteFoundation')
     dependsOn tasks.named('verifyPuppetAssets')
     dependsOn tasks.named('verifyClassManagementLayout')
     dependsOn tasks.named('verifyMentalDominatorLayout')
