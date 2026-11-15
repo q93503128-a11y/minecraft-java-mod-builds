@@ -512,6 +512,7 @@ public final class MentalDominatorService {
             MentalDominatorSavedData.ControlledRecord attackerRecord = data.controlled(attacker.getUUID());
             if (attackerRecord != null && attackerRecord.linkState() == MentalDominatorSavedData.LinkState.ACTIVE
                     && !canHarmPlayer(attackerRecord, victim)) event.setNewDamage(0.0F);
+            MentalDominatorCombatService.applyOverloadDamage(event, attackerRecord);
             return;
         }
         MentalDominatorSavedData.ControlledRecord victimRecord = data.controlled(event.getEntity().getUUID());
@@ -519,6 +520,7 @@ public final class MentalDominatorService {
                 && isOwnerOrAllyDamage(event.getEntity().level().getServer(), victimRecord, attacker, data)) {
             event.setNewDamage(0.0F);
         }
+        MentalDominatorCombatService.applyOverloadDamage(event, data.controlled(attacker.getUUID()));
     }
 
     private static boolean isOwnerOrAllyDamage(MinecraftServer server,
@@ -786,8 +788,8 @@ public final class MentalDominatorService {
     /** 0 supported, 1 unsupported entity family, 2 protected/owned by another player. */
     private static int captureSupportResult(ServerPlayer player, Mob target) {
         if (!(target instanceof PathfinderMob) || target.isNoAi() || target.isRemoved() || !target.isAlive()) return 1;
-        ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
-        if (typeId == null || !"minecraft".equals(typeId.getNamespace())) return 1;
+        // PathfinderMob already supplies the navigation/goal APIs we need.
+        // Do not blacklist every modded creature merely because its namespace is not minecraft.
         if (target instanceof TamableAnimal tame && tame.isTame()) {
             UUID owner = tame.getOwnerUUID();
             if (owner != null && !owner.equals(player.getUUID())) return 2;

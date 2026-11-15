@@ -28,8 +28,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
  */
 public final class MentalDominatorCombatService {
     private static final String STUN_TAG = "anomalousclasses_mental_stun";
-    private static final ResourceLocation ATTACK_BOOST = ResourceLocation.fromNamespaceAndPath(
-            AnomalousClasses.MOD_ID, "mental_overload_attack");
     private static final ResourceLocation SPEED_BOOST = ResourceLocation.fromNamespaceAndPath(
             AnomalousClasses.MOD_ID, "mental_overload_speed");
 
@@ -182,6 +180,21 @@ public final class MentalDominatorCombatService {
         return effect != null && effect.expires() > now ? 1.5 : 1.0;
     }
 
+    /** Applies the same +30% outgoing hit multiplier to melee and ranged attacks. */
+    public static void applyOverloadDamage(net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Pre event,
+                                            MentalDominatorSavedData.ControlledRecord attackerRecord) {
+        if (attackerRecord == null || attackerRecord.linkState() != MentalDominatorSavedData.LinkState.ACTIVE
+                || !OVERLOADS.containsKey(attackerRecord.entityId())
+                || upkeepMultiplier(attackerRecord.entityId()) == 1.0
+                || event.getNewDamage() <= 0.0F) return;
+        MinecraftServer server = event.getEntity().level().getServer();
+        ServerPlayer owner = MentalDominatorService.onlineOwner(server, attackerRecord.ownerId());
+        if (!MentalDominatorService.isValidCombatTarget(owner, event.getEntity(),
+                attackerRecord.allowPlayerDamage())) return;
+        event.setNewDamage((float) Math.min(1_000_000.0,
+                event.getNewDamage() * 1.30));
+    }
+
     public static boolean isStunned(UUID entityId) { return STUNS.containsKey(entityId); }
 
     public static void tick(MinecraftServer server, long tick) {
@@ -254,13 +267,8 @@ public final class MentalDominatorCombatService {
     }
 
     private static void overload(Mob mob, int duration) {
-        AttributeInstance attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        // Damage is scaled in the authoritative damage event for both melee and projectiles.
         AttributeInstance speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
-        if (attack != null) {
-            attack.removeModifier(ATTACK_BOOST);
-            attack.addTransientModifier(new AttributeModifier(ATTACK_BOOST, 0.30,
-                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-        }
         if (speed != null) {
             speed.removeModifier(SPEED_BOOST);
             speed.addTransientModifier(new AttributeModifier(SPEED_BOOST, 0.15,
@@ -270,9 +278,7 @@ public final class MentalDominatorCombatService {
     }
 
     private static void clearOverload(Mob mob) {
-        AttributeInstance attack = mob.getAttribute(Attributes.ATTACK_DAMAGE);
         AttributeInstance speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
-        if (attack != null) attack.removeModifier(ATTACK_BOOST);
         if (speed != null) speed.removeModifier(SPEED_BOOST);
     }
 
