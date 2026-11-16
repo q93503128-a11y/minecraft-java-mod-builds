@@ -1,5 +1,22 @@
 # 기생술사 — 2026-11-15 구현·검증 체크포인트
 
+## 2026-11-16 — 기생술사 실숙주 상호작용·대형 근접 타격·탑승체 순간이동
+
+- **구현 소스:** [`f3098fc173f9690ea2b65f7f5c5c5df5a93115f3`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/f3098fc173f9690ea2b65f7f5c5c5df5a93115f3), standalone verifier 접근 제한 수정 [`e909e5726a4c10fa7c72c602c81066d1ea1a1139`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/e909e5726a4c10fa7c72c602c81066d1ea1a1139). 기존 바닐라 **34종 + 외부 20종 = 총54 숙주** 및 타 직업/데이터/외부 모드 고정 manifest 유지.
+- **BUILD VERIFIED / JAR PRODUCED:** [Build anomalous-classes #43824126337](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43824126337) **SUCCESS**, `anomalous-classes-0.1.0-alpha.1.jar` **32,070,688 bytes / 188 classes**. [JAR+SHA256와 검증 기록](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43824126337/artifacts/14204724896). `verifyParasiteFoundation` PASS: 54 hosts, original-host interaction reach, giant melee cone, mounted teleport projection, cooldown, input, mastery and NBT. 기타 직업/스킬트리/UI layout/JAR 검사 포함 기존 build PASS.
+- **바닐라 생존 조작을 버리지 않고 숙주 눈 기준 재검증:** 신규 `ParasiteHostReachService`가 기생 중 실제 player 블록/엔티티 도달 거리 속성에 **일시적인 +2.75 블록 network reach buffer**를 주고, 채굴 시작/블록 우클릭·엔티티 우클릭·블록 파괴 완료 시 **서버에서 원본 숙주 눈높이·시선·시야 가림·실제 사거리**를 독립 확인한다. 원본 플레이어 인벤토리/도구/아이템·제작/상자·일반 채굴 처리와 소유권/도전과제 경로를 보존. 호스트 없는 플레이어나 클래스 변경/사망/로그아웃/자발적 이탈 시 reach modifier 삭제; 기존 속성 모디파이어는 삭제하지 않는다. 기존 상호작용의 새로운 서버 권한 우회 금지.
+- **큰 몸체 근접 판정:** `ParasiteHostCombatService`는 플레이어 기본 사거리와 원본 Mob 폭을 이용해 최대 **5.5블록** 내에서 근접 가능 범위를 제한적으로 넓힌다. 기존 숙주 눈높이 레이캐스트를 1순위로, 그 결과가 없을 때만 대형 몸체의 **좁은 전방 몸통 공격 범위**를 검사한다. 벽 뒤 대상·후방 대상은 원칙적으로 제외하고, 공격/드롭/인챈트/무기 내구도/기여도는 기존 서버 `owner.attack` 경로 사용. 공격의 최종 feel, 원본 애니메이션·히트박스는 미검증.
+- **엔더맨 수동 순간이동·자동 회피에서 탑승자 보호:** 이동 후보가 원본 Mob의 충돌 없는 발판/로드된 청크/월드 보더를 충족하는지뿐 아니라 실제 플레이어가 숙주 승차 위치에 들어갈 **실제 몸체 충돌·머리 공간**도 확인. `host.teleportTo` 성공 후 실제 owner 승차 상태 복원 시도, `host.positionRider(owner)`, `owner.connection.resetPosition()`, `ParasiteService.syncView(owner)`를 사용해 원본 몸+탑승자 클라이언트 상태를 갱신. 착지/승차 복구가 실패하면 기술은 실패로 처리. 쿨다운은 이전 도입한 성공 결과 기반 `castIf` 계약을 유지.
+- **회귀 검증:** 상호작용 cap, 정면/후방·횡방향 시야 검사, 대형 공격 보너스 상한과 뒤쪽/작은 몹 제외, 호스트 원위치·승차점 이동량 일치 등 순수 규칙 fixture PASS. 기존 54종, 외부 20 exact class, BD/마스터리, 생체 데이터/저장·전투 쿨다운 테스트 유지.
+- **실패 후 수정 사실:** 최초 빌드 [#43823909989](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43823909989)는 별도 verifier에서 새로운 policy 함수에 접근할 수 없어 실패. 해당 함수만 public으로 바꾼 뒤 #43824126337 재검증 성공, 기존 테스트·콘텐츠 축소 없음.
+- **실행하지 않은 것:** **CLIENT RUNTIME / ACTUAL PLAYTEST / MULTIPLAYER TEST = NO.** 서버 패킷과 클라이언트 블록 outline의 도달 거리 표시 일치, 손실/연속 입력, 승차체 순간이동 시 멀티 좌표 동기화·크기별 좌석/천장 충돌, 블록 파괴 후 리소스 드롭, 상자/문/우클릭 모드 호환, 대형 몹 애니메이션과 손맛은 실게임 검수가 필요. [직전 검증된 외부 13 JAR 동시 서버 부팅 #43741441267](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43741441267)은 별도 이전 단계이며 **이 변경 커밋의 외부 모드 플레이테스트가 아님**.
+
+
+---
+
+> 아래 항목들은 이전 검증 시점의 기록이다. 상호작용·대형 근접 공격·승차체 순간이동 현황은 위 최신 체크포인트 우선.
+
+
 ## 2026-11-16 — 숙주 직접 조작 안정화: 입력·시선·AI·무효화 복구
 
 - **구현 코드:** [`b217a05fb73e04ba834ac216b0d2f94d4d42817d`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b217a05fb73e04ba834ac216b0d2f94d4d42817d). 기존 숙주 바닐라34/외부20 **54개 프로필 보존**. 기존 외부 모드 9+6, 저장 NBT 키, 종족 직접 능력 슬롯, 다른 직업 변경 없음.

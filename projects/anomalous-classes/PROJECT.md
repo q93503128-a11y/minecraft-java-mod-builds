@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-16 최신 기생술사 54종 상호작용 개선:** [코드 `f3098fc`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/f3098fc173f9690ea2b65f7f5c5c5df5a93115f3) + [검증함수 수정 `e909e57`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/e909e5726a4c10fa7c72c602c81066d1ea1a1139). 원본 숙주 눈 기준 채굴/블록·몹 상호작용, 크기에 맞춘 근접 공격, 안전 착지·플레이어 승차 위치 동기화. [CI #43824126337](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43824126337) **BUILD VERIFIED / JAR PRODUCED**, **CLIENT/PLAYTEST/MULTIPLAYER NOT TESTED**. 아래 과거 단계보다 [현행 기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md) 우선.
+
+
 > **2026-11-16 최신 기생술사 조작 안정화:** [게임 코드 `b217a05`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b217a05fb73e04ba834ac216b0d2f94d4d42817d)에서 **제자리 숙주 시선 회전 서버 동기화**, 대각선/질주/수중 입력 규칙 공통화, 오래되거나 소유권 없는 입력 차단, 외부 몹 AI 재활성화 억제, 외부 클래스 변경 시 탑승·상태·카메라 복구 구현. **54종 숙주 유지.** [CI #43744893340](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43744893340) BUILD VERIFIED/JAR PRODUCED. **CLIENT/PLAYTEST/MULTIPLAYER NOT TESTED**. [상세 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
 
 
