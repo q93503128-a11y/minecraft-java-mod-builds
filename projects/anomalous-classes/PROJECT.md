@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-16 최신 개발 단계:** 기생술사 원본 숙주 **54종 유지**, 그로톨 V+5 질주·블러프 V+6 지면 충격·스파이더 피그 벽 타기/도약을 한 번에 연결([코드 `f9a9897`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/f9a9897c6818a1c535f0988a16db633246e170f7), [CI #43828544203](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43828544203) PASS). **원본 모드 애니메이션의 완전 재현 아님, CLIENT/PLAYTEST/MULTIPLAYER 미검증.** 무제한 종 확장을 멈추고 **결계술사 핵심 플레이 묶음 개발로 우선순위를 전환**. [현행 검증·남은 작업](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
+
+
 > **2026-11-16 최신 기생술사 54종 상호작용 개선:** [코드 `f3098fc`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/f3098fc173f9690ea2b65f7f5c5c5df5a93115f3) + [검증함수 수정 `e909e57`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/e909e5726a4c10fa7c72c602c81066d1ea1a1139). 원본 숙주 눈 기준 채굴/블록·몹 상호작용, 크기에 맞춘 근접 공격, 안전 착지·플레이어 승차 위치 동기화. [CI #43824126337](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43824126337) **BUILD VERIFIED / JAR PRODUCED**, **CLIENT/PLAYTEST/MULTIPLAYER NOT TESTED**. 아래 과거 단계보다 [현행 기생술사 체크포인트](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md) 우선.
 
 
