@@ -128,16 +128,16 @@ public final class ParasiteHostReachService {
     }
 
     /** Bounded game reach before the server-side mount offset safety buffer. */
-    static double blockLimit(double base) {
+    public static double blockLimit(double base) {
         return Math.max(3.0, Math.min(5.5, base));
     }
 
-    static double entityLimit(double base) {
+    public static double entityLimit(double base) {
         return Math.max(2.5, Math.min(5.0, base));
     }
 
     /** Allow small network-angle lag, never a side/backward reach. */
-    static boolean aimedToward(Vec3 start, Vec3 target, Vec3 look) {
+    public static boolean aimedToward(Vec3 start, Vec3 target, Vec3 look) {
         Vec3 delta = target.subtract(start);
         if (delta.lengthSqr() < .00001) return true;
         return look.lengthSqr() > .00001
