@@ -18,6 +18,7 @@ import kr.moonseungjun.anomalousclasses.state.PuppetCombatService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteTraitService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteHostCombatService;
+import kr.moonseungjun.anomalousclasses.state.ParasiteHostReachService;
 import kr.moonseungjun.anomalousclasses.state.ExternalMobAudit;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
@@ -60,6 +61,10 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(ParasiteService::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(ParasiteService::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(ParasiteHostCombatService::onAttackEntity);
+        NeoForge.EVENT_BUS.addListener(ParasiteHostReachService::onLeftClickBlock);
+        NeoForge.EVENT_BUS.addListener(ParasiteHostReachService::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(ParasiteHostReachService::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(ParasiteHostReachService::onEntityInteractSpecific);
         NeoForge.EVENT_BUS.addListener(this::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(ParasiteService::tick);
         NeoForge.EVENT_BUS.addListener(ExternalMobAudit::onServerStarted);

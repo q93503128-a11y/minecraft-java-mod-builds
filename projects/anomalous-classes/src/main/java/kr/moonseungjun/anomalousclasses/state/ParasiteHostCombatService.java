@@ -70,30 +70,65 @@ public final class ParasiteHostCombatService {
         AUTHORIZED_ATTACKS.remove(player);
     }
 
-    /** Server-only raycast. The packet never supplies its own target, range or damage. */
+    /**
+     * The natural reach of a large original body may extend beyond a human
+     * sword swing, but it never becomes a server-side 10-block attack.
+     * Any vanilla/modded reach bonuses are considered before the bounded
+     * width adjustment; the temporary mount buffer is NOT an attack bonus.
+     */
+    public static double bodyRange(double realPlayerRange, double hostWidth) {
+        double base = ParasiteHostReachService.entityLimit(realPlayerRange - 2.75);
+        double size = Math.max(0.0, Math.min(1.5, (hostWidth - 1.0) * 0.6));
+        return Math.min(5.5, base + size);
+    }
+
+    /**
+     * Large mobs can naturally strike a small enemy in front of their chest
+     * even if their high eye-to-eye ray misses it. This is a narrow forward
+     * body swing, never a rear hit or an attack through blocks.
+     */
+    public static boolean bodySwingCone(Vec3 look, Vec3 delta, double hostHeight) {
+        if (hostHeight < 1.8 || delta.lengthSqr() < 0.01
+                || Math.abs(look.y) > .65) return false;
+        Vec3 flatLook = new Vec3(look.x, 0, look.z);
+        Vec3 flatDelta = new Vec3(delta.x, 0, delta.z);
+        return flatLook.lengthSqr() > .01 && flatDelta.lengthSqr() > .01
+                && flatLook.normalize().dot(flatDelta.normalize()) >= .93;
+    }
+
+    /** Server-only raycast. The packet never supplies target, range or damage. */
     private static LivingEntity aimedEnemy(ServerPlayer owner, Mob host) {
-        double range = Math.min(4.0, Math.max(2.5, owner.entityInteractionRange()));
+        double range = bodyRange(owner.entityInteractionRange(), host.getBbWidth());
         Vec3 eye = host.getEyePosition();
-        Vec3 look = ParasiteService.viewDirection(owner);
+        Vec3 look = ParasiteService.viewDirection(owner).normalize();
         Vec3 far = eye.add(look.scale(range));
-        AABB search = host.getBoundingBox().expandTowards(look.scale(range)).inflate(1.0);
+        AABB search = host.getBoundingBox().inflate(range);
         LivingEntity closest = null;
-        double nearest = range * range;
+        double nearest = Double.POSITIVE_INFINITY;
         for (LivingEntity candidate : owner.serverLevel().getEntitiesOfClass(LivingEntity.class, search,
                 e -> e != host && e != owner && e.isAlive() && e.isPickable() && e.isAttackable())) {
-            var hit = candidate.getBoundingBox().inflate(.15).clip(eye, far);
-            if (hit.isEmpty()) continue;
-            double distance = eye.distanceToSqr(hit.get());
-            if (distance < nearest) {
-                nearest = distance;
-                closest = candidate;
+            var rayHit = candidate.getBoundingBox().inflate(.15).clip(eye, far);
+            boolean eyeHit = rayHit.isPresent();
+            Vec3 sightOrigin = eye;
+            Vec3 hitPoint = eyeHit ? rayHit.get() : null;
+            if (!eyeHit) {
+                Vec3 chest = host.getBoundingBox().getCenter();
+                Vec3 center = candidate.getBoundingBox().getCenter();
+                if (!bodySwingCone(look, center.subtract(chest), host.getBbHeight())
+                        || host.getBoundingBox().distanceToSqr(center) > range * range) continue;
+                sightOrigin = chest;
+                hitPoint = center;
             }
+            double dist = sightOrigin.distanceToSqr(hitPoint);
+            if (dist >= nearest || dist > (range + .2) * (range + .2)) continue;
+            BlockHitResult wall = owner.serverLevel().clip(new ClipContext(
+                    sightOrigin, hitPoint, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, host));
+            if (wall.getType() != HitResult.Type.MISS
+                    && sightOrigin.distanceToSqr(wall.getLocation()) + .001 < dist) continue;
+            nearest = dist;
+            closest = candidate;
         }
-        if (closest == null) return null;
-        BlockHitResult wall = owner.serverLevel().clip(new ClipContext(eye, far,
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, host));
-        if (wall.getType() != HitResult.Type.MISS
-                && eye.distanceToSqr(wall.getLocation()) < nearest) return null;
         return closest;
     }
+
 }

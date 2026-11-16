@@ -98,8 +98,8 @@ public final class ParasiteSpeciesService {
             int levelOffset = (int) Math.round(direction.y * step);
             for (int dy = 2; dy >= -3; dy--) {
                 Vec3 destination = new Vec3(ahead.x, Math.floor(origin.y) + levelOffset + dy, ahead.z);
-                if (safe(owner.serverLevel(), host, destination))
-                    return teleport(owner.serverLevel(), host, destination);
+                if (safe(owner, host, destination)
+                        && teleport(owner, host, destination)) return true;
             }
         }
         return false;
@@ -138,7 +138,7 @@ public final class ParasiteSpeciesService {
             Vec3 intended = host.position().add(away.scale(v[0])).add(side.scale(v[1]));
             for (int dy = 1; dy >= -2; dy--) {
                 Vec3 dest = new Vec3(intended.x, Math.floor(host.getY()) + dy, intended.z);
-                if (safe(owner.serverLevel(), host, dest) && teleport(owner.serverLevel(), host, dest)) {
+                if (safe(owner, host, dest) && teleport(owner, host, dest)) {
                     LAST_DODGE.put(owner.getUUID(), now);
                     return true;
                 }
@@ -153,7 +153,10 @@ public final class ParasiteSpeciesService {
     }
 
     /** Only loaded, standable, non-fluid, world-border-safe spaces are candidates. */
-    private static boolean safe(ServerLevel level, Mob host, Vec3 pos) {
+    private static boolean safe(ServerPlayer owner, Mob host, Vec3 pos) {
+        ServerLevel level = owner.serverLevel();
+        if (owner.getVehicle() != host || host.getPassengers().size() != 1
+                || host.getPassengers().get(0) != owner) return false;
         BlockPos feet = BlockPos.containing(pos);
         BlockPos floor = feet.below();
         BlockPos top = feet.above((int)Math.ceil(host.getBbHeight()));
@@ -162,14 +165,42 @@ public final class ParasiteSpeciesService {
         if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)
                 || !level.getFluidState(feet).isEmpty() || !level.getFluidState(top).isEmpty()) return false;
         Vec3 shift = pos.subtract(host.position());
-        return level.noCollision(host, host.getBoundingBox().move(shift));
+        if (!level.noCollision(host, host.getBoundingBox().move(shift))) return false;
+        // Validate the real mounted PLAYER body at its projected vehicle seat,
+        // rather than moving a safe Mob into an unsafe player-size ceiling.
+        Vec3 passengerAt = passengerDestination(host.position(),
+                host.getPassengerRidingPosition(owner), pos);
+        BlockPos riderFeet = BlockPos.containing(passengerAt);
+        BlockPos riderTop = BlockPos.containing(passengerAt.add(0, owner.getBbHeight(), 0));
+        if (!level.hasChunkAt(riderFeet) || !level.hasChunkAt(riderTop)
+                || !level.getWorldBorder().isWithinBounds(riderFeet)
+                || !level.getWorldBorder().isWithinBounds(riderTop)) return false;
+        return level.noCollision(owner,
+                owner.getBoundingBox().move(passengerAt.subtract(owner.position())));
     }
 
-    private static boolean teleport(ServerLevel level, Mob host, Vec3 pos) {
+    /** Immutable geometry; the actual teleport still happens only on the server. */
+    public static Vec3 passengerDestination(Vec3 hostOrigin, Vec3 seatOrigin, Vec3 hostDestination) {
+        return seatOrigin.add(hostDestination.subtract(hostOrigin));
+    }
+
+    private static boolean teleport(ServerPlayer owner, Mob host, Vec3 pos) {
+        ServerLevel level = owner.serverLevel();
+        if (!safe(owner, host, pos)) return false;
         Vec3 before = host.position();
+        host.teleportTo(pos.x, pos.y, pos.z);
+        if (host.position().distanceToSqr(pos) > .02) return false;
+        if (owner.getVehicle() != host && !owner.startRiding(host, true)) {
+            // An external Mob may disallow remounting after relocation. No
+            // completed skill, no cooldown charge, and the original body goes back.
+            host.teleportTo(before.x, before.y, before.z);
+            return false;
+        }
+        host.positionRider(owner);
+        owner.connection.resetPosition();
+        ParasiteService.syncView(owner);
         level.sendParticles(ParticleTypes.PORTAL, before.x, before.y + host.getBbHeight() / 2,
                 before.z, 32, 0.3, 0.6, 0.3, 0.15);
-        host.teleportTo(pos.x, pos.y, pos.z);
         level.sendParticles(ParticleTypes.PORTAL, pos.x, pos.y + host.getBbHeight() / 2,
                 pos.z, 32, 0.3, 0.6, 0.3, 0.15);
         level.playSound(null, host.blockPosition(), SoundEvents.ENDERMAN_TELEPORT,

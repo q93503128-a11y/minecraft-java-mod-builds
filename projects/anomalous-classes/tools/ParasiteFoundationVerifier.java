@@ -6,6 +6,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 
 /** Deterministic server-contract fixtures. This is not a Minecraft client or multiplayer test. */
 public final class ParasiteFoundationVerifier {
@@ -45,6 +46,35 @@ public final class ParasiteFoundationVerifier {
         check(ParasiteMotionRules.yaw(360F) == 0F
                 && ParasiteMotionRules.yaw(-270F) == 90F,
                 "canonical wraparound camera yaw");
+        // Mounted actions: server validates host-eye direction and caps the
+        // extra vanilla network reach to the actual host's permissible range.
+        check(ParasiteHostReachService.blockLimit(4.5) == 4.5
+                && ParasiteHostReachService.blockLimit(50) == 5.5
+                && ParasiteHostReachService.blockLimit(-1) == 3,
+                "host-block interaction distance is bounded");
+        check(ParasiteHostReachService.entityLimit(3.0) == 3.0
+                && ParasiteHostReachService.entityLimit(30) == 5.0,
+                "host-entity interaction distance is bounded");
+        Vec3 eye = new Vec3(0, 2, 0);
+        check(ParasiteHostReachService.aimedToward(eye, new Vec3(0, 2, 3), new Vec3(0, 0, 1))
+                && !ParasiteHostReachService.aimedToward(eye, new Vec3(0, 2, -3), new Vec3(0, 0, 1))
+                && !ParasiteHostReachService.aimedToward(eye, new Vec3(3, 2, 0), new Vec3(0, 0, 1)),
+                "server host interaction cannot reach behind or sideways");
+        check(ParasiteHostCombatService.bodyRange(5.75, .7) == 3
+                && ParasiteHostCombatService.bodyRange(5.75, 2.0) > 3
+                && ParasiteHostCombatService.bodyRange(100, 100) == 5.5,
+                "large body melee scaling is bounded without using mounting bonus");
+        check(ParasiteHostCombatService.bodySwingCone(
+                new Vec3(0, 0, 1), new Vec3(0, -1, 3), 2.7)
+                && !ParasiteHostCombatService.bodySwingCone(
+                new Vec3(0, 0, 1), new Vec3(0, -1, -3), 2.7)
+                && !ParasiteHostCombatService.bodySwingCone(
+                new Vec3(0, 0, 1), new Vec3(0, -1, 3), 1.5),
+                "large host chest swing is forward-only and size-gated");
+        check(ParasiteSpeciesService.passengerDestination(
+                new Vec3(10, 50, -8), new Vec3(10, 52, -8),
+                new Vec3(14, 51, 1)).equals(new Vec3(14, 53, 1)),
+                "teleport projects the mounted player seat with the original host");
         PlayerClassProfile profile = new PlayerClassProfile();
         var pig = ParasiteRules.supported(ResourceLocation.parse("minecraft:pig"));
         var cow = ParasiteRules.supported(ResourceLocation.parse("minecraft:cow"));
@@ -329,7 +359,7 @@ public final class ParasiteFoundationVerifier {
                 && !savedTraits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 200, 560, 0)
                 && savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 531, 480, 60),
                 "guardian and enderman cooldowns persist separately after restart");
-        System.out.println("PASS: 54 host profiles, pinned external identities, input/standing-aim/diagonal/swim motion, turtle/ravager, atomic trait cooldown, mastery and NBT");
+        System.out.println("PASS: 54 hosts, original-host interaction reach, giant melee cone, mounted teleport projection, cooldown, input, mastery and NBT");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

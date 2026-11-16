@@ -170,6 +170,7 @@ public final class ParasiteService {
         CHANNELS.remove(player.getUUID());
         MOTIONS.remove(player.getUUID());
         ParasiteTraitService.reset(player);
+        ParasiteHostReachService.reset(player);
         return true;
     }
 
@@ -196,6 +197,7 @@ public final class ParasiteService {
         MOTIONS.remove(player.getUUID());
         CONTRIBUTIONS.remove(player.getUUID());
         RECENT_KILLS.remove(player.getUUID());
+        ParasiteHostReachService.reset(player);
         ParasiteSpeciesService.logout(player.getUUID());
         Mob host = loadedHost(player, ParasiteSavedData.get(player.getServer()).player(player.getUUID()).host());
         if (host != null) ParasiteAbilityService.endHost(player, host);
@@ -240,6 +242,7 @@ public final class ParasiteService {
         }
         if (player.isAlive()) player.setHealth(Math.max(.5F,
                 Math.min(player.getMaxHealth(), player.getMaxHealth() * Math.max(0, Math.min(1, ratio)))));
+        ParasiteHostReachService.refresh(player, activeHost(player));
     }
 
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
@@ -322,10 +325,14 @@ public final class ParasiteService {
 
     /** Capped, one-time survival milestones supplement movement and combat BD. */
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (event.isCanceled() || !(event.getPlayer() instanceof ServerPlayer owner)
-                || owner.isCreative() || owner.isSpectator()) return;
+        if (event.isCanceled() || !(event.getPlayer() instanceof ServerPlayer owner)) return;
         Mob host = activeHost(owner);
         if (host == null) return;
+        if (!ParasiteHostReachService.canReachBlock(owner, host, event.getPos())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (owner.isCreative() || owner.isSpectator()) return;
         var block = event.getState();
         String milestone = null;
         int amount = 0;
@@ -450,6 +457,7 @@ public final class ParasiteService {
                     host.getNavigation().stop();
                     host.setNoAi(true);
                 }
+                ParasiteHostReachService.refresh(player, host);
                 moveHost(player, host, state);
                 ParasiteSpeciesService.tick(player, host, state);
                 ParasiteAbilityService.tick(player, host);
@@ -734,7 +742,10 @@ public final class ParasiteService {
         if (owner == null || owner.getServer() == null) return;
         ParasiteSavedData data = ParasiteSavedData.get(owner.getServer());
         UUID hostId = data.player(owner.getUUID()).host();
-        if (hostId == null) return;
+        if (hostId == null) {
+            ParasiteHostReachService.reset(owner);
+            return;
+        }
         Mob host = loadedSavedHost(owner, hostId);
         if (owner.getVehicle() != null) owner.stopRiding();
         if (host != null) {
@@ -742,6 +753,7 @@ public final class ParasiteService {
             restore(host);
         }
         data.release(owner.getUUID(), hostId);
+        ParasiteHostReachService.reset(owner);
         if (!death) applyHumanStats(owner);
         syncView(owner);
     }
