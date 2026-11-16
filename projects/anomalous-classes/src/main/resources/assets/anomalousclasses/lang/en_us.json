@@ -482,5 +482,11 @@
   "message.anomalousclasses.parasite_trait.ender_blink": "The host folds through space.",
   "message.anomalousclasses.parasite_trait.ravager_unlearned": "Ravager roar requires a ravager host or ravager mastery 100.",
   "message.anomalousclasses.parasite_trait.roar_no_target": "No enemies are within the roar's reach.",
-  "message.anomalousclasses.parasite_trait.ravager_roar": "The host's roar strikes and drives back nearby enemies."
+  "message.anomalousclasses.parasite_trait.ravager_roar": "The host's roar strikes and drives back nearby enemies.",
+  "message.anomalousclasses.parasite_trait.grottol_unlearned": "Scuttle requires a Grottol host or Grottol mastery 100.",
+  "message.anomalousclasses.parasite_trait.bluff_unlearned": "Earth Rise requires a Bluff host or Bluff mastery 100.",
+  "message.anomalousclasses.parasite_trait.scuttle_blocked": "The ground is unstable or the path ahead is blocked.",
+  "message.anomalousclasses.parasite_trait.earth_no_target": "There is no exposed grounded target in reach.",
+  "message.anomalousclasses.parasite_trait.grottol_scuttle": "The host scuttles forward in a burst of speed.",
+  "message.anomalousclasses.parasite_trait.bluff_earth_rise": "The earth jolts upward beneath your enemy."
 }

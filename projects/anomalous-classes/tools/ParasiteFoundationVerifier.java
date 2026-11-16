@@ -119,6 +119,38 @@ public final class ParasiteFoundationVerifier {
         // 34 vanilla original bodies + 20 audited external non-boss profiles.
         // Exact mod Java fingerprints are a safety boundary after updates.
         check(ParasiteRules.supportedCount() == 54, "34 vanilla + 20 pinned external profiles");
+        check(ParasiteRules.supported(ResourceLocation.parse("mutantmonsters:spider_pig"))
+                    .wallClimb()
+                && ParasiteRules.supported(ResourceLocation.parse("mutantmonsters:spider_pig"))
+                    .innateJump() == .55,
+                "mutant spider pig native climb and leap are catalog-based");
+        var spiderPigProgress = new ParasiteSavedData();
+        UUID spiderPigOwner = UUID.randomUUID();
+        var spiderPigState = spiderPigProgress.player(spiderPigOwner);
+        check(ParasiteRules.hasWallClimb("mutantmonsters:spider_pig", spiderPigState)
+                && !ParasiteRules.hasWallClimb("minecraft:pig", spiderPigState)
+                && ParasiteRules.jumpImpulse("mutantmonsters:spider_pig", spiderPigState) == .55,
+                "native mutant spider pig environmental traits need no mastery");
+        spiderPigProgress.reward(spiderPigOwner, "mutantmonsters:spider_pig", 999,
+                new PlayerClassProfile());
+        check(!ParasiteRules.hasWallClimb("minecraft:pig", spiderPigState)
+                && ParasiteRules.jumpImpulse("minecraft:pig", spiderPigState) == .42,
+                "mutant spider pig traits cannot transfer at mastery 99");
+        spiderPigProgress.reward(spiderPigOwner, "mutantmonsters:spider_pig", 1,
+                new PlayerClassProfile());
+        check(ParasiteRules.hasWallClimb("minecraft:pig", spiderPigState)
+                && ParasiteRules.jumpImpulse("minecraft:pig", spiderPigState) == .55,
+                "mutant spider pig jump and climb both transfer permanently at 100");
+        check(ParasiteExternalTraitService.canScuttle(true, false, false, new Vec3(1, 0, 0))
+                && !ParasiteExternalTraitService.canScuttle(false, false, false, new Vec3(1, 0, 0))
+                && !ParasiteExternalTraitService.canScuttle(true, true, false, new Vec3(1, 0, 0))
+                && !ParasiteExternalTraitService.canScuttle(true, false, true, new Vec3(1, 0, 0))
+                && !ParasiteExternalTraitService.canScuttle(true, false, false, new Vec3(0, 1, 0)),
+                "grottol physical escape cannot bypass water, ground or wall rules");
+        check(ParasiteTraitService.GROTTOL_SLOT == 4 && ParasiteTraitService.BLUFF_SLOT == 5
+                && ParasiteRules.supported(ResourceLocation.parse("mowziesmobs:grottol")) != null
+                && ParasiteRules.supported(ResourceLocation.parse("mowziesmobs:bluff")) != null,
+                "two audited external trait species map to V+5/6");
         String[] externalIds = {
                 "born_in_chaos_v1:maggot", "born_in_chaos_v1:baby_spider",
                 "born_in_chaos_v1:diamond_termite", "born_in_chaos_v1:decaying_zombie",
@@ -332,6 +364,16 @@ public final class ParasiteFoundationVerifier {
                 && transactional.remaining(actor, ParasiteTraitService.RAVAGER_ROAR, 200) > 0,
                 "individual cooldowns remain intact after both successful casts");
         ParasiteTraitSavedData traits = new ParasiteTraitSavedData();
+        UUID externalActor = UUID.randomUUID();
+        AtomicInteger externalEffects = new AtomicInteger();
+        check(traits.castIf(externalActor, ParasiteTraitService.GROTTOL_SCUTTLE,
+                1000, 360, 0, () -> { externalEffects.incrementAndGet(); return true; })
+                && traits.castIf(externalActor, ParasiteTraitService.BLUFF_EARTH_RISE,
+                1001, 460, 60, () -> { externalEffects.incrementAndGet(); return true; })
+                && !traits.castIf(externalActor, ParasiteTraitService.GROTTOL_SCUTTLE,
+                1002, 360, 0, () -> { externalEffects.incrementAndGet(); return true; })
+                && externalEffects.get() == 2,
+                "grottol mobility and bluff shared combat recovery share saved cooldown safely");
         String blast = "anomalousclasses:creeper_blast";
         check(traits.cast(owner, blast, 50, 600, 60), "first inherited cast");
         check(!traits.cast(owner, blast, 100, 600, 60), "individual cooldown blocks repeat");
@@ -359,7 +401,7 @@ public final class ParasiteFoundationVerifier {
                 && !savedTraits.cast(fighter, ParasiteTraitService.ENDER_BLINK, 200, 560, 0)
                 && savedTraits.cast(fighter, ParasiteTraitService.GUARDIAN_BEAM, 531, 480, 60),
                 "guardian and enderman cooldowns persist separately after restart");
-        System.out.println("PASS: 54 hosts, original-host interaction reach, giant melee cone, mounted teleport projection, cooldown, input, mastery and NBT");
+        System.out.println("PASS: 54 hosts, external Grottol/Bluff casts, Spider Pig passive mastery, host-eye reach, giant melee, mounted teleport, cooldown and NBT");
     }
     private static void check(boolean truth, String label) {
         if (!truth) throw new AssertionError(label);

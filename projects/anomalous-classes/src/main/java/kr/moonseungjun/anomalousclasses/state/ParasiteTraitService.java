@@ -8,6 +8,7 @@ import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteTraitModeStatePayload;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -25,7 +26,9 @@ import net.minecraft.world.phys.AABB;
 
 /**
  * V controls number-key access; species mastery is the permanent unlock.
- * Slots 1–4: creeper blast, guardian beam, ender blink, ravager roar.
+ * Slots 1–6: creeper blast, guardian beam, ender blink, ravager roar,
+ * Grottol scuttle, Bluff earth rise. External adaptations do not replace the
+ * original mod's visual animation system.
  * Environmental adaptations and automatic dodge remain active with V OFF.
  */
 public final class ParasiteTraitService {
@@ -33,10 +36,14 @@ public final class ParasiteTraitService {
     public static final int GUARDIAN_SLOT = 1;
     public static final int ENDERMAN_SLOT = 2;
     public static final int RAVAGER_SLOT = 3;
+    public static final int GROTTOL_SLOT = 4;
+    public static final int BLUFF_SLOT = 5;
     public static final String CREEPER_BLAST = "anomalousclasses:creeper_blast";
     public static final String GUARDIAN_BEAM = "anomalousclasses:guardian_beam";
     public static final String ENDER_BLINK = "anomalousclasses:ender_blink";
     public static final String RAVAGER_ROAR = "anomalousclasses:ravager_roar";
+    public static final String GROTTOL_SCUTTLE = "anomalousclasses:grottol_scuttle";
+    public static final String BLUFF_EARTH_RISE = "anomalousclasses:bluff_earth_rise";
     private static final Map<UUID, Boolean> MODES = new HashMap<>();
     private ParasiteTraitService() {}
 
@@ -63,6 +70,7 @@ public final class ParasiteTraitService {
         String ability;
         String species;
         boolean nativeSpecies;
+        String currentSpecies = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).toString();
         int cooldownTicks;
         int recoveryTicks;
         switch (slot) {
@@ -94,6 +102,20 @@ public final class ParasiteTraitService {
                 cooldownTicks = 800;
                 recoveryTicks = 60;
             }
+            case GROTTOL_SLOT -> {
+                ability = GROTTOL_SCUTTLE;
+                species = "mowziesmobs:grottol";
+                nativeSpecies = currentSpecies.equals(species);
+                cooldownTicks = 360;
+                recoveryTicks = 0;
+            }
+            case BLUFF_SLOT -> {
+                ability = BLUFF_EARTH_RISE;
+                species = "mowziesmobs:bluff";
+                nativeSpecies = currentSpecies.equals(species);
+                cooldownTicks = 460;
+                recoveryTicks = 60;
+            }
             default -> {
                 tell(owner, "message.anomalousclasses.parasite_trait.empty");
                 return;
@@ -105,6 +127,8 @@ public final class ParasiteTraitService {
                 case GUARDIAN_SLOT -> "message.anomalousclasses.parasite_trait.guardian_unlearned";
                 case ENDERMAN_SLOT -> "message.anomalousclasses.parasite_trait.ender_unlearned";
                 case RAVAGER_SLOT -> "message.anomalousclasses.parasite_trait.ravager_unlearned";
+                case GROTTOL_SLOT -> "message.anomalousclasses.parasite_trait.grottol_unlearned";
+                case BLUFF_SLOT -> "message.anomalousclasses.parasite_trait.bluff_unlearned";
                 default -> "message.anomalousclasses.parasite_trait.unlearned";
             });
             return;
@@ -130,6 +154,8 @@ public final class ParasiteTraitService {
                     case GUARDIAN_SLOT -> ParasiteSpeciesService.guardianBeam(owner, host);
                     case ENDERMAN_SLOT -> ParasiteSpeciesService.blink(owner, host);
                     case RAVAGER_SLOT -> roar(owner, host);
+                    case GROTTOL_SLOT -> ParasiteExternalTraitService.scuttle(owner, host);
+                    case BLUFF_SLOT -> ParasiteExternalTraitService.earthRise(owner, host);
                     default -> false;
                 });
         if (!success) {
@@ -141,12 +167,18 @@ public final class ParasiteTraitService {
                 tell(owner, "message.anomalousclasses.parasite_trait.blink_no_space");
             else if (slot == RAVAGER_SLOT)
                 tell(owner, "message.anomalousclasses.parasite_trait.roar_no_target");
+            else if (slot == GROTTOL_SLOT)
+                tell(owner, "message.anomalousclasses.parasite_trait.scuttle_blocked");
+            else if (slot == BLUFF_SLOT)
+                tell(owner, "message.anomalousclasses.parasite_trait.earth_no_target");
             return;
         }
         if (slot != CREEPER_SLOT)
             tell(owner, switch (slot) {
                 case GUARDIAN_SLOT -> "message.anomalousclasses.parasite_trait.guardian_beam";
                 case ENDERMAN_SLOT -> "message.anomalousclasses.parasite_trait.ender_blink";
+                case GROTTOL_SLOT -> "message.anomalousclasses.parasite_trait.grottol_scuttle";
+                case BLUFF_SLOT -> "message.anomalousclasses.parasite_trait.bluff_earth_rise";
                 default -> "message.anomalousclasses.parasite_trait.ravager_roar";
             });
     }

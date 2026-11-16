@@ -454,8 +454,9 @@
       "intrusionTicks": 170,
       "speedFactor": 1.07,
       "adapter": "ground",
-      "innateJump": 0.42,
-      "expectedClass": "fuzs.mutantmonsters.world.entity.mutant.SpiderPig"
+      "innateJump": 0.55,
+      "expectedClass": "fuzs.mutantmonsters.world.entity.mutant.SpiderPig",
+      "wallClimb": true
     }
   ]
 }
