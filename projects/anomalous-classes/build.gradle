@@ -185,7 +185,18 @@ tasks.register('verifyFocusInventoryUi', Exec) {
     commandLine 'python', 'tools/verify_focus_inventory_ui.py'
 }
 
+tasks.register('verifyRpgXpCurve', Exec) {
+    group = 'verification'
+    description = 'Verifies provisional P30 thresholds, multi-level XP, and 3SP per level.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/RpgXpCurveVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyRpgXpCurve')
     dependsOn tasks.named('verifyProfileSkillTree')
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')
     dependsOn tasks.named('verifyMentalDominatorRules')

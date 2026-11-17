@@ -20,6 +20,7 @@ import kr.moonseungjun.anomalousclasses.state.ParasiteTraitService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteHostCombatService;
 import kr.moonseungjun.anomalousclasses.state.ParasiteHostReachService;
 import kr.moonseungjun.anomalousclasses.state.ExternalMobAudit;
+import kr.moonseungjun.anomalousclasses.state.RpgExperienceService;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.bus.api.IEventBus;
@@ -35,6 +36,7 @@ import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.MobDespawnEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.bus.api.EventPriority;
 
 @Mod(AnomalousClasses.MOD_ID)
 public final class AnomalousClasses {
@@ -52,6 +54,11 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogout);
+        NeoForge.EVENT_BUS.addListener(RpgExperienceService::onLogout);
+        NeoForge.EVENT_BUS.addListener(RpgExperienceService::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(RpgExperienceService::onItemCrafted);
+        NeoForge.EVENT_BUS.addListener(RpgExperienceService::onAdvancementEarned);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RpgExperienceService::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(this::onLivingDamage);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onLivingDamagePre);
         NeoForge.EVENT_BUS.addListener(PuppetCombatService::onLivingDamage);
@@ -70,6 +77,7 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(ExternalMobAudit::onServerStarted);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onChangeTarget);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RpgExperienceService::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onMobDespawn);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onEntityLeave);

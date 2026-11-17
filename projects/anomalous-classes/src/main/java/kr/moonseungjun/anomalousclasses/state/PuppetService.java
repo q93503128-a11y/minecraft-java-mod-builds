@@ -405,6 +405,7 @@ public final class PuppetService {
         ItemStack result = PuppetItem.make(puppet, 1, false);
         if (!inventory.add(result)) player.drop(result, false);
         message(player, "message.anomalousclasses.puppet.assembled");
+        RpgExperienceService.awardFirst(player, "puppet_device:" + device.name().toLowerCase(java.util.Locale.ROOT), 900);
         return true;
     }
 

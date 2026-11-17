@@ -488,5 +488,6 @@
   "message.anomalousclasses.parasite_trait.scuttle_blocked": "지면이 불안정하거나 이동 경로가 막혀 질주할 수 없습니다.",
   "message.anomalousclasses.parasite_trait.earth_no_target": "지면에서 공격할 수 있는 적이 없습니다.",
   "message.anomalousclasses.parasite_trait.grottol_scuttle": "숙주가 재빠르게 튀어나갑니다.",
-  "message.anomalousclasses.parasite_trait.bluff_earth_rise": "지면이 솟구쳐 적을 밀어냈습니다."
+  "message.anomalousclasses.parasite_trait.bluff_earth_rise": "지면이 솟구쳐 적을 밀어냈습니다.",
+  "message.anomalousclasses.rpg.level_up": "직업 레벨 %s 달성! 스킬 포인트 +%s"
 }

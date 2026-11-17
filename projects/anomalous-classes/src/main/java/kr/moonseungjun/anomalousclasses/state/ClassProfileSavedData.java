@@ -43,6 +43,9 @@ public final class ClassProfileSavedData extends SavedData {
             playerTag.putString("currentClass", profile.currentClass().map(ClassId::key).orElse(""));
             playerTag.putString("equippedFocus", profile.equippedFocus().map(ClassFocus::key).orElse(""));
             playerTag.putInt("revision", profile.revision());
+            ListTag milestones = new ListTag();
+            profile.rpgMilestones().stream().sorted().forEach(value -> milestones.add(StringTag.valueOf(value)));
+            playerTag.put("rpgMilestones", milestones);
 
             ListTag progressList = new ListTag();
             for (ClassId id : ClassId.values()) {
@@ -67,7 +70,7 @@ public final class ClassProfileSavedData extends SavedData {
             playerList.add(playerTag);
         }
         tag.put("players", playerList);
-        tag.putInt("schemaVersion", 4);
+        tag.putInt("schemaVersion", 5);
         return tag;
     }
 
@@ -109,8 +112,14 @@ public final class ClassProfileSavedData extends SavedData {
                                 ? progressTag.getInt("skillTreeVersion") : 0,
                         purchasedNodes));
             }
+            java.util.Set<String> milestones = new java.util.HashSet<>();
+            ListTag milestoneList = playerTag.getList("rpgMilestones", Tag.TAG_STRING);
+            for (int m = 0; m < milestoneList.size(); m++) {
+                String value = milestoneList.getString(m);
+                if (!value.isBlank() && value.length() <= 256) milestones.add(value);
+            }
             PlayerClassProfile profile = new PlayerClassProfile();
-            profile.load(selected, progress, focus, playerTag.getInt("revision"));
+            profile.load(selected, progress, focus, playerTag.getInt("revision"), milestones);
             data.profiles.put(playerId, profile);
         }
         return data;

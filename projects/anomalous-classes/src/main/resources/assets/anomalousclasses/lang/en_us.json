@@ -488,5 +488,6 @@
   "message.anomalousclasses.parasite_trait.scuttle_blocked": "The ground is unstable or the path ahead is blocked.",
   "message.anomalousclasses.parasite_trait.earth_no_target": "There is no exposed grounded target in reach.",
   "message.anomalousclasses.parasite_trait.grottol_scuttle": "The host scuttles forward in a burst of speed.",
-  "message.anomalousclasses.parasite_trait.bluff_earth_rise": "The earth jolts upward beneath your enemy."
+  "message.anomalousclasses.parasite_trait.bluff_earth_rise": "The earth jolts upward beneath your enemy.",
+  "message.anomalousclasses.rpg.level_up": "Class level %s reached! Skill points +%s"
 }

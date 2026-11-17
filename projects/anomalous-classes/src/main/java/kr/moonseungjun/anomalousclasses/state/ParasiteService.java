@@ -537,6 +537,8 @@ public final class ParasiteService {
         motion.lastInput = clock(player);
         MOTIONS.put(player.getUUID(), motion);
         syncView(player);
+        RpgExperienceService.awardFirst(player, "parasite_species:"
+                + BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()), 900);
         return true;
     }
 

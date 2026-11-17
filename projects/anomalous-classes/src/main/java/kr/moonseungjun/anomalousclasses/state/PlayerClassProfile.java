@@ -1,6 +1,8 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
 
@@ -8,6 +10,7 @@ public final class PlayerClassProfile {
     private ClassId currentClass;
     private ClassFocus equippedFocus;
     private final EnumMap<ClassId, ClassProgress> progress = new EnumMap<>(ClassId.class);
+    private final Set<String> rpgMilestones = new HashSet<>();
     private int revision;
 
     public PlayerClassProfile() {
@@ -30,6 +33,14 @@ public final class PlayerClassProfile {
         return revision;
     }
 
+    public Set<String> rpgMilestones() { return Set.copyOf(rpgMilestones); }
+
+    public boolean recordRpgMilestone(String key) {
+        if (key == null || key.isBlank() || key.length() > 256 || !rpgMilestones.add(key)) return false;
+        revision++;
+        return true;
+    }
+
     public Optional<ClassFocus> equippedFocus() {
         return Optional.ofNullable(equippedFocus);
     }
@@ -41,7 +52,17 @@ public final class PlayerClassProfile {
     }
 
     public void load(ClassId selected, Map<ClassId, ClassProgress> loaded, ClassFocus loadedFocus, int loadedRevision) {
+        load(selected, loaded, loadedFocus, loadedRevision, Set.of());
+    }
+
+    public void load(ClassId selected, Map<ClassId, ClassProgress> loaded, ClassFocus loadedFocus,
+                     int loadedRevision, Set<String> milestones) {
         currentClass = selected;
+        rpgMilestones.clear();
+        if (milestones != null) for (String milestone : milestones) {
+            if (milestone != null && !milestone.isBlank() && milestone.length() <= 256)
+                rpgMilestones.add(milestone);
+        }
         equippedFocus = loadedFocus;
         for (ClassId id : ClassId.values()) {
             progress.put(id, loaded.getOrDefault(id, ClassProgress.fresh()));

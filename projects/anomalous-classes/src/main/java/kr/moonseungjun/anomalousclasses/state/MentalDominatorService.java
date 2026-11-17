@@ -382,6 +382,7 @@ public final class MentalDominatorService {
         data.player(player.getUUID()).bumpRevision();
         attach(target, record);
         tell(player, "message.anomalousclasses.mental.capture_success");
+        RpgExperienceService.awardFirst(player, "mental_species:" + entityType, 900);
         return true;
     }
 
