@@ -159,9 +159,21 @@ public final class RpgExperienceService {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.tickCount % 200 != 0
                 || !eligible(player)) return;
         String dimension = player.serverLevel().dimension().location().toString();
-        awardFirst(player, "dimension:" + dimension, 800L);
-        player.serverLevel().getBiome(player.blockPosition()).unwrapKey().ifPresent(biome ->
-                awardFirst(player, "biome:" + dimension + ":" + biome.location(), 600L));
+        player.serverLevel().getBiome(player.blockPosition()).unwrapKey().ifPresent(biome -> {
+            String biomeKey = "biome:" + dimension + ":" + biome.location();
+            ClassProfileSavedData data = ClassProfileSavedData.get(player.getServer());
+            PlayerClassProfile profile = data.profile(player.getUUID());
+            if (profile.currentClass().isEmpty()) return;
+            // The login/spawn position is the starting point, not a new discovery.
+            if (profile.rpgMilestones().stream().noneMatch(key -> key.startsWith("biome:"))) {
+                profile.recordRpgMilestone("dimension:" + dimension);
+                profile.recordRpgMilestone(biomeKey);
+                data.setDirty();
+                return;
+            }
+            awardFirst(player, "dimension:" + dimension, 800L);
+            awardFirst(player, biomeKey, 600L);
+        });
     }
 
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
