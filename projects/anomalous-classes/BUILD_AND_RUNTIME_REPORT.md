@@ -1,5 +1,14 @@
 # Build and Runtime Report
 
+## 2026-11-17 — 시작 위치 XP 중복 획득 방지 후 최종 빌드
+
+- **게임 코드:** [e64dfe2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/e64dfe29862c8e7e13faf251fce5763cc0c3004a). 최초 생존 시작 차원·생물군계는 기록만 하고 XP를 즉시 주지 않도록 정정. 이후 실제 새로운 차원과 생물군계에 진입하면 정해진 최초 보상 지급. 직업 전환 뒤 재지급 불가.
+- **BUILD VERIFIED / JAR PRODUCED:** [Actions #44070219486](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44070219486) **SUCCESS**. Java21 `clean build`, RPG XP 보상 곡선 검증, 기존 회귀 검증, JAR 구조 검증, SHA256 및 산출물 업로드 PASS. [최신 검증 JAR 및 SHA256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44070219486/artifacts/14322735997).
+- **미검증:** 실제 클라이언트 화면/생존 XP 이벤트 체감/저장 월드 마이그레이션/6직업 멀티플레이 모두 NOT TESTED. P30 성장 30시간 목표와 각 보상량은 실플레이 측정 후 조정 대상.
+
+---
+
+
 ## 2026-11-17 — RPG XP 성장·생존 보상 연결
 
 - **코드 기준 커밋:** [929f643](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/929f64367989b48b8be0e5c406bd4daf196b3c25). Minecraft 1.21.1 / NeoForge 21.1.244 / Java 21. RPG XP 분리·레벨당 3SP·월드 저장 마일스톤·5종 활동 보상을 구현했다.
