@@ -1,5 +1,17 @@
 # Build and Runtime Report
 
+## 2026-11-17 — RPG XP 성장·생존 보상 연결
+
+- **코드 기준 커밋:** [929f643](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/929f64367989b48b8be0e5c406bd4daf196b3c25). Minecraft 1.21.1 / NeoForge 21.1.244 / Java 21. RPG XP 분리·레벨당 3SP·월드 저장 마일스톤·5종 활동 보상을 구현했다.
+- **BUILD VERIFIED / JAR PRODUCED:** [Build anomalous-classes #44069240203](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44069240203) **SUCCESS**. `clean build`, `verifyRpgXpCurve`, 기존 통합 검증 작업, `verify_jar.py`, JAR+SHA256 업로드 PASS. [JAR 및 SHA-256 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44069240203/artifacts/14321504156).
+- **규칙:** P30은 시험 XP 곡선(총 713,125 XP에 Lv300), 시간당 XP 상한 없음. 적 처치·광석/원목 채집·첫 제작·발전과제·새 차원/생물군계·기존 정신 지배/인형/기생술사의 첫 진전으로 XP 지급. 직업별 XP/SP/투자 저장과 바닐라 XP 완전 분리. 같은 위치 단기 중복 채굴 및 최초 보상 반복만 제한.
+- **마이그레이션:** 기존 schemaVersion 4의 필드를 보존해 schemaVersion 5에서 플레이어 공통 마일스톤 목록만 추가. 기존 저장 파일을 실제 로드한 수동 테스트는 아직 없음.
+- **미검증:** CLIENT RUNTIME TESTED NO / PLAYTESTED NO / MULTIPLAYER TESTED NO. 일반 30시간에 Lv300 도달 여부, 실제 제작/전투 이벤트 빈도, 외부 모드 호환 및 소환체 처치 인식은 **추후 게임 안에서 검증**. 기존 6직업 자동 레벨 능력치 연결은 별도 감사 필요.
+- **역할 구분:** 이번 커밋은 게임 서버 로직 중심. Codex 담당 UI/모델/애니메이션은 변경하지 않음. 기존 정신·인형·기생 전투 기능 보존.
+
+---
+
+
 ## 2026-11-16 — 기생술사 54종 보존·외부 3계열 특성 묶음 구현·개발 우선순위 전환
 
 - 코드: [`f9a9897c6818a1c535f0988a16db633246e170f7`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/f9a9897c6818a1c535f0988a16db633246e170f7).

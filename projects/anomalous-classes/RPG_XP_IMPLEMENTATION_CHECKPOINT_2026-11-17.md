@@ -15,4 +15,4 @@
 - 탐험의 기본 보상은 생물군계·차원·발전과제이며, 별도의 구조물 감지기는 아직 없다.
 - 기존 스킬트리 효과·직업 자동 스탯 수식을 임의로 대체하지 않는다. 이후 직업별 연결 상태를 별도 검사한다.
 - 모델·UI·애니메이션은 기존 분담대로 Codex 담당.
-- CI 검증 상태는 커밋 이후 결과로 따로 기록한다.
+- **BUILD VERIFIED / JAR PRODUCED:** 코드 커밋 `929f643`, [Actions #44069240203](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44069240203) SUCCESS. `clean build`와 JAR 구조 검증 및 `verifyRpgXpCurve` PASS. 실제 Minecraft 클라이언트/플레이·멀티플레이는 NOT TESTED.
