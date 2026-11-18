@@ -23,13 +23,14 @@ public final class PactTierThreeVerifier {
             require(PactAltarBlock.index(id)>=8&&PactAltarBlock.index(id)<=11,"Stable world blockstate: "+id);
         }
         require(PactCatalog.all().size()==16,"All existing names preserved");
-        require(PactCatalog.all().values().stream().filter(PactCatalog.Patron::enabled).count()==12,
-                "Tier four must remain locked");
+        require(PactCatalog.all().values().stream().filter(PactCatalog.Patron::enabled).count()==16,
+                "All tier-four patrons enabled");
         UUID player=UUID.fromString("00000000-0000-0000-0000-000000000013");
         PactSavedData save=new PactSavedData();
         require(save.completeTrial(player,"sevenwing"),"First legitimate trial");
         require(!save.completeTrial(player,"sevenwing"),"Cannot repeat the same proof");
-        require(!save.completeTrial(player,"nahar"),"Cannot skip to tier four");
+        require(save.completeTrial(player,"nahar"),"Fourth-tier altar trials use the same earned proof system");
+        require(!save.player(player).has("nahar"),"Trial is not a free fourth-tier contract");
         require(!save.player(player).has("sevenwing"),"Proof is not a free contract");
         save.observe(player,"projectile");
         save.observe(player,"melee");
@@ -54,7 +55,7 @@ public final class PactTierThreeVerifier {
             seen.add(PactAltarPlacement.selectLandPatron(chunk[0],chunk[1]));
         }
         require(seen.containsAll(List.of("karda","shero","hastel","sevenwing",
-                "merzad","taron","arken")),"Every land identity has reachable altar placement");
+                "merzad","taron","arken",\n                "nahar","rakiel","ormas","viar")),"Every land identity has reachable altar placement");
         System.out.println("Tier3 altars, hard gating, proof NBT, safe 2-profile records, grid: PASS");
     }
 }
