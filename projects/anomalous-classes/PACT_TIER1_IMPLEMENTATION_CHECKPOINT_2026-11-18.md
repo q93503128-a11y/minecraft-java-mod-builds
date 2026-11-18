@@ -18,3 +18,7 @@ PACT_16_COMBAT_DESIGN_BASELINE_V3, PACT_SOFTCAP_MULTICONTRACT_POLICY_V1, PACT_TI
 ## 남은 게임플레이
 - 2~4위계 12종 권능·패시브와 16종 제단 월드젠/공용 상자/계약핵, 고위 제물·시련, 심화/정식 서약/면책/현현, 계약술사 전체 270랭크 패시브 효과 연계, 완전한 계약별 관리/키 재배치.
 - 첫 4종 패시브·수치도 실제 플레이는 미검증. Minecraft 클라이언트·멀티플레이·밸런스 테스트 미수행. 사용자의 6직업 구현→통합 플레이테스트→Codex 디자인 단계 정책 유지.
+
+## 자동 검증 체크포인트
+- 기준: `21152c3`; [Build #44230634936](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44230634936) SUCCESS. PactFoundationVerifier 포함 Gradle 회귀 및 JAR 검사 통과.
+- 이후 미리보기 요청이 거절되더라도 이전 승인 대기 상태가 남지 않게 확인 상태 초기화 코드 추가(`[skip ci]`). 이 수정의 실게임/멀티 검증은 아직 수행하지 않음.

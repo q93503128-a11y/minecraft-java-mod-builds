@@ -41,6 +41,7 @@ public final class PactService {
         say(player, "message.anomalousclasses.pact.contact_hint");
     }
     public static void previewSign(ServerPlayer player, String id) {
+        PENDING.remove(player.getUUID()); // Invalid second previews must invalidate any older consent.
         if (!isPact(player) || CombatTracker.isLocked(player)) {
             say(player, "message.anomalousclasses.pact.unavailable"); return;
         }
@@ -57,6 +58,7 @@ public final class PactService {
                 state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS));
     }
     public static void previewRelease(ServerPlayer player, String id) {
+        PENDING.remove(player.getUUID());
         if (!isPact(player) || CombatTracker.isLocked(player)) {
             say(player, "message.anomalousclasses.pact.unavailable"); return;
         }

@@ -1,5 +1,15 @@
 # Build and Runtime Report
 
+## 2026-11-18 — 계약술사 1위계 계약·서버 전투 1차
+
+- **코드 기준:** [21152c3](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/21152c38ad46c690531b4104c2d4cf410cb0e7f8). 16종 카탈로그(실접근 1위계 4명), 제물 서버 검증·2단계 서명/해약, 3개 이상 계약 소프트캡, 계약/권능 지속 저장, 제1위계 4명 능력·패시브 및 가호 연결. [상세/남은 작업](./PACT_TIER1_IMPLEMENTATION_CHECKPOINT_2026-11-18.md).
+- **BUILD VERIFIED / JAR PRODUCED:** [Build anomalous-classes #44230634936](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44230634936) **SUCCESS**. `clean build`, 신규 `verifyPactFoundation`, 기존 규칙·회귀·`verify_jar.py` 검사 및 산출물 업로드 통과. [빌드 JAR 및 SHA256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44230634936/artifacts/14395211638).
+- **후속 작은 보호 수정:** 실패한 다른 계약서 열람이 전에 승인 대기하던 계약서를 남겨두지 않도록, 새 계약/해약 미리보기 요청을 시작할 때 이전 확인 상태를 항상 폐기. 해당 몇 줄 코드는 이번 문서 체크포인트와 함께 `[skip ci]` 반영하므로 **이 수정 자체는 자동 빌드 이후의 코드**이다. 다음 의미 있는 기능 묶음 빌드에서 재검증.
+- **미완:** 제단 월드젠/고위 12명 실전 권능/심화·금기/현현/정식 계약 GUI. 계약술사 전체 완료 아님. **CLIENT RUNTIME TESTED NO / PLAYTESTED NO / MULTIPLAYER TESTED NO.** 사용자는 6직업 구현 후 통합 플레이테스트, 그 이후 Codex 디자인 작업 진행.
+
+---
+
+
 ## 2026-11-18 — 결계술사 전투 코드 1차 검증
 
 - 서버 전투/결계 설치/3종 결계/3보조 주문/HP 자동 성장: [19366ab](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/19366ab3e865526ed220704913836a15a6c0ea86), 클래스 경로 정정 [8ac2478](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/8ac2478b34c86fe892891be5cbafde600b0a6c5d).
