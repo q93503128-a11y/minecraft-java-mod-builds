@@ -58,7 +58,7 @@ public final class PactCombatService {
         return PactService.isPact(player) && PactSavedData.get(player.getServer())
                 .player(player.getUUID()).has(patron);
     }
-    private static boolean enemy(ServerPlayer player, LivingEntity entity) {
+    static boolean enemy(ServerPlayer player, LivingEntity entity) {
         return entity instanceof Mob && entity instanceof Enemy
                 && !(entity instanceof PuppetEntity)
                 && MentalDominatorService.isValidCombatTarget(player, entity)
@@ -106,7 +106,7 @@ public final class PactCombatService {
         tell(player,"message.anomalousclasses.pact.cast",
                 Component.translatable("pact_ability.anomalousclasses."+spell.id()));
     }
-    private static float power(ServerPlayer player, PactCatalog.Patron patron, double damage) {
+    static float power(ServerPlayer player, PactCatalog.Patron patron, double damage) {
         var data=PactSavedData.get(player.getServer()).player(player.getUUID());
         PactSavedData.Bond bond=data.bond(patron.id());
         if (bond==null) return 0;
@@ -114,7 +114,7 @@ public final class PactCombatService {
         return (float)Math.min(10000.0,damage * PactBlessingService.relationFactor(bond.relation())
                 * PactBlessingService.focusFactor(profile));
     }
-    private static Mob aimed(ServerPlayer player,double reach) {
+    static Mob aimed(ServerPlayer player,double reach) {
         Vec3 eye=player.getEyePosition();
         Vec3 end=eye.add(player.getLookAngle().scale(reach));
         BlockHitResult block=player.serverLevel().clip(new ClipContext(eye,end,
@@ -150,7 +150,7 @@ public final class PactCombatService {
         if (out.size()>maximum) return out.subList(0,maximum);
         return out;
     }
-    private static boolean impact(ServerPlayer player,Mob mob,PactCatalog.Patron patron,double damage) {
+    static boolean impact(ServerPlayer player,Mob mob,PactCatalog.Patron patron,double damage) {
         boolean landed=mob.hurt(player.damageSources().source(DamageTypes.MAGIC,player),
                 power(player,patron,damage));
         if (landed) CombatTracker.markOwnedCombat(player);
@@ -244,7 +244,7 @@ public final class PactCombatService {
                 if (impact(owner,target,patron,9*bonus)) state.starredUntil=0;
                 return true;
             }
-            default -> {return false;}
+            default -> {return PactTierTwoCombatService.cast(owner,patron,id);}
         }
     }
     private static boolean noTarget(ServerPlayer owner) {
@@ -403,16 +403,25 @@ public final class PactCombatService {
     public static void removeBond(ServerPlayer owner,String patron) {
         // Active marks, wards, page selection and ambient triggers must not survive release.
         BATTLES.remove(owner.getUUID());
+        PactTierTwoCombatService.clear(owner);
     }
-    public static void clear(ServerPlayer player) { BATTLES.remove(player.getUUID()); }
-    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) { BATTLES.remove(event.getEntity().getUUID()); }
+    public static void clear(ServerPlayer player) {
+        BATTLES.remove(player.getUUID());
+        PactTierTwoCombatService.clear(player);
+    }
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        BATTLES.remove(event.getEntity().getUUID());
+        if (event.getEntity() instanceof ServerPlayer player) PactTierTwoCombatService.clear(player);
+    }
     public static void onDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         BATTLES.remove(event.getEntity().getUUID());
+        if (event.getEntity() instanceof ServerPlayer player) PactTierTwoCombatService.clear(player);
         if (event.getEntity() instanceof ServerPlayer owner) PactService.expire(owner);
     }
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer owner) {
             BATTLES.remove(owner.getUUID());
+            PactTierTwoCombatService.clear(owner);
             PactService.expire(owner);
         }
     }

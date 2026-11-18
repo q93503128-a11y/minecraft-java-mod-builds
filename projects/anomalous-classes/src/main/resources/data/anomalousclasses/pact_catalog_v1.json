@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "tier_1_live_higher_tiers_catalogued_only",
+  "status": "tier_1_and_tier_2_enabled_via_altar_for_tier_2;_tiers_3_and_4_locked",
   "entries": [
     {
       "id": "isael",
@@ -35,7 +35,8 @@
           "id": "ward",
           "cooldown": 14
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "velkan",
@@ -70,7 +71,8 @@
           "id": "ashen_strike",
           "cooldown": 8
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "urgen",
@@ -113,7 +115,8 @@
           "id": "ground_shatter",
           "cooldown": 12
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "ridna",
@@ -148,7 +151,8 @@
           "id": "starlight",
           "cooldown": 7
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "karda",
@@ -161,8 +165,26 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:copper_ingot",
+          "count": 24
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "count": 8
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:copper_ingot",
+          "count": 32
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "count": 16
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -173,7 +195,8 @@
           "id": "thunder_slam",
           "cooldown": 12
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "nerea",
@@ -186,8 +209,18 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:prismarine_shard",
+          "count": 16
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:prismarine_shard",
+          "count": 32
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -198,7 +231,8 @@
           "id": "abyss_pressure",
           "cooldown": 10
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "shero",
@@ -211,15 +245,26 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:ender_pearl",
+          "count": 4
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:ender_pearl",
+          "count": 8
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
           "id": "observed_retribution",
           "cooldown": 7
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "hastel",
@@ -232,15 +277,34 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 4
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 8
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 12
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 16
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
           "id": "advance_claim",
           "cooldown": 16
         }
-      ]
+      ],
+      "enabled": true
     },
     {
       "id": "sevenwing",
@@ -261,7 +325,8 @@
           "id": "final_verdict",
           "cooldown": 10
         }
-      ]
+      ],
+      "enabled": false
     },
     {
       "id": "merzad",
@@ -282,7 +347,8 @@
           "id": "royal_flame",
           "cooldown": 10
         }
-      ]
+      ],
+      "enabled": false
     },
     {
       "id": "taron",
@@ -307,7 +373,8 @@
           "id": "mountain_sunder",
           "cooldown": 11
         }
-      ]
+      ],
+      "enabled": false
     },
     {
       "id": "arken",
@@ -328,7 +395,8 @@
           "id": "record_reprise",
           "cooldown": 9
         }
-      ]
+      ],
+      "enabled": false
     },
     {
       "id": "nahar",
@@ -349,7 +417,8 @@
           "id": "black_star_rebirth",
           "cooldown": 14
         }
-      ]
+      ],
+      "enabled": false
     },
     {
       "id": "rakiel",
@@ -370,7 +439,8 @@
           "id": "first_oath_sword",
           "cooldown": 8
         }
-      ]
+      ],
+      "enabled": false
     },
     {
       "id": "ormas",
@@ -395,7 +465,8 @@
           "id": "continent_break",
           "cooldown": 13
         }
-      ]
+      ],
+      "enabled": false
     },
     {
       "id": "viar",
@@ -416,7 +487,8 @@
           "id": "first_root",
           "cooldown": 11
         }
-      ]
+      ],
+      "enabled": false
     }
   ]
 }

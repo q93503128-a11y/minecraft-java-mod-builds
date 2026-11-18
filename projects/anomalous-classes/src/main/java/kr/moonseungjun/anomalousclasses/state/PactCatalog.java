@@ -29,7 +29,7 @@ public final class PactCatalog {
         }
     }
     public record Ability(String id, int cooldownSeconds) {}
-    public record Patron(String id, String name, int tier, boolean accessible, double health,
+    public record Patron(String id, String name, int tier, boolean accessible, boolean enabled, double health,
             double attack, double speed, double mining, List<Material> offering,
             List<Material> release, double hpSacrifice, List<Ability> abilities) {
         public Patron {
@@ -75,12 +75,13 @@ public final class PactCatalog {
                 int tier = object.get("tier").getAsInt();
                 JsonObject graces = object.getAsJsonObject("graces");
                 boolean accessible = object.get("open_without_altar").getAsBoolean();
+                boolean enabled = object.get("enabled").getAsBoolean();
                 List<Ability> abilities = new ArrayList<>();
                 for (JsonElement ability : object.getAsJsonArray("abilities")) {
                     JsonObject v = ability.getAsJsonObject();
                     abilities.add(new Ability(v.get("id").getAsString(), v.get("cooldown").getAsInt()));
                 }
-                Patron patron = new Patron(id, object.get("name").getAsString(), tier, accessible,
+                Patron patron = new Patron(id, object.get("name").getAsString(), tier, accessible, enabled,
                         graces.get("max_health").getAsDouble(), graces.get("attack_damage").getAsDouble(),
                         graces.get("movement_speed").getAsDouble(), graces.get("mining_speed").getAsDouble(),
                         materials(object.getAsJsonArray("offering")),
@@ -88,10 +89,12 @@ public final class PactCatalog {
                         object.get("hp_sacrifice").getAsDouble(), abilities);
                 if (id.isBlank() || tier < 1 || tier > 4 || (accessible && (tier != 1
                         || patron.offering().isEmpty() || patron.release().isEmpty()))
+                        || (enabled && (patron.offering().isEmpty() || patron.release().isEmpty()))
                         || result.putIfAbsent(id, patron) != null)
                     throw new IllegalStateException("Bad pact catalog entry: " + id);
             }
-            if (result.size() != 16 || result.values().stream().filter(Patron::accessible).count() != 4)
+            if (result.size() != 16 || result.values().stream().filter(Patron::accessible).count() != 4
+                    || result.values().stream().filter(Patron::enabled).count() != 8)
                 throw new IllegalStateException("Expected 16 patrons with exactly 4 accessible introductions");
             return Collections.unmodifiableMap(result);
         } catch (Exception failure) {

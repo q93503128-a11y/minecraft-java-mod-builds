@@ -547,5 +547,18 @@
   "pact_ability.anomalousclasses.giants_fist": "거인의 주먹",
   "pact_ability.anomalousclasses.ground_shatter": "지반 파쇄",
   "pact_ability.anomalousclasses.star_step": "성간 도약",
-  "pact_ability.anomalousclasses.starlight": "별빛 궤적"
+  "pact_ability.anomalousclasses.starlight": "별빛 궤적",
+  "message.anomalousclasses.pact.not_caster_altar": "이 제단은 계약술사만 사용할 수 있습니다.",
+  "message.anomalousclasses.pact.outstanding_debt": "미상환 채무가 너무 많아 새로 청구할 수 없습니다. 유효한 적을 공격해 빚을 갚으세요.",
+  "message.anomalousclasses.pact.shero_warning": "관측된 적의 주의가 당신에게 집중됐습니다.",
+  "pact_ability.anomalousclasses.storm_leap": "폭풍 도약",
+  "pact_ability.anomalousclasses.thunder_slam": "천둥 강타",
+  "pact_ability.anomalousclasses.tide_grasp": "해류 장악",
+  "pact_ability.anomalousclasses.abyss_pressure": "심해 압력",
+  "pact_ability.anomalousclasses.observed_retribution": "관측의 응징",
+  "pact_ability.anomalousclasses.advance_claim": "선불 청구",
+  "pact_terms.anomalousclasses.karda": "폭풍의 서약: 구리와 자수정 제물을 바치고 폭풍의 뿔탑에서 서약합니다. 도약과 낙뢰의 힘을 빌릴 수 있습니다.",
+  "pact_terms.anomalousclasses.nerea": "심해의 서약: 프리즈머린 제물을 바치고 침몰한 해류당에서 서약합니다. 물 밖에서도 해류와 압력 권능을 사용할 수 있습니다.",
+  "pact_terms.anomalousclasses.shero": "관측의 서약: 엔더 진주를 바치고 눈 없는 관측대에서 서약합니다. 적의 위협을 관측하고 정밀하게 반격합니다.",
+  "pact_terms.anomalousclasses.hastel": "장부의 서약: 금과 에메랄드를 바치고 폐쇄된 계산당에서 서약합니다. 강한 권능을 빌리면 실제 교전으로 갚아야 할 채무가 생깁니다. 계약 종료 전에 채무를 갚아야 합니다."
 }

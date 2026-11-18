@@ -1,0 +1,52 @@
+{
+  "variants": {
+    "patron=0": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=1": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=2": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=3": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=4": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=5": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=6": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=7": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=8": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=9": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=10": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=11": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=12": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=13": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=14": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    },
+    "patron=15": {
+      "model": "anomalousclasses:block/pact_altar_core"
+    }
+  }
+}

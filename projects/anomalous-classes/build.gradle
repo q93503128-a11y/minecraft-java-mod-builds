@@ -225,7 +225,18 @@ tasks.register('verifyPactFoundation', Exec) {
     }
 }
 
+tasks.register('verifyPactTierTwo', Exec) {
+    group = 'verification'
+    description = 'Checks four tier-two patrons and shared altar placement invariants.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactTierTwoVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactTierTwo')
     dependsOn tasks.named('verifyPactFoundation')
     dependsOn tasks.named('verifyBarrierRules')
     dependsOn tasks.named('verifyLevelHealthGrowth')

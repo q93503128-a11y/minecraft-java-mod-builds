@@ -547,5 +547,18 @@
   "pact_ability.anomalousclasses.giants_fist": "Giant Fist",
   "pact_ability.anomalousclasses.ground_shatter": "Ground Shatter",
   "pact_ability.anomalousclasses.star_step": "Star Step",
-  "pact_ability.anomalousclasses.starlight": "Starlight Trail"
+  "pact_ability.anomalousclasses.starlight": "Starlight Trail",
+  "message.anomalousclasses.pact.not_caster_altar": "Only a pact caster can use this altar.",
+  "message.anomalousclasses.pact.outstanding_debt": "Outstanding debt is too high. Repay it by fighting real enemies.",
+  "message.anomalousclasses.pact.shero_warning": "An observed enemy has locked onto you.",
+  "pact_ability.anomalousclasses.storm_leap": "Storm Leap",
+  "pact_ability.anomalousclasses.thunder_slam": "Thunder Slam",
+  "pact_ability.anomalousclasses.tide_grasp": "Tide Grasp",
+  "pact_ability.anomalousclasses.abyss_pressure": "Abyss Pressure",
+  "pact_ability.anomalousclasses.observed_retribution": "Observed Retribution",
+  "pact_ability.anomalousclasses.advance_claim": "Advance Claim",
+  "pact_terms.anomalousclasses.karda": "Storm Covenant: Offer copper and amethyst at the Horns of Storm. Leap and strike with thunder.",
+  "pact_terms.anomalousclasses.nerea": "Deep-Sea Covenant: Offer prismarine at the Sunken Hall. Tide and pressure work on land as well.",
+  "pact_terms.anomalousclasses.shero": "Observer Covenant: Offer ender pearls at the Eyeless Observatory and anticipate hostile threats.",
+  "pact_terms.anomalousclasses.hastel": "Ledger Covenant: Offer gold and emeralds at the Closed Counting Hall. Powers create battle debt that must be repaid before release."
 }

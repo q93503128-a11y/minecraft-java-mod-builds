@@ -3,6 +3,11 @@ package kr.moonseungjun.anomalousclasses.state;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+import kr.moonseungjun.anomalousclasses.block.PactAltarBlock;
+import kr.moonseungjun.anomalousclasses.block.PactBlocks;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -13,7 +18,8 @@ import net.minecraft.world.item.ItemStack;
 public final class PactService {
     private static final long OFFER_DURATION_MS = 60_000L;
     private enum Action { SIGN, RELEASE }
-    private record Pending(String id, Action action, int count, int revision, long expires) {}
+    private record Pending(String id, Action action, int count, int revision, long expires,
+                           ResourceKey<Level> altarDimension, BlockPos altarPos) {}
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
     private PactService() {}
 
@@ -55,8 +61,39 @@ public final class PactService {
         }
         quote(player, patron, state.count(), false);
         PENDING.put(player.getUUID(), new Pending(id, Action.SIGN, state.count(),
-                state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS));
+                state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS, null, null));
     }
+    /** Higher-tier quotes require a specific altar core near the player. */
+    public static void previewAtAltar(ServerPlayer player, String id, BlockPos altarPos) {
+        PENDING.remove(player.getUUID());
+        if (!isPact(player) || CombatTracker.isLocked(player)) {
+            say(player, "message.anomalousclasses.pact.unavailable"); return;
+        }
+        PactCatalog.Patron patron = PactCatalog.get(id);
+        if (patron == null || !patron.enabled() || patron.tier() < 2
+                || !validAltar(player, id, player.level().dimension(), altarPos)) {
+            say(player, "message.anomalousclasses.pact.altar_required"); return;
+        }
+        PactSavedData.Player state = PactSavedData.get(player.getServer()).player(player.getUUID());
+        if (state.has(id)) {
+            say(player, "message.anomalousclasses.pact.already_signed"); return;
+        }
+        quote(player, patron, state.count(), false);
+        PENDING.put(player.getUUID(), new Pending(id, Action.SIGN, state.count(), state.revision(),
+                System.currentTimeMillis() + OFFER_DURATION_MS, player.level().dimension(),
+                altarPos.immutable()));
+    }
+
+    private static boolean validAltar(ServerPlayer player, String id,
+            ResourceKey<Level> dimension, BlockPos pos) {
+        if (pos == null || dimension == null || !player.level().dimension().equals(dimension)
+                || player.distanceToSqr(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5) > 100
+                || !player.serverLevel().hasChunkAt(pos)) return false;
+        var state = player.serverLevel().getBlockState(pos);
+        return state.is(PactBlocks.ALTAR_CORE.get())
+                && PactAltarBlock.patronId(state).equals(id);
+    }
+
     public static void previewRelease(ServerPlayer player, String id) {
         PENDING.remove(player.getUUID());
         if (!isPact(player) || CombatTracker.isLocked(player)) {
@@ -73,7 +110,7 @@ public final class PactService {
         }
         quote(player, patron, state.count(), true);
         PENDING.put(player.getUUID(), new Pending(id, Action.RELEASE, state.count(),
-                state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS));
+                state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS, null, null));
     }
     private static void quote(ServerPlayer player, PactCatalog.Patron patron,
                               int active, boolean release) {
@@ -122,7 +159,9 @@ public final class PactService {
         }
         boolean release = pending.action() == Action.RELEASE;
         if (release ? (!state.has(patron.id()) || state.bond(patron.id()).debt() > 0)
-                : (!patron.accessible() || state.has(patron.id()))) {
+                : (!patron.enabled() || (!patron.accessible()
+                       && !validAltar(player, patron.id(), pending.altarDimension(), pending.altarPos()))
+                       || state.has(patron.id()))) {
             say(player, "message.anomalousclasses.pact.changed"); return;
         }
         long hpCost = release ? 0 : (long) Math.ceil(patron.hpSacrifice());

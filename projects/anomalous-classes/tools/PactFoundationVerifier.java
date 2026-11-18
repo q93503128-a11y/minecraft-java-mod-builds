@@ -12,6 +12,17 @@ public final class PactFoundationVerifier {
     public static void main(String[] args) {
         check(PactCatalog.all().size()==16,"Sixteen patrons");
         check(PactCatalog.introductory().size()==4,"Four accessible patrons");
+        check(PactCatalog.all().values().stream().filter(PactCatalog.Patron::enabled).count()==8,
+                "Four tier-one and four tier-two patrons enabled");
+        for (String id : List.of("karda","nerea","shero","hastel")) {
+            var patron=PactCatalog.get(id);
+            check(patron.tier()==2 && patron.enabled() && !patron.accessible(),
+                    "Tier two must use physical altar: "+id);
+            check(!patron.offering().isEmpty() && !patron.release().isEmpty()
+                    && !patron.abilities().isEmpty(), "Tier two offerings and powers: "+id);
+        }
+        for (var patron : PactCatalog.all().values()) if(patron.tier()>2)
+            check(!patron.enabled(), "Higher tier remains locked: "+patron.id());
         for (var p:PactCatalog.introductory()) {
             check(p.tier()==1&&!p.offering().isEmpty()&&!p.release().isEmpty()
                     &&!p.abilities().isEmpty(),"Playable first tier "+p.id());
