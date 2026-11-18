@@ -2,7 +2,7 @@ import java.util.HashSet;
 import java.util.List;
 import kr.moonseungjun.anomalousclasses.block.PactAltarBlock;
 import kr.moonseungjun.anomalousclasses.state.PactCatalog;
-import kr.moonseungjun.anomalousclasses.worldgen.PactRuinFeature;
+import kr.moonseungjun.anomalousclasses.worldgen.PactAltarPlacement;
 
 /** Checks shared 40-chunk terrain attempts, stable block identities and four playable patrons. */
 public final class PactTierTwoVerifier {
@@ -25,7 +25,7 @@ public final class PactTierTwoVerifier {
         int count=0;
         var encountered=new HashSet<String>();
         for(int rx=-8;rx<8;rx++)for(int rz=-8;rz<8;rz++){
-            int[] pos=PactRuinFeature.targetChunk(rx,rz);
+            int[] pos=PactAltarPlacement.targetChunk(rx,rz);
             require(Math.floorDiv(pos[0],40)==rx && Math.floorDiv(pos[1],40)==rz,"Cell owner");
             require(Math.floorMod(pos[0],40)>=7 && Math.floorMod(pos[0],40)<=32,
                     "No cross-chunk edge");

@@ -27,21 +27,11 @@ import net.minecraft.world.level.storage.loot.LootTable;
  */
 public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
     public PactRuinFeature() { super(NoneFeatureConfiguration.CODEC); }
-    private static long mix(long value) {
-        value ^= value >>> 30; value *= 0xbf58476d1ce4e5b9L;
-        value ^= value >>> 27; value *= 0x94d049bb133111ebL;
-        return value ^ value >>> 31;
-    }
-    public static int[] targetChunk(long x, long z) {
-        long h = mix(x * 0x9e3779b97f4a7c15L ^ z * 0xc2b2ae3d27d4eb4fL ^ 0x8ff2a52L);
-        return new int[]{(int) (x*40 + 7 + Math.floorMod(h,26)),
-                         (int) (z*40 + 7 + Math.floorMod(h>>>26,26))};
-    }
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         BlockPos origin=context.origin();
         int cx=origin.getX()>>4, cz=origin.getZ()>>4;
-        int[] goal=targetChunk(Math.floorDiv(cx,40),Math.floorDiv(cz,40));
+        int[] goal=PactAltarPlacement.targetChunk(Math.floorDiv(cx,40),Math.floorDiv(cz,40));
         if (cx!=goal[0]||cz!=goal[1]) return false;
         WorldGenLevel level=context.level();
         int x=(cx<<4)+8, z=(cz<<4)+8;
@@ -51,7 +41,7 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
         String patron;
         if(ocean) patron="nerea";
         else {
-            long h=mix(cx*0x632be59bd9b4e019L ^ cz*0x85157af5L);
+            long h=PactAltarPlacement.mix(cx*0x632be59bd9b4e019L ^ cz*0x85157af5L);
             patron=switch((int)Math.floorMod(h,3)){case 0->"karda";case 1->"shero";default->"hastel";};
         }
         int height=ocean?level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z):terrain;
