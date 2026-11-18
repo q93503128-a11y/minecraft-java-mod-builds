@@ -41,7 +41,8 @@ public final class PactTierTwoVerifier {
         require(count==256 && encountered.size()==256,"One shared candidate per grid region");
         require(tier3>=55 && tier3<=120,"Third-tier land share near one third: "+tier3);
         require(patrons.containsAll(List.of("karda","shero","hastel",
-                "sevenwing","merzad","taron","arken",\n                "nahar","rakiel","ormas","viar")),"All land themes reachable");
+                "sevenwing","merzad","taron","arken",
+                "nahar","rakiel","ormas","viar")),"All land themes reachable");
         require(PactCatalog.get("hastel").offering().size()==2,"Debt pact has real materials");
         require(PactCatalog.get("nerea").offering().size()==1,"Sea-specific offering");
         System.out.println("Pact tier 2, altar identity, 40-chunk grid, resource gates: PASS");
