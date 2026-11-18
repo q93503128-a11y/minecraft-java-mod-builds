@@ -1,5 +1,15 @@
 # Build and Runtime Report
 
+## 2026-11-18 — 결계술사 전투 코드 1차 검증
+
+- 서버 전투/결계 설치/3종 결계/3보조 주문/HP 자동 성장: [19366ab](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/19366ab3e865526ed220704913836a15a6c0ea86), 클래스 경로 정정 [8ac2478](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/8ac2478b34c86fe892891be5cbafde600b0a6c5d).
+- **BUILD VERIFIED / JAR PRODUCED:** [GitHub Actions #44222816576](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44222816576) SUCCESS. Gradle clean build, 신규 `verifyBarrierRules`/`verifyLevelHealthGrowth`, 기존 회귀 검증 및 JAR 확인 성공. [검증된 JAR 및 SHA256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44222816576/artifacts/14391372788).
+- **구분:** 첫 성공 이후 빈 장소에 결계를 설치하기만 해도 XP가 지급되는 부적절한 성취 보상을 제거하고 실제 피해 방호/압축 적중/격리 방해/술식탄 적중/순간 방벽 방호 성공에 한해 한 번만 지급하도록 후속 조정. 이 소규모 성취 XP 패치는 `[skip ci]`로 기록하므로 검증 완료 JAR에는 아직 미반영. 후속 기능 단위 빌드에서 같이 확인한다.
+- **CLIENT RUNTIME/PLAYTEST/MULTIPLAYER: NOT TESTED.** 투명 3D 미리보기와 결계 외형·전용 VFX, 클라이언트 위치 동기화는 미구현. 6직업 게임플레이 구현 완료 → 전체 통합 테스트 → Codex 시각 작업 순서 유지.
+
+---
+
+
 ## 2026-11-17 — 시작 위치 XP 중복 획득 방지 후 최종 빌드
 
 - **게임 코드:** [e64dfe2](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/e64dfe29862c8e7e13faf251fce5763cc0c3004a). 최초 생존 시작 차원·생물군계는 기록만 하고 XP를 즉시 주지 않도록 정정. 이후 실제 새로운 차원과 생물군계에 진입하면 정해진 최초 보상 지급. 직업 전환 뒤 재지급 불가.

@@ -222,8 +222,6 @@ public final class BarrierCasterService {
         runtime.barriers.add(boundary);
         cooldown(player, kind.ordinal(), kind.cooldown, kind, size);
         say(player, "message.anomalousclasses.barrier.placed", label(kind), (int) size.radius);
-        // Only first successful use of each kind is a class-progression milestone.
-        RpgExperienceService.awardFirst(player, "barrier_first:" + kind.name(), 650L);
         return true;
     }
     private static void bolt(ServerPlayer player) {
@@ -251,7 +249,8 @@ public final class BarrierCasterService {
             PlayerClassProfile profile = ClassProfileSavedData.get(owner.getServer()).profile(owner.getUUID());
             float damage = (float) Math.min(4_000, 5.0 * BarrierRules.power(
                     profile.progress(ClassId.BARRIER_CASTER).level()));
-            target.hurt(owner.damageSources().source(DamageTypes.MAGIC, owner), damage);
+            if (target.hurt(owner.damageSources().source(DamageTypes.MAGIC, owner), damage))
+                RpgExperienceService.awardFirst(owner, "barrier_bolt_hit", 250L);
         }
         event.setCanceled(true);
         bolt.discard();
@@ -366,6 +365,7 @@ public final class BarrierCasterService {
             // A strong boss breaks the boundary quickly but is never permanently pinned.
             boolean boss = mob.getMaxHealth() >= 80.0F;
             b.integrity -= (boss ? 26.0 : 4.0) / (b.amplified(now) ? 1.35 : 1.0);
+            RpgExperienceService.awardFirst(owner, "barrier_isolation_crossing", 500L);
             if (!boss && b.integrity > 0 && validLocation(b.world, from)) {
                 mob.teleportTo(from.x, from.y, from.z);
                 mob.getNavigation().stop();
@@ -412,6 +412,8 @@ public final class BarrierCasterService {
                         float amount = event.getAmount();
                         float remaining = blockDamage(event, flash.integrity, cause);
                         flash.integrity -= amount - remaining;
+                        if (amount > remaining)
+                            RpgExperienceService.awardFirst(owner, "barrier_flash_block", 250L);
                         return;
                     }
                 }
@@ -424,6 +426,8 @@ public final class BarrierCasterService {
                 double efficiency = b.amplified(now) ? 1.35 : 1.0;
                 float remaining = blockDamage(event, b.integrity * efficiency, cause);
                 b.integrity -= (amount - remaining) / efficiency;
+                if (amount > remaining)
+                    RpgExperienceService.awardFirst(owner, "barrier_defense_block", 500L);
                 return; // One chosen boundary takes one hit, never stacked shields.
             }
         }
