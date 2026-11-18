@@ -245,7 +245,18 @@ tasks.register('verifyPactTierThree', Exec) {
     }
 }
 
+tasks.register('verifyPactTierFour', Exec) {
+    group = 'verification'
+    description = 'Checks tier-four endgame patrons, earned proofs, persistent life-saving cooldowns and placement.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactTierFourVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactTierFour')
     dependsOn tasks.named('verifyPactTierThree')
     dependsOn tasks.named('verifyPactTierTwo')
     dependsOn tasks.named('verifyPactFoundation')
