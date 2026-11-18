@@ -14,6 +14,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
@@ -102,6 +105,18 @@ public final class PactTrialService {
         var hp = guardian.getAttribute(Attributes.MAX_HEALTH);
         if (hp != null) hp.setBaseValue(health);
         guardian.setHealth((float) health);
+        // Raw EntityType#create does not guarantee ordinary natural-spawn equipment.
+        // The guardians must actually be able to attack, especially pillager crossbows.
+        switch (patron) {
+            case "sevenwing" -> guardian.setItemSlot(
+                    EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE));
+            case "merzad" -> guardian.setItemSlot(
+                    EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD));
+            case "arken" -> guardian.setItemSlot(
+                    EquipmentSlot.MAINHAND, new ItemStack(Items.CROSSBOW));
+            default -> { } // Ravager already attacks without equipment.
+        }
+        guardian.setCanPickUpLoot(false);
         guardian.setCustomName(Component.translatable(
                 "message.anomalousclasses.pact.guardian." + patron));
         guardian.setCustomNameVisible(true);

@@ -1,5 +1,17 @@
 # Build and Runtime Report
 
+## 2026-11-18 — 계약술사 3위계 전투·제단·시련 서버 단계
+
+- **기준 코드 커밋:** [4c9e281](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/4c9e28189c227046a7dd84f4ca254ad9f643d8d6) (3위계 4종·제단·수호자 시련/증명·데이터/회귀 검사) → [b0288e8](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b0288e848dd3037d1c3db6d702f8f43db97082e9) (2개 Java 타입 오류) → [744eca1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/744eca1263ded9f86b0e01ae7c8af80ea33f1a82) (3위계 활성 상태를 반영한 검사 기대값, 시련 전 계약서 전체 열람).
+- **BUILD VERIFIED / JAR PRODUCED:** [Build anomalous-classes #44260784804](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44260784804) **SUCCESS**, `clean build`, `verifyPactFoundation`, `verifyPactTierTwo`, 신규 `verifyPactTierThree` (시련 완료 중복 방지·NBT roundtrip/2종 공격 기록·서버 권위 자료), 기타 기존 검사, `verify_jar.py` 및 JAR/SHA256 아티팩트 업로드 PASS. [검증된 빌드 JAR 및 SHA256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44260784804/artifacts/14408510404).
+- **실패·수정 근거:** [CI #44259927249](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44259927249) Java 컴파일 실패: PactSavedData lambda 변수명이 외부 `id`와 충돌, 틱 int→Long 자동 변환 누락 → 국소 수정. [CI #44260407732](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44260407732) Java 컴파일 통과, 검증기가 3위계도 비활성이라고 판단하던 구형 검사 기대값 실패 → **4위계만 비활성 검사**로 교정. 동일 원인을 무시하거나 CI만 재실행하지 않음.
+- **최종 소규모 전투 보완:** 별도 수호자 소환은 일반 자연 스폰의 장비가 자동으로 보장되지 않으므로 칠익 심판자 철도끼/메르자드 돌검/아르켄 쇠뇌를 명시 장착. 이 수십 줄 미만의 후속 개선은 이번 보고 문서와 `[skip ci]`로 묶어 기록하므로 **상기 성공 JAR은 장비 보완 전의 검증 코드**에 해당한다. 추후 4위계 통합 빌드에서 함께 검증.
+- **내용:** 계약술사 1~3위계 총 12종 전투/가호 접근, 3위계 4종 전용 제단과 월드젠 공유 격자·공용 상자, 수호자 실전 격파 기반 1회 시련, 계약서/제물 선고지, 시련 증명과 Arken 관측 기록 저장, 멀티 유저 서버 권한 확인. [상세 인계](./PACT_TIER3_IMPLEMENTATION_CHECKPOINT_2026-11-18.md).
+- **범위 한계:** 4위계 4종 아직 잠금. 단독 시드 월드젠/서버 런타임/보스 실전/외부모드 전투·멀티플레이는 **NOT TESTED**. 기능성 바닐라 AI 수호자와 소규모 제단 구조물을 고퀄리티 디자인 완성으로 취급하지 않음. 사용자 순서대로 6직업 코드 완성→통합 플레이테스트→Codex 시각 작업.
+
+---
+
+
 ## 2026-11-18 — 계약술사 제2위계 제단·권능 첫 안정 빌드
 
 - **게임 코드:** [b2385f1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b2385f121573d3ec2f0b9cd5ce04a59828119f18), **독립 월드젠 간격 검증 수정:** [abf3cba](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/abf3cba44570b28e8d4d0f93cfeb962056473983).
