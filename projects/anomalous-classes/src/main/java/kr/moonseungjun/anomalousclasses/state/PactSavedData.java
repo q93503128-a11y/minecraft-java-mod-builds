@@ -127,7 +127,7 @@ public final class PactSavedData extends SavedData {
             }
             row.put("bonds", entries);
             ListTag completed = new ListTag();
-            p.completedTrials.forEach(id -> completed.add(StringTag.valueOf(id)));
+            p.completedTrials.forEach(patronId -> completed.add(StringTag.valueOf(patronId)));
             row.put("completedTrials", completed);
             ListTag profiles = new ListTag();
             p.recordedProfiles.forEach(name->profiles.add(StringTag.valueOf(name)));

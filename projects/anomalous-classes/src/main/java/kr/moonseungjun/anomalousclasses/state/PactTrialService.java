@@ -146,7 +146,7 @@ public final class PactTrialService {
                 || !(event.getSource().getEntity() instanceof ServerPlayer owner)) return;
         Trial trial=ACTIVE.get(owner.getUUID());
         if (trial != null && trial.guardian().equals(guardian.getUUID())) {
-            RECENT_HITS.put(guardian.getUUID(), owner.getServer().getTickCount());
+            RECENT_HITS.put(guardian.getUUID(), (long) owner.getServer().getTickCount());
         }
     }
     public static void onDeath(LivingDeathEvent event) {
