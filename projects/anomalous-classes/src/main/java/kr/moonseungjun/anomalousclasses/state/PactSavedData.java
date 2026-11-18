@@ -66,7 +66,7 @@ public final class PactSavedData extends SavedData {
     /** Earned once per player. Proof is preserved independently of signed bonds. */
     public boolean completeTrial(UUID owner, String patron) {
         PactCatalog.Patron definition = PactCatalog.get(patron);
-        if (definition == null || definition.tier() != 3) return false;
+        if (definition == null || (definition.tier() != 3 && definition.tier() != 4)) return false;
         Player p = player(owner);
         if (!p.completedTrials.add(patron)) return false;
         p.revision++;
@@ -165,7 +165,7 @@ public final class PactSavedData extends SavedData {
             for (int j=0; j<completed.size(); j++) {
                 String patron = completed.getString(j);
                 PactCatalog.Patron definition = PactCatalog.get(patron);
-                if (definition != null && definition.tier() == 3)
+                if (definition != null && (definition.tier() == 3 || definition.tier() == 4))
                     p.completedTrials.add(patron);
             }
             ListTag profiles = row.getList("observedAttacks", Tag.TAG_STRING);
