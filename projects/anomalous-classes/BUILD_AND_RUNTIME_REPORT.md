@@ -1,5 +1,17 @@
 # Build and Runtime Report
 
+## 2026-11-18 — 계약술사 제2위계 제단·권능 첫 안정 빌드
+
+- **게임 코드:** [b2385f1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b2385f121573d3ec2f0b9cd5ce04a59828119f18), **독립 월드젠 간격 검증 수정:** [abf3cba](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/abf3cba44570b28e8d4d0f93cfeb962056473983).
+- **BUILD VERIFIED / JAR PRODUCED:** [Build anomalous-classes #44236873523](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44236873523) **SUCCESS**. Java21 `clean build`, 기존 모든 검사, `verifyPactFoundation`, `verifyPactTierTwo`, JAR 검증 및 아티팩트 업로드 통과. [최신 JAR+SHA256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44236873523/artifacts/14397244456).
+- **실패 원인과 수정:** 최초 [CI #44236334420](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44236334420)은 **Java 컴파일 및 종전 자동 검사 정상**, 단독 실행 검증기의 Feature 정적 초기화 시 레지스트리가 미부트스트랩되어 `ExceptionInInitializerError` 발생. 월드젠 간격 연산을 `PactAltarPlacement` 순수 함수로 분리, 서버/클라이언트 실행 없이 검증 가능하게 교정 후 동일 대상 재빌드 성공. 컴파일 오류가 아니며 기존 테스트 삭제/무시 없음.
+- **내용:** 제2위계 4종 제단 핵·오버월드 신규 청크 월드젠, 일반 상자 전리품, 서버 계약서/제물/해약 두 단계 확인과 사거리·차원 검증, 1/2/4/8 제물 배수·가호 합산, 카르다/네르아/셰로/하스텔 주력 권능 및 핵심 전투 패시브. [상세 인계](./PACT_TIER2_IMPLEMENTATION_CHECKPOINT_2026-11-18.md).
+- **현재 잠금:** 제3/4위계 8종 계약 체결·권능 불가. 제단 4종의 실제 시드·지형·기존 구조물 충돌, 해양 접근/호흡 통로, 실전 밸런스는 미검증. 16종 전체 건축 크기/아트는 Codex 단계까지 미완.
+- **CLIENT RUNTIME TESTED: NO / PLAYTESTED: NO / MULTIPLAYER TESTED: NO.** 사용자의 6직업 구현 완료 후 통합 실플레이, 그 뒤 Codex 시각 작업 순서를 유지.
+
+---
+
+
 ## 2026-11-18 — 계약술사 1위계 계약·서버 전투 1차
 
 - **코드 기준:** [21152c3](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/21152c38ad46c690531b4104c2d4cf410cb0e7f8). 16종 카탈로그(실접근 1위계 4명), 제물 서버 검증·2단계 서명/해약, 3개 이상 계약 소프트캡, 계약/권능 지속 저장, 제1위계 4명 능력·패시브 및 가호 연결. [상세/남은 작업](./PACT_TIER1_IMPLEMENTATION_CHECKPOINT_2026-11-18.md).

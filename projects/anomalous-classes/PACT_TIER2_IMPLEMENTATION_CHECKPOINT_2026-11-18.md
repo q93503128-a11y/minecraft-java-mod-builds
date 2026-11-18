@@ -26,3 +26,8 @@
 
 - 직접 Minecraft 클라이언트·실제 월드 시드·월드젠 분포·외부 몬스터·멸티플레이 충돌·전투 손맛은 **NOT TESTED**. 코드 컴파일과 숫자/변환/구조 검사만 수행 예정. 타 모드 월드젠·유적 간 충돌, 해양 내부 호흡 공간, 유적 보물 주머니의 실제 밸런스는 통합 테스트에서 확인해야 함.
 - 3·4위계 8종 제단·진입 제물·고유 권능/패시브/상위 현현·시련·심화 및 여섯 직업 통합 게임 루프가 아직 남아 있음. **'계약술사 완성'이란 표현 금지**.
+
+## 2026-11-18 최종 자동 검사 기록
+- `abf3cba` 코드 기준 [Actions #44236873523](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44236873523) **BUILD VERIFIED / JAR PRODUCED**. `verifyPactFoundation`/`verifyPactTierTwo`/기존 회귀/JAR 검증 PASS. [JAR 및 SHA256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44236873523/artifacts/14397244456).
+- 초기 검사 실패는 [Actions #44236334420](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44236334420)의 Java 소스 검증기가 Feature 초기화를 요청한 문제였으며, `PactAltarPlacement` 순수 함수 분리로 수정. 실제 Minecraft worldgen이 성공했다는 주장 아님.
+- **실게임/멀티/월드 시드 검수 NOT TESTED.**
