@@ -22,4 +22,12 @@
 - PactTierFourCombatService, PactCatalog, PactSavedData, PactTrialService, PactCombatService, PactBlessingService, PactRuinFeature, PactAltarPlacement, 번역, 보상·회귀 검증기 코드 수정.
 - Gradle check에 신규 PactTierFourVerifier 연결(16종 정체성/재료/권능/증명 저장/쿨다운 NBT/단일 격자 분포 검증). 빌드 성공 여부는 뒤이어 GitHub Actions 결과로 별도 확인할 것.
 - 남은 범위: 1위계 유적, 공통 관계·금기·심화/현현, 고유 수호자 전투 페이즈/최종 모델·애니메이션·VFX, 정식 제단 건축·시드 실측·외부 모드/멀티플레이 실전, 6직업 공통 패시브 실효과 및 UI 검수.
-- 현재 문서 작성 시점: CODE CHANGED. BUILD/CI PENDING. CLIENT / WORLD-SEED / PLAYTEST / MULTIPLAYER NOT TESTED.
+## 자동 빌드·수정 이력 (2026-11-18)
+- 검증 대상 기능 코드 HEAD: `4b0817c4a561267c51d3e2913c73a00ddbfb4908`. [Actions #44274849567](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44274849567) **SUCCESS**: Java/Gradle clean build, 자동 회귀 검사, 4위계 계약 증명/서버 재사용 NBT, 2·3위계 회귀 검사, JAR 파일 내부 구조 검사, SHA-256 생성 및 업로드까지 성공.
+- `PactTierFourVerifier` 결과: `Tier4 offerings, powers, proof/cooldown NBT, placement distribution: PASS 1848/1240/633` (2/3/4위계 표본). 기존 2위계 카르다 쏠림을 수정해 같은 2위계 내 종류 비중을 균등화.
+- 최초 [Actions #44273816087](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44273816087) 실패는 Minecraft Bootstrap 전 게임 아이템 레지스트리를 호출한 **검증기 자체 결함**. 게임 로직의 컴파일 오류가 아니었고, 검증기가 ResourceLocation을 검사하도록 좁게 수정해 해결.
+- 치명적인 예외 수정: `PactService.isPact()`의 `player.isAlive()` 검사는 실제 사망 이벤트에서는 false가 될 수 있으므로, 라키엘의 구제에서는 살아 있는지에 무관하게 **서버 직업과 서명한 계약을 직접 조회**한다. 아직 실제 게임 사망 시나리오는 미검증.
+- **검증 결과물 JAR 및 SHA:** [Actions artifact #14413584440](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44274849567/artifacts/14413584440). 검증기에서 236개 class, JAR 32,230,066바이트 확인. [원본 로그 artifact #14413433488](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44274849567/artifacts/14413433488).
+- 이후 이 체크포인트 및 PROJECT.md 문서 갱신은 `[skip ci]`로 기록하므로 **검증된 코드/JAR 대상 SHA와 최신 문서 HEAD는 다를 수 있다.**
+
+**검증 상태: CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. 실제 Minecraft CLIENT, WORLD-SEED, PLAYTEST, MULTIPLAYER: NOT TESTED.**
