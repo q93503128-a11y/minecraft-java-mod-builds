@@ -50,7 +50,7 @@ public final class PactTierFourCombatService {
         return PactCombatService.impact(caster,target,PactCatalog.get(id),power);
     }
     private static boolean target(ServerPlayer caster,LivingEntity entity) {
-        return PactCombatService.enemy(caster,entity) && entity.level()==caster.level() && entity.isAlive();
+        return PactCombatService.enemy(caster,entity) && entity.level()==caster.level();
     }
     private static void hint(ServerPlayer player,String key) {
         player.displayClientMessage(Component.translatable("message.anomalousclasses.pact."+key),true);
