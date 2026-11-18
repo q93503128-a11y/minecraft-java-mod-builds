@@ -199,6 +199,14 @@ public final class PactTierFourCombatService {
             s.rootCombatUntil=now+140;
         }
     }
+    private static boolean contractedAtDeath(ServerPlayer victim,String patron) {
+        // Player#isAlive is false after fatal damage; PactService.isPact must
+        // never be used as the identity check inside LivingDeathEvent.
+        return victim.getServer()!=null
+                && ClassProfileSavedData.get(victim.getServer()).profile(victim.getUUID())
+                        .currentClass().orElse(null)==ClassId.PACT_CASTER
+                && PactSavedData.get(victim.getServer()).player(victim.getUUID()).has(patron);
+    }
     /**
      * Vanilla checks its totem before firing LivingDeathEvent. A successful
      * totem never reaches this handler. The optional rescue spends exactly
@@ -206,7 +214,7 @@ public final class PactTierFourCombatService {
      */
     public static void onDeath(LivingDeathEvent event) {
         if(!(event.getEntity() instanceof ServerPlayer victim) || event.isCanceled()
-                || !has(victim,"rakiel"))return;
+                || !contractedAtDeath(victim,"rakiel"))return;
         PactSavedData saved=PactSavedData.get(victim.getServer());
         long now=System.currentTimeMillis();
         if(saved.player(victim.getUUID()).readyAt("rakiel:fate_refusal")>now)return;
