@@ -64,7 +64,8 @@ public final class RpgExperienceService {
     }
 
     public static void onLivingDeath(LivingDeathEvent event) {
-        if (event.isCanceled() || !(event.getEntity() instanceof Mob victim)
+        if (event.isCanceled() || event.getEntity().getPersistentData().getBoolean("anomalousclasses_trial_guardian")
+                || !(event.getEntity() instanceof Mob victim)
                 || event.getEntity() instanceof PuppetEntity || victim.level().isClientSide()) return;
         MinecraftServer server = victim.level().getServer();
         if (server == null || event.getSource().getEntity() == null) return;
