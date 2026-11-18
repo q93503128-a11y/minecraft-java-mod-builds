@@ -1,6 +1,6 @@
 {
   "type": "neoforge:add_features",
-  "biomes": "#minecraft:is_overworld",
+  "biomes": "#c:is_overworld",
   "features": "anomalousclasses:pact_ruins",
   "step": "surface_structures"
 }

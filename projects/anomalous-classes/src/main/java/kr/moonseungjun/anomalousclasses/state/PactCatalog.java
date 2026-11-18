@@ -94,8 +94,8 @@ public final class PactCatalog {
                     throw new IllegalStateException("Bad pact catalog entry: " + id);
             }
             if (result.size() != 16 || result.values().stream().filter(Patron::accessible).count() != 4
-                    || result.values().stream().filter(Patron::enabled).count() != 8)
-                throw new IllegalStateException("Expected 16 patrons with exactly 4 accessible introductions");
+                    || result.values().stream().filter(Patron::enabled).count() != 12)
+                throw new IllegalStateException("Expected 16 patrons, 4 accessible introductions, 12 enabled combat identities");
             return Collections.unmodifiableMap(result);
         } catch (Exception failure) {
             throw new IllegalStateException("Invalid pact catalog", failure);

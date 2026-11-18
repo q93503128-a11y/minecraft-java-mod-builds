@@ -41,13 +41,17 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
         String patron;
         if(ocean) patron="nerea";
         else {
-            long h=PactAltarPlacement.mix(cx*0x632be59bd9b4e019L ^ cz*0x85157af5L);
-            patron=switch((int)Math.floorMod(h,3)){case 0->"karda";case 1->"shero";default->"hastel";};
+            patron=PactAltarPlacement.selectLandPatron(cx,cz);
         }
         int height=ocean?level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z):terrain;
         if(height<=level.getMinBuildHeight()+4||height>=level.getMaxBuildHeight()-10) return false;
-        int tolerance=ocean?5:3;
-        for(int dx=-4;dx<=4;dx+=4) for(int dz=-4;dz<=4;dz+=4) {
+        boolean highTier= switch(patron){
+            case "sevenwing","merzad","taron","arken" -> true;
+            default -> false;
+        };
+        int radius=highTier?6:4;
+        int tolerance=ocean?5:highTier?4:3;
+        for(int dx=-radius;dx<=radius;dx+=radius) for(int dz=-radius;dz<=radius;dz+=radius) {
             int neighbor=level.getHeight(ocean?Heightmap.Types.OCEAN_FLOOR_WG
                     : Heightmap.Types.WORLD_SURFACE_WG,x+dx,z+dz);
             if(Math.abs(neighbor-height)>tolerance) return false;
@@ -60,18 +64,27 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
             case "karda"->Blocks.CUT_COPPER;
             case "nerea"->Blocks.PRISMARINE_BRICKS;
             case "shero"->Blocks.END_STONE_BRICKS;
+            case "sevenwing"->Blocks.QUARTZ_BRICKS;
+            case "merzad"->Blocks.NETHER_BRICKS;
+            case "taron"->Blocks.DEEPSLATE_BRICKS;
+            case "arken"->Blocks.STONE_BRICKS;
             default->Blocks.POLISHED_BLACKSTONE_BRICKS;
         };
         Block accent= switch(patron){
             case "karda"->Blocks.OXIDIZED_CUT_COPPER;
             case "nerea"->Blocks.DARK_PRISMARINE;
             case "shero"->Blocks.CALCITE;
+            case "sevenwing"->Blocks.CHISELED_QUARTZ_BLOCK;
+            case "merzad"->Blocks.POLISHED_BLACKSTONE_BRICKS;
+            case "taron"->Blocks.TUFF_BRICKS;
+            case "arken"->Blocks.CHISELED_STONE_BRICKS;
             default->Blocks.GILDED_BLACKSTONE;
         };
-        for(int dx=-4;dx<=4;dx++) for(int dz=-4;dz<=4;dz++) {
-            // Circular broken plinth and a walkable interior. Leave outside terrain untouched.
+        for(int dx=-radius;dx<=radius;dx++) for(int dz=-radius;dz<=radius;dz++) {
+            // Circular broken plinth and walkable interior; no broad terrain flattening.
             int squared=dx*dx+dz*dz;
-            if(squared>20 || (squared>14 && ((dx*31+dz*17)&3)==0)) continue;
+            int squaredLimit=radius*radius;
+            if(squared>squaredLimit || (squared>squaredLimit-6 && ((dx*31+dz*17)&3)==0)) continue;
             Block platform=squared>=9?accent:base;
             level.setBlock(floor.offset(dx,0,dz),platform.defaultBlockState(),2);
         }
@@ -110,8 +123,47 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
                 for(int dx=-3;dx<=3;dx++)
                     level.setBlock(floor.offset(dx,4,-2),accent.defaultBlockState(),2);
             }
+            case "sevenwing" -> {
+                // Seven open pillars around a circular court.
+                for(int i=0;i<7;i++){
+                    double angle=i*2*Math.PI/7;
+                    int ox=(int)Math.round(Math.cos(angle)*5);
+                    int oz=(int)Math.round(Math.sin(angle)*5);
+                    for(int rise=0;rise<5;rise++)
+                        level.setBlock(floor.offset(ox,rise,oz),
+                                (rise==4?accent:base).defaultBlockState(),2);
+                }
+            }
+            case "merzad" -> {
+                // A split throne and a path to the bargaining core, without lava or fire grief.
+                for(int dx=-4;dx<=4;dx+=8)
+                    for(int rise=0;rise<5;rise++)
+                        level.setBlock(floor.offset(dx,rise,-3),
+                                (rise>=3?accent:base).defaultBlockState(),2);
+                for(int dx=-2;dx<=2;dx++)
+                    level.setBlock(floor.offset(dx,1,-4),accent.defaultBlockState(),2);
+                level.setBlock(floor.offset(0,2,-4),Blocks.SHROOMLIGHT.defaultBlockState(),2);
+            }
+            case "taron" -> {
+                // The stone king's gate uses heavy asymmetrical uprights.
+                for(int dx=-4;dx<=4;dx+=8)
+                    for(int rise=0;rise<6;rise++)
+                        level.setBlock(floor.offset(dx,rise,-2),
+                                (rise%3==0?accent:base).defaultBlockState(),2);
+                for(int dx=-4;dx<=4;dx++)
+                    level.setBlock(floor.offset(dx,6,-2),accent.defaultBlockState(),2);
+            }
+            case "arken" -> {
+                // A broken reading aisle with an open archive lectern.
+                for(int dz=-4;dz<=4;dz++)
+                    if(dz!=-1 && dz!=1) {
+                        level.setBlock(floor.offset(-4,1,dz),base.defaultBlockState(),2);
+                        level.setBlock(floor.offset(4,1,dz),accent.defaultBlockState(),2);
+                    }
+                level.setBlock(floor.offset(0,1,-4),Blocks.LECTERN.defaultBlockState(),2);
+            }
         }
-        BlockPos chest=floor.offset(2,1,2);
+        BlockPos chest=floor.offset(highTier?3:2,1,highTier?3:2);
         if(ocean) chest=floor.offset(-2,1,2);
         level.setBlock(chest,Blocks.CHEST.defaultBlockState(),2);
         if(level.getBlockEntity(chest) instanceof RandomizableContainerBlockEntity loot) {

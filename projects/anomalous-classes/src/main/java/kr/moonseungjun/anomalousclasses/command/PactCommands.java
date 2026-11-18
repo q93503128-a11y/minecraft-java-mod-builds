@@ -3,6 +3,7 @@ package kr.moonseungjun.anomalousclasses.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import kr.moonseungjun.anomalousclasses.state.PactService;
+import kr.moonseungjun.anomalousclasses.state.PactTrialService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,6 +28,11 @@ public final class PactCommands {
                             PactService.previewRelease(player,StringArgumentType.getString(ctx,"patron"));
                             return 1;
                         })))
+                .then(Commands.literal("challenge")
+                    .executes(ctx -> {
+                        PactTrialService.challenge(ctx.getSource().getPlayerOrException());
+                        return 1;
+                    }))
                 .then(Commands.literal("confirm")
                     .executes(ctx -> {
                         PactService.confirm(ctx.getSource().getPlayerOrException());

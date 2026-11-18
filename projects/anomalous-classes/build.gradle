@@ -235,7 +235,18 @@ tasks.register('verifyPactTierTwo', Exec) {
     }
 }
 
+tasks.register('verifyPactTierThree', Exec) {
+    group = 'verification'
+    description = 'Checks third-tier identities, trial proofs, limited combat records and saved data.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactTierThreeVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactTierThree')
     dependsOn tasks.named('verifyPactTierTwo')
     dependsOn tasks.named('verifyPactFoundation')
     dependsOn tasks.named('verifyBarrierRules')

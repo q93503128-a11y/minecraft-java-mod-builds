@@ -32,7 +32,11 @@ public final class PactBlessingService {
             case "attack" -> patron.attack();
             case "speed" -> patron.speed();
             case "mining" -> patron.mining();
-            case "knockback" -> patron.id().equals("urgen") ? .25 : 0;
+            case "knockback" -> switch (patron.id()) {
+                case "urgen" -> .25;
+                case "taron" -> .30;
+                default -> 0.0;
+            };
             default -> 0;
         };
         return base * relationFactor(bond.relation());

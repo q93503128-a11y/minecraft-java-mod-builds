@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "tier_1_and_tier_2_enabled_via_altar_for_tier_2;_tiers_3_and_4_locked",
+  "status": "tiers_1_to_3_enabled;third_tier_requires_altar_and_earned_trial;fourth_tier_locked",
   "entries": [
     {
       "id": "isael",
@@ -317,8 +317,26 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:gold_block",
+          "count": 4
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "count": 16
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:gold_block",
+          "count": 6
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "count": 24
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -326,7 +344,7 @@
           "cooldown": 10
         }
       ],
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "merzad",
@@ -339,8 +357,34 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 24
+        },
+        {
+          "item": "minecraft:blaze_rod",
+          "count": 6
+        },
+        {
+          "item": "minecraft:magma_cream",
+          "count": 8
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 40
+        },
+        {
+          "item": "minecraft:blaze_rod",
+          "count": 8
+        },
+        {
+          "item": "minecraft:magma_cream",
+          "count": 12
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -348,7 +392,7 @@
           "cooldown": 10
         }
       ],
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "taron",
@@ -361,8 +405,26 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:iron_block",
+          "count": 8
+        },
+        {
+          "item": "minecraft:obsidian",
+          "count": 24
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:iron_block",
+          "count": 12
+        },
+        {
+          "item": "minecraft:obsidian",
+          "count": 32
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -374,7 +436,7 @@
           "cooldown": 11
         }
       ],
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "arken",
@@ -387,8 +449,34 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:echo_shard",
+          "count": 2
+        },
+        {
+          "item": "minecraft:book",
+          "count": 4
+        },
+        {
+          "item": "minecraft:lapis_lazuli",
+          "count": 16
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:echo_shard",
+          "count": 2
+        },
+        {
+          "item": "minecraft:book",
+          "count": 8
+        },
+        {
+          "item": "minecraft:lapis_lazuli",
+          "count": 24
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -396,7 +484,7 @@
           "cooldown": 9
         }
       ],
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "nahar",

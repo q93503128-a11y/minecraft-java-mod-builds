@@ -78,6 +78,10 @@ public final class PactService {
         if (state.has(id)) {
             say(player, "message.anomalousclasses.pact.already_signed"); return;
         }
+        if (patron.tier() == 3 && !state.hasProof(id)) {
+            say(player, "message.anomalousclasses.pact.trial_required", patron.name());
+            return;
+        }
         quote(player, patron, state.count(), false);
         PENDING.put(player.getUUID(), new Pending(id, Action.SIGN, state.count(), state.revision(),
                 System.currentTimeMillis() + OFFER_DURATION_MS, player.level().dimension(),
@@ -161,6 +165,7 @@ public final class PactService {
         if (release ? (!state.has(patron.id()) || state.bond(patron.id()).debt() > 0)
                 : (!patron.enabled() || (!patron.accessible()
                        && !validAltar(player, patron.id(), pending.altarDimension(), pending.altarPos()))
+                       || (patron.tier() == 3 && !state.hasProof(patron.id()))
                        || state.has(patron.id()))) {
             say(player, "message.anomalousclasses.pact.changed"); return;
         }

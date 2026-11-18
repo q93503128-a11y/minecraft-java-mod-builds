@@ -73,7 +73,7 @@ public final class PactCombatService {
         for (PactSavedData.Bond bond : PactSavedData.get(player.getServer())
                 .player(player.getUUID()).bonds()) {
             PactCatalog.Patron patron = PactCatalog.get(bond.id());
-            if (patron == null || !patron.accessible()) continue;
+            if (patron == null || !patron.enabled()) continue;
             for (var spell : patron.abilities()) slots.add(new Slot(patron,spell));
         }
         return slots;
@@ -135,7 +135,7 @@ public final class PactCombatService {
         }
         return best;
     }
-    private static List<Mob> cone(ServerPlayer player,double reach,double cosine,int maximum) {
+    static List<Mob> cone(ServerPlayer player,double reach,double cosine,int maximum) {
         List<Mob> out=new ArrayList<>();
         Vec3 eye=player.getEyePosition();
         Vec3 look=player.getLookAngle();
@@ -244,7 +244,11 @@ public final class PactCombatService {
                 if (impact(owner,target,patron,9*bonus)) state.starredUntil=0;
                 return true;
             }
-            default -> {return PactTierTwoCombatService.cast(owner,patron,id);}
+            default -> {
+                if (patron.tier()==2) return PactTierTwoCombatService.cast(owner,patron,id);
+                if (patron.tier()==3) return PactTierThreeCombatService.cast(owner,patron,id);
+                return false;
+            }
         }
     }
     private static boolean noTarget(ServerPlayer owner) {
@@ -404,24 +408,38 @@ public final class PactCombatService {
         // Active marks, wards, page selection and ambient triggers must not survive release.
         BATTLES.remove(owner.getUUID());
         PactTierTwoCombatService.clear(owner);
+        PactTierThreeCombatService.clear(owner);
+        PactTrialService.clear(owner);
     }
     public static void clear(ServerPlayer player) {
         BATTLES.remove(player.getUUID());
         PactTierTwoCombatService.clear(player);
+        PactTierThreeCombatService.clear(player);
+        PactTrialService.clear(player);
     }
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         BATTLES.remove(event.getEntity().getUUID());
-        if (event.getEntity() instanceof ServerPlayer player) PactTierTwoCombatService.clear(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PactTierTwoCombatService.clear(player);
+            PactTierThreeCombatService.clear(player);
+            PactTrialService.clear(player);
+        }
     }
     public static void onDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         BATTLES.remove(event.getEntity().getUUID());
-        if (event.getEntity() instanceof ServerPlayer player) PactTierTwoCombatService.clear(player);
-        if (event.getEntity() instanceof ServerPlayer owner) PactService.expire(owner);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PactTierTwoCombatService.clear(player);
+            PactTierThreeCombatService.clear(player);
+            PactTrialService.clear(player);
+            PactService.expire(player);
+        }
     }
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer owner) {
             BATTLES.remove(owner.getUUID());
             PactTierTwoCombatService.clear(owner);
+            PactTierThreeCombatService.clear(owner);
+            PactTrialService.clear(owner);
             PactService.expire(owner);
         }
     }

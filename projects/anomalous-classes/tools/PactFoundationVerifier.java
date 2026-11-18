@@ -12,8 +12,8 @@ public final class PactFoundationVerifier {
     public static void main(String[] args) {
         check(PactCatalog.all().size()==16,"Sixteen patrons");
         check(PactCatalog.introductory().size()==4,"Four accessible patrons");
-        check(PactCatalog.all().values().stream().filter(PactCatalog.Patron::enabled).count()==8,
-                "Four tier-one and four tier-two patrons enabled");
+        check(PactCatalog.all().values().stream().filter(PactCatalog.Patron::enabled).count()==12,
+                "Four patrons each in tiers one, two and three enabled");
         for (String id : List.of("karda","nerea","shero","hastel")) {
             var patron=PactCatalog.get(id);
             check(patron.tier()==2 && patron.enabled() && !patron.accessible(),
