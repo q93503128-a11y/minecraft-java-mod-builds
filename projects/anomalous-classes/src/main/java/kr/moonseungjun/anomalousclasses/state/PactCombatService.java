@@ -247,6 +247,7 @@ public final class PactCombatService {
             default -> {
                 if (patron.tier()==2) return PactTierTwoCombatService.cast(owner,patron,id);
                 if (patron.tier()==3) return PactTierThreeCombatService.cast(owner,patron,id);
+                if (patron.tier()==4) return PactTierFourCombatService.cast(owner,patron,id);
                 return false;
             }
         }
@@ -409,12 +410,14 @@ public final class PactCombatService {
         BATTLES.remove(owner.getUUID());
         PactTierTwoCombatService.clear(owner);
         PactTierThreeCombatService.clear(owner);
+        PactTierFourCombatService.clear(owner);
         PactTrialService.clear(owner);
     }
     public static void clear(ServerPlayer player) {
         BATTLES.remove(player.getUUID());
         PactTierTwoCombatService.clear(player);
         PactTierThreeCombatService.clear(player);
+        PactTierFourCombatService.clear(player);
         PactTrialService.clear(player);
     }
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -422,6 +425,7 @@ public final class PactCombatService {
         if (event.getEntity() instanceof ServerPlayer player) {
             PactTierTwoCombatService.clear(player);
             PactTierThreeCombatService.clear(player);
+            PactTierFourCombatService.clear(player);
             PactTrialService.clear(player);
         }
     }
@@ -430,6 +434,7 @@ public final class PactCombatService {
         if (event.getEntity() instanceof ServerPlayer player) {
             PactTierTwoCombatService.clear(player);
             PactTierThreeCombatService.clear(player);
+            PactTierFourCombatService.clear(player);
             PactTrialService.clear(player);
             PactService.expire(player);
         }
@@ -439,6 +444,7 @@ public final class PactCombatService {
             BATTLES.remove(owner.getUUID());
             PactTierTwoCombatService.clear(owner);
             PactTierThreeCombatService.clear(owner);
+            PactTierFourCombatService.clear(owner);
             PactTrialService.clear(owner);
             PactService.expire(owner);
         }
