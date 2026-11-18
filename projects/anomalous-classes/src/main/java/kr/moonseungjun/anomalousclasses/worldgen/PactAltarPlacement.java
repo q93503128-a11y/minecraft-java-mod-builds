@@ -8,17 +8,30 @@ public final class PactAltarPlacement {
         value ^= value >>> 27; value *= 0x94d049bb133111ebL;
         return value ^ value >>> 31;
     }
-    /** The same placement cell is shared by both enabled tiers. */
-    public static String selectLandPatron(int chunkX, int chunkZ) {
+    /** One shared grid across tiers 2, 3 and 4, with tier-one ruins pending.
+     * Temporary non-ocean distribution: 50% tier 2, 33% tier 3, 17% tier 4.
+     * All patrons can appear without increasing the overall worldgen density.
+     */
+    public static String selectLandPatron(int chunkX,int chunkZ) {
         long hash=mix(chunkX*0x632be59bd9b4e019L ^ chunkZ*0x85157af5L);
-        return switch((int)Math.floorMod(hash,10)) {
-            case 0,1 -> "karda";
-            case 2,3 -> "shero";
-            case 4,5 -> "hastel";
-            case 6 -> "sevenwing";
-            case 7 -> "merzad";
-            case 8 -> "taron";
+        int roll=(int)Math.floorMod(hash,100);
+        int pick=(int)Math.floorMod(hash>>>8,4);
+        if(roll<50)return switch(pick%3) {
+            case 0 -> "karda";
+            case 1 -> "shero";
+            default -> "hastel";
+        };
+        if(roll<83)return switch(pick) {
+            case 0 -> "sevenwing";
+            case 1 -> "merzad";
+            case 2 -> "taron";
             default -> "arken";
+        };
+        return switch(pick) {
+            case 0 -> "nahar";
+            case 1 -> "rakiel";
+            case 2 -> "ormas";
+            default -> "viar";
         };
     }
     public static int[] targetChunk(long x, long z) {
