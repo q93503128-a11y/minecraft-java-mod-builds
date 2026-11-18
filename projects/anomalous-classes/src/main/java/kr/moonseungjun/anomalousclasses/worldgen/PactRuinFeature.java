@@ -21,8 +21,8 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import net.minecraft.world.level.storage.loot.LootTable;
 
 /**
- * Functional 4-altar world placement with four different vanilla-block structures.
- * Shared 40-chunk cell: never place four independent full-frequency structure sets.
+ * Functional, recognizable ruins for tier-two through tier-four patrons.
+ * One shared 40-chunk cell: adding patrons never multiplies structure attempts.
  * The full-scale distinct altar architecture is a later visual/worldbuilding pass.
  */
 public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
@@ -45,12 +45,17 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
         }
         int height=ocean?level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z):terrain;
         if(height<=level.getMinBuildHeight()+4||height>=level.getMaxBuildHeight()-10) return false;
-        boolean highTier= switch(patron){
-            case "sevenwing","merzad","taron","arken" -> true;
+        boolean topTier= switch(patron) {
+            case "nahar","rakiel","ormas","viar" -> true;
             default -> false;
         };
-        int radius=highTier?6:4;
-        int tolerance=ocean?5:highTier?4:3;
+        boolean highTier= switch(patron){
+            case "sevenwing","merzad","taron","arken",
+                 "nahar","rakiel","ormas","viar" -> true;
+            default -> false;
+        };
+        int radius=topTier?7:highTier?6:4;
+        int tolerance=ocean?5:topTier?5:highTier?4:3;
         for(int dx=-radius;dx<=radius;dx+=radius) for(int dz=-radius;dz<=radius;dz+=radius) {
             int neighbor=level.getHeight(ocean?Heightmap.Types.OCEAN_FLOOR_WG
                     : Heightmap.Types.WORLD_SURFACE_WG,x+dx,z+dz);
@@ -68,6 +73,10 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
             case "merzad"->Blocks.NETHER_BRICKS;
             case "taron"->Blocks.DEEPSLATE_BRICKS;
             case "arken"->Blocks.STONE_BRICKS;
+            case "nahar"->Blocks.POLISHED_BLACKSTONE_BRICKS;
+            case "rakiel"->Blocks.QUARTZ_BRICKS;
+            case "ormas"->Blocks.DEEPSLATE_BRICKS;
+            case "viar"->Blocks.MOSSY_STONE_BRICKS;
             default->Blocks.POLISHED_BLACKSTONE_BRICKS;
         };
         Block accent= switch(patron){
@@ -78,6 +87,10 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
             case "merzad"->Blocks.POLISHED_BLACKSTONE_BRICKS;
             case "taron"->Blocks.TUFF_BRICKS;
             case "arken"->Blocks.CHISELED_STONE_BRICKS;
+            case "nahar"->Blocks.CRYING_OBSIDIAN;
+            case "rakiel"->Blocks.CHISELED_QUARTZ_BLOCK;
+            case "ormas"->Blocks.POLISHED_BASALT;
+            case "viar"->Blocks.MOSS_BLOCK;
             default->Blocks.GILDED_BLACKSTONE;
         };
         for(int dx=-radius;dx<=radius;dx++) for(int dz=-radius;dz<=radius;dz++) {
@@ -161,6 +174,48 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
                         level.setBlock(floor.offset(4,1,dz),accent.defaultBlockState(),2);
                     }
                 level.setBlock(floor.offset(0,1,-4),Blocks.LECTERN.defaultBlockState(),2);
+            }
+            case "nahar" -> {
+                // Fragmented impact ring: a short, open path to the central core.
+                for(int i=0;i<8;i++) {
+                    double angle=i*Math.PI/4;
+                    int dx=(int)Math.round(Math.cos(angle)*6);
+                    int dz=(int)Math.round(Math.sin(angle)*6);
+                    for(int rise=0;rise<(i%2==0?5:3);rise++)
+                        level.setBlock(floor.offset(dx,rise,dz),
+                                (rise==0?accent:base).defaultBlockState(),2);
+                }
+            }
+            case "rakiel" -> {
+                // Paired open wings around an unobstructed oath dais.
+                for(int dx:new int[]{-5,5})for(int dz:new int[]{-4,4}) {
+                    for(int rise=0;rise<6;rise++)
+                        level.setBlock(floor.offset(dx,rise,dz),
+                                (rise==5?accent:base).defaultBlockState(),2);
+                }
+                level.setBlock(floor.offset(-5,6,-4),Blocks.GLOWSTONE.defaultBlockState(),2);
+                level.setBlock(floor.offset(5,6,-4),Blocks.GLOWSTONE.defaultBlockState(),2);
+            }
+            case "ormas" -> {
+                // Four towering fingers, with a clear center and reachable loot.
+                for(int dx:new int[]{-5,5})for(int dz:new int[]{-4,4}) {
+                    int tall=dz==-4?7:4;
+                    for(int rise=0;rise<tall;rise++)
+                        level.setBlock(floor.offset(dx,rise,dz),
+                                (rise%3==0?accent:base).defaultBlockState(),2);
+                }
+                for(int rise=1;rise<4;rise++)
+                    level.setBlock(floor.offset(0,rise,-6),accent.defaultBlockState(),2);
+            }
+            case "viar" -> {
+                // Open forest roots and canopy; the contract core stays walkable.
+                for(int dx:new int[]{-5,5})for(int dz:new int[]{-5,5}) {
+                    for(int rise=0;rise<5;rise++)
+                        level.setBlock(floor.offset(dx,rise,dz),Blocks.OAK_LOG.defaultBlockState(),2);
+                    level.setBlock(floor.offset(dx,5,dz),Blocks.OAK_LEAVES.defaultBlockState(),2);
+                }
+                for(int dx=-2;dx<=2;dx++)
+                    level.setBlock(floor.offset(dx,1,-6),accent.defaultBlockState(),2);
             }
         }
         BlockPos chest=floor.offset(highTier?3:2,1,highTier?3:2);
