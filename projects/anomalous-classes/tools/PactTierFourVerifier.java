@@ -31,7 +31,9 @@ public final class PactTierFourVerifier {
             require(PactAltarBlock.index(id)>=12 && PactAltarBlock.index(id)<=15,
                     "Persisted blockstate index preserved: "+id);
             for(var item:patron.offering()) {
-                require(item.item()!=null && item.count()>0,"Registered positive offering: "+id);
+                require(item.itemId()!=null && "minecraft".equals(item.itemId().getNamespace())
+                        && !item.itemId().getPath().isBlank() && item.count()>0,
+                        "Well-formed positive vanilla offering: "+id);
                 require(PactCatalog.required(item,2)==item.count()*4L,
                         "Three concurrent covenants pay fourfold: "+id);
             }
