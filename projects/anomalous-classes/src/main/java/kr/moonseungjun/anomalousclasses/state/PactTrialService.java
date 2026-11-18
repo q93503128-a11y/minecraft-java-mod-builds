@@ -29,7 +29,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-/** Short real fights at third-tier altars; completed proof is permanently server saved. */
+/** Real one-time fights at third- and fourth-tier altars; completed proof is permanently server saved. */
 public final class PactTrialService {
     private static final String MARKER = "anomalousclasses_trial_guardian";
     private static final String OWNER = "anomalousclasses_trial_owner";
@@ -74,7 +74,7 @@ public final class PactTrialService {
         }
         String patron = PactAltarBlock.patronId(player.serverLevel().getBlockState(pos));
         PactCatalog.Patron config = PactCatalog.get(patron);
-        if (config == null || config.tier() != 3 || !config.enabled()
+        if (config == null || (config.tier() != 3 && config.tier() != 4) || !config.enabled()
                 || !validAltar(player, pos, patron)) {
             hint(player, "message.anomalousclasses.pact.trial_aim"); return;
         }
@@ -89,7 +89,10 @@ public final class PactTrialService {
         EntityType<? extends Mob> type = switch (patron) {
             case "sevenwing" -> EntityType.VINDICATOR;
             case "merzad" -> EntityType.WITHER_SKELETON;
-            case "taron" -> EntityType.RAVAGER;
+            case "taron", "ormas" -> EntityType.RAVAGER;
+            case "nahar" -> EntityType.ENDERMAN;
+            case "rakiel" -> EntityType.VINDICATOR;
+            case "viar" -> EntityType.HUSK;
             default -> EntityType.PILLAGER;
         };
         Mob guardian = type.create(player.serverLevel());
@@ -100,6 +103,10 @@ public final class PactTrialService {
             case "sevenwing" -> 60.0;
             case "merzad" -> 66.0;
             case "taron" -> 95.0;
+            case "nahar" -> 130.0;
+            case "rakiel" -> 145.0;
+            case "ormas" -> 180.0;
+            case "viar" -> 160.0;
             default -> 52.0;
         };
         var hp = guardian.getAttribute(Attributes.MAX_HEALTH);
@@ -108,9 +115,9 @@ public final class PactTrialService {
         // Raw EntityType#create does not guarantee ordinary natural-spawn equipment.
         // The guardians must actually be able to attack, especially pillager crossbows.
         switch (patron) {
-            case "sevenwing" -> guardian.setItemSlot(
+            case "sevenwing", "rakiel" -> guardian.setItemSlot(
                     EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_AXE));
-            case "merzad" -> guardian.setItemSlot(
+            case "merzad", "viar" -> guardian.setItemSlot(
                     EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD));
             case "arken" -> guardian.setItemSlot(
                     EquipmentSlot.MAINHAND, new ItemStack(Items.CROSSBOW));
@@ -144,7 +151,7 @@ public final class PactTrialService {
         if (!found) {
             hint(player, "message.anomalousclasses.pact.trial_invalid"); return;
         }
-        long expires = player.getServer().getTickCount() + MAX_TICKS;
+        long expires = player.getServer().getTickCount() + (config.tier()==4 ? 20L*240 : MAX_TICKS);
         ACTIVE.put(player.getUUID(), new Trial(patron, guardian.getUUID(),
                 player.serverLevel(), pos.immutable(), expires));
         if (!player.serverLevel().addFreshEntity(guardian)) {
