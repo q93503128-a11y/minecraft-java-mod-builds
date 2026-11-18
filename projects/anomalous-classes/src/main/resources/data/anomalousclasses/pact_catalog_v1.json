@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "tiers_1_to_3_enabled;third_tier_requires_altar_and_earned_trial;fourth_tier_locked",
+  "status": "tiers_1_to_4_enabled;upper_tiers_require_earned_trial;initial_offer_costs_provisional",
   "entries": [
     {
       "id": "isael",
@@ -497,8 +497,26 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:nether_star",
+          "count": 1
+        },
+        {
+          "item": "minecraft:echo_shard",
+          "count": 8
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:nether_star",
+          "count": 1
+        },
+        {
+          "item": "minecraft:echo_shard",
+          "count": 4
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -506,7 +524,7 @@
           "cooldown": 14
         }
       ],
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "rakiel",
@@ -519,8 +537,26 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:nether_star",
+          "count": 1
+        },
+        {
+          "item": "minecraft:gold_block",
+          "count": 12
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:gold_block",
+          "count": 16
+        },
+        {
+          "item": "minecraft:diamond",
+          "count": 8
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -528,7 +564,7 @@
           "cooldown": 8
         }
       ],
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "ormas",
@@ -541,8 +577,26 @@
         "movement_speed": 0,
         "mining_speed": 0.55
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:ancient_debris",
+          "count": 6
+        },
+        {
+          "item": "minecraft:netherite_ingot",
+          "count": 1
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:ancient_debris",
+          "count": 4
+        },
+        {
+          "item": "minecraft:diamond",
+          "count": 12
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -554,7 +608,7 @@
           "cooldown": 13
         }
       ],
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "viar",
@@ -567,8 +621,30 @@
         "movement_speed": 0,
         "mining_speed": 0
       },
-      "offering": [],
-      "release_offering": [],
+      "offering": [
+        {
+          "item": "minecraft:enchanted_golden_apple",
+          "count": 1
+        },
+        {
+          "item": "minecraft:moss_block",
+          "count": 32
+        },
+        {
+          "item": "minecraft:emerald",
+          "count": 16
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:golden_apple",
+          "count": 4
+        },
+        {
+          "item": "minecraft:emerald_block",
+          "count": 4
+        }
+      ],
       "hp_sacrifice": 0,
       "abilities": [
         {
@@ -576,7 +652,7 @@
           "cooldown": 11
         }
       ],
-      "enabled": false
+      "enabled": true
     }
   ]
 }
