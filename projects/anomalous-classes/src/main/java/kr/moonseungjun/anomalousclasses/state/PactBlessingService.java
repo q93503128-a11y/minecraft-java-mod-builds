@@ -35,6 +35,7 @@ public final class PactBlessingService {
             case "knockback" -> switch (patron.id()) {
                 case "urgen" -> .25;
                 case "taron" -> .30;
+                case "ormas" -> .55;
                 default -> 0.0;
             };
             default -> 0;
