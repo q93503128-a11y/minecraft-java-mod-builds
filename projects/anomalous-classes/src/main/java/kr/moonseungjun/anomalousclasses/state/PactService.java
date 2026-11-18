@@ -79,6 +79,8 @@ public final class PactService {
             say(player, "message.anomalousclasses.pact.already_signed"); return;
         }
         if (patron.tier() == 3 && !state.hasProof(id)) {
+            // The player can read all obligations before choosing to fight the trial.
+            quote(player, patron, state.count(), false, false);
             say(player, "message.anomalousclasses.pact.trial_required", patron.name());
             return;
         }
@@ -118,6 +120,10 @@ public final class PactService {
     }
     private static void quote(ServerPlayer player, PactCatalog.Patron patron,
                               int active, boolean release) {
+        quote(player, patron, active, release, true);
+    }
+    private static void quote(ServerPlayer player, PactCatalog.Patron patron,
+                              int active, boolean release, boolean confirmable) {
         say(player, release ? "message.anomalousclasses.pact.release_preview"
                 : "message.anomalousclasses.pact.sign_preview",
                 patron.name(), release ? 1 : PactCatalog.multiplier(active));
@@ -146,7 +152,7 @@ public final class PactService {
                     && PactSavedData.get(player.getServer()).player(player.getUUID()).has("isael")))
                 say(player, "message.anomalousclasses.pact.conflict");
         }
-        say(player, "message.anomalousclasses.pact.confirm_hint");
+        if (confirmable) say(player, "message.anomalousclasses.pact.confirm_hint");
     }
     public static void confirm(ServerPlayer player) {
         Pending pending = PENDING.remove(player.getUUID());

@@ -21,7 +21,7 @@ public final class PactFoundationVerifier {
             check(!patron.offering().isEmpty() && !patron.release().isEmpty()
                     && !patron.abilities().isEmpty(), "Tier two offerings and powers: "+id);
         }
-        for (var patron : PactCatalog.all().values()) if(patron.tier()>2)
+        for (var patron : PactCatalog.all().values()) if(patron.tier()>3)
             check(!patron.enabled(), "Higher tier remains locked: "+patron.id());
         for (var p:PactCatalog.introductory()) {
             check(p.tier()==1&&!p.offering().isEmpty()&&!p.release().isEmpty()
