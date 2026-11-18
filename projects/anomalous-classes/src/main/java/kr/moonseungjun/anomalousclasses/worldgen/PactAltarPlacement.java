@@ -16,7 +16,8 @@ public final class PactAltarPlacement {
         long hash=mix(chunkX*0x632be59bd9b4e019L ^ chunkZ*0x85157af5L);
         int roll=(int)Math.floorMod(hash,100);
         int pick=(int)Math.floorMod(hash>>>8,4);
-        if(roll<50)return switch(pick%3) {
+        int commonPick=(int)Math.floorMod(hash>>>12,3);
+        if(roll<50)return switch(commonPick) {
             case 0 -> "karda";
             case 1 -> "shero";
             default -> "hastel";
