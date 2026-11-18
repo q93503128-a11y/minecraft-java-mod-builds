@@ -69,6 +69,7 @@ public final class ClassSelectionService {
                 return;
             }
 
+            BarrierCasterService.prepareClassChange(player, previous);
             profile.select(target);
             savedData.setDirty();
             SkillTreeAttributeService.apply(player, target, profile.progress(target));

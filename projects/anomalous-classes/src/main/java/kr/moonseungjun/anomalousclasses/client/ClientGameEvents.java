@@ -12,6 +12,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ParasiteInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.BarrierInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostAttackPayload;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -68,7 +69,11 @@ public final class ClientGameEvents {
                     ? MentalIntrusionPayload.START : MentalIntrusionPayload.STOP));
             PacketDistributor.sendToServer(new ParasiteInputPayload(intrusionDown
                     ? ParasiteInputPayload.START : ParasiteInputPayload.STOP));
-            if (intrusionDown) PacketDistributor.sendToServer(PuppetTargetPayload.INSTANCE);
+            if (intrusionDown) {
+                PacketDistributor.sendToServer(PuppetTargetPayload.INSTANCE);
+                if (ParasiteTraitClientControls.isBarrier())
+                    PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.PREVIEW_OR_PLACE));
+            }
             intrusionWasDown = intrusionDown;
         }
         if (screenOpen) {
@@ -98,23 +103,40 @@ public final class ClientGameEvents {
             PacketDistributor.sendToServer(new MentalSpellPayload(0));
             PacketDistributor.sendToServer(new PuppetAbilityPayload(0));
             PacketDistributor.sendToServer(new ParasiteAbilityPayload(0));
+            if (ParasiteTraitClientControls.isBarrier())
+                PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CYCLE_KIND));
         }
         if (ClassSelectionKeyMappings.MENTAL_SUGGESTION.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(1));
             PacketDistributor.sendToServer(new PuppetAbilityPayload(1));
             PacketDistributor.sendToServer(new ParasiteAbilityPayload(1));
+            if (ParasiteTraitClientControls.isBarrier())
+                PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CYCLE_SIZE));
         }
         if (ClassSelectionKeyMappings.MENTAL_OVERLOAD.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(2));
             PacketDistributor.sendToServer(new PuppetAbilityPayload(2));
             PacketDistributor.sendToServer(new ParasiteAbilityPayload(2));
+            if (ParasiteTraitClientControls.isBarrier())
+                PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.BOLT));
         }
         if (ClassSelectionKeyMappings.MENTAL_CONTAINMENT.consumeClick()) {
             if (ParasiteTraitClientControls.isParasite())
                 ParasiteTraitClientControls.toggle();
+            else if (ParasiteTraitClientControls.isBarrier())
+                PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.FLASH));
             else
                 PacketDistributor.sendToServer(new MentalSpellPayload(3));
         }
+        if (ClassSelectionKeyMappings.BARRIER_AMPLIFY.consumeClick()
+                && ParasiteTraitClientControls.isBarrier())
+            PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.AMPLIFY));
+        if (ClassSelectionKeyMappings.BARRIER_REPEAT.consumeClick()
+                && ParasiteTraitClientControls.isBarrier())
+            PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.REPEAT));
+        if (ClassSelectionKeyMappings.BARRIER_CANCEL.consumeClick()
+                && ParasiteTraitClientControls.isBarrier())
+            PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CANCEL_NEAREST));
         if (ClassSelectionKeyMappings.OPEN_PROFILE.consumeClick()) {
             PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);
         } else if (ClassSelectionKeyMappings.OPEN_SKILL_TREE.consumeClick()) {

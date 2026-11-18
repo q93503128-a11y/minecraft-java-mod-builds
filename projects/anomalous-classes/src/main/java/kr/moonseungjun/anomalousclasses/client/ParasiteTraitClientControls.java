@@ -12,6 +12,9 @@ public final class ParasiteTraitClientControls {
     private static boolean mode;
     private ParasiteTraitClientControls() {}
 
+    public static boolean isBarrier() {
+        return currentClassIndex == ClassId.BARRIER_CASTER.networkIndex();
+    }
     public static boolean isParasite() {
         return currentClassIndex == ClassId.PARASITE_MORPHER.networkIndex();
     }

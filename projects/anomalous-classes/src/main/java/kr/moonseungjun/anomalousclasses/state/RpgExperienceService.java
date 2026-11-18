@@ -47,6 +47,7 @@ public final class RpgExperienceService {
                 next.level(), next.experience(), next.skillPoints()));
         saved.setDirty();
         if (next.levelsGained() > 0) {
+            SkillTreeAttributeService.apply(player, active, profile.progress(active));
             player.displayClientMessage(Component.translatable("message.anomalousclasses.rpg.level_up",
                     next.level(), next.levelsGained() * RpgXpCurve.SKILL_POINTS_PER_LEVEL), true);
         }

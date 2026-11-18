@@ -489,5 +489,22 @@
   "message.anomalousclasses.parasite_trait.earth_no_target": "There is no exposed grounded target in reach.",
   "message.anomalousclasses.parasite_trait.grottol_scuttle": "The host scuttles forward in a burst of speed.",
   "message.anomalousclasses.parasite_trait.bluff_earth_rise": "The earth jolts upward beneath your enemy.",
-  "message.anomalousclasses.rpg.level_up": "Class level %s reached! Skill points +%s"
+  "message.anomalousclasses.rpg.level_up": "Class level %s reached! Skill points +%s",
+  "key.anomalousclasses.barrier_repeat": "Barrier caster: Repeat last boundary",
+  "key.anomalousclasses.barrier_amplify": "Barrier caster: Amplify boundaries",
+  "key.anomalousclasses.barrier_cancel": "Barrier caster: Dismiss aimed boundary",
+  "message.anomalousclasses.barrier.kind.defense": "Defense",
+  "message.anomalousclasses.barrier.kind.compression": "Compression",
+  "message.anomalousclasses.barrier.kind.isolation": "Isolation",
+  "message.anomalousclasses.barrier.preview": "%s boundary · radius %s — R to place",
+  "message.anomalousclasses.barrier.no_recent": "Place a boundary first.",
+  "message.anomalousclasses.barrier.cooldown": "Available in %s seconds.",
+  "message.anomalousclasses.barrier.capacity": "Maximum active boundaries reached.",
+  "message.anomalousclasses.barrier.invalid_location": "Cannot place a boundary here.",
+  "message.anomalousclasses.barrier.overlap": "Too close to an existing boundary of this type.",
+  "message.anomalousclasses.barrier.placed": "%s boundary placed · radius %s",
+  "message.anomalousclasses.barrier.flash": "Flash wall deployed",
+  "message.anomalousclasses.barrier.no_active": "No eligible active boundaries.",
+  "message.anomalousclasses.barrier.amplified": "Amplified %s active boundaries",
+  "message.anomalousclasses.barrier.dismissed": "Boundary dismissed"
 }

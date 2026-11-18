@@ -1,5 +1,8 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-18 서버 기능 단계:** 결계술사 3종 결계·3보조 주문·전직 정리·서버 쿨타임·HP 자동 성장 1차 코드가 추가됨. [결계 로직 체크포인트](./BARRIER_GAMEPLAY_IMPLEMENTATION_CHECKPOINT_2026-11-18.md). 투명 3D 배치 미리보기/정식 VFX는 **아직 구현되지 않았으며**, 6직업 완성 → 통합 테스트 → Codex 디자인 순서가 현행 작업 정책. build/CI 결과는 별도 기록.
+
+
 > **2026-11-16 최신 개발 단계:** 기생술사 원본 숙주 **54종 유지**, 그로톨 V+5 질주·블러프 V+6 지면 충격·스파이더 피그 벽 타기/도약을 한 번에 연결([코드 `f9a9897`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/f9a9897c6818a1c535f0988a16db633246e170f7), [CI #43828544203](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/43828544203) PASS). **원본 모드 애니메이션의 완전 재현 아님, CLIENT/PLAYTEST/MULTIPLAYER 미검증.** 무제한 종 확장을 멈추고 **결계술사 핵심 플레이 묶음 개발로 우선순위를 전환**. [현행 검증·남은 작업](./PARASITE_IMPLEMENTATION_CHECKPOINT_2026-11-15.md).
 
 

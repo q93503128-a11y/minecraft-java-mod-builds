@@ -489,5 +489,22 @@
   "message.anomalousclasses.parasite_trait.earth_no_target": "지면에서 공격할 수 있는 적이 없습니다.",
   "message.anomalousclasses.parasite_trait.grottol_scuttle": "숙주가 재빠르게 튀어나갑니다.",
   "message.anomalousclasses.parasite_trait.bluff_earth_rise": "지면이 솟구쳐 적을 밀어냈습니다.",
-  "message.anomalousclasses.rpg.level_up": "직업 레벨 %s 달성! 스킬 포인트 +%s"
+  "message.anomalousclasses.rpg.level_up": "직업 레벨 %s 달성! 스킬 포인트 +%s",
+  "key.anomalousclasses.barrier_repeat": "결계술사: 최근 결계 즉시 전개",
+  "key.anomalousclasses.barrier_amplify": "결계술사: 결계 증폭",
+  "key.anomalousclasses.barrier_cancel": "결계술사: 조준 결계 해제",
+  "message.anomalousclasses.barrier.kind.defense": "방어",
+  "message.anomalousclasses.barrier.kind.compression": "압축",
+  "message.anomalousclasses.barrier.kind.isolation": "격리",
+  "message.anomalousclasses.barrier.preview": "%s 결계 · 반경 %s블록 — R로 설치",
+  "message.anomalousclasses.barrier.no_recent": "먼저 결계를 설치해야 해요.",
+  "message.anomalousclasses.barrier.cooldown": "다시 사용하려면 %s초가 필요해요.",
+  "message.anomalousclasses.barrier.capacity": "동시에 유지할 수 있는 결계 수에 도달했어요.",
+  "message.anomalousclasses.barrier.invalid_location": "이 위치에는 결계를 설치할 수 없어요.",
+  "message.anomalousclasses.barrier.overlap": "이미 설치된 같은 종류의 결계와 겹쳐요.",
+  "message.anomalousclasses.barrier.placed": "%s 결계 설치 · 반경 %s블록",
+  "message.anomalousclasses.barrier.flash": "순간 방벽 전개",
+  "message.anomalousclasses.barrier.no_active": "증폭할 활성 결계가 없어요.",
+  "message.anomalousclasses.barrier.amplified": "활성 결계 %s개 증폭",
+  "message.anomalousclasses.barrier.dismissed": "결계 해제"
 }

@@ -40,6 +40,10 @@ public final class ClassSelectionKeyMappings {
     public static final KeyMapping MENTAL_OVERLOAD = skill("key.anomalousclasses.mental_overload", GLFW.GLFW_KEY_C);
     public static final KeyMapping MENTAL_CONTAINMENT = skill("key.anomalousclasses.mental_containment", GLFW.GLFW_KEY_V);
 
+    public static final KeyMapping BARRIER_REPEAT = skill("key.anomalousclasses.barrier_repeat", GLFW.GLFW_KEY_G);
+    public static final KeyMapping BARRIER_AMPLIFY = skill("key.anomalousclasses.barrier_amplify", GLFW.GLFW_KEY_B);
+    public static final KeyMapping BARRIER_CANCEL = skill("key.anomalousclasses.barrier_cancel", GLFW.GLFW_KEY_H);
+
     private static KeyMapping skill(String key, int glfw) {
         return new KeyMapping(key, KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM,
                 glfw, "key.categories.anomalousclasses");

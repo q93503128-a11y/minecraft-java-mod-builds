@@ -37,6 +37,8 @@ import kr.moonseungjun.anomalousclasses.state.SkillTreeService;
 import kr.moonseungjun.anomalousclasses.state.ClassFocusService;
 import kr.moonseungjun.anomalousclasses.state.MentalDominatorService;
 import kr.moonseungjun.anomalousclasses.state.MentalDominatorCombatService;
+import kr.moonseungjun.anomalousclasses.network.payload.BarrierInputPayload;
+import kr.moonseungjun.anomalousclasses.state.BarrierCasterService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.IEventBus;
@@ -139,6 +141,11 @@ public final class ClassNetwork {
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player)
                         ParasiteService.movement(player, payload.mask(), payload.yaw(), payload.pitch());
+                }));
+        registrar.playToServer(BarrierInputPayload.TYPE, BarrierInputPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        BarrierCasterService.input(player, payload.action());
                 }));
         registrar.playToServer(MentalIntrusionPayload.TYPE, MentalIntrusionPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

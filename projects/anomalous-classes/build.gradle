@@ -195,7 +195,29 @@ tasks.register('verifyRpgXpCurve', Exec) {
     }
 }
 
+tasks.register('verifyBarrierRules', Exec) {
+    group = 'verification'
+    description = 'Validates barrier radius, 3D intersection, damage stages, capacity and focus scaling.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/BarrierRulesVerifier.java').absolutePath
+    }
+}
+
+tasks.register('verifyLevelHealthGrowth', Exec) {
+    group = 'verification'
+    description = 'Verifies class-specific automatic maximum health progression.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/LevelHealthGrowthVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyBarrierRules')
+    dependsOn tasks.named('verifyLevelHealthGrowth')
     dependsOn tasks.named('verifyRpgXpCurve')
     dependsOn tasks.named('verifyProfileSkillTree')
     dependsOn tasks.named('verifyGraphSkillTreeRuntime')

@@ -43,6 +43,9 @@ public final class ClientModEvents {
         event.register(ClassSelectionKeyMappings.MENTAL_SUGGESTION);
         event.register(ClassSelectionKeyMappings.MENTAL_OVERLOAD);
         event.register(ClassSelectionKeyMappings.MENTAL_CONTAINMENT);
+        event.register(ClassSelectionKeyMappings.BARRIER_REPEAT);
+        event.register(ClassSelectionKeyMappings.BARRIER_AMPLIFY);
+        event.register(ClassSelectionKeyMappings.BARRIER_CANCEL);
     }
 
     @SubscribeEvent
