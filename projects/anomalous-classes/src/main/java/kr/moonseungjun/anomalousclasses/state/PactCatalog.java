@@ -15,7 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.core.registries.BuiltInRegistries;
 
-/** Identity and tentative balance data. Higher-tier entries are NOT enabled until altar work. */
+/** Identity and initial balance data for the sixteen pact patrons. */
 public final class PactCatalog {
     public record Material(ResourceLocation itemId, int count) {
         public Material {
@@ -94,8 +94,8 @@ public final class PactCatalog {
                     throw new IllegalStateException("Bad pact catalog entry: " + id);
             }
             if (result.size() != 16 || result.values().stream().filter(Patron::accessible).count() != 4
-                    || result.values().stream().filter(Patron::enabled).count() != 12)
-                throw new IllegalStateException("Expected 16 patrons, 4 accessible introductions, 12 enabled combat identities");
+                    || result.values().stream().filter(Patron::enabled).count() != 16)
+                throw new IllegalStateException("Expected 16 patrons, 4 accessible introductions, 16 enabled combat identities");
             return Collections.unmodifiableMap(result);
         } catch (Exception failure) {
             throw new IllegalStateException("Invalid pact catalog", failure);
