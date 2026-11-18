@@ -78,7 +78,7 @@ public final class PactService {
         if (state.has(id)) {
             say(player, "message.anomalousclasses.pact.already_signed"); return;
         }
-        if (patron.tier() == 3 && !state.hasProof(id)) {
+        if (patron.tier() >= 3 && !state.hasProof(id)) {
             // The player can read all obligations before choosing to fight the trial.
             quote(player, patron, state.count(), false, false);
             say(player, "message.anomalousclasses.pact.trial_required", patron.name());
@@ -171,7 +171,7 @@ public final class PactService {
         if (release ? (!state.has(patron.id()) || state.bond(patron.id()).debt() > 0)
                 : (!patron.enabled() || (!patron.accessible()
                        && !validAltar(player, patron.id(), pending.altarDimension(), pending.altarPos()))
-                       || (patron.tier() == 3 && !state.hasProof(patron.id()))
+                       || (patron.tier() >= 3 && !state.hasProof(patron.id()))
                        || state.has(patron.id()))) {
             say(player, "message.anomalousclasses.pact.changed"); return;
         }
