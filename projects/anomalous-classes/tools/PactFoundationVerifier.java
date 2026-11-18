@@ -12,8 +12,8 @@ public final class PactFoundationVerifier {
     public static void main(String[] args) {
         check(PactCatalog.all().size()==16,"Sixteen patrons");
         check(PactCatalog.introductory().size()==4,"Four accessible patrons");
-        check(PactCatalog.all().values().stream().filter(PactCatalog.Patron::enabled).count()==12,
-                "Four patrons each in tiers one, two and three enabled");
+        check(PactCatalog.all().values().stream().filter(PactCatalog.Patron::enabled).count()==16,
+                "Four patrons each in all four tiers enabled");
         for (String id : List.of("karda","nerea","shero","hastel")) {
             var patron=PactCatalog.get(id);
             check(patron.tier()==2 && patron.enabled() && !patron.accessible(),
@@ -21,8 +21,8 @@ public final class PactFoundationVerifier {
             check(!patron.offering().isEmpty() && !patron.release().isEmpty()
                     && !patron.abilities().isEmpty(), "Tier two offerings and powers: "+id);
         }
-        for (var patron : PactCatalog.all().values()) if(patron.tier()>3)
-            check(!patron.enabled(), "Higher tier remains locked: "+patron.id());
+        for (var patron : PactCatalog.all().values())
+            check(patron.enabled(), "All tier identities now have functional combat: "+patron.id());
         for (var p:PactCatalog.introductory()) {
             check(p.tier()==1&&!p.offering().isEmpty()&&!p.release().isEmpty()
                     &&!p.abilities().isEmpty(),"Playable first tier "+p.id());
