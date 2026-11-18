@@ -20,7 +20,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.AbstractVillager;
-import net.minecraft.world.entity.animal.TamableAnimal;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
