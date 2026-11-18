@@ -70,10 +70,13 @@ public final class ClassSelectionService {
             }
 
             BarrierCasterService.prepareClassChange(player, previous);
+            PactCombatService.clear(player);
+            PactService.expire(player);
             profile.select(target);
             savedData.setDirty();
             SkillTreeAttributeService.apply(player, target, profile.progress(target));
             ParasiteService.applyHumanStats(player);
+            PactBlessingService.apply(player);
             send(player, profile, ClassSelectionStatePayload.Result.SAVED);
         }, () -> send(player, profile, ClassSelectionStatePayload.Result.INVALID_CLASS));
     }

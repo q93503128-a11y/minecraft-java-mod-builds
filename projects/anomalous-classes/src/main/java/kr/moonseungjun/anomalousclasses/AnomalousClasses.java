@@ -1,6 +1,7 @@
 package kr.moonseungjun.anomalousclasses;
 
 import kr.moonseungjun.anomalousclasses.command.ClassCommands;
+import kr.moonseungjun.anomalousclasses.command.PactCommands;
 import kr.moonseungjun.anomalousclasses.item.ClassFocusItems;
 import kr.moonseungjun.anomalousclasses.item.PuppetItems;
 import kr.moonseungjun.anomalousclasses.block.PuppetBlocks;
@@ -22,6 +23,10 @@ import kr.moonseungjun.anomalousclasses.state.ParasiteHostReachService;
 import kr.moonseungjun.anomalousclasses.state.ExternalMobAudit;
 import kr.moonseungjun.anomalousclasses.state.RpgExperienceService;
 import kr.moonseungjun.anomalousclasses.state.BarrierCasterService;
+import kr.moonseungjun.anomalousclasses.state.PactCatalog;
+import kr.moonseungjun.anomalousclasses.state.PactService;
+import kr.moonseungjun.anomalousclasses.state.PactCombatService;
+import kr.moonseungjun.anomalousclasses.state.PactBlessingService;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.bus.api.IEventBus;
@@ -47,6 +52,7 @@ public final class AnomalousClasses {
 
     public AnomalousClasses(IEventBus modEventBus, ModContainer modContainer) {
         ClassRosterCatalog.validate();
+        PactCatalog.all();
         ClassFocusItems.ITEMS.register(modEventBus);
         PuppetBlocks.BLOCKS.register(modEventBus);
         PuppetItems.ITEMS.register(modEventBus);
@@ -59,6 +65,8 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(this::onPlayerLogout);
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onLogout);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onLogout);
+        NeoForge.EVENT_BUS.addListener(PactCombatService::onLogout);
+        NeoForge.EVENT_BUS.addListener(PactBlessingService::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onItemCrafted);
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onAdvancementEarned);
@@ -66,8 +74,14 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onIncoming);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onProjectile);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onDeath);
+        NeoForge.EVENT_BUS.addListener(PactCombatService::onPlayerDeath);
+        NeoForge.EVENT_BUS.addListener(PactCombatService::onDeath);
+        NeoForge.EVENT_BUS.addListener(PactCombatService::onDamagePre);
+        NeoForge.EVENT_BUS.addListener(PactCombatService::onDamagePost);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onChangedDimension);
+        NeoForge.EVENT_BUS.addListener(PactCombatService::onDimension);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::tick);
+        NeoForge.EVENT_BUS.addListener(PactCombatService::tick);
         NeoForge.EVENT_BUS.addListener(this::onLivingDamage);
         NeoForge.EVENT_BUS.addListener(MentalDominatorService::onLivingDamagePre);
         NeoForge.EVENT_BUS.addListener(PuppetCombatService::onLivingDamage);
@@ -105,6 +119,7 @@ public final class AnomalousClasses {
             MentalDominatorService.onPlayerRespawn(player);
             ParasiteService.onLogin(player);
             ParasiteTraitService.reset(player);
+            PactBlessingService.apply(player);
         }
     }
 
@@ -114,6 +129,8 @@ public final class AnomalousClasses {
         ParasiteService.onLogout(event.getEntity());
         ParasiteTraitService.logout(event.getEntity().getUUID());
         ParasiteHostCombatService.logout(event.getEntity().getUUID());
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)
+            PactService.expire(player);
     }
 
     private void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
@@ -123,6 +140,7 @@ public final class AnomalousClasses {
             MentalDominatorService.onPlayerRespawn(player);
             ParasiteService.onRespawn(player);
             ParasiteTraitService.reset(player);
+            PactBlessingService.apply(player);
         }
     }
 
@@ -138,5 +156,6 @@ public final class AnomalousClasses {
 
     private void onRegisterCommands(RegisterCommandsEvent event) {
         ClassCommands.register(event.getDispatcher());
+        PactCommands.register(event.getDispatcher());
     }
 }

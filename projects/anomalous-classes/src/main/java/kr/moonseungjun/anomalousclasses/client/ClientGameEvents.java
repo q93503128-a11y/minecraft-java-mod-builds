@@ -13,6 +13,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ParasiteMovePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.BarrierInputPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.PactAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostAttackPayload;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -73,6 +74,8 @@ public final class ClientGameEvents {
                 PacketDistributor.sendToServer(PuppetTargetPayload.INSTANCE);
                 if (ParasiteTraitClientControls.isBarrier())
                     PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.PREVIEW_OR_PLACE));
+                if (ParasiteTraitClientControls.isPact())
+                    PacketDistributor.sendToServer(new PactAbilityPayload(6));
             }
             intrusionWasDown = intrusionDown;
         }
@@ -105,6 +108,8 @@ public final class ClientGameEvents {
             PacketDistributor.sendToServer(new ParasiteAbilityPayload(0));
             if (ParasiteTraitClientControls.isBarrier())
                 PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CYCLE_KIND));
+            if (ParasiteTraitClientControls.isPact())
+                PacketDistributor.sendToServer(new PactAbilityPayload(0));
         }
         if (ClassSelectionKeyMappings.MENTAL_SUGGESTION.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(1));
@@ -112,6 +117,8 @@ public final class ClientGameEvents {
             PacketDistributor.sendToServer(new ParasiteAbilityPayload(1));
             if (ParasiteTraitClientControls.isBarrier())
                 PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CYCLE_SIZE));
+            if (ParasiteTraitClientControls.isPact())
+                PacketDistributor.sendToServer(new PactAbilityPayload(1));
         }
         if (ClassSelectionKeyMappings.MENTAL_OVERLOAD.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(2));
@@ -119,21 +126,31 @@ public final class ClientGameEvents {
             PacketDistributor.sendToServer(new ParasiteAbilityPayload(2));
             if (ParasiteTraitClientControls.isBarrier())
                 PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.BOLT));
+            if (ParasiteTraitClientControls.isPact())
+                PacketDistributor.sendToServer(new PactAbilityPayload(2));
         }
         if (ClassSelectionKeyMappings.MENTAL_CONTAINMENT.consumeClick()) {
             if (ParasiteTraitClientControls.isParasite())
                 ParasiteTraitClientControls.toggle();
             else if (ParasiteTraitClientControls.isBarrier())
                 PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.FLASH));
+            else if (ParasiteTraitClientControls.isPact())
+                PacketDistributor.sendToServer(new PactAbilityPayload(3));
             else
                 PacketDistributor.sendToServer(new MentalSpellPayload(3));
         }
-        if (ClassSelectionKeyMappings.BARRIER_AMPLIFY.consumeClick()
-                && ParasiteTraitClientControls.isBarrier())
-            PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.AMPLIFY));
-        if (ClassSelectionKeyMappings.BARRIER_REPEAT.consumeClick()
-                && ParasiteTraitClientControls.isBarrier())
-            PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.REPEAT));
+        if (ClassSelectionKeyMappings.BARRIER_AMPLIFY.consumeClick()) {
+            if (ParasiteTraitClientControls.isBarrier())
+                PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.AMPLIFY));
+            if (ParasiteTraitClientControls.isPact())
+                PacketDistributor.sendToServer(new PactAbilityPayload(4));
+        }
+        if (ClassSelectionKeyMappings.BARRIER_REPEAT.consumeClick()) {
+            if (ParasiteTraitClientControls.isBarrier())
+                PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.REPEAT));
+            if (ParasiteTraitClientControls.isPact())
+                PacketDistributor.sendToServer(new PactAbilityPayload(5));
+        }
         if (ClassSelectionKeyMappings.BARRIER_CANCEL.consumeClick()
                 && ParasiteTraitClientControls.isBarrier())
             PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CANCEL_NEAREST));

@@ -215,7 +215,18 @@ tasks.register('verifyLevelHealthGrowth', Exec) {
     }
 }
 
+tasks.register('verifyPactFoundation', Exec) {
+    group = 'verification'
+    description = 'Validates sixteen identities, first-tier offers, multi-contract graces and persistence.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactFoundationVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactFoundation')
     dependsOn tasks.named('verifyBarrierRules')
     dependsOn tasks.named('verifyLevelHealthGrowth')
     dependsOn tasks.named('verifyRpgXpCurve')

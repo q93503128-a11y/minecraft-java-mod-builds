@@ -1,0 +1,422 @@
+{
+  "schema": 1,
+  "status": "tier_1_live_higher_tiers_catalogued_only",
+  "entries": [
+    {
+      "id": "isael",
+      "tier": 1,
+      "name": "이사엘",
+      "open_without_altar": true,
+      "graces": {
+        "max_health": 0.25,
+        "attack_damage": 0.15,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 2
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 6
+        }
+      ],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "mark",
+          "cooldown": 6
+        },
+        {
+          "id": "ward",
+          "cooldown": 14
+        }
+      ]
+    },
+    {
+      "id": "velkan",
+      "tier": 1,
+      "name": "벨칸",
+      "open_without_altar": true,
+      "graces": {
+        "max_health": 0,
+        "attack_damage": 0.3,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 1
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:gold_ingot",
+          "count": 16
+        },
+        {
+          "item": "minecraft:blaze_powder",
+          "count": 2
+        }
+      ],
+      "hp_sacrifice": 4,
+      "abilities": [
+        {
+          "id": "ashen_strike",
+          "cooldown": 8
+        }
+      ]
+    },
+    {
+      "id": "urgen",
+      "tier": 1,
+      "name": "우르겐",
+      "open_without_altar": true,
+      "graces": {
+        "max_health": 0.4,
+        "attack_damage": 0.25,
+        "movement_speed": 0,
+        "mining_speed": 0.15
+      },
+      "offering": [
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 8
+        },
+        {
+          "item": "minecraft:stone",
+          "count": 32
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 16
+        },
+        {
+          "item": "minecraft:stone",
+          "count": 64
+        }
+      ],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "giants_fist",
+          "cooldown": 6
+        },
+        {
+          "id": "ground_shatter",
+          "cooldown": 12
+        }
+      ]
+    },
+    {
+      "id": "ridna",
+      "tier": 1,
+      "name": "리드나",
+      "open_without_altar": true,
+      "graces": {
+        "max_health": 0,
+        "attack_damage": 0.15,
+        "movement_speed": 0.15,
+        "mining_speed": 0
+      },
+      "offering": [
+        {
+          "item": "minecraft:lapis_lazuli",
+          "count": 8
+        }
+      ],
+      "release_offering": [
+        {
+          "item": "minecraft:lapis_lazuli",
+          "count": 16
+        }
+      ],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "star_step",
+          "cooldown": 8
+        },
+        {
+          "id": "starlight",
+          "cooldown": 7
+        }
+      ]
+    },
+    {
+      "id": "karda",
+      "tier": 2,
+      "name": "카르다",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.25,
+        "attack_damage": 0.35,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "storm_leap",
+          "cooldown": 9
+        },
+        {
+          "id": "thunder_slam",
+          "cooldown": 12
+        }
+      ]
+    },
+    {
+      "id": "nerea",
+      "tier": 2,
+      "name": "네르아",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.4,
+        "attack_damage": 0.2,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "tide_grasp",
+          "cooldown": 8
+        },
+        {
+          "id": "abyss_pressure",
+          "cooldown": 10
+        }
+      ]
+    },
+    {
+      "id": "shero",
+      "tier": 2,
+      "name": "셰로",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0,
+        "attack_damage": 0.2,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "observed_retribution",
+          "cooldown": 7
+        }
+      ]
+    },
+    {
+      "id": "hastel",
+      "tier": 2,
+      "name": "하스텔",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.3,
+        "attack_damage": 0.3,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "advance_claim",
+          "cooldown": 16
+        }
+      ]
+    },
+    {
+      "id": "sevenwing",
+      "tier": 3,
+      "name": "칠익의 재판관",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.65,
+        "attack_damage": 0.6,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "final_verdict",
+          "cooldown": 10
+        }
+      ]
+    },
+    {
+      "id": "merzad",
+      "tier": 3,
+      "name": "메르자드",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.4,
+        "attack_damage": 0.85,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "royal_flame",
+          "cooldown": 10
+        }
+      ]
+    },
+    {
+      "id": "taron",
+      "tier": 3,
+      "name": "타론",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.8,
+        "attack_damage": 0.7,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "kings_stone_armor",
+          "cooldown": 20
+        },
+        {
+          "id": "mountain_sunder",
+          "cooldown": 11
+        }
+      ]
+    },
+    {
+      "id": "arken",
+      "tier": 3,
+      "name": "아르켄",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.35,
+        "attack_damage": 0.55,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "record_reprise",
+          "cooldown": 9
+        }
+      ]
+    },
+    {
+      "id": "nahar",
+      "tier": 4,
+      "name": "나하르",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 0.9,
+        "attack_damage": 1,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "black_star_rebirth",
+          "cooldown": 14
+        }
+      ]
+    },
+    {
+      "id": "rakiel",
+      "tier": 4,
+      "name": "라키엘",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 1.35,
+        "attack_damage": 0.85,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "first_oath_sword",
+          "cooldown": 8
+        }
+      ]
+    },
+    {
+      "id": "ormas",
+      "tier": 4,
+      "name": "오르마스",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 1.6,
+        "attack_damage": 1.2,
+        "movement_speed": 0,
+        "mining_speed": 0.55
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "continent_skin",
+          "cooldown": 22
+        },
+        {
+          "id": "continent_break",
+          "cooldown": 13
+        }
+      ]
+    },
+    {
+      "id": "viar",
+      "tier": 4,
+      "name": "비아르",
+      "open_without_altar": false,
+      "graces": {
+        "max_health": 1.4,
+        "attack_damage": 0.85,
+        "movement_speed": 0,
+        "mining_speed": 0
+      },
+      "offering": [],
+      "release_offering": [],
+      "hp_sacrifice": 0,
+      "abilities": [
+        {
+          "id": "first_root",
+          "cooldown": 11
+        }
+      ]
+    }
+  ]
+}

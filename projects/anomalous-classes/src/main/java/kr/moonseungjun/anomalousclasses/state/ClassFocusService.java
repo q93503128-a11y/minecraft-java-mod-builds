@@ -83,6 +83,7 @@ public final class ClassFocusService {
         inventory.setChanged();
         profile.equipFocus(requested);
         saved.setDirty();
+        PactBlessingService.apply(player);
         return Result.EQUIPPED;
     }
 
@@ -104,6 +105,7 @@ public final class ClassFocusService {
         inventory.setChanged();
         profile.equipFocus(null);
         saved.setDirty();
+        PactBlessingService.apply(player);
         return Result.UNEQUIPPED;
     }
 

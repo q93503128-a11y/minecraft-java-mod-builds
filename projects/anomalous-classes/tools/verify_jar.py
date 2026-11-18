@@ -101,6 +101,7 @@ def main() -> None:
                 "META-INF/neoforge.mods.toml",
                 "META-INF/MANIFEST.MF",
                 "data/anomalousclasses/class_catalog.json",
+                "data/anomalousclasses/pact_catalog_v1.json",
                 "data/anomalousclasses/skill_point_cost_model_v2.json",
                 "data/anomalousclasses/skill_tree_branch_redesign_v1.json",
                 "data/anomalousclasses/skill_tree_graph_layout_v1.json",
