@@ -1,5 +1,17 @@
 # Build and Runtime Report
 
+## 2026-11-20 — 계약술사 전체 16제단 생성 후보 통합
+
+- **기능 코드 HEAD:** [`4b16f7c`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/4b16f7ce91053bd73b69b686e47667e6d7e3c689). 1위계 4종 자연 제단/공용 loot·기존 2~4위계와 40청크 공유 격자 통합, 육상 선택 가중치 40:30:20:10, 해양 네르아 단독, 비해양 유적 액체 검사, 선택적 제단 계약서/명시적 서명.
+- **BUILD VERIFIED / JAR PRODUCED:** [GitHub Actions #44639840274](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44639840274) SUCCESS. Java 21 `clean build`, 기존 1~4위계 계약 회귀 검사, 신규 `verifyPactSixteenAltars` PASS, JAR 구조 검증과 해시 생성·아티팩트 업로드 PASS.
+- **자동 출력:** `Sixteen shrines, shared loot, ocean-only Nerea, stable block IDs, one placement grid, dry distribution: PASS 1512/1090/732/387`. 이 수치는 61×61 **가상 육상 후보 위치**의 선택 결과이지 실제 시드에서 배치한 건축물 수가 아니다.
+- **산출물:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar` (32,232,736 바이트, 236 class). [JAR + SHA-256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44639840274/artifacts/14586785197), [빌드 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44639840274/artifacts/14586345973).
+- **검증 한계:** 실제 Minecraft client 런타임, 신규/기존 시드의 지형 생성 성공률, 4k×4k/8k×8k 세계 비교, 구조물 간 충돌, 접근 가능한 상자, 네르아 수중 호흡/출입, 멀티 전리품, 게임 플레이: **NOT TESTED**. 제단은 기능성 블록 건축으로 최종 모델·VFX 완성 아님. 사용자 결정대로 6직업 기능 검토/통합 실게임 테스트 이후 Codex 시각화 단계.
+- **상세 체크포인트:** [16제단 월드젠](./PACT_16_ALTAR_WORLDGEN_CHECKPOINT_2026-11-20.md). 이후 `[skip ci]` 문서 커밋은 검증된 실행 코드에 영향을 주지 않는다.
+
+---
+
+
 ## 2026-11-18 — 계약술사 3위계 전투·제단·시련 서버 단계
 
 - **기준 코드 커밋:** [4c9e281](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/4c9e28189c227046a7dd84f4ca254ad9f643d8d6) (3위계 4종·제단·수호자 시련/증명·데이터/회귀 검사) → [b0288e8](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/b0288e848dd3037d1c3db6d702f8f43db97082e9) (2개 Java 타입 오류) → [744eca1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/744eca1263ded9f86b0e01ae7c8af80ea33f1a82) (3위계 활성 상태를 반영한 검사 기대값, 시련 전 계약서 전체 열람).
