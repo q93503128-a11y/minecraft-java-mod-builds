@@ -30,9 +30,16 @@
 ## 빠른 재현
 테스트 월드에서 계약술사 직업을 선택한 뒤 다음처럼 1위계 핵을 배치할 수 있다. 이것은 **제단 계약 기능 검사**이며 구조물 자연 생성 확인은 아니다.
 
-`/setblock ~ ~ ~ anomalousclasses:pact_altar_core[patron=0]` (이사엘; 1 벨칸, 2 우르겐, 3 리드나)
+`/setblock ~2 ~ ~ anomalousclasses:pact_altar_core[patron=0]` (이사엘; 1 벨칸, 2 우르겐, 3 리드나)
 `/give @s minecraft:gold_ingot 2`
 핵을 우클릭해 계약서·제물 확인 → `/pact confirm`. 별도로 제단 없이 `/pact contact isael`도 검증한다. 임의 시점/좌표에 자연 생성된 유적 탐색은 게임에서 새 청크로 이동하여 검사한다. 본 모드는 별도 구조물 레지스트리형이 아니라 바이옴 feature 방식이므로 바닐라 `/locate structure`로 직접 찾을 수 있다는 주장 금지.
 
 ## 검증 상태 (빌드 판정은 후속 기록)
-CODE MODIFIED / SOURCE REVIEWED. BUILT: PENDING. JAR: PENDING. GAME CLIENT: NOT TESTED. WORLD SEED: NOT TESTED. MULTIPLAYER: NOT TESTED.
+**최신 검증 — 2026-11-20**
+- 검증 대상 코드 HEAD: `4b16f7ce91053bd73b69b686e47667e6d7e3c689`.
+- [GitHub Actions #44639840274](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44639840274) **SUCCESS**. Java 21 clean build 및 기존 체크, 신규 `verifyPactSixteenAltars`, `verifyPactTierTwo`, `verifyPactTierThree`, `verifyPactTierFour`, JAR 구조 검증, SHA-256, 아티팩트 업로드 모두 통과.
+- 검증 로그: `Sixteen shrines, shared loot, ocean-only Nerea, stable block IDs, one placement grid, dry distribution: PASS 1512/1090/732/387`. 61×61 **가상 육상 후보**의 각 위계 카운트이며 실제 월드 성공 배치/바다 분포가 아니다.
+- JAR: `build/libs/anomalous-classes-0.1.0-alpha.1.jar` (32,232,736바이트, 236 classes). [JAR + SHA-256 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44639840274/artifacts/14586785197), [로그 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44639840274/artifacts/14586345973).
+- 성공한 JAR과 코드 HEAD는 위 SHA에 해당한다. 이후 문서 기록은 `[skip ci]` 처리하며 검증된 코드에 영향이 없다.
+
+**검증 상태: CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. Minecraft CLIENT / REAL WORLD SEED / PLAYTEST / MULTIPLAYER: NOT TESTED.**
