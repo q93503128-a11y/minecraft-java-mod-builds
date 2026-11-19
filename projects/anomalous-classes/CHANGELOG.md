@@ -1,5 +1,13 @@
 # Changelog
 
+## Sixteen-shrine shared world generation — 2026-11-20
+
+- Added functional first-tier dawn arch (Isael), fractured bargaining table (Velkan), palm monolith (Urgen) and asymmetrical star marker (Ridna) within the original single-grid worldgen.
+- Integrated all sixteen altars into one conditional dry-land 40/30/20/10 tier-selection baseline; ocean cells remain Nerea-only. Added dry-water footprint checks without rewriting any existing placed-core IDs.
+- Added four public low-tier chest loot tables. First-tier covenants remain available away from altars, while altar interaction now also opens their optional contract review.
+- Added a bootstrap-free sixteen-shrine validator, updated the existing tier-two/three/four placement expectations and linked validation to Gradle check. Build, real seed, client and multiplayer outcomes are tracked separately.
+
+
 ## Class-management overview hub — 2026-11-12
 
 - Reworked the U screen into a class overview using each class's existing card art and icon, plus server-supplied level, experience, SP, and current vanilla attributes.
