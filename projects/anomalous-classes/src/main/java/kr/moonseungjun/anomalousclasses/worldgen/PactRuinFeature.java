@@ -21,7 +21,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import net.minecraft.world.level.storage.loot.LootTable;
 
 /**
- * Functional, recognizable ruins for tier-two through tier-four patrons.
+ * Functional, recognizable ruins across all sixteen patron identities.
  * One shared 40-chunk cell: adding patrons never multiplies structure attempts.
  * The full-scale distinct altar architecture is a later visual/worldbuilding pass.
  */
@@ -45,6 +45,10 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
         }
         int height=ocean?level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z):terrain;
         if(height<=level.getMinBuildHeight()+4||height>=level.getMaxBuildHeight()-10) return false;
+        boolean firstTier= switch(patron) {
+            case "isael","velkan","urgen","ridna" -> true;
+            default -> false;
+        };
         boolean topTier= switch(patron) {
             case "nahar","rakiel","ormas","viar" -> true;
             default -> false;
@@ -54,18 +58,30 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
                  "nahar","rakiel","ormas","viar" -> true;
             default -> false;
         };
-        int radius=topTier?7:highTier?6:4;
-        int tolerance=ocean?5:topTier?5:highTier?4:3;
+        int radius=firstTier?4:topTier?7:highTier?6:4;
+        int tolerance=ocean?5:firstTier?2:topTier?5:highTier?4:3;
         for(int dx=-radius;dx<=radius;dx+=radius) for(int dz=-radius;dz<=radius;dz+=radius) {
             int neighbor=level.getHeight(ocean?Heightmap.Types.OCEAN_FLOOR_WG
                     : Heightmap.Types.WORLD_SURFACE_WG,x+dx,z+dz);
             if(Math.abs(neighbor-height)>tolerance) return false;
         }
         BlockPos floor=new BlockPos(x,height-1,z);
-        if(!ocean && !level.getFluidState(floor.above()).isEmpty()) return false;
+        if(!ocean) {
+            // Surface river, swamp or lake edges must not become flooded land altars.
+            // Every footprint sample stays in the already selected generation chunk.
+            for(int dx=-radius;dx<=radius;dx++)for(int dz=-radius;dz<=radius;dz++) {
+                if(dx*dx+dz*dz>radius*radius)continue;
+                if(!level.getFluidState(floor.offset(dx,0,dz)).isEmpty()
+                        || !level.getFluidState(floor.offset(dx,1,dz)).isEmpty())return false;
+            }
+        }
         int variant=PactAltarBlock.index(patron);
         if(variant<0) return false;
         Block base= switch(patron){
+            case "isael"->Blocks.SMOOTH_SANDSTONE;
+            case "velkan"->Blocks.POLISHED_BLACKSTONE_BRICKS;
+            case "urgen"->Blocks.TUFF_BRICKS;
+            case "ridna"->Blocks.STONE_BRICKS;
             case "karda"->Blocks.CUT_COPPER;
             case "nerea"->Blocks.PRISMARINE_BRICKS;
             case "shero"->Blocks.END_STONE_BRICKS;
@@ -80,6 +96,10 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
             default->Blocks.POLISHED_BLACKSTONE_BRICKS;
         };
         Block accent= switch(patron){
+            case "isael"->Blocks.QUARTZ_BRICKS;
+            case "velkan"->Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS;
+            case "urgen"->Blocks.CHISELED_TUFF_BRICKS;
+            case "ridna"->Blocks.AMETHYST_BLOCK;
             case "karda"->Blocks.OXIDIZED_CUT_COPPER;
             case "nerea"->Blocks.DARK_PRISMARINE;
             case "shero"->Blocks.CALCITE;
@@ -104,6 +124,51 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
         level.setBlock(floor.above(),PactBlocks.ALTAR_CORE.get().defaultBlockState()
                 .setValue(PactAltarBlock.PATRON,variant),2);
         switch(patron){
+            case "isael" -> {
+                // Broken dawn arch. The path to the core and small loot chest stay open.
+                for(int dx:new int[]{-3,3}) {
+                    for(int rise=1;rise<=3;rise++)
+                        level.setBlock(floor.offset(dx,rise,-2),
+                                (rise==3?accent:base).defaultBlockState(),2);
+                }
+                for(int dx=-2;dx<=1;dx++)
+                    level.setBlock(floor.offset(dx,4,-2),accent.defaultBlockState(),2);
+                level.setBlock(floor.offset(3,4,-2),Blocks.GLOWSTONE.defaultBlockState(),2);
+            }
+            case "velkan" -> {
+                // A snapped blackstone negotiation table with two broken uprights.
+                for(int dx=-2;dx<=2;dx++) {
+                    if(dx!=0)level.setBlock(floor.offset(dx,1,-3),
+                            (dx%2==0?accent:base).defaultBlockState(),2);
+                }
+                for(int dx:new int[]{-3,3})for(int rise=1;rise<=3;rise++)
+                    level.setBlock(floor.offset(dx,rise,-2),
+                            (rise==3?accent:base).defaultBlockState(),2);
+                level.setBlock(floor.offset(0,1,-3),Blocks.NETHER_BRICKS.defaultBlockState(),2);
+            }
+            case "urgen" -> {
+                // The solitary palm-stone is a readable monument, not a second
+                // copy of the later tier-three Taron throne.
+                for(int rise=1;rise<=5;rise++)
+                    level.setBlock(floor.offset(0,rise,-3),
+                            (rise==5?accent:base).defaultBlockState(),2);
+                for(int dx:new int[]{-1,1}) {
+                    for(int rise=2;rise<=3;rise++)
+                        level.setBlock(floor.offset(dx,rise,-3),base.defaultBlockState(),2);
+                }
+                level.setBlock(floor.offset(0,3,-2),accent.defaultBlockState(),2);
+            }
+            case "ridna" -> {
+                // Asymmetric observation arms point toward an absent star.
+                for(int rise=1;rise<=3;rise++)
+                    level.setBlock(floor.offset(-3,rise,-2),
+                            (rise==3?accent:base).defaultBlockState(),2);
+                for(int rise=1;rise<=4;rise++)
+                    level.setBlock(floor.offset(3,rise,-2),
+                            (rise==4?accent:base).defaultBlockState(),2);
+                level.setBlock(floor.offset(0,1,-3),Blocks.CHISELED_STONE_BRICKS.defaultBlockState(),2);
+                level.setBlock(floor.offset(0,2,-3),Blocks.END_ROD.defaultBlockState(),2);
+            }
             case "karda" -> {
                 for(int heightOffset=0;heightOffset<6;heightOffset++){
                     level.setBlock(floor.offset(-4,heightOffset,0),
