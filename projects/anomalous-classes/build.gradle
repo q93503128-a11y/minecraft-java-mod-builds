@@ -255,7 +255,18 @@ tasks.register('verifyPactTierFour', Exec) {
     }
 }
 
+tasks.register('verifyPactSixteenAltars', Exec) {
+    group = 'verification'
+    description = 'Checks sixteen altar identities, shared exploration loot and dry/ocean placement proportions.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactSixteenAltarVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactSixteenAltars')
     dependsOn tasks.named('verifyPactTierFour')
     dependsOn tasks.named('verifyPactTierThree')
     dependsOn tasks.named('verifyPactTierTwo')
