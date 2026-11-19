@@ -63,7 +63,7 @@ public final class PactTierFourVerifier {
         require(restored.player(owner).readyAt("rakiel:fate_refusal")==1_985_000_000_000L,
                 "Single-event fate rejection cooldown survives server restart");
         Set<String> seen=new HashSet<>();
-        int second=0,third=0,fourth=0;
+        int first=0,second=0,third=0,fourth=0;
         for(int rx=-30;rx<=30;rx++)for(int rz=-30;rz<=30;rz++) {
             int[] goal=PactAltarPlacement.targetChunk(rx,rz);
             require(Math.floorDiv(goal[0],40)==rx && Math.floorDiv(goal[1],40)==rz,
@@ -71,22 +71,25 @@ public final class PactTierFourVerifier {
             String id=PactAltarPlacement.selectLandPatron(goal[0],goal[1]);
             seen.add(id);
             int tier=PactCatalog.get(id).tier();
-            if(tier==2)second++;
+            if(tier==1)first++;
+            else if(tier==2)second++;
             else if(tier==3)third++;
             else if(tier==4)fourth++;
             else throw new AssertionError("Unexpected or underwater land altar: "+id);
         }
-        require(seen.containsAll(List.of("karda","shero","hastel","sevenwing",
+        require(seen.containsAll(List.of("isael","velkan","urgen","ridna","karda","shero","hastel","sevenwing",
                 "merzad","taron","arken","nahar","rakiel","ormas","viar")),
-                "Every dry land identity must be reachable");
-        int total=second+third+fourth;
-        require(second>total*.40 && second<total*.60,
+                "All dry land identities must be reachable");
+        int total=first+second+third+fourth;
+        require(first>total*.34 && first<total*.46,
+                "Tier one provides the most common exploratory ruins");
+        require(second>total*.24 && second<total*.36,
                 "Tier two remains the most common land choice");
-        require(third>total*.25 && third<total*.42,
+        require(third>total*.15 && third<total*.25,
                 "Tier three share remains near a third");
-        require(fourth>total*.10 && fourth<total*.25,
+        require(fourth>total*.07 && fourth<total*.13,
                 "Fourth-tier land share stays limited without additional grid attempts");
         System.out.println("Tier4 offerings, powers, proof/cooldown NBT, placement distribution: PASS "
-                +second+"/"+third+"/"+fourth);
+                +first+"/"+second+"/"+third+"/"+fourth);
     }
 }
