@@ -38,11 +38,7 @@ public final class PactRuinFeature extends Feature<NoneFeatureConfiguration> {
         int terrain=level.getHeight(Heightmap.Types.WORLD_SURFACE_WG,x,z);
         BlockPos reference=new BlockPos(x,terrain,z);
         boolean ocean=level.getBiome(reference).is(BiomeTags.IS_OCEAN);
-        String patron;
-        if(ocean) patron="nerea";
-        else {
-            patron=PactAltarPlacement.selectLandPatron(cx,cz);
-        }
+        String patron=PactAltarPlacement.selectPatron(cx,cz,ocean);
         int height=ocean?level.getHeight(Heightmap.Types.OCEAN_FLOOR_WG,x,z):terrain;
         if(height<=level.getMinBuildHeight()+4||height>=level.getMaxBuildHeight()-10) return false;
         boolean firstTier= switch(patron) {
