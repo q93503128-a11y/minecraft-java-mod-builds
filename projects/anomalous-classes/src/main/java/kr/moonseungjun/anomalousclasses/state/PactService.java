@@ -70,7 +70,7 @@ public final class PactService {
             say(player, "message.anomalousclasses.pact.unavailable"); return;
         }
         PactCatalog.Patron patron = PactCatalog.get(id);
-        if (patron == null || !patron.enabled() || patron.tier() < 2
+        if (patron == null || !patron.enabled()
                 || !validAltar(player, id, player.level().dimension(), altarPos)) {
             say(player, "message.anomalousclasses.pact.altar_required"); return;
         }
