@@ -84,9 +84,9 @@ public final class PactTierFourVerifier {
         require(first>total*.34 && first<total*.46,
                 "Tier one provides the most common exploratory ruins");
         require(second>total*.24 && second<total*.36,
-                "Tier two remains the most common land choice");
+                "Tier two remains the second-most-common dry-land tier");
         require(third>total*.15 && third<total*.25,
-                "Tier three share remains near a third");
+                "Tier three dry-land share remains near one fifth");
         require(fourth>total*.07 && fourth<total*.13,
                 "Fourth-tier land share stays limited without additional grid attempts");
         System.out.println("Tier4 offerings, powers, proof/cooldown NBT, placement distribution: PASS "
