@@ -54,7 +54,8 @@ public final class PactTierThreeVerifier {
             int[] chunk=PactAltarPlacement.targetChunk(x,z);
             seen.add(PactAltarPlacement.selectLandPatron(chunk[0],chunk[1]));
         }
-        require(seen.containsAll(List.of("karda","shero","hastel","sevenwing",
+        require(seen.containsAll(List.of("isael","velkan","urgen","ridna",
+                "karda","shero","hastel","sevenwing",
                 "merzad","taron","arken",
                 "nahar","rakiel","ormas","viar")),"Every land identity has reachable altar placement");
         System.out.println("Tier3 altars, hard gating, proof NBT, safe 2-profile records, grid: PASS");
