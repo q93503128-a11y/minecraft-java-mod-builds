@@ -41,6 +41,10 @@ public final class PactAltarPlacement {
             default -> "viar";
         };
     }
+    /** Ocean shrines belong to Nerea alone; never submerge a dry-land patron. */
+    public static String selectPatron(int chunkX, int chunkZ, boolean ocean) {
+        return ocean ? "nerea" : selectLandPatron(chunkX,chunkZ);
+    }
     public static int[] targetChunk(long x, long z) {
         long h = mix(x * 0x9e3779b97f4a7c15L ^ z * 0xc2b2ae3d27d4eb4fL ^ 0x8ff2a52L);
         return new int[]{(int) (x*40 + 7 + Math.floorMod(h,26)),
