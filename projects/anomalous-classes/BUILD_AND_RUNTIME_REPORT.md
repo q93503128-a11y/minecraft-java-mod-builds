@@ -1,5 +1,18 @@
 # Build and Runtime Report
 
+## 2026-11-20 — 이사엘·벨칸 금기 갈등 영속화와 복구, 하스텔 선택형 채무 결산
+
+- **검증 게임 코드:** [`da147d1`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/da147d1ff863e1bfe075899fc8b13584c3d17bac). 이사엘–벨칸 양쪽 서명 시 1회 -10(실제 현재 신앙 한도) 충돌 저장, 벨칸 해약 뒤 실제 서로 다른 적대자로부터 주민 3회 방어해 원상 복구, 기존 NBT 마이그레이션 시 추가 감점 금지. 정상 주민 보호의 같은 적 반복/재시작 +1 재파밍 제한.
+- **하스텔:** 기존 전투 채무 상환 경로 유지. 선택형 `/pact settle` → `/pact confirm`으로 실채무당 금괴 1개를 **자발적 일회성** 납부. 기존 위약금과 별개, 계약·심화/기타 채무 상태에는 영향 없음.
+- **BUILD VERIFIED / JAR PRODUCED:** [GitHub Actions #44671383373](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373) **SUCCESS**. Java21 clean build, 기존 계약 16종·제단·1/2위계 심화 회귀, 신규 PactCovenantConflictVerifier, Jar 구조·SHA-256·artifact 모두 PASS.
+- **신규 검증 로그:** `One-time celestial breach, no upkeep, unique-threat restoration, legacy no-double-charge, multiplayer separation, debt persistence: PASS`. 여기서 “separation”은 여러 **UUID의 데이터 레코드 격리** 검증이며 실제 멀티플레이 검증은 아니다. 저신앙 갈등에서 +10 자유 복구 방지, 구형 저장 중복 제재 방지, 특정 적 반복 방호로 신앙 파밍 방지.
+- **산출물:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar`, 32,252,054바이트 / 240 classes. [JAR + SHA-256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373/artifacts/14600461949), [전체 실행 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373/artifacts/14600856407).
+- **미검증/미구현:** 실제 클라이언트의 물리 방호·시점·피격 타이밍, 제물 납부·중복 네트워크 패킷, 실제 Minecraft 멀티플레이, 디자인/애니메이션/VFX, 16종 전체의 금기·면책/강행 파기·특별 현현 및 3·4위계 세부 심화는 아직 NOT TESTED/NOT IMPLEMENTED. 단순 빌드 성공으로 게임 완성 간주하지 않음.
+- **정본:** [갈등과 회복 체크포인트](./PACT_CONFLICT_AND_RESTITUTION_CHECKPOINT_2026-11-20.md). 검증된 실행 코드 이후의 [skip ci] 커밋은 문서 전용.
+
+---
+
+
 ## 2026-11-20 — 계약술사 2위계 4종 심화·관계·채무 연계
 
 - **코드 대상 SHA:** [e2508cd](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/e2508cdb2dcdd11e576dfa428a347c8e78d8f1b7). 카르다/네르아/셰로/하스텔 각자의 실제 사용 권능 증명, 2단계 심화 제물/서버 최종 확인, 단계별 가호·고유 전투 효과. 기존 하스텔 채무는 면제하지 않으며 연계 완납 사건으로만 증명.
