@@ -652,5 +652,13 @@
   "message.anomalousclasses.pact.nerea_restored": "심해의 서약이 회복되었습니다. 잃었던 친화만 돌아왔습니다. (%s/%s)",
   "message.anomalousclasses.pact.terms_title": "%s — 계약의 조항",
   "message.anomalousclasses.pact.terms_unsigned": "아직 체결하지 않은 계약입니다. 계약 제물과 체결 조건은 접촉/제단에서 별도로 확인하세요.",
-  "message.anomalousclasses.pact.relationship_status": "현재 %s: %s / 100"
+  "message.anomalousclasses.pact.relationship_status": "현재 %s: %s / 100",
+  "pact_relation.anomalousclasses.sevenwing": "공정성",
+  "pact_relation.anomalousclasses.merzad": "야망",
+  "pact_relation.anomalousclasses.taron": "위엄",
+  "pact_relation.anomalousclasses.arken": "이해도",
+  "pact_relation.anomalousclasses.nahar": "동조율",
+  "pact_relation.anomalousclasses.rakiel": "서약의 순도",
+  "pact_relation.anomalousclasses.ormas": "대지의 신뢰",
+  "pact_relation.anomalousclasses.viar": "생명의 친화"
 }
