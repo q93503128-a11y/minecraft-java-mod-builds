@@ -35,6 +35,11 @@ public final class PactCommands {
                             PactService.previewDeepen(player,StringArgumentType.getString(ctx,"patron"));
                             return 1;
                         })))
+                .then(Commands.literal("settle")
+                    .executes(ctx -> {
+                        PactService.previewSettle(ctx.getSource().getPlayerOrException());
+                        return 1;
+                    }))
                 .then(Commands.literal("challenge")
                     .executes(ctx -> {
                         PactTrialService.challenge(ctx.getSource().getPlayerOrException());
