@@ -39,6 +39,7 @@ public final class PactCombatService {
         int page;
         long starredUntil, stepUntil, guardianUntil, bulwarkUntil, lastGuard, lastBulwark;
         long emberUntil, lastEmberHeal, lastIsaelAnswer;
+        long lastWardFaith=-1000L;
         int urgenStrikes;
         long urgenComboUntil;
         Vec3 lastStrikePosition;
@@ -341,11 +342,26 @@ public final class PactCombatService {
             state.lastIsaelAnswer=now+120;
             if(source instanceof Mob aggressor && enemy(owner,aggressor))
                 PactDeepeningService.record(owner,"isael","protected_from_hostile",aggressor);
-            if (event.getEntity() instanceof AbstractVillager
-                    && now-state.lastGuard>600) {
-                state.lastGuard=now;
-                PactSavedData.get(server).relation(owner.getUUID(),"isael",1);
-                PactBlessingService.apply(owner);
+            if(event.getEntity() instanceof AbstractVillager
+                    && source instanceof Mob aggressor && enemy(owner,aggressor)
+                    && now-state.lastWardFaith>=600) {
+                state.lastWardFaith=now;
+                PactSavedData saved=PactSavedData.get(server);
+                PactSavedData.Bond bond=saved.player(owner.getUUID()).bond("isael");
+                if(bond!=null && bond.vowConflict()) {
+                    int progress=saved.protectVillagerForIsael(
+                            owner.getUUID(),aggressor.getUUID());
+                    if(progress>0) {
+                        tell(owner,progress>=PactSavedData.ISAEL_RESTITUTION_GOAL
+                                ? "message.anomalousclasses.pact.vow_restituted"
+                                : "message.anomalousclasses.pact.vow_restitution_progress",
+                                progress,PactSavedData.ISAEL_RESTITUTION_GOAL);
+                        PactBlessingService.apply(owner);
+                    }
+                } else {
+                    saved.relation(owner.getUUID(),"isael",1);
+                    PactBlessingService.apply(owner);
+                }
             }
             break;
         }
