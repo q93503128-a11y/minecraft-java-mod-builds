@@ -660,5 +660,17 @@
   "pact_relation.anomalousclasses.nahar": "Attunement",
   "pact_relation.anomalousclasses.rakiel": "Purity of Oath",
   "pact_relation.anomalousclasses.ormas": "Trust of the Earth",
-  "pact_relation.anomalousclasses.viar": "Affinity with Life"
+  "pact_relation.anomalousclasses.viar": "Affinity with Life",
+  "pact_deepening_goal.anomalousclasses.sevenwing": "Mark a real hostile through an attack or by surviving its strike, then land Final Verdict while the judgement mark lasts.",
+  "pact_deepening_goal.anomalousclasses.merzad": "Mark a real hostile with the Burning Crown, then land Royal Flame on an already marked foe to trigger the chain.",
+  "pact_deepening_goal.anomalousclasses.taron": "While King's Stone Armor remains active, land Mountain Sunder on a real hostile to prove the armor-to-sunder combination.",
+  "pact_deepening_goal.anomalousclasses.arken": "Observe an actual hostile attack type, then land Record Reprise before the observed combat memory expires.",
+  "pact_deepening_reward.anomalousclasses.sevenwing.1": "Borrowed graces +8%; Final Verdict range 7 to 8 blocks, longer defensive ward after being hit.",
+  "pact_deepening_reward.anomalousclasses.sevenwing.2": "Borrowed graces +18%; Verdict range 9 blocks, short protection after judging a marked enemy, stronger multi-target follow-up.",
+  "pact_deepening_reward.anomalousclasses.merzad.1": "Borrowed graces +8%; stronger flames and longer marks. Does not add fire damage to buildings.",
+  "pact_deepening_reward.anomalousclasses.merzad.2": "Borrowed graces +18%; stronger chained fire, longer marks and one more possible chained target.",
+  "pact_deepening_reward.anomalousclasses.taron.1": "Borrowed graces +8%; stronger and longer Stone Armor, improved Sunder knockback.",
+  "pact_deepening_reward.anomalousclasses.taron.2": "Borrowed graces +18%; powerful brief Mountain Sunder follow-up when a real enemy breaks Stone Armor.",
+  "pact_deepening_reward.anomalousclasses.arken.1": "Borrowed graces +8%; stronger recorded attack adaptations and replay, longer concentration window.",
+  "pact_deepening_reward.anomalousclasses.arken.2": "Borrowed graces +18%; switching between genuinely observed attack types grants one extra Record Reprise strike."
 }
