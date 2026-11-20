@@ -1,5 +1,18 @@
 # Build and Runtime Report
 
+## 2026-11-20 — 계약술사 3위계 4종 실제 전투 성취 심화
+
+- **검증 코드:** [`00960d0`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/00960d0cfa55f8346b5bf449ea6aeeddd3182071). 칠익의 재판관·메르자드·타론·아르켄의 기존 대표 권능 실제 명중/방호/관측 상태에서 2회 선택적 심화 가능. 3위계 가호 및 공격 권능에 1.00/1.08/1.18 증가분, 별개 전투 동작(표식 판결 후 수호·화염 연쇄·석갑 파괴 뒤 분쇄·서로 다른 공격 유형 재현). 최초 고유 수호자 시련/3위계 제단 체결 조건은 그대로.
+- **증명/제물/저장:** 각 심화 1차 3회, 2차 5회(시험값), 명시적 재료·위약금/최종 승인 전 필수 성취. NBT에서 계약별 진행도·영구 입문 시련 기록 분리, 재접속·체결 반복/해약 뒤 회복되지 않은 비용·다른 계약 진행도 혼합을 회귀 확인. 아르켄의 입문 메아리 조각과 4위계 초희귀 소재 반복 강제 없음.
+- **BUILD VERIFIED / JAR PRODUCED:** [GitHub Actions #44689561180](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44689561180) **SUCCESS**. Java21 full Gradle clean build, 신규 `verifyPactTierThreeDeepening`, 기존 전체 16계약·16제단·1/2위계 심화·이사엘/네르아 갈등/저장 테스트, jar 구조 및 SHA-256, 업로드 모두 PASS.
+- **신규 회귀 로그:** `Four tier-three earned rites, no repeated rare relics, separate guardian proof, NBT upgrades, multi-bond isolation and no replay: PASS`. 기존 1·2위계 심화, 16종 계약/제단 및 금기 회귀 PASS.
+- **출력:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar` **32,258,806 bytes / 241 classes**. [JAR + SHA256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44689561180/artifacts/14608271228), [전체 빌드 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44689561180/artifacts/14608405659).
+- **검증 경계:** Minecraft CLIENT / REAL-WORLD PLAYTEST / MULTIPLAYER / GUI-VFX-SOUND ART / 실제 보스 및 체감 밸런스 **NOT TESTED**. 4위계 심화·현현은 **NOT IMPLEMENTED**. 빌드 PASS로 실전 완성 판정 불가.
+- **정본:** [3위계 심화 개발 및 검증 체크포인트](./PACT_TIER3_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). 성공한 코드 SHA 뒤는 [skip ci] 문서 수정만 수행.
+
+---
+
+
 ## 2026-11-20 — 네르아 심해 성역 위반·회복 및 16계약 조항 조회
 
 - **검증된 코드 기준:** `26149ee25086a4799c4b4fc708ae135c97653a10`. PactCovenantService의 실제 네르아 제단 핵 파괴 이벤트→1회 친화 감소 및 Bond NBT, 실전 수중 해류→압력 연계로 서로 다른 적 2명에게 명중→정확히 잃은 친화만 복구. 일반 채광·낚시/항해/크리에이티브와 다른 제단·계약자 무제재.
