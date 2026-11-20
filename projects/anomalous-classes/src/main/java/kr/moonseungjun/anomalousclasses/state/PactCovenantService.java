@@ -4,7 +4,7 @@ import kr.moonseungjun.anomalousclasses.block.PactAltarBlock;
 import kr.moonseungjun.anomalousclasses.block.PactBlocks;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Mob;
+import java.util.UUID;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
@@ -30,14 +30,16 @@ public final class PactCovenantService {
         }
     }
 
-    /** Invoked only after a real hostile was hit by Tide Grasp -> Pressure. */
-    public static void onNereaWaterCombo(ServerPlayer player,Mob hostile) {
+    /**
+     * Called ONLY by PactTierTwoCombatService after a successful landed hit
+     * against a hostile validated BEFORE damage. A killing blow must count:
+     * calling enemy() again here would reject a legitimately defeated mob.
+     */
+    static void onNereaWaterCombo(ServerPlayer player,UUID validatedHostile) {
         if(player.getServer()==null || !PactService.isPact(player)
-                || !player.isInWater() || hostile==null
-                || hostile.level()!=player.level()
-                || !PactCombatService.enemy(player,hostile)) return;
+                || !player.isInWater() || validatedHostile==null) return;
         PactSavedData data=PactSavedData.get(player.getServer());
-        int progress=data.reconcileNereaSanctum(player.getUUID(),hostile.getUUID());
+        int progress=data.reconcileNereaSanctum(player.getUUID(),validatedHostile);
         if(progress>0) {
             PactBlessingService.apply(player);
             player.sendSystemMessage(Component.translatable(
