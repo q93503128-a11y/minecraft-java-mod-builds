@@ -26,4 +26,11 @@
 - Java 빌드·JAR·새 검사기는 CI 완료 결과로만 판정한다. Minecraft 클라이언트/실전 적대 개체 테스트/멀티플레이는 NOT TESTED.
 - 확인용: /pact contact isael → /pact confirm; /pact deepen isael에서 증명 목표 확인; 실제 적에게 수호의 빛 사용 후 증명 채우기; 요구 재료 확보 → /pact deepen isael → /pact confirm → 단계·가호 확인.
 
-**현재 상태: CODE MODIFIED. BUILD/CI PENDING. CLIENT/PLAYTEST/MULTIPLAYER NOT TESTED.**
+## 실제 자동 빌드 결과
+- 코드 기준 HEAD: `3b6d1f1523152c9b9d3625046a9b1203cc28c0a0`.
+- [GitHub Actions #44644586601](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44644586601) **SUCCESS**: Java 21 Gradle clean build, 기존 1~4위계 계약과 16제단 검사, 신규 1위계 심화/저장 검증, JAR 구조 확인, SHA-256·아티팩트 업로드.
+- 신규 검증기 실제 출력: `Four earned first-tier rites, separate evidence, staged costs, NBT and no free replay: PASS`. 16제단 분포 및 고위계 NBT 관련 기존 검증도 PASS.
+- JAR: 32,245,097 bytes, 240 compiled classes. [JAR 및 SHA-256 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44644586601/artifacts/14588525487), [빌드 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44644586601/artifacts/14587724178).
+- 이후 문서만 [skip ci] 반영. 빌드 대상 코드 SHA와 최신 문서 HEAD는 다를 수 있다. 실제 플레이/적대 개체 발동/서버 다중 플레이/최종 UI 시각 확인은 수행하지 않았다.
+
+**검증 상태: CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. CLIENT/PLAYTEST/MULTIPLAYER: NOT TESTED.**
