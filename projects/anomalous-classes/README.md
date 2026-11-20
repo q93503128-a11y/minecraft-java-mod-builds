@@ -1,4 +1,4 @@
-> **2026-11-20 2위계 심화 구현:** 카르다(폭풍 도약→강타), 네르아(해류→압력), 셰로(관측→응징), 하스텔(실제 채무 완납) 각각에 1·2차 선택형 심화를 추가했다. 별개 서버 증명·제물·재확인·한글 설명과 종별 심화 효과·회귀 검증기를 연결했다. [구현 체크포인트](./PACT_TIER2_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). **현재 새 코드 빌드 확인 중**이며 실제 Minecraft·멀티플레이 테스트는 미실행.
+> **2026-11-20 2위계 심화 구현:** 카르다(폭풍 도약→강타), 네르아(해류→압력), 셰로(관측→응징), 하스텔(실제 채무 완납) 각각에 1·2차 선택형 심화를 추가했다. 별개 서버 증명·제물·재확인·한글 설명과 종별 심화 효과·회귀 검증기를 연결했다. [구현 체크포인트](./PACT_TIER2_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). **[Actions #44660488870](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870) BUILD VERIFIED / JAR PRODUCED**이며 실제 Minecraft·멀티플레이 테스트는 미실행.
 
 > **2026-11-20 1위계 계약 심화 서버 작업:** 이사엘·벨칸·우르겐·리드나에 각기 다른 실제 권능 행동 증명, 두 차례 선택적 심화, 계약별 서버 저장 진행도·일반 재료 봉납·최종 승인·가호/기술 강화·관계 상승 경로를 연결했다. 2~4위계 개별 심화·현현과 전 존재 금기는 미확정 기획을 임의 확정하지 않고 남겨뒀다. [심화 개발 체크포인트](./PACT_TIER1_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). [Actions #44644586601](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44644586601)에서 **BUILD VERIFIED / JAR PRODUCED**. 실게임·멀티 테스트는 미실행.
 
