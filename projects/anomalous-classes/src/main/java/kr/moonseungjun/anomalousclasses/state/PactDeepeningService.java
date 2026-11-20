@@ -18,8 +18,8 @@ import net.minecraft.world.entity.monster.Enemy;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 
 /**
- * Tier-one and tier-two voluntary deepening: distinct combat evidence,
- * separate offerings and explicit consent. Upper tiers remain pending.
+ * Tier-one through tier-three voluntary deepening: distinct earned combat evidence,
+ * separate offerings and explicit consent. Fourth-tier quests remain pending.
  */
 public final class PactDeepeningService {
     public record Stage(int proofs, List<PactCatalog.Material> offering) {
@@ -95,7 +95,8 @@ public final class PactDeepeningService {
         Map<String,Rite> loaded=new LinkedHashMap<>();
         loadTier(loaded,"pact_deepening_tier1_v1.json",1);
         loadTier(loaded,"pact_deepening_tier2_v1.json",2);
-        if(loaded.size()!=8)throw new IllegalStateException("Expected eight active rites");
+        loadTier(loaded,"pact_deepening_tier3_v1.json",3);
+        if(loaded.size()!=12)throw new IllegalStateException("Expected twelve active rites");
         return Map.copyOf(loaded);
     }
     private static void loadTier(Map<String,Rite> loaded,String resource,int tier) {
