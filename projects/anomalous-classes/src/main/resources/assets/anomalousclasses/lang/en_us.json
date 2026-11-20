@@ -511,7 +511,7 @@
   "message.anomalousclasses.pact.no_contract": "You have no active covenants.",
   "message.anomalousclasses.pact.status": "%s · Trust %s · Outstanding debt %s",
   "message.anomalousclasses.pact.available": "Available: %s — /pact contact %s",
-  "message.anomalousclasses.pact.contact_hint": "Read a covenant, then use /pact confirm to sign.",
+  "message.anomalousclasses.pact.contact_hint": "Read a covenant, then use /pact confirm to sign. Review signed covenant terms anytime with /pact terms <id>.",
   "message.anomalousclasses.pact.unavailable": "You cannot alter your covenants now.",
   "message.anomalousclasses.pact.altar_required": "That patron can only be approached at its altar.",
   "message.anomalousclasses.pact.already_signed": "You already hold that covenant.",
@@ -558,7 +558,7 @@
   "pact_ability.anomalousclasses.observed_retribution": "Observed Retribution",
   "pact_ability.anomalousclasses.advance_claim": "Advance Claim",
   "pact_terms.anomalousclasses.karda": "Storm Covenant: Offer copper and amethyst at the Horns of Storm. Leap and strike with thunder.",
-  "pact_terms.anomalousclasses.nerea": "Deep-Sea Covenant: Offer prismarine at the Sunken Hall. Tide and pressure work on land as well.",
+  "pact_terms.anomalousclasses.nerea": "Deep-Sea Covenant: Offer prismarine at the Sunken Hall. Tide and pressure work on land as well. Deliberately destroying your own abyssal altar core weakens affinity once. Reconcile it by landing underwater tide-to-pressure combos on real hostiles. Ordinary mining, fishing and sailing are not prohibited.",
   "pact_terms.anomalousclasses.shero": "Observer Covenant: Offer ender pearls at the Eyeless Observatory and anticipate hostile threats.",
   "pact_terms.anomalousclasses.hastel": "Ledger Covenant: Offer gold and emeralds at the Closed Counting Hall. Powers create battle debt that must be repaid before release. Alternatively settle outstanding debt once for one gold ingot per point; formal release penalties remain separate.",
   "message.anomalousclasses.pact.trial_required": "Before signing with %s, prove yourself in this sanctuary. Aim at the altar and use /pact challenge.",
@@ -645,5 +645,12 @@
   "message.anomalousclasses.pact.settle_preview": "Settle Hastel's outstanding debt of %s with gold. This is a one-time settlement; covenant release penalties are separate.",
   "message.anomalousclasses.pact.settle_price": "Gold required: %s ingots (one per debt point). Confirm with /pact confirm.",
   "message.anomalousclasses.pact.settle_done": "Hastel's debt is settled. Your contract remains active.",
-  "message.anomalousclasses.pact.no_debt": "There is no outstanding debt to settle."
+  "message.anomalousclasses.pact.no_debt": "There is no outstanding debt to settle.",
+  "message.anomalousclasses.pact.nerea_breach": "You have broken Nerea's abyssal altar core. Abyssal affinity weakens. Restore your bond by landing two Tide Grasp-to-Abyssal Pressure combos on distinct hostiles while submerged.",
+  "message.anomalousclasses.pact.nerea_status": "Abyssal covenant unsettled · Proof %s/%s. Land underwater tide-to-pressure combos on distinct hostiles.",
+  "message.anomalousclasses.pact.nerea_restitution": "Abyssal reconciliation %s/%s. Complete another underwater combo against a different hostile.",
+  "message.anomalousclasses.pact.nerea_restored": "Your abyssal covenant is restored. Only your lost affinity is returned. (%s/%s)",
+  "message.anomalousclasses.pact.terms_title": "%s — Covenant Terms",
+  "message.anomalousclasses.pact.terms_unsigned": "This covenant is not signed. Inspect its exact signing offering and requirements through contact or its altar.",
+  "message.anomalousclasses.pact.relationship_status": "Current %s: %s / 100"
 }
