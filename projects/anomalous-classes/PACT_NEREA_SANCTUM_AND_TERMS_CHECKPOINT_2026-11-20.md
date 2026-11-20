@@ -26,4 +26,12 @@
 - 실게임 QA 재현: 네르아 계약자로 해저 성역 핵을 직접 채굴 → /pact terms nerea 또는 /pact에서 남은 친화 및 성역 위반 확인 → 물속에서 서로 다른 적에게 해류→압력 명중 2회 → 상태 해제 확인. 동일 적 반복, 지상 전투, 다른 제단 파괴, 크리에이티브는 회복/위반이 발생하지 않아야 한다. 멀티플레이와 외부 보호 모드에 의해 취소된 파괴 이벤트, 복잡한 손상 이벤트 순서는 Minecraft 실제 월드에서 추가 확인이 필요하다.
 - 정식 제단 아트/GUI/VFX·음향, 3·4위계 심화와 특별 현현, 우르겐/리드나/카르다/셰로의 고유 금기 조건, 전체 강행 파기/면책은 여전히 미구현.
 
-**코드 반영. BUILD/CI PENDING. PLAYTEST / CLIENT / MULTIPLAYER NOT TESTED.**
+## 자동 빌드 최종 검증
+- **검증된 게임 코드 커밋:** `26149ee25086a4799c4b4fc708ae135c97653a10`. 추가된 16관계명 번역 키, 게임 내 읽기 전용 조항 조회, 실제 네르아 제단 핵 훼손/수중 고유 연계 회복, 죽는 적을 마지막 일격으로 처치할 때 사전 유효 대상으로 증명 처리한 수정까지 포함.
+- [GitHub Actions #44673677553](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44673677553) **SUCCESS**. Java 21 clean build, PactNereaSanctumVerifier, 16종 KO/EN 계약 조항·관계명, 이사엘 갈등/채무, 1~2위계 심화·16제단, JAR 구조 및 SHA-256·아티팩트 업로드 모두 PASS.
+- **신규 검증 실제 출력:** `Sixteen localized covenant terms, Nerea unique hostile water rites, single sanctuary breach, exact affinity restitution, persistent proof and legacy migration: PASS`. 기존 `One-time celestial breach ... PASS`, `Four earned first-tier rites ... PASS`, `Tier-two distinct rites ... PASS` 확인.
+- **JAR:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar`, **32,255,965 bytes, 241 classes**. [JAR·SHA-256 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44673677553/artifacts/14600859407) · [실행 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44673677553/artifacts/14600414918).
+- 정적/메서드 테스트에서 **멀티플레이 저장 레코드 분리**는 검증했지만 실제 **MULTIPLAYER TESTED가 아니다**. 자동 빌드 PASS로 Minecraft 실게임 콤보 조작·특수 현현·월드 시드·GUI·애니메이션/외부 모드 연계 성공을 주장하지 않는다.
+- CI 통과 뒤 변경은 정본 문서/체크포인트만 `[skip ci]`로 수정한다.
+
+**CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. CLIENT / PLAYTEST / MULTIPLAYER NOT TESTED.**
