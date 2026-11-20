@@ -265,7 +265,18 @@ tasks.register('verifyPactSixteenAltars', Exec) {
     }
 }
 
+tasks.register('verifyPactTierOneDeepening', Exec) {
+    group = 'verification'
+    description = 'Validates four unique first-tier rites, earned proof, stage storage and no duplicate redemption.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactTierOneDeepeningVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactTierOneDeepening')
     dependsOn tasks.named('verifyPactSixteenAltars')
     dependsOn tasks.named('verifyPactTierFour')
     dependsOn tasks.named('verifyPactTierThree')
