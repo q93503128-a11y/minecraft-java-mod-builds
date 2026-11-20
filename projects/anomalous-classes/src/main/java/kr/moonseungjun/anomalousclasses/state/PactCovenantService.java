@@ -33,7 +33,7 @@ public final class PactCovenantService {
     /** Invoked only after a real hostile was hit by Tide Grasp -> Pressure. */
     public static void onNereaWaterCombo(ServerPlayer player,Mob hostile) {
         if(player.getServer()==null || !PactService.isPact(player)
-                || !player.isInWater() || hostile==null || !hostile.isAlive()
+                || !player.isInWater() || hostile==null
                 || hostile.level()!=player.level()
                 || !PactCombatService.enemy(player,hostile)) return;
         PactSavedData data=PactSavedData.get(player.getServer());
