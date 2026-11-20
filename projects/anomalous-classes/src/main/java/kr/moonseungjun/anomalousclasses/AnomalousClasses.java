@@ -27,6 +27,7 @@ import kr.moonseungjun.anomalousclasses.state.RpgExperienceService;
 import kr.moonseungjun.anomalousclasses.state.BarrierCasterService;
 import kr.moonseungjun.anomalousclasses.state.PactCatalog;
 import kr.moonseungjun.anomalousclasses.state.PactService;
+import kr.moonseungjun.anomalousclasses.state.PactCovenantService;
 import kr.moonseungjun.anomalousclasses.state.PactCombatService;
 import kr.moonseungjun.anomalousclasses.state.PactTierTwoCombatService;
 import kr.moonseungjun.anomalousclasses.state.PactTierThreeCombatService;
@@ -79,6 +80,7 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onItemCrafted);
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onAdvancementEarned);
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RpgExperienceService::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, PactCovenantService::onBreak);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onIncoming);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onProjectile);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onDeath);
