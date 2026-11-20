@@ -1,5 +1,13 @@
 # Changelog
 
+## Nerea sanctum taboo and read-only contract terms — 2026-11-20
+
+- Implemented narrowly scoped Nerea altar-core desecration as a one-time server covenant event; a temporary abyssal affinity loss is recoverable only through two distinct real underwater tide-to-pressure combat achievements.
+- Persisted separate breach/proof/debt state in NBT, validated no low-affinity free refund, safe legacy load, multiple contracts, restart, repeat-event and release/re-sign boundaries.
+- Introduced /pact terms <id> for revisiting covenant conditions/penalties/status without opening a payment or leaving a stale confirmation. Korean/English text covers the explicit behavior and its limits.
+- No arbitrary punishment for ordinary retreat, general mining, travelling, fishing, or unrelated patrons. Values remain provisional before real Minecraft client, worldgen and multiplayer playtests.
+
+
 ## Covenant conflict / restitution — 2026-11-20
 
 - Persisted the Isael–Velkan incompatible-vow state, existing one-time trust cost and precise faith restitution after formal covenant release and three legitimate villager wards against distinct hostiles.
