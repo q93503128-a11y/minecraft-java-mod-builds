@@ -145,6 +145,7 @@ public final class PactService {
         say(player,"message.anomalousclasses.pact.deepening_preview",
                 patron.name(),bond.deepening()+1);
         say(player,"pact_deepening_goal.anomalousclasses."+id);
+        say(player,"pact_deepening_reward.anomalousclasses."+id+"."+(bond.deepening()+1));
         say(player,"message.anomalousclasses.pact.deepening_progress",bond.progress(),stage.proofs());
         for(var material:stage.offering())
             player.sendSystemMessage(Component.translatable("message.anomalousclasses.pact.material",
