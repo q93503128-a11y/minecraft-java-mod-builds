@@ -18,8 +18,8 @@ import net.minecraft.world.entity.monster.Enemy;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 
 /**
- * First-tier voluntary deepening: real combat evidence, a separate offering,
- * and explicit confirmation. Later tiers require their own approved trials.
+ * Tier-one and tier-two voluntary deepening: distinct combat evidence,
+ * separate offerings and explicit consent. Upper tiers remain pending.
  */
 public final class PactDeepeningService {
     public record Stage(int proofs, List<PactCatalog.Material> offering) {
@@ -92,19 +92,27 @@ public final class PactDeepeningService {
                     "message.anomalousclasses.pact.deepening_ready",PactCatalog.get(patron).name()),true);
     }
     private static Map<String,Rite> load() {
+        Map<String,Rite> loaded=new LinkedHashMap<>();
+        loadTier(loaded,"pact_deepening_tier1_v1.json",1);
+        loadTier(loaded,"pact_deepening_tier2_v1.json",2);
+        if(loaded.size()!=8)throw new IllegalStateException("Expected eight active rites");
+        return Map.copyOf(loaded);
+    }
+    private static void loadTier(Map<String,Rite> loaded,String resource,int tier) {
         try (var stream=PactDeepeningService.class.getResourceAsStream(
-                "/data/anomalousclasses/pact_deepening_tier1_v1.json")) {
-            if (stream==null)throw new IllegalStateException("Missing first-tier rites");
+                "/data/anomalousclasses/"+resource)) {
+            if (stream==null)throw new IllegalStateException("Missing rite resource: "+resource);
             JsonObject root=JsonParser.parseReader(
                     new InputStreamReader(stream,StandardCharsets.UTF_8)).getAsJsonObject();
-            Map<String,Rite> loaded=new LinkedHashMap<>();
+            int count=0;
             for(JsonElement element:root.getAsJsonArray("entries")) {
                 JsonObject row=element.getAsJsonObject();
                 String id=row.get("id").getAsString();
                 String event=row.get("event").getAsString();
                 var patron=PactCatalog.get(id);
-                if (patron==null || patron.tier()!=1 || event.isBlank()
-                        || loaded.containsKey(id))throw new IllegalStateException("Bad rite: "+id);
+                if (patron==null || patron.tier()!=tier || event.isBlank()
+                        || loaded.containsKey(id))
+                    throw new IllegalStateException("Invalid tier "+tier+" rite: "+id);
                 var stages=new java.util.ArrayList<Stage>();
                 for(JsonElement elementStage:row.getAsJsonArray("stages")) {
                     JsonObject stage=elementStage.getAsJsonObject();
@@ -117,11 +125,15 @@ public final class PactDeepeningService {
                     }
                     stages.add(new Stage(stage.get("proofs").getAsInt(),materials));
                 }
-                if(stages.size()!=2)throw new IllegalStateException("Expected two playable rites: "+id);
+                if(stages.size()!=2)
+                    throw new IllegalStateException("Expected two playable rites: "+id);
                 loaded.put(id,new Rite(id,event,stages));
+                count++;
             }
-            if(loaded.size()!=4)throw new IllegalStateException("Missing a first-tier rite");
-            return Map.copyOf(loaded);
-        } catch(Exception bad) { throw new IllegalStateException("Invalid first-tier deepening rites",bad); }
+            if(count!=4)throw new IllegalStateException("Incomplete tier "+tier+" rites");
+        } catch(Exception bad) {
+            throw new IllegalStateException("Invalid tier "+tier+" covenant rites",bad);
+        }
     }
+
 }
