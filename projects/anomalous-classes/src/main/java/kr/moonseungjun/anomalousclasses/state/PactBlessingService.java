@@ -41,7 +41,7 @@ public final class PactBlessingService {
             default -> 0;
         };
         return base * relationFactor(bond.relation())
-                * (patron.tier()==1 ? deepeningFactor(bond.deepening()) : 1.0);
+                * deepeningFactor(patron,bond.deepening());
     }
     /** Provisional first-tier rite bonus affects only the borrowed blessing. */
     public static double deepeningFactor(int depth) {
@@ -50,6 +50,16 @@ public final class PactBlessingService {
             case 2 -> 1.25;
             default -> 1.0;
         };
+    }
+    /** Deepening multiplies only that patron's borrowed boon, not base player stats. */
+    public static double deepeningFactor(PactCatalog.Patron patron,int depth) {
+        if (patron.tier()==1) return deepeningFactor(depth);
+        if (patron.tier()==2) return switch(Math.clamp(depth,0,2)) {
+            case 1 -> 1.10;
+            case 2 -> 1.22;
+            default -> 1.0;
+        };
+        return 1.0; // Higher-tier rites have not been approved or implemented.
     }
     public static double combined(PactSavedData.Player state, String stat) {
         List<Double> bonuses = new ArrayList<>();
