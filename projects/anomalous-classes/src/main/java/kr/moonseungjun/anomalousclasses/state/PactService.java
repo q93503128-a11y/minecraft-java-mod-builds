@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import kr.moonseungjun.anomalousclasses.block.PactAltarBlock;
 import kr.moonseungjun.anomalousclasses.block.PactBlocks;
@@ -17,7 +18,7 @@ import net.minecraft.world.item.ItemStack;
 /** Explicit two-step server confirmation; no offerings are charged for inspection. */
 public final class PactService {
     private static final long OFFER_DURATION_MS = 60_000L;
-    private enum Action { SIGN, RELEASE, DEEPEN }
+    private enum Action { SIGN, RELEASE, DEEPEN, SETTLE }
     private record Pending(String id, Action action, int count, int revision, long expires,
                            ResourceKey<Level> altarDimension, BlockPos altarPos) {}
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
@@ -44,6 +45,14 @@ public final class PactService {
             if(next!=null) say(player,"message.anomalousclasses.pact.deepening_status",
                     Component.translatable("pact_relation.anomalousclasses."+bond.id()),
                     bond.relation(),bond.deepening(),bond.progress(),next.proofs());
+            if(bond.id().equals("isael") && bond.vowConflict()) {
+                if(state.has("velkan"))
+                    say(player,"message.anomalousclasses.pact.vow_conflict_active");
+                else say(player,"message.anomalousclasses.pact.vow_restitution",
+                        bond.restitution(),PactSavedData.ISAEL_RESTITUTION_GOAL);
+            }
+            if(bond.id().equals("hastel") && bond.debt()>0)
+                say(player,"message.anomalousclasses.pact.settle_hint");
         }
         for (var patron : PactCatalog.introductory())
             player.sendSystemMessage(Component.translatable("message.anomalousclasses.pact.available",
@@ -119,8 +128,34 @@ public final class PactService {
             return;
         }
         quote(player, patron, state.count(), true);
+        if(id.equals("velkan") && state.has("isael")
+                && state.bond("isael").vowConflict())
+            say(player,"message.anomalousclasses.pact.vow_release_help");
         PENDING.put(player.getUUID(), new Pending(id, Action.RELEASE, state.count(),
                 state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS, null, null));
+    }
+    /**
+     * The existing battle debt may also be settled by a one-time, explicitly
+     * accepted gold payment. No automatic timer, withdrawal, or upkeep.
+     */
+    public static void previewSettle(ServerPlayer player) {
+        PENDING.remove(player.getUUID());
+        if(!isPact(player)||CombatTracker.isLocked(player)) {
+            say(player,"message.anomalousclasses.pact.unavailable");return;
+        }
+        var state=PactSavedData.get(player.getServer()).player(player.getUUID());
+        PactSavedData.Bond bond=state.bond("hastel");
+        if(bond==null) {
+            say(player,"message.anomalousclasses.pact.not_signed");return;
+        }
+        if(bond.debt()<=0) {
+            say(player,"message.anomalousclasses.pact.no_debt");return;
+        }
+        say(player,"message.anomalousclasses.pact.settle_preview",bond.debt());
+        say(player,"message.anomalousclasses.pact.settle_price",bond.debt());
+        say(player,"message.anomalousclasses.pact.confirm_hint");
+        PENDING.put(player.getUUID(),new Pending("hastel",Action.SETTLE,state.count(),
+                state.revision(),System.currentTimeMillis()+OFFER_DURATION_MS,null,null));
     }
     /** Each tier-one contract has two independently earned and funded rites. */
     public static void previewDeepen(ServerPlayer player,String id) {
@@ -208,10 +243,12 @@ public final class PactService {
         }
         boolean release = pending.action() == Action.RELEASE;
         boolean deepening = pending.action() == Action.DEEPEN;
+        boolean settling = pending.action() == Action.SETTLE;
         PactSavedData.Bond bond=state.bond(patron.id());
         PactDeepeningService.Stage stage=deepening && bond!=null
                 ? PactDeepeningService.next(patron.id(),bond.deepening()) : null;
-        if (deepening ? (bond == null || stage == null || bond.progress()<stage.proofs())
+        if (settling ? (!patron.id().equals("hastel") || bond==null || bond.debt()<=0)
+                : deepening ? (bond == null || stage == null || bond.progress()<stage.proofs())
                 : release ? (bond == null || bond.debt() > 0)
                 : (!patron.enabled() || (!patron.accessible()
                        && !validAltar(player, patron.id(), pending.altarDimension(), pending.altarPos()))
@@ -219,12 +256,15 @@ public final class PactService {
                        || state.has(patron.id()))) {
             say(player, "message.anomalousclasses.pact.changed"); return;
         }
-        long hpCost = release || deepening ? 0 : (long) Math.ceil(patron.hpSacrifice());
+        long hpCost = release || deepening || settling ? 0 : (long) Math.ceil(patron.hpSacrifice());
         if (hpCost > 0 && player.getHealth() <= hpCost + 1.0) {
             say(player, "message.anomalousclasses.pact.need_health"); return;
         }
-        var offering = deepening ? stage.offering() : release ? patron.release() : patron.offering();
-        int multiplierCount = release || deepening ? 0 : state.count();
+        var offering = settling
+                ? java.util.List.of(new PactCatalog.Material(
+                        ResourceLocation.withDefaultNamespace("gold_ingot"),bond.debt()))
+                : deepening ? stage.offering() : release ? patron.release() : patron.offering();
+        int multiplierCount = release || deepening || settling ? 0 : state.count();
         if (!canPay(player.getInventory(), offering, multiplierCount)) {
             say(player, "message.anomalousclasses.pact.need_material"); return;
         }
@@ -234,22 +274,24 @@ public final class PactService {
         if (release) {
             saved.breakBond(player.getUUID(), patron.id());
             PactCombatService.removeBond(player, patron.id());
+        } else if(settling) {
+            saved.debt(player.getUUID(),"hastel",0);
         } else if(deepening) {
             saved.deepen(player.getUUID(),patron.id(),bond.deepening(),stage.proofs());
         } else {
             saved.sign(player.getUUID(), patron.id());
-            if ((patron.id().equals("isael") && state.has("velkan"))
-                    || (patron.id().equals("velkan") && state.has("isael"))) {
-                saved.relation(player.getUUID(),"isael",-10);
+            if ((patron.id().equals("isael") || patron.id().equals("velkan"))
+                    && saved.markIsaelConflict(player.getUUID()))
                 say(player,"message.anomalousclasses.pact.conflict");
-            }
         }
         PactBlessingService.apply(player);
-        if(deepening) say(player,"message.anomalousclasses.pact.deepening_done",
+        if(settling) say(player,"message.anomalousclasses.pact.settle_done");
+        else if(deepening) say(player,"message.anomalousclasses.pact.deepening_done",
                 patron.name(),saved.player(player.getUUID()).bond(patron.id()).deepening());
         else say(player,release ? "message.anomalousclasses.pact.released"
                 : "message.anomalousclasses.pact.signed",patron.name());
-        if (!release && !deepening) RpgExperienceService.awardFirst(player, "pact_signed:" + patron.id(), 1_200);
+        if (!release && !deepening && !settling)
+            RpgExperienceService.awardFirst(player, "pact_signed:" + patron.id(), 1_200);
     }
     private static boolean canPay(Inventory inventory, java.util.List<PactCatalog.Material> offering,
                                    int count) {
