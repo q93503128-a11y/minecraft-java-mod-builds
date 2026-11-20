@@ -63,77 +63,118 @@ public final class PactTierThreeCombatService {
         long tick = now(player);
         switch (spell) {
             case "final_verdict" -> {
-                var targets = PactCombatService.cone(player, 7, .78, 18);
-                if (targets.isEmpty()) {hint(player, "message.anomalousclasses.pact.no_target"); return false;}
+                int stage=depth(player,"sevenwing");
+                var targets=PactCombatService.cone(player,7+stage,.78,18);
+                if(targets.isEmpty()){hint(player,"message.anomalousclasses.pact.no_target");return false;}
                 int landed=0;
-                for (Mob target : targets) {
-                    double multiplier=state.verdictMarks.getOrDefault(target.getUUID(),0L)>tick?1.25:1.0;
-                    if (hit(player,patron,target,28*multiplier)) landed++;
+                Mob proofTarget=null,secondary=null;
+                for(Mob target:targets) {
+                    boolean marked=state.verdictMarks.getOrDefault(target.getUUID(),0L)>tick;
+                    double modifier=marked?1.25:1.0;
+                    if(hit(player,patron,target,28*modifier)) {
+                        landed++;
+                        if(marked && proofTarget==null)proofTarget=target;
+                        if(secondary==null && target!=proofTarget)secondary=target;
+                    }
                 }
-                if (landed==0) return false;
-                if (landed>0 && targets.size()>1 && tick>=state.verdictEchoReady) {
-                    // One non-recursive extra hit, not a second full cone.
-                    hit(player,patron,targets.get(1),6);
+                if(landed==0)return false;
+                if(proofTarget!=null){
+                    PactDeepeningService.record(player,"sevenwing","marked_verdict_landed",proofTarget);
+                    if(stage>=2)state.verdictGuardUntil=Math.max(state.verdictGuardUntil,tick+60);
+                }
+                if(landed>=2 && secondary!=null && secondary.isAlive()
+                        && tick>=state.verdictEchoReady) {
+                    hit(player,patron,secondary,6+2*stage);
                     state.verdictEchoReady=tick+120;
                 }
                 return true;
             }
             case "royal_flame" -> {
-                var targets = PactCombatService.cone(player, 9, .70, 18);
-                if (targets.isEmpty()) {hint(player,"message.anomalousclasses.pact.no_target");return false;}
-                int landed=0, chained=0;
-                for (Mob target : targets) {
-                    boolean existing = state.fireMarks.getOrDefault(target.getUUID(),0L)>tick;
-                    if (hit(player,patron,target,30)) {
+                int stage=depth(player,"merzad");
+                var targets=PactCombatService.cone(player,9,.70,18);
+                if(targets.isEmpty()){hint(player,"message.anomalousclasses.pact.no_target");return false;}
+                int landed=0,chained=0;
+                Mob proofTarget=null;
+                for(Mob target:targets) {
+                    boolean marked=state.fireMarks.getOrDefault(target.getUUID(),0L)>tick;
+                    if(hit(player,patron,target,30)) {
                         landed++;
-                        if (existing && chained<3) {
-                            hit(player,patron,target,8);
-                            chained++;
+                        if(marked) {
+                            if(proofTarget==null)proofTarget=target;
+                            if(chained<3+(stage>=2?1:0) && target.isAlive()) {
+                                hit(player,patron,target,8+2*stage);
+                                chained++;
+                            }
                         }
-                        state.fireMarks.put(target.getUUID(),tick+120);
+                        state.fireMarks.put(target.getUUID(),tick+120+20L*stage);
                     }
                 }
-                if (landed==0) return false;
-                state.fireAfterglowUntil=tick+100;
+                if(landed==0)return false;
+                if(proofTarget!=null)
+                    PactDeepeningService.record(player,"merzad","crowned_flame_chain",proofTarget);
+                state.fireAfterglowUntil=tick+100+20L*stage;
                 return true;
             }
             case "kings_stone_armor" -> {
-                double relation = PactBlessingService.relationFactor(
+                double relation=PactBlessingService.relationFactor(
                         PactSavedData.get(player.getServer()).player(player.getUUID()).bond("taron").relation());
-                double focus = PactBlessingService.focusFactor(
+                double focus=PactBlessingService.focusFactor(
                         ClassProfileSavedData.get(player.getServer()).profile(player.getUUID()));
-                state.stoneIntegrity=34.0*relation*focus;
-                state.stoneUntil=tick+180;
+                int stage=depth(player,"taron");
+                state.stoneIntegrity=34.0*relation*focus*
+                        PactBlessingService.deepeningFactor(patron,stage);
+                state.stoneUntil=tick+180+20L*stage;
+                state.stoneShatterFollowupUntil=0;
                 return true;
             }
             case "mountain_sunder" -> {
                 var targets=PactCombatService.cone(player,7,.78,16);
-                if (targets.isEmpty()) {hint(player,"message.anomalousclasses.pact.no_target");return false;}
+                if(targets.isEmpty()){hint(player,"message.anomalousclasses.pact.no_target");return false;}
+                int stage=depth(player,"taron");
+                boolean armored=state.stoneUntil>tick && state.stoneIntegrity>0;
+                boolean shatteredResponse=stage>=2 && state.stoneShatterFollowupUntil>tick;
                 int landed=0;
+                Mob proofTarget=null;
                 for(Mob target:targets) {
-                    if(hit(player,patron,target,28)) {
+                    if(hit(player,patron,target,28*(shatteredResponse?1.25:1.0))) {
                         landed++;
-                        target.knockback(.35,player.getX()-target.getX(),player.getZ()-target.getZ());
+                        if(proofTarget==null)proofTarget=target;
+                        target.knockback(.35+.05*stage,player.getX()-target.getX(),
+                                player.getZ()-target.getZ());
                     }
                 }
+                if(landed>0 && armored)
+                    PactDeepeningService.record(player,"taron","armored_mountain_sunder",proofTarget);
+                if(landed>0 && shatteredResponse)state.stoneShatterFollowupUntil=0;
                 return landed>0;
             }
             case "record_reprise" -> {
                 Mob target=PactCombatService.aimed(player,16);
                 if(target==null){hint(player,"message.anomalousclasses.pact.no_target");return false;}
-                if(!hit(player,patron,target,25)) return false;
-                var observations = PactSavedData.get(player.getServer()).player(player.getUUID()).observations();
+                var observations=PactSavedData.get(player.getServer()).player(player.getUUID()).observations();
+                boolean fresh=!state.lastObserved.isBlank() && state.recordAdaptUntil>tick
+                        && observations.contains(state.lastObserved);
+                if(!hit(player,patron,target,25))return false;
+                int stage=depth(player,"arken");
+                if(fresh)
+                    PactDeepeningService.record(player,"arken","observed_record_reprise",target);
                 if(!observations.isEmpty()) {
                     String recent=observations.get(observations.size()-1);
                     switch(recent) {
-                        case "melee" -> hit(player,patron,target,3);
-                        case "projectile" -> hit(player,patron,target,4);
-                        case "fire" -> target.setRemainingFireTicks(Math.max(target.getRemainingFireTicks(),40));
-                        case "impact" -> target.knockback(.6,player.getX()-target.getX(),player.getZ()-target.getZ());
+                        case "melee" -> {if(target.isAlive())hit(player,patron,target,3+stage);}
+                        case "projectile" -> {if(target.isAlive())hit(player,patron,target,4+stage);}
+                        case "fire" -> {if(target.isAlive())target.setRemainingFireTicks(
+                                Math.max(target.getRemainingFireTicks(),40+15*stage));}
+                        case "impact" -> {if(target.isAlive())target.knockback(.6+.1*stage,
+                                player.getX()-target.getX(),player.getZ()-target.getZ());}
                         default -> { }
                     }
+                    if(fresh && stage>=2 && !state.lastRepriseProfile.isBlank()
+                            && !state.lastRepriseProfile.equals(recent) && target.isAlive())
+                        hit(player,patron,target,6);
+                    if(fresh)state.lastRepriseProfile=recent;
                 }
-                state.focusUntil=tick+100;
+                state.focusUntil=tick+100+20L*stage;
                 return true;
             }
             default -> {return false;}
