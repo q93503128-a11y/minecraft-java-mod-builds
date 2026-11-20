@@ -59,7 +59,12 @@ public final class PactBlessingService {
             case 2 -> 1.22;
             default -> 1.0;
         };
-        return 1.0; // Higher-tier rites have not been approved or implemented.
+        if (patron.tier()==3) return switch(Math.clamp(depth,0,2)) {
+            case 1 -> 1.08;
+            case 2 -> 1.18;
+            default -> 1.0;
+        };
+        return 1.0; // Fourth-tier quest rites are not implemented.
     }
     public static double combined(PactSavedData.Player state, String stat) {
         List<Double> bonuses = new ArrayList<>();
