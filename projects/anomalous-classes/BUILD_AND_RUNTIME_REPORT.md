@@ -1,5 +1,16 @@
 # Build and Runtime Report
 
+## 2026-11-20 — 계약술사 2위계 4종 심화·관계·채무 연계
+
+- **코드 대상 SHA:** [e2508cd](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/e2508cdb2dcdd11e576dfa428a347c8e78d8f1b7). 카르다/네르아/셰로/하스텔 각자의 실제 사용 권능 증명, 2단계 심화 제물/서버 최종 확인, 단계별 가호·고유 전투 효과. 기존 하스텔 채무는 면제하지 않으며 연계 완납 사건으로만 증명.
+- **BUILD VERIFIED / JAR PRODUCED:** [Actions #44660488870](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870) SUCCESS. Java21 clean build, 기존 16제단·1~4위계 계약·1위계 심화 회귀, 새 `verifyPactTierTwoDeepening` PASS, JAR 구조/SHA-256 및 업로드 통과.
+- **검증기 로그:** `Tier-two distinct rites, canon thresholds, multi-bond debt, NBT roundtrip, proof cap and paid stage transitions: PASS`. 기존 1위계 심화·계약·제단 검증기도 PASS.
+- **JAR:** build/libs/anomalous-classes-0.1.0-alpha.1.jar (32,247,944바이트, 240 classes). [JAR+SHA-256 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870/artifacts/14595416893) / [raw logs](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870/artifacts/14595955869).
+- **검증 한계:** 실제 Minecraft PvE 콤보 타이밍·AI 상태·스테이지 보상 체감·클라이언트/멀티플레이·모델/VFX는 NOT TESTED. 3·4위계 개별 심화, 특별 현현, 금기 충돌 면책과 강행 파기 종합 시스템 미완. 사용자 원래 방향 6직업 핵심 코드→통합 게임 검수→Codex 시각 작업 유지.
+- **상세 기록:** [2위계 심화 구현 체크포인트](./PACT_TIER2_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). 빌드 대상 코드 SHA 이후 [skip ci] 문서 커밋만 추가.
+
+---
+
 ## 2026-11-20 — 1위계 4종 계약 심화·계약 관계 전투 증명
 
 - **검증 코드 기준:** [3b6d1f1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/3b6d1f1523152c9b9d3625046a9b1203cc28c0a0). 이사엘·벨칸·우르겐·리드나 각각의 실제 전투 권능 증명→진행도 저장→2단계 명시적 봉납·확정, 계약별 관계 및 강화 가호·기술을 추가. 2~4위계의 구체 심화·현현은 미구현.
