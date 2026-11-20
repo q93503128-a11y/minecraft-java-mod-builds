@@ -1,3 +1,7 @@
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
@@ -23,8 +27,29 @@ public final class PactTierThreeDeepeningVerifier {
         return (PactSavedData)loader.invoke(null,
                 state.save(new CompoundTag(),RegistryAccess.EMPTY),RegistryAccess.EMPTY);
     }
+    private static void verifyReadableRites(List<String> patrons) throws Exception {
+        for(String language:List.of("ko_kr","en_us")) {
+            String path="/assets/anomalousclasses/lang/"+language+".json";
+            try(var stream=PactTierThreeDeepeningVerifier.class.getResourceAsStream(path)) {
+                require(stream!=null,"Missing language pack: "+language);
+                JsonObject lang=JsonParser.parseReader(
+                        new InputStreamReader(stream,StandardCharsets.UTF_8)).getAsJsonObject();
+                for(String id:patrons) {
+                    for(String key:List.of("pact_deepening_goal.anomalousclasses."+id,
+                            "pact_deepening_reward.anomalousclasses."+id+".1",
+                            "pact_deepening_reward.anomalousclasses."+id+".2",
+                            "pact_terms.anomalousclasses."+id,
+                            "pact_relation.anomalousclasses."+id)) {
+                        require(lang.has(key) && !lang.get(key).getAsString().isBlank(),
+                                "Unreadable covenant "+language+": "+key);
+                    }
+                }
+            }
+        }
+    }
     public static void main(String[] args) throws Exception {
         var patrons=List.of("sevenwing","merzad","taron","arken");
+        verifyReadableRites(patrons);
         var eventByPatron=Map.of(
                 "sevenwing","marked_verdict_landed",
                 "merzad","crowned_flame_chain",
