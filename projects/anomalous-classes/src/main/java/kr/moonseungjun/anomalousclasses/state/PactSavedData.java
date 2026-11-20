@@ -23,6 +23,8 @@ public final class PactSavedData extends SavedData {
     public static final class Bond {
         private final String patronId;
         private int relation, deepening, debt, progress;
+        private boolean vowConflict;
+        private final Set<UUID> restitutionThreats = new LinkedHashSet<>();
         Bond(String patronId, int relation, int deepening, int debt) {
             this(patronId,relation,deepening,debt,0);
         }
@@ -38,6 +40,8 @@ public final class PactSavedData extends SavedData {
         public int deepening() { return deepening; }
         public int progress() { return progress; }
         public int debt() { return debt; }
+        public boolean vowConflict() { return vowConflict; }
+        public int restitution() { return restitutionThreats.size(); }
     }
     public static final class Player {
         private final LinkedHashMap<String, Bond> bonds = new LinkedHashMap<>();
@@ -94,6 +98,40 @@ public final class PactSavedData extends SavedData {
         p.revision++;
         setDirty();
         return true;
+    }
+    /** One event on the SECOND incompatible signature, never a recurring timer. */
+    public boolean markIsaelConflict(UUID owner) {
+        Player p=player(owner);
+        Bond isael=p.bond("isael");
+        if(isael==null || !p.has("velkan") || isael.vowConflict)return false;
+        isael.vowConflict=true;
+        isael.restitutionThreats.clear();
+        isael.relation=Math.max(0,isael.relation-10);
+        p.revision++;
+        setDirty();
+        return true;
+    }
+    /**
+     * Restitution is possible only after ending the conflicting covenant.
+     * Three UNIQUE attackers must be intercepted while defending villagers.
+     * Evidence is owned by the actual server and persisted, not client packets.
+     * The 2+2+6 trust refunded here repairs the single original -10 conflict
+     * penalty, without a free increase for joining incompatible contracts.
+     */
+    public int protectVillagerForIsael(UUID owner, UUID validThreat) {
+        Player p=player(owner);
+        Bond bond=p.bond("isael");
+        if(bond==null || !bond.vowConflict || p.has("velkan")
+                || validThreat==null || !bond.restitutionThreats.add(validThreat))return 0;
+        int steps=bond.restitutionThreats.size();
+        bond.relation=Math.min(100,bond.relation+(steps==3?6:2));
+        if(steps>=3) {
+            bond.vowConflict=false;
+            bond.restitutionThreats.clear();
+        }
+        p.revision++;
+        setDirty();
+        return steps;
     }
     /** Successful, rate-limited real actions increment only the active rite. */
     public boolean addDeepeningProof(UUID owner,String patron,int cap) {
@@ -154,6 +192,16 @@ public final class PactSavedData extends SavedData {
                 entry.putInt("deepening", b.deepening);
                 entry.putInt("deepeningProgress", b.progress);
                 entry.putInt("debt", b.debt);
+                if(b.patronId.equals("isael")) {
+                    entry.putBoolean("vowConflict",b.vowConflict);
+                    ListTag violations=new ListTag();
+                    for(UUID threat:b.restitutionThreats) {
+                        CompoundTag evidence=new CompoundTag();
+                        evidence.putUUID("threat",threat);
+                        violations.add(evidence);
+                    }
+                    entry.put("vowRestitution",violations);
+                }
                 entries.add(entry);
             }
             row.put("bonds", entries);
@@ -185,13 +233,31 @@ public final class PactSavedData extends SavedData {
             Player p = new Player();
             p.revision = Math.max(0,row.getInt("revision"));
             ListTag bonds = row.getList("bonds", Tag.TAG_COMPOUND);
+            boolean legacyIsael=false;
             for (int j=0; j<bonds.size(); j++) {
                 CompoundTag item = bonds.getCompound(j);
                 String id = item.getString("id");
                 if (PactCatalog.get(id) == null || p.bonds.containsKey(id)) continue;
-                p.bonds.put(id, new Bond(id, item.getInt("relation"), item.getInt("deepening"),
-                        item.getInt("debt"), item.getInt("deepeningProgress")));
+                Bond bond=new Bond(id, item.getInt("relation"), item.getInt("deepening"),
+                        item.getInt("debt"), item.getInt("deepeningProgress"));
+                if(id.equals("isael")) {
+                    legacyIsael=!item.contains("vowConflict");
+                    bond.vowConflict=item.getBoolean("vowConflict");
+                    if(bond.vowConflict) {
+                        ListTag evidence=item.getList("vowRestitution",Tag.TAG_COMPOUND);
+                        for(int n=0;n<evidence.size() && bond.restitutionThreats.size()<2;n++) {
+                            CompoundTag victim=evidence.getCompound(n);
+                            if(victim.hasUUID("threat"))
+                                bond.restitutionThreats.add(victim.getUUID("threat"));
+                        }
+                    }
+                }
+                p.bonds.put(id,bond);
             }
+            // Old saves already applied the -10 once at sign time. Rehydrate
+            // its ongoing conflict without charging the same breach again.
+            if(legacyIsael && p.has("isael") && p.has("velkan"))
+                p.bond("isael").vowConflict=true;
             ListTag completed = row.getList("completedTrials", Tag.TAG_STRING);
             for (int j=0; j<completed.size(); j++) {
                 String patron = completed.getString(j);
