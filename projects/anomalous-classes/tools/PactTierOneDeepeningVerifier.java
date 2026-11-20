@@ -15,7 +15,7 @@ public final class PactTierOneDeepeningVerifier {
     public static void main(String[] args) throws Exception {
         var expected=List.of("isael","velkan","urgen","ridna");
         require(PactDeepeningService.all().keySet().containsAll(expected)
-                && PactDeepeningService.all().size()==8,
+                && PactDeepeningService.all().size()==12,
                 "Four distinct first-tier rites");
         var events=new java.util.HashSet<String>();
         for(String patron:expected) {
