@@ -40,6 +40,7 @@ public final class PactCombatService {
         long starredUntil, stepUntil, guardianUntil, bulwarkUntil, lastGuard, lastBulwark;
         long emberUntil, lastEmberHeal, lastIsaelAnswer;
         int urgenStrikes;
+        long urgenComboUntil;
         Vec3 lastStrikePosition;
         final Map<UUID, Long> recentExtras = new HashMap<>();
         final Map<UUID, TimedHit> burning = new HashMap<>();
@@ -106,12 +107,18 @@ public final class PactCombatService {
         tell(player,"message.anomalousclasses.pact.cast",
                 Component.translatable("pact_ability.anomalousclasses."+spell.id()));
     }
+    private static int depth(ServerPlayer owner, String patron) {
+        PactSavedData.Bond bond=PactSavedData.get(owner.getServer())
+                .player(owner.getUUID()).bond(patron);
+        return bond==null ? 0 : bond.deepening();
+    }
     static float power(ServerPlayer player, PactCatalog.Patron patron, double damage) {
         var data=PactSavedData.get(player.getServer()).player(player.getUUID());
         PactSavedData.Bond bond=data.bond(patron.id());
         if (bond==null) return 0;
         var profile=ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
         return (float)Math.min(10000.0,damage * PactBlessingService.relationFactor(bond.relation())
+                * (patron.tier()==1 ? PactBlessingService.deepeningFactor(bond.deepening()) : 1.0)
                 * PactBlessingService.focusFactor(profile));
     }
     static Mob aimed(ServerPlayer player,double reach) {
@@ -164,7 +171,8 @@ public final class PactCombatService {
             case "mark" -> {
                 Mob target=aimed(owner,16);
                 if (target==null) return noTarget(owner);
-                if (impact(owner,target,patron,7)) state.marks.put(target.getUUID(),now+160);
+                if (impact(owner,target,patron,7))
+                    state.marks.put(target.getUUID(),now+160+depth(owner,"isael")*30L);
                 return true;
             }
             case "ward" -> {
@@ -192,36 +200,53 @@ public final class PactCombatService {
                     tell(owner,"message.anomalousclasses.pact.need_health");return false;
                 }
                 owner.setHealth(owner.getHealth()-cost);
-                impact(owner,target,patron,12);
+                boolean landed=impact(owner,target,patron,12);
+                if (landed) PactDeepeningService.record(owner,"velkan","ashen_strike_landed",target);
+                int level=depth(owner,"velkan");
+                int splash=level==2?4:3;
                 for (Mob other:owner.serverLevel().getEntitiesOfClass(Mob.class,
-                        target.getBoundingBox().inflate(3),m->m!=target&&enemy(owner,m))) {
-                    if (other.distanceToSqr(target)<=9) impact(owner,other,patron,5);
+                        target.getBoundingBox().inflate(splash),m->m!=target&&enemy(owner,m))) {
+                    if (other.distanceToSqr(target)<=splash*splash)
+                        impact(owner,other,patron,5+level);
                 }
                 return true;
             }
             case "giants_fist" -> {
                 Mob target=aimed(owner,3.5);
                 if (target==null) return noTarget(owner);
-                if (impact(owner,target,patron,10))
-                    target.knockback(.7,owner.getX()-target.getX(),owner.getZ()-target.getZ());
+                if (impact(owner,target,patron,10)) {
+                    target.knockback(.7+.1*depth(owner,"urgen"),
+                            owner.getX()-target.getX(),owner.getZ()-target.getZ());
+                    state.urgenComboUntil=now+100;
+                }
                 return true;
             }
             case "ground_shatter" -> {
                 List<Mob> targets=cone(owner,6,.58,5);
                 if (targets.isEmpty()) return noTarget(owner);
+                int level=depth(owner,"urgen");
+                double bonus=level==2 && state.urgenComboUntil>now ? 4 : 0;
+                Mob firstHit=null;
                 for (Mob target:targets)
-                    if (impact(owner,target,patron,9))
+                    if (impact(owner,target,patron,9+bonus)) {
+                        if(firstHit==null)firstHit=target;
                         target.knockback(.4,owner.getX()-target.getX(),owner.getZ()-target.getZ());
+                    }
+                if(firstHit!=null) {
+                    PactDeepeningService.record(owner,"urgen","ground_shatter_landed",firstHit);
+                    state.urgenComboUntil=0;
+                }
                 return true;
             }
             case "star_step" -> {
                 Vec3 look=owner.getLookAngle();
                 Vec3 eye=owner.getEyePosition();
-                BlockHitResult obstruction=owner.serverLevel().clip(new ClipContext(eye,eye.add(look.scale(8)),
+                double reach=8+depth(owner,"ridna");
+                BlockHitResult obstruction=owner.serverLevel().clip(new ClipContext(eye,eye.add(look.scale(reach)),
                         ClipContext.Block.COLLIDER,ClipContext.Fluid.NONE,owner));
                 double limit=obstruction.getType()==HitResult.Type.BLOCK
-                        ? Math.max(0,Math.sqrt(obstruction.getLocation().distanceToSqr(eye))-.65):8;
-                for (double distance=Math.min(8,limit);distance>=1.0;distance-=.5) {
+                        ? Math.max(0,Math.sqrt(obstruction.getLocation().distanceToSqr(eye))-.65):reach;
+                for (double distance=Math.min(reach,limit);distance>=1.0;distance-=.5) {
                     Vec3 destination=owner.position().add(look.scale(distance));
                     BlockPos block=BlockPos.containing(destination);
                     if (!owner.serverLevel().hasChunkAt(block)
@@ -231,7 +256,7 @@ public final class PactCombatService {
                     if (!owner.serverLevel().noCollision(owner,newBox)) continue;
                     if (!owner.serverLevel().getBlockState(block.below()).isSolid()) continue;
                     owner.teleportTo(destination.x,destination.y,destination.z);
-                    state.starredUntil=now+60;
+                    state.starredUntil=now+60+depth(owner,"ridna")*10L;
                     state.stepUntil=now+40;
                     return true;
                 }
@@ -240,8 +265,12 @@ public final class PactCombatService {
             case "starlight" -> {
                 Mob target=aimed(owner,15);
                 if (target==null) return noTarget(owner);
-                double bonus=state.starredUntil>now ? 1.25:1.0;
-                if (impact(owner,target,patron,9*bonus)) state.starredUntil=0;
+                boolean chained=state.starredUntil>now;
+                double bonus=chained ? 1.25+.1*depth(owner,"ridna"):1.0;
+                if (impact(owner,target,patron,9*bonus)) {
+                    if(chained)PactDeepeningService.record(owner,"ridna","star_step_starlight_combo",target);
+                    state.starredUntil=0;
+                }
                 return true;
             }
             default -> {
@@ -305,11 +334,13 @@ public final class PactCombatService {
             var source=event.getSource().getEntity();
             if (source==owner || source!=null&&owner.isAlliedTo(source)) continue;
             float before=event.getNewDamage();
-            float reduction=Math.min(10F,before*.35F);
+            float reduction=Math.min(10F,before*(.35F+.05F*depth(owner,"isael")));
             if (reduction<=0) continue;
             event.setNewDamage(Math.max(0,before-reduction));
             state.ward=null;
             state.lastIsaelAnswer=now+120;
+            if(source instanceof Mob aggressor && enemy(owner,aggressor))
+                PactDeepeningService.record(owner,"isael","protected_from_hostile",aggressor);
             if (event.getEntity() instanceof AbstractVillager
                     && now-state.lastGuard>600) {
                 state.lastGuard=now;
@@ -411,6 +442,7 @@ public final class PactCombatService {
         PactTierTwoCombatService.clear(owner);
         PactTierThreeCombatService.clear(owner);
         PactTierFourCombatService.clear(owner);
+        PactDeepeningService.clear(owner);
         PactTrialService.clear(owner);
     }
     public static void clear(ServerPlayer player) {
@@ -418,6 +450,7 @@ public final class PactCombatService {
         PactTierTwoCombatService.clear(player);
         PactTierThreeCombatService.clear(player);
         PactTierFourCombatService.clear(player);
+        PactDeepeningService.clear(player);
         PactTrialService.clear(player);
     }
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -426,6 +459,7 @@ public final class PactCombatService {
             PactTierTwoCombatService.clear(player);
             PactTierThreeCombatService.clear(player);
             PactTierFourCombatService.clear(player);
+            PactDeepeningService.clear(player);
             PactTrialService.clear(player);
         }
     }
