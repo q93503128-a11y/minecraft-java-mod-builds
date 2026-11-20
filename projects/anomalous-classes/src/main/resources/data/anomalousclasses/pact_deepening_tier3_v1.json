@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "note": "Provisional tier-three voluntary deepening: earn real combat proof separately from the existing one-time guardian trial; no repeat echo shards or Nether Stars, no periodic upkeep.",
+  "entries": [
+    {
+      "id": "sevenwing",
+      "event": "marked_verdict_landed",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:gold_ingot",
+              "count": 12
+            },
+            {
+              "item": "minecraft:glowstone_dust",
+              "count": 12
+            }
+          ]
+        },
+        {
+          "proofs": 5,
+          "offering": [
+            {
+              "item": "minecraft:gold_block",
+              "count": 2
+            },
+            {
+              "item": "minecraft:amethyst_shard",
+              "count": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "merzad",
+      "event": "crowned_flame_chain",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:blaze_powder",
+              "count": 8
+            },
+            {
+              "item": "minecraft:magma_cream",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "proofs": 5,
+          "offering": [
+            {
+              "item": "minecraft:blaze_rod",
+              "count": 4
+            },
+            {
+              "item": "minecraft:gold_ingot",
+              "count": 16
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "taron",
+      "event": "armored_mountain_sunder",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:iron_ingot",
+              "count": 24
+            },
+            {
+              "item": "minecraft:tuff",
+              "count": 32
+            }
+          ]
+        },
+        {
+          "proofs": 5,
+          "offering": [
+            {
+              "item": "minecraft:iron_block",
+              "count": 4
+            },
+            {
+              "item": "minecraft:obsidian",
+              "count": 16
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "arken",
+      "event": "observed_record_reprise",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:book",
+              "count": 4
+            },
+            {
+              "item": "minecraft:lapis_lazuli",
+              "count": 20
+            }
+          ]
+        },
+        {
+          "proofs": 5,
+          "offering": [
+            {
+              "item": "minecraft:amethyst_shard",
+              "count": 16
+            },
+            {
+              "item": "minecraft:ender_pearl",
+              "count": 3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
