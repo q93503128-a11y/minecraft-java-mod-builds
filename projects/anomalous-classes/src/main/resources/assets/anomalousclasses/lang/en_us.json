@@ -594,5 +594,21 @@
   "pact_terms.anomalousclasses.nahar": "Defeat the trial at the Black Star Observatory. The celestial strike is powerful without a record and stronger after a true weapon hit.",
   "pact_terms.anomalousclasses.rakiel": "Defeat the guardian of the First Oath. The blade strikes at once. Totems act first; Fate Refusal costs two gold blocks with a long cooldown.",
   "pact_terms.anomalousclasses.ormas": "Prove yourself at the Hand of the Sleeping Continent. Skin shields your body; the quake works without it and does not destroy player builds.",
-  "pact_terms.anomalousclasses.viar": "Overcome the trial at the First Forest Heart. Roots strike anywhere, and valid combat damage provides capped healing."
+  "pact_terms.anomalousclasses.viar": "Overcome the trial at the First Forest Heart. Roots strike anywhere, and valid combat damage provides capped healing.",
+  "message.anomalousclasses.pact.deepening_status": "%s %s · Covenant depth %s · Next rite %s/%s",
+  "message.anomalousclasses.pact.deepening_preview": "%s — Covenant rite %s",
+  "message.anomalousclasses.pact.deepening_progress": "Evidence of the oath: %s / %s",
+  "message.anomalousclasses.pact.deepening_not_ready": "The rite is not yet earned. Prove the oath through combat.",
+  "message.anomalousclasses.pact.deepening_unavailable": "No deepening rite is available for this covenant yet.",
+  "message.anomalousclasses.pact.deepening_complete": "This covenant has reached its full depth.",
+  "message.anomalousclasses.pact.deepening_ready": "The oath of %s may deepen. Use /pact deepen to inspect its offering.",
+  "message.anomalousclasses.pact.deepening_done": "Your covenant with %s has deepened to stage %s.",
+  "pact_relation.anomalousclasses.isael": "Faith",
+  "pact_relation.anomalousclasses.velkan": "Trade Satisfaction",
+  "pact_relation.anomalousclasses.urgen": "Honor",
+  "pact_relation.anomalousclasses.ridna": "Astral Resonance",
+  "pact_deepening_goal.anomalousclasses.isael": "Use Guardian Light to stop a real hostile attack. Protecting a villager also restores faith.",
+  "pact_deepening_goal.anomalousclasses.velkan": "Strike a hostile foe with Ashen Strike to honor the cost of the bargain.",
+  "pact_deepening_goal.anomalousclasses.urgen": "Land Ground Shatter on a hostile enemy to prove the giant's power.",
+  "pact_deepening_goal.anomalousclasses.ridna": "Land Starlight after Star Step on a hostile enemy to prove the two powers are connected."
 }
