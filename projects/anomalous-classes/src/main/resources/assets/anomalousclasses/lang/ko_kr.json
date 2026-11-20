@@ -618,5 +618,21 @@
   "pact_deepening_reward.anomalousclasses.urgen.1": "가호 증가분 +12%, 거인의 주먹 밀침 증가.",
   "pact_deepening_reward.anomalousclasses.urgen.2": "가호 증가분 +25%, 주먹 직후 지반 파쇄의 타격 연계 해금.",
   "pact_deepening_reward.anomalousclasses.ridna.1": "가호 증가분 +12%, 성간 도약 최대 9블록·도약 후 별빛 궤적 강화.",
-  "pact_deepening_reward.anomalousclasses.ridna.2": "가호 증가분 +25%, 성간 도약 최대 10블록·도약 후 별빛 궤적 추가 강화."
+  "pact_deepening_reward.anomalousclasses.ridna.2": "가호 증가분 +25%, 성간 도약 최대 10블록·도약 후 별빛 궤적 추가 강화.",
+  "pact_relation.anomalousclasses.karda": "투지",
+  "pact_relation.anomalousclasses.nerea": "심해의 친화",
+  "pact_relation.anomalousclasses.shero": "관측 일치도",
+  "pact_relation.anomalousclasses.hastel": "신용",
+  "pact_deepening_goal.anomalousclasses.karda": "폭풍 도약 후 강화된 천둥 강타를 실제 적대자에게 맞혀 돌격을 증명하세요. 폭우 대기는 필요하지 않습니다.",
+  "pact_deepening_goal.anomalousclasses.nerea": "해류 붙잡기 후 심해 압력을 적대자에게 맞혀 연계를 증명하세요. 지상에서도 가능합니다.",
+  "pact_deepening_goal.anomalousclasses.shero": "자신을 공격하려는 적을 관찰하거나 투사체를 회피한 뒤 관측 응징으로 반격하세요.",
+  "pact_deepening_goal.anomalousclasses.hastel": "선지급 권능으로 생긴 실제 채무를 유효 적에게 준 피해로 완전히 상환하세요. 신용과 채무는 별도입니다.",
+  "pact_deepening_reward.anomalousclasses.karda.1": "계약 가호 증가분 +10%, 안전한 폭풍 도약 거리 9블록.",
+  "pact_deepening_reward.anomalousclasses.karda.2": "계약 가호 증가분 +22%, 폭풍 도약 10블록, 도약 후 강타로 복수 적을 명중시키면 한 대상에 추가 번개 타격.",
+  "pact_deepening_reward.anomalousclasses.nerea.1": "계약 가호 증가분 +10%, 해류 끌어당김·심해 압력 범위 강화.",
+  "pact_deepening_reward.anomalousclasses.nerea.2": "계약 가호 증가분 +22%, 해류 끌어당김·압력 범위 추가 강화, 해류 후 압력 피해 증가.",
+  "pact_deepening_reward.anomalousclasses.shero.1": "계약 가호 증가분 +10%, 관측 응징 기본 피해 강화.",
+  "pact_deepening_reward.anomalousclasses.shero.2": "계약 가호 증가분 +22%, 관측 응징 강화, 실제 투사체 회피 뒤 지연 응징 추가.",
+  "pact_deepening_reward.anomalousclasses.hastel.1": "계약 가호 증가분 +10%, 선지급 타격·단기 보호 강화. 기존 채무는 유지.",
+  "pact_deepening_reward.anomalousclasses.hastel.2": "계약 가호 증가분 +22%, 선지급·단기 보호·완납 후 보너스 타격 추가 강화. 기존 채무는 유지."
 }
