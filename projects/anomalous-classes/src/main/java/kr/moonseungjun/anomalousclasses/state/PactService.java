@@ -224,7 +224,10 @@ public final class PactService {
             if ((patron.id().equals("isael") && PactSavedData.get(player.getServer()).player(player.getUUID()).has("velkan"))
                     || (patron.id().equals("velkan")
                     && PactSavedData.get(player.getServer()).player(player.getUUID()).has("isael")))
-                say(player, "message.anomalousclasses.pact.conflict");
+                {
+                    say(player, "message.anomalousclasses.pact.conflict");
+                    say(player, "message.anomalousclasses.pact.vow_conflict_terms");
+                }
         }
         if (confirmable) say(player, "message.anomalousclasses.pact.confirm_hint");
     }
@@ -276,6 +279,7 @@ public final class PactService {
             PactCombatService.removeBond(player, patron.id());
         } else if(settling) {
             saved.debt(player.getUUID(),"hastel",0);
+            PactTierTwoCombatService.onDebtSettled(player);
         } else if(deepening) {
             saved.deepen(player.getUUID(),patron.id(),bond.deepening(),stage.proofs());
         } else {
