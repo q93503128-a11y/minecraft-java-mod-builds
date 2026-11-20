@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "note": "Provisional earned tier-two rites; no automatic upkeep, manifestation, or first-contract multiplier on deepening offerings.",
+  "entries": [
+    {
+      "id": "karda",
+      "event": "storm_slam_after_leap",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:copper_ingot",
+              "count": 16
+            },
+            {
+              "item": "minecraft:amethyst_shard",
+              "count": 6
+            }
+          ]
+        },
+        {
+          "proofs": 6,
+          "offering": [
+            {
+              "item": "minecraft:lightning_rod",
+              "count": 2
+            },
+            {
+              "item": "minecraft:copper_block",
+              "count": 4
+            },
+            {
+              "item": "minecraft:amethyst_shard",
+              "count": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nerea",
+      "event": "tide_to_pressure",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:prismarine_shard",
+              "count": 12
+            },
+            {
+              "item": "minecraft:kelp",
+              "count": 16
+            }
+          ]
+        },
+        {
+          "proofs": 6,
+          "offering": [
+            {
+              "item": "minecraft:prismarine_crystals",
+              "count": 8
+            },
+            {
+              "item": "minecraft:sea_lantern",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shero",
+      "event": "observed_retribution",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:redstone",
+              "count": 16
+            },
+            {
+              "item": "minecraft:amethyst_shard",
+              "count": 4
+            }
+          ]
+        },
+        {
+          "proofs": 6,
+          "offering": [
+            {
+              "item": "minecraft:ender_pearl",
+              "count": 2
+            },
+            {
+              "item": "minecraft:spyglass",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hastel",
+      "event": "debt_fully_repaid",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:gold_ingot",
+              "count": 8
+            },
+            {
+              "item": "minecraft:emerald",
+              "count": 8
+            }
+          ]
+        },
+        {
+          "proofs": 6,
+          "offering": [
+            {
+              "item": "minecraft:gold_block",
+              "count": 2
+            },
+            {
+              "item": "minecraft:emerald_block",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
