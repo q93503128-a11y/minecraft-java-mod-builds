@@ -22,16 +22,21 @@ public final class PactSavedData extends SavedData {
             new Factory<>(PactSavedData::new, PactSavedData::load, DataFixTypes.LEVEL);
     public static final class Bond {
         private final String patronId;
-        private int relation, deepening, debt;
+        private int relation, deepening, debt, progress;
         Bond(String patronId, int relation, int deepening, int debt) {
+            this(patronId,relation,deepening,debt,0);
+        }
+        Bond(String patronId, int relation, int deepening, int debt, int progress) {
             this.patronId = patronId;
             this.relation = Math.clamp(relation, 0, 100);
-            this.deepening = Math.max(0, deepening);
+            this.deepening = Math.clamp(deepening,0,2);
+            this.progress = Math.clamp(progress,0,100);
             this.debt = Math.max(0, Math.min(24, debt));
         }
         public String id() { return patronId; }
         public int relation() { return relation; }
         public int deepening() { return deepening; }
+        public int progress() { return progress; }
         public int debt() { return debt; }
     }
     public static final class Player {
@@ -90,6 +95,30 @@ public final class PactSavedData extends SavedData {
         setDirty();
         return true;
     }
+    /** Successful, rate-limited real actions increment only the active rite. */
+    public boolean addDeepeningProof(UUID owner,String patron,int cap) {
+        Player state=player(owner);
+        Bond bond=state.bond(patron);
+        if(bond==null || PactDeepeningService.next(patron,bond.deepening())==null
+                || cap<1 || bond.progress>=cap)return false;
+        bond.progress++;
+        state.revision++;
+        setDirty();
+        return true;
+    }
+    /** The caller must check materials and consent on the server thread first. */
+    public boolean deepen(UUID owner,String patron,int expectedDepth,int needed) {
+        Player state=player(owner);
+        Bond bond=state.bond(patron);
+        if(bond==null || expectedDepth!=bond.deepening || needed<1
+                || bond.progress<needed || PactDeepeningService.next(patron,expectedDepth)==null)
+            return false;
+        bond.deepening++;
+        bond.progress=0;
+        state.revision++;
+        setDirty();
+        return true;
+    }
     public void relation(UUID owner, String patron, int delta) {
         Player p = player(owner);
         Bond b = p.bonds.get(patron);
@@ -122,6 +151,7 @@ public final class PactSavedData extends SavedData {
                 entry.putString("id", b.patronId);
                 entry.putInt("relation", b.relation);
                 entry.putInt("deepening", b.deepening);
+                entry.putInt("deepeningProgress", b.progress);
                 entry.putInt("debt", b.debt);
                 entries.add(entry);
             }
@@ -159,7 +189,7 @@ public final class PactSavedData extends SavedData {
                 String id = item.getString("id");
                 if (PactCatalog.get(id) == null || p.bonds.containsKey(id)) continue;
                 p.bonds.put(id, new Bond(id, item.getInt("relation"), item.getInt("deepening"),
-                        item.getInt("debt")));
+                        item.getInt("debt"), item.getInt("deepeningProgress")));
             }
             ListTag completed = row.getList("completedTrials", Tag.TAG_STRING);
             for (int j=0; j<completed.size(); j++) {
