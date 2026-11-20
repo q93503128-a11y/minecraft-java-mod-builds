@@ -1,5 +1,13 @@
 # Changelog
 
+## Third-tier earned covenant deepening — 2026-11-20
+
+- Added four distinct third-tier rites earned from marked Final Verdict, royal fire chains, active Stone Armor to Mountain Sunder, and actual observation to Record Reprise.
+- Provided two independent proof-gated and offering-funded stages per patron, persistent individual proof, earned grace and spell amplification, and new combat behaviors including short verdict guard, additional royal chain, stone-break retaliation and changed-profile replay.
+- Preserved existing one-off guardian entry trials, lower-tier deepening/covenant status, multi-contract graces and no regular fees. The new stage costs are trial balances rather than individually approved final values; fourth-tier quests and manifestations remain separate.
+- Added server-state/NBT/offerings/anti-replay/bilingual text verifier and kept previous Gradle checks. Build/JAR and actual Minecraft gameplay status are tracked independently.
+
+
 ## Nerea sanctum taboo and read-only contract terms — 2026-11-20
 
 - Implemented narrowly scoped Nerea altar-core desecration as a one-time server covenant event; a temporary abyssal affinity loss is recoverable only through two distinct real underwater tide-to-pressure combat achievements.
