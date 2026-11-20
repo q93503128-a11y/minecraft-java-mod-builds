@@ -176,7 +176,7 @@ public final class PactTierTwoCombatService {
                 if(hits==0) return false;
                 if(tideCombo) {
                     PactDeepeningService.record(owner,"nerea","tide_to_pressure",proofTarget);
-                    PactCovenantService.onNereaWaterCombo(owner,proofTarget);
+                    PactCovenantService.onNereaWaterCombo(owner,proofTarget.getUUID());
                 }
                 state.tideComboUntil=0;
                 state.pressureUntil=time+80;
