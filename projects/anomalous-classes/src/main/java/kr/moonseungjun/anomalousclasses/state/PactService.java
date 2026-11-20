@@ -198,7 +198,7 @@ public final class PactService {
         PENDING.put(player.getUUID(),new Pending("hastel",Action.SETTLE,state.count(),
                 state.revision(),System.currentTimeMillis()+OFFER_DURATION_MS,null,null));
     }
-    /** Each tier-one contract has two independently earned and funded rites. */
+    /** Earned covenant rites are independent of the one-off entry guardian trials. */
     public static void previewDeepen(ServerPlayer player,String id) {
         PENDING.remove(player.getUUID());
         if(!isPact(player)||CombatTracker.isLocked(player)) {
