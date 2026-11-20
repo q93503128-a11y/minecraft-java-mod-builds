@@ -1,5 +1,13 @@
 # Changelog
 
+## Second-tier covenant deepening — 2026-11-20
+
+- Added four contract-specific, earned second-tier rites with two optional deepening stages, separate data-defined offerings, and independently persisted proof.
+- Linked Karda's leap-to-slam, Nerea's tide-to-pressure, Shero's valid observation retribution and Hastel's actual debt repayment to the existing server-owned upgrade flow.
+- Upgraded mobility, follow-up damage and credit-backed protection without introducing periodic covenant upkeep or changing baseline independent abilities.
+- Preserved tier-one progress/NBT verifiers, added a tier-two verifier and updated Korean/English previews. This is source work, not a claimed Minecraft gameplay or multiplayer test.
+
+
 ## First-tier covenant deepening — 2026-11-20
 
 - Added four patron-specific combat-based rite proofs, two earned deepening stages per first-tier pact, persistent independent evidence, server-confirmed material payments and revised covenant strengths.
