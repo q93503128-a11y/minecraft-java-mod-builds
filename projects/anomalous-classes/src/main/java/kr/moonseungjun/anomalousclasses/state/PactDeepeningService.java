@@ -14,6 +14,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
+import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 
 /**
  * First-tier voluntary deepening: real combat evidence, a separate offering,
@@ -58,7 +60,11 @@ public final class PactDeepeningService {
      */
     public static void record(ServerPlayer caster, String patron, String event, Mob hostile) {
         if (caster.getServer() == null || !PactService.isPact(caster)
-                || hostile == null || !PactCombatService.enemy(caster,hostile)) return;
+                || hostile == null || !(hostile instanceof Enemy)
+                || hostile.level()!=caster.level() || hostile instanceof PuppetEntity
+                || caster.isAlliedTo(hostile)
+                || MentalDominatorSavedData.get(caster.getServer()).controlled(hostile.getUUID())!=null
+                || ParasiteSavedData.get(caster.getServer()).ownerOf(hostile.getUUID())!=null) return;
         PactSavedData saved=PactSavedData.get(caster.getServer());
         PactSavedData.Bond bond=saved.player(caster.getUUID()).bond(patron);
         Rite rite=RITES.get(patron);
@@ -77,7 +83,9 @@ public final class PactDeepeningService {
         if (evidence.targetReady.size()>=128) evidence.targetReady.clear();
         evidence.targetReady.put(hostile.getUUID(),now+1200);
         if (saved.addDeepeningProof(caster.getUUID(),patron,next.proofs())) {
-            saved.relation(caster.getUUID(),patron,1);
+            // Isael's trust rises only from an actual villager rescue via the
+            // existing ward code; personal blocking can still prove mastery.
+            if(!patron.equals("isael"))saved.relation(caster.getUUID(),patron,1);
             PactBlessingService.apply(caster);
             if (saved.player(caster.getUUID()).bond(patron).progress()==next.proofs())
                 caster.displayClientMessage(net.minecraft.network.chat.Component.translatable(
