@@ -25,6 +25,7 @@ public final class PactSavedData extends SavedData {
         private final String patronId;
         private int relation, deepening, debt, progress;
         private boolean vowConflict;
+        private int vowFaithDebt;
         private final Set<UUID> restitutionThreats = new LinkedHashSet<>();
         Bond(String patronId, int relation, int deepening, int debt) {
             this(patronId,relation,deepening,debt,0);
@@ -43,6 +44,7 @@ public final class PactSavedData extends SavedData {
         public int debt() { return debt; }
         public boolean vowConflict() { return vowConflict; }
         public int restitution() { return restitutionThreats.size(); }
+        public int unresolvedFaithCost() { return vowFaithDebt; }
     }
     public static final class Player {
         private final LinkedHashMap<String, Bond> bonds = new LinkedHashMap<>();
@@ -107,7 +109,8 @@ public final class PactSavedData extends SavedData {
         if(isael==null || !p.has("velkan") || isael.vowConflict)return false;
         isael.vowConflict=true;
         isael.restitutionThreats.clear();
-        isael.relation=Math.max(0,isael.relation-10);
+        isael.vowFaithDebt=Math.min(10,isael.relation);
+        isael.relation-=isael.vowFaithDebt;
         p.revision++;
         setDirty();
         return true;
@@ -125,7 +128,12 @@ public final class PactSavedData extends SavedData {
         if(bond==null || !bond.vowConflict || p.has("velkan")
                 || validThreat==null || !bond.restitutionThreats.add(validThreat))return 0;
         int steps=bond.restitutionThreats.size();
-        bond.relation=Math.min(100,bond.relation+(steps==ISAEL_RESTITUTION_GOAL?6:2));
+        // Only return the faith actually paid. A believer with 0 faith can
+        // never turn an incompatible signature into a free reputation farm.
+        int refund=steps==ISAEL_RESTITUTION_GOAL
+                ? bond.vowFaithDebt : Math.min(2,bond.vowFaithDebt);
+        bond.vowFaithDebt-=refund;
+        bond.relation=Math.min(100,bond.relation+refund);
         if(steps>=ISAEL_RESTITUTION_GOAL) {
             bond.vowConflict=false;
             bond.restitutionThreats.clear();
@@ -195,6 +203,7 @@ public final class PactSavedData extends SavedData {
                 entry.putInt("debt", b.debt);
                 if(b.patronId.equals("isael")) {
                     entry.putBoolean("vowConflict",b.vowConflict);
+                    entry.putInt("vowFaithDebt",b.vowFaithDebt);
                     ListTag violations=new ListTag();
                     for(UUID threat:b.restitutionThreats) {
                         CompoundTag evidence=new CompoundTag();
@@ -244,6 +253,7 @@ public final class PactSavedData extends SavedData {
                 if(id.equals("isael")) {
                     legacyIsael=!item.contains("vowConflict");
                     bond.vowConflict=item.getBoolean("vowConflict");
+                    bond.vowFaithDebt=Math.clamp(item.getInt("vowFaithDebt"),0,10);
                     if(bond.vowConflict) {
                         ListTag evidence=item.getList("vowRestitution",Tag.TAG_COMPOUND);
                         for(int n=0;n<evidence.size() && bond.restitutionThreats.size()<ISAEL_RESTITUTION_GOAL-1;n++) {
@@ -257,8 +267,14 @@ public final class PactSavedData extends SavedData {
             }
             // Old saves already applied the -10 once at sign time. Rehydrate
             // its ongoing conflict without charging the same breach again.
-            if(legacyIsael && p.has("isael") && p.has("velkan"))
-                p.bond("isael").vowConflict=true;
+            if(legacyIsael && p.has("isael") && p.has("velkan")) {
+                Bond isael=p.bond("isael");
+                isael.vowConflict=true;
+                // The original code already took the -10; do not re-charge.
+                // Its original faith is unavailable, so cap restitution to
+                // today's existing faith rather than minting 10 free points.
+                isael.vowFaithDebt=Math.min(10,isael.relation);
+            }
             ListTag completed = row.getList("completedTrials", Tag.TAG_STRING);
             for (int j=0; j<completed.size(); j++) {
                 String patron = completed.getString(j);
