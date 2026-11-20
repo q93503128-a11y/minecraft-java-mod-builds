@@ -45,6 +45,15 @@ public final class PactTierTwoCombatService {
         return LIVE.computeIfAbsent(player.getUUID(),id->new State());
     }
     public static void clear(ServerPlayer player) { LIVE.remove(player.getUUID()); }
+    /** Paying old debt must not leave fractional or previous-completion credit. */
+    public static void onDebtSettled(ServerPlayer player) {
+        if(!LIVE.containsKey(player.getUUID()))return;
+        State current=LIVE.get(player.getUUID());
+        current.debtRemainder=0;
+        current.repaidInWindow=0;
+        current.repayWindow=0;
+        current.fullyPaidUntil=0;
+    }
     private static boolean has(ServerPlayer player,String id) {
         return PactService.isPact(player) &&
                 PactSavedData.get(player.getServer()).player(player.getUUID()).has(id);
@@ -205,6 +214,11 @@ public final class PactTierTwoCombatService {
                 }
                 // The initial damage landed before the new debt exists, so it never self-repays.
                 save.debt(owner.getUUID(),"hastel",bond.debt()+12);
+                // An old paid claim never grants a bonus after a NEW advance.
+                state.fullyPaidUntil=0;
+                state.debtRemainder=0;
+                state.repaidInWindow=0;
+                state.repayWindow=time;
                 state.hasteShieldUntil=time+120+20*depth(owner,"hastel");
                 return true;
             }
