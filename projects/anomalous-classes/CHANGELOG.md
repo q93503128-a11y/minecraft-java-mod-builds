@@ -1,5 +1,13 @@
 # Changelog
 
+## First-tier covenant deepening — 2026-11-20
+
+- Added four patron-specific combat-based rite proofs, two earned deepening stages per first-tier pact, persistent independent evidence, server-confirmed material payments and revised covenant strengths.
+- Improved Isael's mark and ward, Velkan's fire splash while retaining the HP cost, Urgen's fist-to-shatter combat link, and Ridna's safe step-and-starlight combo.
+- Kept distinct first-tier relations, original multi-contract offering multipliers and diminishing-grace rules. Higher-tier quest requirements and manifestations remain unimplemented rather than invented from planning examples.
+- New staged proof/NBT verifier, all existing checks, CI and JAR verified. Minecraft client, gameplay and multiplayer not tested.
+
+
 ## Sixteen-shrine shared world generation — 2026-11-20
 
 - Added functional first-tier dawn arch (Isael), fractured bargaining table (Velkan), palm monolith (Urgen) and asymmetrical star marker (Ridna) within the original single-grid worldgen.
