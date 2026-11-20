@@ -1,5 +1,13 @@
 # Changelog
 
+## Covenant conflict / restitution — 2026-11-20
+
+- Persisted the Isael–Velkan incompatible-vow state, existing one-time trust cost and precise faith restitution after formal covenant release and three legitimate villager wards against distinct hostiles.
+- Migrated older dual-contract saves without a second trust penalty; prevented low-faith refund minting and ordinary defence farming across server restarts.
+- Added a separate consent-based /pact settle command to pay Hastel's existing combat debt at a provisional one-gold-per-debt rate, without replacing normal battle repayment or original release costs.
+- Added server-side NBT/revision regression tests and Korean/English covenant text. CI/actual client and multiplayer results tracked separately.
+
+
 ## Second-tier covenant deepening — 2026-11-20
 
 - Added four contract-specific, earned second-tier rites with two optional deepening stages, separate data-defined offerings, and independently persisted proof.
