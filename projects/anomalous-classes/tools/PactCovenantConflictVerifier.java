@@ -30,6 +30,8 @@ public final class PactCovenantConflictVerifier {
         must(saved.player(owner).bond("isael").relation()==50,"Initial faith is intact");
         must(saved.sign(owner,"velkan"),"Voluntary incompatible covenant");
         must(saved.markIsaelConflict(owner),"Second covenant creates one recorded breach");
+        must(saved.player(owner).bond("isael").unresolvedFaithCost()==10,
+                "One-time loss is exactly the maximum possible refund");
         must(saved.player(owner).bond("isael").vowConflict()
                 && saved.player(owner).bond("isael").relation()==40,
                 "Conflict recorded and single -10 applied");
@@ -54,6 +56,8 @@ public final class PactCovenantConflictVerifier {
         must(saved.protectVillagerForIsael(owner,threat(1))==0,
                 "Repeated protection against the same threat never double-counts");
         saved=reload(saved);
+        must(saved.player(owner).bond("isael").unresolvedFaithCost()==8,
+                "Only the remaining paid faith may be refunded");
         must(saved.player(owner).bond("isael").restitution()==1
                 && saved.player(owner).bond("isael").vowConflict(),
                 "Unique protection history persists across logout/restart");
@@ -64,6 +68,7 @@ public final class PactCovenantConflictVerifier {
         must(saved.protectVillagerForIsael(owner,threat(3))==3,
                 "Third distinct threat reconciles the vow");
         must(!saved.player(owner).bond("isael").vowConflict()
+                && saved.player(owner).bond("isael").unresolvedFaithCost()==0
                 && saved.player(owner).bond("isael").restitution()==0
                 && saved.player(owner).bond("isael").relation()==50,
                 "Full restoration exactly offsets the one-time breach, without overflow");
@@ -77,6 +82,20 @@ public final class PactCovenantConflictVerifier {
         must(saved.protectVillagerForIsael(owner,threat(7))==0,
                 "No resurrection of restitution after breaking the owner covenant");
 
+        UUID low=UUID.fromString("00000000-0000-0000-0000-000000000099");
+        must(saved.sign(low,"isael"),"Low-faith test created");
+        saved.relation(low,"isael",-100);
+        must(saved.sign(low,"velkan") && saved.markIsaelConflict(low),
+                "Low-faith incompatible covenant still records a conflict");
+        must(saved.player(low).bond("isael").relation()==0
+                && saved.player(low).bond("isael").unresolvedFaithCost()==0,
+                "An oath cannot charge more faith than actually owned");
+        must(saved.breakBond(low,"velkan"),"Low-faith conflict partner released");
+        must(saved.protectVillagerForIsael(low,threat(11))==1
+                && saved.protectVillagerForIsael(low,threat(12))==2
+                && saved.protectVillagerForIsael(low,threat(13))==3
+                && saved.player(low).bond("isael").relation()==0,
+                "Zero-faith conflict cannot mint ten free faith through restitution");
         UUID reverse=UUID.fromString("00000000-0000-0000-0000-000000000102");
         must(saved.sign(reverse,"velkan") && saved.sign(reverse,"isael")
                 && saved.markIsaelConflict(reverse),
