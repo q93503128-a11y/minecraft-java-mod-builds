@@ -358,8 +358,7 @@ public final class PactCombatService {
                                 progress,PactSavedData.ISAEL_RESTITUTION_GOAL);
                         PactBlessingService.apply(owner);
                     }
-                } else {
-                    saved.relation(owner.getUUID(),"isael",1);
+                } else if(saved.faithfulDefense(owner.getUUID(),aggressor.getUUID())) {
                     PactBlessingService.apply(owner);
                 }
             }
