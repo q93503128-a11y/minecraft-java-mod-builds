@@ -511,7 +511,7 @@
   "message.anomalousclasses.pact.no_contract": "현재 맺은 서약이 없습니다.",
   "message.anomalousclasses.pact.status": "%s · 관계 %s · 미상환 채무 %s",
   "message.anomalousclasses.pact.available": "접촉 가능: %s — /pact contact %s",
-  "message.anomalousclasses.pact.contact_hint": "계약서를 확인한 뒤 /pact confirm으로 서명합니다.",
+  "message.anomalousclasses.pact.contact_hint": "계약서를 확인한 뒤 /pact confirm으로 서명합니다. 체결한 계약 조항은 /pact terms <id>에서 다시 확인할 수 있습니다.",
   "message.anomalousclasses.pact.unavailable": "지금은 서약을 변경할 수 없습니다.",
   "message.anomalousclasses.pact.altar_required": "그 존재를 만나려면 해당 성역의 제단이 필요합니다.",
   "message.anomalousclasses.pact.already_signed": "이미 그 존재와 계약했습니다.",
@@ -558,7 +558,7 @@
   "pact_ability.anomalousclasses.observed_retribution": "관측의 응징",
   "pact_ability.anomalousclasses.advance_claim": "선불 청구",
   "pact_terms.anomalousclasses.karda": "폭풍의 서약: 구리와 자수정 제물을 바치고 폭풍의 뿔탑에서 서약합니다. 도약과 낙뢰의 힘을 빌릴 수 있습니다.",
-  "pact_terms.anomalousclasses.nerea": "심해의 서약: 프리즈머린 제물을 바치고 침몰한 해류당에서 서약합니다. 물 밖에서도 해류와 압력 권능을 사용할 수 있습니다.",
+  "pact_terms.anomalousclasses.nerea": "심해의 서약: 프리즈머린 제물을 바치고 침몰한 해류당에서 서약합니다. 물 밖에서도 해류와 압력 권능을 사용할 수 있습니다. 자신의 심해 제단 핵을 직접 파괴하면 친화가 1회 약화됩니다. 수중 적대자에게 해류→압력 연계를 성공시켜 회복할 수 있습니다. 주변 블록 채굴이나 일반 낚시·항해는 금지하지 않습니다.",
   "pact_terms.anomalousclasses.shero": "관측의 서약: 엔더 진주를 바치고 눈 없는 관측대에서 서약합니다. 적의 위협을 관측하고 정밀하게 반격합니다.",
   "pact_terms.anomalousclasses.hastel": "장부의 서약: 금과 에메랄드를 바치고 폐쇄된 계산당에서 서약합니다. 강한 권능을 빌리면 실제 교전으로 갚아야 할 채무가 생깁니다. 계약 종료 전에 채무를 갚아야 합니다. 대체 상환으로 남은 채무 1당 금괴 1개를 일회 지불할 수 있으며 정식 해약 비용은 별도입니다.",
   "message.anomalousclasses.pact.trial_required": "%s의 계약 전에는 이 성역의 시련을 증명해야 합니다. 제단을 조준하고 /pact challenge로 도전하세요.",
@@ -645,5 +645,12 @@
   "message.anomalousclasses.pact.settle_preview": "하스텔의 미상환 채무 %s를 금괴로 결산합니다. 이것은 일회성 정산이며 계약 해약 위약금은 별도입니다.",
   "message.anomalousclasses.pact.settle_price": "정산 필요 금괴: %s개 (채무 1당 금괴 1개). /pact confirm으로 지불합니다.",
   "message.anomalousclasses.pact.settle_done": "하스텔의 채무를 모두 정산했습니다. 계약은 유지됩니다.",
-  "message.anomalousclasses.pact.no_debt": "현재 미상환 채무가 없습니다."
+  "message.anomalousclasses.pact.no_debt": "현재 미상환 채무가 없습니다.",
+  "message.anomalousclasses.pact.nerea_breach": "네르아의 심해 제단 핵을 훼손했습니다. 심해의 친화가 약해졌습니다. 수중에서 실제 적대자에게 해류 장악→심해 압력 연계를 2회 성공시켜 관계를 회복하세요.",
+  "message.anomalousclasses.pact.nerea_status": "심해의 서약 갈등 중 · 회복 증명 %s/%s. 물속에서 서로 다른 적대자에게 해류→압력 연계를 성공시키세요.",
+  "message.anomalousclasses.pact.nerea_restitution": "심해 친화 회복 %s/%s. 다른 적대자에게 수중 연계를 다시 증명하세요.",
+  "message.anomalousclasses.pact.nerea_restored": "심해의 서약이 회복되었습니다. 잃었던 친화만 돌아왔습니다. (%s/%s)",
+  "message.anomalousclasses.pact.terms_title": "%s — 계약의 조항",
+  "message.anomalousclasses.pact.terms_unsigned": "아직 체결하지 않은 계약입니다. 계약 제물과 체결 조건은 접촉/제단에서 별도로 확인하세요.",
+  "message.anomalousclasses.pact.relationship_status": "현재 %s: %s / 100"
 }
