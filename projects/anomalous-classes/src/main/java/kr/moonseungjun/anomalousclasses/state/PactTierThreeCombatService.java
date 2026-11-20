@@ -211,8 +211,12 @@ public final class PactTierThreeCombatService {
                 float blocked=(float)Math.min(value,state.stoneIntegrity);
                 state.stoneIntegrity-=blocked;
                 value-=blocked;
-                if (blocked>0 && source instanceof Mob mob
-                        && PactCombatService.enemy(victim,mob) && tick>=state.stoneReflectReady) {
+                // Judge the attacking mob BEFORE the retaliation: a lethal
+                // reflected hit must not erase a legitimate armor-break combo.
+                boolean hostileArmorBreaker=source instanceof Mob mob
+                        && PactCombatService.enemy(victim,mob);
+                if (blocked>0 && hostileArmorBreaker && source instanceof Mob mob
+                        && tick>=state.stoneReflectReady) {
                     state.stoneReflectReady=tick+140;
                     // Reflected damage cannot recursively trigger a second reflection.
                     PactCatalog.Patron patron=PactCatalog.get("taron");
@@ -220,8 +224,7 @@ public final class PactTierThreeCombatService {
                 }
                 if(state.stoneIntegrity<=0) {
                     state.stoneUntil=0;
-                    if(depth(victim,"taron")>=2 && source instanceof Mob mob
-                            && PactCombatService.enemy(victim,mob))
+                    if(depth(victim,"taron")>=2 && hostileArmorBreaker)
                         state.stoneShatterFollowupUntil=tick+100;
                 }
             }
