@@ -70,7 +70,6 @@ public final class PactDeepeningService {
         Rite rite=RITES.get(patron);
         if (bond == null || rite == null || !rite.event().equals(event)) return;
         Stage next=next(patron,bond.deepening());
-        if (next == null || bond.progress()>=next.proofs()) return;
         MinecraftServer server=caster.getServer();
         if (currentServer != server) { EVIDENCE.clear();currentServer=server; }
         long now=server.getTickCount();
@@ -82,15 +81,15 @@ public final class PactDeepeningService {
         evidence.targetReady.entrySet().removeIf(e->e.getValue()<=now);
         if (evidence.targetReady.size()>=128) evidence.targetReady.clear();
         evidence.targetReady.put(hostile.getUUID(),now+1200);
-        if (saved.addDeepeningProof(caster.getUUID(),patron,next.proofs())) {
-            // Isael's trust rises only from an actual villager rescue via the
-            // existing ward code; personal blocking can still prove mastery.
-            if(!patron.equals("isael"))saved.relation(caster.getUUID(),patron,1);
-            PactBlessingService.apply(caster);
-            if (saved.player(caster.getUUID()).bond(patron).progress()==next.proofs())
-                caster.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                        "message.anomalousclasses.pact.deepening_ready",PactCatalog.get(patron).name()),true);
-        }
+        boolean earned=next!=null
+                && saved.addDeepeningProof(caster.getUUID(),patron,next.proofs());
+        // Isael's trust rises only from an actual villager rescue via the
+        // existing ward code; personal blocking can still prove mastery.
+        if(!patron.equals("isael"))saved.relation(caster.getUUID(),patron,1);
+        if(!patron.equals("isael"))PactBlessingService.apply(caster);
+        if(earned && saved.player(caster.getUUID()).bond(patron).progress()==next.proofs())
+            caster.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.anomalousclasses.pact.deepening_ready",PactCatalog.get(patron).name()),true);
     }
     private static Map<String,Rite> load() {
         try (var stream=PactDeepeningService.class.getResourceAsStream(
