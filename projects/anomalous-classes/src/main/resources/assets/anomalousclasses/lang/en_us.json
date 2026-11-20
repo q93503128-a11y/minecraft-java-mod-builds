@@ -652,5 +652,13 @@
   "message.anomalousclasses.pact.nerea_restored": "Your abyssal covenant is restored. Only your lost affinity is returned. (%s/%s)",
   "message.anomalousclasses.pact.terms_title": "%s — Covenant Terms",
   "message.anomalousclasses.pact.terms_unsigned": "This covenant is not signed. Inspect its exact signing offering and requirements through contact or its altar.",
-  "message.anomalousclasses.pact.relationship_status": "Current %s: %s / 100"
+  "message.anomalousclasses.pact.relationship_status": "Current %s: %s / 100",
+  "pact_relation.anomalousclasses.sevenwing": "Justice",
+  "pact_relation.anomalousclasses.merzad": "Ambition",
+  "pact_relation.anomalousclasses.taron": "Majesty",
+  "pact_relation.anomalousclasses.arken": "Understanding",
+  "pact_relation.anomalousclasses.nahar": "Attunement",
+  "pact_relation.anomalousclasses.rakiel": "Purity of Oath",
+  "pact_relation.anomalousclasses.ormas": "Trust of the Earth",
+  "pact_relation.anomalousclasses.viar": "Affinity with Life"
 }
