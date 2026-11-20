@@ -1,4 +1,4 @@
-> **2026-11-20 계약 금기·회복 기능 묶음:** 이사엘×벨칸 충돌 1회 기록 및 재접속 후 유지, 정식 해약 후 실제 주민 방어 3건을 통한 신앙 회복, 구형 저장 호환·신앙 복제 방지, 하스텔 잔액의 선택적 금괴 정산(/pact settle → /pact confirm)을 구현했다. 16종 공통 금기 면책이나 강행 파기를 완성했다는 뜻은 아니다. [현재 갈등·복구 체크포인트](./PACT_CONFLICT_AND_RESTITUTION_CHECKPOINT_2026-11-20.md). 신규 코드 전체 빌드·JAR 검증을 진행하고, 실제 게임·멀티플레이는 미실행.
+> **2026-11-20 계약 금기·회복 기능 묶음:** 이사엘×벨칸 충돌 1회 기록 및 재접속 후 유지, 정식 해약 후 실제 주민 방어 3건을 통한 신앙 회복, 구형 저장 호환·신앙 복제 방지, 하스텔 잔액의 선택적 금괴 정산(/pact settle → /pact confirm)을 구현했다. 16종 공통 금기 면책이나 강행 파기를 완성했다는 뜻은 아니다. [현재 갈등·복구 체크포인트](./PACT_CONFLICT_AND_RESTITUTION_CHECKPOINT_2026-11-20.md). [Actions #44671383373](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373)에서 **BUILD VERIFIED / JAR PRODUCED**를 확인했고, 실제 게임·멀티플레이는 미실행.
 
 > **2026-11-20 2위계 심화 구현:** 카르다(폭풍 도약→강타), 네르아(해류→압력), 셰로(관측→응징), 하스텔(실제 채무 완납) 각각에 1·2차 선택형 심화를 추가했다. 별개 서버 증명·제물·재확인·한글 설명과 종별 심화 효과·회귀 검증기를 연결했다. [구현 체크포인트](./PACT_TIER2_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). **[Actions #44660488870](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870) BUILD VERIFIED / JAR PRODUCED**이며 실제 Minecraft·멀티플레이 테스트는 미실행.
 
