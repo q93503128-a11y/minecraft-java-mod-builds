@@ -118,7 +118,7 @@ public final class PactCombatService {
         if (bond==null) return 0;
         var profile=ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
         return (float)Math.min(10000.0,damage * PactBlessingService.relationFactor(bond.relation())
-                * (patron.tier()==1 ? PactBlessingService.deepeningFactor(bond.deepening()) : 1.0)
+                * PactBlessingService.deepeningFactor(patron,bond.deepening())
                 * PactBlessingService.focusFactor(profile));
     }
     static Mob aimed(ServerPlayer player,double reach) {
