@@ -618,5 +618,21 @@
   "pact_deepening_reward.anomalousclasses.urgen.1": "Borrowed blessings +12%, stronger Giant's Fist knockback.",
   "pact_deepening_reward.anomalousclasses.urgen.2": "Borrowed blessings +25%, unlock enhanced Ground Shatter after Giant's Fist.",
   "pact_deepening_reward.anomalousclasses.ridna.1": "Borrowed blessings +12%, Star Step reaches 9 blocks and linked Starlight grows stronger.",
-  "pact_deepening_reward.anomalousclasses.ridna.2": "Borrowed blessings +25%, Star Step reaches 10 blocks and linked Starlight gains another boost."
+  "pact_deepening_reward.anomalousclasses.ridna.2": "Borrowed blessings +25%, Star Step reaches 10 blocks and linked Starlight gains another boost.",
+  "pact_relation.anomalousclasses.karda": "Resolve",
+  "pact_relation.anomalousclasses.nerea": "Abyssal Affinity",
+  "pact_relation.anomalousclasses.shero": "Observational Accord",
+  "pact_relation.anomalousclasses.hastel": "Credit",
+  "pact_deepening_goal.anomalousclasses.karda": "Land Thunder Slam against a hostile enemy after Storm Leap. A thunderstorm is not required.",
+  "pact_deepening_goal.anomalousclasses.nerea": "Land Abyssal Pressure after Tide Grasp against a hostile enemy. Works on land too.",
+  "pact_deepening_goal.anomalousclasses.shero": "Use Observed Retribution against a hostile targeting you or after a genuine projectile near-miss.",
+  "pact_deepening_goal.anomalousclasses.hastel": "Fully repay a real Advance Claim debt by damaging valid hostiles. Credit and debt are separate.",
+  "pact_deepening_reward.anomalousclasses.karda.1": "Borrowed graces +10%; safe Storm Leap distance reaches 9 blocks.",
+  "pact_deepening_reward.anomalousclasses.karda.2": "Borrowed graces +22%; Storm Leap reaches 10 blocks; multi-target combo slam gains a limited lightning follow-up.",
+  "pact_deepening_reward.anomalousclasses.nerea.1": "Borrowed graces +10%; stronger Tide Grasp and wider Abyssal Pressure.",
+  "pact_deepening_reward.anomalousclasses.nerea.2": "Borrowed graces +22%; further improved pull and radius, plus stronger pressure after Tide Grasp.",
+  "pact_deepening_reward.anomalousclasses.shero.1": "Borrowed graces +10%; Observed Retribution deals more direct damage.",
+  "pact_deepening_reward.anomalousclasses.shero.2": "Borrowed graces +22%; stronger Retribution and a delayed follow-up after dodging a real projectile.",
+  "pact_deepening_reward.anomalousclasses.hastel.1": "Borrowed graces +10%; stronger Advance Claim and short protection. Existing debt remains.",
+  "pact_deepening_reward.anomalousclasses.hastel.2": "Borrowed graces +22%; stronger Advance Claim, protection and repaid-debt retaliation. Existing debt remains."
 }
