@@ -52,6 +52,9 @@ public final class PactTierOneDeepeningVerifier {
         PactSavedData state=new PactSavedData();
         require(!state.addDeepeningProof(owner,"isael",3),"Unsigned rites may never progress");
         require(state.sign(owner,"isael"),"First signature");
+        require(!state.addDeepeningProof(owner,"isael",1)
+                && !state.addDeepeningProof(owner,"isael",100),
+                "Proof threshold must match the rite definition, not a supplied shortcut");
         require(state.sign(owner,"velkan"),"Second signature independently");
         int firstCount=PactDeepeningService.requirement("isael",0);
         for(int n=0;n<firstCount;n++)
@@ -59,6 +62,8 @@ public final class PactTierOneDeepeningVerifier {
         require(!state.addDeepeningProof(owner,"isael",firstCount),
                 "Evidence capped; repeated events cannot overflow next rite");
         require(!state.deepen(owner,"isael",1,firstCount),"Out-of-order confirmation blocked");
+        require(!state.deepen(owner,"isael",0,1),
+                "Cannot forge a smaller completion threshold");
         require(state.player(owner).bond("velkan").progress()==0,
                 "Other contracts cannot inherit the oath evidence");
         CompoundTag pending=state.save(new CompoundTag(),RegistryAccess.EMPTY);
