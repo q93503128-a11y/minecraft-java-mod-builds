@@ -28,6 +28,13 @@ public final class PactCommands {
                             PactService.previewRelease(player,StringArgumentType.getString(ctx,"patron"));
                             return 1;
                         })))
+                .then(Commands.literal("deepen")
+                    .then(Commands.argument("patron",StringArgumentType.word())
+                        .executes(ctx -> {
+                            ServerPlayer player=ctx.getSource().getPlayerOrException();
+                            PactService.previewDeepen(player,StringArgumentType.getString(ctx,"patron"));
+                            return 1;
+                        })))
                 .then(Commands.literal("challenge")
                     .executes(ctx -> {
                         PactTrialService.challenge(ctx.getSource().getPlayerOrException());
