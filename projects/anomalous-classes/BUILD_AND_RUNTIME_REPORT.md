@@ -1,5 +1,17 @@
 # Build and Runtime Report
 
+## 2026-11-20 — 1위계 4종 계약 심화·계약 관계 전투 증명
+
+- **검증 코드 기준:** [3b6d1f1](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/3b6d1f1523152c9b9d3625046a9b1203cc28c0a0). 이사엘·벨칸·우르겐·리드나 각각의 실제 전투 권능 증명→진행도 저장→2단계 명시적 봉납·확정, 계약별 관계 및 강화 가호·기술을 추가. 2~4위계의 구체 심화·현현은 미구현.
+- **BUILD VERIFIED / JAR PRODUCED:** [Build anomalous-classes #44644586601](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44644586601) **SUCCESS**. Java 21 clean build, 기존 16제단·모든 위계 계약 검사, 신규 `verifyPactTierOneDeepening`, Jar 구조 검사 및 SHA-256 생성·아티팩트 업로드 PASS.
+- **검사 로그:** `Four earned first-tier rites, separate evidence, staged costs, NBT and no free replay: PASS`. 미승인 고위계 심화 비활성, 서명 없는 증명 거부, 다른 계약에 진행도 복제 불가, 1차/2차 증명·NBT 지속성·부당 임계값 거부·해약 후 재계약 상태 확인.
+- **산출물:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar`, 32,245,097 bytes / 240 classes. [JAR+SHA 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44644586601/artifacts/14588525487), [전체 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44644586601/artifacts/14587724178).
+- **검증 경계:** 진행도·계약 갱신의 단위 검증은 통과했으나 실제 Minecraft 클라이언트/월드/보호 행동·전투 기술 손맛/인벤토리 최종 지불·서버 멀티테스트는 **NOT TESTED**. 고위계 퀘스트별 구체 조건 및 정식 UI·모델/현현은 이번 성공 범위 밖. 6직업 기능→실게임 검토→Codex 디자인 순서 유지.
+- **정본:** [계약술사 1위계 심화 체크포인트](./PACT_TIER1_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). 빌드 성공 이후 문서 정리만 `[skip ci]` 처리했으며 코드는 추가 변경하지 않았다.
+
+---
+
+
 ## 2026-11-20 — 계약술사 전체 16제단 생성 후보 통합
 
 - **기능 코드 HEAD:** [`4b16f7c`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/4b16f7ce91053bd73b69b686e47667e6d7e3c689). 1위계 4종 자연 제단/공용 loot·기존 2~4위계와 40청크 공유 격자 통합, 육상 선택 가중치 40:30:20:10, 해양 네르아 단독, 비해양 유적 액체 검사, 선택적 제단 계약서/명시적 서명.
