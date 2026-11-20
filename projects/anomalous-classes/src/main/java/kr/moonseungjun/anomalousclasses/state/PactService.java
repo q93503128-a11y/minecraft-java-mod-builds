@@ -53,6 +53,9 @@ public final class PactService {
             }
             if(bond.id().equals("hastel") && bond.debt()>0)
                 say(player,"message.anomalousclasses.pact.settle_hint");
+            if(bond.id().equals("nerea") && bond.nereaSanctumBreach())
+                say(player,"message.anomalousclasses.pact.nerea_status",
+                        bond.nereaReconciliation(),2);
         }
         for (var patron : PactCatalog.introductory())
             player.sendSystemMessage(Component.translatable("message.anomalousclasses.pact.available",
