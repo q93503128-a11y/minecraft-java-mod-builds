@@ -174,7 +174,10 @@ public final class PactTierTwoCombatService {
                     }
                 }
                 if(hits==0) return false;
-                if(tideCombo)PactDeepeningService.record(owner,"nerea","tide_to_pressure",proofTarget);
+                if(tideCombo) {
+                    PactDeepeningService.record(owner,"nerea","tide_to_pressure",proofTarget);
+                    PactCovenantService.onNereaWaterCombo(owner,proofTarget);
+                }
                 state.tideComboUntil=0;
                 state.pressureUntil=time+80;
                 return true;
