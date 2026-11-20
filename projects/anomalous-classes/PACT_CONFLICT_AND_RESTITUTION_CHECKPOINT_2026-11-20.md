@@ -28,4 +28,11 @@
 - 별도 하스텔 테스트: 하스텔 계약 및 선지급 공격으로 채무 발생 → /pact settle → 보유 금괴 견적 확인 → /pact confirm → 채무0 확인; 아이템 부족/전투 잠금/채무 변화/재접속 시 confirm 중복 무소모 확인.
 - 코드 자동 빌드 및 JAR 생성은 CI 결과 후 이 문서에 따로 기록. Minecraft client, 실제 몹 AI/타격 순서·실제 멀티·경제 밸런스/실제 GUI는 검수 전이다.
 
-**CODE MODIFIED. BUILD/CI PENDING. CLIENT / PLAYTEST / MULTIPLAYER NOT TESTED.**
+## 실제 CI/JAR 검증 — 2026-11-20
+- **빌드 대상 코드 HEAD:** `da147d1ff863e1bfe075899fc8b13584c3d17bac`.
+- [GitHub Actions #44671383373](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373) **SUCCESS**. Java 21 full clean build, 기존 16계약자/16제단, 1·2위계 심화·NBT 검사, 신규 `verifyPactCovenantConflicts`, JAR 검사·SHA-256 생성·아티팩트 업로드 통과.
+- 신규 검증기 실제 출력: `One-time celestial breach, no upkeep, unique-threat restoration, legacy no-double-charge, multiplayer separation, debt persistence: PASS`. 이 중 separation은 **복수 UUID 저장 레코드 간 격리 검증**을 의미하며 실제 멀티플레이 서버 검증이 아님.
+- 검증 JAR: `build/libs/anomalous-classes-0.1.0-alpha.1.jar` (**32,252,054 바이트 / 240 classes**). [JAR+SHA-256 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373/artifacts/14600461949) · [빌드 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373/artifacts/14600856407).
+- 임계 금기/복구 조건은 서버 저장·정적/메서드 테스트 검증까지 통과. Minecraft 월드 클라이언트에서 실제 발동·피해 이벤트 순서·실제 하스텔 금괴 재료 납부, 멀티/모델/시각 UI 검사는 **NOT TESTED**. 이 코드 SHA 뒤의 [skip ci] 문서 수정은 검증한 실행 코드에 영향이 없음.
+
+**CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. CLIENT / PLAYTEST / MULTIPLAYER: NOT TESTED.**
