@@ -26,6 +26,9 @@ public final class PactSavedData extends SavedData {
         private int relation, deepening, debt, progress;
         private boolean vowConflict;
         private int vowFaithDebt;
+        private boolean nereaSanctumBreach;
+        private int nereaAffinityDebt;
+        private final Set<UUID> nereaReconciliationThreats=new LinkedHashSet<>();
         private final Set<UUID> restitutionThreats = new LinkedHashSet<>();
         private final Set<UUID> faithfulDefenseThreats = new LinkedHashSet<>();
         Bond(String patronId, int relation, int deepening, int debt) {
@@ -46,6 +49,9 @@ public final class PactSavedData extends SavedData {
         public boolean vowConflict() { return vowConflict; }
         public int restitution() { return restitutionThreats.size(); }
         public int unresolvedFaithCost() { return vowFaithDebt; }
+        public boolean nereaSanctumBreach() { return nereaSanctumBreach; }
+        public int nereaReconciliation() { return nereaReconciliationThreats.size(); }
+        public int nereaAffinityDebt() { return nereaAffinityDebt; }
     }
     public static final class Player {
         private final LinkedHashMap<String, Bond> bonds = new LinkedHashMap<>();
@@ -164,6 +170,41 @@ public final class PactSavedData extends SavedData {
         setDirty();
         return true;
     }
+    /** A deliberate break of Nerea's own altar core is one covenant event. */
+    public boolean defileNereaSanctum(UUID owner) {
+        Player state=player(owner);
+        Bond bond=state.bond("nerea");
+        if(bond==null || bond.nereaSanctumBreach)return false;
+        bond.nereaSanctumBreach=true;
+        bond.nereaReconciliationThreats.clear();
+        bond.nereaAffinityDebt=Math.min(8,bond.relation);
+        bond.relation-=bond.nereaAffinityDebt;
+        state.revision++;
+        setDirty();
+        return true;
+    }
+    /**
+     * Repair the bond by two different real underwater tide-to-pressure
+     * attacks. Proof of an actual hostile and underwater caster is enforced
+     * by the combat caller, never by a client packet.
+     */
+    public int reconcileNereaSanctum(UUID owner,UUID hostile) {
+        Player state=player(owner);
+        Bond bond=state.bond("nerea");
+        if(bond==null || !bond.nereaSanctumBreach || hostile==null
+                || !bond.nereaReconciliationThreats.add(hostile))return 0;
+        int progress=bond.nereaReconciliationThreats.size();
+        int refund=progress>=2 ? bond.nereaAffinityDebt : Math.min(4,bond.nereaAffinityDebt);
+        bond.nereaAffinityDebt-=refund;
+        bond.relation=Math.min(100,bond.relation+refund);
+        if(progress>=2) {
+            bond.nereaSanctumBreach=false;
+            bond.nereaReconciliationThreats.clear();
+        }
+        state.revision++;
+        setDirty();
+        return progress;
+    }
     /** Successful, rate-limited real actions increment only the active rite. */
     public boolean addDeepeningProof(UUID owner,String patron,int cap) {
         Player state=player(owner);
@@ -241,6 +282,17 @@ public final class PactSavedData extends SavedData {
                     }
                     entry.put("faithfulDefenseThreats",defended);
                 }
+                if(b.patronId.equals("nerea")) {
+                    entry.putBoolean("sanctumBreach",b.nereaSanctumBreach);
+                    entry.putInt("sanctumDebt",b.nereaAffinityDebt);
+                    ListTag recovered=new ListTag();
+                    for(UUID hostile:b.nereaReconciliationThreats) {
+                        CompoundTag marker=new CompoundTag();
+                        marker.putUUID("hostile",hostile);
+                        recovered.add(marker);
+                    }
+                    entry.put("sanctumRestitution",recovered);
+                }
                 entries.add(entry);
             }
             row.put("bonds", entries);
@@ -296,6 +348,18 @@ public final class PactSavedData extends SavedData {
                         CompoundTag evidence=defended.getCompound(n);
                         if(evidence.hasUUID("threat"))
                             bond.faithfulDefenseThreats.add(evidence.getUUID("threat"));
+                    }
+                }
+                if(id.equals("nerea")) {
+                    bond.nereaSanctumBreach=item.getBoolean("sanctumBreach");
+                    if(bond.nereaSanctumBreach) {
+                        bond.nereaAffinityDebt=Math.clamp(item.getInt("sanctumDebt"),0,8);
+                        ListTag proof=item.getList("sanctumRestitution",Tag.TAG_COMPOUND);
+                        for(int k=0;k<proof.size() && bond.nereaReconciliationThreats.size()<1;k++) {
+                            CompoundTag evidence=proof.getCompound(k);
+                            if(evidence.hasUUID("hostile"))
+                                bond.nereaReconciliationThreats.add(evidence.getUUID("hostile"));
+                        }
                     }
                 }
                 p.bonds.put(id,bond);
