@@ -305,7 +305,18 @@ tasks.register('verifyPactNereaSanctum', Exec) {
     }
 }
 
+tasks.register('verifyPactTierThreeDeepening', Exec) {
+    group = 'verification'
+    description = 'Validates earned third-tier combat rites, guardian-proof separation, NBT and anti-replay.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactTierThreeDeepeningVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactTierThreeDeepening')
     dependsOn tasks.named('verifyPactNereaSanctum')
     dependsOn tasks.named('verifyPactCovenantConflicts')
     dependsOn tasks.named('verifyPactTierTwoDeepening')
