@@ -32,10 +32,10 @@ public final class PactTierThreeCombatService {
         final Map<UUID, Long> fireMarks = new HashMap<>();
         long verdictGuardReady, verdictGuardUntil, verdictEchoReady;
         long fireAfterglowUntil, fireEchoReady;
-        long stoneUntil, stoneReflectReady, stoneStrikeReady;
+        long stoneUntil, stoneReflectReady, stoneStrikeReady, stoneShatterFollowupUntil;
         double stoneIntegrity;
         long recordAdaptUntil, recordAdaptReady, focusUntil, focusReady;
-        String lastObserved = "";
+        String lastObserved = "", lastRepriseProfile = "";
     }
     private PactTierThreeCombatService() {}
     private static Battle battle(ServerPlayer player) {
@@ -51,6 +51,11 @@ public final class PactTierThreeCombatService {
                 && PactSavedData.get(player.getServer()).player(player.getUUID()).has(id);
     }
     private static long now(ServerPlayer player) { return player.getServer().getTickCount(); }
+    private static int depth(ServerPlayer player,String patron) {
+        PactSavedData.Bond bond=PactSavedData.get(player.getServer())
+                .player(player.getUUID()).bond(patron);
+        return bond==null?0:bond.deepening();
+    }
     private static boolean hit(ServerPlayer owner, PactCatalog.Patron patron, Mob target, double amount) {
         return PactCombatService.impact(owner, target, patron, amount);
     }
@@ -213,12 +218,18 @@ public final class PactTierThreeCombatService {
                     PactCatalog.Patron patron=PactCatalog.get("taron");
                     hit(victim,patron,mob,6);
                 }
+                if(state.stoneIntegrity<=0) {
+                    state.stoneUntil=0;
+                    if(depth(victim,"taron")>=2 && source instanceof Mob mob
+                            && PactCombatService.enemy(victim,mob))
+                        state.stoneShatterFollowupUntil=tick+100;
+                }
             }
             String damageType=profile(event.getSource());
             if (has(victim,"arken") && !damageType.isBlank()
                     && damageType.equals(state.lastObserved)
                     && state.recordAdaptUntil>tick && tick>=state.recordAdaptReady) {
-                value*=.88F;
+                value*=(float)(.88-.035*depth(victim,"arken"));
                 state.recordAdaptReady=tick+200;
                 state.recordAdaptUntil=0;
             }
@@ -243,10 +254,10 @@ public final class PactTierThreeCombatService {
             if (event.getSource().getEntity() instanceof Mob attacker
                     && PactCombatService.enemy(victim,attacker)) {
                 if(has(victim,"sevenwing")) {
-                    state.verdictMarks.put(attacker.getUUID(),tick+140);
+                    state.verdictMarks.put(attacker.getUUID(),tick+140+20L*depth(victim,"sevenwing"));
                     if(tick>=state.verdictGuardReady) {
                         state.verdictGuardReady=tick+320;
-                        state.verdictGuardUntil=tick+60;
+                        state.verdictGuardUntil=tick+60+20L*depth(victim,"sevenwing");
                     }
                 }
                 if(has(victim,"arken")) {
@@ -267,9 +278,10 @@ public final class PactTierThreeCombatService {
         Battle state=battle(owner);
         long tick=now(owner);
         LivingEntity victim=event.getEntity();
-        if(has(owner,"sevenwing")) state.verdictMarks.put(victim.getUUID(),tick+140);
+        if(has(owner,"sevenwing")) state.verdictMarks.put(victim.getUUID(),
+                tick+140+20L*depth(owner,"sevenwing"));
         if(has(owner,"merzad")) {
-            state.fireMarks.put(victim.getUUID(),tick+120);
+            state.fireMarks.put(victim.getUUID(),tick+120+20L*depth(owner,"merzad"));
             if(state.fireAfterglowUntil>tick && tick>=state.fireEchoReady) {
                 state.fireEchoReady=tick+140;
                 state.fireAfterglowUntil=0;
