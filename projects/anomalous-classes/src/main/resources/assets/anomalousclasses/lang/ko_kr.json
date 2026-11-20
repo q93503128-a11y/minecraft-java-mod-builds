@@ -594,5 +594,21 @@
   "pact_terms.anomalousclasses.nahar": "흑성의 낙하 관측소에서 시련을 이겨야 계약할 수 있습니다. 검은 별의 재림은 기록 없이도 강하며, 자신의 실제 무기 공격 흔적이 남아 있으면 강화됩니다.",
   "pact_terms.anomalousclasses.rakiel": "최초 서약의 성역에서 시련을 이겨야 합니다. 첫 서약의 검은 즉시 신성 공격을 가합니다. 목숨을 구할 때는 불사의 토템이 먼저 작동하며, 그 뒤 운명의 거부는 금 블록 2개와 긴 회복 시간이 필요합니다.",
   "pact_terms.anomalousclasses.ormas": "잠든 대륙의 손에서 시련을 이겨야 합니다. 대륙의 피부는 자신만 보호하며, 대륙 분쇄는 피부 없이도 강력합니다. 땅과 건물을 무너뜨리지 않습니다.",
-  "pact_terms.anomalousclasses.viar": "첫 숲의 심근에서 시련을 이겨야 합니다. 첫 뿌리는 어느 지형에서나 공격할 수 있으며 실제 적에게 입힌 피해의 일부를 정해진 한도 안에서 회복합니다."
+  "pact_terms.anomalousclasses.viar": "첫 숲의 심근에서 시련을 이겨야 합니다. 첫 뿌리는 어느 지형에서나 공격할 수 있으며 실제 적에게 입힌 피해의 일부를 정해진 한도 안에서 회복합니다.",
+  "message.anomalousclasses.pact.deepening_status": "%s %s · 심화 %s단계 · 다음 의식 %s/%s",
+  "message.anomalousclasses.pact.deepening_preview": "%s — %s차 서약 심화",
+  "message.anomalousclasses.pact.deepening_progress": "서약의 증명: %s / %s",
+  "message.anomalousclasses.pact.deepening_not_ready": "아직 의식의 조건을 채우지 못했습니다. 전투에서 서약을 증명하세요.",
+  "message.anomalousclasses.pact.deepening_unavailable": "이 계약의 심화 의식은 아직 열리지 않았습니다.",
+  "message.anomalousclasses.pact.deepening_complete": "이 서약의 심화를 모두 마쳤습니다.",
+  "message.anomalousclasses.pact.deepening_ready": "%s의 서약을 심화할 수 있습니다. /pact deepen으로 제물을 확인하세요.",
+  "message.anomalousclasses.pact.deepening_done": "%s의 서약이 %s단계로 심화되었습니다.",
+  "pact_relation.anomalousclasses.isael": "신앙심",
+  "pact_relation.anomalousclasses.velkan": "거래 만족도",
+  "pact_relation.anomalousclasses.urgen": "명예",
+  "pact_relation.anomalousclasses.ridna": "별의 공명",
+  "pact_deepening_goal.anomalousclasses.isael": "수호의 빛으로 실제 적대자의 공격을 막아 서약의 보호를 증명하세요. 주민을 지키면 신앙심도 회복됩니다.",
+  "pact_deepening_goal.anomalousclasses.velkan": "재화의 일격을 적대자에게 실제로 적중시켜 거래의 대가를 증명하세요.",
+  "pact_deepening_goal.anomalousclasses.urgen": "지반 파쇄로 실제 적대자를 제압해 거인의 힘을 증명하세요.",
+  "pact_deepening_goal.anomalousclasses.ridna": "성간 도약 직후 별빛 궤적을 실제 적대자에게 명중시켜 두 권능의 연계를 증명하세요."
 }
