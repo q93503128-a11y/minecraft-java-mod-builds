@@ -62,6 +62,44 @@ public final class PactService {
                     patron.name(), patron.id()));
         say(player, "message.anomalousclasses.pact.contact_hint");
     }
+    /**
+     * Read-only contract terms for active or future patrons. The player can
+     * revisit these without moving to an altar or starting a paid action.
+     */
+    public static void terms(ServerPlayer player,String id) {
+        PENDING.remove(player.getUUID());
+        if(!isPact(player)) {
+            say(player,"message.anomalousclasses.pact.wrong_class");return;
+        }
+        PactCatalog.Patron patron=PactCatalog.get(id);
+        if(patron==null) {
+            say(player,"message.anomalousclasses.pact.not_signed");return;
+        }
+        PactSavedData.Player state=PactSavedData.get(player.getServer()).player(player.getUUID());
+        say(player,"message.anomalousclasses.pact.terms_title",patron.name());
+        say(player,"pact_terms.anomalousclasses."+id);
+        say(player,"message.anomalousclasses.pact.release_cost");
+        for(PactCatalog.Material material:patron.release())
+            player.sendSystemMessage(Component.translatable(
+                    "message.anomalousclasses.pact.material",material.count(),
+                    Component.translatable(material.item().getDescriptionId())));
+        PactSavedData.Bond bond=state.bond(id);
+        if(bond==null) {
+            say(player,"message.anomalousclasses.pact.terms_unsigned");return;
+        }
+        say(player,"message.anomalousclasses.pact.relationship_status",
+                Component.translatable("pact_relation.anomalousclasses."+id),bond.relation());
+        if(id.equals("isael") && bond.vowConflict())
+            say(player,state.has("velkan")
+                    ? "message.anomalousclasses.pact.vow_conflict_active"
+                    : "message.anomalousclasses.pact.vow_restitution",bond.restitution(),
+                    PactSavedData.ISAEL_RESTITUTION_GOAL);
+        if(id.equals("nerea") && bond.nereaSanctumBreach())
+            say(player,"message.anomalousclasses.pact.nerea_status",
+                    bond.nereaReconciliation(),2);
+        if(id.equals("hastel") && bond.debt()>0)
+            say(player,"message.anomalousclasses.pact.settle_hint");
+    }
     public static void previewSign(ServerPlayer player, String id) {
         PENDING.remove(player.getUUID()); // Invalid second previews must invalidate any older consent.
         if (!isPact(player) || CombatTracker.isLocked(player)) {
