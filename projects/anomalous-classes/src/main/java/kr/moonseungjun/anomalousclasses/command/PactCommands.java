@@ -21,6 +21,13 @@ public final class PactCommands {
                             PactService.previewSign(player,StringArgumentType.getString(ctx,"patron"));
                             return 1;
                         })))
+                .then(Commands.literal("terms")
+                    .then(Commands.argument("patron",StringArgumentType.word())
+                        .executes(ctx -> {
+                            PactService.terms(ctx.getSource().getPlayerOrException(),
+                                    StringArgumentType.getString(ctx,"patron"));
+                            return 1;
+                        })))
                 .then(Commands.literal("release")
                     .then(Commands.argument("patron",StringArgumentType.word())
                         .executes(ctx -> {
