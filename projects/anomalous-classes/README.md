@@ -1,3 +1,5 @@
+> **2026-11-20 네르아 성역 금기·회복 / 계약 조항 조회:** 네르아 제단 핵 직접 파괴(생존/계약 보유) 때만 친화 1회 감소·서버 저장, 실제 수중 해류→압력 연계로 서로 다른 적을 타격해 원상 복구. 모든 계약 조항을 제물 소모 없이 /pact terms <id>로 재확인 가능. 일반 채굴/낚시/항해, 다른 제단/미계약자/크리에이티브에는 금기 제재 없음. [검증 경계 및 구현 기록](./PACT_NEREA_SANCTUM_AND_TERMS_CHECKPOINT_2026-11-20.md). 본 변경의 서버 빌드·JAR 검증 결과는 CI 완료 후 별도 기록.
+
 > **2026-11-20 계약 금기·회복 기능 묶음:** 이사엘×벨칸 충돌 1회 기록 및 재접속 후 유지, 정식 해약 후 실제 주민 방어 3건을 통한 신앙 회복, 구형 저장 호환·신앙 복제 방지, 하스텔 잔액의 선택적 금괴 정산(/pact settle → /pact confirm)을 구현했다. 16종 공통 금기 면책이나 강행 파기를 완성했다는 뜻은 아니다. [현재 갈등·복구 체크포인트](./PACT_CONFLICT_AND_RESTITUTION_CHECKPOINT_2026-11-20.md). [Actions #44671383373](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44671383373)에서 **BUILD VERIFIED / JAR PRODUCED**를 확인했고, 실제 게임·멀티플레이는 미실행.
 
 > **2026-11-20 2위계 심화 구현:** 카르다(폭풍 도약→강타), 네르아(해류→압력), 셰로(관측→응징), 하스텔(실제 채무 완납) 각각에 1·2차 선택형 심화를 추가했다. 별개 서버 증명·제물·재확인·한글 설명과 종별 심화 효과·회귀 검증기를 연결했다. [구현 체크포인트](./PACT_TIER2_DEEPENING_IMPLEMENTATION_CHECKPOINT_2026-11-20.md). **[Actions #44660488870](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870) BUILD VERIFIED / JAR PRODUCED**이며 실제 Minecraft·멀티플레이 테스트는 미실행.
