@@ -1,3 +1,7 @@
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import kr.moonseungjun.anomalousclasses.state.PactSavedData;
@@ -23,7 +27,38 @@ public final class PactNereaSanctumVerifier {
     private static PactSavedData restart(PactSavedData original) throws Exception {
         return load(original.save(new CompoundTag(),RegistryAccess.EMPTY));
     }
+    private static void verifyAllReadableTerms() throws Exception {
+        var patrons=java.util.List.of("isael","velkan","urgen","ridna",
+                "karda","nerea","shero","hastel","sevenwing","merzad",
+                "taron","arken","nahar","rakiel","ormas","viar");
+        for(String language:java.util.List.of("ko_kr","en_us")) {
+            String path="/assets/anomalousclasses/lang/"+language+".json";
+            try(var stream=PactNereaSanctumVerifier.class.getResourceAsStream(path)) {
+                yes(stream!=null,"Both official locale tables ship in the JAR");
+                JsonObject strings=JsonParser.parseReader(
+                        new InputStreamReader(stream,StandardCharsets.UTF_8)).getAsJsonObject();
+                for(String id:patrons) {
+                    for(String prefix:java.util.List.of("pact_terms.anomalousclasses.",
+                            "pact_relation.anomalousclasses.")) {
+                        var translation=strings.get(prefix+id);
+                        yes(translation!=null && !translation.getAsString().isBlank(),
+                                "Readable "+language+" covenant terms and relationship "+id);
+                    }
+                }
+                for(String key:java.util.List.of(
+                        "message.anomalousclasses.pact.terms_title",
+                        "message.anomalousclasses.pact.relationship_status",
+                        "message.anomalousclasses.pact.nerea_status",
+                        "message.anomalousclasses.pact.nerea_restitution",
+                        "message.anomalousclasses.pact.nerea_restored")) {
+                    yes(strings.has(key) && !strings.get(key).getAsString().isBlank(),
+                            "No raw UI translation keys in "+language+": "+key);
+                }
+            }
+        }
+    }
     public static void main(String[] args) throws Exception {
+        verifyAllReadableTerms();
         UUID owner=uuid(220),enemy1=uuid(301),enemy2=uuid(302);
         PactSavedData pacts=new PactSavedData();
         yes(!pacts.defileNereaSanctum(owner),"Unsigned player cannot break an oath");
@@ -109,7 +144,7 @@ public final class PactNereaSanctumVerifier {
         yes(!restored.player(oldOwner).bond("nerea").nereaSanctumBreach()
                 && restored.player(oldOwner).bond("nerea").relation()==50,
                 "Old saves without new fields stay unaffected");
-        System.out.println("Nerea unique hostile water rites, single sanctuary breach, "
+        System.out.println("Sixteen localized covenant terms, Nerea unique hostile water rites, single sanctuary breach, "
                 +"exact affinity restitution, persistent proof and legacy migration: PASS");
     }
 }
