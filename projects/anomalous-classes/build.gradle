@@ -285,7 +285,18 @@ tasks.register('verifyPactTierTwoDeepening', Exec) {
     }
 }
 
+tasks.register('verifyPactCovenantConflicts', Exec) {
+    group = 'verification'
+    description = 'Checks persistent vow conflict, single penalty, three distinct rescues, legacy saves and debt isolation.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactCovenantConflictVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactCovenantConflicts')
     dependsOn tasks.named('verifyPactTierTwoDeepening')
     dependsOn tasks.named('verifyPactTierOneDeepening')
     dependsOn tasks.named('verifyPactSixteenAltars')
