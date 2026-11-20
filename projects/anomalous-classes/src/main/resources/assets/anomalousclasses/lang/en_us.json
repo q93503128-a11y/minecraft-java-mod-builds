@@ -610,5 +610,13 @@
   "pact_deepening_goal.anomalousclasses.isael": "Use Guardian Light to stop a real hostile attack. Protecting a villager also restores faith.",
   "pact_deepening_goal.anomalousclasses.velkan": "Strike a hostile foe with Ashen Strike to honor the cost of the bargain.",
   "pact_deepening_goal.anomalousclasses.urgen": "Land Ground Shatter on a hostile enemy to prove the giant's power.",
-  "pact_deepening_goal.anomalousclasses.ridna": "Land Starlight after Star Step on a hostile enemy to prove the two powers are connected."
+  "pact_deepening_goal.anomalousclasses.ridna": "Land Starlight after Star Step on a hostile enemy to prove the two powers are connected.",
+  "pact_deepening_reward.anomalousclasses.isael.1": "Borrowed blessings +12%, longer marks and stronger Guardian Light protection.",
+  "pact_deepening_reward.anomalousclasses.isael.2": "Borrowed blessings +25%, further increased mark duration and Guardian Light protection.",
+  "pact_deepening_reward.anomalousclasses.velkan.1": "Borrowed blessings +12%, stronger fire and splash damage. The health cost remains.",
+  "pact_deepening_reward.anomalousclasses.velkan.2": "Borrowed blessings +25%, wider, stronger fire splashes. The health cost remains.",
+  "pact_deepening_reward.anomalousclasses.urgen.1": "Borrowed blessings +12%, stronger Giant's Fist knockback.",
+  "pact_deepening_reward.anomalousclasses.urgen.2": "Borrowed blessings +25%, unlock enhanced Ground Shatter after Giant's Fist.",
+  "pact_deepening_reward.anomalousclasses.ridna.1": "Borrowed blessings +12%, Star Step reaches 9 blocks and linked Starlight grows stronger.",
+  "pact_deepening_reward.anomalousclasses.ridna.2": "Borrowed blessings +25%, Star Step reaches 10 blocks and linked Starlight gains another boost."
 }
