@@ -23,4 +23,13 @@
 - 실전 검증 명령: `/pact` → 3위계 해당 제단에 접근해 수호자 시련 증명 및 최초 계약 체결 → 각 권능 조합으로 서버 증명을 채우기 → `/pact deepen sevenwing`(또는 `merzad`/`taron`/`arken`) → 필요한 재료 준비 → `/pact confirm` → 계약서 심화 단계/가호/기술 변화 확인.
 - **실제 Minecraft 클라이언트 피격/애니메이션/콤보 유효 시간·보스/멀티·발동 VFX/사운드/UI 이미지 검사, 패시브 270랭크의 전수 기능 검수는 아직 하지 않았다.** 컴파일·Gradle·JAR 검증 결과는 이번 checkpoint 아래 CI 결과로만 확정한다.
 
-**CODE MODIFIED / CI PENDING / CLIENT · PLAYTEST · MULTIPLAYER NOT TESTED.**
+## 실제 통합 CI 및 JAR 결과
+- **검증 대상 코드 SHA:** `00960d0cfa55f8346b5bf449ea6aeeddd3182071`.
+- [GitHub Actions #44689561180](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44689561180) **SUCCESS**. Java 21 clean build + Gradle check + 기존 1·2위계 심화·3/4위계 계약자·16제단·금기/채무·계약/기술 데이터 회귀 검사, 신규 `verifyPactTierThreeDeepening` 모두 PASS. JAR ZIP 구조·class 수·SHA-256 생성·artifact 업로드 통과.
+- **신규 검사 실제 출력:** `Four tier-three earned rites, no repeated rare relics, separate guardian proof, NBT upgrades, multi-bond isolation and no replay: PASS`.
+- **기존 회귀:** `Four earned first-tier rites ... PASS`, `Tier-two distinct rites ... PASS`, `Sixteen shrines ... PASS`, `Sixteen localized covenant terms ... PASS`, `One-time celestial breach ... PASS`. 16계약 정본·제단 ID와 NBT를 유지했다.
+- **생성 JAR:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar`, **32,258,806 bytes, 241 classes**. [실행용 JAR + SHA-256 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44689561180/artifacts/14608271228), [빌드 로그 artifact](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44689561180/artifacts/14608405659).
+- **검증 구분:** 코드/명세/NBT/Gradle/JAR PASS. Minecraft 클라이언트/실제 몹 AI·마법 판정/콤보 타격감·실제 제물 소비 UI·멀티플레이 및 실시간 전투/최종 3D·VFX·사운드 **NOT TESTED**. 최초 수호자 통합 시련과 심화 전투 실전 QA도 별도다. 현현과 4위계 심화 미구현.
+- CI 통과 뒤 문서만 `[skip ci]`로 업데이트하며 게임 코드 변경 없음.
+
+**CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. CLIENT / PLAYTEST / MULTIPLAYER NOT TESTED.**
