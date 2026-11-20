@@ -610,5 +610,13 @@
   "pact_deepening_goal.anomalousclasses.isael": "수호의 빛으로 실제 적대자의 공격을 막아 서약의 보호를 증명하세요. 주민을 지키면 신앙심도 회복됩니다.",
   "pact_deepening_goal.anomalousclasses.velkan": "재화의 일격을 적대자에게 실제로 적중시켜 거래의 대가를 증명하세요.",
   "pact_deepening_goal.anomalousclasses.urgen": "지반 파쇄로 실제 적대자를 제압해 거인의 힘을 증명하세요.",
-  "pact_deepening_goal.anomalousclasses.ridna": "성간 도약 직후 별빛 궤적을 실제 적대자에게 명중시켜 두 권능의 연계를 증명하세요."
+  "pact_deepening_goal.anomalousclasses.ridna": "성간 도약 직후 별빛 궤적을 실제 적대자에게 명중시켜 두 권능의 연계를 증명하세요.",
+  "pact_deepening_reward.anomalousclasses.isael.1": "가호 증가분 +12%, 낙인 지속·수호의 빛 방호량 증가.",
+  "pact_deepening_reward.anomalousclasses.isael.2": "가호 증가분 +25%, 낙인 지속·수호의 빛 방호량 추가 증가.",
+  "pact_deepening_reward.anomalousclasses.velkan.1": "가호 증가분 +12%, 화염 권능 위력·확산 피해 강화. 체력 희생은 유지.",
+  "pact_deepening_reward.anomalousclasses.velkan.2": "가호 증가분 +25%, 화염 확산 범위와 피해 추가 강화. 체력 희생은 유지.",
+  "pact_deepening_reward.anomalousclasses.urgen.1": "가호 증가분 +12%, 거인의 주먹 밀침 증가.",
+  "pact_deepening_reward.anomalousclasses.urgen.2": "가호 증가분 +25%, 주먹 직후 지반 파쇄의 타격 연계 해금.",
+  "pact_deepening_reward.anomalousclasses.ridna.1": "가호 증가분 +12%, 성간 도약 최대 9블록·도약 후 별빛 궤적 강화.",
+  "pact_deepening_reward.anomalousclasses.ridna.2": "가호 증가분 +25%, 성간 도약 최대 10블록·도약 후 별빛 궤적 추가 강화."
 }
