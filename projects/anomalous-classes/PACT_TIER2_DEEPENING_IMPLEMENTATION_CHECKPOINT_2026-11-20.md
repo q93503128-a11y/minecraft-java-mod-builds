@@ -22,4 +22,12 @@
 - 수동 확인: 계약서에서 카르다/네르아/셰로/하스텔 2위계 계약 후 해당 연계 기술로 증명 축적 → /pact deepen <id> → 제물 지급 → /pact confirm. 통상적인 멀티/실게임/시드·전투 피드백 검증은 필요.
 - 자동빌드/JAR/Actions 결과는 실제 실행 완료 후 문서에 추가함.
 
-**CODE MODIFIED. BUILD/CI PENDING. CLIENT / PLAYTEST / MULTIPLAYER NOT TESTED.**
+## GitHub Actions 최종 검증
+- **검증 대상 코드 SHA:** e2508cdb2dcdd11e576dfa428a347c8e78d8f1b7.
+- [Actions #44660488870](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870) **SUCCESS**. Java21 Gradle clean build, 컴파일, 1~4위계 계약 회귀 검증, 16제단, 신규 2위계 심화/저장·채무 격리·증명 위조 방지 테스트, JAR 구조 검사, SHA256 생성, 산출물 업로드 PASS.
+- **신규 검사 실제 출력:** Tier-two distinct rites, canon thresholds, multi-bond debt, NBT roundtrip, proof cap and paid stage transitions: PASS.
+- **기존 1위계 심화 검사:** Four earned first-tier rites, separate evidence, staged costs, NBT and no free replay: PASS.
+- **검증된 JAR:** build/libs/anomalous-classes-0.1.0-alpha.1.jar, 32,247,944바이트 / 240 classes. [JAR+SHA-256 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870/artifacts/14595416893), [실행 로그 아티팩트](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44660488870/artifacts/14595955869).
+- **검증 경계:** 정적·데이터·저장 회귀 검사와 JAR 빌드는 성공했으나 실제 Minecraft 클라이언트에서 콤보 명중·채무 완납·시간창·실제 PvE 밸런스, 월드 시드·멀티플레이는 아직 실행 안 함. 모델·VFX·UI 최종 디자인 없음. 성공 코드 뒤 [skip ci] 문서만 수정.
+
+**CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. CLIENT / PLAYTEST / MULTIPLAYER NOT TESTED.**
