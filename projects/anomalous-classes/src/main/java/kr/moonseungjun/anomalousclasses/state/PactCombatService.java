@@ -469,6 +469,7 @@ public final class PactCombatService {
             PactTierTwoCombatService.clear(player);
             PactTierThreeCombatService.clear(player);
             PactTierFourCombatService.clear(player);
+            PactDeepeningService.clear(player);
             PactTrialService.clear(player);
             PactService.expire(player);
         }
@@ -479,6 +480,7 @@ public final class PactCombatService {
             PactTierTwoCombatService.clear(owner);
             PactTierThreeCombatService.clear(owner);
             PactTierFourCombatService.clear(owner);
+            PactDeepeningService.clear(owner);
             PactTrialService.clear(owner);
             PactService.expire(owner);
         }
