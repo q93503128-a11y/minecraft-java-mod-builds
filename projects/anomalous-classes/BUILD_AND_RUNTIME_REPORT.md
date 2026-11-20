@@ -1,5 +1,18 @@
 # Build and Runtime Report
 
+## 2026-11-20 — 네르아 심해 성역 위반·회복 및 16계약 조항 조회
+
+- **검증된 코드 기준:** `26149ee25086a4799c4b4fc708ae135c97653a10`. PactCovenantService의 실제 네르아 제단 핵 파괴 이벤트→1회 친화 감소 및 Bond NBT, 실전 수중 해류→압력 연계로 서로 다른 적 2명에게 명중→정확히 잃은 친화만 복구. 일반 채광·낚시/항해/크리에이티브와 다른 제단·계약자 무제재.
+- **서버 안전성:** 같은 적 반복 사용·재접속 복제·저친화 무한 보상·기존 계약 상태 변조 방지, 옛 월드 NBT 필드 기본값 호환. 정상 마지막 일격으로 적이 죽어도 사전 검증한 타깃 UUID를 사용하므로 성취 누락 방지.
+- **읽기 전용 계약서:** `/pact terms <id>`에서 현재 관계·위약금·해당 금기를 계약 상태 변화/무료 취소/재료 지급 없이 조회. 16종 관계명/조항 한·영 번역 누락 방지 검증기 추가. 상위 위계의 관계명은 기존 기획 후보이며 상위 전투 관계·금기 전면 구현이 아니다.
+- **빌드:** [GitHub Actions #44673677553](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44673677553) **SUCCESS**. Java 21 Gradle clean build, 신규 `verifyPactNereaSanctum`, 기존 16제단·16계약·이사엘 갈등·1·2위계 심화·NBT 회귀, JAR/sha256 아티팩트 모두 통과.
+- **검사 출력:** `Sixteen localized covenant terms, Nerea unique hostile water rites, single sanctuary breach, exact affinity restitution, persistent proof and legacy migration: PASS`.
+- **검증된 JAR:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar` (**32,255,965 bytes / 241 classes**). [산출물·SHA-256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44673677553/artifacts/14600859407), [전체 CI 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44673677553/artifacts/14600414918).
+- **한계:** 검증기는 데이터·저장 및 로컬라이제이션·구현의 정합성을 확인한다. 실제 Minecraft 클라이언트 제단 파괴/주문 타격·보스·모드 상호작용, 월드/멀티 및 UI/애니메이션/VFX는 **NOT TESTED**. 다른 미확정 금기/면책/강행 파기, 3·4위계 개별 심화·현현은 **NOT IMPLEMENTED**. 정확한 친화 감소/회복 횟수는 플레이테스트 전 시험값.
+- **정본:** [네르아 성역·계약서 체크포인트](./PACT_NEREA_SANCTUM_AND_TERMS_CHECKPOINT_2026-11-20.md). 빌드 성공 이후 [skip ci] 문서 변경만 수행.
+
+---
+
 ## 2026-11-20 — 이사엘·벨칸 금기 갈등 영속화와 복구, 하스텔 선택형 채무 결산
 
 - **검증 게임 코드:** [`da147d1`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/da147d1ff863e1bfe075899fc8b13584c3d17bac). 이사엘–벨칸 양쪽 서명 시 1회 -10(실제 현재 신앙 한도) 충돌 저장, 벨칸 해약 뒤 실제 서로 다른 적대자로부터 주민 3회 방어해 원상 복구, 기존 NBT 마이그레이션 시 추가 감점 금지. 정상 주민 보호의 같은 적 반복/재시작 +1 재파밍 제한.
