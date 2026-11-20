@@ -27,6 +27,7 @@ public final class PactSavedData extends SavedData {
         private boolean vowConflict;
         private int vowFaithDebt;
         private final Set<UUID> restitutionThreats = new LinkedHashSet<>();
+        private final Set<UUID> faithfulDefenseThreats = new LinkedHashSet<>();
         Bond(String patronId, int relation, int deepening, int debt) {
             this(patronId,relation,deepening,debt,0);
         }
@@ -142,6 +143,27 @@ public final class PactSavedData extends SavedData {
         setDirty();
         return steps;
     }
+    /**
+     * Normal trust recovery is earned from a real hostile attack against a
+     * villager intercepted by Isael's ward, not from passive login timers.
+     * Remember the eight most recent attackers across server restarts.
+     */
+    public boolean faithfulDefense(UUID owner, UUID validThreat) {
+        Player player=player(owner);
+        Bond bond=player.bond("isael");
+        if(bond==null || bond.vowConflict || validThreat==null
+                || bond.relation>=100
+                || !bond.faithfulDefenseThreats.add(validThreat))return false;
+        while(bond.faithfulDefenseThreats.size()>8) {
+            var it=bond.faithfulDefenseThreats.iterator();
+            it.next();
+            it.remove();
+        }
+        bond.relation++;
+        player.revision++;
+        setDirty();
+        return true;
+    }
     /** Successful, rate-limited real actions increment only the active rite. */
     public boolean addDeepeningProof(UUID owner,String patron,int cap) {
         Player state=player(owner);
@@ -211,6 +233,13 @@ public final class PactSavedData extends SavedData {
                         violations.add(evidence);
                     }
                     entry.put("vowRestitution",violations);
+                    ListTag defended=new ListTag();
+                    for(UUID threat:b.faithfulDefenseThreats) {
+                        CompoundTag evidence=new CompoundTag();
+                        evidence.putUUID("threat",threat);
+                        defended.add(evidence);
+                    }
+                    entry.put("faithfulDefenseThreats",defended);
                 }
                 entries.add(entry);
             }
@@ -261,6 +290,12 @@ public final class PactSavedData extends SavedData {
                             if(victim.hasUUID("threat"))
                                 bond.restitutionThreats.add(victim.getUUID("threat"));
                         }
+                    }
+                    ListTag defended=item.getList("faithfulDefenseThreats",Tag.TAG_COMPOUND);
+                    for(int n=0;n<defended.size() && bond.faithfulDefenseThreats.size()<8;n++) {
+                        CompoundTag evidence=defended.getCompound(n);
+                        if(evidence.hasUUID("threat"))
+                            bond.faithfulDefenseThreats.add(evidence.getUUID("threat"));
                     }
                 }
                 p.bonds.put(id,bond);
