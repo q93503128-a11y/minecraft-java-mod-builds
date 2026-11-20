@@ -275,7 +275,18 @@ tasks.register('verifyPactTierOneDeepening', Exec) {
     }
 }
 
+tasks.register('verifyPactTierTwoDeepening', Exec) {
+    group = 'verification'
+    description = 'Validates four second-tier rites, distinct proofs, debt isolation, and NBT persistence.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactTierTwoDeepeningVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactTierTwoDeepening')
     dependsOn tasks.named('verifyPactTierOneDeepening')
     dependsOn tasks.named('verifyPactSixteenAltars')
     dependsOn tasks.named('verifyPactTierFour')
