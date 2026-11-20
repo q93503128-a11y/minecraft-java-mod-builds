@@ -18,7 +18,7 @@ public final class PactTierTwoDeepeningVerifier {
         var ids=List.of("karda","nerea","shero","hastel");
         var names=new HashSet<String>();
         var events=new HashSet<String>();
-        check(PactDeepeningService.all().size()==8,"Eight first/second tier rites");
+        check(PactDeepeningService.all().size()==12,"Twelve first through third tier rites");
         for(String id:ids) {
             var patron=PactCatalog.get(id);
             var rite=PactDeepeningService.rite(id);
@@ -40,9 +40,9 @@ public final class PactTierTwoDeepeningVerifier {
                         "No repeated high-tier covenant entry fee: "+id);
             }
         }
-        check(PactDeepeningService.rite("taron")==null
-                && PactDeepeningService.rite("nahar")==null,
-                "Third/fourth tier quest details remain unapproved");
+        check(PactDeepeningService.rite("nahar")==null
+                && PactDeepeningService.rite("rakiel")==null,
+                "Fourth-tier quest details remain unapproved");
         check(Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("karda"),0)-1)<1e-8
                 && Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("karda"),1)-1.10)<1e-8
                 && Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("karda"),2)-1.22)<1e-8,
