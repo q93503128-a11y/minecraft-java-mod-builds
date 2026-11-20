@@ -17,6 +17,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 /** All permanent contracts, relationships, and actual ability cooldowns are server-owned. */
 public final class PactSavedData extends SavedData {
+    public static final int ISAEL_RESTITUTION_GOAL = 3;
     private static final String KEY = "anomalousclasses_pacts";
     private static final Factory<PactSavedData> FACTORY =
             new Factory<>(PactSavedData::new, PactSavedData::load, DataFixTypes.LEVEL);
@@ -124,8 +125,8 @@ public final class PactSavedData extends SavedData {
         if(bond==null || !bond.vowConflict || p.has("velkan")
                 || validThreat==null || !bond.restitutionThreats.add(validThreat))return 0;
         int steps=bond.restitutionThreats.size();
-        bond.relation=Math.min(100,bond.relation+(steps==3?6:2));
-        if(steps>=3) {
+        bond.relation=Math.min(100,bond.relation+(steps==ISAEL_RESTITUTION_GOAL?6:2));
+        if(steps>=ISAEL_RESTITUTION_GOAL) {
             bond.vowConflict=false;
             bond.restitutionThreats.clear();
         }
@@ -245,7 +246,7 @@ public final class PactSavedData extends SavedData {
                     bond.vowConflict=item.getBoolean("vowConflict");
                     if(bond.vowConflict) {
                         ListTag evidence=item.getList("vowRestitution",Tag.TAG_COMPOUND);
-                        for(int n=0;n<evidence.size() && bond.restitutionThreats.size()<2;n++) {
+                        for(int n=0;n<evidence.size() && bond.restitutionThreats.size()<ISAEL_RESTITUTION_GOAL-1;n++) {
                             CompoundTag victim=evidence.getCompound(n);
                             if(victim.hasUUID("threat"))
                                 bond.restitutionThreats.add(victim.getUUID("threat"));
