@@ -660,5 +660,17 @@
   "pact_relation.anomalousclasses.nahar": "동조율",
   "pact_relation.anomalousclasses.rakiel": "서약의 순도",
   "pact_relation.anomalousclasses.ormas": "대지의 신뢰",
-  "pact_relation.anomalousclasses.viar": "생명의 친화"
+  "pact_relation.anomalousclasses.viar": "생명의 친화",
+  "pact_deepening_goal.anomalousclasses.sevenwing": "실제 적대자의 공격을 받거나 직접 공격해 판결 표식을 남긴 뒤, 표식이 사라지기 전에 최후의 판결을 적중시키세요.",
+  "pact_deepening_goal.anomalousclasses.merzad": "실제 적대자에게 왕관의 화염 표식을 남긴 뒤 왕의 화염으로 다시 명중시켜 연쇄 폭발을 일으키세요.",
+  "pact_deepening_goal.anomalousclasses.taron": "왕의 석갑이 유지되는 동안 실제 적대자에게 산맥 분쇄를 명중시켜 방호와 반격의 연계를 증명하세요.",
+  "pact_deepening_goal.anomalousclasses.arken": "실제 적대자로부터 공격 유형을 관측한 직후, 기록의 기억이 유지되는 동안 기록 재현을 적중시키세요.",
+  "pact_deepening_reward.anomalousclasses.sevenwing.1": "계약 가호 증가분 +8%, 판결 사거리 7→8블록, 피격 후 수호 지속시간 증가.",
+  "pact_deepening_reward.anomalousclasses.sevenwing.2": "계약 가호 증가분 +18%, 판결 사거리 9블록, 표식 적 판결 성공 후 추가 보호. 다중 판결 연계 강화.",
+  "pact_deepening_reward.anomalousclasses.merzad.1": "계약 가호 증가분 +8%, 화염 표식 유지와 연쇄 피해 강화. 건축물 방화는 추가하지 않습니다.",
+  "pact_deepening_reward.anomalousclasses.merzad.2": "계약 가호 증가분 +18%, 표식 유지·연쇄 피해 추가 강화, 왕의 화염 연쇄 최대 대상 수 확장.",
+  "pact_deepening_reward.anomalousclasses.taron.1": "계약 가호 증가분 +8%, 왕의 석갑 내구·유지시간 및 분쇄 밀침 강화.",
+  "pact_deepening_reward.anomalousclasses.taron.2": "계약 가호 증가분 +18%, 석갑이 적의 공격으로 깨진 직후 짧은 시간 안에 산맥 분쇄로 강력한 반격 가능.",
+  "pact_deepening_reward.anomalousclasses.arken.1": "계약 가호 증가분 +8%, 기록한 공격 유형의 대응·재현 효과와 집중 유지시간 강화.",
+  "pact_deepening_reward.anomalousclasses.arken.2": "계약 가호 증가분 +18%, 서로 다른 실제 관측 공격 유형을 연속 재현하면 한 번의 추가 기록 타격."
 }
