@@ -31,7 +31,9 @@ public final class PactTierTwoCombatService {
     private static MinecraftServer serverContext;
     private static final class State {
         long stormUntil, stormLandingPending, chargeUntil, chargeReadyAt, lastStormLanding;
-        long pressureUntil, lastSeaHeal, sheroDodgeUntil, lastSheroPrecision;
+        long pressureUntil, tideComboUntil, lastSeaHeal, sheroDodgeUntil, lastSheroPrecision;
+        Mob sheroDelayedTarget;
+        long sheroDelayedAt;
         long hasteShieldUntil, repayWindow;
         double repaidInWindow, debtRemainder;
         long fullyPaidUntil, lastFullReward;
@@ -51,6 +53,10 @@ public final class PactTierTwoCombatService {
         return PactCombatService.impact(player,victim,patron,damage);
     }
     private static long tick(ServerPlayer player) { return player.getServer().getTickCount(); }
+    private static int depth(ServerPlayer owner,String id) {
+        var bond=PactSavedData.get(owner.getServer()).player(owner.getUUID()).bond(id);
+        return bond==null?0:bond.deepening();
+    }
     private static void say(ServerPlayer owner,String key) {
         owner.displayClientMessage(Component.translatable(key),true);
     }
@@ -65,7 +71,7 @@ public final class PactTierTwoCombatService {
                 if(horizontal.lengthSqr()<.05) horizontal=new Vec3(0,0,1);
                 horizontal=horizontal.normalize();
                 Vec3 start=owner.getEyePosition();
-                for(double distance=8;distance>=2;distance-=1) {
+                for(double distance=8+depth(owner,"karda");distance>=2;distance-=1) {
                     for(double height=5;height>=1;height-=1) {
                         Vec3 newPosition=owner.position().add(horizontal.scale(distance)).add(0,height,0);
                         BlockPos at=BlockPos.containing(newPosition);
@@ -98,16 +104,27 @@ public final class PactTierTwoCombatService {
             case "thunder_slam" -> {
                 Vec3 center=owner.position().add(owner.getLookAngle().normalize().scale(4));
                 int hits=0;
-                double power=state.stormUntil>time?1.25:1;
+                boolean leapCombo=state.stormUntil>time;
+                double power=leapCombo?1.25:1;
+                Mob proofTarget=null,chainTarget=null;
                 for(Mob victim:owner.serverLevel().getEntitiesOfClass(Mob.class,
                         new AABB(center.subtract(3.5,3.5,3.5),center.add(3.5,3.5,3.5)),
                         target->PactCombatService.enemy(owner,target))) {
                     if(victim.position().distanceToSqr(center)>12.25
                             || !owner.hasLineOfSight(victim)) continue;
-                    if(hit(owner,patron,victim,16*power)) hits++;
+                    if(hit(owner,patron,victim,16*power)) {
+                        hits++;
+                        if(proofTarget==null)proofTarget=victim;
+                        else if(chainTarget==null)chainTarget=victim;
+                    }
                 }
                 if(hits==0) {
                     say(owner,"message.anomalousclasses.pact.no_target");return false;
+                }
+                if(leapCombo) {
+                    PactDeepeningService.record(owner,"karda","storm_slam_after_leap",proofTarget);
+                    if(depth(owner,"karda")>=2 && chainTarget!=null && chainTarget.isAlive())
+                        hit(owner,patron,chainTarget,6);
                 }
                 state.stormUntil=0;
                 state.chargeUntil=time+60;
@@ -119,11 +136,12 @@ public final class PactTierTwoCombatService {
                 if(hit(owner,patron,victim,6)) {
                     Vec3 drag=owner.position().subtract(victim.position());
                     if(drag.lengthSqr()>.1) {
-                        drag=drag.normalize().scale(.65);
+                        drag=drag.normalize().scale(.65+.15*depth(owner,"nerea"));
                         victim.push(drag.x,.15,drag.z);
                         victim.hurtMarked=true;
                     }
                     state.pressureUntil=time+80;
+                    state.tideComboUntil=time+80;
                 }
                 return true;
             }
@@ -132,22 +150,41 @@ public final class PactTierTwoCombatService {
                 if(focus==null) {say(owner,"message.anomalousclasses.pact.no_target");return false;}
                 Vec3 center=focus.position();
                 int hits=0;
+                boolean tideCombo=state.tideComboUntil>time;
+                double radius=2.5+.25*depth(owner,"nerea");
+                Mob proofTarget=null;
                 for(Mob victim:owner.serverLevel().getEntitiesOfClass(Mob.class,
-                        focus.getBoundingBox().inflate(2.5),
+                        focus.getBoundingBox().inflate(radius),
                         target->PactCombatService.enemy(owner,target))) {
-                    if(victim.position().distanceToSqr(center)>6.25
+                    if(victim.position().distanceToSqr(center)>radius*radius
                             || !owner.hasLineOfSight(victim)) continue;
-                    if(hit(owner,patron,victim,16*(owner.isInWater()?1.2:1.0))) hits++;
+                    double comboBonus=tideCombo && depth(owner,"nerea")>=2 ? 1.2 : 1.0;
+                    if(hit(owner,patron,victim,16*(owner.isInWater()?1.2:1.0)*comboBonus)) {
+                        hits++;
+                        if(proofTarget==null)proofTarget=victim;
+                    }
                 }
                 if(hits==0) return false;
+                if(tideCombo)PactDeepeningService.record(owner,"nerea","tide_to_pressure",proofTarget);
+                state.tideComboUntil=0;
                 state.pressureUntil=time+80;
                 return true;
             }
             case "observed_retribution" -> {
                 Mob victim=PactCombatService.aimed(owner,14);
                 if(victim==null) {say(owner,"message.anomalousclasses.pact.no_target");return false;}
-                if(hit(owner,patron,victim,14*(state.sheroDodgeUntil>time?1.35:1.0)))
-                    state.sheroDodgeUntil=0;
+                boolean nearMiss=state.sheroDodgeUntil>time;
+                boolean focusedOnOwner=victim.getTarget()==owner;
+                boolean landed=hit(owner,patron,victim,
+                        (14+depth(owner,"shero"))*(nearMiss?1.35:1.0));
+                if(!landed)return false;
+                if(nearMiss || focusedOnOwner)
+                    PactDeepeningService.record(owner,"shero","observed_retribution",victim);
+                if(nearMiss && depth(owner,"shero")>=2 && victim.isAlive()) {
+                    state.sheroDelayedTarget=victim;
+                    state.sheroDelayedAt=time+12;
+                }
+                state.sheroDodgeUntil=0;
                 return true;
             }
             case "advance_claim" -> {
@@ -160,14 +197,15 @@ public final class PactTierTwoCombatService {
                 for(Mob target:owner.serverLevel().getEntitiesOfClass(Mob.class,
                         owner.getBoundingBox().inflate(4),
                         mob->PactCombatService.enemy(owner,mob) && mob.distanceToSqr(owner)<=16)) {
-                    if(owner.hasLineOfSight(target) && hit(owner,patron,target,15))damaged++;
+                    if(owner.hasLineOfSight(target)
+                            && hit(owner,patron,target,15+2*depth(owner,"hastel")))damaged++;
                 }
                 if(damaged==0) {
                     say(owner,"message.anomalousclasses.pact.no_target");return false;
                 }
                 // The initial damage landed before the new debt exists, so it never self-repays.
                 save.debt(owner.getUUID(),"hastel",bond.debt()+12);
-                state.hasteShieldUntil=time+120;
+                state.hasteShieldUntil=time+120+20*depth(owner,"hastel");
                 return true;
             }
             default -> {return false;}
@@ -182,7 +220,8 @@ public final class PactTierTwoCombatService {
             if (has(player,"karda") && event.getSource().is(DamageTypes.FALL))
                 damage*=.70F;
             if (has(player,"hastel")) {
-                if (state.hasteShieldUntil>time) damage*=.8F;
+                if (state.hasteShieldUntil>time)
+                    damage*=(float)(.8-.025*depth(player,"hastel"));
                 PactSavedData.Bond bond=PactSavedData.get(player.getServer()).player(player.getUUID())
                         .bond("hastel");
                 if(bond!=null&&bond.debt()>0) damage*=.9F;
@@ -248,13 +287,18 @@ public final class PactTierTwoCombatService {
                     state.repaidInWindow+=repay;
                     int left=Math.max(0,bond.debt()-repay);
                     save.debt(attacker.getUUID(),"hastel",left);
-                    if(left==0) state.fullyPaidUntil=now+160;
+                    if(left==0) {
+                        state.fullyPaidUntil=now+160;
+                        PactDeepeningService.record(attacker,"hastel","debt_fully_repaid",
+                                (Mob)event.getEntity());
+                    }
                 }
             } else if(event.getSource().is(DamageTypes.PLAYER_ATTACK)
                     && state.fullyPaidUntil>now && now>=state.lastFullReward+240) {
                 state.fullyPaidUntil=0;
                 state.lastFullReward=now;
-                event.getEntity().hurt(attacker.damageSources().source(DamageTypes.MAGIC,attacker),4.0F);
+                event.getEntity().hurt(attacker.damageSources().source(DamageTypes.MAGIC,attacker),
+                        4.0F+2F*depth(attacker,"hastel"));
             }
         }
     }
@@ -289,6 +333,14 @@ public final class PactTierTwoCombatService {
             ServerPlayer owner=server.getPlayerList().getPlayer(row.getKey());
             if(owner==null||!PactService.isPact(owner)){it.remove();continue;}
             State state=row.getValue();
+            if(state.sheroDelayedTarget!=null && state.sheroDelayedAt<=time) {
+                Mob marked=state.sheroDelayedTarget;
+                state.sheroDelayedTarget=null;
+                if(has(owner,"shero") && marked.isAlive() && marked.level()==owner.level()
+                        && owner.distanceToSqr(marked)<256
+                        && PactCombatService.enemy(owner,marked) && owner.hasLineOfSight(marked))
+                    hit(owner,PactCatalog.get("shero"),marked,5);
+            }
             if(has(owner,"karda") && state.stormLandingPending>time && owner.onGround()) {
                 state.stormLandingPending=0;
                 state.lastStormLanding=time;
