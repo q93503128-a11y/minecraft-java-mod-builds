@@ -99,7 +99,7 @@ public final class PactSavedData extends SavedData {
     public boolean addDeepeningProof(UUID owner,String patron,int cap) {
         Player state=player(owner);
         Bond bond=state.bond(patron);
-        if(bond==null || PactDeepeningService.next(patron,bond.deepening())==null
+        if(bond==null || cap!=PactDeepeningService.requirement(patron,bond.deepening())
                 || cap<1 || bond.progress>=cap)return false;
         bond.progress++;
         state.revision++;
@@ -111,7 +111,8 @@ public final class PactSavedData extends SavedData {
         Player state=player(owner);
         Bond bond=state.bond(patron);
         if(bond==null || expectedDepth!=bond.deepening || needed<1
-                || bond.progress<needed || PactDeepeningService.next(patron,expectedDepth)==null)
+                || bond.progress<needed
+                || needed!=PactDeepeningService.requirement(patron,expectedDepth))
             return false;
         bond.deepening++;
         bond.progress=0;
