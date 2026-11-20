@@ -40,7 +40,8 @@ public final class PactCovenantConflictVerifier {
                 && saved.player(owner).revision()==revision
                 && saved.player(owner).bond("isael").relation()==40,
                 "Repeated server events and reloads cannot repeat the penalty");
-        must(saved.protectVillagerForIsael(owner,threat(1))==0,
+        must(saved.protectVillagerForIsael(owner,threat(1))==0
+                && !saved.faithfulDefense(owner,threat(1)),
                 "Ongoing forbidden covenant cannot be forgiven by farming protection");
         saved=reload(saved);
         must(saved.player(owner).bond("isael").vowConflict()
@@ -103,6 +104,20 @@ public final class PactCovenantConflictVerifier {
         must(saved.player(reverse).bond("isael").relation()==40,
                 "Signing order cannot avoid the conflict cost");
 
+        UUID faithful=UUID.fromString("00000000-0000-0000-0000-000000000104");
+        must(saved.sign(faithful,"isael"),"Ordinary faithful defence scenario");
+        must(saved.faithfulDefense(faithful,threat(40))
+                && saved.player(faithful).bond("isael").relation()==51,
+                "One legitimate new attacking hostile earns one trust");
+        must(!saved.faithfulDefense(faithful,threat(40)),
+                "Same attacker never grants repeat trust by rapid ward recasting");
+        saved=reload(saved);
+        must(!saved.faithfulDefense(faithful,threat(40))
+                && saved.player(faithful).bond("isael").relation()==51,
+                "Ordinary defence anti-farm memory survives server restart");
+        must(saved.faithfulDefense(faithful,threat(41))
+                && saved.player(faithful).bond("isael").relation()==52,
+                "Defending from another real hostile advances relationship");
         UUID legacy=UUID.fromString("00000000-0000-0000-0000-000000000103");
         must(saved.sign(legacy,"isael") && saved.sign(legacy,"velkan"),
                 "Construct legacy two-contract state");
