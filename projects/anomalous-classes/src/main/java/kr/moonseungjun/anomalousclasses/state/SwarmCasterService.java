@@ -5,6 +5,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import java.util.UUID;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 import kr.moonseungjun.anomalousclasses.entity.SwarmEntities;
@@ -35,7 +39,13 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 /** First playable server collision slice: actual monster targeting, arrows and finite N. */
 public final class SwarmCasterService {
     private static final Map<UUID, EnumMap<SwarmNodeRole, SwarmNodeEntity>> NODES = new HashMap<>();
+    private static final Map<UUID, UUID> PRIORITY_TARGETS = new HashMap<>();
+    private static final Map<UUID, RushOrder> RUSH_ORDERS = new HashMap<>();
+    private static final double TARGET_RANGE = 48.0;
+    private static final long RUSH_COOLDOWN = 160L;
+    private static final long SACRIFICE_COOLDOWN = 240L;
     private static MinecraftServer activeServer;
+    private record RushOrder(UUID target, long untilTick) {}
     private SwarmCasterService() {}
 
     public static boolean isSwarm(ServerPlayer player) {
@@ -71,6 +81,8 @@ public final class SwarmCasterService {
         if (activeServer != server) {
             NODES.values().forEach(map -> map.values().forEach(Entity::discard));
             NODES.clear();
+            PRIORITY_TARGETS.clear();
+            RUSH_ORDERS.clear();
             activeServer = server;
         }
         if (server.overworld().getGameTime() % 10 != 0) return;
@@ -88,7 +100,8 @@ public final class SwarmCasterService {
             SwarmSavedData.State state = data.player(id);
             if (state.advance(server.overworld().getGameTime(), SwarmRules.maximum(level)))
                 data.changed();
-            Monster target = nearestHostile(player.serverLevel(), player, 12);
+            Monster target = selectedEnemy(player);
+            if (target == null) target = nearestHostile(player.serverLevel(), player, 12);
             updateRole(player, state, SwarmNodeRole.GUARD, target, level);
             updateRole(player, state, SwarmNodeRole.ATTACK, target, level);
             updateRole(player, state, SwarmNodeRole.REGROUP, target, level);
@@ -96,13 +109,164 @@ public final class SwarmCasterService {
         for (UUID id : Set.copyOf(NODES.keySet())) if (!online.contains(id)) clear(id);
     }
 
+    /** R/Z/X carry an intent only. All aiming, ownership and combat validation is server-side. */
+    public static void input(ServerPlayer player, int action) {
+        if (!player.isAlive() || !isSwarm(player) || player.isSpectator()) return;
+        switch (action) {
+            case 0 -> designateTarget(player);
+            case 1 -> chargeRush(player);
+            case 2 -> sacrifice(player);
+            default -> { } // Unknown packets never mutate state.
+        }
+    }
+
+    private static boolean validEnemy(ServerPlayer owner, Monster enemy) {
+        if (enemy == null || !enemy.isAlive() || owner.level() != enemy.level()
+                || owner.distanceToSqr(enemy) > TARGET_RANGE * TARGET_RANGE
+                || owner.isAlliedTo(enemy) || enemy.isAlliedTo(owner)) return false;
+        var controlled = MentalDominatorSavedData.get(owner.getServer()).controlled(enemy.getUUID());
+        return controlled == null || controlled.linkState() != MentalDominatorSavedData.LinkState.ACTIVE;
+    }
+
+    private static Monster selectedEnemy(ServerPlayer player) {
+        UUID selected = PRIORITY_TARGETS.get(player.getUUID());
+        if (selected == null) return null;
+        Entity candidate = player.serverLevel().getEntity(selected);
+        if (candidate instanceof Monster enemy && validEnemy(player, enemy)) return enemy;
+        PRIORITY_TARGETS.remove(player.getUUID());
+        RUSH_ORDERS.remove(player.getUUID());
+        return null;
+    }
+
+    private static Monster aimedEnemy(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 direction = player.getLookAngle().scale(TARGET_RANGE);
+        Vec3 end = eye.add(direction);
+        var hit = ProjectileUtil.getEntityHitResult(player, eye, end,
+                player.getBoundingBox().expandTowards(direction).inflate(1.0),
+                entity -> entity instanceof Monster mob && validEnemy(player, mob),
+                TARGET_RANGE * TARGET_RANGE);
+        if (hit == null || !(hit.getEntity() instanceof Monster target)) return null;
+        BlockHitResult wall = player.serverLevel().clip(new ClipContext(eye, end,
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        if (wall.getType() != HitResult.Type.MISS
+                && wall.getLocation().distanceToSqr(eye) < hit.getLocation().distanceToSqr(eye))
+            return null;
+        return target;
+    }
+
+    private static void designateTarget(ServerPlayer player) {
+        Monster target = aimedEnemy(player);
+        if (target == null) {
+            PRIORITY_TARGETS.remove(player.getUUID());
+            RUSH_ORDERS.remove(player.getUUID());
+            say(player, "message.anomalousclasses.swarm.target_cleared");
+            return;
+        }
+        PRIORITY_TARGETS.put(player.getUUID(), target.getUUID());
+        RUSH_ORDERS.remove(player.getUUID());
+        say(player, "message.anomalousclasses.swarm.target_set", target.getDisplayName().getString());
+    }
+
+    private static SwarmNodeEntity attackers(ServerPlayer player) {
+        var nodes = NODES.get(player.getUUID());
+        if (nodes == null) return null;
+        SwarmNodeEntity node = nodes.get(SwarmNodeRole.ATTACK);
+        return node != null && !node.isRemoved() && node.isAlive()
+                && node.level() == player.level() && node.count() > 0 ? node : null;
+    }
+
+    private static long tickTime(ServerPlayer player) {
+        return player.getServer().overworld().getGameTime();
+    }
+
+    private static void chargeRush(ServerPlayer player) {
+        SwarmSavedData.State state = current(player);
+        long now = tickTime(player);
+        if (state.cooldownRemaining(1, now) > 0) {
+            cooldownMessage(player, state.cooldownRemaining(1, now));
+            return;
+        }
+        SwarmNodeEntity node = attackers(player);
+        if (node == null || state.attack() == 0) {
+            say(player, "message.anomalousclasses.swarm.no_attackers");
+            return;
+        }
+        Monster target = selectedEnemy(player);
+        if (target == null) target = nearestHostile(player.serverLevel(), player, 12.0);
+        if (target == null) {
+            say(player, "message.anomalousclasses.swarm.no_target");
+            return;
+        }
+        if (!state.commitCooldown(1, now, RUSH_COOLDOWN)) return;
+        SwarmSavedData.get(player.getServer()).changed();
+        RUSH_ORDERS.put(player.getUUID(), new RushOrder(target.getUUID(), now + 120L));
+        say(player, "message.anomalousclasses.swarm.rush_started");
+    }
+
+    private static void sacrifice(ServerPlayer player) {
+        SwarmSavedData.State state = current(player);
+        long now = tickTime(player);
+        if (state.cooldownRemaining(2, now) > 0) {
+            cooldownMessage(player, state.cooldownRemaining(2, now));
+            return;
+        }
+        SwarmNodeEntity node = attackers(player);
+        int cost = SwarmRules.sacrificeCost(state.attack());
+        if (node == null || cost == 0) {
+            say(player, "message.anomalousclasses.swarm.no_attackers");
+            return;
+        }
+        Monster target = selectedEnemy(player);
+        if (target == null) target = nearestHostile(player.serverLevel(), player, 12);
+        // Sacrifice may only occur at a *real* deployed attack position.
+        if (target == null || node.distanceToSqr(target) > 9.0
+                || !node.getSensing().hasLineOfSight(target)) {
+            say(player, "message.anomalousclasses.swarm.not_in_range");
+            return;
+        }
+        int level = ClassProfileSavedData.get(player.getServer())
+                .profile(player.getUUID()).progress(ClassId.SWARM_CASTER).level();
+        float damage = SwarmRules.sacrificeDamage(cost, level);
+        if (!target.hurt(node.damageSources().mobAttack(node), damage)) {
+            say(player, "message.anomalousclasses.swarm.no_hit");
+            return;
+        }
+        // The actual, successful hit is the commit point: pay exactly once.
+        if (!state.commitCooldown(2, now, SACRIFICE_COOLDOWN))
+            throw new IllegalStateException("swarm sacrifice cooldown raced a server tick");
+        int lost = state.lose(SwarmNodeRole.ATTACK, cost);
+        if (lost != cost) throw new IllegalStateException("swarm sacrifice consumed mismatched units");
+        node.setCount(state.attack());
+        SwarmSavedData.get(player.getServer()).changed();
+        if (state.attack() == 0) {
+            node.discard();
+            var nodes = NODES.get(player.getUUID());
+            if (nodes != null) nodes.remove(SwarmNodeRole.ATTACK);
+        }
+        for (Monster nearby : player.serverLevel().getEntitiesOfClass(Monster.class,
+                target.getBoundingBox().inflate(2.0),
+                candidate -> candidate != target && validEnemy(player, candidate)
+                        && node.distanceToSqr(candidate) < 10.0
+                        && node.getSensing().hasLineOfSight(candidate))) {
+            nearby.hurt(node.damageSources().mobAttack(node), damage * .48F);
+        }
+        say(player, "message.anomalousclasses.swarm.sacrifice_success", cost);
+    }
+
+    private static void cooldownMessage(ServerPlayer player, long remaining) {
+        say(player, "message.anomalousclasses.swarm.cooldown", Math.max(1L, (remaining + 19) / 20));
+    }
+
+    private static void say(ServerPlayer player, String key, Object... args) {
+        player.displayClientMessage(Component.translatable(key, args), true);
+    }
+
     private static Monster nearestHostile(ServerLevel world, ServerPlayer owner, double radius) {
         Monster closest = null;
         double nearest = radius * radius;
         for (Monster mob : world.getEntitiesOfClass(Monster.class,
-                owner.getBoundingBox().inflate(radius), m -> m.isAlive() && !owner.isAlliedTo(m))) {
-            var controlled = MentalDominatorSavedData.get(world.getServer()).controlled(mob.getUUID());
-            if (controlled != null && controlled.linkState() == MentalDominatorSavedData.LinkState.ACTIVE) continue;
+                owner.getBoundingBox().inflate(radius), m -> validEnemy(owner, m))) {
             double distance = owner.distanceToSqr(mob);
             if (distance < nearest) { closest = mob; nearest = distance; }
         }
@@ -122,7 +286,8 @@ public final class SwarmCasterService {
             return;
         }
         if (node == null || node.isRemoved() || node.level() != player.level()
-                || node.distanceToSqr(player) > 32.0 * 32.0) {
+                || node.distanceToSqr(player) >
+                    (role == SwarmNodeRole.ATTACK ? 64.0 * 64.0 : 32.0 * 32.0)) {
             if (node != null) node.discard();
             node = SwarmEntities.NODE.get().create(player.serverLevel());
             if (node == null) return;
@@ -134,7 +299,32 @@ public final class SwarmCasterService {
         }
         node.setCount(count);
         if (role == SwarmNodeRole.ATTACK && threat != null) {
-            if (node.tickCount % 10 == 0) node.getNavigation().moveTo(threat, 1.15);
+            long now = tickTime(player);
+            RushOrder rush = RUSH_ORDERS.get(id);
+            if (rush != null && (!rush.target().equals(threat.getUUID())
+                    || now > rush.untilTick() || !validEnemy(player, threat))) {
+                RUSH_ORDERS.remove(id);
+                rush = null;
+            }
+            if (node.tickCount % 10 == 0)
+                node.getNavigation().moveTo(threat, rush == null ? 1.15 : 1.45);
+            if (rush != null && node.distanceToSqr(threat) < 3.24
+                    && node.getSensing().hasLineOfSight(threat)) {
+                RUSH_ORDERS.remove(id); // Never replay this cast on another tick.
+                float burst = SwarmRules.rushDamage(count, level);
+                if (threat.hurt(node.damageSources().mobAttack(node), burst)) {
+                    int hits = 1;
+                    for (Monster nearby : player.serverLevel().getEntitiesOfClass(Monster.class,
+                            threat.getBoundingBox().inflate(1.6),
+                            candidate -> candidate != threat && validEnemy(player, candidate)
+                                    && node.distanceToSqr(candidate) < 9.0
+                                    && node.getSensing().hasLineOfSight(candidate))) {
+                        if (hits++ >= 3) break;
+                        nearby.hurt(node.damageSources().mobAttack(node), burst * .55F);
+                    }
+                }
+                say(player, "message.anomalousclasses.swarm.rush_landed");
+            }
             if (node.distanceToSqr(threat) < 2.25 && node.getSensing().hasLineOfSight(threat)
                     && node.tickCount % 20 == 0) {
                 float damage = (float) Math.min(12.0, .8 + Math.sqrt(count) * .65 + level * .03);
@@ -216,6 +406,8 @@ public final class SwarmCasterService {
     }
 
     public static void clear(UUID owner) {
+        PRIORITY_TARGETS.remove(owner);
+        RUSH_ORDERS.remove(owner);
         EnumMap<SwarmNodeRole, SwarmNodeEntity> nodes = NODES.remove(owner);
         if (nodes != null) nodes.values().forEach(Entity::discard);
     }

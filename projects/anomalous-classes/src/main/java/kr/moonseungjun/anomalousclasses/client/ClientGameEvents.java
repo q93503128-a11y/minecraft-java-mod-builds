@@ -14,6 +14,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ParasiteAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.BarrierInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PactAbilityPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.SwarmCombatPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostAttackPayload;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -72,6 +73,8 @@ public final class ClientGameEvents {
                     ? ParasiteInputPayload.START : ParasiteInputPayload.STOP));
             if (intrusionDown) {
                 PacketDistributor.sendToServer(PuppetTargetPayload.INSTANCE);
+                if (ParasiteTraitClientControls.isSwarm())
+                    PacketDistributor.sendToServer(new SwarmCombatPayload(SwarmCombatPayload.TARGET));
                 if (ParasiteTraitClientControls.isBarrier())
                     PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.PREVIEW_OR_PLACE));
                 if (ParasiteTraitClientControls.isPact())
@@ -110,6 +113,8 @@ public final class ClientGameEvents {
                 PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CYCLE_KIND));
             if (ParasiteTraitClientControls.isPact())
                 PacketDistributor.sendToServer(new PactAbilityPayload(0));
+            if (ParasiteTraitClientControls.isSwarm())
+                PacketDistributor.sendToServer(new SwarmCombatPayload(SwarmCombatPayload.RUSH));
         }
         if (ClassSelectionKeyMappings.MENTAL_SUGGESTION.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(1));
@@ -119,6 +124,8 @@ public final class ClientGameEvents {
                 PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CYCLE_SIZE));
             if (ParasiteTraitClientControls.isPact())
                 PacketDistributor.sendToServer(new PactAbilityPayload(1));
+            if (ParasiteTraitClientControls.isSwarm())
+                PacketDistributor.sendToServer(new SwarmCombatPayload(SwarmCombatPayload.SACRIFICE));
         }
         if (ClassSelectionKeyMappings.MENTAL_OVERLOAD.consumeClick()) {
             PacketDistributor.sendToServer(new MentalSpellPayload(2));

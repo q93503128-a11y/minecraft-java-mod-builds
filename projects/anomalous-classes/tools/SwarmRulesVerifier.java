@@ -29,6 +29,18 @@ public final class SwarmRulesVerifier {
         for (int tick = 131; tick <= 160; tick++) state.advance(tick * 10L, 16);
         state.verify();
         require(!state.saveTactic("bad", 101), "reject invalid ratio");
+        require(SwarmRules.sacrificeCost(0) == 0, "zero attack cannot sacrifice");
+        require(SwarmRules.sacrificeCost(1) == 1, "minimum sacrifice cost");
+        require(SwarmRules.sacrificeCost(16) == 4, "sacrifice based on attacking not total");
+        require(SwarmRules.sacrificeDamage(0, 1) == 0F, "no damage without paid organisms");
+        require(SwarmRules.rushDamage(0, 1) == 0F, "no attack when allocated zero");
+        require(state.cooldownRemaining(1, 1000) == 0, "fresh rush");
+        require(state.commitCooldown(1, 1000, 160), "first rush cast accepted");
+        require(state.cooldownRemaining(1, 1000) == 160, "rush cooldown starts");
+        require(!state.commitCooldown(1, 1001, 160), "same skill cannot spam");
+        require(state.commitCooldown(2, 1002, 240), "separate sacrifice cooldown");
+        require(state.cooldownRemaining(2, 1003) == 239, "sacrifice cooldown active");
+        require(state.commitCooldown(1, 1160, 160), "rush ready again");
         System.out.println("Swarm rules / conservation / user tactics VERIFIED");
     }
     private static void require(boolean ok, String name) {

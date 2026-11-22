@@ -28,6 +28,23 @@ public final class SwarmRules {
         return new Split(attack, available - attack, lift, regroup);
     }
 
+    /** Sacrifice is paid solely from physically deployed attack organisms. */
+    public static int sacrificeCost(int attackers) {
+        return attackers <= 0 ? 0 : Math.max(1, (attackers + 3) / 4);
+    }
+
+    public static float rushDamage(int attackers, int level) {
+        if (attackers <= 0) return 0F;
+        return (float) Math.min(34.0, 2.0 + Math.sqrt(attackers) * 1.25
+                + Math.min(2000, Math.max(1, level)) * .045);
+    }
+
+    public static float sacrificeDamage(int consumed, int level) {
+        if (consumed <= 0) return 0F;
+        return (float) Math.min(60.0, 2.0 + consumed * 2.35
+                + Math.min(2000, Math.max(1, level)) * .05);
+    }
+
     public static int casualties(float damage, int level, int available) {
         if (!(damage > 0.0F) || available <= 0) return 0;
         double resistance = 2.0 + Math.min(1000, Math.max(1, level)) * 0.025;

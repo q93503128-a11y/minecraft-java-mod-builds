@@ -362,3 +362,8 @@ tasks.register('verifySwarmRules', Exec) {
                 file('tools/SwarmRulesVerifier.java').absolutePath
     }
 }
+
+// This is a core server contract; package builds must execute its invariant verifier.
+tasks.named('check') {
+    dependsOn tasks.named('verifySwarmRules')
+}

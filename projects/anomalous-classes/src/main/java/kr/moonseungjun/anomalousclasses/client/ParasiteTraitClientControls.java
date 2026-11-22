@@ -12,6 +12,9 @@ public final class ParasiteTraitClientControls {
     private static boolean mode;
     private ParasiteTraitClientControls() {}
 
+    public static boolean isSwarm() {
+        return currentClassIndex == ClassId.SWARM_CASTER.networkIndex();
+    }
     public static boolean isPact() {
         return currentClassIndex == ClassId.PACT_CASTER.networkIndex();
     }

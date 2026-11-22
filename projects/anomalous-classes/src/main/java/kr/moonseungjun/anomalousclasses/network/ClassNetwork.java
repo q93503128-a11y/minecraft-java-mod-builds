@@ -41,6 +41,8 @@ import kr.moonseungjun.anomalousclasses.network.payload.BarrierInputPayload;
 import kr.moonseungjun.anomalousclasses.state.BarrierCasterService;
 import kr.moonseungjun.anomalousclasses.network.payload.PactAbilityPayload;
 import kr.moonseungjun.anomalousclasses.state.PactCombatService;
+import kr.moonseungjun.anomalousclasses.state.SwarmCasterService;
+import kr.moonseungjun.anomalousclasses.network.payload.SwarmCombatPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.bus.api.IEventBus;
@@ -114,6 +116,11 @@ public final class ClassNetwork {
         registrar.playToServer(PuppetTargetPayload.TYPE, PuppetTargetPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) PuppetService.designateTarget(player);
+                }));
+        registrar.playToServer(SwarmCombatPayload.TYPE, SwarmCombatPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        SwarmCasterService.input(player, payload.action());
                 }));
         registrar.playToServer(MentalSpellPayload.TYPE, MentalSpellPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

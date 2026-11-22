@@ -36,6 +36,8 @@ public final class SwarmSavedData extends SavedData {
         private int lift;
         private int regroup = 16;
         private long lastRegeneration = -1L;
+        private long nextRushTick;
+        private long nextSacrificeTick;
         private String active = "";
         private final LinkedHashMap<String, Integer> tactics = new LinkedHashMap<>();
 
@@ -46,6 +48,22 @@ public final class SwarmSavedData extends SavedData {
         public int regroup() { return regroup; }
         public String activeName() { return active; }
         public Map<String, Integer> tactics() { return Map.copyOf(tactics); }
+
+        public long cooldownRemaining(int ability, long now) {
+            long next = ability == 1 ? nextRushTick
+                    : ability == 2 ? nextSacrificeTick : 0L;
+            return Math.max(0L, next - now);
+        }
+
+        /** Called only after all server validation and actual ability acceptance. */
+        public boolean commitCooldown(int ability, long now, long duration) {
+            if (now < 0 || duration <= 0 || (ability != 1 && ability != 2)
+                    || cooldownRemaining(ability, now) > 0L) return false;
+            if (ability == 1) nextRushTick = now + duration;
+            else nextSacrificeTick = now + duration;
+            return true;
+        }
+
         public int count(SwarmNodeRole role) {
             return switch (role) {
                 case ATTACK -> attack;
@@ -156,6 +174,8 @@ public final class SwarmSavedData extends SavedData {
             tag.putInt("lift", lift);
             tag.putInt("regroup", regroup);
             tag.putLong("lastRegeneration", lastRegeneration);
+            tag.putLong("nextRushTick", nextRushTick);
+            tag.putLong("nextSacrificeTick", nextSacrificeTick);
             tag.putString("active", active);
             ListTag items = new ListTag();
             tactics.forEach((name, pct) -> {
@@ -176,6 +196,8 @@ public final class SwarmSavedData extends SavedData {
             state.lift = Math.max(0, tag.getInt("lift"));
             state.regroup = Math.max(0, tag.getInt("regroup"));
             state.lastRegeneration = tag.getLong("lastRegeneration");
+            state.nextRushTick = Math.max(0L, tag.getLong("nextRushTick"));
+            state.nextSacrificeTick = Math.max(0L, tag.getLong("nextSacrificeTick"));
             ListTag items = tag.getList("tactics", Tag.TAG_COMPOUND);
             for (int i = 0; i < items.size() && state.tactics.size() < 8; i++) {
                 CompoundTag entry = items.getCompound(i);

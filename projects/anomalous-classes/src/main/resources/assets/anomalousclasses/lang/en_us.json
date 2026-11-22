@@ -696,5 +696,15 @@
   "message.anomalousclasses.swarm.saved": "Saved and selected '%s' (attack %s%%).",
   "message.anomalousclasses.swarm.not_found": "Tactic '%s' was not found.",
   "message.anomalousclasses.swarm.selected": "Selected tactic '%s'.",
-  "message.anomalousclasses.swarm.deleted": "Deleted tactic '%s'."
+  "message.anomalousclasses.swarm.deleted": "Deleted tactic '%s'.",
+  "message.anomalousclasses.swarm.target_set": "Swarm priority target: %s",
+  "message.anomalousclasses.swarm.target_cleared": "Swarm priority target cleared.",
+  "message.anomalousclasses.swarm.rush_started": "Your attack swarm surges toward the target.",
+  "message.anomalousclasses.swarm.rush_landed": "Swarm Rush hits!",
+  "message.anomalousclasses.swarm.sacrifice_success": "Sacrificed %s organisms to strike.",
+  "message.anomalousclasses.swarm.no_attackers": "No attackers available. Check your tactic's attack ratio.",
+  "message.anomalousclasses.swarm.no_target": "No valid hostile target.",
+  "message.anomalousclasses.swarm.not_in_range": "Your attack swarm must reach the target first.",
+  "message.anomalousclasses.swarm.no_hit": "No damage dealt to the target.",
+  "message.anomalousclasses.swarm.cooldown": "Ready in %s seconds."
 }
