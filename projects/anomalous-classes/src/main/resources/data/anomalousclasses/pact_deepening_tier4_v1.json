@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "note": "Tier-four provisional story rites: proof earned through power combos, two threatening hostile victories (not just attacks), or real life recovery across distinct biomes. Initial rare entry relics are never demanded again.",
+  "elite_min_health": 70,
+  "entries": [
+    {
+      "id": "nahar",
+      "event": "rebirth_recorded_landed",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:amethyst_shard",
+              "count": 16
+            },
+            {
+              "item": "minecraft:obsidian",
+              "count": 16
+            }
+          ]
+        },
+        {
+          "event": "star_recorded_elite_victory",
+          "proofs": 2,
+          "offering": [
+            {
+              "item": "minecraft:crying_obsidian",
+              "count": 8
+            },
+            {
+              "item": "minecraft:ender_pearl",
+              "count": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rakiel",
+      "event": "oath_sword_after_guard",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:gold_ingot",
+              "count": 16
+            },
+            {
+              "item": "minecraft:glowstone_dust",
+              "count": 16
+            }
+          ]
+        },
+        {
+          "event": "oath_guarded_elite_victory",
+          "proofs": 2,
+          "offering": [
+            {
+              "item": "minecraft:gold_block",
+              "count": 3
+            },
+            {
+              "item": "minecraft:golden_apple",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ormas",
+      "event": "armored_continent_break",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:iron_block",
+              "count": 4
+            },
+            {
+              "item": "minecraft:obsidian",
+              "count": 24
+            }
+          ]
+        },
+        {
+          "event": "continent_warded_elite_victory",
+          "proofs": 2,
+          "offering": [
+            {
+              "item": "minecraft:diamond",
+              "count": 6
+            },
+            {
+              "item": "minecraft:tuff",
+              "count": 32
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "viar",
+      "event": "roots_to_real_healing",
+      "stages": [
+        {
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:moss_block",
+              "count": 16
+            },
+            {
+              "item": "minecraft:golden_carrot",
+              "count": 12
+            }
+          ]
+        },
+        {
+          "event": "renewal_in_distinct_biomes",
+          "proofs": 3,
+          "offering": [
+            {
+              "item": "minecraft:glistering_melon_slice",
+              "count": 16
+            },
+            {
+              "item": "minecraft:emerald",
+              "count": 12
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
