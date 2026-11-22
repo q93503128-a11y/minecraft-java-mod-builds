@@ -127,7 +127,10 @@ public final class SwarmFlightService {
             boolean savedDescent = player.getPersistentData().getBoolean(DESCENT);
             if (flight == null && (savedGrant || savedDescent)) {
                 // A crash or disconnect must never grant perpetual creative flight.
-                if (savedGrant) revokeFlight(player);
+                if (savedGrant) {
+                    revokeFlight(player);
+                    release(player);
+                }
                 if (!player.onGround() && player.isAlive() && !player.isCreative()
                         && !player.isSpectator()) {
                     flight = new Flight(Mode.DESCENDING, 0);
@@ -164,7 +167,12 @@ public final class SwarmFlightService {
                 }
                 continue;
             }
-            if (state.lift() < flight.required) {
+            if (!player.getAbilities().mayfly) {
+                end(player, true);
+                continue;
+            }
+            if (state.lift() < flight.required
+                    || !SwarmCasterService.physicallySupported(player)) {
                 if (++flight.lowLiftTicks >= 20) {
                     end(player, true);
                     say(player, "message.anomalousclasses.swarm.flight_insufficient");

@@ -85,6 +85,7 @@ public final class SwarmCasterService {
             RUSH_ORDERS.clear();
             activeServer = server;
         }
+        followLiftNodes(server);
         SwarmFlightService.tick(event);
         if (server.overworld().getGameTime() % 10 != 0) return;
         SwarmSavedData data = SwarmSavedData.get(server);
@@ -284,6 +285,36 @@ public final class SwarmCasterService {
         player.displayClientMessage(Component.translatable(key, args), true);
     }
 
+    /**
+     * Keep the collision-bearing lift unit at its real world-space location,
+     * instead of trailing by several blocks behind a fast-moving player.
+     * Collision can block its movement; there is no through-wall teleport.
+     */
+    private static void followLiftNodes(MinecraftServer server) {
+        for (var entry : NODES.entrySet()) {
+            var node = entry.getValue().get(SwarmNodeRole.LIFT);
+            if (node == null || node.isRemoved() || !node.isAlive()) continue;
+            ServerPlayer owner = server.getPlayerList().getPlayer(entry.getKey());
+            if (owner == null || !owner.isAlive() || owner.level() != node.level()
+                    || !isSwarm(owner)) continue;
+            Vec3 destination = owner.position().add(.35, .05, .45);
+            Vec3 path = destination.subtract(node.position());
+            double lengthSq = path.lengthSqr();
+            if (lengthSq > .0004 && lengthSq < 100.0)
+                node.move(MoverType.SELF, path.scale(Math.min(1.0, .58 / Math.sqrt(lengthSq))));
+        }
+    }
+
+    /** Support is a present and physically nearby living node, not just an NBT count. */
+    public static boolean physicallySupported(ServerPlayer player) {
+        var byRole = NODES.get(player.getUUID());
+        if (byRole == null) return false;
+        var node = byRole.get(SwarmNodeRole.LIFT);
+        return node != null && node.isAlive() && !node.isRemoved()
+                && node.level() == player.level() && node.distanceToSqr(player) < 9.0
+                && node.count() >= SwarmFlightService.liftRequired(player);
+    }
+
     private static Monster nearestHostile(ServerLevel world, ServerPlayer owner, double radius) {
         Monster closest = null;
         double nearest = radius * radius;
@@ -308,8 +339,8 @@ public final class SwarmCasterService {
             return;
         }
         if (node == null || node.isRemoved() || node.level() != player.level()
-                || node.distanceToSqr(player) >
-                    (role == SwarmNodeRole.ATTACK ? 64.0 * 64.0 : 32.0 * 32.0)) {
+                || (role != SwarmNodeRole.LIFT && node.distanceToSqr(player) >
+                    (role == SwarmNodeRole.ATTACK ? 64.0 * 64.0 : 32.0 * 32.0))) {
             if (node != null) node.discard();
             node = SwarmEntities.NODE.get().create(player.serverLevel());
             if (node == null) return;
@@ -372,7 +403,7 @@ public final class SwarmCasterService {
                 intended = intended.add(role == SwarmNodeRole.GUARD ? .7 : -.7, 0, .3);
             }
             Vec3 displacement = intended.subtract(node.position());
-            if (displacement.lengthSqr() > .01)
+            if (role != SwarmNodeRole.LIFT && displacement.lengthSqr() > .01)
                 node.move(MoverType.SELF, displacement.scale(Math.min(.9, .25 / Math.sqrt(displacement.lengthSqr()))));
             // No hidden preset is saved. Until the player writes a tactic, the
             // regrouping colony still fights back against an immediate attacker.
