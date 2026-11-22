@@ -18,14 +18,15 @@ import net.minecraft.world.entity.monster.Enemy;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 
 /**
- * Tier-one through tier-three voluntary deepening: distinct earned combat evidence,
- * separate offerings and explicit consent. Fourth-tier quests remain pending.
+ * Four tiers of voluntary deepening. Endgame second stages require genuine
+ * high-threat victories or diverse-biome survival, not recurring relic tolls.
  */
 public final class PactDeepeningService {
-    public record Stage(int proofs, List<PactCatalog.Material> offering) {
+    public record Stage(int proofs, List<PactCatalog.Material> offering,String event) {
         public Stage {
-            if (proofs < 1 || offering.isEmpty()) throw new IllegalArgumentException("Empty rite");
-            offering = List.copyOf(offering);
+            if (proofs < 1 || offering.isEmpty() || event==null || event.isBlank())
+                throw new IllegalArgumentException("Empty or unnamed rite");
+            offering=List.copyOf(offering);
         }
     }
     public record Rite(String patron, String event, List<Stage> stages) {
@@ -68,8 +69,9 @@ public final class PactDeepeningService {
         PactSavedData saved=PactSavedData.get(caster.getServer());
         PactSavedData.Bond bond=saved.player(caster.getUUID()).bond(patron);
         Rite rite=RITES.get(patron);
-        if (bond == null || rite == null || !rite.event().equals(event)) return;
+        if (bond == null || rite == null) return;
         Stage next=next(patron,bond.deepening());
+        if (next==null || !next.event().equals(event)) return;
         MinecraftServer server=caster.getServer();
         if (currentServer != server) { EVIDENCE.clear();currentServer=server; }
         long now=server.getTickCount();
@@ -96,7 +98,8 @@ public final class PactDeepeningService {
         loadTier(loaded,"pact_deepening_tier1_v1.json",1);
         loadTier(loaded,"pact_deepening_tier2_v1.json",2);
         loadTier(loaded,"pact_deepening_tier3_v1.json",3);
-        if(loaded.size()!=12)throw new IllegalStateException("Expected twelve active rites");
+        loadTier(loaded,"pact_deepening_tier4_v1.json",4);
+        if(loaded.size()!=16)throw new IllegalStateException("Expected sixteen active rites");
         return Map.copyOf(loaded);
     }
     private static void loadTier(Map<String,Rite> loaded,String resource,int tier) {
@@ -124,7 +127,9 @@ public final class PactDeepeningService {
                                 ResourceLocation.parse(material.get("item").getAsString()),
                                 material.get("count").getAsInt()));
                     }
-                    stages.add(new Stage(stage.get("proofs").getAsInt(),materials));
+                    String stageEvent=stage.has("event")
+                            ? stage.get("event").getAsString() : event;
+                    stages.add(new Stage(stage.get("proofs").getAsInt(),materials,stageEvent));
                 }
                 if(stages.size()!=2)
                     throw new IllegalStateException("Expected two playable rites: "+id);
