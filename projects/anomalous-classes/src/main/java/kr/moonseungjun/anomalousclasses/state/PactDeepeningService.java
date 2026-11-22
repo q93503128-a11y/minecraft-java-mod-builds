@@ -93,6 +93,30 @@ public final class PactDeepeningService {
             caster.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                     "message.anomalousclasses.pact.deepening_ready",PactCatalog.get(patron).name()),true);
     }
+    /** A biome counts only following valid damage AND actual rooted-combat healing.
+     * The server resolves biome IDs; no client-supplied exploration token.
+     */
+    public static void recordViarBiome(ServerPlayer caster,Mob hostile) {
+        if(caster.getServer()==null || !PactService.isPact(caster)
+                || hostile==null || !(hostile instanceof Enemy)
+                || hostile.level()!=caster.level() || hostile instanceof PuppetEntity
+                || caster.isAlliedTo(hostile)
+                || MentalDominatorSavedData.get(caster.getServer()).controlled(hostile.getUUID())!=null
+                || ParasiteSavedData.get(caster.getServer()).ownerOf(hostile.getUUID())!=null)return;
+        PactSavedData data=PactSavedData.get(caster.getServer());
+        PactSavedData.Bond bond=data.player(caster.getUUID()).bond("viar");
+        Stage stage=bond==null?null:next("viar",bond.deepening());
+        if(stage==null || !"renewal_in_distinct_biomes".equals(stage.event()))return;
+        var key=caster.serverLevel().getBiome(caster.blockPosition()).unwrapKey();
+        if(key.isEmpty())return;
+        if(!data.addViarBiomeProof(caster.getUUID(),key.get().location()))return;
+        data.relation(caster.getUUID(),"viar",1);
+        PactBlessingService.apply(caster);
+        if(data.player(caster.getUUID()).bond("viar").progress()==stage.proofs())
+            caster.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.anomalousclasses.pact.deepening_ready",
+                    PactCatalog.get("viar").name()),true);
+    }
     private static Map<String,Rite> load() {
         Map<String,Rite> loaded=new LinkedHashMap<>();
         loadTier(loaded,"pact_deepening_tier1_v1.json",1);
