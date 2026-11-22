@@ -55,6 +55,16 @@ public final class PactDeepeningService {
         Stage stage = next(patron,depth);
         return stage == null ? 0 : stage.proofs();
     }
+    /**
+     * Only the currently earned stage counts for rite proof. After the last
+     * stage, original legitimate ability use STILL contributes relationship.
+     */
+    public static boolean acceptsEvent(String patron,int depth,String event) {
+        Rite rite=RITES.get(patron);
+        if(rite==null || event==null || depth<0)return false;
+        Stage stage=next(patron,depth);
+        return (stage==null ? rite.event() : stage.event()).equals(event);
+    }
     public static void clear(ServerPlayer player) { EVIDENCE.remove(player.getUUID()); }
 
     /**
@@ -77,7 +87,7 @@ public final class PactDeepeningService {
         // Completed pacts still earn relationship through their original
         // genuine ability use; only NEW rite evidence is stage-restricted.
         // This preserves prior tier-one/two/three post-mastery progression.
-        if(next!=null ? !next.event().equals(event) : !rite.event().equals(event))return;
+        if(!acceptsEvent(patron,bond.deepening(),event))return;
         MinecraftServer server=caster.getServer();
         if (currentServer != server) { EVIDENCE.clear();currentServer=server; }
         long now=server.getTickCount();
