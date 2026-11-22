@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.LinkedHashSet;
 import net.minecraft.nbt.StringTag;
 import java.util.UUID;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -31,6 +32,7 @@ public final class PactSavedData extends SavedData {
         private final Set<UUID> nereaReconciliationThreats=new LinkedHashSet<>();
         private final Set<UUID> restitutionThreats = new LinkedHashSet<>();
         private final Set<UUID> faithfulDefenseThreats = new LinkedHashSet<>();
+        private final Set<ResourceLocation> viarSurvivalBiomes=new LinkedHashSet<>();
         Bond(String patronId, int relation, int deepening, int debt) {
             this(patronId,relation,deepening,debt,0);
         }
@@ -49,6 +51,9 @@ public final class PactSavedData extends SavedData {
         public boolean vowConflict() { return vowConflict; }
         public int restitution() { return restitutionThreats.size(); }
         public int unresolvedFaithCost() { return vowFaithDebt; }
+        public Set<ResourceLocation> viarSurvivalBiomes() {
+            return Set.copyOf(viarSurvivalBiomes);
+        }
         public boolean nereaSanctumBreach() { return nereaSanctumBreach; }
         public int nereaReconciliation() { return nereaReconciliationThreats.size(); }
         public int nereaAffinityDebt() { return nereaAffinityDebt; }
@@ -216,6 +221,21 @@ public final class PactSavedData extends SavedData {
         setDirty();
         return true;
     }
+    /**
+     * Only the real rooted-hit healing path can call this. Every qualifying
+     * biome is counted once across restarts; the rite itself is stage-locked.
+     */
+    public boolean addViarBiomeProof(UUID owner,ResourceLocation biome) {
+        Player p=player(owner);
+        Bond bond=p.bond("viar");
+        int required=PactDeepeningService.requirement("viar",1);
+        if(bond==null || biome==null || bond.deepening!=1 || required<1
+                || bond.progress>=required || !bond.viarSurvivalBiomes.add(biome)) return false;
+        bond.progress++;
+        p.revision++;
+        setDirty();
+        return true;
+    }
     /** The caller must check materials and consent on the server thread first. */
     public boolean deepen(UUID owner,String patron,int expectedDepth,int needed) {
         Player state=player(owner);
@@ -226,6 +246,7 @@ public final class PactSavedData extends SavedData {
             return false;
         bond.deepening++;
         bond.progress=0;
+        bond.viarSurvivalBiomes.clear();
         state.revision++;
         setDirty();
         return true;
@@ -281,6 +302,11 @@ public final class PactSavedData extends SavedData {
                         defended.add(evidence);
                     }
                     entry.put("faithfulDefenseThreats",defended);
+                }
+                if(b.patronId.equals("viar")) {
+                    ListTag biomes=new ListTag();
+                    b.viarSurvivalBiomes.forEach(biome->biomes.add(StringTag.valueOf(biome.toString())));
+                    entry.put("viarRiteBiomes",biomes);
                 }
                 if(b.patronId.equals("nerea")) {
                     entry.putBoolean("sanctumBreach",b.nereaSanctumBreach);
@@ -349,6 +375,16 @@ public final class PactSavedData extends SavedData {
                         if(evidence.hasUUID("threat"))
                             bond.faithfulDefenseThreats.add(evidence.getUUID("threat"));
                     }
+                }
+                if(id.equals("viar") && bond.deepening==1) {
+                    ListTag locations=item.getList("viarRiteBiomes",Tag.TAG_STRING);
+                    int cap=Math.max(0,PactDeepeningService.requirement("viar",1));
+                    for(int n=0;n<locations.size() && bond.viarSurvivalBiomes.size()<cap;n++) {
+                        ResourceLocation biome=ResourceLocation.tryParse(locations.getString(n));
+                        if(biome!=null)bond.viarSurvivalBiomes.add(biome);
+                    }
+                    // Do not generate proof from malformed NBT or infer from past visits.
+                    bond.progress=Math.min(bond.progress,bond.viarSurvivalBiomes.size());
                 }
                 if(id.equals("nerea")) {
                     bond.nereaSanctumBreach=item.getBoolean("sanctumBreach");
