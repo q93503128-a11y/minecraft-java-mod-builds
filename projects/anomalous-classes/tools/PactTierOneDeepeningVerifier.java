@@ -15,7 +15,7 @@ public final class PactTierOneDeepeningVerifier {
     public static void main(String[] args) throws Exception {
         var expected=List.of("isael","velkan","urgen","ridna");
         require(PactDeepeningService.all().keySet().containsAll(expected)
-                && PactDeepeningService.all().size()==12,
+                && PactDeepeningService.all().size()==16,
                 "Four distinct first-tier rites");
         var events=new java.util.HashSet<String>();
         for(String patron:expected) {
@@ -41,9 +41,10 @@ public final class PactTierOneDeepeningVerifier {
                             || i.itemId().getPath().equals("echo_shard")),
                     "No repeated endgame relics in common early rites");
         }
-        require(PactDeepeningService.rite("nahar")==null
-                && PactDeepeningService.next("rakiel",0)==null,
-                "Unapproved fourth-tier quest sets are not silently implemented");
+        require(PactDeepeningService.rite("nahar")!=null
+                && PactDeepeningService.next("rakiel",1)!=null
+                && PactDeepeningService.next("rakiel",2)==null,
+                "New fourth-tier quests stay separate from original first-tier rites");
         require(Math.abs(PactBlessingService.deepeningFactor(0)-1.0)<1e-9
                 && Math.abs(PactBlessingService.deepeningFactor(1)-1.12)<1e-9
                 && Math.abs(PactBlessingService.deepeningFactor(2)-1.25)<1e-9,
