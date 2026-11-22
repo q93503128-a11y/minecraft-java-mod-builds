@@ -228,6 +228,14 @@ public final class SwarmCasterService {
         int level = ClassProfileSavedData.get(player.getServer())
                 .profile(player.getUUID()).progress(ClassId.SWARM_CASTER).level();
         float damage = SwarmRules.sacrificeDamage(cost, level);
+        // Capture physically reachable secondary enemies before the first blow
+        // can kill or remove its primary target.
+        final Monster primary = target;
+        var secondary = player.serverLevel().getEntitiesOfClass(Monster.class,
+                target.getBoundingBox().inflate(2.0),
+                candidate -> candidate != primary && validEnemy(player, candidate)
+                        && node.distanceToSqr(candidate) < 10.0
+                        && node.getSensing().hasLineOfSight(candidate));
         if (!target.hurt(node.damageSources().mobAttack(node), damage)) {
             say(player, "message.anomalousclasses.swarm.no_hit");
             return;
@@ -239,17 +247,13 @@ public final class SwarmCasterService {
         if (lost != cost) throw new IllegalStateException("swarm sacrifice consumed mismatched units");
         node.setCount(state.attack());
         SwarmSavedData.get(player.getServer()).changed();
+        for (Monster nearby : secondary) {
+            if (nearby.isAlive()) nearby.hurt(node.damageSources().mobAttack(node), damage * .48F);
+        }
         if (state.attack() == 0) {
             node.discard();
             var nodes = NODES.get(player.getUUID());
             if (nodes != null) nodes.remove(SwarmNodeRole.ATTACK);
-        }
-        for (Monster nearby : player.serverLevel().getEntitiesOfClass(Monster.class,
-                target.getBoundingBox().inflate(2.0),
-                candidate -> candidate != target && validEnemy(player, candidate)
-                        && node.distanceToSqr(candidate) < 10.0
-                        && node.getSensing().hasLineOfSight(candidate))) {
-            nearby.hurt(node.damageSources().mobAttack(node), damage * .48F);
         }
         say(player, "message.anomalousclasses.swarm.sacrifice_success", cost);
     }
