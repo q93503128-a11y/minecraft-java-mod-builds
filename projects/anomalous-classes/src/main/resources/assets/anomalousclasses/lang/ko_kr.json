@@ -672,5 +672,21 @@
   "pact_deepening_reward.anomalousclasses.taron.1": "계약 가호 증가분 +8%, 왕의 석갑 내구·유지시간 및 분쇄 밀침 강화.",
   "pact_deepening_reward.anomalousclasses.taron.2": "계약 가호 증가분 +18%, 석갑이 적의 공격으로 깨진 직후 짧은 시간 안에 산맥 분쇄로 강력한 반격 가능.",
   "pact_deepening_reward.anomalousclasses.arken.1": "계약 가호 증가분 +8%, 기록한 공격 유형의 대응·재현 효과와 집중 유지시간 강화.",
-  "pact_deepening_reward.anomalousclasses.arken.2": "계약 가호 증가분 +18%, 서로 다른 실제 관측 공격 유형을 연속 재현하면 한 번의 추가 기록 타격."
+  "pact_deepening_reward.anomalousclasses.arken.2": "계약 가호 증가분 +18%, 서로 다른 실제 관측 공격 유형을 연속 재현하면 한 번의 추가 기록 타격.",
+  "pact_deepening_goal.anomalousclasses.nahar.1": "적대자에게 무기로 실전 피해를 기록하고, 기억이 남아 있는 동안 검은 별의 재림을 실제 적에게 3회 적중시키세요.",
+  "pact_deepening_goal.anomalousclasses.nahar.2": "최근 공격을 기록한 뒤 검은 별의 재림으로 위협적인 강적(최대 체력 70 이상)을 타격하고 직접 처치하세요. 서로 다른 강적을 2회 격파해야 합니다.",
+  "pact_deepening_goal.anomalousclasses.rakiel.1": "적대자의 실제 공격을 견뎌 수호의 기운이 남아 있을 때 첫 서약의 검으로 적에게 3회 적중시키세요.",
+  "pact_deepening_goal.anomalousclasses.rakiel.2": "적대자의 공격을 견딘 직후 첫 서약의 검으로 강적(최대 체력 70 이상)을 타격하고 직접 처치하세요. 서로 다른 강적 2회를 증명하세요.",
+  "pact_deepening_goal.anomalousclasses.ormas.1": "대륙의 피부를 두른 상태에서 대륙 분쇄를 실제 적대자에게 3회 성공시키세요.",
+  "pact_deepening_goal.anomalousclasses.ormas.2": "대륙의 피부로 적대자의 실제 피해 16 이상을 막은 뒤 대륙 분쇄로 강적(최대 체력 70 이상)을 타격하고 직접 처치하세요. 강적 2회가 필요합니다.",
+  "pact_deepening_goal.anomalousclasses.viar.1": "첫 뿌리로 적대자를 붙잡은 뒤 그 적에게 실제 피해를 주어 상처 입은 자신의 체력을 회복하세요. 유효한 연계를 3회 수행하세요.",
+  "pact_deepening_goal.anomalousclasses.viar.2": "서로 다른 생물군계 3곳에서 뿌리 적중 후 유효 적에게 피해를 주어 실제 체력을 회복하세요. 같은 생물군계는 다시 인정되지 않습니다.",
+  "pact_deepening_reward.anomalousclasses.nahar.1": "계약 가호 증가분 +8%, 흑성의 전투 기억 지속·재림 도달 범위·기록 후 추가 타격이 강화됩니다.",
+  "pact_deepening_reward.anomalousclasses.nahar.2": "계약 가호 증가분 +20%, 기억을 재림에 성공적으로 소모하면 짧은 별의 수호가 발동하고 추가 타격이 강화됩니다.",
+  "pact_deepening_reward.anomalousclasses.rakiel.1": "계약 가호 증가분 +8%, 첫 서약의 검 범위·피격 후 수호 유지시간과 연쇄 공격이 강화됩니다.",
+  "pact_deepening_reward.anomalousclasses.rakiel.2": "계약 가호 증가분 +20%, 첫 서약의 검 범위 및 수호·연쇄 공격 추가 강화, 운명의 거부가 성공하면 회복 체력 비율이 증가합니다. 기존 금 블록 소비는 유지됩니다.",
+  "pact_deepening_reward.anomalousclasses.ormas.1": "계약 가호 증가분 +8%, 대륙의 피부 내구·지속시간과 분쇄 밀침이 강화됩니다.",
+  "pact_deepening_reward.anomalousclasses.ormas.2": "계약 가호 증가분 +20%, 피부로 실제 공격을 흡수한 뒤 분쇄하는 고위 연계 타격의 위력이 강화됩니다.",
+  "pact_deepening_reward.anomalousclasses.viar.1": "계약 가호 증가분 +8%, 첫 뿌리 범위·속박 시간·실전 피해 회복량이 늘어납니다.",
+  "pact_deepening_reward.anomalousclasses.viar.2": "계약 가호 증가분 +20%, 첫 뿌리와 제한 회복이 추가 강화되어 여러 지형의 장기 전투에 적응합니다."
 }
