@@ -1,7 +1,6 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import java.util.HashMap;
-import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
@@ -29,7 +28,7 @@ public final class PactTierFourCombatService {
     private static final Map<UUID, Battle> LIVE = new HashMap<>();
     private static final long FIVE_SECONDS = 100L;
     /** Provisional strong-foe baseline. Bosses and >=70 HP hostiles qualify. */
-    private static final double ELITE_MIN_HEALTH = 70.0;
+    private static final double ELITE_MIN_HEALTH = PactDeepeningService.eliteMinHealth();
     private static final long FATE_COOLDOWN_MS = 180_000L;
 
     private static final class Battle {
