@@ -90,6 +90,20 @@ public final class PactTierFourDeepeningVerifier {
                     && Math.abs(PactBlessingService.deepeningFactor(patron,2)-1.20)<1e-8,
                     "All buffs scale only the fourth-tier borrowed increase: "+id);
         }
+        // A newly completed covenant must still gain relationship from
+        // legitimate default ability use, while stage-one events cannot
+        // accidentally complete a different stage-two rite.
+        require(PactDeepeningService.acceptsEvent("nahar",0,"rebirth_recorded_landed")
+                && !PactDeepeningService.acceptsEvent("nahar",0,"star_recorded_elite_victory")
+                && PactDeepeningService.acceptsEvent("nahar",1,"star_recorded_elite_victory")
+                && !PactDeepeningService.acceptsEvent("nahar",1,"rebirth_recorded_landed")
+                && PactDeepeningService.acceptsEvent("nahar",2,"rebirth_recorded_landed")
+                && !PactDeepeningService.acceptsEvent("nahar",2,"star_recorded_elite_victory"),
+                "Stage-specific events and endgame patron trust do not regress");
+        require(PactDeepeningService.acceptsEvent("karda",2,"storm_slam_after_leap")
+                && PactDeepeningService.acceptsEvent("sevenwing",2,"marked_verdict_landed")
+                && !PactDeepeningService.acceptsEvent("viar",1,"roots_to_real_healing"),
+                "Completed lower-tier relationships still earn, unlike incomplete tier-four phase-two evidence");
         require(PactDeepeningService.next("viar",1).event()
                     .equals("renewal_in_distinct_biomes")
                 && PactDeepeningService.next("ormas",1).event()
