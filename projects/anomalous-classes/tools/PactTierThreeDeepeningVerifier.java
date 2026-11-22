@@ -55,8 +55,8 @@ public final class PactTierThreeDeepeningVerifier {
                 "merzad","crowned_flame_chain",
                 "taron","armored_mountain_sunder",
                 "arken","observed_record_reprise");
-        require(PactDeepeningService.all().size()==12,
-                "Four unique rites per each of the first three tiers");
+        require(PactDeepeningService.all().size()==16,
+                "Four unique rites per each of the four tiers");
         Set<String> distinct=new HashSet<>();
         for(String id:patrons) {
             PactCatalog.Patron patron=PactCatalog.get(id);
@@ -85,11 +85,11 @@ public final class PactTierThreeDeepeningVerifier {
                     && Math.abs(PactBlessingService.deepeningFactor(patron,2)-1.18)<1e-9,
                     "Tier-three specific borrowed grace bonus: "+id);
         }
-        require(PactDeepeningService.rite("nahar")==null
-                && PactDeepeningService.rite("rakiel")==null
-                && PactDeepeningService.rite("ormas")==null
-                && PactDeepeningService.rite("viar")==null,
-                "Fourth-tier manifestation and unapproved quest details remain separate");
+        require(PactDeepeningService.rite("nahar")!=null
+                && PactDeepeningService.rite("rakiel")!=null
+                && PactDeepeningService.rite("ormas")!=null
+                && PactDeepeningService.rite("viar")!=null,
+                "Fourth-tier earned quests are active; special manifestations remain separate");
         require(Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("isael"),1)-1.12)<1e-9
                 && Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("nerea"),2)-1.22)<1e-9,
                 "Earlier tier progression unchanged");
