@@ -284,6 +284,34 @@ public final class PactTierFourCombatService {
             s.rootCombatUntil=now+140;
         }
     }
+    /**
+     * Stage-two high-threat conquest: actual hostile death with this caster as
+     * the attributed attacker AND a recent successful themed spell strike.
+     * Ordinary monster deaths, owned/controlled targets and idle XP farms
+     * cannot grant a conquest. Direct magic finishing blows also qualify.
+     */
+    private static void onEliteDeath(LivingDeathEvent event,Mob hostile) {
+        if(!(event.getSource().getEntity() instanceof ServerPlayer owner)
+                || owner.getServer()==null || !PactService.isPact(owner)
+                || hostile.level()!=owner.level() || !(hostile instanceof Enemy)
+                || hostile.getMaxHealth()<ELITE_MIN_HEALTH
+                || hostile instanceof PuppetEntity
+                || owner.isAlliedTo(hostile)
+                || hostile.getPersistentData().getBoolean("anomalousclasses_trial_guardian")
+                || MentalDominatorSavedData.get(owner.getServer()).controlled(hostile.getUUID())!=null
+                || ParasiteSavedData.get(owner.getServer()).ownerOf(hostile.getUUID())!=null)return;
+        Battle battle=state(owner);
+        long time=tick(owner);
+        Long star=battle.starFoes.remove(hostile.getUUID());
+        if(star!=null && star>=time && has(owner,"nahar"))
+            PactDeepeningService.record(owner,"nahar","star_recorded_elite_victory",hostile);
+        Long oath=battle.oathFoes.remove(hostile.getUUID());
+        if(oath!=null && oath>=time && has(owner,"rakiel"))
+            PactDeepeningService.record(owner,"rakiel","oath_guarded_elite_victory",hostile);
+        Long stone=battle.continentFoes.remove(hostile.getUUID());
+        if(stone!=null && stone>=time && has(owner,"ormas"))
+            PactDeepeningService.record(owner,"ormas","continent_warded_elite_victory",hostile);
+    }
     private static boolean contractedAtDeath(ServerPlayer victim,String patron) {
         // Player#isAlive is false after fatal damage; PactService.isPact must
         // never be used as the identity check inside LivingDeathEvent.
@@ -298,7 +326,12 @@ public final class PactTierFourCombatService {
      * two gold blocks and persists its cooldown before cancelling one death.
      */
     public static void onDeath(LivingDeathEvent event) {
-        if(!(event.getEntity() instanceof ServerPlayer victim) || event.isCanceled()
+        if(event.isCanceled())return;
+        if(event.getEntity() instanceof Mob foe) {
+            onEliteDeath(event,foe);
+            return;
+        }
+        if(!(event.getEntity() instanceof ServerPlayer victim)
                 || !contractedAtDeath(victim,"rakiel"))return;
         PactSavedData saved=PactSavedData.get(victim.getServer());
         long now=System.currentTimeMillis();
