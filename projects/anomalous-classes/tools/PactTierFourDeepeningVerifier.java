@@ -57,6 +57,8 @@ public final class PactTierFourDeepeningVerifier {
         localized(ids);
         require(PactDeepeningService.all().size()==16,
                 "All sixteen pact identities have voluntary rite definitions");
+        require(Math.abs(PactDeepeningService.eliteMinHealth()-70.0)<1e-8,
+                "Strong hostile milestone threshold matches versioned quest data");
         Set<String> events=new HashSet<>();
         for(String id:ids) {
             PactCatalog.Patron patron=PactCatalog.get(id);
