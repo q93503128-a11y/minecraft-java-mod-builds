@@ -14,4 +14,6 @@
 - 실제 운반군 리깅/애니메이션, HUD, 전술휠/관리 UI는 Codex 디자인 단계로 유지한다.
 - 외부 안티치트/엘리트라/서버 지연/멀티플레이의 실제 이동 일치성은 미검증이다.
 
-상태: CODE AUTHORED. BUILD PENDING. PLAYTESTED / MULTIPLAYER TESTED: NO.
+상태: CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED — GitHub Actions #45018666549, 최종 코드 commit fa4df42d1fb367a04643bb5d645b68028c78157b. verifySwarmRules PASS; JAR package verification PASS. 실제 클라이언트 비행/서버 이동 처리·외부 안티치트·멀티플레이는 NOT TESTED.
+
+첫 CI #45018425679는 재증식 후 테스트 수량을 과거 수량으로 비교한 잘못된 단언으로 실패. 테스트를 수정한 #45018480787과 운반군 실제 위치 추적/물리 지원 검사를 추가한 최종 #45018666549에서 성공. 숫자 계산과 검증 이력을 본문에 구분해 보존.
