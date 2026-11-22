@@ -86,54 +86,99 @@ public final class PactTierFourCombatService {
         switch(spell) {
             case "black_star_rebirth" -> {
                 Vec3 eye=player.getEyePosition(),look=player.getLookAngle();
-                int landed=0;
+                int stage=depth(player,"nahar"),landed=0;
                 boolean recorded=s.starRecordUntil>now;
-                for(Mob mob:PactCombatService.cone(player,18,.75,24)) {
+                Mob first=null;
+                for(Mob mob:PactCombatService.cone(player,18+stage,.75,24)) {
                     Vec3 offset=mob.getEyePosition().subtract(eye);
                     double forward=offset.dot(look);
-                    if(forward<=0 || forward>18 || offset.subtract(look.scale(forward)).lengthSqr()>25)continue;
+                    if(forward<=0 || forward>18+stage
+                            || offset.subtract(look.scale(forward)).lengthSqr()>25)continue;
+                    boolean elite=stage>=1 && recorded && strongEnemy(player,mob);
+                    if(elite)mark(s.starFoes,mob.getUUID(),now+240);
                     if(impact(player,"nahar",mob,65)) {
                         landed++;
-                        if(recorded)impact(player,"nahar",mob,16.25);
-                    }
+                        if(first==null)first=mob;
+                        if(recorded && mob.isAlive())
+                            impact(player,"nahar",mob,16.25+5*stage);
+                    } else if(elite) s.starFoes.remove(mob.getUUID());
                 }
                 if(landed==0){hint(player,"no_target");return false;}
-                if(recorded)s.starRecordUntil=0;
+                if(recorded && first!=null)
+                    PactDeepeningService.record(player,"nahar","rebirth_recorded_landed",first);
+                if(recorded) {
+                    s.starRecordUntil=0;
+                    if(stage>=2)s.starGuardUntil=Math.max(s.starGuardUntil,now+80);
+                }
                 return true;
             }
             case "first_oath_sword" -> {
-                var targets=PactCombatService.cone(player,9,.74,18);
+                int stage=depth(player,"rakiel");
+                var targets=PactCombatService.cone(player,9+stage,.74,18);
+                boolean guarded=s.oathGuardUntil>now;
                 int landed=0;
-                for(Mob enemy:targets)if(impact(player,"rakiel",enemy,52))landed++;
+                Mob first=null,extra=null;
+                for(Mob enemy:targets) {
+                    boolean elite=stage>=1 && guarded && strongEnemy(player,enemy);
+                    if(elite)mark(s.oathFoes,enemy.getUUID(),now+240);
+                    if(impact(player,"rakiel",enemy,52)) {
+                        landed++;
+                        if(first==null)first=enemy;
+                        else if(extra==null)extra=enemy;
+                    } else if(elite)s.oathFoes.remove(enemy.getUUID());
+                }
                 if(landed==0){hint(player,"no_target");return false;}
-                if(landed>1)impact(player,"rakiel",targets.get(1),10);
+                if(guarded && first!=null) {
+                    PactDeepeningService.record(player,"rakiel","oath_sword_after_guard",first);
+                    if(stage>=2)s.oathGuardUntil=Math.max(s.oathGuardUntil,now+80);
+                }
+                if(landed>1 && extra!=null && extra.isAlive())
+                    impact(player,"rakiel",extra,10+3*stage);
                 return true;
             }
             case "continent_skin" -> {
                 var bond=PactSavedData.get(player.getServer()).player(player.getUUID()).bond("ormas");
                 var profile=ClassProfileSavedData.get(player.getServer()).profile(player.getUUID());
+                int stage=depth(player,"ormas");
                 s.continentIntegrity=55*PactBlessingService.relationFactor(bond.relation())
-                        *PactBlessingService.focusFactor(profile);
-                s.continentUntil=now+200;
+                        *PactBlessingService.focusFactor(profile)
+                        *PactBlessingService.deepeningFactor(patron,stage);
+                s.continentUntil=now+200+20L*stage;
+                s.continentAbsorbed=0;
                 return true;
             }
             case "continent_break" -> {
+                int stage=depth(player,"ormas");
+                boolean armored=s.continentUntil>now && s.continentIntegrity>0;
+                boolean tested=s.continentAbsorbed>=16 && armored;
                 int landed=0;
+                Mob first=null;
                 for(Mob enemy:PactCombatService.cone(player,8,.56,24)) {
-                    if(impact(player,"ormas",enemy,60)) {
+                    boolean elite=stage>=1 && tested && strongEnemy(player,enemy);
+                    if(elite)mark(s.continentFoes,enemy.getUUID(),now+240);
+                    if(impact(player,"ormas",enemy,60*(tested && stage>=2?1.25:1.0))) {
                         landed++;
-                        enemy.knockback(.45,player.getX()-enemy.getX(),player.getZ()-enemy.getZ());
-                    }
+                        if(first==null)first=enemy;
+                        if(enemy.isAlive())enemy.knockback(.45+.05*stage,
+                                player.getX()-enemy.getX(),player.getZ()-enemy.getZ());
+                    } else if(elite)s.continentFoes.remove(enemy.getUUID());
                 }
-                if(landed==0)hint(player,"no_target");
-                return landed>0;
+                if(landed==0){hint(player,"no_target");return false;}
+                if(armored && first!=null)
+                    PactDeepeningService.record(player,"ormas","armored_continent_break",first);
+                if(tested && stage>=2)s.continentAbsorbed=0;
+                return true;
             }
             case "first_root" -> {
-                int landed=0;
-                for(Mob enemy:PactCombatService.cone(player,11,.73,24)) {
+                int stage=depth(player,"viar"),landed=0;
+                for(Mob enemy:PactCombatService.cone(player,11+stage,.73,24)) {
                     if(impact(player,"viar",enemy,54)) {
                         landed++;
-                        enemy.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,30,1));
+                        if(enemy.isAlive()) {
+                            mark(s.rootedFoes,enemy.getUUID(),now+160);
+                            enemy.addEffect(new MobEffectInstance(
+                                    MobEffects.MOVEMENT_SLOWDOWN,30+15*stage,1));
+                        }
                     }
                 }
                 if(landed==0)hint(player,"no_target");
