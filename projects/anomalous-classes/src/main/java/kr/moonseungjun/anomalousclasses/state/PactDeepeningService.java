@@ -32,6 +32,7 @@ public final class PactDeepeningService {
     public record Rite(String patron, String event, List<Stage> stages) {
         public Rite { stages = List.copyOf(stages); }
     }
+    private static double eliteMinHealth=70.0;
     private static final Map<String, Rite> RITES = load();
     private static MinecraftServer currentServer;
     private static final Map<UUID, Map<String, Evidence>> EVIDENCE = new HashMap<>();
@@ -42,6 +43,8 @@ public final class PactDeepeningService {
     private PactDeepeningService() {}
 
     public static Map<String, Rite> all() { return RITES; }
+    /** Data-defined health threshold; boss kill also needs player damage attribution. */
+    public static double eliteMinHealth() { return eliteMinHealth; }
     public static Rite rite(String patron) { return RITES.get(patron); }
     public static Stage next(String patron, int depth) {
         Rite rite = RITES.get(patron);
@@ -132,6 +135,12 @@ public final class PactDeepeningService {
             if (stream==null)throw new IllegalStateException("Missing rite resource: "+resource);
             JsonObject root=JsonParser.parseReader(
                     new InputStreamReader(stream,StandardCharsets.UTF_8)).getAsJsonObject();
+            if(tier==4) {
+                double threshold=root.get("elite_min_health").getAsDouble();
+                if(!Double.isFinite(threshold) || threshold<40 || threshold>1000)
+                    throw new IllegalStateException("Invalid endgame strong-foe threshold");
+                eliteMinHealth=threshold;
+            }
             int count=0;
             for(JsonElement element:root.getAsJsonArray("entries")) {
                 JsonObject row=element.getAsJsonObject();
