@@ -1,6 +1,7 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
@@ -11,6 +12,8 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
+import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -25,6 +28,8 @@ public final class PactTierFourCombatService {
     private static MinecraftServer context;
     private static final Map<UUID, Battle> LIVE = new HashMap<>();
     private static final long FIVE_SECONDS = 100L;
+    /** Provisional strong-foe baseline. Bosses and >=70 HP hostiles qualify. */
+    private static final double ELITE_MIN_HEALTH = 70.0;
     private static final long FATE_COOLDOWN_MS = 180_000L;
 
     private static final class Battle {
@@ -33,6 +38,11 @@ public final class PactTierFourCombatService {
         long continentUntil, quakeReady;
         double continentIntegrity;
         long rootCounterReady, rootRegenAt, rootCombatUntil, rootHealWindow;
+        double continentAbsorbed;
+        final Map<UUID,Long> starFoes=new HashMap<>();
+        final Map<UUID,Long> oathFoes=new HashMap<>();
+        final Map<UUID,Long> continentFoes=new HashMap<>();
+        final Map<UUID,Long> rootedFoes=new HashMap<>();
         float rootHealed;
     }
     private PactTierFourCombatService() {}
@@ -42,6 +52,21 @@ public final class PactTierFourCombatService {
     }
     public static void clear(ServerPlayer player) {LIVE.remove(player.getUUID());}
     private static long tick(ServerPlayer player) {return player.getServer().getTickCount();}
+    private static int depth(ServerPlayer player,String patron) {
+        PactSavedData.Bond bond=PactSavedData.get(player.getServer())
+                .player(player.getUUID()).bond(patron);
+        return bond==null?0:bond.deepening();
+    }
+    private static boolean strongEnemy(ServerPlayer owner,Mob target) {
+        return target.getMaxHealth()>=ELITE_MIN_HEALTH && target(owner,target);
+    }
+    private static void mark(Map<UUID,Long> observed,UUID target,long expiry) {
+        if(observed.size()>=64) {
+            observed.entrySet().removeIf(e->e.getValue()<=expiry-240);
+            if(observed.size()>=64)observed.clear();
+        }
+        observed.put(target,expiry);
+    }
     private static boolean has(ServerPlayer player,String patron) {
         return PactService.isPact(player) &&
                 PactSavedData.get(player.getServer()).player(player.getUUID()).has(patron);
