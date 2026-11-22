@@ -74,7 +74,10 @@ public final class PactDeepeningService {
         Rite rite=RITES.get(patron);
         if (bond == null || rite == null) return;
         Stage next=next(patron,bond.deepening());
-        if (next==null || !next.event().equals(event)) return;
+        // Completed pacts still earn relationship through their original
+        // genuine ability use; only NEW rite evidence is stage-restricted.
+        // This preserves prior tier-one/two/three post-mastery progression.
+        if(next!=null ? !next.event().equals(event) : !rite.event().equals(event))return;
         MinecraftServer server=caster.getServer();
         if (currentServer != server) { EVIDENCE.clear();currentServer=server; }
         long now=server.getTickCount();
