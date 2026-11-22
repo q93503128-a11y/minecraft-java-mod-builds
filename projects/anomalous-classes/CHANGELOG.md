@@ -1,5 +1,13 @@
 # Changelog
 
+## Fourth-tier milestone covenants — 2026-11-22
+
+- Enabled four final-tier, separate-stage earned pact rites. Stage one rewards legitimate combat combos; stage two requires Nahar/Rakiel/Ormas high-health hostile victories attributed to the player after their patron-specific power or Viar's actual rooted-hit healing across three distinct biomes.
+- Kept initial guardian trials separate from deepening; introduced data-defined elite HP threshold, one-time accessible materials without repeating Nether Stars/Echo Shards/Netherite, server NBT biome proof, and bounded short-lived strong-foe contribution records.
+- Enhanced endgame power loops (recorded star echoes, oath guard and Fate Refusal recovery, continental armor absorption to shock, limited rooted combat healing). Applied fourth-tier 1.00/1.08/1.20 multipliers to borrowed graces and powers, preserving existing tier factors and multi-contract softness.
+- Added bilingual stage-specific goals and explicit costs, NBT and anti-repeat verifier, updated lower-tier regressions; no periodic upkeep or automated manifestation. Numbers and enemy threshold are trial balances, and gameplay/multiplayer/art remain unverified.
+
+
 ## Third-tier earned covenant deepening — 2026-11-20
 
 - Added four distinct third-tier rites earned from marked Final Verdict, royal fire chains, active Stone Armor to Mountain Sunder, and actual observation to Record Reprise.
