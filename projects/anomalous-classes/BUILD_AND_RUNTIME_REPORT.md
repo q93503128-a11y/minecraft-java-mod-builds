@@ -1,5 +1,17 @@
 # Build and Runtime Report
 
+## 2026-11-22 — 제4위계 나하르·라키엘·오르마스·비아르 성취형 심화
+
+- **검증된 코드 SHA:** [`278a5ad`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/278a5ad9875c3957e749b9246f099e96eb2eeb1d). 각 4위계 계약자의 1차 실제 권능 연계·2차 실제 강적 처치/세 생물군계 뿌리+회복 성취. 서버 이벤트에서 유효 적대 대상·실제 막타의 출처를 확인, 비아르 바이옴 NBT는 구형 월드에 추가 가능. 최초 계약의 초희귀 소재를 심화 때 반복 요구하지 않고 서버 동의/제물 비용·심화 진행도 별도 유지.
+- **관계 회귀 방지:** 1~4위계 모두 2차 심화를 끝낸 뒤에도 합법적인 기술 행동으로 해당 계약 관계를 개선할 수 있으며, 완료된 심화 증명·제물은 반복 수령할 수 없다. `acceptsEvent`에 대한 신규 전수 단계 회귀를 포함.
+- **BUILD VERIFIED / JAR PRODUCED:** [GitHub Actions #44970995262](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44970995262) **SUCCESS**. Java21 `clean build`, Gradle checks, 기존 16종 계약·제단·1/2/3위계 심화·금기/채무 검증 PASS, 신규 `verifyPactTierFourDeepening` PASS, JAR 구조·SHA-256·artifacts 업로드 완료.
+- **신규 검증 출력:** `Four earned fourth-tier quests, strong-hostile conquest phases, distinct-biome NBT, legacy stages, payments, multi-bond isolation and no replay: PASS`.
+- **JAR:** `build/libs/anomalous-classes-0.1.0-alpha.1.jar`, **32,265,696 bytes, 241 classes**. [JAR 및 SHA-256](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44970995262/artifacts/14733995836) · [전체 빌드 로그](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44970995262/artifacts/14733303620).
+- **현재 완료/미완료 구분:** CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED. 실제 Minecraft **CLIENT / PLAYTESTED / MULTIPLAYER: NOT TESTED**. 서버 이벤트의 실전 순서, 강적 HP 기준 70·2마리, 비아르 3바이옴, 1/1.08/1.20 보상은 **시험/조정 수치**. 아트·3D/애니메이션/VFX/사운드·최종 계약 GUI·4위계 특별 현현/나머지 금기 면책은 별도.
+- **정본:** [4위계 성취형 심화 체크포인트](./PACT_TIER4_EARNED_DEEPENING_CHECKPOINT_2026-11-22.md). 게임 코드 SHA 이후 [skip ci] 문서 전용 변경.
+
+---
+
 ## 2026-11-20 — 계약술사 3위계 4종 실제 전투 성취 심화
 
 - **검증 코드:** [`00960d0`](https://github.com/q93503128-a11y/minecraft-java-mod-builds/commit/00960d0cfa55f8346b5bf449ea6aeeddd3182071). 칠익의 재판관·메르자드·타론·아르켄의 기존 대표 권능 실제 명중/방호/관측 상태에서 2회 선택적 심화 가능. 3위계 가호 및 공격 권능에 1.00/1.08/1.18 증가분, 별개 전투 동작(표식 판결 후 수호·화염 연쇄·석갑 파괴 뒤 분쇄·서로 다른 공격 유형 재현). 최초 고유 수호자 시련/3위계 제단 체결 조건은 그대로.
