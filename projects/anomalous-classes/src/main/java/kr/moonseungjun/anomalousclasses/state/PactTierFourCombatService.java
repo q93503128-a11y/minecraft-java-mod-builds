@@ -201,6 +201,9 @@ public final class PactTierFourCombatService {
                     float blocked=(float)Math.min(damage,s.continentIntegrity);
                     s.continentIntegrity-=blocked;
                     damage-=blocked;
+                    if(blocked>0 && event.getSource().getEntity() instanceof Mob foe
+                            && target(victim,foe))
+                        s.continentAbsorbed=Math.min(80,s.continentAbsorbed+blocked);
                 }
             }
             event.setNewDamage(Math.max(0,damage));
@@ -221,10 +224,12 @@ public final class PactTierFourCombatService {
             Battle s=state(victim);
             long now=tick(victim);
             if(has(victim,"nahar") && now>=s.starGuardReady) {
-                s.starGuardReady=now+320;s.starGuardUntil=now+80;
+                s.starGuardReady=now+320;
+                s.starGuardUntil=now+80+20L*depth(victim,"nahar");
             }
             if(has(victim,"rakiel") && now>=s.oathGuardReady) {
-                s.oathGuardReady=now+320;s.oathGuardUntil=now+60;
+                s.oathGuardReady=now+320;
+                s.oathGuardUntil=now+60+20L*depth(victim,"rakiel");
             }
             if(has(victim,"viar") && now>=s.rootCounterReady) {
                 s.rootCounterReady=now+200;
@@ -238,7 +243,7 @@ public final class PactTierFourCombatService {
         LivingEntity enemy=event.getEntity();
         boolean weapon=event.getSource().is(DamageTypes.PLAYER_ATTACK);
         if(weapon && has(owner,"nahar")) {
-            s.starRecordUntil=now+400;
+            s.starRecordUntil=now+400+80L*depth(owner,"nahar");
             if(now>=s.starEchoReady && enemy instanceof Mob mob) {
                 s.starEchoReady=now+80;
                 impact(owner,"nahar",mob,6);
@@ -260,11 +265,21 @@ public final class PactTierFourCombatService {
             if(now>=s.rootHealWindow+FIVE_SECONDS || s.rootHealWindow==0) {
                 s.rootHealWindow=now;s.rootHealed=0;
             }
-            float allowed=Math.max(0,7-s.rootHealed);
-            float gained=Math.min(allowed,event.getNewDamage()*.12F);
+            int stage=depth(owner,"viar");
+            float allowed=Math.max(0,(7+2*stage)-s.rootHealed);
+            float gained=Math.min(allowed,event.getNewDamage()*(.12F+.02F*stage));
             if(gained>0 && owner.getHealth()<owner.getMaxHealth()) {
                 float actual=Math.min(gained,owner.getMaxHealth()-owner.getHealth());
                 owner.heal(actual);s.rootHealed+=actual;
+                Long rootedUntil=s.rootedFoes.get(enemy.getUUID());
+                if(actual>=.5F && rootedUntil!=null && rootedUntil>now
+                        && enemy instanceof Mob mob) {
+                    // Require a real wound, a previous root hit, and healing
+                    // from a successful follow-up on that rooted hostile.
+                    s.rootedFoes.remove(enemy.getUUID());
+                    PactDeepeningService.record(owner,"viar","roots_to_real_healing",mob);
+                    PactDeepeningService.recordViarBiome(owner,mob);
+                }
             }
             s.rootCombatUntil=now+140;
         }
@@ -301,7 +316,8 @@ public final class PactTierFourCombatService {
         }
         victim.getInventory().setChanged();
         saved.cooldown(victim.getUUID(),"rakiel:fate_refusal",now+FATE_COOLDOWN_MS);
-        victim.setHealth(Math.max(1F,victim.getMaxHealth()*.2F));
+        float restore=depth(victim,"rakiel")>=2?.28F:.20F;
+        victim.setHealth(Math.max(1F,victim.getMaxHealth()*restore));
         event.setCanceled(true);
         hint(victim,"fate_refused");
     }
@@ -316,7 +332,14 @@ public final class PactTierFourCombatService {
             ServerPlayer owner=server.getPlayerList().getPlayer(row.getKey());
             if(owner==null||!PactService.isPact(owner)){iterator.remove();continue;}
             Battle s=row.getValue();
-            if(s.continentUntil<=now)s.continentIntegrity=0;
+            if(s.continentUntil<=now) {
+                s.continentIntegrity=0;
+                s.continentAbsorbed=0;
+            }
+            s.rootedFoes.entrySet().removeIf(e->e.getValue()<=now);
+            s.starFoes.entrySet().removeIf(e->e.getValue()<=now);
+            s.oathFoes.entrySet().removeIf(e->e.getValue()<=now);
+            s.continentFoes.entrySet().removeIf(e->e.getValue()<=now);
             if(has(owner,"viar") && s.rootCombatUntil>now && owner.getHealth()<owner.getMaxHealth()
                     && now>=s.rootRegenAt) {
                 s.rootRegenAt=now+FIVE_SECONDS;owner.heal(1);
