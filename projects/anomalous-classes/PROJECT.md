@@ -1,5 +1,7 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-22 군체술사 2차 원격 표적·급습·소모 서버 연계:** R 무료 서버 시선 표적·Z 실제 접근 후 급습·X 실제 공격대 일부 희생, 사거리·아군·서버 쿨다운과 세이브/직업 변경 연계. [GitHub Actions #45006788611](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/45006788611)에서 **BUILD VERIFIED / JAR PRODUCED**, `verifySwarmRules` (N 보존·자유 전술·희생·쿨다운) 통과. 1차 실피격·클라이언트·멀티플레이 **NOT PLAYTESTED**, 비행·전술 GUI·고유 패시브 효과·Codex 시각 디자인 **NOT IMPLEMENTED**. [이번 체크포인트](./SWARM_COMBAT_IMPLEMENTATION_CHECKPOINT_2026-11-22.md).
+
 > **2026-11-22 군체술사 첫 전투·실피격 서버 수직 슬라이스:** 3역할 충돌체와 유효 군체 수량·재증식, 기본 생존 반격, 사용자 이름·비율 지정 전술, 좀비/스켈레톤 AI 타깃 연계, 아군 피해 필터 및 직업 XP 귀속 구현. **Actions [#44992232163](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/44992232163) BUILD VERIFIED / JAR PRODUCED**. 실제 피격/화살·클라이언트·멀티플레이 **NOT TESTED**, 급습/소모/비행/정식 Codex 시각·GUI **NOT IMPLEMENTED**. [군체 구현 체크포인트](./SWARM_IMPLEMENTATION_CHECKPOINT_2026-11-22.md).
 
 > **2026-11-22 4위계 성취형 심화 · Actions #44970995262 BUILD VERIFIED / JAR PRODUCED:** 나하르·라키엘·오르마스·비아르의 1차 실제 권능 연계와 2차 고난도 강적 격파/생물군계별 전투 회복을 별도 목표로 구현. 기존 16계약·수호자 입문 시련·1~3위계 심화·금기/채무/가호 합산 보존, 네더의 별·메아리 조각 등 최초 체결 초희귀 재료 반복 요구 없음. [4위계 구현 체크포인트](./PACT_TIER4_EARNED_DEEPENING_CHECKPOINT_2026-11-22.md). 4위계 특별 현현 및 실제 클라이언트/멀티플레이 검증은 미진행.

@@ -28,4 +28,6 @@
 5. `/swarm tactic save 0 생존`으로 공격 0·엄호 100 전술 전환 후 Z/X 입력. 공격대가 0인 시점에는 공격 금지. R은 무료 표적만 지정해 둬야 함.
 6. 사망·재접속·차원 이동 후 대상·예약 급습 소멸과 기본 성장·쿨다운 보존, 아군 몹 비공격 확인.
 
-STATUS: CODE AUTHORED / BUILD NOT YET VERIFIED / CLIENT NOT PLAYTESTED / MULTIPLAYER NOT TESTED.
+STATUS: CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED — GitHub Actions #45006788611 (commit c560a65b26155a9c736324d6386ea0b18c75a6d4). `verifySwarmRules` 실행 통과. CLIENT NOT PLAYTESTED / MULTIPLAYER NOT TESTED.
+
+첫 두 GitHub Actions 빌드는 람다에서 재할당 가능한 지역변수를 참조한 컴파일 오류로 실패. 원인 수정 후 최신 빌드는 clean build, JAR 검증, SHA-256, 아티팩트 업로드까지 모두 통과.
