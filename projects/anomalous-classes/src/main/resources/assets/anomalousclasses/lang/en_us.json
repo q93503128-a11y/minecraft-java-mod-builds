@@ -672,5 +672,21 @@
   "pact_deepening_reward.anomalousclasses.taron.1": "Borrowed graces +8%; stronger and longer Stone Armor, improved Sunder knockback.",
   "pact_deepening_reward.anomalousclasses.taron.2": "Borrowed graces +18%; powerful brief Mountain Sunder follow-up when a real enemy breaks Stone Armor.",
   "pact_deepening_reward.anomalousclasses.arken.1": "Borrowed graces +8%; stronger recorded attack adaptations and replay, longer concentration window.",
-  "pact_deepening_reward.anomalousclasses.arken.2": "Borrowed graces +18%; switching between genuinely observed attack types grants one extra Record Reprise strike."
+  "pact_deepening_reward.anomalousclasses.arken.2": "Borrowed graces +18%; switching between genuinely observed attack types grants one extra Record Reprise strike.",
+  "pact_deepening_goal.anomalousclasses.nahar.1": "Record genuine weapon damage against a hostile, then land Black Star Rebirth while the combat memory remains, three times.",
+  "pact_deepening_goal.anomalousclasses.nahar.2": "Record a real strike, use Black Star Rebirth against a strong hostile (70 or more maximum HP), then directly defeat it. Win two such encounters.",
+  "pact_deepening_goal.anomalousclasses.rakiel.1": "Survive a genuine hostile attack and land First Oath Sword while the defensive vow remains. Repeat three times.",
+  "pact_deepening_goal.anomalousclasses.rakiel.2": "After surviving a hostile attack, hit a strong foe (70+ maximum HP) with First Oath Sword and defeat it yourself. Conquer two foes.",
+  "pact_deepening_goal.anomalousclasses.ormas.1": "While wearing Continental Skin, strike a real hostile with Continent Break. Repeat three successful combinations.",
+  "pact_deepening_goal.anomalousclasses.ormas.2": "Absorb at least 16 actual hostile damage with Continental Skin, then strike and defeat a strong foe (70+ maximum HP) with Continent Break. Repeat twice.",
+  "pact_deepening_goal.anomalousclasses.viar.1": "Root a real hostile, then damage that rooted foe to recover genuinely missing health. Repeat three successful recoveries.",
+  "pact_deepening_goal.anomalousclasses.viar.2": "Complete rooted combat and genuine self-healing in three different biomes. Each biome can qualify only once.",
+  "pact_deepening_reward.anomalousclasses.nahar.1": "Borrowed graces +8%; longer combat memory, wider Black Star Rebirth reach and stronger recorded echoes.",
+  "pact_deepening_reward.anomalousclasses.nahar.2": "Borrowed graces +20%; a successful recorded rebirth grants brief astral protection and stronger echoes.",
+  "pact_deepening_reward.anomalousclasses.rakiel.1": "Borrowed graces +8%; wider Oath Sword range, longer guard after hostile hits, stronger follow-up.",
+  "pact_deepening_reward.anomalousclasses.rakiel.2": "Borrowed graces +20%; further stronger sword and protection, improved Fate Refusal healing while keeping the existing gold-block cost.",
+  "pact_deepening_reward.anomalousclasses.ormas.1": "Borrowed graces +8%; stronger and longer Continental Skin and improved Continent Break knockback.",
+  "pact_deepening_reward.anomalousclasses.ormas.2": "Borrowed graces +20%; stronger Continent Break after the skin has absorbed real hostile attacks.",
+  "pact_deepening_reward.anomalousclasses.viar.1": "Borrowed graces +8%; wider First Root, longer snare and stronger capped genuine-combat healing.",
+  "pact_deepening_reward.anomalousclasses.viar.2": "Borrowed graces +20%; further improved root combat and limited regeneration for sustained battles."
 }
