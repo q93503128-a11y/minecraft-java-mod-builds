@@ -6,7 +6,7 @@ public final class SwarmFlightRules {
 
     public static int requiredLift(int level) {
         if (level < 25) return 0;
-        return 24 + Math.min(6, Math.max(0, (level - 25) * 6 / 75));
+        return 24 + (int) Math.min(6L, Math.max(0L, ((long) level - 25L) * 6L / 75L));
     }
 
     public static float flyingSpeed(int level) {

@@ -46,9 +46,10 @@ public final class SwarmRulesVerifier {
         state.verify();
         for (int t = 1; t <= 20; t++) state.advance(10000 + 10L * t, 16);
         require(state.attack() > 0, "attack resuming after landing");
+        int beforeAttackLoss = state.alive();
         int casualties = Math.min(5, state.attack());
         require(state.lose(SwarmSavedData.SwarmNodeRole.ATTACK, casualties) == casualties, "real loss");
-        require(state.alive() == beforeFlight - 3 - casualties, "no free refill");
+        require(state.alive() == beforeAttackLoss - casualties, "no free refill");
         require(state.saveTactic("균등", 50), "mid tactic");
         for (int tick = 131; tick <= 160; tick++) state.advance(tick * 10L, 16);
         state.verify();
