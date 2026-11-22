@@ -315,7 +315,18 @@ tasks.register('verifyPactTierThreeDeepening', Exec) {
     }
 }
 
+tasks.register('verifyPactTierFourDeepening', Exec) {
+    group = 'verification'
+    description = 'Verifies distinct endgame rites, earned strong-enemy milestones, biome NBT and no repeated ultra-rare materials.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactTierFourDeepeningVerifier.java').absolutePath
+    }
+}
+
 tasks.named('check') {
+    dependsOn tasks.named('verifyPactTierFourDeepening')
     dependsOn tasks.named('verifyPactTierThreeDeepening')
     dependsOn tasks.named('verifyPactNereaSanctum')
     dependsOn tasks.named('verifyPactCovenantConflicts')
