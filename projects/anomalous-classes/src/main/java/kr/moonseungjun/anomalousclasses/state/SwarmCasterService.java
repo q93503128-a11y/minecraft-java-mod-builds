@@ -318,11 +318,12 @@ public final class SwarmCasterService {
                 float burst = SwarmRules.rushDamage(count, level);
                 if (threat.hurt(node.damageSources().mobAttack(node), burst)) {
                     int hits = 1;
+                    final SwarmNodeEntity striker = node;
                     for (Monster nearby : player.serverLevel().getEntitiesOfClass(Monster.class,
                             threat.getBoundingBox().inflate(1.6),
                             candidate -> candidate != threat && validEnemy(player, candidate)
-                                    && node.distanceToSqr(candidate) < 9.0
-                                    && node.getSensing().hasLineOfSight(candidate))) {
+                                    && striker.distanceToSqr(candidate) < 9.0
+                                    && striker.getSensing().hasLineOfSight(candidate))) {
                         if (hits++ >= 3) break;
                         nearby.hurt(node.damageSources().mobAttack(node), burst * .55F);
                     }
