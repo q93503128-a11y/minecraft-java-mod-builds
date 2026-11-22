@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
+import kr.moonseungjun.anomalousclasses.entity.SwarmNodeEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -66,7 +67,8 @@ public final class RpgExperienceService {
     public static void onLivingDeath(LivingDeathEvent event) {
         if (event.isCanceled() || event.getEntity().getPersistentData().getBoolean("anomalousclasses_trial_guardian")
                 || !(event.getEntity() instanceof Mob victim)
-                || event.getEntity() instanceof PuppetEntity || victim.level().isClientSide()) return;
+                || (event.getEntity() instanceof PuppetEntity || event.getEntity() instanceof SwarmNodeEntity)
+                || victim.level().isClientSide()) return;
         MinecraftServer server = victim.level().getServer();
         if (server == null || event.getSource().getEntity() == null) return;
         if (MentalDominatorSavedData.get(server).controlled(victim.getUUID()) != null
@@ -85,7 +87,10 @@ public final class RpgExperienceService {
         if (attacker instanceof ServerPlayer owner) return owner;
         UUID id = null;
         ClassId required = null;
-        if (attacker instanceof PuppetEntity puppet) {
+        if (attacker instanceof SwarmNodeEntity swarm) {
+            id = swarm.ownerId();
+            required = ClassId.SWARM_CASTER;
+        } else if (attacker instanceof PuppetEntity puppet) {
             id = puppet.puppetOwner();
             required = ClassId.PUPPETEER;
         } else {

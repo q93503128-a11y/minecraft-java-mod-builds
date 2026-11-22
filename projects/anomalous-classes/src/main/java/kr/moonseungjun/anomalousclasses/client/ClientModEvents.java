@@ -2,6 +2,7 @@ package kr.moonseungjun.anomalousclasses.client;
 
 import kr.moonseungjun.anomalousclasses.AnomalousClasses;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntities;
+import kr.moonseungjun.anomalousclasses.entity.SwarmEntities;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassManagementStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ClassFocusStatePayload;
@@ -26,6 +27,7 @@ public final class ClientModEvents {
     @SubscribeEvent
     public static void registerPuppetRenderer(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(PuppetEntities.MARIONETTE.get(), PuppetRenderer::new);
+        event.registerEntityRenderer(SwarmEntities.NODE.get(), SwarmNodeRenderer::new);
     }
 
     @SubscribeEvent

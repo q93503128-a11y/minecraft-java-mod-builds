@@ -2,6 +2,7 @@ package kr.moonseungjun.anomalousclasses;
 
 import kr.moonseungjun.anomalousclasses.command.ClassCommands;
 import kr.moonseungjun.anomalousclasses.command.PactCommands;
+import kr.moonseungjun.anomalousclasses.command.SwarmCommands;
 import kr.moonseungjun.anomalousclasses.item.ClassFocusItems;
 import kr.moonseungjun.anomalousclasses.item.PuppetItems;
 import kr.moonseungjun.anomalousclasses.block.PuppetBlocks;
@@ -9,6 +10,9 @@ import kr.moonseungjun.anomalousclasses.block.PactBlocks;
 import kr.moonseungjun.anomalousclasses.worldgen.PactWorldgen;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntities;
 import kr.moonseungjun.anomalousclasses.entity.PuppetEntity;
+import kr.moonseungjun.anomalousclasses.entity.SwarmEntities;
+import kr.moonseungjun.anomalousclasses.entity.SwarmNodeEntity;
+import kr.moonseungjun.anomalousclasses.state.SwarmCasterService;
 import kr.moonseungjun.anomalousclasses.network.ClassNetwork;
 import kr.moonseungjun.anomalousclasses.state.ClassSelectionService;
 import kr.moonseungjun.anomalousclasses.state.CombatTracker;
@@ -66,6 +70,7 @@ public final class AnomalousClasses {
         PactWorldgen.FEATURES.register(modEventBus);
         PuppetItems.ITEMS.register(modEventBus);
         PuppetEntities.ENTITIES.register(modEventBus);
+        SwarmEntities.ENTITIES.register(modEventBus);
         modEventBus.addListener(this::onEntityAttributes);
         ClassNetwork.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.SERVER, MentalDominatorConfig.SPEC, "anomalousclasses-server.toml");
@@ -75,6 +80,12 @@ public final class AnomalousClasses {
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onLogout);
         NeoForge.EVENT_BUS.addListener(BarrierCasterService::onLogout);
         NeoForge.EVENT_BUS.addListener(PactCombatService::onLogout);
+        NeoForge.EVENT_BUS.addListener(SwarmCasterService::onLogout);
+        NeoForge.EVENT_BUS.addListener(SwarmCasterService::onDimension);
+        NeoForge.EVENT_BUS.addListener(SwarmCasterService::onRespawn);
+        NeoForge.EVENT_BUS.addListener(SwarmCasterService::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(SwarmCasterService::onProjectile);
+        NeoForge.EVENT_BUS.addListener(SwarmCasterService::tick);
         NeoForge.EVENT_BUS.addListener(PactBlessingService::onBreakSpeed);
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(RpgExperienceService::onItemCrafted);
@@ -138,6 +149,7 @@ public final class AnomalousClasses {
 
     private void onEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(PuppetEntities.MARIONETTE.get(), PuppetEntity.createAttributes().build());
+        event.put(SwarmEntities.NODE.get(), SwarmNodeEntity.createAttributes().build());
     }
 
     private void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
@@ -184,5 +196,6 @@ public final class AnomalousClasses {
     private void onRegisterCommands(RegisterCommandsEvent event) {
         ClassCommands.register(event.getDispatcher());
         PactCommands.register(event.getDispatcher());
+        SwarmCommands.register(event.getDispatcher());
     }
 }

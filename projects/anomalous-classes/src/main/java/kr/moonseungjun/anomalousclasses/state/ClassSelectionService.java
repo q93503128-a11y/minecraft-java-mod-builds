@@ -70,6 +70,7 @@ public final class ClassSelectionService {
             }
 
             BarrierCasterService.prepareClassChange(player, previous);
+            SwarmCasterService.prepareClassChange(player, previous);
             PactCombatService.clear(player);
             PactService.expire(player);
             profile.select(target);

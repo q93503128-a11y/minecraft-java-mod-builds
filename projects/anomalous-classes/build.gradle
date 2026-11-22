@@ -352,3 +352,13 @@ tasks.named('check') {
     dependsOn tasks.named('verifyClassFocusLayout')
     dependsOn tasks.named('verifyFocusInventoryUi')
 }
+
+tasks.register('verifySwarmRules', Exec) {
+    group = 'verification'
+    description = 'Verifies physical-count conservation, loss, role allocation and user-authored tactics.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/SwarmRulesVerifier.java').absolutePath
+    }
+}

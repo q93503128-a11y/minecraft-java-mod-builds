@@ -688,5 +688,13 @@
   "pact_deepening_reward.anomalousclasses.ormas.1": "Borrowed graces +8%; stronger and longer Continental Skin and improved Continent Break knockback.",
   "pact_deepening_reward.anomalousclasses.ormas.2": "Borrowed graces +20%; stronger Continent Break after the skin has absorbed real hostile attacks.",
   "pact_deepening_reward.anomalousclasses.viar.1": "Borrowed graces +8%; wider First Root, longer snare and stronger capped genuine-combat healing.",
-  "pact_deepening_reward.anomalousclasses.viar.2": "Borrowed graces +20%; further improved root combat and limited regeneration for sustained battles."
+  "pact_deepening_reward.anomalousclasses.viar.2": "Borrowed graces +20%; further improved root combat and limited regeneration for sustained battles.",
+  "message.anomalousclasses.swarm.class_only": "Only a Swarm Caster can use this.",
+  "message.anomalousclasses.swarm.status": "Swarm %s/%s · Attack %s · Guard %s · Regroup %s · Tactic: %s",
+  "message.anomalousclasses.swarm.list": "Saved tactics: %s",
+  "message.anomalousclasses.swarm.invalid_tactic": "Save up to eight tactics. Names must be 1–24 characters and attack ratio 0–100.",
+  "message.anomalousclasses.swarm.saved": "Saved and selected '%s' (attack %s%%).",
+  "message.anomalousclasses.swarm.not_found": "Tactic '%s' was not found.",
+  "message.anomalousclasses.swarm.selected": "Selected tactic '%s'.",
+  "message.anomalousclasses.swarm.deleted": "Deleted tactic '%s'."
 }

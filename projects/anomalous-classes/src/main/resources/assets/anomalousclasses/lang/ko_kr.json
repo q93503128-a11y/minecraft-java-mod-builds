@@ -688,5 +688,13 @@
   "pact_deepening_reward.anomalousclasses.ormas.1": "계약 가호 증가분 +8%, 대륙의 피부 내구·지속시간과 분쇄 밀침이 강화됩니다.",
   "pact_deepening_reward.anomalousclasses.ormas.2": "계약 가호 증가분 +20%, 피부로 실제 공격을 흡수한 뒤 분쇄하는 고위 연계 타격의 위력이 강화됩니다.",
   "pact_deepening_reward.anomalousclasses.viar.1": "계약 가호 증가분 +8%, 첫 뿌리 범위·속박 시간·실전 피해 회복량이 늘어납니다.",
-  "pact_deepening_reward.anomalousclasses.viar.2": "계약 가호 증가분 +20%, 첫 뿌리와 제한 회복이 추가 강화되어 여러 지형의 장기 전투에 적응합니다."
+  "pact_deepening_reward.anomalousclasses.viar.2": "계약 가호 증가분 +20%, 첫 뿌리와 제한 회복이 추가 강화되어 여러 지형의 장기 전투에 적응합니다.",
+  "message.anomalousclasses.swarm.class_only": "군체술사만 사용할 수 있습니다.",
+  "message.anomalousclasses.swarm.status": "군체 %s/%s · 공격 %s · 엄호 %s · 재집결 %s · 전술: %s",
+  "message.anomalousclasses.swarm.list": "저장한 전술: %s",
+  "message.anomalousclasses.swarm.invalid_tactic": "전술은 8개까지 저장할 수 있습니다. 이름은 1~24자, 공격 비율은 0~100이어야 합니다.",
+  "message.anomalousclasses.swarm.saved": "전술 '%s' 저장 및 선택 완료 (공격 %s%%).",
+  "message.anomalousclasses.swarm.not_found": "전술 '%s'을(를) 찾을 수 없습니다.",
+  "message.anomalousclasses.swarm.selected": "전술 '%s'을(를) 선택했습니다.",
+  "message.anomalousclasses.swarm.deleted": "전술 '%s'을(를) 삭제했습니다."
 }
