@@ -18,7 +18,7 @@ public final class PactTierTwoDeepeningVerifier {
         var ids=List.of("karda","nerea","shero","hastel");
         var names=new HashSet<String>();
         var events=new HashSet<String>();
-        check(PactDeepeningService.all().size()==12,"Twelve first through third tier rites");
+        check(PactDeepeningService.all().size()==16,"All sixteen tier-specific rites");
         for(String id:ids) {
             var patron=PactCatalog.get(id);
             var rite=PactDeepeningService.rite(id);
@@ -40,17 +40,17 @@ public final class PactTierTwoDeepeningVerifier {
                         "No repeated high-tier covenant entry fee: "+id);
             }
         }
-        check(PactDeepeningService.rite("nahar")==null
-                && PactDeepeningService.rite("rakiel")==null,
-                "Fourth-tier quest details remain unapproved");
+        check(PactDeepeningService.rite("nahar")!=null
+                && PactDeepeningService.rite("rakiel")!=null,
+                "Fourth-tier quests are now separately registered");
         check(Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("karda"),0)-1)<1e-8
                 && Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("karda"),1)-1.10)<1e-8
                 && Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("karda"),2)-1.22)<1e-8,
                 "Tier-two tier-specific boon progression");
         check(Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("isael"),1)-1.12)<1e-8,
                 "Original first-tier bonus preserved");
-        check(PactBlessingService.deepeningFactor(PactCatalog.get("nahar"),2)==1,
-                "Higher tiers do not silently receive invented depth multipliers");
+        check(Math.abs(PactBlessingService.deepeningFactor(PactCatalog.get("nahar"),2)-1.20)<1e-8,
+                "Fourth-tier progression uses its own tier-specific trial factor");
         UUID owner=UUID.fromString("00000000-0000-0000-0000-000000000022");
         PactSavedData saved=new PactSavedData();
         check(!saved.addDeepeningProof(owner,"hastel",3),
