@@ -27,4 +27,4 @@
 4. `/swarm tactic save 100 돌격` 실행, 엄호군 0인지와 공격대가 좀비를 실제 공격하는지 확인.
 5. 공격 개체 수가 줄어들 때 /swarm에 표시되는 N이 감소하고 자연히 회복되는지, 재접속·직업 변경에서 복제가 없는지 확인.
 
-상태: CODE AUTHORED (일단 커밋 이후 업데이트), BUILD NOT VERIFIED, REAL CLIENT / PLAYTEST / MULTIPLAYER NOT TESTED.
+상태: CODE REVIEWED / BUILD VERIFIED / JAR PRODUCED (Actions #44992232163, commit 75d5daf12257f4390c37aa4893618a432bd178e3). 독립 verifySwarmRules 과제는 이번 CI에서 별도 실행하지 않았음. REAL CLIENT / PLAYTEST / MULTIPLAYER NOT TESTED.
