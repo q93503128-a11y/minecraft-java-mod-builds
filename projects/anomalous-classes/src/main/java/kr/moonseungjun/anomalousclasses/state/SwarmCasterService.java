@@ -153,14 +153,24 @@ public final class SwarmCasterService {
             Vec3 displacement = intended.subtract(node.position());
             if (displacement.lengthSqr() > .01)
                 node.move(MoverType.SELF, displacement.scale(Math.min(.9, .25 / Math.sqrt(displacement.lengthSqr()))));
+            // No hidden preset is saved. Until the player writes a tactic, the
+            // regrouping colony still fights back against an immediate attacker.
+            if (role == SwarmNodeRole.REGROUP && threat != null
+                    && node.distanceToSqr(threat) < 2.25
+                    && (threat.getTarget() == player || threat.getTarget() == node)
+                    && node.tickCount % 30 == 0)
+                threat.hurt(node.damageSources().mobAttack(node), .65F);
         }
     }
 
     public static boolean friendlyHit(SwarmNodeEntity node, DamageSource source) {
+        return friendlyAttacker(node, source.getEntity());
+    }
+
+    private static boolean friendlyAttacker(SwarmNodeEntity node, Entity attacker) {
         if (!(node.level() instanceof ServerLevel level) || node.ownerId() == null) return true;
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(node.ownerId());
         if (owner == null || !isSwarm(owner)) return true;
-        Entity attacker = source.getEntity();
         if (attacker == null) return false;
         if (attacker.getUUID().equals(owner.getUUID())) return true;
         if (attacker instanceof SwarmNodeEntity other && other.ownerId() != null)
@@ -177,11 +187,11 @@ public final class SwarmCasterService {
 
     public static void onProjectile(ProjectileImpactEvent event) {
         if (!(event.getRayTraceResult() instanceof EntityHitResult hit)
-                || !(hit.getEntity() instanceof SwarmNodeEntity node)
-                || !(event.getProjectile() instanceof Projectile projectile)) return;
-        Entity shooter = projectile.getOwner();
-        if (shooter != null && friendlyHit(node, projectile.damageSources().indirectMagic(projectile, shooter)))
-            event.setCanceled(true);
+                || !(hit.getEntity() instanceof SwarmNodeEntity node)) return;
+        // The event already exposes Projectile. Do not pattern-match its own type
+        // or fabricate a DamageSource with ambiguous attacker ordering.
+        Projectile projectile = event.getProjectile();
+        if (friendlyAttacker(node, projectile.getOwner())) event.setCanceled(true);
     }
 
     public static void onNodeHit(SwarmNodeEntity node, float damage) {
