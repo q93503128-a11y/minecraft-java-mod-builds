@@ -1,5 +1,6 @@
 import kr.moonseungjun.anomalousclasses.state.SwarmRules;
 import kr.moonseungjun.anomalousclasses.state.SwarmSavedData;
+import kr.moonseungjun.anomalousclasses.state.SwarmFlightRules;
 
 public final class SwarmRulesVerifier {
     public static void main(String[] args) {
@@ -8,6 +9,14 @@ public final class SwarmRulesVerifier {
         require(SwarmRules.maximum(100) == 80, "level 100");
         require(SwarmRules.maximum(500) == 128, "level 500");
         require(SwarmRules.maximum(100000) == 128, "bounded entity budget");
+        require(SwarmFlightRules.requiredLift(1) == 0, "no low-level flight");
+        require(SwarmFlightRules.requiredLift(25) == 24, "level 25");
+        require(SwarmFlightRules.requiredLift(100) == 30, "level 100");
+        require(SwarmFlightRules.requiredLift(500) == 30, "max support");
+        require(!SwarmFlightRules.qualified(25, 23), "flight needs actual organisms");
+        require(SwarmFlightRules.qualified(25, 24), "available lift");
+        require(SwarmFlightRules.flyingSpeed(500) > SwarmFlightRules.flyingSpeed(25),
+                "later flight grows");
         for (int pct : new int[]{0, 40, 50, 100}) {
             var split = SwarmRules.distribute(80, 30, 0, pct);
             require(split.total() == 80, "flight conservation");
@@ -23,8 +32,23 @@ public final class SwarmRulesVerifier {
         require(state.saveTactic("돌격", 100), "user tactic 100");
         for (int tick = 51; tick <= 130; tick++) state.advance(tick * 10L, 16);
         require(state.attack() == 16 && state.guard() == 0, "100:0");
-        require(state.lose(SwarmSavedData.SwarmNodeRole.ATTACK, 5) == 5, "real loss");
-        require(state.alive() == 11, "no free refill");
+        int beforeFlight = state.alive();
+        for (int x = 0; x < 8; x++) {
+            int moved = state.reserveLift(24, true, true);
+            require(moved <= 2, "flight deployment rate limit");
+        }
+        require(state.lift() == 16 && state.attack() == 0, "lift cannot create creatures");
+        require(state.alive() == beforeFlight, "lift N conservation");
+        require(state.lose(SwarmSavedData.SwarmNodeRole.LIFT, 3) == 3, "lift can be killed");
+        require(state.lift() == 13 && state.alive() == beforeFlight - 3, "lift casualties real");
+        require(state.releaseLift() == 13, "landing returns survivors only");
+        require(state.lift() == 0, "landing clears lift");
+        state.verify();
+        for (int t = 1; t <= 20; t++) state.advance(10000 + 10L * t, 16);
+        require(state.attack() > 0, "attack resuming after landing");
+        int casualties = Math.min(5, state.attack());
+        require(state.lose(SwarmSavedData.SwarmNodeRole.ATTACK, casualties) == casualties, "real loss");
+        require(state.alive() == beforeFlight - 3 - casualties, "no free refill");
         require(state.saveTactic("균등", 50), "mid tactic");
         for (int tick = 131; tick <= 160; tick++) state.advance(tick * 10L, 16);
         state.verify();

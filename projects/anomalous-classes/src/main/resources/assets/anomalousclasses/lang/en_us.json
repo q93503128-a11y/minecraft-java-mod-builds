@@ -492,7 +492,7 @@
   "message.anomalousclasses.rpg.level_up": "Class level %s reached! Skill points +%s",
   "key.anomalousclasses.barrier_repeat": "Barrier caster: Repeat last boundary",
   "key.anomalousclasses.barrier_amplify": "Barrier caster: Amplify boundaries",
-  "key.anomalousclasses.barrier_cancel": "Barrier caster: Dismiss aimed boundary",
+  "key.anomalousclasses.barrier_cancel": "Dismiss boundary / Swarm flight",
   "message.anomalousclasses.barrier.kind.defense": "Defense",
   "message.anomalousclasses.barrier.kind.compression": "Compression",
   "message.anomalousclasses.barrier.kind.isolation": "Isolation",
@@ -706,5 +706,11 @@
   "message.anomalousclasses.swarm.no_target": "No valid hostile target.",
   "message.anomalousclasses.swarm.not_in_range": "Your attack swarm must reach the target first.",
   "message.anomalousclasses.swarm.no_hit": "No damage dealt to the target.",
-  "message.anomalousclasses.swarm.cooldown": "Ready in %s seconds."
+  "message.anomalousclasses.swarm.cooldown": "Ready in %s seconds.",
+  "message.anomalousclasses.swarm.flight_insufficient": "Not enough living swarm organisms to fly.",
+  "message.anomalousclasses.swarm.flight_unavailable": "Swarm flight is unavailable right now.",
+  "message.anomalousclasses.swarm.flight_gathering": "The swarm gathers into a lifting formation.",
+  "message.anomalousclasses.swarm.flight_started": "Swarm flight engaged.",
+  "message.anomalousclasses.swarm.flight_stopped": "Ending swarm flight.",
+  "message.anomalousclasses.swarm.flight_landing": "Descending safely."
 }

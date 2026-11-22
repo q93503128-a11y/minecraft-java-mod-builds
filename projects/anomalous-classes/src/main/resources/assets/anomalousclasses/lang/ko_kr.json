@@ -492,7 +492,7 @@
   "message.anomalousclasses.rpg.level_up": "직업 레벨 %s 달성! 스킬 포인트 +%s",
   "key.anomalousclasses.barrier_repeat": "결계술사: 최근 결계 즉시 전개",
   "key.anomalousclasses.barrier_amplify": "결계술사: 결계 증폭",
-  "key.anomalousclasses.barrier_cancel": "결계술사: 조준 결계 해제",
+  "key.anomalousclasses.barrier_cancel": "결계 해제 / 군체 비행 전환",
   "message.anomalousclasses.barrier.kind.defense": "방어",
   "message.anomalousclasses.barrier.kind.compression": "압축",
   "message.anomalousclasses.barrier.kind.isolation": "격리",
@@ -706,5 +706,11 @@
   "message.anomalousclasses.swarm.no_target": "공격할 적이 없습니다.",
   "message.anomalousclasses.swarm.not_in_range": "공격대가 적에게 접근해야 사용할 수 있습니다.",
   "message.anomalousclasses.swarm.no_hit": "적에게 피해를 주지 못했습니다.",
-  "message.anomalousclasses.swarm.cooldown": "다시 사용하려면 %s초 남았습니다."
+  "message.anomalousclasses.swarm.cooldown": "다시 사용하려면 %s초 남았습니다.",
+  "message.anomalousclasses.swarm.flight_insufficient": "비행에 필요한 군체가 부족합니다.",
+  "message.anomalousclasses.swarm.flight_unavailable": "지금은 군체 비행을 사용할 수 없습니다.",
+  "message.anomalousclasses.swarm.flight_gathering": "군체가 운반 진형으로 모이고 있습니다.",
+  "message.anomalousclasses.swarm.flight_started": "군체 비행 시작",
+  "message.anomalousclasses.swarm.flight_stopped": "군체 비행을 종료합니다.",
+  "message.anomalousclasses.swarm.flight_landing": "안전하게 착륙하는 중입니다."
 }

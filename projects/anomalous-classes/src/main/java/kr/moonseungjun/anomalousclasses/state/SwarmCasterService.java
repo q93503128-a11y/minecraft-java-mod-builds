@@ -85,6 +85,7 @@ public final class SwarmCasterService {
             RUSH_ORDERS.clear();
             activeServer = server;
         }
+        SwarmFlightService.tick(event);
         if (server.overworld().getGameTime() % 10 != 0) return;
         SwarmSavedData data = SwarmSavedData.get(server);
         Set<UUID> online = new HashSet<>();
@@ -98,6 +99,17 @@ public final class SwarmCasterService {
             int level = ClassProfileSavedData.get(server).profile(id)
                     .progress(ClassId.SWARM_CASTER).level();
             SwarmSavedData.State state = data.player(id);
+            if (SwarmFlightService.needsLift(player, state)) {
+                var nodes = NODES.get(id);
+                SwarmNodeEntity attack = nodes == null ? null : nodes.get(SwarmNodeRole.ATTACK);
+                SwarmNodeEntity guard = nodes == null ? null : nodes.get(SwarmNodeRole.GUARD);
+                boolean attackNear = attack != null && !attack.isRemoved()
+                        && attack.level() == player.level() && attack.distanceToSqr(player) < 12.25;
+                boolean guardNear = guard != null && !guard.isRemoved()
+                        && guard.level() == player.level() && guard.distanceToSqr(player) < 12.25;
+                if (state.reserveLift(SwarmFlightService.liftRequired(player), attackNear, guardNear) > 0)
+                    data.changed();
+            }
             if (state.advance(server.overworld().getGameTime(), SwarmRules.maximum(level)))
                 data.changed();
             Monster target = selectedEnemy(player);
@@ -105,6 +117,12 @@ public final class SwarmCasterService {
             updateRole(player, state, SwarmNodeRole.GUARD, target, level);
             updateRole(player, state, SwarmNodeRole.ATTACK, target, level);
             updateRole(player, state, SwarmNodeRole.REGROUP, target, level);
+            updateRole(player, state, SwarmNodeRole.LIFT, target, level);
+            var liveNodes = NODES.get(id);
+            SwarmNodeEntity lift = liveNodes == null ? null : liveNodes.get(SwarmNodeRole.LIFT);
+            SwarmFlightService.afterRoleUpdate(player, state,
+                    lift != null && !lift.isRemoved() && lift.level() == player.level()
+                            && lift.distanceToSqr(player) < 9.0);
         }
         for (UUID id : Set.copyOf(NODES.keySet())) if (!online.contains(id)) clear(id);
     }
@@ -296,13 +314,18 @@ public final class SwarmCasterService {
             node = SwarmEntities.NODE.get().create(player.serverLevel());
             if (node == null) return;
             node.initialize(id, role, count);
-            node.moveTo(player.getX(), player.getY() + (role == SwarmNodeRole.ATTACK ? 0 : 1.0),
+            node.moveTo(player.getX(), player.getY() +
+                    (role == SwarmNodeRole.ATTACK ? 0 : role == SwarmNodeRole.LIFT ? .05 : 1.0),
                     player.getZ(), player.getYRot(), 0);
             if (!player.serverLevel().addFreshEntity(node)) return;
             map.put(role, node);
         }
         node.setCount(count);
-        if (role == SwarmNodeRole.ATTACK && threat != null) {
+        if (role == SwarmNodeRole.ATTACK && SwarmFlightService.isBoarding(player)
+                && SwarmFlightService.needsLift(player, state)) {
+            // Real attackers return before joining the lift squad.
+            if (node.tickCount % 10 == 0) node.getNavigation().moveTo(player, 1.15);
+        } else if (role == SwarmNodeRole.ATTACK && threat != null) {
             long now = tickTime(player);
             RushOrder rush = RUSH_ORDERS.get(id);
             if (rush != null && (!rush.target().equals(threat.getUUID())
@@ -337,8 +360,11 @@ public final class SwarmCasterService {
             }
         } else {
             node.getNavigation().stop();
-            Vec3 intended = player.position().add(0, 1.1, 0);
-            if (role == SwarmNodeRole.GUARD && threat != null) {
+            Vec3 intended = player.position().add(0,
+                    role == SwarmNodeRole.LIFT ? .05 : 1.1, 0);
+            if (role == SwarmNodeRole.LIFT) {
+                intended = intended.add(.35, 0, .45);
+            } else if (role == SwarmNodeRole.GUARD && threat != null) {
                 Vec3 direction = threat.position().subtract(player.position());
                 if (direction.horizontalDistanceSqr() > .01)
                     intended = intended.add(direction.multiply(1, 0, 1).normalize().scale(1.15));
@@ -418,18 +444,27 @@ public final class SwarmCasterService {
     }
 
     public static void prepareClassChange(ServerPlayer player, ClassId previous) {
-        if (previous == ClassId.SWARM_CASTER) clear(player.getUUID());
+        if (previous == ClassId.SWARM_CASTER) {
+            SwarmFlightService.onLifecycle(player, true);
+            clear(player.getUUID());
+        }
     }
 
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            SwarmFlightService.onLifecycle(player, true);
         clear(event.getEntity().getUUID());
     }
 
     public static void onDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            SwarmFlightService.onLifecycle(player, true);
         clear(event.getEntity().getUUID());
     }
 
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            SwarmFlightService.onLifecycle(player, false);
         clear(event.getEntity().getUUID());
     }
 }

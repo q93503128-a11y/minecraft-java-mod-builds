@@ -42,6 +42,8 @@ import kr.moonseungjun.anomalousclasses.state.BarrierCasterService;
 import kr.moonseungjun.anomalousclasses.network.payload.PactAbilityPayload;
 import kr.moonseungjun.anomalousclasses.state.PactCombatService;
 import kr.moonseungjun.anomalousclasses.state.SwarmCasterService;
+import kr.moonseungjun.anomalousclasses.state.SwarmFlightService;
+import kr.moonseungjun.anomalousclasses.network.payload.SwarmFlightPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SwarmCombatPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -121,6 +123,10 @@ public final class ClassNetwork {
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player)
                         SwarmCasterService.input(player, payload.action());
+                }));
+        registrar.playToServer(SwarmFlightPayload.TYPE, SwarmFlightPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player) SwarmFlightService.toggle(player);
                 }));
         registrar.playToServer(MentalSpellPayload.TYPE, MentalSpellPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

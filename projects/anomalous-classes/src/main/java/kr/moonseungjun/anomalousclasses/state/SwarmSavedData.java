@@ -68,6 +68,7 @@ public final class SwarmSavedData extends SavedData {
             return switch (role) {
                 case ATTACK -> attack;
                 case GUARD -> guard;
+                case LIFT -> lift;
                 case REGROUP -> regroup;
             };
         }
@@ -148,11 +149,43 @@ public final class SwarmSavedData extends SavedData {
             return count;
         }
 
+        /**
+         * Only already gathered or physically nearby units may become lift.
+         * This operation never changes totalAlive.
+         */
+        public int reserveLift(int required, boolean attackNearby, boolean guardNearby) {
+            int missing = Math.min(2, Math.max(0, required - lift));
+            int added = 0;
+            int moved = Math.min(missing, regroup);
+            regroup -= moved; added += moved; missing -= moved;
+            if (missing > 0 && guardNearby) {
+                moved = Math.min(missing, guard);
+                guard -= moved; added += moved; missing -= moved;
+            }
+            if (missing > 0 && attackNearby) {
+                moved = Math.min(missing, attack);
+                attack -= moved; added += moved;
+            }
+            lift += added;
+            verify();
+            return added;
+        }
+
+        /** Landing restores the same surviving units to regroup. */
+        public int releaseLift() {
+            int count = lift;
+            lift = 0;
+            regroup += count;
+            verify();
+            return count;
+        }
+
         public int lose(SwarmNodeRole role, int requested) {
             int lost = Math.min(count(role), Math.max(0, requested));
             switch (role) {
                 case ATTACK -> attack -= lost;
                 case GUARD -> guard -= lost;
+                case LIFT -> lift -= lost;
                 case REGROUP -> regroup -= lost;
             }
             alive -= lost;
@@ -219,7 +252,7 @@ public final class SwarmSavedData extends SavedData {
         }
     }
 
-    public enum SwarmNodeRole { ATTACK, GUARD, REGROUP }
+    public enum SwarmNodeRole { ATTACK, GUARD, LIFT, REGROUP }
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registry) {

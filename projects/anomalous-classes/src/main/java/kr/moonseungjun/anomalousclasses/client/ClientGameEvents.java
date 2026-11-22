@@ -15,6 +15,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.RequestMentalDominatorPa
 import kr.moonseungjun.anomalousclasses.network.payload.BarrierInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PactAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SwarmCombatPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.SwarmFlightPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostAttackPayload;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -158,9 +159,12 @@ public final class ClientGameEvents {
             if (ParasiteTraitClientControls.isPact())
                 PacketDistributor.sendToServer(new PactAbilityPayload(5));
         }
-        if (ClassSelectionKeyMappings.BARRIER_CANCEL.consumeClick()
-                && ParasiteTraitClientControls.isBarrier())
-            PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CANCEL_NEAREST));
+        if (ClassSelectionKeyMappings.BARRIER_CANCEL.consumeClick()) {
+            if (ParasiteTraitClientControls.isBarrier())
+                PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.CANCEL_NEAREST));
+            if (ParasiteTraitClientControls.isSwarm())
+                PacketDistributor.sendToServer(SwarmFlightPayload.INSTANCE);
+        }
         if (ClassSelectionKeyMappings.OPEN_PROFILE.consumeClick()) {
             PacketDistributor.sendToServer(RequestProfilePayload.INSTANCE);
         } else if (ClassSelectionKeyMappings.OPEN_SKILL_TREE.consumeClick()) {
