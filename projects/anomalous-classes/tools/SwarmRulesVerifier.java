@@ -10,6 +10,9 @@ import kr.moonseungjun.anomalousclasses.state.FocusTier;
 import kr.moonseungjun.anomalousclasses.state.PlayerClassProfile;
 import java.util.HashSet;
 import java.util.Set;
+import java.lang.reflect.Method;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 
 public final class SwarmRulesVerifier {
     public static void main(String[] args) {
@@ -77,6 +80,8 @@ public final class SwarmRulesVerifier {
         require(state.commitCooldown(1, 1160, 160), "rush ready again");
         verifyGraphGrowth();
         verifyInjuryAndSpeed();
+        verifyTacticIdentity();
+        verifyLegacyNamedTacticLoad();
         System.out.println("Swarm rules / nine graph perks / focus / fractional injury VERIFIED");
     }
     private static void verifyGraphGrowth() {
@@ -173,6 +178,77 @@ public final class SwarmRulesVerifier {
         high.advance(0, 16, 40, 2);
         high.advance(30, 16, 30, 2);
         high.verify();
+    }
+
+    private static void verifyTacticIdentity() {
+        var state = new SwarmSavedData.State();
+        require(state.orderedTactics().isEmpty(), "no injected tactical presets");
+        int revision0 = state.tacticRevision();
+        var first = state.createTactic("내 전술", 0);
+        require(first != null && state.tacticRevision() > revision0, "first custom tactic");
+        require(state.activeId().equals(first) && state.attackPercent() == 0, "zero attack accepted");
+        var duplicate = state.createTactic("내 전술", 100);
+        require(duplicate != null && !first.equals(duplicate), "duplicate names use unique IDs");
+        require(state.orderedTactics().size() == 2, "both name duplicates retained");
+        require(state.activeId().equals(duplicate) && state.attackPercent() == 100,
+                "second custom tactic active");
+        require(state.applyTemporary(33) && state.isTemporary() && state.attackPercent() == 33,
+                "temporary manual ratio");
+        require(state.updateTactic(first, "돌격", 100), "rename by stable ID");
+        require(state.orderedTactics().get(0).id().equals(first), "rename never rekeys ID");
+        require(state.moveTactic(first, 1) && state.orderedTactics().get(1).id().equals(first),
+                "quick order moves without renaming");
+        require(state.activate(first) && !state.isTemporary() && state.attackPercent() == 100,
+                "stored tactic restoration");
+        require(state.applyTemporary(0) && state.clearTemporary(),
+                "temporary zero can be reverted without overwriting");
+        require(state.attackPercent() == 100, "revert restores stored ratio");
+        require(state.removeTactic(duplicate) && state.orderedTactics().size() == 1,
+                "delete exact duplicate by ID");
+        require(state.removeTactic(first) && state.activeId() == null
+                && state.attackPercent() == -1, "deleting active does not inject fallback");
+        require(!state.saveTactic(" ", 50) && !state.saveTactic("invalid", -1)
+                && !state.saveTactic("invalid", 101), "validation boundaries");
+        for (int i = 0; i < 8; i++)
+            require(state.createTactic("전술" + i, i * 10) != null, "8 named tactics");
+        require(state.createTactic("아홉번째", 50) == null, "no ninth tactic");
+        require(state.saveTactic("전술0", 55), "legacy command edits existing name");
+        require(state.orderedTactics().size() == 8, "legacy update never duplicates");
+        require(state.activate("전술1") && state.attackPercent() == 10,
+                "legacy command selects by name");
+        require(state.removeTactic("전술1"), "legacy command deletes by name");
+    }
+
+    private static void verifyLegacyNamedTacticLoad() {
+        try {
+            CompoundTag old = new CompoundTag();
+            old.putInt("alive", 16);
+            old.putInt("regroup", 16);
+            ListTag tactics = new ListTag();
+            CompoundTag item = new CompoundTag();
+            item.putString("name", "기존 전술");
+            item.putInt("attackPercent", 75);
+            tactics.add(item);
+            old.put("tactics", tactics);
+            old.putString("active", "기존 전술");
+            Method load = SwarmSavedData.State.class.getDeclaredMethod("load", CompoundTag.class);
+            load.setAccessible(true);
+            var state = (SwarmSavedData.State) load.invoke(null, old);
+            require(state.orderedTactics().size() == 1, "legacy tactic preserved");
+            require(state.attackPercent() == 75, "legacy selected percent preserved");
+            var stable = state.activeId();
+            require(stable != null, "legacy entry gains stable UUID");
+            Method save = SwarmSavedData.State.class.getDeclaredMethod("save");
+            save.setAccessible(true);
+            var persisted = (CompoundTag) save.invoke(state);
+            var first = persisted.getList("tactics", 10).getCompound(0);
+            require(first.hasUUID("id") && first.getUUID("id").equals(stable),
+                    "next save persists migrated ID");
+            require(persisted.getUUID("activeId").equals(stable),
+                    "next save preserves active ID");
+        } catch (ReflectiveOperationException unexpected) {
+            throw new AssertionError("legacy tactic migration inspection failed", unexpected);
+        }
     }
 
     private static boolean close(double a, double b) {

@@ -547,8 +547,13 @@ public final class SwarmCasterService {
     }
 
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player)
+        if (event.getEntity() instanceof ServerPlayer player) {
             SwarmFlightService.onLifecycle(player, true);
+            if (player.getServer() != null) {
+                SwarmSavedData data = SwarmSavedData.get(player.getServer());
+                if (data.player(player.getUUID()).clearTemporary()) data.changed();
+            }
+        }
         clear(event.getEntity().getUUID());
     }
 
