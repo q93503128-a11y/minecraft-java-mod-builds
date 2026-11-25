@@ -42,6 +42,9 @@ import kr.moonseungjun.anomalousclasses.state.BarrierCasterService;
 import kr.moonseungjun.anomalousclasses.network.payload.PactAbilityPayload;
 import kr.moonseungjun.anomalousclasses.state.PactCombatService;
 import kr.moonseungjun.anomalousclasses.state.SwarmCasterService;
+import kr.moonseungjun.anomalousclasses.state.SwarmTacticService;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestSwarmTacticsPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.SwarmTacticActionPayload;
 import kr.moonseungjun.anomalousclasses.state.SwarmFlightService;
 import kr.moonseungjun.anomalousclasses.network.payload.SwarmFlightPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SwarmCombatPayload;
@@ -127,6 +130,16 @@ public final class ClassNetwork {
         registrar.playToServer(SwarmFlightPayload.TYPE, SwarmFlightPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {
                     if (context.player() instanceof ServerPlayer player) SwarmFlightService.toggle(player);
+                }));
+        registrar.playToServer(RequestSwarmTacticsPayload.TYPE, RequestSwarmTacticsPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        SwarmTacticService.open(player, payload.view());
+                }));
+        registrar.playToServer(SwarmTacticActionPayload.TYPE, SwarmTacticActionPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player)
+                        SwarmTacticService.act(player, payload);
                 }));
         registrar.playToServer(MentalSpellPayload.TYPE, MentalSpellPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> {

@@ -60,8 +60,8 @@ public final class SwarmCommands {
         ServerPlayer player = eligible(source);
         if (player == null) return 0;
         SwarmSavedData.State state = SwarmCasterService.current(player);
-        String text = state.tactics().isEmpty() ? "-" : state.tactics().entrySet().stream()
-                .map(e -> e.getKey() + " (" + e.getValue() + "%)")
+        String text = state.orderedTactics().isEmpty() ? "-" : state.orderedTactics().stream()
+                .map(t -> t.name() + " (" + t.attackPercent() + "%)")
                 .collect(Collectors.joining(", "));
         source.sendSuccess(() -> Component.translatable("message.anomalousclasses.swarm.list", text), false);
         return 1;

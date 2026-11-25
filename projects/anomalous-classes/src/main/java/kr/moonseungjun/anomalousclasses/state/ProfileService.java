@@ -21,6 +21,11 @@ public final class ProfileService {
             MentalDominatorService.openManagement(player);
             return;
         }
+        if (profile.currentClass().filter(id -> id == ClassId.SWARM_CASTER).isPresent()) {
+            SwarmTacticService.open(player,
+                    kr.moonseungjun.anomalousclasses.network.payload.RequestSwarmTacticsPayload.MANAGEMENT);
+            return;
+        }
         profile.currentClass().ifPresentOrElse(id ->
                 ClassNetwork.sendToPlayer(player, new ClassManagementStatePayload(
                         ProfileStatePayload.from(player, profile, id))),
