@@ -66,6 +66,8 @@ public final class PactSavedData extends SavedData {
         /** Exact release bills retained after an expressly forced exit. */
         private final Map<String, List<PactCatalog.Material>> outstandingReleases = new LinkedHashMap<>();
         private final Set<String> completedTrials = new LinkedHashSet<>();
+        /** At most 64 real innocent victims for one-time attribution across reloads. */
+        private final Set<UUID> innocentVictims = new LinkedHashSet<>();
         private final java.util.ArrayList<String> recordedProfiles = new java.util.ArrayList<>();
         private int revision;
         public List<Bond> bonds() { return List.copyOf(bonds.values()); }
@@ -157,6 +159,25 @@ public final class PactSavedData extends SavedData {
     public boolean settleForcedRelease(UUID owner, String patron) {
         Player p = player(owner);
         if (p.has(patron) || p.outstandingReleases.remove(patron) == null) return false;
+        p.revision++;
+        setDirty();
+        return true;
+    }
+
+    /**
+     * Only the verified Minecraft living-death hook can call this, with a
+     * genuinely player-caused harmless-villager or nonthreatening-golem death.
+     * The caller decides which signed patron condemns that same event.
+     */
+    public boolean recordInnocentSlaying(UUID owner, UUID victim) {
+        Player p = player(owner);
+        if (victim == null || (!p.has("isael") && !p.has("sevenwing"))
+                || !p.innocentVictims.add(victim)) return false;
+        while (p.innocentVictims.size() > 64) {
+            var iterator = p.innocentVictims.iterator();
+            iterator.next();
+            iterator.remove();
+        }
         p.revision++;
         setDirty();
         return true;
@@ -385,6 +406,13 @@ public final class PactSavedData extends SavedData {
                 unpaid.add(entry);
             });
             row.put("unpaidReleaseBills", unpaid);
+            ListTag innocent = new ListTag();
+            p.innocentVictims.forEach(victim -> {
+                CompoundTag killed = new CompoundTag();
+                killed.putUUID("victim", victim);
+                innocent.add(killed);
+            });
+            row.put("innocentVictims", innocent);
             ListTag completed = new ListTag();
             p.completedTrials.forEach(patronId -> completed.add(StringTag.valueOf(patronId)));
             row.put("completedTrials", completed);
@@ -497,6 +525,11 @@ public final class PactSavedData extends SavedData {
                 // Its original faith is unavailable, so cap restitution to
                 // today's existing faith rather than minting 10 free points.
                 isael.vowFaithDebt=Math.min(10,isael.relation);
+            }
+            ListTag victims = row.getList("innocentVictims", Tag.TAG_COMPOUND);
+            for (int j = 0; j < victims.size() && p.innocentVictims.size() < 64; j++) {
+                CompoundTag evidence = victims.getCompound(j);
+                if (evidence.hasUUID("victim")) p.innocentVictims.add(evidence.getUUID("victim"));
             }
             ListTag completed = row.getList("completedTrials", Tag.TAG_STRING);
             for (int j=0; j<completed.size(); j++) {
