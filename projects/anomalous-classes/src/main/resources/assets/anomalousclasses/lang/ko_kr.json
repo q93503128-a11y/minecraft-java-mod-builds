@@ -743,5 +743,6 @@
   "message.anomalousclasses.pact.unpaid_status": "%s의 미납 위약금이 남아 있습니다. /pact redeem <존재>로 정산할 수 있습니다.",
   "message.anomalousclasses.pact.unpaid_terms": "이전에 강행 파기하여 미납 위약금이 남아 있습니다. 아래 제물을 정산해야 재계약할 수 있습니다.",
   "message.anomalousclasses.pact.unpaid_block": "%s의 미납 위약금을 먼저 정산해야 재계약할 수 있습니다. /pact redeem <존재>.",
-  "message.anomalousclasses.pact.no_unpaid_release": "정산할 미납 해약 위약금이 없습니다."
+  "message.anomalousclasses.pact.no_unpaid_release": "정산할 미납 해약 위약금이 없습니다.",
+  "message.anomalousclasses.pact.sevenwing_breach": "무고한 생명을 해쳐 칠익의 재판관이 공정성을 거두었습니다. 유효한 판결 권능의 정당한 사용으로 신뢰를 되찾을 수 있습니다."
 }

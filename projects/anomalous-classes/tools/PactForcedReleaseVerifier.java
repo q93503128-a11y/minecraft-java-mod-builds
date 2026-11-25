@@ -94,6 +94,31 @@ public final class PactForcedReleaseVerifier {
         require(storage.player(other).has("isael")
                 && storage.player(other).outstandingReleases().isEmpty(),
                 "other player's faithful covenant intact");
+        UUID sinner = UUID.fromString("00000000-0000-0000-0000-000000000210");
+        UUID innocent = UUID.fromString("00000000-0000-0000-0000-000000000211");
+        require(!storage.recordInnocentSlaying(sinner, innocent),
+                "unsworn outsider is never punished");
+        require(storage.sign(sinner, "isael") && storage.sign(sinner, "sevenwing"),
+                "both protective oaths may coexist");
+        require(storage.recordInnocentSlaying(sinner, innocent),
+                "first confirmed innocent victim recorded");
+        storage.relation(sinner, "isael", -6);
+        storage.relation(sinner, "sevenwing", -6);
+        require(storage.player(sinner).bond("isael").relation() == 44
+                && storage.player(sinner).bond("sevenwing").relation() == 44,
+                "one victim changes only signed protective bonds");
+        storage = restart(storage);
+        require(!storage.recordInnocentSlaying(sinner, innocent),
+                "same victim cannot be penalized twice after NBT roundtrip");
+        require(storage.player(sinner).bond("isael").relation() == 44
+                && storage.player(sinner).bond("sevenwing").relation() == 44,
+                "protected faith and justice remain reduced until earned back");
+        require(storage.recordInnocentSlaying(sinner, UUID.fromString(
+                        "00000000-0000-0000-0000-000000000212")),
+                "distinct actual victim may create new breach");
+        require(storage.player(other).bond("isael").relation() == 50,
+                "another player's protective pact is unaffected");
+
         System.out.println("Sixteen exact quoted release bills, forced-exit no-payment, "
                 + "multi-user isolation, Hastel debt preservation, NBT migration and redemption: PASS");
     }

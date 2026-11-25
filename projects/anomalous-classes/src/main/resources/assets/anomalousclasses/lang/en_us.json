@@ -743,5 +743,6 @@
   "message.anomalousclasses.pact.unpaid_status": "You have an unpaid release bill for %s. Use /pact redeem <patron> to settle it.",
   "message.anomalousclasses.pact.unpaid_terms": "An earlier forced release remains unpaid. Settle these exact materials before signing again.",
   "message.anomalousclasses.pact.unpaid_block": "Settle the unpaid release bill for %s before signing again. Use /pact redeem <patron>.",
-  "message.anomalousclasses.pact.no_unpaid_release": "There is no unpaid release bill to settle."
+  "message.anomalousclasses.pact.no_unpaid_release": "There is no unpaid release bill to settle.",
+  "message.anomalousclasses.pact.sevenwing_breach": "The Sevenwing Judge withdraws favor after an innocent life is taken. Regain trust through righteous, effective judgments."
 }
