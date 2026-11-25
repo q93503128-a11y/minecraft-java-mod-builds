@@ -16,6 +16,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.BarrierInputPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PactAbilityPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SwarmCombatPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SwarmFlightPayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestSwarmTacticsPayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostAttackPayload;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -158,6 +159,11 @@ public final class ClientGameEvents {
                 PacketDistributor.sendToServer(new BarrierInputPayload(BarrierInputPayload.REPEAT));
             if (ParasiteTraitClientControls.isPact())
                 PacketDistributor.sendToServer(new PactAbilityPayload(5));
+            if (ParasiteTraitClientControls.isSwarm()) {
+                ClassManagementNavigation.enterFromWorld();
+                PacketDistributor.sendToServer(new RequestSwarmTacticsPayload(
+                        RequestSwarmTacticsPayload.QUICK));
+            }
         }
         if (ClassSelectionKeyMappings.BARRIER_CANCEL.consumeClick()) {
             if (ParasiteTraitClientControls.isBarrier())

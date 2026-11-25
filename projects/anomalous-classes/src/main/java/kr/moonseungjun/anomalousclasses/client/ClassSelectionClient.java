@@ -7,6 +7,8 @@ import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.SwarmTacticStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.RequestSwarmTacticsPayload;
 import net.minecraft.client.Minecraft;
 
 public final class ClassSelectionClient {
@@ -59,6 +61,21 @@ public final class ClassSelectionClient {
                 && minecraft.player != null && minecraft.level != null) {
             minecraft.setScreen(new PuppetWorkshopScreen(state));
         }
+    }
+
+    public static void receive(SwarmTacticStatePayload state) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof SwarmTacticsScreen screen) {
+            screen.applyServerState(state);
+            return;
+        }
+        if (state.result() != SwarmTacticStatePayload.OPEN) return;
+        if (state.view() == RequestSwarmTacticsPayload.QUICK && minecraft.screen != null) return;
+        if (state.view() == RequestSwarmTacticsPayload.MANAGEMENT
+                && minecraft.screen != null
+                && !(minecraft.screen instanceof ProfileScreen)
+                && !(minecraft.screen instanceof ClassManagementScreen)) return;
+        minecraft.setScreen(new SwarmTacticsScreen(state));
     }
 
     public static void receive(MentalDominatorStatePayload state) {

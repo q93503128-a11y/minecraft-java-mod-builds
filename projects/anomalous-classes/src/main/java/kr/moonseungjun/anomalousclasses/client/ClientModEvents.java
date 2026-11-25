@@ -11,6 +11,7 @@ import kr.moonseungjun.anomalousclasses.network.payload.ProfileStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.SkillTreeStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.MentalDominatorStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.PuppetWorkshopStatePayload;
+import kr.moonseungjun.anomalousclasses.network.payload.SwarmTacticStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteTraitModeStatePayload;
 import kr.moonseungjun.anomalousclasses.network.payload.ParasiteHostViewPayload;
 import net.neoforged.api.distmarker.Dist;
@@ -60,6 +61,8 @@ public final class ClientModEvents {
                 (payload, context) -> context.enqueueWork(() ->
                         ParasiteTraitClientControls.confirm(payload.enabled())));
         registrar.playToClient(PuppetWorkshopStatePayload.TYPE, PuppetWorkshopStatePayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
+        registrar.playToClient(SwarmTacticStatePayload.TYPE, SwarmTacticStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
         registrar.playToClient(ClassSelectionStatePayload.TYPE, ClassSelectionStatePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClassSelectionClient.receive(payload)));
