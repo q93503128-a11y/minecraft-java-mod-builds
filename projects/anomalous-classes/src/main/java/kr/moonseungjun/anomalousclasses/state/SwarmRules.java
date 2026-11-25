@@ -45,9 +45,13 @@ public final class SwarmRules {
                 + Math.min(2000, Math.max(1, level)) * .05);
     }
 
+    public static double unitDurability(int level) {
+        return 2.0 + Math.min(1000, Math.max(1, level)) * 0.025;
+    }
+
     public static int casualties(float damage, int level, int available) {
         if (!(damage > 0.0F) || available <= 0) return 0;
-        double resistance = 2.0 + Math.min(1000, Math.max(1, level)) * 0.025;
+        double resistance = unitDurability(level);
         return Math.min(available, Math.max(1, (int) Math.ceil(damage / resistance)));
     }
 }
