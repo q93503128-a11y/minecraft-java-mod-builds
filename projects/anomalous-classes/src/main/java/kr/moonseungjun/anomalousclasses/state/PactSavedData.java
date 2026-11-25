@@ -1,6 +1,8 @@
 package kr.moonseungjun.anomalousclasses.state;
 
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,6 +63,8 @@ public final class PactSavedData extends SavedData {
     public static final class Player {
         private final LinkedHashMap<String, Bond> bonds = new LinkedHashMap<>();
         private final Map<String, Long> cooldowns = new LinkedHashMap<>();
+        /** Exact release bills retained after an expressly forced exit. */
+        private final Map<String, List<PactCatalog.Material>> outstandingReleases = new LinkedHashMap<>();
         private final Set<String> completedTrials = new LinkedHashSet<>();
         private final java.util.ArrayList<String> recordedProfiles = new java.util.ArrayList<>();
         private int revision;
@@ -69,6 +73,15 @@ public final class PactSavedData extends SavedData {
         public boolean has(String id) { return bonds.containsKey(id); }
         public int count() { return bonds.size(); }
         public int revision() { return revision; }
+        public boolean hasOutstandingRelease(String patron) {
+            return outstandingReleases.containsKey(patron);
+        }
+        public List<PactCatalog.Material> outstandingRelease(String patron) {
+            return outstandingReleases.getOrDefault(patron, List.of());
+        }
+        public Map<String, List<PactCatalog.Material>> outstandingReleases() {
+            return Collections.unmodifiableMap(outstandingReleases);
+        }
         public long readyAt(String spell) { return cooldowns.getOrDefault(spell, 0L); }
         public boolean hasProof(String patron) { return completedTrials.contains(patron); }
         public Set<String> completedTrials() { return Set.copyOf(completedTrials); }
@@ -81,7 +94,8 @@ public final class PactSavedData extends SavedData {
     public Player player(UUID id) { return players.computeIfAbsent(id, k -> new Player()); }
     public boolean sign(UUID owner, String patron) {
         Player p = player(owner);
-        if (PactCatalog.get(patron) == null || p.bonds.containsKey(patron)) return false;
+        if (PactCatalog.get(patron) == null || p.bonds.containsKey(patron)
+                || p.hasOutstandingRelease(patron)) return false;
         p.bonds.put(patron, new Bond(patron, 50, 0, 0));
         p.revision++;
         setDirty();
@@ -114,6 +128,40 @@ public final class PactSavedData extends SavedData {
         setDirty();
         return true;
     }
+    /**
+     * End the selected bond without paying now. Capture its existing release
+     * price, plus actual outstanding Hastel combat debt; do not invent a new
+     * penalty, tax, or time-dependent charge.
+     */
+    public boolean forceBreakBond(UUID owner, String patron) {
+        Player p = player(owner);
+        Bond bond = p.bond(patron);
+        PactCatalog.Patron definition = PactCatalog.get(patron);
+        if (bond == null || definition == null || p.hasOutstandingRelease(patron)) return false;
+        Map<ResourceLocation, Integer> grouped = new LinkedHashMap<>();
+        for (PactCatalog.Material material : definition.release())
+            grouped.merge(material.itemId(), material.count(), Math::addExact);
+        if (patron.equals("hastel") && bond.debt > 0)
+            grouped.merge(ResourceLocation.withDefaultNamespace("gold_ingot"), bond.debt, Math::addExact);
+        if (grouped.isEmpty()) return false;
+        List<PactCatalog.Material> snapshot = new ArrayList<>();
+        grouped.forEach((id, count) -> snapshot.add(new PactCatalog.Material(id, count)));
+        p.outstandingReleases.put(patron, List.copyOf(snapshot));
+        p.bonds.remove(patron);
+        p.revision++;
+        setDirty();
+        return true;
+    }
+
+    /** Clear only the specific bill that the server has just charged. */
+    public boolean settleForcedRelease(UUID owner, String patron) {
+        Player p = player(owner);
+        if (p.has(patron) || p.outstandingReleases.remove(patron) == null) return false;
+        p.revision++;
+        setDirty();
+        return true;
+    }
+
     /** One event on the SECOND incompatible signature, never a recurring timer. */
     public boolean markIsaelConflict(UUID owner) {
         Player p=player(owner);
@@ -322,6 +370,21 @@ public final class PactSavedData extends SavedData {
                 entries.add(entry);
             }
             row.put("bonds", entries);
+            ListTag unpaid = new ListTag();
+            p.outstandingReleases.forEach((patron, materials) -> {
+                CompoundTag entry = new CompoundTag();
+                entry.putString("patron", patron);
+                ListTag bill = new ListTag();
+                for (PactCatalog.Material material : materials) {
+                    CompoundTag item = new CompoundTag();
+                    item.putString("item", material.itemId().toString());
+                    item.putInt("count", material.count());
+                    bill.add(item);
+                }
+                entry.put("bill", bill);
+                unpaid.add(entry);
+            });
+            row.put("unpaidReleaseBills", unpaid);
             ListTag completed = new ListTag();
             p.completedTrials.forEach(patronId -> completed.add(StringTag.valueOf(patronId)));
             row.put("completedTrials", completed);
@@ -399,6 +462,31 @@ public final class PactSavedData extends SavedData {
                     }
                 }
                 p.bonds.put(id,bond);
+            }
+            ListTag unpaid = row.getList("unpaidReleaseBills", Tag.TAG_COMPOUND);
+            for (int j = 0; j < unpaid.size() && j < PactCatalog.all().size(); j++) {
+                CompoundTag entry = unpaid.getCompound(j);
+                String patron = entry.getString("patron");
+                if (PactCatalog.get(patron) == null || p.has(patron)
+                        || p.outstandingReleases.containsKey(patron)) continue;
+                ListTag bill = entry.getList("bill", Tag.TAG_COMPOUND);
+                if (bill.isEmpty() || bill.size() > 12) continue;
+                Map<ResourceLocation, Integer> grouped = new LinkedHashMap<>();
+                boolean valid = true;
+                for (int k = 0; k < bill.size(); k++) {
+                    CompoundTag material = bill.getCompound(k);
+                    ResourceLocation id = ResourceLocation.tryParse(material.getString("item"));
+                    int count = material.getInt("count");
+                    if (id == null || count < 1 || count > 4096 || grouped.containsKey(id)) {
+                        valid = false;
+                        break;
+                    }
+                    grouped.put(id, count);
+                }
+                if (!valid) continue;
+                List<PactCatalog.Material> materials = new ArrayList<>();
+                grouped.forEach((id, count) -> materials.add(new PactCatalog.Material(id, count)));
+                p.outstandingReleases.put(patron, List.copyOf(materials));
             }
             // Old saves already applied the -10 once at sign time. Rehydrate
             // its ongoing conflict without charging the same breach again.
