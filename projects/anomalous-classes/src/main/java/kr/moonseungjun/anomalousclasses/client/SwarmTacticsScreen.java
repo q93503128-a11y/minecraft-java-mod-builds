@@ -209,7 +209,7 @@ public final class SwarmTacticsScreen extends Screen {
                 state.appliedAttackPercent() + ":" + (100 - state.appliedAttackPercent());
         Component current = state.temporary() ? label("temporary_status") :
                 state.tactics().stream().filter(t -> t.id().equals(state.selectedId()))
-                        .findFirst().map(t -> Component.literal(t.name())).orElse(label("none"));
+                        .findFirst().map(t -> (Component) Component.literal(t.name())).orElse(label("none"));
         MenuUi.drawFit(graphics, font, Component.translatable(
                 "screen.anomalousclasses.swarm.current", ratio, current),
                 surface.x() + 2, surface.y() + 12, surface.width() - 4, 0xFFD8D0C5);
