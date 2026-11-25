@@ -1,5 +1,7 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-25 군체술사 스킬트리 9종·5등급 군체 핵 서버 효과 연결:** 기존 그래프 스킬트리 주요 단계의 대응 랭크를 사용해 공격·급습·희생·갑피·탄도 대응·호위·자연 증식·재결집·추적을 서버 계산에 반영. 실제 장착한 군체 핵 등급만 공격·개체 내구에 +5/+10/+15/+20/+40% 적용. 실제 피격의 잔여 피해를 NBT로 보존하고 군체 역할 변경 시 남아 있는 부상도 처리. [Actions #45535522465](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/45535522465) **BUILD VERIFIED / JAR PRODUCED**, `verifySwarmRules`와 기존 그래프 트리 검증 통과. **실게임·멀티플레이 NOT TESTED.** [성장 효과 체크포인트](./SWARM_GROWTH_FOCUS_IMPLEMENTATION_CHECKPOINT_2026-11-25.md).
+
 > **2026-11-22 군체술사 비행 서버 구현:** 운반군 물리 예약(역할별 N 합 보존)·비행 자격·H 전환·바닐라 이동/충돌·운반군 피격 및 부족 시 감속 착륙·전직/차원/재접속 정리. [GitHub Actions #45018666549](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/45018666549) **BUILD VERIFIED / JAR PRODUCED**, 군체 규칙 검증 통과. **CLIENT PLAYTEST / MULTIPLAYER NOT TESTED**, 전술 GUI/매개체·패시브 고유 효과/정식 디자인 **NOT IMPLEMENTED**. [비행 구현 체크포인트](./SWARM_FLIGHT_IMPLEMENTATION_CHECKPOINT_2026-11-22.md).
 
 > **2026-11-22 군체술사 2차 원격 표적·급습·소모 서버 연계:** R 무료 서버 시선 표적·Z 실제 접근 후 급습·X 실제 공격대 일부 희생, 사거리·아군·서버 쿨다운과 세이브/직업 변경 연계. [GitHub Actions #45006788611](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/45006788611)에서 **BUILD VERIFIED / JAR PRODUCED**, `verifySwarmRules` (N 보존·자유 전술·희생·쿨다운) 통과. 1차 실피격·클라이언트·멀티플레이 **NOT PLAYTESTED**, 비행·전술 GUI·고유 패시브 효과·Codex 시각 디자인 **NOT IMPLEMENTED**. [이번 체크포인트](./SWARM_COMBAT_IMPLEMENTATION_CHECKPOINT_2026-11-22.md).
