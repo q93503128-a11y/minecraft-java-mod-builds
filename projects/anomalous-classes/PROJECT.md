@@ -1,5 +1,7 @@
 # 이능 직업 서바이벌 (working title)
 
+> **2026-11-25 군체술사 전술 관리 구현:** 기존 이름 기반 전술 8개 저장을 고유 UUID·수정 버전·순서 기반 데이터로 확장, 구형 저장 불러오기 시 기존 활성 이름과 비율 유지. 공통 **U 관리 화면**, 군체술사 전용 **G 빠른 전술 화면**(기존 G 키 직업별 분기), 저장·이름 수정·삭제·순서 변경·일시 비율 적용/복원·즉시 선택을 기존 `MenuUi` 시각 자산으로 연결. [CI #45537546610](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/45537546610) **BUILD VERIFIED / JAR PRODUCED**, `verifySwarmRules` 회귀 검증 성공. 현재 퀵 화면은 기존 `Screen` 기반이므로 **게임 내 이동을 계속 유지하는 논블로킹 휠은 미구현**, 실제 시각·동작 평가와 Codex 마감이 필요. [전술 구현 체크포인트](./SWARM_TACTICS_IMPLEMENTATION_CHECKPOINT_2026-11-25.md).
+
 > **2026-11-25 군체술사 스킬트리 9종·5등급 군체 핵 서버 효과 연결:** 기존 그래프 스킬트리 주요 단계의 대응 랭크를 사용해 공격·급습·희생·갑피·탄도 대응·호위·자연 증식·재결집·추적을 서버 계산에 반영. 실제 장착한 군체 핵 등급만 공격·개체 내구에 +5/+10/+15/+20/+40% 적용. 실제 피격의 잔여 피해를 NBT로 보존하고 군체 역할 변경 시 남아 있는 부상도 처리. [Actions #45535522465](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/45535522465) **BUILD VERIFIED / JAR PRODUCED**, `verifySwarmRules`와 기존 그래프 트리 검증 통과. **실게임·멀티플레이 NOT TESTED.** [성장 효과 체크포인트](./SWARM_GROWTH_FOCUS_IMPLEMENTATION_CHECKPOINT_2026-11-25.md).
 
 > **2026-11-22 군체술사 비행 서버 구현:** 운반군 물리 예약(역할별 N 합 보존)·비행 자격·H 전환·바닐라 이동/충돌·운반군 피격 및 부족 시 감속 착륙·전직/차원/재접속 정리. [GitHub Actions #45018666549](https://github.com/q93503128-a11y/minecraft-java-mod-builds/actions/runs/45018666549) **BUILD VERIFIED / JAR PRODUCED**, 군체 규칙 검증 통과. **CLIENT PLAYTEST / MULTIPLAYER NOT TESTED**, 전술 GUI/매개체·패시브 고유 효과/정식 디자인 **NOT IMPLEMENTED**. [비행 구현 체크포인트](./SWARM_FLIGHT_IMPLEMENTATION_CHECKPOINT_2026-11-22.md).
