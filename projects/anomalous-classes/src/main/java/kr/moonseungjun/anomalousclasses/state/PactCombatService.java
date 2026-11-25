@@ -418,14 +418,29 @@ public final class PactCombatService {
         }
     }
     public static void onDeath(LivingDeathEvent event) {
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)
-                || !owned(player,"isael")) return;
+        if (event.isCanceled() || !(event.getSource().getEntity() instanceof ServerPlayer player)
+                || !PactService.isPact(player) || player.isCreative()) return;
+        boolean isael = owned(player, "isael");
+        boolean sevenwing = owned(player, "sevenwing");
+        if (!isael && !sevenwing) return;
+        // No blanket moral judgment on hostile mobs, player fights, or
+        // a golem actually attacking its killer.
         if (!(event.getEntity() instanceof AbstractVillager)
-                && !(event.getEntity() instanceof IronGolem golem && golem.getTarget()!=player))
+                && !(event.getEntity() instanceof IronGolem golem && golem.getTarget() != player))
             return;
-        PactSavedData.get(player.getServer()).relation(player.getUUID(),"isael",-6);
+        PactSavedData saved = PactSavedData.get(player.getServer());
+        if (!saved.recordInnocentSlaying(player.getUUID(), event.getEntity().getUUID())) return;
+        // Reuse the existing Isael -6 consequence. The Sevenwing verdict
+        // covenant already explicitly forbids harming innocent villagers.
+        if (isael) {
+            saved.relation(player.getUUID(), "isael", -6);
+            tell(player, "message.anomalousclasses.pact.isael_breach");
+        }
+        if (sevenwing) {
+            saved.relation(player.getUUID(), "sevenwing", -6);
+            tell(player, "message.anomalousclasses.pact.sevenwing_breach");
+        }
         PactBlessingService.apply(player);
-        tell(player,"message.anomalousclasses.pact.isael_breach");
     }
     public static void tick(ServerTickEvent.Post event) {
         MinecraftServer server=event.getServer();
