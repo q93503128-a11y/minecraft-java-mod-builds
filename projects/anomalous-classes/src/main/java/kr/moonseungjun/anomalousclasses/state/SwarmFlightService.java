@@ -94,8 +94,10 @@ public final class SwarmFlightService {
         }
         var abilities = player.getAbilities();
         player.getPersistentData().putFloat(ORIGINAL_SPEED, abilities.getFlyingSpeed());
-        abilities.setFlyingSpeed(SwarmFlightRules.flyingSpeed(ClassProfileSavedData.get(player.getServer())
-                .profile(player.getUUID()).progress(ClassId.SWARM_CASTER).level()));
+        PlayerClassProfile profile = ClassProfileSavedData.get(player.getServer())
+                .profile(player.getUUID());
+        abilities.setFlyingSpeed(SwarmGrowthRules.from(profile).flightSpeed(
+                SwarmFlightRules.flyingSpeed(profile.progress(ClassId.SWARM_CASTER).level())));
         abilities.mayfly = true;
         abilities.flying = true;
         player.getPersistentData().putBoolean(GRANTED, true);
@@ -179,6 +181,15 @@ public final class SwarmFlightService {
                     continue;
                 }
             } else flight.lowLiftTicks = 0;
+            if (server.overworld().getGameTime() % 20 == 0) {
+                PlayerClassProfile profile = ClassProfileSavedData.get(server).profile(id);
+                float expected = SwarmGrowthRules.from(profile).flightSpeed(
+                        SwarmFlightRules.flyingSpeed(profile.progress(ClassId.SWARM_CASTER).level()));
+                if (Math.abs(player.getAbilities().getFlyingSpeed() - expected) > 0.000001F) {
+                    player.getAbilities().setFlyingSpeed(expected);
+                    player.onUpdateAbilities();
+                }
+            }
             if (player.getAbilities().mayfly && !player.getAbilities().flying) {
                 player.getAbilities().flying = true;
                 player.onUpdateAbilities();

@@ -41,6 +41,7 @@ public final class SwarmCasterService {
     private static final Map<UUID, EnumMap<SwarmNodeRole, SwarmNodeEntity>> NODES = new HashMap<>();
     private static final Map<UUID, UUID> PRIORITY_TARGETS = new HashMap<>();
     private static final Map<UUID, RushOrder> RUSH_ORDERS = new HashMap<>();
+    private static final Map<UUID, Long> SACRIFICE_FOLLOWUPS = new HashMap<>();
     private static final double TARGET_RANGE = 48.0;
     private static final long RUSH_COOLDOWN = 160L;
     private static final long SACRIFICE_COOLDOWN = 240L;
@@ -83,6 +84,7 @@ public final class SwarmCasterService {
             NODES.clear();
             PRIORITY_TARGETS.clear();
             RUSH_ORDERS.clear();
+            SACRIFICE_FOLLOWUPS.clear();
             activeServer = server;
         }
         followLiftNodes(server);
@@ -97,8 +99,9 @@ public final class SwarmCasterService {
                 clear(id);
                 continue;
             }
-            int level = ClassProfileSavedData.get(server).profile(id)
-                    .progress(ClassId.SWARM_CASTER).level();
+            PlayerClassProfile profile = ClassProfileSavedData.get(server).profile(id);
+            int level = profile.progress(ClassId.SWARM_CASTER).level();
+            SwarmGrowthRules growth = SwarmGrowthRules.from(profile);
             SwarmSavedData.State state = data.player(id);
             if (SwarmFlightService.needsLift(player, state)) {
                 var nodes = NODES.get(id);
@@ -111,14 +114,14 @@ public final class SwarmCasterService {
                 if (state.reserveLift(SwarmFlightService.liftRequired(player), attackNear, guardNear) > 0)
                     data.changed();
             }
-            if (state.advance(server.overworld().getGameTime(), SwarmRules.maximum(level)))
-                data.changed();
+            if (state.advance(server.overworld().getGameTime(), SwarmRules.maximum(level),
+                    growth.regenerationTicks(), growth.transferBudget())) data.changed();
             Monster target = selectedEnemy(player);
             if (target == null) target = nearestHostile(player.serverLevel(), player, 12);
-            updateRole(player, state, SwarmNodeRole.GUARD, target, level);
-            updateRole(player, state, SwarmNodeRole.ATTACK, target, level);
-            updateRole(player, state, SwarmNodeRole.REGROUP, target, level);
-            updateRole(player, state, SwarmNodeRole.LIFT, target, level);
+            updateRole(player, state, SwarmNodeRole.GUARD, target, level, growth);
+            updateRole(player, state, SwarmNodeRole.ATTACK, target, level, growth);
+            updateRole(player, state, SwarmNodeRole.REGROUP, target, level, growth);
+            updateRole(player, state, SwarmNodeRole.LIFT, target, level, growth);
             var liveNodes = NODES.get(id);
             SwarmNodeEntity lift = liveNodes == null ? null : liveNodes.get(SwarmNodeRole.LIFT);
             SwarmFlightService.afterRoleUpdate(player, state,
@@ -246,7 +249,10 @@ public final class SwarmCasterService {
         }
         int level = ClassProfileSavedData.get(player.getServer())
                 .profile(player.getUUID()).progress(ClassId.SWARM_CASTER).level();
-        float damage = SwarmRules.sacrificeDamage(cost, level);
+        SwarmGrowthRules growth = SwarmGrowthRules.from(ClassProfileSavedData.get(player.getServer())
+                .profile(player.getUUID()));
+        float damage = (float) (SwarmRules.sacrificeDamage(cost, level)
+                * growth.sacrificeAttackFactor());
         // Capture physically reachable secondary enemies before the first blow
         // can kill or remove its primary target.
         final Monster primary = target;
@@ -274,6 +280,8 @@ public final class SwarmCasterService {
             var nodes = NODES.get(player.getUUID());
             if (nodes != null) nodes.remove(SwarmNodeRole.ATTACK);
         }
+        if (growth.sacrificeInstinct() >= 30)
+            SACRIFICE_FOLLOWUPS.put(player.getUUID(), now + 40L);
         say(player, "message.anomalousclasses.swarm.sacrifice_success", cost);
     }
 
@@ -327,7 +335,8 @@ public final class SwarmCasterService {
     }
 
     private static void updateRole(ServerPlayer player, SwarmSavedData.State state,
-                                   SwarmNodeRole role, Monster threat, int level) {
+                                   SwarmNodeRole role, Monster threat, int level,
+                                   SwarmGrowthRules growth) {
         UUID id = player.getUUID();
         EnumMap<SwarmNodeRole, SwarmNodeEntity> map =
                 NODES.computeIfAbsent(id, ignored -> new EnumMap<>(SwarmNodeRole.class));
@@ -355,7 +364,8 @@ public final class SwarmCasterService {
         if (role == SwarmNodeRole.ATTACK && SwarmFlightService.isBoarding(player)
                 && SwarmFlightService.needsLift(player, state)) {
             // Real attackers return before joining the lift squad.
-            if (node.tickCount % 10 == 0) node.getNavigation().moveTo(player, 1.15);
+            if (node.tickCount % 10 == 0)
+                node.getNavigation().moveTo(player, 1.15 * growth.regroupMoveFactor());
         } else if (role == SwarmNodeRole.ATTACK && threat != null) {
             long now = tickTime(player);
             RushOrder rush = RUSH_ORDERS.get(id);
@@ -364,12 +374,17 @@ public final class SwarmCasterService {
                 RUSH_ORDERS.remove(id);
                 rush = null;
             }
-            if (node.tickCount % 10 == 0)
-                node.getNavigation().moveTo(threat, rush == null ? 1.15 : 1.45);
+            if (node.tickCount % 10 == 0) {
+                double speed = (rush == null ? 1.15 : 1.45)
+                        * growth.chaseSpeedFactor()
+                        * (rush != null && growth.assaultTactics() >= 20 ? 1.08 : 1.0);
+                node.getNavigation().moveTo(threat, speed);
+            }
             if (rush != null && node.distanceToSqr(threat) < 3.24
                     && node.getSensing().hasLineOfSight(threat)) {
                 RUSH_ORDERS.remove(id); // Never replay this cast on another tick.
-                float burst = SwarmRules.rushDamage(count, level);
+                float burst = (float) (SwarmRules.rushDamage(count, level)
+                        * growth.rushAttackFactor());
                 if (threat.hurt(node.damageSources().mobAttack(node), burst)) {
                     int hits = 1;
                     final SwarmNodeEntity striker = node;
@@ -384,17 +399,25 @@ public final class SwarmCasterService {
                 }
                 say(player, "message.anomalousclasses.swarm.rush_landed");
             }
+            boolean followup = SACRIFICE_FOLLOWUPS.getOrDefault(id, 0L) > tickTime(player);
+            int interval = followup ? 10 : 20;
             if (node.distanceToSqr(threat) < 2.25 && node.getSensing().hasLineOfSight(threat)
-                    && node.tickCount % 20 == 0) {
-                float damage = (float) Math.min(12.0, .8 + Math.sqrt(count) * .65 + level * .03);
+                    && node.tickCount % interval == 0) {
+                float damage = (float) (Math.min(12.0,
+                        .8 + Math.sqrt(count) * .65 + level * .03)
+                        * growth.normalAttackFactor());
                 threat.hurt(node.damageSources().mobAttack(node), damage);
             }
         } else {
             node.getNavigation().stop();
             Vec3 intended = player.position().add(0,
                     role == SwarmNodeRole.LIFT ? .05 : 1.1, 0);
+            Vec3 incoming = role == SwarmNodeRole.GUARD && growth.ballisticSense() > 0
+                    ? projectedGuardPosition(player, node, growth.ballisticSense()) : null;
             if (role == SwarmNodeRole.LIFT) {
                 intended = intended.add(.35, 0, .45);
+            } else if (incoming != null) {
+                intended = incoming;
             } else if (role == SwarmNodeRole.GUARD && threat != null) {
                 Vec3 direction = threat.position().subtract(player.position());
                 if (direction.horizontalDistanceSqr() > .01)
@@ -403,8 +426,13 @@ public final class SwarmCasterService {
                 intended = intended.add(role == SwarmNodeRole.GUARD ? .7 : -.7, 0, .3);
             }
             Vec3 displacement = intended.subtract(node.position());
-            if (role != SwarmNodeRole.LIFT && displacement.lengthSqr() > .01)
-                node.move(MoverType.SELF, displacement.scale(Math.min(.9, .25 / Math.sqrt(displacement.lengthSqr()))));
+            if (role != SwarmNodeRole.LIFT && displacement.lengthSqr() > .01) {
+                double factor = role == SwarmNodeRole.GUARD ? growth.guardMoveFactor()
+                        : growth.regroupMoveFactor();
+                double maxStep = .25 * factor;
+                node.move(MoverType.SELF, displacement.scale(
+                        Math.min(1.0, maxStep / Math.sqrt(displacement.lengthSqr()))));
+            }
             // No hidden preset is saved. Until the player writes a tactic, the
             // regrouping colony still fights back against an immediate attacker.
             if (role == SwarmNodeRole.REGROUP && threat != null
@@ -413,6 +441,38 @@ public final class SwarmCasterService {
                     && node.tickCount % 30 == 0)
                 threat.hurt(node.damageSources().mobAttack(node), .65F);
         }
+    }
+
+    /**
+     * Short-range threat projection only for real enemy projectiles heading
+     * toward the owner. This repositions a physical collider; it never erases
+     * projectiles or grants invulnerability outside its hitbox.
+     */
+    private static Vec3 projectedGuardPosition(ServerPlayer owner, SwarmNodeEntity guard,
+                                                int senseRank) {
+        Vec3 body = owner.position().add(0, 1.0, 0);
+        double closest = Double.MAX_VALUE;
+        Vec3 intercept = null;
+        double radius = senseRank >= 15 ? 8.0 : 5.0;
+        for (Projectile shot : owner.serverLevel().getEntitiesOfClass(Projectile.class,
+                owner.getBoundingBox().inflate(radius),
+                arrow -> arrow.isAlive() && arrow.getDeltaMovement().lengthSqr() > .02
+                        && !friendlyAttacker(guard, arrow.getOwner()))) {
+            Vec3 velocity = shot.getDeltaMovement();
+            Vec3 relative = body.subtract(shot.position());
+            double steps = relative.dot(velocity) / velocity.lengthSqr();
+            if (steps < .1 || steps > 12.0) continue;
+            Vec3 predicted = shot.position().add(velocity.scale(steps));
+            if (predicted.distanceToSqr(body) > 2.5) continue;
+            double distance = shot.distanceToSqr(owner);
+            if (distance >= closest) continue;
+            Vec3 facing = shot.position().subtract(owner.position());
+            Vec3 horizontal = new Vec3(facing.x, 0, facing.z);
+            if (horizontal.lengthSqr() < .01) continue;
+            closest = distance;
+            intercept = body.add(horizontal.normalize().scale(1.15));
+        }
+        return intercept;
     }
 
     public static boolean friendlyHit(SwarmNodeEntity node, DamageSource source) {
@@ -452,13 +512,17 @@ public final class SwarmCasterService {
         if (map == null || map.get(node.role()) != node) return;
         ServerPlayer owner = node.level().getServer().getPlayerList().getPlayer(node.ownerId());
         if (owner == null || !isSwarm(owner)) return;
-        int level = ClassProfileSavedData.get(owner.getServer()).profile(owner.getUUID())
-                .progress(ClassId.SWARM_CASTER).level();
+        PlayerClassProfile profile = ClassProfileSavedData.get(owner.getServer())
+                .profile(owner.getUUID());
+        int level = profile.progress(ClassId.SWARM_CASTER).level();
         SwarmSavedData data = SwarmSavedData.get(owner.getServer());
         SwarmSavedData.State state = data.player(owner.getUUID());
-        int casualties = SwarmRules.casualties(damage, level, state.count(node.role()));
-        if (state.lose(node.role(), casualties) > 0) {
-            data.changed();
+        double durability = SwarmRules.unitDurability(level)
+                * SwarmGrowthRules.from(profile).durabilityFactor(node.role());
+        int casualties = state.applyDamage(node.role(), damage, durability);
+        // A hit that injured part of an organism still changes persisted state.
+        if (damage > 0 && Float.isFinite(damage)) data.changed();
+        if (casualties > 0) {
             node.setCount(state.count(node.role()));
             if (state.count(node.role()) == 0) {
                 node.discard();
@@ -470,6 +534,7 @@ public final class SwarmCasterService {
     public static void clear(UUID owner) {
         PRIORITY_TARGETS.remove(owner);
         RUSH_ORDERS.remove(owner);
+        SACRIFICE_FOLLOWUPS.remove(owner);
         EnumMap<SwarmNodeRole, SwarmNodeEntity> nodes = NODES.remove(owner);
         if (nodes != null) nodes.values().forEach(Entity::discard);
     }
