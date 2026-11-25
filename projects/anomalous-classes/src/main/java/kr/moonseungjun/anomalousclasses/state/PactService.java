@@ -18,7 +18,7 @@ import net.minecraft.world.item.ItemStack;
 /** Explicit two-step server confirmation; no offerings are charged for inspection. */
 public final class PactService {
     private static final long OFFER_DURATION_MS = 60_000L;
-    private enum Action { SIGN, RELEASE, DEEPEN, SETTLE }
+    private enum Action { SIGN, RELEASE, DEEPEN, SETTLE, FORCE_RELEASE, REDEEM_RELEASE }
     private record Pending(String id, Action action, int count, int revision, long expires,
                            ResourceKey<Level> altarDimension, BlockPos altarPos) {}
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
@@ -57,6 +57,11 @@ public final class PactService {
                 say(player,"message.anomalousclasses.pact.nerea_status",
                         bond.nereaReconciliation(),2);
         }
+        for (var unpaid : state.outstandingReleases().entrySet()) {
+            PactCatalog.Patron patron = PactCatalog.get(unpaid.getKey());
+            if (patron != null)
+                say(player, "message.anomalousclasses.pact.unpaid_status", patron.name());
+        }
         for (var patron : PactCatalog.introductory())
             player.sendSystemMessage(Component.translatable("message.anomalousclasses.pact.available",
                     patron.name(), patron.id()));
@@ -83,6 +88,13 @@ public final class PactService {
             player.sendSystemMessage(Component.translatable(
                     "message.anomalousclasses.pact.material",material.count(),
                     Component.translatable(material.item().getDescriptionId())));
+        if (state.hasOutstandingRelease(id)) {
+            say(player, "message.anomalousclasses.pact.unpaid_terms");
+            for (var material : state.outstandingRelease(id))
+                player.sendSystemMessage(Component.translatable(
+                        "message.anomalousclasses.pact.material", material.count(),
+                        Component.translatable(material.item().getDescriptionId())));
+        }
         PactSavedData.Bond bond=state.bond(id);
         if(bond==null) {
             say(player,"message.anomalousclasses.pact.terms_unsigned");return;
@@ -113,6 +125,9 @@ public final class PactService {
         if (state.has(id)) {
             say(player, "message.anomalousclasses.pact.already_signed"); return;
         }
+        if (state.hasOutstandingRelease(id)) {
+            say(player, "message.anomalousclasses.pact.unpaid_block", patron.name()); return;
+        }
         quote(player, patron, state.count(), false);
         PENDING.put(player.getUUID(), new Pending(id, Action.SIGN, state.count(),
                 state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS, null, null));
@@ -131,6 +146,9 @@ public final class PactService {
         PactSavedData.Player state = PactSavedData.get(player.getServer()).player(player.getUUID());
         if (state.has(id)) {
             say(player, "message.anomalousclasses.pact.already_signed"); return;
+        }
+        if (state.hasOutstandingRelease(id)) {
+            say(player, "message.anomalousclasses.pact.unpaid_block", patron.name()); return;
         }
         if (patron.tier() >= 3 && !state.hasProof(id)) {
             // The player can read all obligations before choosing to fight the trial.
@@ -175,6 +193,56 @@ public final class PactService {
         PENDING.put(player.getUUID(), new Pending(id, Action.RELEASE, state.count(),
                 state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS, null, null));
     }
+    /** Immediate force release after a separate, time-limited explicit confirmation.
+     * The quoted original release price remains due, but inventory is not charged now.
+     */
+    public static void previewForcedRelease(ServerPlayer player, String id) {
+        PENDING.remove(player.getUUID());
+        if (!isPact(player) || CombatTracker.isLocked(player)) {
+            say(player, "message.anomalousclasses.pact.unavailable"); return;
+        }
+        PactSavedData.Player state = PactSavedData.get(player.getServer()).player(player.getUUID());
+        PactCatalog.Patron patron = PactCatalog.get(id);
+        if (patron == null || !state.has(id) || state.hasOutstandingRelease(id)) {
+            say(player, "message.anomalousclasses.pact.not_signed"); return;
+        }
+        say(player, "message.anomalousclasses.pact.force_preview", patron.name());
+        for (var material : patron.release())
+            player.sendSystemMessage(Component.translatable(
+                    "message.anomalousclasses.pact.material", material.count(),
+                    Component.translatable(material.item().getDescriptionId())));
+        if (id.equals("hastel") && state.bond(id).debt() > 0)
+            say(player, "message.anomalousclasses.pact.force_hastel_debt",
+                    state.bond(id).debt());
+        if (id.equals("velkan") && state.has("isael")
+                && state.bond("isael").vowConflict())
+            say(player, "message.anomalousclasses.pact.vow_release_help");
+        say(player, "message.anomalousclasses.pact.confirm_hint");
+        PENDING.put(player.getUUID(), new Pending(id, Action.FORCE_RELEASE, state.count(),
+                state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS, null, null));
+    }
+
+    /** Pay the exact fixed bill from a former covenant without re-signing. */
+    public static void previewRedeemRelease(ServerPlayer player, String id) {
+        PENDING.remove(player.getUUID());
+        if (!isPact(player) || CombatTracker.isLocked(player)) {
+            say(player, "message.anomalousclasses.pact.unavailable"); return;
+        }
+        PactSavedData.Player state = PactSavedData.get(player.getServer()).player(player.getUUID());
+        PactCatalog.Patron patron = PactCatalog.get(id);
+        if (patron == null || !state.hasOutstandingRelease(id) || state.has(id)) {
+            say(player, "message.anomalousclasses.pact.no_unpaid_release"); return;
+        }
+        say(player, "message.anomalousclasses.pact.redeem_preview", patron.name());
+        for (var material : state.outstandingRelease(id))
+            player.sendSystemMessage(Component.translatable(
+                    "message.anomalousclasses.pact.material", material.count(),
+                    Component.translatable(material.item().getDescriptionId())));
+        say(player, "message.anomalousclasses.pact.confirm_hint");
+        PENDING.put(player.getUUID(), new Pending(id, Action.REDEEM_RELEASE, state.count(),
+                state.revision(), System.currentTimeMillis() + OFFER_DURATION_MS, null, null));
+    }
+
     /**
      * The existing battle debt may also be settled by a one-time, explicitly
      * accepted gold payment. No automatic timer, withdrawal, or upkeep.
@@ -290,27 +358,35 @@ public final class PactService {
         boolean release = pending.action() == Action.RELEASE;
         boolean deepening = pending.action() == Action.DEEPEN;
         boolean settling = pending.action() == Action.SETTLE;
+        boolean forced = pending.action() == Action.FORCE_RELEASE;
+        boolean redeem = pending.action() == Action.REDEEM_RELEASE;
         PactSavedData.Bond bond=state.bond(patron.id());
         PactDeepeningService.Stage stage=deepening && bond!=null
                 ? PactDeepeningService.next(patron.id(),bond.deepening()) : null;
         if (settling ? (!patron.id().equals("hastel") || bond==null || bond.debt()<=0)
+                : redeem ? (!state.hasOutstandingRelease(patron.id()) || bond != null)
+                : forced ? (bond == null || state.hasOutstandingRelease(patron.id()))
                 : deepening ? (bond == null || stage == null || bond.progress()<stage.proofs())
                 : release ? (bond == null || bond.debt() > 0)
                 : (!patron.enabled() || (!patron.accessible()
                        && !validAltar(player, patron.id(), pending.altarDimension(), pending.altarPos()))
                        || (patron.tier() >= 3 && !state.hasProof(patron.id()))
-                       || state.has(patron.id()))) {
+                       || state.has(patron.id()) || state.hasOutstandingRelease(patron.id()))) {
             say(player, "message.anomalousclasses.pact.changed"); return;
         }
-        long hpCost = release || deepening || settling ? 0 : (long) Math.ceil(patron.hpSacrifice());
+        long hpCost = release || deepening || settling || forced || redeem
+                ? 0 : (long) Math.ceil(patron.hpSacrifice());
         if (hpCost > 0 && player.getHealth() <= hpCost + 1.0) {
             say(player, "message.anomalousclasses.pact.need_health"); return;
         }
         var offering = settling
                 ? java.util.List.of(new PactCatalog.Material(
-                        ResourceLocation.withDefaultNamespace("gold_ingot"),bond.debt()))
+                        ResourceLocation.withDefaultNamespace("gold_ingot"), bond.debt()))
+                : redeem ? state.outstandingRelease(patron.id())
+                : forced ? java.util.List.<PactCatalog.Material>of()
                 : deepening ? stage.offering() : release ? patron.release() : patron.offering();
-        int multiplierCount = release || deepening || settling ? 0 : state.count();
+        int multiplierCount = release || deepening || settling || forced || redeem
+                ? 0 : state.count();
         if (!canPay(player.getInventory(), offering, multiplierCount)) {
             say(player, "message.anomalousclasses.pact.need_material"); return;
         }
@@ -320,6 +396,13 @@ public final class PactService {
         if (release) {
             saved.breakBond(player.getUUID(), patron.id());
             PactCombatService.removeBond(player, patron.id());
+        } else if (forced) {
+            if (!saved.forceBreakBond(player.getUUID(), patron.id()))
+                throw new IllegalStateException("Pact break changed during server settlement");
+            PactCombatService.removeBond(player, patron.id());
+        } else if (redeem) {
+            if (!saved.settleForcedRelease(player.getUUID(), patron.id()))
+                throw new IllegalStateException("Pact arrears changed during server settlement");
         } else if(settling) {
             saved.debt(player.getUUID(),"hastel",0);
             PactTierTwoCombatService.onDebtSettled(player);
@@ -333,11 +416,13 @@ public final class PactService {
         }
         PactBlessingService.apply(player);
         if(settling) say(player,"message.anomalousclasses.pact.settle_done");
+        else if(forced) say(player,"message.anomalousclasses.pact.force_done", patron.name());
+        else if(redeem) say(player,"message.anomalousclasses.pact.redeem_done", patron.name());
         else if(deepening) say(player,"message.anomalousclasses.pact.deepening_done",
                 patron.name(),saved.player(player.getUUID()).bond(patron.id()).deepening());
         else say(player,release ? "message.anomalousclasses.pact.released"
                 : "message.anomalousclasses.pact.signed",patron.name());
-        if (!release && !deepening && !settling)
+        if (pending.action() == Action.SIGN)
             RpgExperienceService.awardFirst(player, "pact_signed:" + patron.id(), 1_200);
     }
     private static boolean canPay(Inventory inventory, java.util.List<PactCatalog.Material> offering,
