@@ -1,6 +1,15 @@
 import kr.moonseungjun.anomalousclasses.state.SwarmRules;
 import kr.moonseungjun.anomalousclasses.state.SwarmSavedData;
 import kr.moonseungjun.anomalousclasses.state.SwarmFlightRules;
+import kr.moonseungjun.anomalousclasses.state.SwarmGrowthRules;
+import kr.moonseungjun.anomalousclasses.state.GraphSkillTreeCatalog;
+import kr.moonseungjun.anomalousclasses.state.ClassFocus;
+import kr.moonseungjun.anomalousclasses.state.ClassId;
+import kr.moonseungjun.anomalousclasses.state.ClassProgress;
+import kr.moonseungjun.anomalousclasses.state.FocusTier;
+import kr.moonseungjun.anomalousclasses.state.PlayerClassProfile;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class SwarmRulesVerifier {
     public static void main(String[] args) {
@@ -66,8 +75,110 @@ public final class SwarmRulesVerifier {
         require(state.commitCooldown(2, 1002, 240), "separate sacrifice cooldown");
         require(state.cooldownRemaining(2, 1003) == 239, "sacrifice cooldown active");
         require(state.commitCooldown(1, 1160, 160), "rush ready again");
-        System.out.println("Swarm rules / conservation / user tactics VERIFIED");
+        verifyGraphGrowth();
+        verifyInjuryAndSpeed();
+        System.out.println("Swarm rules / nine graph perks / focus / fractional injury VERIFIED");
     }
+    private static void verifyGraphGrowth() {
+        PlayerClassProfile profile = new PlayerClassProfile();
+        ClassId id = ClassId.SWARM_CASTER;
+        var none = SwarmGrowthRules.from(profile);
+        require(none.sharpJaws() == 0 && none.naturalFission() == 0
+                && none.focusBonus() == 0.0, "unequipped rank zero");
+        String[] ids = {"sharp_jaws", "assault_tactics", "sacrifice_instinct",
+                "hard_shell", "ballistic_sense", "escort_formation",
+                "natural_fission", "regrouping", "pack_tracking"};
+        Set<String> all = new HashSet<>();
+        for (String skill : ids) {
+            var treeSkill = GraphSkillTreeCatalog.tree(id).skills().get(skill);
+            require(treeSkill != null, "existing source graph skill " + skill);
+            var stages = treeSkill.segments();
+            var first = stages.get(0);
+            require(first.oldRankTo() >= 10, "first major stage value");
+            all.add(stages.get(stages.size() - 1).majorNodeId());
+        }
+        // Graph minor nodes alone grant generic stats, not the unique swarm
+        // perk before the corresponding major is actually purchased.
+        var minorOnly = profile.progress(id).withGraphTree(100,
+                Set.of("sharp_jaws.s1.m1"), GraphSkillTreeCatalog.CURRENT_VERSION);
+        profile.updateProgress(id, minorOnly);
+        require(SwarmGrowthRules.from(profile).sharpJaws() == 0, "major required");
+        var firstStage = profile.progress(id).withGraphTree(100,
+                Set.of("sharp_jaws.s1.major", "assault_tactics.s2.major"),
+                GraphSkillTreeCatalog.CURRENT_VERSION);
+        profile.updateProgress(id, firstStage);
+        require(SwarmGrowthRules.from(profile).sharpJaws() == 10, "stage one is rank 10");
+        require(SwarmGrowthRules.from(profile).assaultTactics() == 20,
+                "stage two rank not just two");
+        profile.updateProgress(id, profile.progress(id).withGraphTree(0, all,
+                GraphSkillTreeCatalog.CURRENT_VERSION));
+        var perks = SwarmGrowthRules.from(profile);
+        require(perks.sharpJaws() == 30 && perks.assaultTactics() == 30
+                && perks.sacrificeInstinct() == 30 && perks.hardShell() == 30
+                && perks.ballisticSense() == 30 && perks.escortFormation() == 30
+                && perks.naturalFission() == 30 && perks.regrouping() == 30
+                && perks.packTracking() == 30, "all nine graph ranks");
+        require(close(perks.normalAttackFactor(), 1.18), "normal offense");
+        require(close(perks.rushAttackFactor(), 1.36), "rush adds only rush rank");
+        require(close(perks.sacrificeAttackFactor(), 1.36), "sacrifice adds only sacrifice rank");
+        require(close(perks.durabilityFactor(SwarmSavedData.SwarmNodeRole.GUARD), 1.33),
+                "guard shell and formation additive");
+        require(close(perks.durabilityFactor(SwarmSavedData.SwarmNodeRole.LIFT), 1.18),
+                "lift shell without free guard");
+        require(perks.regenerationTicks() == 30, "36 percent faster multiplication");
+        require(perks.transferBudget() == 6, "regroup plus escort milestone");
+        require(close(perks.chaseSpeedFactor(), 1.24), "pack tracking travel");
+        require(close(perks.guardMoveFactor(), 1.24), "ballistic guard movement");
+        require(close(perks.regroupMoveFactor(), 1.21), "regroup path movement");
+        double[] bonuses = {.05, .10, .15, .20, .40};
+        for (FocusTier tier : FocusTier.values()) {
+            profile.equipFocus(new ClassFocus(ClassId.SWARM_CASTER, tier));
+            var equipped = SwarmGrowthRules.from(profile);
+            require(close(equipped.focusBonus(), bonuses[tier.index()]), "focus tier " + tier);
+            require(close(equipped.normalAttackFactor(), 1.18 + bonuses[tier.index()]),
+                    "single focus offense " + tier);
+            require(close(equipped.durabilityFactor(SwarmSavedData.SwarmNodeRole.GUARD),
+                    1.33 + bonuses[tier.index()]), "single focus guard " + tier);
+        }
+        profile.equipFocus(new ClassFocus(ClassId.PUPPETEER, FocusTier.INCOMPREHENSIBLE));
+        require(SwarmGrowthRules.from(profile).focusBonus() == 0.0, "wrong-class focus ignored");
+    }
+
+    private static void verifyInjuryAndSpeed() {
+        var state = new SwarmSavedData.State();
+        state.saveTactic("attack", 100);
+        for (int i = 0; i < 50; i++) state.advance(i * 10L, 16);
+        int original = state.alive();
+        require(state.attack() == original, "physical attack group assembled");
+        require(state.applyDamage(SwarmSavedData.SwarmNodeRole.ATTACK, 1.5F, 4.0) == 0,
+                "weak hits accumulate without guaranteed death");
+        require(state.alive() == original, "no instant casualty");
+        require(close(state.pendingDamage(SwarmSavedData.SwarmNodeRole.ATTACK), 1.5),
+                "injury stored between hits");
+        require(state.applyDamage(SwarmSavedData.SwarmNodeRole.ATTACK, 2.5F, 4.0) == 1,
+                "threshold crossing costs exactly one organism");
+        require(state.alive() == original - 1, "one valid casualty");
+        require(state.applyDamage(SwarmSavedData.SwarmNodeRole.ATTACK, 2.0F, 5.6) == 0,
+                "equipped durability takes effect without a free heal");
+        require(close(state.pendingDamage(SwarmSavedData.SwarmNodeRole.ATTACK), 2.0),
+                "raw persistent injury survives durability change");
+        state.saveTactic("defense", 0);
+        for (int i = 0; i < 70; i++) state.advance(1000 + i * 10L, 16);
+        state.verify();
+        double injurySum = 0;
+        for (var role : SwarmSavedData.SwarmNodeRole.values()) injurySum += state.pendingDamage(role);
+        require(injurySum >= 2.0, "reassignment cannot erase carried injury");
+        var high = new SwarmSavedData.State();
+        high.saveTactic("attack", 100);
+        high.advance(0, 16, 40, 2);
+        high.advance(30, 16, 30, 2);
+        high.verify();
+    }
+
+    private static boolean close(double a, double b) {
+        return Math.abs(a - b) < 0.0001;
+    }
+
     private static void require(boolean ok, String name) {
         if (!ok) throw new AssertionError(name);
     }
