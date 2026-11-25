@@ -35,6 +35,20 @@ public final class PactCommands {
                             PactService.previewRelease(player,StringArgumentType.getString(ctx,"patron"));
                             return 1;
                         })))
+                .then(Commands.literal("force")
+                    .then(Commands.argument("patron",StringArgumentType.word())
+                        .executes(ctx -> {
+                            PactService.previewForcedRelease(ctx.getSource().getPlayerOrException(),
+                                    StringArgumentType.getString(ctx,"patron"));
+                            return 1;
+                        })))
+                .then(Commands.literal("redeem")
+                    .then(Commands.argument("patron",StringArgumentType.word())
+                        .executes(ctx -> {
+                            PactService.previewRedeemRelease(ctx.getSource().getPlayerOrException(),
+                                    StringArgumentType.getString(ctx,"patron"));
+                            return 1;
+                        })))
                 .then(Commands.literal("deepen")
                     .then(Commands.argument("patron",StringArgumentType.word())
                         .executes(ctx -> {

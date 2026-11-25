@@ -734,5 +734,14 @@
   "screen.anomalousclasses.swarm.ratio_hint": "공격 %",
   "screen.anomalousclasses.swarm.pending": "전술을 변경하고 있습니다…",
   "screen.anomalousclasses.swarm.stale": "전술이 변경되었습니다. 다시 확인해 주세요.",
-  "screen.anomalousclasses.swarm.invalid": "이름과 공격 비율(0~100)을 확인해 주세요."
+  "screen.anomalousclasses.swarm.invalid": "이름과 공격 비율(0~100)을 확인해 주세요.",
+  "message.anomalousclasses.pact.force_preview": "%s와의 계약을 강행 파기합니다. 권능은 즉시 사라지고 아래 미납 위약금이 남습니다. 재계약하려면 전액 정산해야 합니다. 지금은 재료를 소모하지 않습니다.",
+  "message.anomalousclasses.pact.force_hastel_debt": "하스텔의 미상환 전투 채무 %s도 금괴 1:1 비율로 미납 위약금에 포함됩니다.",
+  "message.anomalousclasses.pact.force_done": "%s와의 계약을 강행 파기했습니다. 미납 위약금은 /pact redeem <존재>로 정산할 수 있습니다.",
+  "message.anomalousclasses.pact.redeem_preview": "%s의 강행 파기 미납 위약금을 결산합니다. 아래 재료를 한 번만 지불하며 계약이 자동으로 재체결되지는 않습니다.",
+  "message.anomalousclasses.pact.redeem_done": "%s의 미납 위약금을 정산했습니다. 다시 계약할 수 있습니다.",
+  "message.anomalousclasses.pact.unpaid_status": "%s의 미납 위약금이 남아 있습니다. /pact redeem <존재>로 정산할 수 있습니다.",
+  "message.anomalousclasses.pact.unpaid_terms": "이전에 강행 파기하여 미납 위약금이 남아 있습니다. 아래 제물을 정산해야 재계약할 수 있습니다.",
+  "message.anomalousclasses.pact.unpaid_block": "%s의 미납 위약금을 먼저 정산해야 재계약할 수 있습니다. /pact redeem <존재>.",
+  "message.anomalousclasses.pact.no_unpaid_release": "정산할 미납 해약 위약금이 없습니다."
 }

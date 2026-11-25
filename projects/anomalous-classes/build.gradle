@@ -295,6 +295,16 @@ tasks.register('verifyPactCovenantConflicts', Exec) {
     }
 }
 
+tasks.register('verifyPactForcedRelease', Exec) {
+    group = 'verification'
+    description = 'Verifies unpaid forced-release bills and exact original contracts on all sixteen patrons.'
+    dependsOn tasks.named('classes')
+    doFirst {
+        commandLine 'java', '-cp', sourceSets.main.runtimeClasspath.asPath,
+                file('tools/PactForcedReleaseVerifier.java').absolutePath
+    }
+}
+
 tasks.register('verifyPactNereaSanctum', Exec) {
     group = 'verification'
     description = 'Checks one-off ocean sanctum breach, precise restitution, NBT, legacy migration and isolation.'
@@ -329,6 +339,7 @@ tasks.named('check') {
     dependsOn tasks.named('verifyPactTierFourDeepening')
     dependsOn tasks.named('verifyPactTierThreeDeepening')
     dependsOn tasks.named('verifyPactNereaSanctum')
+    dependsOn tasks.named('verifyPactForcedRelease')
     dependsOn tasks.named('verifyPactCovenantConflicts')
     dependsOn tasks.named('verifyPactTierTwoDeepening')
     dependsOn tasks.named('verifyPactTierOneDeepening')

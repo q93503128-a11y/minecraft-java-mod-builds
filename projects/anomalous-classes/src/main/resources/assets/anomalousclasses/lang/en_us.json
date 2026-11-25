@@ -734,5 +734,14 @@
   "screen.anomalousclasses.swarm.ratio_hint": "Attack %",
   "screen.anomalousclasses.swarm.pending": "Changing tactics…",
   "screen.anomalousclasses.swarm.stale": "Tactics changed. Please review the latest list.",
-  "screen.anomalousclasses.swarm.invalid": "Check the name and attack ratio (0–100)."
+  "screen.anomalousclasses.swarm.invalid": "Check the name and attack ratio (0–100).",
+  "message.anomalousclasses.pact.force_preview": "Force-release covenant with %s. Powers end immediately. The following release bill remains due and must be paid before signing this patron again. Nothing is charged now.",
+  "message.anomalousclasses.pact.force_hastel_debt": "Hastel's existing combat debt of %s is also added to the unpaid bill at one gold ingot per debt point.",
+  "message.anomalousclasses.pact.force_done": "Forced release of %s confirmed. Your release bill remains due. Settle it with /pact redeem <patron>.",
+  "message.anomalousclasses.pact.redeem_preview": "Settle the unpaid release bill for %s. These materials are paid once. No covenant is renewed automatically.",
+  "message.anomalousclasses.pact.redeem_done": "The unpaid release bill for %s has been settled. You may sign again.",
+  "message.anomalousclasses.pact.unpaid_status": "You have an unpaid release bill for %s. Use /pact redeem <patron> to settle it.",
+  "message.anomalousclasses.pact.unpaid_terms": "An earlier forced release remains unpaid. Settle these exact materials before signing again.",
+  "message.anomalousclasses.pact.unpaid_block": "Settle the unpaid release bill for %s before signing again. Use /pact redeem <patron>.",
+  "message.anomalousclasses.pact.no_unpaid_release": "There is no unpaid release bill to settle."
 }
